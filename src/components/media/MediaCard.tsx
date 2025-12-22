@@ -1,0 +1,180 @@
+import Link from "next/link"
+import Image from "next/image"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { AgeBadge, OfficialRatingBadge } from "./AgeBadge"
+import { ContentGridDots } from "./ContentGrid"
+import { cn, mediaTypeLabels } from "@/lib/utils"
+import type { MockMediaItem } from "@/lib/mock-data"
+
+const typeIcons = {
+  MOVIE: Film,
+  TV: Tv,
+  GAME: Gamepad2,
+  BOOK: BookOpen,
+  APP: Smartphone,
+}
+
+interface MediaCardProps {
+  media: MockMediaItem
+  className?: string
+}
+
+export function MediaCard({ media, className }: MediaCardProps) {
+  const Icon = typeIcons[media.type]
+  const avgRating =
+    media.reviews.length > 0
+      ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
+      : 0
+
+  return (
+    <Link href={`/media/${media.id}`}>
+      <Card
+        className={cn(
+          "group overflow-hidden hover:shadow-lg transition-all duration-300 h-full",
+          className
+        )}
+      >
+        {/* Poster Image */}
+        <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
+          <Image
+            src={media.posterUrl}
+            alt={media.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          />
+          
+          {/* Age Badge Overlay */}
+          <div className="absolute top-2 left-2">
+            <AgeBadge age={media.expertAgeRec} size="sm" />
+          </div>
+
+          {/* Type Badge */}
+          <div className="absolute top-2 right-2">
+            <Badge variant="secondary" className="bg-white/90 text-gray-700 gap-1">
+              <Icon className="h-3 w-3" />
+              {mediaTypeLabels[media.type]}
+            </Badge>
+          </div>
+
+          {/* Official Rating */}
+          <div className="absolute bottom-2 left-2">
+            <OfficialRatingBadge
+              rating={media.officialRating}
+              type={media.type}
+              size="sm"
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+              {media.title}
+            </h3>
+            {media.originalTitle && media.originalTitle !== media.title && (
+              <p className="text-xs text-gray-500 line-clamp-1">
+                {media.originalTitle}
+              </p>
+            )}
+          </div>
+
+          {/* Genres */}
+          <div className="flex flex-wrap gap-1">
+            {media.genres.slice(0, 2).map((genre) => (
+              <Badge key={genre} variant="outline" className="text-xs">
+                {genre}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Content Dots */}
+          <ContentGridDots metrics={media.contentMetrics} />
+
+          {/* Rating & Reviews */}
+          <div className="flex items-center justify-between pt-2 border-t">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="text-sm font-medium">
+                {avgRating > 0 ? avgRating.toFixed(1) : "—"}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">
+              {media.reviews.length} avis
+            </span>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  )
+}
+
+// Horizontal variant for lists
+export function MediaCardHorizontal({ media, className }: MediaCardProps) {
+  const Icon = typeIcons[media.type]
+
+  return (
+    <Link href={`/media/${media.id}`}>
+      <Card
+        className={cn(
+          "group flex overflow-hidden hover:shadow-lg transition-all duration-300",
+          className
+        )}
+      >
+        {/* Poster */}
+        <div className="relative w-24 sm:w-32 shrink-0 aspect-[2/3] overflow-hidden bg-gray-100">
+          <Image
+            src={media.posterUrl}
+            alt={media.title}
+            fill
+            className="object-cover"
+            sizes="128px"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+                  {media.title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="text-xs gap-1">
+                    <Icon className="h-3 w-3" />
+                    {mediaTypeLabels[media.type]}
+                  </Badge>
+                  <OfficialRatingBadge
+                    rating={media.officialRating}
+                    type={media.type}
+                    size="sm"
+                  />
+                </div>
+              </div>
+              <AgeBadge age={media.expertAgeRec} size="sm" />
+            </div>
+
+            <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+              {media.synopsisFr}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 mt-3">
+            <ContentGridDots metrics={media.contentMetrics} />
+            <div className="flex items-center gap-1 text-sm">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+              <span className="font-medium">
+                {media.communityAgeRec.toFixed(1)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  )
+}
+

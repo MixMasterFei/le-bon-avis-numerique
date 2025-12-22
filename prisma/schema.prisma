@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MediaType {
+  MOVIE
+  TV
+  GAME
+  BOOK
+  APP
+}
+
+enum ReviewerRole {
+  PARENT
+  KID
+  EDUCATOR
+}
+
+model MediaItem {
+  id                String          @id @default(uuid())
+  title             String
+  originalTitle     String?         @map("original_title")
+  type              MediaType
+  releaseDate       DateTime?       @map("release_date")
+  posterUrl         String?         @map("poster_url")
+  synopsisFr        String?         @map("synopsis_fr") @db.Text
+  officialRating    String?         @map("official_rating")
+  expertAgeRec      Int?            @map("expert_age_rec")
+  communityAgeRec   Float?          @map("community_age_rec")
+  duration          Int?            // minutes for movies/shows, null for others
+  director          String?
+  genres            String[]
+  platforms         String[]        // Netflix, Disney+, Canal+, etc.
+  topics            String[]        // Princesses, Dinosaurs, History, etc.
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  
+  contentMetrics    ContentMetrics?
+  reviews           Review[]
+  
+  @@map("media_items")
+}
+
+model ContentMetrics {
+  id                String    @id @default(uuid())
+  mediaId           String    @unique @map("media_id")
+  violence          Int       @default(0) // 0-5 scale
+  sexNudity         Int       @default(0) @map("sex_nudity")
+  language          Int       @default(0)
+  consumerism       Int       @default(0)
+  substanceUse      Int       @default(0) @map("substance_use")
+  positiveMessages  Int       @default(0) @map("positive_messages")
+  roleModels        Int       @default(0) @map("role_models")
+  whatParentsNeedToKnow String[] @map("what_parents_need_to_know")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  media             MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  
+  @@map("content_metrics")
+}
+
+model Review {
+  id              String       @id @default(uuid())
+  userId          String?      @map("user_id")
+  mediaId         String       @map("media_id")
+  role            ReviewerRole
+  rating          Int          // 1-5 stars
+  ageSuggestion   Int?         @map("age_suggestion")
+  comment         String?      @db.Text
+  isVerified      Boolean      @default(false) @map("is_verified")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  
+  media           MediaItem    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  
+  @@map("reviews")
+}

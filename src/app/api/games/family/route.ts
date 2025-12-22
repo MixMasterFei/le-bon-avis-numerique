@@ -1,0 +1,21 @@
+import { NextRequest, NextResponse } from "next/server"
+import { getFamilyGames, transformGame } from "@/lib/igdb"
+
+export async function GET(request: NextRequest) {
+  try {
+    const results = await getFamilyGames()
+    const games = results.map(transformGame)
+
+    return NextResponse.json({
+      games,
+      totalResults: games.length,
+    })
+  } catch (error) {
+    console.error("IGDB family games error:", error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch games" },
+      { status: 500 }
+    )
+  }
+}
+
