@@ -51,7 +51,7 @@ async function getAccessToken(): Promise<string> {
   accessToken = data.access_token
   tokenExpiry = Date.now() + (data.expires_in - 60) * 1000 // Refresh 1 min early
 
-  return accessToken
+  return accessToken!
 }
 
 /**
