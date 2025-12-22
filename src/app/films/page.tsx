@@ -4,16 +4,20 @@ import { useState, useMemo } from "react"
 import { Film } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
+import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems } from "@/lib/mock-data"
 
+const ITEMS_PER_PAGE = 12
+
 export default function FilmsPage() {
+  const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
     maxAge: 18,
     platforms: [],
     topics: [],
   })
 
-  const movies = useMemo(() => {
+  const filteredMovies = useMemo(() => {
     let items = mockMediaItems.filter((m) => m.type === "MOVIE")
 
     // Filter by age
@@ -45,6 +49,19 @@ export default function FilmsPage() {
     return items
   }, [filters])
 
+  // Reset to page 1 when filters change
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+    setCurrentPage(1)
+  }
+
+  // Pagination
+  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
+  const paginatedMovies = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredMovies, currentPage])
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -56,7 +73,7 @@ export default function FilmsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Films</h1>
         </div>
         <p className="text-gray-600">
-          Découvrez les meilleurs films pour toute la famille avec nos critiques et recommandations par âge.
+          Decouvrez les meilleurs films pour toute la famille avec nos critiques et recommandations par age.
         </p>
       </div>
 
@@ -64,7 +81,7 @@ export default function FilmsPage() {
         {/* Sidebar */}
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={setFilters} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} />
           </div>
         </div>
 
@@ -72,20 +89,35 @@ export default function FilmsPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <p className="text-gray-600">
-              {movies.length} film{movies.length !== 1 ? "s" : ""} trouvé{movies.length !== 1 ? "s" : ""}
+              {filteredMovies.length} film{filteredMovies.length !== 1 ? "s" : ""} trouve{filteredMovies.length !== 1 ? "s" : ""}
             </p>
+            {totalPages > 1 && (
+              <p className="text-sm text-gray-500">
+                Page {currentPage} sur {totalPages}
+              </p>
+            )}
           </div>
 
-          {movies.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {movies.map((movie) => (
-                <MediaCard key={movie.id} media={movie} />
-              ))}
-            </div>
+          {paginatedMovies.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {paginatedMovies.map((movie) => (
+                  <MediaCard key={movie.id} media={movie} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="mt-8"
+              />
+            </>
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucun film trouvé</p>
+              <p className="text-lg font-medium">Aucun film trouve</p>
               <p className="text-sm">Essayez de modifier vos filtres</p>
             </div>
           )}
@@ -94,4 +126,3 @@ export default function FilmsPage() {
     </div>
   )
 }
-

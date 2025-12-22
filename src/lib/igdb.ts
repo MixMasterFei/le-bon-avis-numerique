@@ -1,7 +1,7 @@
 /**
  * IGDB (Internet Game Database) API Integration
  * Owned by Twitch/Amazon - Free with attribution
- * 
+ *
  * Setup:
  * 1. Create a Twitch account: https://dev.twitch.tv/console
  * 2. Register an application
@@ -9,9 +9,11 @@
  * 4. Add to environment variables:
  *    - IGDB_CLIENT_ID
  *    - IGDB_CLIENT_SECRET
- * 
+ *
  * Documentation: https://api-docs.igdb.com/
  */
+
+import { escapeIGDBQuery, sanitizeNumber } from "./security"
 
 const IGDB_BASE_URL = "https://api.igdb.com/v4"
 const TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/token"
@@ -180,15 +182,24 @@ export function getIGDBImageUrl(
 
 /**
  * Search for games
+ * Query is escaped to prevent IGDB query injection
  */
 export async function searchGames(query: string, limit = 20): Promise<IGDBGame[]> {
+  // Sanitize and escape user input
+  const safeQuery = escapeIGDBQuery(query)
+  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+
+  if (!safeQuery) {
+    return []
+  }
+
   const body = `
-    search "${query}";
-    fields name, summary, cover.url, cover.image_id, first_release_date, 
+    search "${safeQuery}";
+    fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    limit ${limit};
+    limit ${safeLimit};
   `
 
   return igdbFetch<IGDBGame[]>("/games", body)
@@ -196,8 +207,15 @@ export async function searchGames(query: string, limit = 20): Promise<IGDBGame[]
 
 /**
  * Get game details by ID
+ * ID is validated to prevent injection
  */
 export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
+  // Validate gameId is a positive integer
+  const safeId = sanitizeNumber(gameId, 1)
+  if (!safeId) {
+    return null
+  }
+
   const body = `
     fields name, summary, storyline, url,
            cover.url, cover.image_id,
@@ -209,7 +227,7 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
            themes.name,
            game_modes.name,
            total_rating, total_rating_count;
-    where id = ${gameId};
+    where id = ${safeId};
   `
 
   const results = await igdbFetch<IGDBGame[]>("/games", body)
@@ -220,6 +238,8 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
  * Get popular games
  */
 export async function getPopularGames(limit = 20): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
@@ -227,7 +247,7 @@ export async function getPopularGames(limit = 20): Promise<IGDBGame[]> {
            total_rating, total_rating_count;
     where total_rating_count > 50 & cover != null;
     sort total_rating desc;
-    limit ${limit};
+    limit ${safeLimit};
   `
 
   return igdbFetch<IGDBGame[]>("/games", body)
@@ -237,6 +257,8 @@ export async function getPopularGames(limit = 20): Promise<IGDBGame[]> {
  * Get family-friendly games (PEGI 3 or PEGI 7)
  */
 export async function getFamilyGames(limit = 20): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
@@ -244,7 +266,7 @@ export async function getFamilyGames(limit = 20): Promise<IGDBGame[]> {
            total_rating, total_rating_count;
     where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null;
     sort total_rating desc;
-    limit ${limit};
+    limit ${safeLimit};
   `
 
   return igdbFetch<IGDBGame[]>("/games", body)
@@ -254,6 +276,7 @@ export async function getFamilyGames(limit = 20): Promise<IGDBGame[]> {
  * Get recently released games
  */
 export async function getRecentGames(limit = 20): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
   const now = Math.floor(Date.now() / 1000)
   const sixMonthsAgo = now - 6 * 30 * 24 * 60 * 60
 
@@ -264,7 +287,7 @@ export async function getRecentGames(limit = 20): Promise<IGDBGame[]> {
            total_rating, total_rating_count;
     where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null;
     sort first_release_date desc;
-    limit ${limit};
+    limit ${safeLimit};
   `
 
   return igdbFetch<IGDBGame[]>("/games", body)

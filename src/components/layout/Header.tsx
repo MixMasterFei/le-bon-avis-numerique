@@ -2,21 +2,42 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Smartphone, User, LogOut, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const navigation = [
   { name: "Films", href: "/films", icon: Film },
-  { name: "Séries TV", href: "/series", icon: Tv },
-  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
+  { name: "Series TV", href: "/series", icon: Tv },
+  { name: "Jeux Video", href: "/jeux", icon: Gamepad2 },
   { name: "Livres", href: "/livres", icon: BookOpen },
   { name: "Applications", href: "/apps", icon: Smartphone },
 ]
 
 export function Header() {
+  const router = useRouter()
+  const { data: session, status } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/recherche?q=${encodeURIComponent(searchQuery)}`)
+      setSearchQuery("")
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch(e)
+    }
+  }
+
+  const isAdmin = session?.user?.role === "ADMIN"
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -29,7 +50,7 @@ export function Header() {
             </div>
             <div className="hidden sm:block">
               <span className="text-lg font-bold text-primary">Le Bon Avis</span>
-              <span className="text-lg font-light text-gray-600"> Numérique</span>
+              <span className="text-lg font-light text-gray-600"> Numerique</span>
             </div>
           </Link>
 
@@ -48,27 +69,97 @@ export function Header() {
           </nav>
 
           {/* Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
+          <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-md mx-6">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="search"
-                placeholder="Rechercher un film, une série, un jeu..."
+                placeholder="Rechercher un film, une serie, un jeu..."
                 className="pl-10 pr-4 bg-gray-50 border-gray-200 focus:bg-white"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
             </div>
-          </div>
+          </form>
 
           {/* Right Section */}
           <div className="flex items-center space-x-3">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              Connexion
-            </Button>
-            <Button size="sm" className="hidden sm:inline-flex">
-              S&apos;inscrire
-            </Button>
+            {status === "loading" ? (
+              <div className="h-8 w-20 bg-gray-100 animate-pulse rounded" />
+            ) : session?.user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                >
+                  {session.user.image ? (
+                    <img
+                      src={session.user.image}
+                      alt={session.user.name || "User"}
+                      className="h-7 w-7 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-4 w-4 text-primary" />
+                    </div>
+                  )}
+                  <span className="hidden sm:inline">
+                    {session.user.name || session.user.email?.split("@")[0]}
+                  </span>
+                </button>
+
+                {/* User Dropdown */}
+                {isUserMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+                      <Link
+                        href="/profil"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <User className="h-4 w-4" />
+                        Mon profil
+                      </Link>
+                      {isAdmin && (
+                        <Link
+                          href="/admin/import"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Settings className="h-4 w-4" />
+                          Administration
+                        </Link>
+                      )}
+                      <hr className="my-1" />
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false)
+                          signOut({ callbackUrl: "/" })
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Deconnexion
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" className="hidden sm:inline-flex" asChild>
+                  <Link href="/connexion">Connexion</Link>
+                </Button>
+                <Button size="sm" className="hidden sm:inline-flex" asChild>
+                  <Link href="/inscription">S&apos;inscrire</Link>
+                </Button>
+              </>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -81,7 +172,7 @@ export function Header() {
         </div>
 
         {/* Mobile Search */}
-        <div className="md:hidden pb-3">
+        <form onSubmit={handleSearch} className="md:hidden pb-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -92,7 +183,7 @@ export function Header() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
+        </form>
       </div>
 
       {/* Mobile Navigation */}
@@ -110,16 +201,51 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
-            <div className="pt-4 flex gap-3">
-              <Button variant="outline" className="flex-1">
-                Connexion
-              </Button>
-              <Button className="flex-1">S&apos;inscrire</Button>
-            </div>
+            {session?.user ? (
+              <>
+                <hr className="my-2" />
+                <Link
+                  href="/profil"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User className="h-5 w-5" />
+                  Mon profil
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin/import"
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Settings className="h-5 w-5" />
+                    Administration
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    signOut({ callbackUrl: "/" })
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Deconnexion
+                </button>
+              </>
+            ) : (
+              <div className="pt-4 flex gap-3">
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href="/connexion">Connexion</Link>
+                </Button>
+                <Button className="flex-1" asChild>
+                  <Link href="/inscription">S&apos;inscrire</Link>
+                </Button>
+              </div>
+            )}
           </nav>
         </div>
       )}
     </header>
   )
 }
-

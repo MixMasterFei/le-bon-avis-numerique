@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 import { searchMovies, getImageUrl, ImageSize } from "@/lib/tmdb"
+import { sanitizeSearchQuery, sanitizeNumber } from "@/lib/security"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("q")
-  const page = parseInt(searchParams.get("page") || "1")
+  const rawQuery = searchParams.get("q")
+  const rawPage = searchParams.get("page")
 
-  if (!query) {
+  // Validate and sanitize inputs
+  if (!rawQuery) {
     return NextResponse.json(
       { error: "Query parameter 'q' is required" },
       { status: 400 }
     )
   }
 
+  const query = sanitizeSearchQuery(rawQuery)
+  const page = sanitizeNumber(rawPage, 1, 500) || 1
+
+  if (!query || query.length < 2) {
+    return NextResponse.json(
+      { error: "Query must be at least 2 characters" },
+      { status: 400 }
+    )
+  }
+
   try {
     const results = await searchMovies(query, page)
-    
+
     // Transform to our format
     const movies = results.results.map((movie) => ({
       id: movie.id.toString(),
@@ -43,4 +55,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

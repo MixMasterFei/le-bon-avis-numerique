@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server"
 import { searchGames, transformGame } from "@/lib/igdb"
+import { sanitizeSearchQuery } from "@/lib/security"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get("q")
+  const rawQuery = searchParams.get("q")
 
-  if (!query) {
+  if (!rawQuery) {
     return NextResponse.json(
       { error: "Query parameter 'q' is required" },
+      { status: 400 }
+    )
+  }
+
+  const query = sanitizeSearchQuery(rawQuery)
+
+  if (!query || query.length < 2) {
+    return NextResponse.json(
+      { error: "Query must be at least 2 characters" },
       { status: 400 }
     )
   }
@@ -28,4 +38,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
