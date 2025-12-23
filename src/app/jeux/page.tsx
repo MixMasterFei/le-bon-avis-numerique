@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Gamepad2 } from "lucide-react"
+import { Gamepad2, Database } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
@@ -16,10 +16,13 @@ export default function JeuxPage() {
     platforms: [],
     topics: [],
   })
-  const [source, setSource] = useState<"api" | "mock">("mock")
+  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
   const [apiGames, setApiGames] = useState<MockMediaItem[]>([])
+  const [apiTotalPages, setApiTotalPages] = useState(1)
+  const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
   const [apiLoading, setApiLoading] = useState(false)
 
+  // Priority: 1. Database, 2. External API, 3. Mock data
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
@@ -27,6 +30,58 @@ export default function JeuxPage() {
     async function load() {
       setApiLoading(true)
       try {
+        // First, try to fetch from database
+        const dbParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
+        })
+        if (filters.maxAge < 18) {
+          dbParams.set("maxAge", filters.maxAge.toString())
+        }
+
+        const dbRes = await fetch(`/api/db/games?${dbParams}`, { signal: controller.signal })
+        if (dbRes.ok) {
+          const dbData = await dbRes.json()
+          if (dbData.games && dbData.games.length > 0) {
+            const mapped: MockMediaItem[] = dbData.games.map((g: any) => ({
+              id: String(g.id),
+              title: String(g.title || ""),
+              originalTitle: undefined,
+              type: "GAME" as const,
+              releaseDate: g.releaseDate ?? null,
+              posterUrl: String(g.posterUrl || ""),
+              synopsisFr: g.synopsisFr ?? null,
+              officialRating: g.officialRating ?? null,
+              expertAgeRec: g.expertAgeRec ?? null,
+              communityAgeRec: g.communityAgeRec ?? null,
+              genres: g.genres || [],
+              platforms: g.platforms || [],
+              topics: g.topics || [],
+              contentMetrics: g.contentMetrics || {
+                violence: 0,
+                sexNudity: 0,
+                language: 0,
+                consumerism: 0,
+                substanceUse: 0,
+                positiveMessages: 0,
+                roleModels: 0,
+                whatParentsNeedToKnow: [],
+              },
+              reviews: [],
+            }))
+
+            if (!cancelled) {
+              setSource("db")
+              setApiGames(mapped)
+              setApiTotalPages(dbData.pagination?.totalPages || 1)
+              setApiTotalResults(dbData.pagination?.total || mapped.length)
+              setApiLoading(false)
+            }
+            return
+          }
+        }
+
+        // Fallback to external API if database is empty
         const endpoint = filters.maxAge <= 12 ? "/api/games/family" : "/api/games/popular"
         const res = await fetch(endpoint, { signal: controller.signal })
         if (!res.ok) {
@@ -71,6 +126,8 @@ export default function JeuxPage() {
         if (!cancelled) {
           setSource("api")
           setApiGames(mapped)
+          setApiTotalPages(1)
+          setApiTotalResults(mapped.length)
         }
       } catch {
         if (!cancelled) {
@@ -87,10 +144,11 @@ export default function JeuxPage() {
       cancelled = true
       controller.abort()
     }
-  }, [filters.maxAge])
+  }, [currentPage, filters.maxAge])
 
   const filteredGames = useMemo(() => {
-    if (source === "api") return apiGames
+    // In DB or API mode, filtering is handled server-side
+    if (source === "db" || source === "api") return apiGames
 
     let items = mockMediaItems.filter((m) => m.type === "GAME")
 
@@ -125,11 +183,12 @@ export default function JeuxPage() {
     setCurrentPage(1)
   }
 
-  const totalPages = Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
+  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
   const paginatedGames = useMemo(() => {
+    if (source === "db" || source === "api") return filteredGames
     const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredGames.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredGames, currentPage])
+  }, [filteredGames, currentPage, source])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -154,10 +213,19 @@ export default function JeuxPage() {
 
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
-            <p className="text-gray-600">
-              {filteredGames.length} jeu{filteredGames.length !== 1 ? "x" : ""} trouve{filteredGames.length !== 1 ? "s" : ""}
-              {source === "api" && " (IGDB)"}
-            </p>
+            <div className="flex items-center gap-2">
+              {source === "db" && (
+                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <Database className="h-3 w-3" /> Base locale
+                </span>
+              )}
+              <p className="text-gray-600">
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredGames.length : filteredGames.length)} jeu
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredGames.length : filteredGames.length) !== 1 ? "x" : ""} trouve
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredGames.length : filteredGames.length) !== 1 ? "s" : ""}
+                {source === "api" && " (IGDB)"}
+              </p>
+            </div>
             {totalPages > 1 && (
               <p className="text-sm text-gray-500">
                 Page {currentPage} sur {totalPages}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Film } from "lucide-react"
+import { Film, Database } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
@@ -16,14 +16,13 @@ export default function FilmsPage() {
     platforms: [],
     topics: [],
   })
-  const [source, setSource] = useState<"api" | "mock">("mock")
+  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
   const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
   const [apiTotalPages, setApiTotalPages] = useState(1)
   const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
   const [apiLoading, setApiLoading] = useState(false)
 
-  // Fetch a larger catalog from TMDB when configured.
-  // If API keys are missing, we keep demo/mock mode.
+  // Priority: 1. Database, 2. External API, 3. Mock data
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
@@ -31,6 +30,58 @@ export default function FilmsPage() {
     async function load() {
       setApiLoading(true)
       try {
+        // First, try to fetch from database
+        const dbParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
+        })
+        if (filters.maxAge < 18) {
+          dbParams.set("maxAge", filters.maxAge.toString())
+        }
+
+        const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
+        if (dbRes.ok) {
+          const dbData = await dbRes.json()
+          if (dbData.movies && dbData.movies.length > 0) {
+            const mapped: MockMediaItem[] = dbData.movies.map((m: any) => ({
+              id: String(m.id),
+              title: String(m.title || ""),
+              originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
+              type: "MOVIE",
+              releaseDate: m.releaseDate ?? null,
+              posterUrl: String(m.posterUrl || ""),
+              synopsisFr: m.synopsisFr ?? null,
+              officialRating: m.officialRating ?? null,
+              expertAgeRec: m.expertAgeRec ?? null,
+              communityAgeRec: m.communityAgeRec ?? null,
+              genres: m.genres || [],
+              platforms: m.platforms || [],
+              topics: m.topics || [],
+              contentMetrics: m.contentMetrics || {
+                violence: 0,
+                sexNudity: 0,
+                language: 0,
+                consumerism: 0,
+                substanceUse: 0,
+                positiveMessages: 0,
+                roleModels: 0,
+                whatParentsNeedToKnow: [],
+              },
+              reviews: [],
+            }))
+
+            if (!cancelled) {
+              setSource("db")
+              setApiMovies(mapped)
+              setApiTotalPages(dbData.pagination?.totalPages || 1)
+              setApiTotalResults(dbData.pagination?.total || mapped.length)
+              setApiLoading(false)
+            }
+            return
+          }
+        }
+
+        // Fallback to external API if database is empty
         const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
         const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
         if (!res.ok) {
@@ -90,8 +141,8 @@ export default function FilmsPage() {
   }, [currentPage, filters.maxAge])
 
   const filteredMovies = useMemo(() => {
-    // In API mode, filtering is handled server-side (popular vs family).
-    if (source === "api") return apiMovies
+    // In DB or API mode, filtering is handled server-side
+    if (source === "db" || source === "api") return apiMovies
 
     let items = mockMediaItems.filter((m) => m.type === "MOVIE")
 
@@ -131,9 +182,9 @@ export default function FilmsPage() {
   }
 
   // Pagination
-  const totalPages = source === "api" ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
+  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
   const paginatedMovies = useMemo(() => {
-    if (source === "api") return filteredMovies
+    if (source === "db" || source === "api") return filteredMovies
     const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
   }, [filteredMovies, currentPage, source])
@@ -164,11 +215,18 @@ export default function FilmsPage() {
         {/* Content */}
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
-            <p className="text-gray-600">
-              {(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
-              {(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
-              trouve{(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
-            </p>
+            <div className="flex items-center gap-2">
+              {source === "db" && (
+                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <Database className="h-3 w-3" /> Base locale
+                </span>
+              )}
+              <p className="text-gray-600">
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
+                trouve{((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
+              </p>
+            </div>
             {totalPages > 1 && (
               <p className="text-sm text-gray-500">
                 Page {currentPage} sur {totalPages}
