@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 
 interface AgeBadgeProps {
-  age: number
+  age: number | null | undefined
   size?: "sm" | "md" | "lg"
   label?: string
   className?: string
@@ -14,7 +14,8 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
     lg: "h-16 w-16 text-2xl",
   }
 
-  const getBgColor = (age: number) => {
+  const getBgColor = (age: number | null | undefined) => {
+    if (age === null || age === undefined) return "bg-gray-500"
     if (age <= 3) return "bg-emerald-500"
     if (age <= 7) return "bg-emerald-600"
     if (age <= 10) return "bg-amber-500"
@@ -31,7 +32,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
           getBgColor(age)
         )}
       >
-        {age}+
+        {age === null || age === undefined ? "—" : `${age}+`}
       </div>
       {label && (
         <span className="text-xs text-gray-600 font-medium">{label}</span>
@@ -41,7 +42,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
 }
 
 interface OfficialRatingBadgeProps {
-  rating: string
+  rating: string | null | undefined
   type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
   size?: "sm" | "md"
   className?: string
@@ -59,6 +60,7 @@ export function OfficialRatingBadge({
   }
 
   const getRatingDisplay = () => {
+    if (!rating) return { label: "Non classé", color: "bg-gray-500" }
     // CSA ratings for Movies/TV
     if (type === "MOVIE" || type === "TV") {
       switch (rating) {
@@ -113,4 +115,5 @@ export function OfficialRatingBadge({
     </span>
   )
 }
+
 

@@ -4,12 +4,12 @@ export interface MockMediaItem {
   title: string
   originalTitle?: string
   type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
-  releaseDate: string
+  releaseDate: string | null
   posterUrl: string
-  synopsisFr: string
-  officialRating: string
-  expertAgeRec: number
-  communityAgeRec: number
+  synopsisFr: string | null
+  officialRating: string | null
+  expertAgeRec: number | null
+  communityAgeRec: number | null
   duration?: number
   director?: string
   genres: string[]
@@ -364,7 +364,7 @@ export function searchMedia(query: string) {
   return mockMediaItems.filter(
     (item) =>
       item.title.toLowerCase().includes(lowercaseQuery) ||
-      item.synopsisFr.toLowerCase().includes(lowercaseQuery) ||
+      (item.synopsisFr ? item.synopsisFr.toLowerCase().includes(lowercaseQuery) : false) ||
       item.genres.some((g) => g.toLowerCase().includes(lowercaseQuery)) ||
       item.topics.some((t) => t.toLowerCase().includes(lowercaseQuery))
   )
@@ -381,4 +381,5 @@ export function filterByPlatform(items: MockMediaItem[], platform: string) {
     item.platforms.some((p) => p.toLowerCase().includes(platform.toLowerCase()))
   )
 }
+
 

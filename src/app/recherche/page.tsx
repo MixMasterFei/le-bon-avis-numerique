@@ -20,6 +20,7 @@ interface SearchResult {
   releaseDate: string | null
   rating: number | null
   type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  source?: "TMDB" | "IGDB" | "GOOGLE_BOOKS"
 }
 
 function RechercheContent() {
@@ -43,14 +44,26 @@ function RechercheContent() {
     setHasSearched(true)
 
     try {
-      // Search in mock data first (instant results)
-      const mockResults = mockMediaItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.originalTitle?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+      // Primary: aggregated API (movies + tv + games + books)
+      const apiRes = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
+      if (apiRes.ok) {
+        const data = await apiRes.json()
+        const apiResults: SearchResult[] = data.results || []
+        if (Array.isArray(apiResults) && apiResults.length > 0) {
+          setResults(apiResults)
+          return
+        }
+      }
 
-      // Transform mock data to search result format
+      // Fallback: search in mock data (demo mode / missing API keys)
+      const mockResults = mockMediaItems.filter((item) => {
+        const q = searchQuery.toLowerCase()
+        return (
+          item.title.toLowerCase().includes(q) ||
+          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
+        )
+      })
+
       const transformedMock: SearchResult[] = mockResults.map((item) => ({
         id: item.id,
         title: item.title,
@@ -60,42 +73,30 @@ function RechercheContent() {
         releaseDate: item.releaseDate,
         rating: item.communityAgeRec,
         type: item.type,
+        source: "TMDB", // demo only
       }))
 
       setResults(transformedMock)
-
-      // Also search external APIs in parallel
-      const apiResults: SearchResult[] = []
-
-      try {
-        const [moviesRes, gamesRes] = await Promise.allSettled([
-          fetch(`/api/movies/search?q=${encodeURIComponent(searchQuery)}`),
-          fetch(`/api/games/search?q=${encodeURIComponent(searchQuery)}`),
-        ])
-
-        if (moviesRes.status === "fulfilled" && moviesRes.value.ok) {
-          const data = await moviesRes.value.json()
-          apiResults.push(...(data.movies || []))
-        }
-
-        if (gamesRes.status === "fulfilled" && gamesRes.value.ok) {
-          const data = await gamesRes.value.json()
-          apiResults.push(...(data.games || []))
-        }
-      } catch {
-        // API errors are non-fatal, continue with mock results
-      }
-
-      // Combine and deduplicate results
-      const combined = [...transformedMock, ...apiResults]
-      const unique = combined.filter(
-        (item, index, self) =>
-          index === self.findIndex((t) => t.id === item.id)
-      )
-
-      setResults(unique)
     } catch {
-      // Keep showing mock results on error
+      // Last resort: keep showing mock results on error
+      const q = searchQuery.toLowerCase()
+      const mockResults = mockMediaItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
+      )
+      setResults(
+        mockResults.map((item) => ({
+          id: item.id,
+          title: item.title,
+          originalTitle: item.originalTitle,
+          synopsisFr: item.synopsisFr,
+          posterUrl: item.posterUrl,
+          releaseDate: item.releaseDate,
+          rating: item.communityAgeRec,
+          type: item.type,
+        }))
+      )
     } finally {
       setIsLoading(false)
     }
@@ -142,11 +143,11 @@ function RechercheContent() {
       originalTitle: result.originalTitle || result.title,
       type: result.type,
       posterUrl: result.posterUrl,
-      synopsisFr: result.synopsisFr || "",
-      releaseDate: result.releaseDate || "",
-      expertAgeRec: 0,
-      communityAgeRec: result.rating || 0,
-      officialRating: "TOUS_PUBLICS",
+      synopsisFr: result.synopsisFr || null,
+      releaseDate: result.releaseDate || null,
+      expertAgeRec: null,
+      communityAgeRec: result.rating ?? null,
+      officialRating: null,
       genres: [],
       platforms: [],
       topics: [],
@@ -156,8 +157,8 @@ function RechercheContent() {
         language: 0,
         consumerism: 0,
         substanceUse: 0,
-        positiveMessages: 3,
-        roleModels: 3,
+        positiveMessages: 0,
+        roleModels: 0,
         whatParentsNeedToKnow: [],
       },
       reviews: [],

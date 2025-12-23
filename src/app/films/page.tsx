@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Film } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
-import { mockMediaItems } from "@/lib/mock-data"
+import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
 const ITEMS_PER_PAGE = 12
 
@@ -16,13 +16,88 @@ export default function FilmsPage() {
     platforms: [],
     topics: [],
   })
+  const [source, setSource] = useState<"api" | "mock">("mock")
+  const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
+  const [apiTotalPages, setApiTotalPages] = useState(1)
+  const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
+  const [apiLoading, setApiLoading] = useState(false)
+
+  // Fetch a larger catalog from TMDB when configured.
+  // If API keys are missing, we keep demo/mock mode.
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+
+    async function load() {
+      setApiLoading(true)
+      try {
+        const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
+        const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
+        if (!res.ok) {
+          setSource("mock")
+          return
+        }
+        const data = await res.json()
+        const movies = Array.isArray(data?.movies) ? data.movies : []
+        const mapped: MockMediaItem[] = movies.map((m: any) => ({
+          id: String(m.id),
+          title: String(m.title || ""),
+          originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
+          type: "MOVIE",
+          releaseDate: m.releaseDate ?? null,
+          posterUrl: String(m.posterUrl || ""),
+          synopsisFr: m.synopsisFr ?? null,
+          officialRating: null,
+          expertAgeRec: null,
+          communityAgeRec: m.rating ?? null,
+          genres: [],
+          platforms: [],
+          topics: [],
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }))
+
+        if (!cancelled) {
+          setSource("api")
+          setApiMovies(mapped)
+          setApiTotalPages(Math.max(1, Number(data?.totalPages) || 1))
+          setApiTotalResults(typeof data?.totalResults === "number" ? data.totalResults : null)
+        }
+      } catch {
+        if (!cancelled) {
+          setSource("mock")
+        }
+      } finally {
+        if (!cancelled) setApiLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [currentPage, filters.maxAge])
 
   const filteredMovies = useMemo(() => {
+    // In API mode, filtering is handled server-side (popular vs family).
+    if (source === "api") return apiMovies
+
     let items = mockMediaItems.filter((m) => m.type === "MOVIE")
 
     // Filter by age
     if (filters.maxAge < 18) {
-      items = items.filter((m) => m.expertAgeRec <= filters.maxAge)
+      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
     }
 
     // Filter by platform
@@ -47,7 +122,7 @@ export default function FilmsPage() {
     }
 
     return items
-  }, [filters])
+  }, [apiMovies, filters, source])
 
   // Reset to page 1 when filters change
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -56,11 +131,12 @@ export default function FilmsPage() {
   }
 
   // Pagination
-  const totalPages = Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
+  const totalPages = source === "api" ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
   const paginatedMovies = useMemo(() => {
+    if (source === "api") return filteredMovies
     const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredMovies, currentPage])
+  }, [filteredMovies, currentPage, source])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -89,7 +165,9 @@ export default function FilmsPage() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <p className="text-gray-600">
-              {filteredMovies.length} film{filteredMovies.length !== 1 ? "s" : ""} trouve{filteredMovies.length !== 1 ? "s" : ""}
+              {(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
+              {(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
+              trouve{(source === "api" ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
             </p>
             {totalPages > 1 && (
               <p className="text-sm text-gray-500">
@@ -98,7 +176,13 @@ export default function FilmsPage() {
             )}
           </div>
 
-          {paginatedMovies.length > 0 ? (
+          {apiLoading ? (
+            <div className="text-center py-16 text-gray-500">
+              <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">Chargement...</p>
+              <p className="text-sm">Récupération du catalogue</p>
+            </div>
+          ) : paginatedMovies.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {paginatedMovies.map((movie) => (
@@ -126,3 +210,4 @@ export default function FilmsPage() {
     </div>
   )
 }
+

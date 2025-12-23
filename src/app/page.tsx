@@ -1,18 +1,27 @@
 import Link from "next/link"
-import { ArrowRight, Search, Shield, Star, Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
+import { ArrowRight, Shield, Star, Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { MediaCard } from "@/components/media/MediaCard"
 import { mockMediaItems } from "@/lib/mock-data"
+import { HeroSearch } from "@/components/home/HeroSearch"
+import { RecommendationWizard } from "@/components/home/RecommendationWizard"
+
+const demoCounts = {
+  MOVIE: mockMediaItems.filter((m) => m.type === "MOVIE").length,
+  TV: mockMediaItems.filter((m) => m.type === "TV").length,
+  GAME: mockMediaItems.filter((m) => m.type === "GAME").length,
+  BOOK: mockMediaItems.filter((m) => m.type === "BOOK").length,
+  APP: mockMediaItems.filter((m) => m.type === "APP").length,
+}
 
 const categories = [
-  { name: "Films", href: "/films", icon: Film, count: 1250, color: "bg-red-500" },
-  { name: "Séries TV", href: "/series", icon: Tv, count: 890, color: "bg-blue-500" },
-  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2, count: 560, color: "bg-green-500" },
-  { name: "Livres", href: "/livres", icon: BookOpen, count: 2100, color: "bg-amber-500" },
-  { name: "Applications", href: "/apps", icon: Smartphone, count: 340, color: "bg-purple-500" },
+  { name: "Films", href: "/films", icon: Film, count: demoCounts.MOVIE, color: "bg-red-500" },
+  { name: "Séries TV", href: "/series", icon: Tv, count: demoCounts.TV, color: "bg-blue-500" },
+  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2, count: demoCounts.GAME, color: "bg-green-500" },
+  { name: "Livres", href: "/livres", icon: BookOpen, count: demoCounts.BOOK, color: "bg-amber-500" },
+  { name: "Applications", href: "/apps", icon: Smartphone, count: demoCounts.APP, color: "bg-purple-500" },
 ]
 
 const features = [
@@ -36,6 +45,10 @@ const features = [
 export default function HomePage() {
   const featuredItems = mockMediaItems.slice(0, 4)
   const recentItems = mockMediaItems.slice(0, 8)
+  const connectedSources =
+    (process.env.TMDB_API_KEY ? 1 : 0) +
+    (process.env.GOOGLE_BOOKS_API_KEY ? 1 : 0) +
+    (process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET ? 1 : 0)
 
   return (
     <div className="flex flex-col">
@@ -66,32 +79,24 @@ export default function HomePage() {
 
             {/* Search Bar */}
             <div className="max-w-xl mx-auto mb-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input
-                  type="search"
-                  placeholder="Rechercher un film, une série, un jeu..."
-                  className="pl-12 pr-4 h-14 text-lg bg-white text-gray-900 border-0 shadow-xl rounded-xl"
-                />
-                <Button className="absolute right-2 top-1/2 -translate-y-1/2 h-10">
-                  Rechercher
-                </Button>
-              </div>
+              <HeroSearch />
             </div>
 
             {/* Quick Stats */}
             <div className="flex flex-wrap justify-center gap-8 text-sm">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">5000+</div>
-                <div className="text-blue-200">Médias évalués</div>
+                <div className="text-3xl font-bold text-white">{mockMediaItems.length}</div>
+                <div className="text-blue-200">Médias (démo)</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">50K+</div>
-                <div className="text-blue-200">Avis parents</div>
+                <div className="text-3xl font-bold text-white">{connectedSources}</div>
+                <div className="text-blue-200">Sources connectées</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white">100%</div>
-                <div className="text-blue-200">Indépendant</div>
+                <div className="text-3xl font-bold text-white">
+                  {connectedSources > 0 ? "API" : "Démo"}
+                </div>
+                <div className="text-blue-200">Mode données</div>
               </div>
             </div>
           </div>
@@ -117,12 +122,23 @@ export default function HomePage() {
                       <category.icon className="h-8 w-8" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-500">{category.count.toLocaleString("fr-FR")} titres</p>
+                    <p className="text-sm text-gray-500">
+                      {connectedSources > 0
+                        ? "Explorer"
+                        : `${category.count.toLocaleString("fr-FR")} titres (démo)`}
+                    </p>
                   </CardContent>
                 </Card>
               </Link>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Recommendation Wizard (demo) */}
+      <section className="py-12 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <RecommendationWizard />
         </div>
       </section>
 

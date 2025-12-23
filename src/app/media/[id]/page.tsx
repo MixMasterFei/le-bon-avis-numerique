@@ -12,6 +12,20 @@ import { ReviewCard, ReviewSummary } from "@/components/media/ReviewCard"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
+import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
+import {
+  getMovieDetails,
+  getTVDetails,
+  getImageUrl,
+  ImageSize,
+  getFrenchCertification,
+  getDirector,
+  getTVFrenchRating,
+  mapCertificationToInternal,
+} from "@/lib/tmdb"
+import { getGameDetails, transformGame } from "@/lib/igdb"
+import { getBookDetails, transformBook } from "@/lib/google-books"
+import type { MockMediaItem } from "@/lib/mock-data"
 
 interface MediaPageProps {
   params: Promise<{ id: string }>
@@ -19,14 +33,165 @@ interface MediaPageProps {
 
 export default async function MediaPage({ params }: MediaPageProps) {
   const { id } = await params
-  const media = mockMediaItems.find((m) => m.id === id)
+  const { type, id: rawId } = parseMediaRouteId(id)
+
+  let media: MockMediaItem | null = null
+  let source: "mock" | "external" = "mock"
+
+  if (!type) {
+    media = mockMediaItems.find((m) => m.id === rawId) || null
+  } else {
+    source = "external"
+    try {
+      if (type === "MOVIE") {
+        const movieId = parseInt(rawId)
+        if (Number.isNaN(movieId)) throw new Error("Invalid movie id")
+        const movie = await getMovieDetails(movieId)
+        const certification = getFrenchCertification(movie.release_dates)
+        const director = getDirector(movie.credits)
+        media = {
+          id: movie.id.toString(),
+          title: movie.title,
+          originalTitle: movie.original_title,
+          type: "MOVIE",
+          releaseDate: movie.release_date || null,
+          posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.large),
+          synopsisFr: movie.overview || null,
+          officialRating: mapCertificationToInternal(certification),
+          expertAgeRec: null,
+          communityAgeRec: null,
+          duration: movie.runtime || undefined,
+          director: director || undefined,
+          genres: movie.genres.map((g) => g.name),
+          platforms: [],
+          topics: [],
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }
+      } else if (type === "TV") {
+        const tvId = parseInt(rawId)
+        if (Number.isNaN(tvId)) throw new Error("Invalid tv id")
+        const show = await getTVDetails(tvId)
+        const rating = getTVFrenchRating(show.content_ratings)
+        media = {
+          id: show.id.toString(),
+          title: show.name,
+          originalTitle: show.original_name,
+          type: "TV",
+          releaseDate: show.first_air_date || null,
+          posterUrl: getImageUrl(show.poster_path, ImageSize.poster.large),
+          synopsisFr: show.overview || null,
+          officialRating: mapCertificationToInternal(rating),
+          expertAgeRec: null,
+          communityAgeRec: null,
+          duration: show.episode_run_time?.[0] || undefined,
+          genres: show.genres.map((g) => g.name),
+          platforms: show.networks?.map((n) => n.name) || [],
+          topics: [],
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }
+      } else if (type === "GAME") {
+        const gameId = parseInt(rawId)
+        if (Number.isNaN(gameId)) throw new Error("Invalid game id")
+        const game = await getGameDetails(gameId)
+        if (!game) throw new Error("Game not found")
+        const g = transformGame(game)
+        media = {
+          id: g.id,
+          title: g.title,
+          type: "GAME",
+          releaseDate: g.releaseDate,
+          posterUrl: g.posterUrl,
+          synopsisFr: g.synopsisFr,
+          officialRating: g.officialRating,
+          expertAgeRec: g.expertAgeRec,
+          communityAgeRec: null,
+          director: g.developer || undefined,
+          genres: g.genres,
+          platforms: g.platforms,
+          topics: g.themes,
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }
+      } else if (type === "BOOK") {
+        const volume = await getBookDetails(rawId)
+        const b = transformBook(volume)
+        media = {
+          id: b.id,
+          title: b.title,
+          originalTitle: b.originalTitle,
+          type: "BOOK",
+          releaseDate: b.releaseDate,
+          posterUrl: b.posterUrl,
+          synopsisFr: b.synopsisFr,
+          officialRating: b.officialRating,
+          expertAgeRec: b.expertAgeRec,
+          communityAgeRec: null,
+          director: b.author || undefined,
+          genres: b.genres,
+          platforms: [],
+          topics: [],
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }
+      } else {
+        // APP not supported yet
+        media = null
+      }
+    } catch {
+      media = null
+    }
+
+    // If external fetch fails (e.g., missing API keys), fall back to mock item if present
+    if (!media) {
+      media = mockMediaItems.find((m) => m.id === rawId && m.type === type) || null
+      if (media) source = "mock"
+    }
+  }
 
   if (!media) {
     notFound()
   }
 
   const avgRating =
-    media.reviews.length > 0
+    media.reviews?.length
       ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
       : 0
 
@@ -158,7 +323,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   <span className="text-gray-400">/ 5</span>
                 </div>
                 <div className="text-sm text-gray-400">
-                  Basé sur {media.reviews.length} avis
+                  Basé sur {media.reviews?.length || 0} avis
                 </div>
               </div>
             </div>
@@ -177,7 +342,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* Tabs */}
             <Tabs defaultValue="reviews" className="w-full">
               <TabsList className="w-full justify-start">
-                <TabsTrigger value="reviews">Avis ({media.reviews.length})</TabsTrigger>
+                <TabsTrigger value="reviews">Avis ({media.reviews?.length || 0})</TabsTrigger>
                 <TabsTrigger value="details">Détails</TabsTrigger>
               </TabsList>
 
@@ -261,41 +426,48 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </CardContent>
             </Card>
 
-            {/* Related (placeholder) */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockMediaItems
-                  .filter((m) => m.id !== media.id && m.type === media.type)
-                  .slice(0, 3)
-                  .map((related) => (
-                    <Link
-                      key={related.id}
-                      href={`/media/${related.id}`}
-                      className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                        <Image
-                          src={related.posterUrl}
-                          alt={related.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">{related.title}</p>
-                        <p className="text-xs text-gray-500">{related.expertAgeRec}+ ans</p>
-                      </div>
-                    </Link>
-                  ))}
-              </CardContent>
-            </Card>
+            {/* Related (only for demo/mock items for now) */}
+            {source === "mock" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {mockMediaItems
+                    .filter((m) => m.id !== media.id && m.type === media.type)
+                    .slice(0, 3)
+                    .map((related) => (
+                      <Link
+                        key={related.id}
+                        href={`/media/${toMediaRouteId(related.type, related.id)}`}
+                        className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
+                          <Image
+                            src={related.posterUrl}
+                            alt={related.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{related.title}</p>
+                          <p className="text-xs text-gray-500">
+                            {related.expertAgeRec === null || related.expertAgeRec === undefined
+                              ? "Âge non renseigné"
+                              : `${related.expertAgeRec}+ ans`}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>
     </div>
   )
 }
+
 

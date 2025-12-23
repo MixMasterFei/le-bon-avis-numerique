@@ -7,6 +7,7 @@ import { AgeBadge, OfficialRatingBadge } from "./AgeBadge"
 import { ContentGridDots } from "./ContentGrid"
 import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MockMediaItem } from "@/lib/mock-data"
+import { toMediaRouteId } from "@/lib/media-route"
 
 const typeIcons = {
   MOVIE: Film,
@@ -24,12 +25,12 @@ interface MediaCardProps {
 export function MediaCard({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
   const avgRating =
-    media.reviews.length > 0
+    media.reviews?.length
       ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
       : 0
 
   return (
-    <Link href={`/media/${media.id}`}>
+    <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
       <Card
         className={cn(
           "group overflow-hidden hover:shadow-lg transition-all duration-300 h-full",
@@ -103,7 +104,7 @@ export function MediaCard({ media, className }: MediaCardProps) {
               </span>
             </div>
             <span className="text-xs text-gray-500">
-              {media.reviews.length} avis
+              {media.reviews?.length || 0} avis
             </span>
           </div>
         </div>
@@ -117,7 +118,7 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
 
   return (
-    <Link href={`/media/${media.id}`}>
+    <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
       <Card
         className={cn(
           "group flex overflow-hidden hover:shadow-lg transition-all duration-300",
@@ -168,7 +169,9 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
             <div className="flex items-center gap-1 text-sm">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
               <span className="font-medium">
-                {media.communityAgeRec.toFixed(1)}
+                {media.communityAgeRec !== null && media.communityAgeRec !== undefined
+                  ? media.communityAgeRec.toFixed(1)
+                  : "—"}
               </span>
             </div>
           </div>
@@ -177,4 +180,5 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
     </Link>
   )
 }
+
 
