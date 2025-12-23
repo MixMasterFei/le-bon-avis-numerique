@@ -177,6 +177,26 @@ export function getIGDBImageUrl(
 }
 
 // ============================================
+// PLATFORM PRIORITIES
+// ============================================
+
+// Priority 1: Modern platforms (Switch, PS5/PS4, Xbox Series/One, PC)
+// Platform IDs from IGDB
+const PRIORITY_PLATFORM_IDS = [
+  130, // Nintendo Switch
+  // 544, // Nintendo Switch 2 (not in IGDB yet)
+  167, // PlayStation 5
+  48,  // PlayStation 4
+  169, // Xbox Series X|S
+  49,  // Xbox One
+  6,   // PC (Windows)
+  14,  // Mac
+]
+
+// Platform filter for queries (includes these platforms)
+const PLATFORM_FILTER = `(${PRIORITY_PLATFORM_IDS.join(",")})`
+
+// ============================================
 // API FUNCTIONS
 // ============================================
 
@@ -235,7 +255,7 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
 }
 
 /**
- * Get popular games
+ * Get popular games on modern platforms (Switch, PS4/5, Xbox One/Series, PC)
  */
 export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -245,7 +265,7 @@ export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where total_rating_count > 50 & cover != null;
+    where total_rating_count > 50 & cover != null & platforms = ${PLATFORM_FILTER};
     sort total_rating desc;
     limit ${safeLimit};
   `
@@ -254,7 +274,7 @@ export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
 }
 
 /**
- * Get family-friendly games (PEGI 3 or PEGI 7)
+ * Get family-friendly games (PEGI 3 or PEGI 7) on modern platforms
  */
 export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -264,7 +284,7 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null;
+    where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null & platforms = ${PLATFORM_FILTER};
     sort total_rating desc;
     limit ${safeLimit};
   `
@@ -273,7 +293,7 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
 }
 
 /**
- * Get recently released games
+ * Get recently released games on modern platforms
  */
 export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -285,7 +305,7 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null;
+    where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null & platforms = ${PLATFORM_FILTER};
     sort first_release_date desc;
     limit ${safeLimit};
   `
@@ -296,6 +316,45 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
 // ============================================
 // TRANSFORM HELPERS
 // ============================================
+
+// Normalize platform names for cleaner display
+const PLATFORM_NAMES: Record<string, string> = {
+  "Nintendo Switch": "Switch",
+  "PC (Microsoft Windows)": "PC",
+  "PlayStation 4": "PS4",
+  "PlayStation 5": "PS5",
+  "Xbox One": "Xbox One",
+  "Xbox Series X|S": "Xbox Series",
+  "Mac": "Mac",
+  "Linux": "Linux",
+  "iOS": "iOS",
+  "Android": "Android",
+}
+
+// Priority platforms to keep (filter out retro platforms)
+const PRIORITY_PLATFORMS = new Set([
+  "Nintendo Switch",
+  "PC (Microsoft Windows)",
+  "PlayStation 4",
+  "PlayStation 5",
+  "Xbox One",
+  "Xbox Series X|S",
+  "Mac",
+  "Linux",
+  "iOS",
+  "Android",
+])
+
+/**
+ * Normalize and filter platforms to only modern ones
+ */
+export function normalizePlatforms(platforms: { name: string }[] | undefined): string[] {
+  if (!platforms) return []
+
+  return platforms
+    .filter(p => PRIORITY_PLATFORMS.has(p.name))
+    .map(p => PLATFORM_NAMES[p.name] || p.name)
+}
 
 /**
  * Transform IGDB game to our internal format
@@ -318,7 +377,7 @@ export function transformGame(game: IGDBGame) {
     officialRating: pegi?.internal || null,
     expertAgeRec: pegi?.age || null,
     genres: game.genres?.map((g) => g.name) || [],
-    platforms: game.platforms?.map((p) => p.name) || [],
+    platforms: normalizePlatforms(game.platforms),
     developer: developer?.company.name || null,
     publisher: publisher?.company.name || null,
     themes: game.themes?.map((t) => t.name) || [],

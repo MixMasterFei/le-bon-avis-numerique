@@ -6,6 +6,7 @@ import {
   getRecentGames,
   getIGDBImageUrl,
   getPegiRating,
+  normalizePlatforms,
   IGDBGame,
 } from "@/lib/igdb"
 
@@ -31,7 +32,7 @@ function transformGameToMediaItem(game: IGDBGame) {
       ? new Date(game.first_release_date * 1000)
       : null,
     genres: game.genres?.map((g) => g.name) || [],
-    platforms: game.platforms?.map((p) => p.name) || [],
+    platforms: normalizePlatforms(game.platforms), // Only modern platforms
     officialRating: pegi?.internal || null,
     expertAgeRec: pegi?.age || null,
     director: developer?.company.name || null, // Using director field for developer

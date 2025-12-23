@@ -62,22 +62,27 @@ export async function middleware(request: NextRequest) {
 
   // Check admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
-    const session = await auth()
+    // Development bypass - set ADMIN_BYPASS_AUTH=true in env to skip auth
+    const bypassAuth = process.env.ADMIN_BYPASS_AUTH === "true"
 
-    if (!session?.user) {
-      const url = new URL("/connexion", request.url)
-      url.searchParams.set("callbackUrl", pathname)
-      return NextResponse.redirect(url)
-    }
+    if (!bypassAuth) {
+      const session = await auth()
 
-    if (session.user.role !== "ADMIN") {
-      return new NextResponse(
-        JSON.stringify({ error: "Acces non autorise" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        }
-      )
+      if (!session?.user) {
+        const url = new URL("/connexion", request.url)
+        url.searchParams.set("callbackUrl", pathname)
+        return NextResponse.redirect(url)
+      }
+
+      if (session.user.role !== "ADMIN") {
+        return new NextResponse(
+          JSON.stringify({ error: "Acces non autorise" }),
+          {
+            status: 403,
+            headers: { "Content-Type": "application/json" },
+          }
+        )
+      }
     }
   }
 
