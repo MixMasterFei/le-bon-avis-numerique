@@ -43,17 +43,24 @@ async function analyzeWithOpenAI(
     officialRating?: string | null
   }
 ): Promise<ContentAnalysis> {
+  const currentYear = new Date().getFullYear()
+  const releaseYear = item.releaseDate?.getFullYear()
+
   const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
 Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
 
 CONTENU:
 - Titre: ${item.title}
 ${item.originalTitle ? `- Titre original: ${item.originalTitle}` : ""}
-- Type: ${item.type}
+- Type: ${item.type === "GAME" ? "Jeu video" : item.type === "TV" ? "Serie TV" : "Film"}
 - Genres: ${item.genres.join(", ") || "Non specifie"}
 ${item.releaseDate ? `- Date de sortie: ${item.releaseDate.toISOString().split("T")[0]}` : ""}
 ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : ""}
-- Synopsis: ${item.synopsis || "Non disponible"}
+- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}
+
+IMPORTANT:
+- Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
+- Base ton analyse sur ta connaissance de ce ${item.type === "GAME" ? "jeu" : item.type === "TV" ? "cette serie" : "ce film"} si tu le connais
 
 Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
 {
@@ -72,15 +79,15 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     "<conseil 2 en francais>",
     "<conseil 3 en francais>"
   ],
-  "synopsis": "<resume en francais de 2-3 phrases>",
+  "synopsis": "<resume EN FRANCAIS de 2-3 phrases, traduit si necessaire>",
   "tags": ["<tag1>", "<tag2>"]
 }
 
-Tags possibles: "famille", "noel", "halloween", "ete", "comedie-ado", "action", "educatif", "classique", "animation", "aventure", "fantastique", "super-heros", "disney", "pixar", "dreamworks", "studio-ghibli", "meilleur-${new Date().getFullYear()}"
+Tags possibles: "famille", "noel", "halloween", "ete", "comedie-ado", "action", "educatif", "classique", "animation", "aventure", "fantastique", "super-heros", "disney", "pixar", "dreamworks", "studio-ghibli", "nintendo", "playstation", "xbox", "pc"${releaseYear && releaseYear >= currentYear - 1 ? `, "meilleur-${releaseYear}"` : ""}
 
 Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 
-Sois precis et base ton analyse sur les informations fournies.`
+Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.`
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
