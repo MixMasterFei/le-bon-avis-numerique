@@ -17,7 +17,7 @@ export default function LivresPage() {
     let items = mockMediaItems.filter((m) => m.type === "BOOK")
 
     if (filters.maxAge < 18) {
-      items = items.filter((m) => m.expertAgeRec <= filters.maxAge)
+      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
     }
 
     if (filters.topics.length > 0) {

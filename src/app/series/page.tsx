@@ -17,7 +17,7 @@ export default function SeriesPage() {
     let items = mockMediaItems.filter((m) => m.type === "TV")
 
     if (filters.maxAge < 18) {
-      items = items.filter((m) => m.expertAgeRec <= filters.maxAge)
+      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
     }
 
     if (filters.platforms.length > 0) {

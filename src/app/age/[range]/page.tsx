@@ -59,7 +59,7 @@ export default async function AgePage({ params }: AgePageProps) {
   // Filter media items by age range
   const filteredItems = mockMediaItems.filter(
     (item) =>
-      item.expertAgeRec >= ageRange.min && item.expertAgeRec <= ageRange.max
+      item.expertAgeRec !== null && item.expertAgeRec >= ageRange.min && item.expertAgeRec <= ageRange.max
   )
 
   return (

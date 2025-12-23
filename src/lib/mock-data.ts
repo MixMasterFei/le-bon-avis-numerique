@@ -372,7 +372,7 @@ export function searchMedia(query: string) {
 
 // Helper to filter by age
 export function filterByAge(items: MockMediaItem[], maxAge: number) {
-  return items.filter((item) => item.expertAgeRec <= maxAge)
+  return items.filter((item) => (item.expertAgeRec ?? 99) <= maxAge)
 }
 
 // Helper to filter by platform
