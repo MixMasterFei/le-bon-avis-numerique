@@ -1,9 +1,15 @@
+"use client"
+
+import { useEffect, useState, use } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Users } from "lucide-react"
+import { ArrowLeft, Users, Database, Loader2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems } from "@/lib/mock-data"
+import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
+import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+
+const ITEMS_PER_PAGE = 20
 
 const ageRanges: Record<string, { min: number; max: number; label: string; description: string }> = {
   "2-4": {
@@ -42,25 +48,100 @@ interface AgePageProps {
   params: Promise<{ range: string }>
 }
 
-export async function generateStaticParams() {
-  return Object.keys(ageRanges).map((range) => ({
-    range,
-  }))
-}
-
-export default async function AgePage({ params }: AgePageProps) {
-  const { range } = await params
+export default function AgePage({ params }: AgePageProps) {
+  const { range } = use(params)
   const ageRange = ageRanges[range]
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [source, setSource] = useState<"db" | "mock">("mock")
+  const [dbItems, setDbItems] = useState<MockMediaItem[]>([])
+  const [dbTotalPages, setDbTotalPages] = useState(1)
+  const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch from database
+  useEffect(() => {
+    if (!ageRange) return
+
+    let cancelled = false
+    const controller = new AbortController()
+
+    async function load() {
+      setLoading(true)
+      try {
+        const dbParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
+          minAge: ageRange.min.toString(),
+          maxAge: ageRange.max.toString(),
+        })
+
+        const dbRes = await fetch(`/api/db/media?${dbParams}`, { signal: controller.signal })
+        if (dbRes.ok) {
+          const dbData = await dbRes.json()
+          if (dbData.items && dbData.items.length > 0) {
+            const mapped: MockMediaItem[] = dbData.items.map((item: any) => ({
+              id: String(item.id),
+              title: String(item.title || ""),
+              originalTitle: item.originalTitle ? String(item.originalTitle) : undefined,
+              type: item.type,
+              releaseDate: item.releaseDate ?? null,
+              posterUrl: String(item.posterUrl || ""),
+              synopsisFr: item.synopsisFr ?? null,
+              officialRating: item.officialRating ?? null,
+              expertAgeRec: item.expertAgeRec ?? null,
+              communityAgeRec: item.communityAgeRec ?? null,
+              genres: item.genres || [],
+              platforms: item.platforms || [],
+              topics: item.topics || [],
+              contentMetrics: item.contentMetrics || null,
+              reviews: [],
+            }))
+
+            if (!cancelled) {
+              setSource("db")
+              setDbItems(mapped)
+              setDbTotalPages(dbData.pagination?.totalPages || 1)
+              setDbTotalResults(dbData.pagination?.total || mapped.length)
+            }
+            return
+          }
+        }
+
+        // Fallback to mock data
+        if (!cancelled) {
+          setSource("mock")
+        }
+      } catch {
+        if (!cancelled) {
+          setSource("mock")
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [currentPage, ageRange])
 
   if (!ageRange) {
     notFound()
   }
 
-  // Filter media items by age range
-  const filteredItems = mockMediaItems.filter(
+  // Mock data fallback
+  const mockItems = mockMediaItems.filter(
     (item) =>
       item.expertAgeRec !== null && item.expertAgeRec >= ageRange.min && item.expertAgeRec <= ageRange.max
   )
+
+  const displayItems = source === "db" ? dbItems : mockItems.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  const totalPages = source === "db" ? dbTotalPages : Math.ceil(mockItems.length / ITEMS_PER_PAGE)
+  const totalCount = source === "db" ? (dbTotalResults ?? dbItems.length) : mockItems.length
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -101,19 +182,49 @@ export default async function AgePage({ params }: AgePageProps) {
         </div>
       </div>
 
-      {/* Results */}
-      <div className="mb-6">
-        <p className="text-gray-600">
-          {filteredItems.length} resultat{filteredItems.length !== 1 ? "s" : ""} pour cette tranche d&apos;age
-        </p>
+      {/* Results Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          {source === "db" && (
+            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+              <Database className="h-3 w-3" /> Base locale
+            </span>
+          )}
+          <p className="text-gray-600">
+            {totalCount} resultat{totalCount !== 1 ? "s" : ""} pour cette tranche d&apos;age
+          </p>
+        </div>
+        {totalPages > 1 && (
+          <p className="text-sm text-gray-500">
+            Page {currentPage} sur {totalPages}
+          </p>
+        )}
       </div>
 
-      {filteredItems.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-          {filteredItems.map((item) => (
-            <MediaCard key={item.id} media={item} />
-          ))}
+      {/* Content */}
+      {loading ? (
+        <div className="text-center py-16 text-gray-500">
+          <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
+          <p className="text-lg font-medium">Chargement...</p>
+          <p className="text-sm">Recuperation du catalogue</p>
         </div>
+      ) : displayItems.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+            {displayItems.map((item) => (
+              <MediaCard key={item.id} media={item} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="mt-8"
+            />
+          )}
+        </>
       ) : (
         <div className="text-center py-16">
           <Users className="h-16 w-16 mx-auto text-gray-300 mb-4" />
