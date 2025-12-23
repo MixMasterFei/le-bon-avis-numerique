@@ -38,6 +38,16 @@ const nextConfig: NextConfig = {
         hostname: "books.google.com",
         pathname: "/books/**",
       },
+      {
+        protocol: "https",
+        hostname: "compressed.photo.goodreads.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "m.media-amazon.com",
+        pathname: "/**",
+      },
     ],
   },
 };

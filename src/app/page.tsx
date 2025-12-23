@@ -1,27 +1,19 @@
 import Link from "next/link"
-import { ArrowRight, Shield, Star, Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
+import { Shield, Star, Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems } from "@/lib/mock-data"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
-
-const demoCounts = {
-  MOVIE: mockMediaItems.filter((m) => m.type === "MOVIE").length,
-  TV: mockMediaItems.filter((m) => m.type === "TV").length,
-  GAME: mockMediaItems.filter((m) => m.type === "GAME").length,
-  BOOK: mockMediaItems.filter((m) => m.type === "BOOK").length,
-  APP: mockMediaItems.filter((m) => m.type === "APP").length,
-}
+import { FeaturedMovies } from "@/components/home/FeaturedMovies"
+import { RecentMovies } from "@/components/home/RecentMovies"
 
 const categories = [
-  { name: "Films", href: "/films", icon: Film, count: demoCounts.MOVIE, color: "bg-red-500" },
-  { name: "Séries TV", href: "/series", icon: Tv, count: demoCounts.TV, color: "bg-blue-500" },
-  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2, count: demoCounts.GAME, color: "bg-green-500" },
-  { name: "Livres", href: "/livres", icon: BookOpen, count: demoCounts.BOOK, color: "bg-amber-500" },
-  { name: "Applications", href: "/apps", icon: Smartphone, count: demoCounts.APP, color: "bg-purple-500" },
+  { name: "Films", href: "/films", icon: Film, color: "bg-red-500" },
+  { name: "Séries TV", href: "/series", icon: Tv, color: "bg-blue-500" },
+  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2, color: "bg-green-500" },
+  { name: "Livres", href: "/livres", icon: BookOpen, color: "bg-amber-500" },
+  { name: "Applications", href: "/apps", icon: Smartphone, color: "bg-purple-500" },
 ]
 
 const features = [
@@ -43,13 +35,6 @@ const features = [
 ]
 
 export default function HomePage() {
-  const featuredItems = mockMediaItems.slice(0, 4)
-  const recentItems = mockMediaItems.slice(0, 8)
-  const connectedSources =
-    (process.env.TMDB_API_KEY ? 1 : 0) +
-    (process.env.GOOGLE_BOOKS_API_KEY ? 1 : 0) +
-    (process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET ? 1 : 0)
-
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -66,13 +51,13 @@ export default function HomePage() {
             <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm">
               🇫🇷 Le guide média pour les familles françaises
             </Badge>
-            
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               Des choix médias
               <span className="text-emerald-400"> éclairés </span>
               pour vos enfants
             </h1>
-            
+
             <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
               Découvrez des films, séries, jeux et livres adaptés à chaque âge grâce à nos avis experts et notre communauté de parents engagés.
             </p>
@@ -80,24 +65,6 @@ export default function HomePage() {
             {/* Search Bar */}
             <div className="max-w-xl mx-auto mb-8">
               <HeroSearch />
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-8 text-sm">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white">{mockMediaItems.length}</div>
-                <div className="text-blue-200">Médias (démo)</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white">{connectedSources}</div>
-                <div className="text-blue-200">Sources connectées</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white">
-                  {connectedSources > 0 ? "API" : "Démo"}
-                </div>
-                <div className="text-blue-200">Mode données</div>
-              </div>
             </div>
           </div>
         </div>
@@ -122,11 +89,7 @@ export default function HomePage() {
                       <category.icon className="h-8 w-8" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      {connectedSources > 0
-                        ? "Explorer"
-                        : `${category.count.toLocaleString("fr-FR")} titres (démo)`}
-                    </p>
+                    <p className="text-sm text-gray-500">Explorer</p>
                   </CardContent>
                 </Card>
               </Link>
@@ -135,43 +98,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Recommendation Wizard (demo) */}
+      {/* Recommendation Wizard */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <RecommendationWizard />
         </div>
       </section>
 
-      {/* Featured Section */}
+      {/* Featured Movies Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Sélection de nos experts</h2>
-              <p className="text-gray-600 mt-1">Des choix de qualité recommandés par notre équipe</p>
-            </div>
-            <Button variant="outline" asChild className="hidden sm:inline-flex">
-              <Link href="/selection">
-                Voir tout <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {featuredItems.map((item, index) => (
-              <div key={item.id} className={`animate-fade-in stagger-${index + 1}`} style={{ opacity: 0 }}>
-                <MediaCard media={item} />
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 text-center sm:hidden">
-            <Button variant="outline" asChild>
-              <Link href="/selection">
-                Voir tout <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          <FeaturedMovies />
         </div>
       </section>
 
@@ -188,8 +125,8 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={feature.title} className={`animate-fade-in stagger-${index + 1} border-0 shadow-lg`} style={{ opacity: 0 }}>
+            {features.map((feature) => (
+              <Card key={feature.title} className="border-0 shadow-lg">
                 <CardContent className="p-8 text-center">
                   <div className="inline-flex p-4 rounded-2xl bg-primary/10 text-primary mb-6">
                     <feature.icon className="h-8 w-8" />
@@ -203,28 +140,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Recent Reviews Section */}
+      {/* Recent Movies Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Récemment évalués</h2>
-              <p className="text-gray-600 mt-1">Les dernières critiques de notre équipe</p>
-            </div>
-            <Button variant="outline" asChild className="hidden sm:inline-flex">
-              <Link href="/nouveautes">
-                Voir tout <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
-            {recentItems.map((item, index) => (
-              <div key={item.id} className={`animate-fade-in stagger-${(index % 5) + 1}`} style={{ opacity: 0 }}>
-                <MediaCard media={item} />
-              </div>
-            ))}
-          </div>
+          <RecentMovies />
         </div>
       </section>
 
