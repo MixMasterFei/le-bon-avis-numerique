@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "./AgeBadge"
+import { SafetyBar } from "./ContentGrid"
 import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MockMediaItem } from "@/lib/mock-data"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -26,10 +27,6 @@ interface MediaCardProps {
 
 export function MediaCard({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
-  const avgRating =
-    media.reviews?.length
-      ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
-      : 0
 
   return (
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
@@ -65,7 +62,7 @@ export function MediaCard({ media, className }: MediaCardProps) {
         </div>
 
         {/* Content */}
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-2">
           <div>
             <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
               {media.title}
@@ -86,18 +83,8 @@ export function MediaCard({ media, className }: MediaCardProps) {
             ))}
           </div>
 
-          {/* Rating & Reviews */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span className="text-sm font-medium">
-                {avgRating > 0 ? avgRating.toFixed(1) : "—"}
-              </span>
-            </div>
-            <span className="text-xs text-gray-500">
-              {media.reviews?.length || 0} avis
-            </span>
-          </div>
+          {/* Safety Bar - quick family-friendliness indicator */}
+          <SafetyBar metrics={media.contentMetrics} />
         </div>
       </Card>
     </Link>
@@ -151,16 +138,8 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 mt-3">
-            <div className="flex items-center gap-1 text-sm">
-              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-              <span className="font-medium">
-                {media.communityAgeRec !== null && media.communityAgeRec !== undefined
-                  ? media.communityAgeRec.toFixed(1)
-                  : "—"}
-              </span>
-            </div>
-          </div>
+          {/* Safety Bar */}
+          <SafetyBar metrics={media.contentMetrics} className="mt-3" />
         </div>
       </Card>
     </Link>

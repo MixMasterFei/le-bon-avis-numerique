@@ -112,7 +112,7 @@ export function ContentGrid({
   )
 }
 
-// Compact version for cards
+// Compact version for cards - shows individual metrics as dots
 export function ContentGridDots({
   metrics,
   className,
@@ -148,6 +148,75 @@ export function ContentGridDots({
         className={cn("h-2 w-2 rounded-full", getDotColor(metrics.substanceUse))}
         title="Alcool & Drogues"
       />
+    </div>
+  )
+}
+
+// Simple safety bar - shows overall family-friendliness at a glance
+export function SafetyBar({
+  metrics,
+  className,
+}: {
+  metrics: ContentMetrics | null | undefined
+  className?: string
+}) {
+  if (!metrics) {
+    // No metrics - not evaluated yet
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <div className="flex-1 h-1.5 bg-gray-200 rounded-full" />
+        <span className="text-xs text-gray-400">Non évalué</span>
+      </div>
+    )
+  }
+
+  // Calculate overall "concern" score (0-5)
+  // Higher negative metrics = more concern
+  const negativeScore = (
+    metrics.violence +
+    metrics.sexNudity +
+    metrics.language +
+    metrics.substanceUse
+  ) / 4
+
+  // Determine color and label
+  let color: string
+  let label: string
+
+  if (negativeScore <= 1) {
+    color = "bg-emerald-500"
+    label = "Familial"
+  } else if (negativeScore <= 2) {
+    color = "bg-emerald-400"
+    label = "Adapté"
+  } else if (negativeScore <= 3) {
+    color = "bg-amber-500"
+    label = "Modéré"
+  } else if (negativeScore <= 4) {
+    color = "bg-orange-500"
+    label = "Attention"
+  } else {
+    color = "bg-red-500"
+    label = "Mature"
+  }
+
+  // Calculate bar width (inverse - lower score = fuller green bar)
+  const safetyPercent = Math.max(0, Math.min(100, (5 - negativeScore) / 5 * 100))
+
+  return (
+    <div className={cn("flex items-center gap-2", className)}>
+      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className={cn("h-full rounded-full transition-all", color)}
+          style={{ width: `${safetyPercent}%` }}
+        />
+      </div>
+      <span className={cn("text-xs font-medium",
+        negativeScore <= 2 ? "text-emerald-600" :
+        negativeScore <= 3 ? "text-amber-600" : "text-red-600"
+      )}>
+        {label}
+      </span>
     </div>
   )
 }

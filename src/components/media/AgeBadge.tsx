@@ -14,12 +14,15 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
     lg: "h-16 w-16 text-2xl",
   }
 
+  // Treat 0, null, undefined as "not rated yet"
+  const isRated = age !== null && age !== undefined && age > 0
+
   const getBgColor = (age: number | null | undefined) => {
-    if (age === null || age === undefined) return "bg-gray-500"
-    if (age <= 3) return "bg-emerald-500"
-    if (age <= 7) return "bg-emerald-600"
-    if (age <= 10) return "bg-amber-500"
-    if (age <= 13) return "bg-orange-500"
+    if (!isRated) return "bg-gray-500"
+    if (age! <= 3) return "bg-emerald-500"
+    if (age! <= 7) return "bg-emerald-600"
+    if (age! <= 10) return "bg-amber-500"
+    if (age! <= 13) return "bg-orange-500"
     return "bg-red-500"
   }
 
@@ -32,7 +35,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
           getBgColor(age)
         )}
       >
-        {age === null || age === undefined ? "—" : `${age}+`}
+        {isRated ? `${age}+` : "?"}
       </div>
       {label && (
         <span className="text-xs text-gray-600 font-medium">{label}</span>
