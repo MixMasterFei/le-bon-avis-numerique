@@ -4,7 +4,7 @@ import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -18,6 +18,7 @@ function ConnexionForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isAdminLogin, setIsAdminLogin] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(
     error === "CredentialsSignin" ? "Email ou mot de passe incorrect" : null
@@ -38,7 +39,9 @@ function ConnexionForm() {
       if (result?.error) {
         setErrorMessage("Email ou mot de passe incorrect")
       } else {
-        router.push(callbackUrl)
+        // If admin login was requested, redirect to admin dashboard
+        const redirectUrl = isAdminLogin ? "/admin" : callbackUrl
+        router.push(redirectUrl)
         router.refresh()
       }
     } catch {
@@ -124,11 +127,31 @@ function ConnexionForm() {
             </div>
           </div>
 
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="adminLogin"
+              checked={isAdminLogin}
+              onChange={(e) => setIsAdminLogin(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              disabled={isLoading}
+            />
+            <label htmlFor="adminLogin" className="flex items-center text-sm text-gray-600 cursor-pointer">
+              <Shield className="h-4 w-4 mr-1 text-amber-600" />
+              Connexion administrateur
+            </label>
+          </div>
+
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Connexion...
+              </>
+            ) : isAdminLogin ? (
+              <>
+                <Shield className="mr-2 h-4 w-4" />
+                Connexion Admin
               </>
             ) : (
               "Se connecter"
