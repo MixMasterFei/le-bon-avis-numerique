@@ -41,7 +41,8 @@ async function analyzeWithOpenAI(
     genres: string[]
     releaseDate?: Date | null
     officialRating?: string | null
-  }
+  },
+  retryCount = 0
 ): Promise<ContentAnalysis> {
   const currentYear = new Date().getFullYear()
   const releaseYear = item.releaseDate?.getFullYear()
@@ -89,37 +90,70 @@ Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Int
 
 Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.`
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.3,
-    max_tokens: 1000,
-  })
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      max_tokens: 1000,
+    })
 
-  const content = response.choices[0]?.message?.content
-  if (!content) {
-    throw new Error("No response from OpenAI")
-  }
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      throw new Error("No response from OpenAI")
+    }
 
-  const cleanedContent = content.replace(/```json\n?|\n?```/g, "").trim()
-  const parsed = JSON.parse(cleanedContent)
+    // Clean the response - remove markdown code blocks and any leading/trailing whitespace
+    let cleanedContent = content
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim()
 
-  return {
-    expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
-    contentMetrics: {
-      violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
-      sexNudity: Math.min(5, Math.max(0, parsed.contentMetrics?.sexNudity || 0)),
-      language: Math.min(5, Math.max(0, parsed.contentMetrics?.language || 0)),
-      consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
-      substanceUse: Math.min(5, Math.max(0, parsed.contentMetrics?.substanceUse || 0)),
-      positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
-      roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
-    },
-    whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
-      ? parsed.whatParentsNeedToKnow.slice(0, 5)
-      : [],
-    synopsis: parsed.synopsis || item.synopsis || "",
-    tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    // Try to extract JSON if there's extra text
+    const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/)
+    if (jsonMatch) {
+      cleanedContent = jsonMatch[0]
+    }
+
+    let parsed
+    try {
+      parsed = JSON.parse(cleanedContent)
+    } catch (parseError) {
+      // If JSON parsing fails, log the content for debugging
+      console.error(`JSON parse error for "${item.title}":`, cleanedContent.substring(0, 200))
+      throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
+    }
+
+    return {
+      expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
+      contentMetrics: {
+        violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
+        sexNudity: Math.min(5, Math.max(0, parsed.contentMetrics?.sexNudity || 0)),
+        language: Math.min(5, Math.max(0, parsed.contentMetrics?.language || 0)),
+        consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
+        substanceUse: Math.min(5, Math.max(0, parsed.contentMetrics?.substanceUse || 0)),
+        positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
+        roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
+      },
+      whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
+        ? parsed.whatParentsNeedToKnow.slice(0, 5)
+        : [],
+      synopsis: parsed.synopsis || item.synopsis || "",
+      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+    }
+  } catch (error) {
+    // Retry on rate limit or temporary errors (max 2 retries)
+    if (retryCount < 2) {
+      const isRateLimit = error instanceof Error &&
+        (error.message.includes("rate") || error.message.includes("429") || error.message.includes("timeout"))
+
+      if (isRateLimit) {
+        // Wait longer for rate limit errors
+        await new Promise((resolve) => setTimeout(resolve, 2000 * (retryCount + 1)))
+        return analyzeWithOpenAI(openai, item, retryCount + 1)
+      }
+    }
+    throw error
   }
 }
 
@@ -228,8 +262,9 @@ export async function POST(request: NextRequest) {
         result.enriched++
         result.details.push(`✓ Enriched: ${item.title} (age ${analysis.expertAgeRec}+)`)
 
-        // Small delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        // Delay to avoid rate limiting - longer for larger batches
+        const delay = items.length > 20 ? 1000 : 500
+        await new Promise((resolve) => setTimeout(resolve, delay))
       } catch (error) {
         result.errors++
         result.details.push(
