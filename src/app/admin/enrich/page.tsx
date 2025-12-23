@@ -22,6 +22,7 @@ interface EnrichmentStats {
   enrichment: {
     withMetrics: number
     withoutMetrics: number
+    withoutAgeRec: number
     percentComplete: number
   }
   recentlyEnriched: Array<{
@@ -48,6 +49,7 @@ export default function EnrichPage() {
   const [enriching, setEnriching] = useState(false)
   const [selectedType, setSelectedType] = useState<MediaType>("all")
   const [batchSize, setBatchSize] = useState(10)
+  const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -80,7 +82,7 @@ export default function EnrichPage() {
         body: JSON.stringify({
           type: selectedType,
           limit: batchSize,
-          onlyMissing: true,
+          onlyMissing: !forceReenrich,
         }),
       })
 
@@ -235,9 +237,38 @@ export default function EnrichPage() {
               </p>
             </div>
 
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="forceReenrich"
+                checked={forceReenrich}
+                onChange={(e) => setForceReenrich(e.target.checked)}
+                disabled={enriching}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <label htmlFor="forceReenrich" className="text-sm text-gray-600">
+                Re-enrichir tous les contenus (meme deja evalues)
+              </label>
+            </div>
+
+            {/* Warning if no content */}
+            {!loading && Object.values(stats?.stats || {}).reduce((a, b) => a + b, 0) === 0 && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                <AlertCircle className="h-4 w-4 inline mr-2" />
+                Aucun contenu en base. Importez d&apos;abord des films/jeux depuis{" "}
+                <a href="/admin/import/bulk" className="underline font-medium">
+                  Import en masse
+                </a>
+              </div>
+            )}
+
             <Button
               onClick={handleEnrich}
-              disabled={enriching || (stats?.enrichment.withoutMetrics || 0) === 0}
+              disabled={
+                enriching ||
+                Object.values(stats?.stats || {}).reduce((a, b) => a + b, 0) === 0 ||
+                (!forceReenrich && (stats?.enrichment.withoutMetrics || 0) === 0)
+              }
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
               {enriching ? (

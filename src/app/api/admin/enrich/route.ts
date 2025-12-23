@@ -266,6 +266,16 @@ export async function GET() {
     where: { contentMetrics: null },
   })
 
+  // Also count items missing age recommendation (even if they have empty metrics)
+  const withoutAgeRec = await prisma.mediaItem.count({
+    where: {
+      OR: [
+        { expertAgeRec: null },
+        { expertAgeRec: 0 },
+      ],
+    },
+  })
+
   const recentlyEnriched = await prisma.mediaItem.findMany({
     where: { contentMetrics: { isNot: null } },
     orderBy: { updatedAt: "desc" },
@@ -283,6 +293,7 @@ export async function GET() {
     enrichment: {
       withMetrics,
       withoutMetrics,
+      withoutAgeRec,
       percentComplete: withMetrics + withoutMetrics > 0
         ? Math.round((withMetrics / (withMetrics + withoutMetrics)) * 100)
         : 0,
