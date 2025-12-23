@@ -184,10 +184,10 @@ export function getIGDBImageUrl(
  * Search for games
  * Query is escaped to prevent IGDB query injection
  */
-export async function searchGames(query: string, limit = 20): Promise<IGDBGame[]> {
+export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]> {
   // Sanitize and escape user input
   const safeQuery = escapeIGDBQuery(query)
-  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 50
 
   if (!safeQuery) {
     return []
@@ -237,8 +237,8 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
 /**
  * Get popular games
  */
-export async function getPopularGames(limit = 20): Promise<IGDBGame[]> {
-  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
 
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
@@ -256,8 +256,8 @@ export async function getPopularGames(limit = 20): Promise<IGDBGame[]> {
 /**
  * Get family-friendly games (PEGI 3 or PEGI 7)
  */
-export async function getFamilyGames(limit = 20): Promise<IGDBGame[]> {
-  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
 
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
@@ -275,8 +275,8 @@ export async function getFamilyGames(limit = 20): Promise<IGDBGame[]> {
 /**
  * Get recently released games
  */
-export async function getRecentGames(limit = 20): Promise<IGDBGame[]> {
-  const safeLimit = sanitizeNumber(limit, 1, 50) || 20
+export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
   const now = Math.floor(Date.now() / 1000)
   const sixMonthsAgo = now - 6 * 30 * 24 * 60 * 60
 
