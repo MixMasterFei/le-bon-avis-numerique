@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getMovieDetails, getTVDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
-import { prisma } from "@/lib/db"
+import { prisma } from "@/lib/prisma"
 import OpenAI from "openai"
 
 // This endpoint generates AI-powered content reviews for movies
