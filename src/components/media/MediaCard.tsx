@@ -6,8 +6,7 @@ import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
-import { AgeBadge, OfficialRatingBadge } from "./AgeBadge"
-import { ContentGridDots } from "./ContentGrid"
+import { AgeBadge } from "./AgeBadge"
 import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MockMediaItem } from "@/lib/mock-data"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -50,8 +49,8 @@ export function MediaCard({ media, className }: MediaCardProps) {
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           />
-          
-          {/* Age Badge Overlay */}
+
+          {/* Age Badge Overlay - single age recommendation */}
           <div className="absolute top-2 left-2">
             <AgeBadge age={media.expertAgeRec} size="sm" />
           </div>
@@ -62,15 +61,6 @@ export function MediaCard({ media, className }: MediaCardProps) {
               <Icon className="h-3 w-3" />
               {mediaTypeLabels[media.type]}
             </Badge>
-          </div>
-
-          {/* Official Rating */}
-          <div className="absolute bottom-2 left-2">
-            <OfficialRatingBadge
-              rating={media.officialRating}
-              type={media.type}
-              size="sm"
-            />
           </div>
         </div>
 
@@ -95,9 +85,6 @@ export function MediaCard({ media, className }: MediaCardProps) {
               </Badge>
             ))}
           </div>
-
-          {/* Content Dots */}
-          <ContentGridDots metrics={media.contentMetrics} />
 
           {/* Rating & Reviews */}
           <div className="flex items-center justify-between pt-2 border-t">
@@ -154,11 +141,6 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
                     <Icon className="h-3 w-3" />
                     {mediaTypeLabels[media.type]}
                   </Badge>
-                  <OfficialRatingBadge
-                    rating={media.officialRating}
-                    type={media.type}
-                    size="sm"
-                  />
                 </div>
               </div>
               <AgeBadge age={media.expertAgeRec} size="sm" />
@@ -170,7 +152,6 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
           </div>
 
           <div className="flex items-center gap-4 mt-3">
-            <ContentGridDots metrics={media.contentMetrics} />
             <div className="flex items-center gap-1 text-sm">
               <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
               <span className="font-medium">
