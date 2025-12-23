@@ -164,7 +164,7 @@ export const mockMediaItems: MockMediaItem[] = [
     title: "Bluey",
     type: "TV",
     releaseDate: "2018-10-01",
-    posterUrl: "https://image.tmdb.org/t/p/w500/q0gMHABa5cTlkVy3AcBGsnRBMeL.jpg",
+    posterUrl: "https://image.tmdb.org/t/p/w500/9xtgBK5qLzHiRvLvCKhPcZr7USE.jpg",
     synopsisFr: "Bluey est une petite chienne de six ans infatigable et curieuse. Elle transforme tous les jours en aventures extraordinaires avec sa sœur Bingo et ses parents.",
     officialRating: "TOUS_PUBLICS",
     expertAgeRec: 3,

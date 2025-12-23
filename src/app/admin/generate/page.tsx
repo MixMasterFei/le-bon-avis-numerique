@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Sparkles, Search, Copy, CheckCircle, AlertCircle } from "lucide-react"
+import { Sparkles, Search, Copy, CheckCircle, AlertCircle, Database, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -30,6 +30,14 @@ interface GeneratedData {
   whatParentsNeedToKnow: string[]
 }
 
+interface ApiResponse {
+  success: boolean
+  data: GeneratedData
+  source: "database" | "generated"
+  analysisMethod?: "openai" | "heuristic"
+  note: string
+}
+
 export default function GenerateReviewPage() {
   const [tmdbId, setTmdbId] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -37,6 +45,7 @@ export default function GenerateReviewPage() {
   const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
   const [result, setResult] = useState<GeneratedData | null>(null)
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -60,7 +69,7 @@ export default function GenerateReviewPage() {
     }
   }
 
-  const handleGenerate = async (id?: number) => {
+  const handleGenerate = async (id?: number, forceRegenerate = false) => {
     const targetId = id || parseInt(tmdbId)
     if (!targetId) {
       setError("Veuillez entrer un ID TMDB valide")
@@ -70,12 +79,13 @@ export default function GenerateReviewPage() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setApiResponse(null)
 
     try {
       const res = await fetch("/api/admin/generate-review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tmdbId: targetId }),
+        body: JSON.stringify({ tmdbId: targetId, forceRegenerate }),
       })
 
       const data = await res.json()
@@ -85,6 +95,7 @@ export default function GenerateReviewPage() {
       }
 
       setResult(data.data)
+      setApiResponse(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
@@ -190,6 +201,40 @@ export default function GenerateReviewPage() {
       {result && (
         <Card>
           <CardContent className="p-6">
+            {/* Source indicator */}
+            {apiResponse && (
+              <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
+                apiResponse.source === "database"
+                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
+              }`}>
+                {apiResponse.source === "database" ? (
+                  <Database className="h-5 w-5" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+                <span className="flex-1">
+                  {apiResponse.note}
+                  {apiResponse.analysisMethod && (
+                    <span className="ml-2 text-xs opacity-75">
+                      (Methode: {apiResponse.analysisMethod})
+                    </span>
+                  )}
+                </span>
+                {apiResponse.source === "database" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGenerate(result.tmdbId, true)}
+                    disabled={loading}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+                    Regenerer
+                  </Button>
+                )}
+              </div>
+            )}
+
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold">{result.title}</h2>

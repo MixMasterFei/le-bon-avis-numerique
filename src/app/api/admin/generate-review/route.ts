@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getMovieDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
+import { getMovieDetails, getTVDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
+import { prisma } from "@/lib/db"
+import OpenAI from "openai"
 
 // This endpoint generates AI-powered content reviews for movies
 // It uses the movie data from TMDB and generates age recommendations and content analysis
@@ -131,10 +133,102 @@ function analyzeContentFromMetadata(movie: {
   }
 }
 
+// AI-powered content analysis using OpenAI
+async function analyzeContentWithAI(movie: {
+  title: string
+  original_title?: string
+  overview: string
+  genres: { id: number; name: string }[]
+  vote_average: number
+  adult: boolean
+  release_date: string
+}): Promise<GeneratedReview> {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  })
+
+  const genreNames = movie.genres.map((g) => g.name).join(", ")
+
+  const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
+Analyse ce film et fournis une evaluation detaillee pour aider les parents.
+
+FILM:
+- Titre: ${movie.title}
+- Titre original: ${movie.original_title || movie.title}
+- Genres: ${genreNames}
+- Date de sortie: ${movie.release_date}
+- Note publique: ${movie.vote_average}/10
+- Contenu adulte: ${movie.adult ? "Oui" : "Non"}
+- Synopsis: ${movie.overview}
+
+Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
+{
+  "expertAgeRec": <nombre entre 3 et 18>,
+  "contentMetrics": {
+    "violence": <0-5>,
+    "sexNudity": <0-5>,
+    "language": <0-5>,
+    "consumerism": <0-5>,
+    "substanceUse": <0-5>,
+    "positiveMessages": <0-5>,
+    "roleModels": <0-5>
+  },
+  "whatParentsNeedToKnow": [
+    "<conseil 1 en francais>",
+    "<conseil 2 en francais>",
+    "<conseil 3 en francais>"
+  ],
+  "synopsis": "<resume en francais de 2-3 phrases>"
+}
+
+Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
+
+Sois precis et base ton analyse sur les genres et le synopsis fournis.`
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      max_tokens: 1000,
+    })
+
+    const content = response.choices[0]?.message?.content
+    if (!content) {
+      throw new Error("No response from OpenAI")
+    }
+
+    // Parse the JSON response
+    const cleanedContent = content.replace(/```json\n?|\n?```/g, "").trim()
+    const parsed = JSON.parse(cleanedContent)
+
+    // Validate and clamp values
+    return {
+      expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
+      contentMetrics: {
+        violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
+        sexNudity: Math.min(5, Math.max(0, parsed.contentMetrics?.sexNudity || 0)),
+        language: Math.min(5, Math.max(0, parsed.contentMetrics?.language || 0)),
+        consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
+        substanceUse: Math.min(5, Math.max(0, parsed.contentMetrics?.substanceUse || 0)),
+        positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
+        roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
+      },
+      whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
+        ? parsed.whatParentsNeedToKnow.slice(0, 5)
+        : [],
+      synopsis: parsed.synopsis || movie.overview,
+    }
+  } catch (error) {
+    console.error("OpenAI analysis failed, falling back to heuristics:", error)
+    return analyzeContentFromMetadata(movie)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { tmdbId, type = "movie" } = body
+    const { tmdbId, type = "movie", forceRegenerate = false } = body
 
     if (!tmdbId) {
       return NextResponse.json(
@@ -143,19 +237,163 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch movie details from TMDB
-    const movie = await getMovieDetails(Number(tmdbId))
+    // Check if already exists in database
+    const existingItem = await prisma.mediaItem.findUnique({
+      where: { tmdbId: Number(tmdbId) },
+      include: { contentMetrics: true },
+    })
 
-    // Generate content analysis
-    const analysis = analyzeContentFromMetadata(movie)
+    if (existingItem && !forceRegenerate) {
+      // Return existing data
+      return NextResponse.json({
+        success: true,
+        data: {
+          id: existingItem.id,
+          tmdbId: existingItem.tmdbId,
+          title: existingItem.title,
+          originalTitle: existingItem.originalTitle,
+          type: existingItem.type,
+          releaseDate: existingItem.releaseDate?.toISOString().split("T")[0],
+          posterUrl: existingItem.posterUrl,
+          backdropUrl: existingItem.backdropUrl,
+          synopsisFr: existingItem.synopsisFr,
+          genres: existingItem.genres,
+          duration: existingItem.duration,
+          director: existingItem.director,
+          expertAgeRec: existingItem.expertAgeRec,
+          contentMetrics: existingItem.contentMetrics ? {
+            violence: existingItem.contentMetrics.violence,
+            sexNudity: existingItem.contentMetrics.sexNudity,
+            language: existingItem.contentMetrics.language,
+            consumerism: existingItem.contentMetrics.consumerism,
+            substanceUse: existingItem.contentMetrics.substanceUse,
+            positiveMessages: existingItem.contentMetrics.positiveMessages,
+            roleModels: existingItem.contentMetrics.roleModels,
+          } : null,
+          whatParentsNeedToKnow: existingItem.contentMetrics?.whatParentsNeedToKnow || [],
+        },
+        source: "database",
+        note: "Cette evaluation existe deja dans la base de donnees.",
+      })
+    }
+
+    // Fetch details from TMDB based on type
+    const mediaType = type.toLowerCase()
+    let movie: {
+      id: number
+      title: string
+      original_title: string
+      overview: string
+      poster_path: string | null
+      backdrop_path: string | null
+      release_date: string
+      genres: { id: number; name: string }[]
+      vote_average: number
+      adult: boolean
+      runtime?: number
+      credits?: { crew?: { job: string; name: string }[] }
+    }
+
+    if (mediaType === "tv") {
+      const tv = await getTVDetails(Number(tmdbId))
+      movie = {
+        id: tv.id,
+        title: tv.name,
+        original_title: tv.original_name,
+        overview: tv.overview,
+        poster_path: tv.poster_path,
+        backdrop_path: tv.backdrop_path,
+        release_date: tv.first_air_date,
+        genres: tv.genres,
+        vote_average: tv.vote_average,
+        adult: false,
+        runtime: tv.episode_run_time?.[0],
+      }
+    } else {
+      movie = await getMovieDetails(Number(tmdbId))
+    }
+
+    // Generate content analysis (AI if available, otherwise heuristics)
+    let analysis: GeneratedReview
+    let analysisMethod: string
+
+    if (process.env.OPENAI_API_KEY) {
+      analysis = await analyzeContentWithAI(movie)
+      analysisMethod = "openai"
+    } else {
+      analysis = analyzeContentFromMetadata(movie)
+      analysisMethod = "heuristic"
+    }
+
+    // Save to database
+    const savedItem = await prisma.mediaItem.upsert({
+      where: { tmdbId: movie.id },
+      update: {
+        title: movie.title,
+        originalTitle: movie.original_title,
+        type: mediaType.toUpperCase() as "MOVIE" | "TV",
+        releaseDate: movie.release_date ? new Date(movie.release_date) : null,
+        posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.medium),
+        backdropUrl: getImageUrl(movie.backdrop_path, ImageSize.backdrop.large),
+        synopsisFr: analysis.synopsis,
+        genres: movie.genres.map((g) => g.name),
+        duration: movie.runtime,
+        director: movie.credits?.crew?.find((c) => c.job === "Director")?.name,
+        expertAgeRec: analysis.expertAgeRec,
+        updatedAt: new Date(),
+      },
+      create: {
+        tmdbId: movie.id,
+        title: movie.title,
+        originalTitle: movie.original_title,
+        type: mediaType.toUpperCase() as "MOVIE" | "TV",
+        releaseDate: movie.release_date ? new Date(movie.release_date) : null,
+        posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.medium),
+        backdropUrl: getImageUrl(movie.backdrop_path, ImageSize.backdrop.large),
+        synopsisFr: analysis.synopsis,
+        genres: movie.genres.map((g) => g.name),
+        platforms: [],
+        topics: [],
+        duration: movie.runtime,
+        director: movie.credits?.crew?.find((c) => c.job === "Director")?.name,
+        expertAgeRec: analysis.expertAgeRec,
+      },
+    })
+
+    // Save or update content metrics
+    await prisma.contentMetrics.upsert({
+      where: { mediaId: savedItem.id },
+      update: {
+        violence: analysis.contentMetrics.violence,
+        sexNudity: analysis.contentMetrics.sexNudity,
+        language: analysis.contentMetrics.language,
+        consumerism: analysis.contentMetrics.consumerism,
+        substanceUse: analysis.contentMetrics.substanceUse,
+        positiveMessages: analysis.contentMetrics.positiveMessages,
+        roleModels: analysis.contentMetrics.roleModels,
+        whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
+        updatedAt: new Date(),
+      },
+      create: {
+        mediaId: savedItem.id,
+        violence: analysis.contentMetrics.violence,
+        sexNudity: analysis.contentMetrics.sexNudity,
+        language: analysis.contentMetrics.language,
+        consumerism: analysis.contentMetrics.consumerism,
+        substanceUse: analysis.contentMetrics.substanceUse,
+        positiveMessages: analysis.contentMetrics.positiveMessages,
+        roleModels: analysis.contentMetrics.roleModels,
+        whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
+      },
+    })
 
     // Build the response
     const result = {
-      id: String(movie.id),
+      id: savedItem.id,
       tmdbId: movie.id,
       title: movie.title,
       originalTitle: movie.original_title,
-      type: type.toUpperCase(),
+      type: mediaType.toUpperCase(),
       releaseDate: movie.release_date,
       posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.medium),
       backdropUrl: getImageUrl(movie.backdrop_path, ImageSize.backdrop.large),
@@ -169,7 +407,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: result,
-      note: "Generated using heuristic analysis. For better results, add ANTHROPIC_API_KEY or OPENAI_API_KEY.",
+      source: "generated",
+      analysisMethod,
+      note: analysisMethod === "openai"
+        ? "Evaluation generee par IA et sauvegardee en base de donnees."
+        : "Evaluation generee par heuristique et sauvegardee. Ajoutez OPENAI_API_KEY pour de meilleurs resultats.",
     })
   } catch (error) {
     console.error("Generate review error:", error)
@@ -182,7 +424,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   return NextResponse.json({
-    message: "POST to this endpoint with { tmdbId: number } to generate a content review",
-    example: { tmdbId: 420818 },
+    message: "POST to this endpoint with { tmdbId: number, type?: 'movie' | 'tv', forceRegenerate?: boolean } to generate a content review",
+    example: { tmdbId: 420818, type: "movie" },
+    notes: [
+      "Si l'item existe deja en base, il sera retourne sans regeneration (sauf si forceRegenerate=true)",
+      "L'analyse utilise OpenAI si OPENAI_API_KEY est configure, sinon des heuristiques",
+      "Les donnees sont automatiquement sauvegardees en base de donnees",
+    ],
   })
 }
