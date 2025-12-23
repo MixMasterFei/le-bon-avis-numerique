@@ -1,8 +1,11 @@
+"use client"
+
 import Link from "next/link"
-import Image from "next/image"
+
 import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge, OfficialRatingBadge } from "./AgeBadge"
 import { ContentGridDots } from "./ContentGrid"
 import { cn, mediaTypeLabels } from "@/lib/utils"
@@ -39,7 +42,8 @@ export function MediaCard({ media, className }: MediaCardProps) {
       >
         {/* Poster Image */}
         <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
-          <Image
+          <SafeImage
+            fallbackClassName="absolute inset-0"
             src={media.posterUrl}
             alt={media.title}
             fill
@@ -127,7 +131,8 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
       >
         {/* Poster */}
         <div className="relative w-24 sm:w-32 shrink-0 aspect-[2/3] overflow-hidden bg-gray-100">
-          <Image
+          <SafeImage
+            fallbackClassName="absolute inset-0"
             src={media.posterUrl}
             alt={media.title}
             fill
