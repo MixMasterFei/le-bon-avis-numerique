@@ -26,9 +26,12 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  accounts Account[]
-  sessions Session[]
-  reviews  Review[]
+  accounts  Account[]
+  sessions  Session[]
+  reviews   Review[]
+  favorites Favorite[]
+  watchlist Watchlist[]
+  reports   ReviewReport[]
 
   @@map("users")
 }
@@ -125,6 +128,8 @@ model MediaItem {
 
   contentMetrics ContentMetrics?
   reviews        Review[]
+  favorites      Favorite[]
+  watchlist      Watchlist[]
 
   @@index([type])
   @@index([expertAgeRec])
@@ -168,4 +173,72 @@ model Review {
   @@index([mediaId])
   @@index([userId])
   @@map("reviews")
+}
+
+// ============================================
+// USER INTERACTIONS
+// ============================================
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  mediaId   String   @map("media_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("favorites")
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  mediaId   String   @map("media_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("watchlist")
+}
+
+// ============================================
+// MODERATION
+// ============================================
+
+enum ReportReason {
+  INAPPROPRIATE
+  SPAM
+  HARASSMENT
+  MISINFORMATION
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model ReviewReport {
+  id        String       @id @default(uuid())
+  reviewId  String       @map("review_id")
+  userId    String       @map("user_id")
+  reason    ReportReason
+  details   String?      @db.Text
+  status    ReportStatus @default(PENDING)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@index([status])
+  @@map("review_reports")
 }

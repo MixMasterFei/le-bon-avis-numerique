@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Clock, Calendar, Star, ExternalLink, Play } from "lucide-react"
+import { ArrowLeft, Clock, Calendar, Star, ExternalLink, Play, Tv } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,7 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AgeBadge, OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
-import { ReviewCard, ReviewSummary } from "@/components/media/ReviewCard"
+import { ReviewSummary } from "@/components/media/ReviewCard"
+import { ReviewsSection } from "@/components/media/ReviewsSection"
+import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -425,17 +427,20 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <ReviewSummary reviews={media.reviews} />
               </div>
 
-              {/* Platforms */}
+              {/* Streaming Platforms */}
               {media.platforms.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-400 mb-2">Disponible sur</h3>
+                  <h3 className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
+                    <Tv className="h-4 w-4" />
+                    Disponible sur
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {media.platforms.map((platform) => (
                       <Badge
                         key={platform}
-                        className="bg-white/10 text-white border-0 hover:bg-white/20 cursor-pointer"
+                        className="bg-white/10 text-white border-0 hover:bg-white/20 cursor-pointer px-3 py-1.5 text-sm"
                       >
-                        <Play className="h-3 w-3 mr-1" />
+                        <Play className="h-3 w-3 mr-1.5" />
                         {platform}
                       </Badge>
                     ))}
@@ -475,22 +480,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </TabsList>
 
               <TabsContent value="reviews" className="space-y-4 mt-6">
-                {media.reviews.length > 0 ? (
-                  media.reviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))
-                ) : (
-                  <Card>
-                    <CardContent className="p-8 text-center text-gray-500">
-                      Aucun avis pour le moment. Soyez le premier à partager votre expérience !
-                    </CardContent>
-                  </Card>
-                )}
+                <ReviewsSection reviews={media.reviews} />
 
                 <div className="pt-4">
-                  <Button size="lg" className="w-full sm:w-auto">
-                    Donner mon avis
-                  </Button>
+                  <MediaPageClient mediaId={media.id} mediaTitle={media.title} />
                 </div>
               </TabsContent>
 
