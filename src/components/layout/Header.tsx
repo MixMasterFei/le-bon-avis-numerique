@@ -11,8 +11,8 @@ import { Input } from "@/components/ui/input"
 const navigation = [
   { name: "Pour votre enfant", href: "/recommandations", icon: Users },
   { name: "Films", href: "/films", icon: Film },
-  { name: "Series TV", href: "/series", icon: Tv },
-  { name: "Jeux Video", href: "/jeux", icon: Gamepad2 },
+  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
+  { name: "Séries TV", href: "/series", icon: Tv },
   { name: "Livres", href: "/livres", icon: BookOpen, comingSoon: true },
   { name: "Applications", href: "/apps", icon: Smartphone, comingSoon: true },
 ]
