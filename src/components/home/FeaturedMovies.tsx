@@ -5,35 +5,39 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import { type MockMediaItem } from "@/lib/mock-data"
 
-interface ApiMovie {
+interface DbMovie {
   id: string
   title: string
   originalTitle?: string
   synopsisFr?: string
   posterUrl: string
   releaseDate?: string
-  rating?: number
-  type: "MOVIE"
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: any
 }
 
-function mapApiToMockFormat(movie: ApiMovie): MockMediaItem {
+function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
   return {
     id: movie.id,
     title: movie.title,
     originalTitle: movie.originalTitle,
     type: "MOVIE",
     releaseDate: movie.releaseDate ?? null,
-    posterUrl: movie.posterUrl,
+    posterUrl: movie.posterUrl || "/placeholder-poster.jpg",
     synopsisFr: movie.synopsisFr ?? null,
     officialRating: null,
-    expertAgeRec: null,
-    communityAgeRec: movie.rating ?? null,
-    genres: [],
-    platforms: [],
-    topics: [],
-    contentMetrics: {
+    expertAgeRec: movie.expertAgeRec ?? null,
+    communityAgeRec: movie.communityAgeRec ?? null,
+    genres: movie.genres || [],
+    platforms: movie.platforms || [],
+    topics: movie.topics || [],
+    contentMetrics: movie.contentMetrics || {
       violence: 0,
       sexNudity: 0,
       language: 0,
@@ -50,23 +54,19 @@ function mapApiToMockFormat(movie: ApiMovie): MockMediaItem {
 export function FeaturedMovies() {
   const [movies, setMovies] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [source, setSource] = useState<"api" | "mock">("mock")
 
   useEffect(() => {
     async function fetchMovies() {
       try {
-        const res = await fetch("/api/movies/family?page=1")
-        if (!res.ok) throw new Error("API error")
+        // Fetch from database - get family-friendly movies (age <= 12)
+        const res = await fetch("/api/db/movies?limit=4&maxAge=12")
+        if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
-          setMovies(data.movies.slice(0, 4).map(mapApiToMockFormat))
-          setSource("api")
-        } else {
-          throw new Error("No movies")
+          setMovies(data.movies.map(mapDbToMockFormat))
         }
-      } catch {
-        setMovies(mockMediaItems.filter(m => m.type === "MOVIE").slice(0, 4))
-        setSource("mock")
+      } catch (error) {
+        console.error("Failed to fetch featured movies:", error)
       } finally {
         setLoading(false)
       }
@@ -84,17 +84,19 @@ export function FeaturedMovies() {
     )
   }
 
+  if (movies.length === 0 && !loading) {
+    return null // Don't show section if no movies
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-            {source === "api" ? "Films populaires pour la famille" : "Selection de nos experts"}
+            Films pour les enfants
           </h2>
           <p className="text-gray-600 mt-1">
-            {source === "api"
-              ? "Les meilleurs films familiaux du moment"
-              : "Des choix de qualite recommandes par notre equipe"}
+            Des films adaptés aux plus jeunes, évalués par nos experts
           </p>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">

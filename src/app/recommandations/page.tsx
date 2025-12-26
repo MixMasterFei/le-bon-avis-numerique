@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems } from "@/lib/mock-data"
+import { type MockMediaItem } from "@/lib/mock-data"
 
 type WizardType = "all" | "movie" | "tv" | "game" | "book" | "app"
 
@@ -21,6 +21,51 @@ const questionChips = [
 ] as const
 
 type ChipKey = (typeof questionChips)[number]["key"]
+
+interface DbMedia {
+  id: string
+  title: string
+  originalTitle?: string
+  synopsisFr?: string
+  posterUrl: string
+  releaseDate?: string
+  type: string
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: any
+}
+
+function mapDbToMockFormat(media: DbMedia): MockMediaItem {
+  return {
+    id: media.id,
+    title: media.title,
+    originalTitle: media.originalTitle,
+    type: media.type as MockMediaItem["type"],
+    releaseDate: media.releaseDate ?? null,
+    posterUrl: media.posterUrl || "/placeholder-poster.jpg",
+    synopsisFr: media.synopsisFr ?? null,
+    officialRating: null,
+    expertAgeRec: media.expertAgeRec ?? null,
+    communityAgeRec: media.communityAgeRec ?? null,
+    genres: media.genres || [],
+    platforms: media.platforms || [],
+    topics: media.topics || [],
+    contentMetrics: media.contentMetrics || {
+      violence: 0,
+      sexNudity: 0,
+      language: 0,
+      consumerism: 0,
+      substanceUse: 0,
+      positiveMessages: 0,
+      roleModels: 0,
+      whatParentsNeedToKnow: [],
+    },
+    reviews: [],
+  }
+}
 
 function RecosInner() {
   const sp = useSearchParams()
@@ -38,6 +83,27 @@ function RecosInner() {
   const [age, setAge] = useState(Number.isFinite(initialAge) ? Math.min(Math.max(initialAge, 2), 18) : 8)
   const [type, setType] = useState<WizardType>(initialType)
   const [chips, setChips] = useState<Set<ChipKey>>(initialChips)
+  const [allMedia, setAllMedia] = useState<MockMediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch all media from database
+  useEffect(() => {
+    async function fetchMedia() {
+      try {
+        const res = await fetch("/api/db/media?limit=200")
+        if (!res.ok) throw new Error("DB error")
+        const data = await res.json()
+        if (Array.isArray(data?.media)) {
+          setAllMedia(data.media.map(mapDbToMockFormat))
+        }
+      } catch (error) {
+        console.error("Failed to fetch media:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMedia()
+  }, [])
 
   // keep URL in sync (shareable)
   useEffect(() => {
@@ -49,7 +115,7 @@ function RecosInner() {
   }, [age, chips, router, type])
 
   const filtered = useMemo(() => {
-    let items = mockMediaItems
+    let items = allMedia
 
     if (type !== "all") {
       const t = type.toUpperCase()
@@ -65,7 +131,7 @@ function RecosInner() {
     }
 
     return items
-  }, [age, chips, type])
+  }, [allMedia, age, chips, type])
 
   const toggleChip = (key: ChipKey) => {
     setChips((prev) => {
@@ -76,12 +142,28 @@ function RecosInner() {
     })
   }
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Recommandations</h1>
+          <p className="text-gray-600 mt-1">Chargement...</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Recommandations (démo)</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Recommandations</h1>
         <p className="text-gray-600 mt-1">
-          Sélection en temps réel basée sur l&apos;âge et quelques critères simples.
+          Sélection personnalisée basée sur l&apos;âge et vos critères.
         </p>
       </div>
 
@@ -176,6 +258,3 @@ export default function RecommandationsPage() {
     </Suspense>
   )
 }
-
-
-

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems } from "@/lib/mock-data"
+import { type MockMediaItem } from "@/lib/mock-data"
 
 type WizardType = "ALL" | "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
 
@@ -31,13 +31,79 @@ const questionChips = [
 
 type ChipKey = (typeof questionChips)[number]["key"]
 
+interface DbMedia {
+  id: string
+  title: string
+  originalTitle?: string
+  synopsisFr?: string
+  posterUrl: string
+  releaseDate?: string
+  type: string
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: any
+}
+
+function mapDbToMockFormat(media: DbMedia): MockMediaItem {
+  return {
+    id: media.id,
+    title: media.title,
+    originalTitle: media.originalTitle,
+    type: media.type as MockMediaItem["type"],
+    releaseDate: media.releaseDate ?? null,
+    posterUrl: media.posterUrl || "/placeholder-poster.jpg",
+    synopsisFr: media.synopsisFr ?? null,
+    officialRating: null,
+    expertAgeRec: media.expertAgeRec ?? null,
+    communityAgeRec: media.communityAgeRec ?? null,
+    genres: media.genres || [],
+    platforms: media.platforms || [],
+    topics: media.topics || [],
+    contentMetrics: media.contentMetrics || {
+      violence: 0,
+      sexNudity: 0,
+      language: 0,
+      consumerism: 0,
+      substanceUse: 0,
+      positiveMessages: 0,
+      roleModels: 0,
+      whatParentsNeedToKnow: [],
+    },
+    reviews: [],
+  }
+}
+
 export function RecommendationWizard() {
   const [age, setAge] = useState(8)
   const [selectedType, setSelectedType] = useState<WizardType>("ALL")
   const [activeChips, setActiveChips] = useState<Set<ChipKey>>(new Set())
+  const [allMedia, setAllMedia] = useState<MockMediaItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch all media from database
+  useEffect(() => {
+    async function fetchMedia() {
+      try {
+        const res = await fetch("/api/db/media?limit=100")
+        if (!res.ok) throw new Error("DB error")
+        const data = await res.json()
+        if (Array.isArray(data?.media)) {
+          setAllMedia(data.media.map(mapDbToMockFormat))
+        }
+      } catch (error) {
+        console.error("Failed to fetch media for recommendations:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMedia()
+  }, [])
 
   const recommendations = useMemo(() => {
-    let items = mockMediaItems
+    let items = allMedia
 
     if (selectedType !== "ALL") {
       items = items.filter((m) => m.type === selectedType)
@@ -59,7 +125,7 @@ export function RecommendationWizard() {
     })
 
     return items
-  }, [activeChips, age, selectedType])
+  }, [allMedia, activeChips, age, selectedType])
 
   const preview = recommendations.slice(0, 8)
 
@@ -76,6 +142,28 @@ export function RecommendationWizard() {
     Array.from(activeChips).join(",")
   )}`
 
+  if (loading) {
+    return (
+      <Card className="border-0 shadow-xl">
+        <CardContent className="p-6 md:p-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
+            <div className="grid grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-[2/3] bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (allMedia.length === 0) {
+    return null // Don't show wizard if no media in database
+  }
+
   return (
     <Card className="border-0 shadow-xl">
       <CardContent className="p-6 md:p-8">
@@ -83,7 +171,7 @@ export function RecommendationWizard() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Pour votre enfant</h2>
             <p className="text-gray-600 mt-1">
-              Ajustez l&apos;âge et quelques critères pour voir des recommandations en temps réel (mode démo).
+              Ajustez l&apos;âge et quelques critères pour voir des recommandations personnalisées.
             </p>
           </div>
           <Button asChild>
@@ -143,7 +231,7 @@ export function RecommendationWizard() {
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-gray-600">
-                {recommendations.length} recommandation{recommendations.length !== 1 ? "s" : ""} (démo)
+                {recommendations.length} recommandation{recommendations.length !== 1 ? "s" : ""}
               </p>
               <Button variant="outline" asChild>
                 <Link href={href}>Tout voir</Link>
@@ -171,6 +259,3 @@ export function RecommendationWizard() {
     </Card>
   )
 }
-
-
-
