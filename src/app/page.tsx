@@ -38,7 +38,7 @@ const features = [
 export default function HomePage() {
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
+      {/* Hero Section - Compact */}
       <section className="relative bg-gradient-to-br from-primary via-blue-700 to-blue-900 text-white overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -47,50 +47,49 @@ export default function HomePage() {
           }} />
         </div>
 
-        <div className="container mx-auto px-4 py-16 md:py-24 relative">
+        <div className="container mx-auto px-4 py-8 md:py-12 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm">
+            <Badge className="mb-3 bg-white/20 text-white border-white/30 backdrop-blur-sm text-xs">
               🇫🇷 Le guide média pour les familles françaises
             </Badge>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
               Des choix médias
               <span className="text-emerald-400"> éclairés </span>
               pour vos enfants
             </h1>
 
-            <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-              Découvrez des films, séries, jeux et livres adaptés à chaque âge grâce à nos avis experts et notre communauté de parents engagés.
+            <p className="text-base md:text-lg text-blue-100 mb-5 max-w-2xl mx-auto">
+              Films, séries, jeux et livres adaptés à chaque âge grâce à nos avis experts.
             </p>
 
             {/* Search Bar */}
-            <div className="max-w-xl mx-auto mb-8">
+            <div className="max-w-xl mx-auto">
               <HeroSearch />
             </div>
           </div>
         </div>
 
-        {/* Wave Separator */}
+        {/* Wave Separator - Smaller */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 50L60 45.7C120 41 240 33 360 37.5C480 42 600 58 720 62.5C840 67 960 58 1080 50C1200 42 1320 33 1380 29.2L1440 25V100H1380C1320 100 1200 100 1080 100C960 100 840 100 720 100C600 100 480 100 360 100C240 100 120 100 60 100H0V50Z" fill="#f8fafc"/>
+          <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-6 md:h-8">
+            <path d="M0 25L60 22.8C120 20.5 240 16.5 360 18.8C480 21 600 29 720 31.3C840 33.5 960 29 1080 25C1200 21 1320 16.5 1380 14.6L1440 12.5V50H1380C1320 50 1200 50 1080 50C960 50 840 50 720 50C600 50 480 50 360 50C240 50 120 50 60 50H0V25Z" fill="#f8fafc"/>
           </svg>
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section className="py-12 bg-background">
+      {/* Categories Section - Compact */}
+      <section className="py-6 bg-background">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
             {categories.map((category) => (
               <Link key={category.name} href={category.href}>
-                <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 h-full">
-                  <CardContent className="p-6 text-center">
-                    <div className={`inline-flex p-4 rounded-2xl ${category.color} text-white mb-4 group-hover:scale-110 transition-transform`}>
-                      <category.icon className="h-8 w-8" />
+                <Card className="group hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 h-full">
+                  <CardContent className="p-4 text-center">
+                    <div className={`inline-flex p-3 rounded-xl ${category.color} text-white mb-2 group-hover:scale-105 transition-transform`}>
+                      <category.icon className="h-6 w-6" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-500">Explorer</p>
+                    <h3 className="font-medium text-gray-900 text-sm">{category.name}</h3>
                   </CardContent>
                 </Card>
               </Link>
