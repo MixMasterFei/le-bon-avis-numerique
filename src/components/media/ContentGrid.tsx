@@ -142,7 +142,7 @@ export function ContentGridDots({
       />
       <div
         className={cn("h-2 w-2 rounded-full", getDotColor(metrics.consumerism))}
-        title="Consommation"
+        title="Consumérisme"
       />
       <div
         className={cn("h-2 w-2 rounded-full", getDotColor(metrics.substanceUse))}

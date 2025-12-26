@@ -10,7 +10,7 @@ export const contentMetricLabels: Record<string, string> = {
   violence: "Violence",
   sexNudity: "Sexe & Nudité",
   language: "Langage",
-  consumerism: "Consommation",
+  consumerism: "Consumérisme",
   substanceUse: "Alcool & Drogues",
   positiveMessages: "Messages Positifs",
   roleModels: "Modèles de Rôle",
