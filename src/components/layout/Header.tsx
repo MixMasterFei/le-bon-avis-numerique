@@ -13,8 +13,8 @@ const navigation = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Series TV", href: "/series", icon: Tv },
   { name: "Jeux Video", href: "/jeux", icon: Gamepad2 },
-  { name: "Livres", href: "/livres", icon: BookOpen },
-  { name: "Applications", href: "/apps", icon: Smartphone },
+  { name: "Livres", href: "/livres", icon: BookOpen, comingSoon: true },
+  { name: "Applications", href: "/apps", icon: Smartphone, comingSoon: true },
 ]
 
 export function Header() {
@@ -57,16 +57,31 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
-              >
-                <item.icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) =>
+              item.comingSoon ? (
+                <div
+                  key={item.name}
+                  className="relative group"
+                >
+                  <span className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                  </span>
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                    Bientôt disponible
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              )
+            )}
           </nav>
 
           {/* Search Bar */}
@@ -191,17 +206,32 @@ export function Header() {
       {isMenuOpen && (
         <div className="lg:hidden border-t bg-white">
           <nav className="container mx-auto px-4 py-4 space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) =>
+              item.comingSoon ? (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between px-4 py-3 text-gray-400 cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </div>
+                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                    Bientôt
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              )
+            )}
             {session?.user ? (
               <>
                 <hr className="my-2" />
