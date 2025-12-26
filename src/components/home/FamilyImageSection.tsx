@@ -1,36 +1,7 @@
 "use client"
 
-import { ImageIcon } from "lucide-react"
-
-interface ImagePlaceholderProps {
-  label: string
-  aspectRatio?: "square" | "landscape" | "portrait"
-  className?: string
-}
-
-function ImagePlaceholder({ label, aspectRatio = "landscape", className = "" }: ImagePlaceholderProps) {
-  const aspectClasses = {
-    square: "aspect-square",
-    landscape: "aspect-[4/3]",
-    portrait: "aspect-[3/4]",
-  }
-
-  return (
-    <div
-      className={`relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden ${aspectClasses[aspectRatio]} ${className}`}
-    >
-      {/* Placeholder content */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 p-4">
-        <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
-        <span className="text-sm font-medium text-center">{label}</span>
-        <span className="text-xs mt-1 opacity-75">Image à ajouter</span>
-      </div>
-
-      {/* Decorative border */}
-      <div className="absolute inset-0 border-2 border-dashed border-gray-300 rounded-2xl" />
-    </div>
-  )
-}
+import Image from "next/image"
+import { User } from "lucide-react"
 
 export function FamilyImageSection() {
   return (
@@ -71,19 +42,30 @@ export function FamilyImageSection() {
 
           {/* Image Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <ImagePlaceholder
-              label="Famille regardant un film"
-              aspectRatio="portrait"
-              className="row-span-2"
-            />
-            <ImagePlaceholder
-              label="Parent et enfant avec tablette"
-              aspectRatio="square"
-            />
-            <ImagePlaceholder
-              label="Enfants lisant ensemble"
-              aspectRatio="square"
-            />
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden row-span-2 shadow-lg">
+              <Image
+                src="/family-movie.jpg"
+                alt="Famille regardant un film ensemble"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg">
+              <Image
+                src="/parent-tablet.jpg"
+                alt="Parent et enfant avec tablette"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg">
+              <Image
+                src="/children-reading.jpg"
+                alt="Enfants lisant ensemble"
+                fill
+                className="object-cover"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -108,7 +90,9 @@ export function TestimonialsSection() {
           {/* Testimonial 1 */}
           <div className="bg-white rounded-2xl p-6 shadow-md">
             <div className="flex items-center gap-4 mb-4">
-              <ImagePlaceholder label="Photo" aspectRatio="square" className="w-14 h-14 !rounded-full" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                <User className="h-7 w-7 text-white" />
+              </div>
               <div>
                 <p className="font-semibold text-gray-900">Marie D.</p>
                 <p className="text-sm text-gray-500">Maman de 2 enfants</p>
@@ -122,7 +106,9 @@ export function TestimonialsSection() {
           {/* Testimonial 2 */}
           <div className="bg-white rounded-2xl p-6 shadow-md">
             <div className="flex items-center gap-4 mb-4">
-              <ImagePlaceholder label="Photo" aspectRatio="square" className="w-14 h-14 !rounded-full" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
+                <User className="h-7 w-7 text-white" />
+              </div>
               <div>
                 <p className="font-semibold text-gray-900">Thomas L.</p>
                 <p className="text-sm text-gray-500">Papa de 3 enfants</p>
@@ -136,7 +122,9 @@ export function TestimonialsSection() {
           {/* Testimonial 3 */}
           <div className="bg-white rounded-2xl p-6 shadow-md">
             <div className="flex items-center gap-4 mb-4">
-              <ImagePlaceholder label="Photo" aspectRatio="square" className="w-14 h-14 !rounded-full" />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                <User className="h-7 w-7 text-white" />
+              </div>
               <div>
                 <p className="font-semibold text-gray-900">Sophie M.</p>
                 <p className="text-sm text-gray-500">Enseignante et maman</p>
