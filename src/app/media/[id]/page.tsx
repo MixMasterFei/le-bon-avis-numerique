@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, Clock, Calendar, Star, ExternalLink, Play, Tv } from "lucide-react"
+import { Clock, Calendar, Star, ExternalLink, Play, Tv } from "lucide-react"
+import { BackButton } from "@/components/ui/BackButton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -342,13 +343,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
         <div className="container mx-auto px-4 py-8 relative">
           {/* Back Button */}
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-8"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Link>
+          <BackButton className="mb-8" />
 
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Poster */}

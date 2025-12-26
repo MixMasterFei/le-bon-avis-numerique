@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       await prisma.favorite.delete({
         where: { id: existing.id },
       })
-      return NextResponse.json({ success: true, favorited: false })
+      return NextResponse.json({ success: true, isFavorite: false })
     }
 
     // Add to favorites
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, favorited: true })
+    return NextResponse.json({ success: true, isFavorite: true })
   } catch (error) {
     console.error("Favorite error:", error)
     return NextResponse.json(
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         userFavorited = !!existing
       }
 
-      return NextResponse.json({ count, userFavorited })
+      return NextResponse.json({ count, isFavorite: userFavorited })
     }
 
     // Get all user favorites
