@@ -25,10 +25,128 @@ import {
 } from "@/lib/tmdb"
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
+import { prisma } from "@/lib/prisma"
 import type { MockMediaItem } from "@/lib/mock-data"
 
 interface MediaPageProps {
   params: Promise<{ id: string }>
+}
+
+// Helper to fetch from database directly
+async function fetchFromDatabase(id: string): Promise<MockMediaItem | null> {
+  try {
+    // Try to find by UUID first
+    let dbMedia = await prisma.mediaItem.findUnique({
+      where: { id },
+      include: {
+        contentMetrics: true,
+        reviews: {
+          include: {
+            user: {
+              select: { id: true, name: true, image: true },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+    })
+
+    // If not found by UUID, try by tmdbId
+    if (!dbMedia) {
+      const numericId = parseInt(id)
+      if (!isNaN(numericId)) {
+        dbMedia = await prisma.mediaItem.findFirst({
+          where: { tmdbId: numericId },
+          include: {
+            contentMetrics: true,
+            reviews: {
+              include: {
+                user: {
+                  select: { id: true, name: true, image: true },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 10,
+            },
+          },
+        })
+      }
+    }
+
+    // If still not found, try by igdbId
+    if (!dbMedia) {
+      const numericId = parseInt(id)
+      if (!isNaN(numericId)) {
+        dbMedia = await prisma.mediaItem.findFirst({
+          where: { igdbId: numericId },
+          include: {
+            contentMetrics: true,
+            reviews: {
+              include: {
+                user: {
+                  select: { id: true, name: true, image: true },
+                },
+              },
+              orderBy: { createdAt: "desc" },
+              take: 10,
+            },
+          },
+        })
+      }
+    }
+
+    if (!dbMedia) return null
+
+    return {
+      id: dbMedia.id,
+      title: dbMedia.title,
+      originalTitle: dbMedia.originalTitle || undefined,
+      type: dbMedia.type as MockMediaItem["type"],
+      releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
+      posterUrl: dbMedia.posterUrl || "/placeholder-poster.jpg",
+      synopsisFr: dbMedia.synopsisFr,
+      officialRating: dbMedia.officialRating,
+      expertAgeRec: dbMedia.expertAgeRec,
+      communityAgeRec: dbMedia.communityAgeRec,
+      duration: dbMedia.duration || undefined,
+      director: dbMedia.director || undefined,
+      genres: dbMedia.genres || [],
+      platforms: dbMedia.platforms || [],
+      topics: dbMedia.topics || [],
+      contentMetrics: dbMedia.contentMetrics
+        ? {
+            violence: dbMedia.contentMetrics.violence,
+            sexNudity: dbMedia.contentMetrics.sexNudity,
+            language: dbMedia.contentMetrics.language,
+            consumerism: dbMedia.contentMetrics.consumerism,
+            substanceUse: dbMedia.contentMetrics.substanceUse,
+            positiveMessages: dbMedia.contentMetrics.positiveMessages,
+            roleModels: dbMedia.contentMetrics.roleModels,
+            whatParentsNeedToKnow: dbMedia.contentMetrics.whatParentsNeedToKnow || [],
+          }
+        : {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+      reviews: dbMedia.reviews.map((r) => ({
+        id: r.id,
+        role: r.role as "PARENT" | "KID" | "EDUCATOR",
+        rating: r.rating,
+        ageSuggestion: r.ageSuggestion ?? 0,
+        comment: r.comment || "",
+      })),
+    }
+  } catch (error) {
+    console.error("Failed to fetch from database:", error)
+    return null
+  }
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
@@ -36,11 +154,21 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const { type, id: rawId } = parseMediaRouteId(id)
 
   let media: MockMediaItem | null = null
-  let source: "mock" | "external" = "mock"
+  let source: "mock" | "external" | "database" = "mock"
 
-  if (!type) {
+  // First, try to fetch from database (works with UUID or external IDs)
+  media = await fetchFromDatabase(rawId)
+  if (media) {
+    source = "database"
+  }
+
+  // If not in database and no type prefix, check mock data
+  if (!media && !type) {
     media = mockMediaItems.find((m) => m.id === rawId) || null
-  } else {
+  }
+
+  // If still not found and has type prefix, try external APIs
+  if (!media && type) {
     source = "external"
     try {
       if (type === "MOVIE") {

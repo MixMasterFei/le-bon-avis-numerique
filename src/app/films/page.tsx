@@ -38,6 +38,12 @@ export default function FilmsPage() {
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
+        if (filters.platforms.length > 0) {
+          dbParams.set("platforms", filters.platforms.join(","))
+        }
+        if (filters.topics.length > 0) {
+          dbParams.set("genres", filters.topics.join(","))
+        }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {
@@ -138,7 +144,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge])
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics])
 
   const filteredMovies = useMemo(() => {
     // In DB or API mode, filtering is handled server-side

@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1")
   const limit = parseInt(searchParams.get("limit") || "20")
   const maxAge = searchParams.get("maxAge")
-  const genre = searchParams.get("genre")
+  const genres = searchParams.get("genres")
+  const platforms = searchParams.get("platforms")
   const search = searchParams.get("q")
 
   const skip = (page - 1) * limit
@@ -26,9 +27,16 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Filter by genre
-    if (genre) {
-      where.genres = { has: genre }
+    // Filter by genres (any match)
+    if (genres) {
+      const genreList = genres.split(",").map(g => g.trim())
+      where.genres = { hasSome: genreList }
+    }
+
+    // Filter by platforms (any match)
+    if (platforms) {
+      const platformList = platforms.split(",").map(p => p.trim())
+      where.platforms = { hasSome: platformList }
     }
 
     // Search by title
