@@ -4,12 +4,15 @@ import { useState, useEffect } from "react"
 import {
   Film,
   Gamepad2,
+  Tv,
   Download,
   RefreshCw,
   CheckCircle,
   AlertCircle,
   Database,
   Loader2,
+  Star,
+  MessageSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,10 +26,24 @@ interface ImportStats {
 }
 
 interface DbStats {
-  movieCount?: number
-  gameCount?: number
-  recentMovies?: Array<{ title: string; tmdbId: number; createdAt: string }>
-  recentGames?: Array<{ title: string; igdbId: number; createdAt: string }>
+  counts: {
+    movies: number
+    games: number
+    tv: number
+    books: number
+    reviews: number
+    total: number
+  }
+  coverage: {
+    moviesWithAgeRec: number
+    gamesWithAgeRec: number
+    moviesPercent: number
+    gamesPercent: number
+  }
+  recent: {
+    movies: Array<{ id: string; title: string; posterUrl: string; tmdbId: number }>
+    games: Array<{ id: string; title: string; posterUrl: string; igdbId: number }>
+  }
 }
 
 type ImportSource = "popular" | "top_rated" | "now_playing" | "family" | "animation" | "kids" | "recent"
@@ -47,8 +64,7 @@ const GAME_SOURCES: { value: ImportSource; label: string; description: string }[
 ]
 
 export default function BulkImportPage() {
-  const [movieStats, setMovieStats] = useState<DbStats | null>(null)
-  const [gameStats, setGameStats] = useState<DbStats | null>(null)
+  const [stats, setStats] = useState<DbStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [importing, setImporting] = useState<string | null>(null)
   const [lastResult, setLastResult] = useState<{ type: string; stats: ImportStats } | null>(null)
@@ -61,16 +77,9 @@ export default function BulkImportPage() {
   const fetchStats = async () => {
     setLoading(true)
     try {
-      const [moviesRes, gamesRes] = await Promise.all([
-        fetch("/api/admin/import/movies"),
-        fetch("/api/admin/import/games"),
-      ])
-
-      if (moviesRes.ok) {
-        setMovieStats(await moviesRes.json())
-      }
-      if (gamesRes.ok) {
-        setGameStats(await gamesRes.json())
+      const res = await fetch("/api/db/stats")
+      if (res.ok) {
+        setStats(await res.json())
       }
     } catch (err) {
       console.error("Failed to fetch stats:", err)
@@ -126,80 +135,141 @@ export default function BulkImportPage() {
       </div>
 
       {/* Database Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center gap-3">
-            <Database className="h-5 w-5 text-blue-600" />
-            <CardTitle className="text-lg">Statistiques de la base</CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={fetchStats}
-              disabled={loading}
-              className="ml-auto"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center gap-2 text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement...
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
+      <Card className="mb-8">
+        <CardHeader className="flex flex-row items-center gap-3">
+          <Database className="h-5 w-5 text-blue-600" />
+          <CardTitle className="text-lg">Contenu de la base de données</CardTitle>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fetchStats}
+            disabled={loading}
+            className="ml-auto"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Chargement...
+            </div>
+          ) : stats ? (
+            <div className="space-y-6">
+              {/* Main counts */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Film className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-                  <div className="text-3xl font-bold text-purple-700">
-                    {movieStats?.movieCount ?? 0}
+                  <Film className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                  <div className="text-2xl font-bold text-purple-700">
+                    {stats.counts.movies}
                   </div>
                   <div className="text-sm text-purple-600">Films</div>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <Gamepad2 className="h-8 w-8 mx-auto mb-2 text-green-600" />
-                  <div className="text-3xl font-bold text-green-700">
-                    {gameStats?.gameCount ?? 0}
+                  <Gamepad2 className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                  <div className="text-2xl font-bold text-green-700">
+                    {stats.counts.games}
                   </div>
                   <div className="text-sm text-green-600">Jeux</div>
                 </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Tv className="h-6 w-6 mx-auto mb-2 text-blue-600" />
+                  <div className="text-2xl font-bold text-blue-700">
+                    {stats.counts.tv}
+                  </div>
+                  <div className="text-sm text-blue-600">Séries TV</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <MessageSquare className="h-6 w-6 mx-auto mb-2 text-orange-600" />
+                  <div className="text-2xl font-bold text-orange-700">
+                    {stats.counts.reviews}
+                  </div>
+                  <div className="text-sm text-orange-600">Avis</div>
+                </div>
               </div>
-            )}
+
+              {/* Coverage stats */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Couverture des recommandations d&apos;âge
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Films avec âge recommandé</span>
+                      <span className="font-medium">{stats.coverage.moviesWithAgeRec} / {stats.counts.movies}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-purple-600 h-2 rounded-full transition-all"
+                        style={{ width: `${stats.coverage.moviesPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.moviesPercent}% couverts</p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Jeux avec âge recommandé</span>
+                      <span className="font-medium">{stats.coverage.gamesWithAgeRec} / {stats.counts.games}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full transition-all"
+                        style={{ width: `${stats.coverage.gamesPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.gamesPercent}% couverts</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="border-t pt-4 text-center">
+                <p className="text-gray-600">
+                  <span className="font-bold text-2xl text-gray-900">{stats.counts.total}</span>
+                  {" "}médias au total dans la base
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500">Impossible de charger les statistiques</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Last Result */}
+      {lastResult && (
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-lg">Dernier import ({lastResult.type === "movies" ? "Films" : "Jeux"})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-4 text-center">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="text-xl font-bold">{lastResult.stats.total}</div>
+                <div className="text-xs text-gray-500">Traités</div>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <div className="text-xl font-bold text-green-700">{lastResult.stats.imported}</div>
+                <div className="text-xs text-green-600">Importés</div>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <div className="text-xl font-bold text-blue-700">{lastResult.stats.skipped}</div>
+                <div className="text-xs text-blue-600">Existants</div>
+              </div>
+              <div className={`p-3 rounded-lg ${lastResult.stats.errors > 0 ? "bg-red-50" : "bg-gray-50"}`}>
+                <div className={`text-xl font-bold ${lastResult.stats.errors > 0 ? "text-red-700" : "text-gray-400"}`}>
+                  {lastResult.stats.errors}
+                </div>
+                <div className={`text-xs ${lastResult.stats.errors > 0 ? "text-red-600" : "text-gray-400"}`}>Erreurs</div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Last Result */}
-        {lastResult && (
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <CardTitle className="text-lg">Dernier import</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Total traite:</span>
-                  <span className="font-medium">{lastResult.stats.total}</span>
-                </div>
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Importes:</span>
-                  <span className="font-medium">{lastResult.stats.imported}</span>
-                </div>
-                <div className="flex justify-between text-sm text-blue-600">
-                  <span>Ignores (existants):</span>
-                  <span className="font-medium">{lastResult.stats.skipped}</span>
-                </div>
-                {lastResult.stats.errors > 0 && (
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>Erreurs:</span>
-                    <span className="font-medium">{lastResult.stats.errors}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      )}
 
       {/* Error Display */}
       {error && (
