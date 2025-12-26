@@ -26,12 +26,13 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  accounts  Account[]
-  sessions  Session[]
-  reviews   Review[]
-  favorites Favorite[]
-  watchlist Watchlist[]
-  reports   ReviewReport[]
+  accounts      Account[]
+  sessions      Session[]
+  reviews       Review[]
+  favorites     Favorite[]
+  watchlist     Watchlist[]
+  reports       ReviewReport[]
+  familyMembers FamilyMember[]
 
   @@map("users")
 }
@@ -130,6 +131,7 @@ model MediaItem {
   reviews        Review[]
   favorites      Favorite[]
   watchlist      Watchlist[]
+  reactions      MediaReaction[]
 
   @@index([type])
   @@index([expertAgeRec])
@@ -241,4 +243,51 @@ model ReviewReport {
   @@unique([reviewId, userId])
   @@index([status])
   @@map("review_reports")
+}
+
+// ============================================
+// FAMILY MEMBERS & REACTIONS
+// ============================================
+
+model FamilyMember {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  name        String
+  birthYear   Int?     @map("birth_year")
+  avatarEmoji String   @default("👧") @map("avatar_emoji")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions MediaReaction[]
+
+  @@index([userId])
+  @@map("family_members")
+}
+
+enum ReactionType {
+  LOVED      // Adoré
+  LIKED      // Bien aimé
+  OK         // Bof
+  SCARED     // A eu peur
+  BORED      // S'est ennuyé
+  TOO_YOUNG  // Trop jeune pour comprendre
+  TOO_OLD    // Trop vieux (pas intéressé)
+}
+
+model MediaReaction {
+  id             String       @id @default(uuid())
+  familyMemberId String       @map("family_member_id")
+  mediaId        String       @map("media_id")
+  reaction       ReactionType
+  note           String?      @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  familyMember FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  media        MediaItem    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([familyMemberId, mediaId])
+  @@index([mediaId])
+  @@map("media_reactions")
 }

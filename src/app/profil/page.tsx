@@ -6,6 +6,7 @@ import { User, Mail, Calendar, Shield, Star, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { FamilyMembers } from "@/components/profile/FamilyMembers"
 
 export default function ProfilPage() {
   const { data: session, status } = useSession()
@@ -103,21 +104,24 @@ export default function ProfilPage() {
         </Card>
       </div>
 
+      {/* Family Members */}
+      <FamilyMembers />
+
       {/* Recent Activity */}
-      <Card>
+      <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Activite recente</CardTitle>
+          <CardTitle>Activité récente</CardTitle>
           <CardDescription>Vos derniers avis et interactions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12 text-gray-500">
             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium">Aucune activite pour le moment</p>
+            <p className="font-medium">Aucune activité pour le moment</p>
             <p className="text-sm mt-1">
-              Commencez par donner votre avis sur un film ou une serie !
+              Commencez par donner votre avis sur un film ou une série !
             </p>
             <Button className="mt-4" asChild>
-              <a href="/films">Decouvrir des films</a>
+              <a href="/films">Découvrir des films</a>
             </Button>
           </div>
         </CardContent>

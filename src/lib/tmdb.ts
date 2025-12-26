@@ -411,5 +411,161 @@ export const TVGenres = {
   WESTERN: 37,
 } as const
 
+// ============================================
+// WATCH PROVIDERS TYPES
+// ============================================
+
+export interface TMDBWatchProvider {
+  logo_path: string
+  provider_id: number
+  provider_name: string
+  display_priority: number
+}
+
+export interface TMDBWatchProviderResult {
+  link?: string // JustWatch link
+  flatrate?: TMDBWatchProvider[] // Subscription (Netflix, Disney+, etc.)
+  rent?: TMDBWatchProvider[] // Rent (Google Play, Apple TV, etc.)
+  buy?: TMDBWatchProvider[] // Buy (Google Play, Apple TV, etc.)
+  free?: TMDBWatchProvider[] // Free with ads
+}
+
+export interface TMDBWatchProvidersResponse {
+  id: number
+  results: Record<string, TMDBWatchProviderResult>
+}
+
+// ============================================
+// VIDEOS TYPES
+// ============================================
+
+export interface TMDBVideo {
+  id: string
+  iso_639_1: string
+  iso_3166_1: string
+  key: string // YouTube key
+  name: string
+  site: string // "YouTube" or "Vimeo"
+  size: number
+  type: string // "Trailer", "Teaser", "Clip", "Featurette", etc.
+  official: boolean
+  published_at: string
+}
+
+export interface TMDBVideosResponse {
+  id: number
+  results: TMDBVideo[]
+}
+
+// ============================================
+// API FUNCTIONS - WATCH PROVIDERS & VIDEOS
+// ============================================
+
+/**
+ * Get watch providers for a movie (streaming platforms in France)
+ * Data is provided by JustWatch
+ */
+export async function getMovieWatchProviders(movieId: number): Promise<TMDBWatchProviderResult | null> {
+  try {
+    const response = await tmdbFetch<TMDBWatchProvidersResponse>(`/movie/${movieId}/watch/providers`)
+    // Return French providers or null
+    return response.results?.FR || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get watch providers for a TV show (streaming platforms in France)
+ */
+export async function getTVWatchProviders(tvId: number): Promise<TMDBWatchProviderResult | null> {
+  try {
+    const response = await tmdbFetch<TMDBWatchProvidersResponse>(`/tv/${tvId}/watch/providers`)
+    return response.results?.FR || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Get videos for a movie (trailers, teasers, etc.)
+ * Prioritizes French videos, falls back to English
+ */
+export async function getMovieVideos(movieId: number): Promise<TMDBVideo[]> {
+  try {
+    // First try French videos
+    const frResponse = await tmdbFetch<TMDBVideosResponse>(`/movie/${movieId}/videos`)
+    let videos = frResponse.results || []
+
+    // If no French trailers, try English
+    if (!videos.some(v => v.type === "Trailer")) {
+      const enResponse = await tmdbFetch<TMDBVideosResponse>(`/movie/${movieId}/videos`, {
+        language: "en-US"
+      })
+      // Add English videos that aren't duplicates
+      const existingKeys = new Set(videos.map(v => v.key))
+      const newVideos = (enResponse.results || []).filter(v => !existingKeys.has(v.key))
+      videos = [...videos, ...newVideos]
+    }
+
+    return videos
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get videos for a TV show
+ */
+export async function getTVVideos(tvId: number): Promise<TMDBVideo[]> {
+  try {
+    const frResponse = await tmdbFetch<TMDBVideosResponse>(`/tv/${tvId}/videos`)
+    let videos = frResponse.results || []
+
+    if (!videos.some(v => v.type === "Trailer")) {
+      const enResponse = await tmdbFetch<TMDBVideosResponse>(`/tv/${tvId}/videos`, {
+        language: "en-US"
+      })
+      const existingKeys = new Set(videos.map(v => v.key))
+      const newVideos = (enResponse.results || []).filter(v => !existingKeys.has(v.key))
+      videos = [...videos, ...newVideos]
+    }
+
+    return videos
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get the best trailer from a list of videos
+ * Prioritizes: Official Trailer > Trailer > Teaser
+ */
+export function getBestTrailer(videos: TMDBVideo[]): TMDBVideo | null {
+  if (!videos.length) return null
+
+  // Prefer official trailers
+  const officialTrailer = videos.find(v => v.type === "Trailer" && v.official && v.site === "YouTube")
+  if (officialTrailer) return officialTrailer
+
+  // Then any trailer
+  const anyTrailer = videos.find(v => v.type === "Trailer" && v.site === "YouTube")
+  if (anyTrailer) return anyTrailer
+
+  // Then teaser
+  const teaser = videos.find(v => v.type === "Teaser" && v.site === "YouTube")
+  if (teaser) return teaser
+
+  // Fallback to first YouTube video
+  return videos.find(v => v.site === "YouTube") || null
+}
+
+/**
+ * Get provider logo URL
+ */
+export function getProviderLogoUrl(logoPath: string, size: "w45" | "w92" | "w154" | "original" = "w92"): string {
+  return `${TMDB_IMAGE_BASE}/${size}${logoPath}`
+}
+
 
 

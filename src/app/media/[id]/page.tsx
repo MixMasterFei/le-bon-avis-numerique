@@ -12,6 +12,8 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewSummary } from "@/components/media/ReviewCard"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
+import { WatchProviders, WatchProvidersCompact } from "@/components/media/WatchProviders"
+import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -25,6 +27,13 @@ import {
   getDirector,
   getTVFrenchRating,
   mapCertificationToInternal,
+  getMovieWatchProviders,
+  getTVWatchProviders,
+  getMovieVideos,
+  getTVVideos,
+  getBestTrailer,
+  type TMDBWatchProviderResult,
+  type TMDBVideo,
 } from "@/lib/tmdb"
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
@@ -158,6 +167,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
   let media: MockMediaItem | null = null
   let source: "mock" | "external" | "database" = "mock"
+  let watchProviders: TMDBWatchProviderResult | null = null
+  let trailer: TMDBVideo | null = null
 
   // First, try to fetch from database (works with UUID or external IDs)
   media = await fetchFromDatabase(rawId)
@@ -321,6 +332,40 @@ export default async function MediaPage({ params }: MediaPageProps) {
     notFound()
   }
 
+  // Fetch watch providers and trailer for movies/TV from TMDB
+  // This works for both database items (with tmdbId) and external API items
+  const mediaType = media.type
+  if (mediaType === "MOVIE" || mediaType === "TV") {
+    // Get the TMDB ID - either from database record or from rawId for external
+    let tmdbId: number | null = null
+
+    if (source === "database") {
+      // For database items, we need to query for the tmdbId
+      const dbItem = await prisma.mediaItem.findUnique({
+        where: { id: media.id },
+        select: { tmdbId: true }
+      })
+      tmdbId = dbItem?.tmdbId || null
+    } else if (source === "external") {
+      tmdbId = parseInt(rawId)
+    }
+
+    if (tmdbId && !isNaN(tmdbId)) {
+      // Fetch providers and videos in parallel
+      const [providersResult, videosResult] = await Promise.all([
+        mediaType === "MOVIE"
+          ? getMovieWatchProviders(tmdbId)
+          : getTVWatchProviders(tmdbId),
+        mediaType === "MOVIE"
+          ? getMovieVideos(tmdbId)
+          : getTVVideos(tmdbId)
+      ])
+
+      watchProviders = providersResult
+      trailer = getBestTrailer(videosResult)
+    }
+  }
+
   const avgRating =
     media.reviews?.length
       ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
@@ -413,7 +458,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </p>
 
               {/* Age Ratings */}
-              <div className="flex flex-wrap items-center gap-8 mb-8">
+              <div className="flex flex-wrap items-center gap-8 mb-6">
                 <AgeBadge
                   age={media.expertAgeRec}
                   size="lg"
@@ -422,26 +467,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <ReviewSummary reviews={media.reviews} />
               </div>
 
-              {/* Streaming Platforms */}
-              {media.platforms.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-400 mb-2 flex items-center gap-2">
-                    <Tv className="h-4 w-4" />
-                    Disponible sur
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {media.platforms.map((platform) => (
-                      <Badge
-                        key={platform}
-                        className="bg-white/10 text-white border-0 hover:bg-white/20 cursor-pointer px-3 py-1.5 text-sm"
-                      >
-                        <Play className="h-3 w-3 mr-1.5" />
-                        {platform}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Trailer & Quick Streaming Info */}
+              <div className="mb-6">
+                <WatchProvidersCompact providers={watchProviders} trailer={trailer} />
+              </div>
+
+              {/* Full Watch Providers Section */}
+              <WatchProviders providers={watchProviders} trailer={null} className="mb-6" />
 
               {/* Rating Summary */}
               <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
@@ -532,6 +564,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Family Reactions */}
+            <FamilyReactions mediaId={media.id} mediaTitle={media.title} />
+
             {/* Content Grid */}
             <Card>
               <CardHeader>

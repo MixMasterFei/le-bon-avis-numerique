@@ -8,6 +8,7 @@ import { RecommendationWizard } from "@/components/home/RecommendationWizard"
 import { FeaturedMovies } from "@/components/home/FeaturedMovies"
 import { RecentMovies } from "@/components/home/RecentMovies"
 import { FamilyImageSection, TestimonialsSection } from "@/components/home/FamilyImageSection"
+import { FamilyRecommendations } from "@/components/home/FamilyRecommendations"
 
 const categories = [
   { name: "Films", href: "/films", icon: Film, color: "bg-red-500" },
@@ -145,6 +146,9 @@ export default function HomePage() {
 
       {/* Testimonials Section */}
       <TestimonialsSection />
+
+      {/* Family Recommendations - Only shows if logged in with family data */}
+      <FamilyRecommendations />
 
       {/* Recent Movies Section */}
       <section className="py-16 bg-white">
