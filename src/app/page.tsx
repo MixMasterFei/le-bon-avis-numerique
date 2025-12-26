@@ -72,14 +72,14 @@ export default function HomePage() {
 
         {/* Wave Separator - Smaller */}
         <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-6 md:h-8">
+          <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-4">
             <path d="M0 25L60 22.8C120 20.5 240 16.5 360 18.8C480 21 600 29 720 31.3C840 33.5 960 29 1080 25C1200 21 1320 16.5 1380 14.6L1440 12.5V50H1380C1320 50 1200 50 1080 50C960 50 840 50 720 50C600 50 480 50 360 50C240 50 120 50 60 50H0V25Z" fill="#f8fafc"/>
           </svg>
         </div>
       </section>
 
       {/* Categories Section - Compact */}
-      <section className="py-6 bg-background">
+      <section className="pt-4 pb-6 bg-slate-50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
             {categories.map((category) => (
@@ -98,17 +98,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Recommendation Wizard */}
-      <section className="py-12 bg-gray-50">
+      {/* Featured Movies Section */}
+      <section className="py-8 bg-white">
         <div className="container mx-auto px-4">
-          <RecommendationWizard />
+          <FeaturedMovies />
         </div>
       </section>
 
-      {/* Featured Movies Section */}
-      <section className="py-16 bg-white">
+      {/* Recommendation Wizard */}
+      <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
-          <FeaturedMovies />
+          <RecommendationWizard />
         </div>
       </section>
 
