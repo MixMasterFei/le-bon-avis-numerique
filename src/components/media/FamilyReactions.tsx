@@ -84,20 +84,25 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
     }
   }, [session, mediaId])
 
-  const handleReaction = async (memberId: string, reaction: string) => {
+  const handleReaction = async (memberId: string, reactionValue: string) => {
     const member = members.find((m) => m.id === memberId)
     if (!member) return
 
     // If clicking same reaction, remove it
-    if (member.reaction?.reaction === reaction) {
+    if (member.reaction?.reaction === reactionValue) {
       setSaving(memberId)
+      // Optimistic update - remove reaction immediately
+      setMembers(prev => prev.map(m =>
+        m.id === memberId ? { ...m, reaction: null } : m
+      ))
       try {
-        await fetch(`/api/user/reaction?familyMemberId=${memberId}&mediaId=${mediaId}`, {
+        const res = await fetch(`/api/user/reaction?familyMemberId=${memberId}&mediaId=${mediaId}`, {
           method: "DELETE",
         })
-        await fetchReactions()
+        if (!res.ok) throw new Error("Delete failed")
       } catch {
         setError("Erreur lors de la suppression")
+        await fetchReactions() // Revert on error
       } finally {
         setSaving(null)
       }
@@ -106,19 +111,28 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
 
     // Save new reaction
     setSaving(memberId)
+    // Optimistic update - show reaction immediately
+    setMembers(prev => prev.map(m =>
+      m.id === memberId
+        ? { ...m, reaction: { id: "temp", reaction: reactionValue, note: null } }
+        : m
+    ))
     try {
-      await fetch("/api/user/reaction", {
+      const res = await fetch("/api/user/reaction", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           familyMemberId: memberId,
           mediaId,
-          reaction,
+          reaction: reactionValue,
         }),
       })
+      if (!res.ok) throw new Error("Save failed")
+      // Fetch to get the real ID
       await fetchReactions()
     } catch {
       setError("Erreur lors de l'enregistrement")
+      await fetchReactions() // Revert on error
     } finally {
       setSaving(null)
     }
