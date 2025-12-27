@@ -4,32 +4,37 @@
 -- Tables: favorites, watchlist, family_members, media_reactions
 -- ============================================
 
+-- First, check what type users.id is and create tables accordingly
+-- The users table uses TEXT for id (UUID stored as text)
+
 -- 1. Create favorites table
 CREATE TABLE IF NOT EXISTS favorites (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  media_id TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, media_id)
 );
 
 CREATE INDEX IF NOT EXISTS favorites_media_id_idx ON favorites(media_id);
+CREATE INDEX IF NOT EXISTS favorites_user_id_idx ON favorites(user_id);
 
 -- 2. Create watchlist table
 CREATE TABLE IF NOT EXISTS watchlist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  media_id TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, media_id)
 );
 
 CREATE INDEX IF NOT EXISTS watchlist_media_id_idx ON watchlist(media_id);
+CREATE INDEX IF NOT EXISTS watchlist_user_id_idx ON watchlist(user_id);
 
 -- 3. Create family_members table
 CREATE TABLE IF NOT EXISTS family_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
   name TEXT NOT NULL,
   birth_year INTEGER,
   avatar_emoji TEXT DEFAULT '👧',
@@ -57,8 +62,8 @@ END $$;
 -- 5. Create media_reactions table
 CREATE TABLE IF NOT EXISTS media_reactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  family_member_id UUID NOT NULL REFERENCES family_members(id) ON DELETE CASCADE,
-  media_id TEXT NOT NULL REFERENCES media_items(id) ON DELETE CASCADE,
+  family_member_id UUID NOT NULL,
+  media_id TEXT NOT NULL,
   reaction reaction_type NOT NULL,
   note TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -67,6 +72,7 @@ CREATE TABLE IF NOT EXISTS media_reactions (
 );
 
 CREATE INDEX IF NOT EXISTS media_reactions_media_id_idx ON media_reactions(media_id);
+CREATE INDEX IF NOT EXISTS media_reactions_family_member_id_idx ON media_reactions(family_member_id);
 
 -- ============================================
 -- Done!
