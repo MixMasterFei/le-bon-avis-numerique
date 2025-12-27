@@ -256,7 +256,12 @@ export async function discoverMovies(options: {
   "certification.lte"?: string
   sort_by?: string
   "vote_average.gte"?: string
+  "vote_count.gte"?: string
   year?: string
+  primary_release_year?: number
+  "primary_release_date.gte"?: string
+  "primary_release_date.lte"?: string
+  with_original_language?: string
 }) {
   const params: Record<string, string> = {}
   Object.entries(options).forEach(([key, value]) => {
