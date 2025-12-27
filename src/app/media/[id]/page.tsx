@@ -169,11 +169,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
   let source: "mock" | "external" | "database" = "mock"
   let watchProviders: TMDBWatchProviderResult | null = null
   let trailer: TMDBVideo | null = null
+  let dbId: string | null = null // Track actual database UUID for reactions
 
   // First, try to fetch from database (works with UUID or external IDs)
   media = await fetchFromDatabase(rawId)
   if (media) {
     source = "database"
+    dbId = media.id // This is the actual database UUID
   }
 
   // If not in database and no type prefix, check mock data
@@ -560,7 +562,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Family Reactions */}
-            <FamilyReactions mediaId={media.id} mediaTitle={media.title} />
+            {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
 
             {/* Content Grid */}
             <Card>
