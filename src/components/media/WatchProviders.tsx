@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { ExternalLink, YoutubeIcon, ChevronDown, ChevronUp, Play, ShoppingCart, Gift } from "lucide-react"
+import { YoutubeIcon, ChevronDown, ChevronUp, Play, ShoppingCart, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
 import { getProviderLogoUrl } from "@/lib/tmdb"
@@ -128,18 +128,6 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
             />
           )}
 
-          {/* JustWatch Attribution */}
-          {providers?.link && (
-            <a
-              href={providers.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors pt-2 border-t border-white/10"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Voir tous les détails sur JustWatch
-            </a>
-          )}
         </div>
       )}
     </div>
