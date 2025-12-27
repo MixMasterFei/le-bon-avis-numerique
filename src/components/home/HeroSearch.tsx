@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2 } from "lucide-react"
+import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -149,11 +148,25 @@ export function HeroSearch() {
         {loading && (
           <Loader2 className="absolute right-36 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin z-10" />
         )}
+        {query && !loading && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("")
+              setSuggestions([])
+              setShowDropdown(false)
+              inputRef.current?.focus()
+            }}
+            className="absolute right-36 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600 z-10"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
         <Input
           ref={inputRef}
-          type="search"
+          type="text"
           placeholder="Rechercher un film, une série, un jeu..."
-          className="pl-12 pr-32 h-14 text-lg bg-white text-gray-900 border-0 shadow-xl rounded-xl"
+          className="pl-12 pr-36 h-14 text-lg bg-white text-gray-900 border-0 shadow-xl rounded-xl"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -173,71 +186,30 @@ export function HeroSearch() {
         </Button>
       </form>
 
-      {/* Autocomplete dropdown */}
+      {/* Autocomplete dropdown - positioned fixed to avoid overflow clipping */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
-          <ul className="py-2">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-gray-200 z-[100]">
+          <ul className="py-1 max-h-64 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
               return (
                 <li key={`${suggestion.type}:${suggestion.id}`}>
                   <button
                     type="button"
-                    className={`w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${
-                      index === selectedIndex ? "bg-gray-100" : ""
+                    className={`w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${
+                      index === selectedIndex ? "bg-blue-50" : ""
                     }`}
                     onClick={() => goToMedia(suggestion)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    {/* Poster thumbnail */}
-                    <div className="w-10 h-14 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                      {suggestion.posterUrl ? (
-                        <Image
-                          src={suggestion.posterUrl}
-                          alt={suggestion.title}
-                          width={40}
-                          height={56}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Icon className="h-5 w-5 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Title and meta */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{suggestion.title}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Icon className="h-3 w-3" />
-                          {typeLabels[suggestion.type]}
-                        </span>
-                        {suggestion.year && <span>({suggestion.year})</span>}
-                        {suggestion.ageRec && (
-                          <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded">
-                            {suggestion.ageRec}+
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="font-medium text-gray-900 truncate flex-1">{suggestion.title}</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">{typeLabels[suggestion.type]}</span>
                   </button>
                 </li>
               )
             })}
           </ul>
-
-          {/* See all results link */}
-          <div className="border-t border-gray-100 px-4 py-3">
-            <button
-              type="button"
-              className="w-full text-center text-sm text-primary hover:underline"
-              onClick={submit}
-            >
-              Voir tous les résultats pour &quot;{query}&quot;
-            </button>
-          </div>
         </div>
       )}
     </div>

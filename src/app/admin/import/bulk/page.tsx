@@ -46,15 +46,19 @@ interface DbStats {
   }
 }
 
-type ImportSource = "popular" | "top_rated" | "now_playing" | "family" | "animation" | "kids" | "recent"
+type ImportSource = "popular" | "top_rated" | "now_playing" | "family" | "animation" | "kids" | "recent" | "french" | "classics" | "highly_rated" | "by_year"
 
 const MOVIE_SOURCES: { value: ImportSource; label: string; description: string }[] = [
   { value: "popular", label: "Populaires", description: "Films les plus populaires actuellement" },
-  { value: "top_rated", label: "Mieux notes", description: "Films les mieux notes de tous les temps" },
-  { value: "now_playing", label: "En salles", description: "Films actuellement au cinema" },
+  { value: "top_rated", label: "Mieux notés", description: "Films les mieux notés de tous les temps" },
+  { value: "now_playing", label: "En salles", description: "Films actuellement au cinéma" },
+  { value: "recent", label: "Récents", description: "Films des 2 dernières années" },
   { value: "family", label: "Famille", description: "Films pour toute la famille" },
   { value: "animation", label: "Animation", description: "Films d'animation" },
-  { value: "kids", label: "Enfants", description: "Films pour enfants (animation + famille, -12 ans)" },
+  { value: "kids", label: "Enfants", description: "Films pour enfants (-12 ans)" },
+  { value: "french", label: "Films français", description: "Films en langue française" },
+  { value: "classics", label: "Classiques", description: "Films classiques (avant 2000)" },
+  { value: "highly_rated", label: "Très bien notés", description: "Films avec note > 7/10" },
 ]
 
 const GAME_SOURCES: { value: ImportSource; label: string; description: string }[] = [
@@ -267,6 +271,26 @@ export default function BulkImportPage() {
                 <div className={`text-xs ${lastResult.stats.errors > 0 ? "text-red-600" : "text-gray-400"}`}>Erreurs</div>
               </div>
             </div>
+
+            {/* Error Details */}
+            {lastResult.stats.errors > 0 && lastResult.stats.details && lastResult.stats.details.length > 0 && (
+              <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-sm font-medium text-red-700 mb-2">Détails des erreurs:</p>
+                <div className="max-h-40 overflow-y-auto text-xs text-red-600 space-y-1">
+                  {lastResult.stats.details
+                    .filter((d) => d.startsWith("Error"))
+                    .slice(0, 20)
+                    .map((detail, i) => (
+                      <p key={i}>{detail}</p>
+                    ))}
+                  {lastResult.stats.details.filter((d) => d.startsWith("Error")).length > 20 && (
+                    <p className="text-red-500 font-medium">
+                      ... et {lastResult.stats.details.filter((d) => d.startsWith("Error")).length - 20} autres erreurs
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -316,10 +340,11 @@ export default function BulkImportPage() {
                 className="w-full p-2 border rounded-lg"
                 disabled={importing === "movies"}
               >
-                <option value={1}>1 page (20 films)</option>
-                <option value={5}>5 pages (100 films)</option>
-                <option value={10}>10 pages (200 films)</option>
-                <option value={20}>20 pages (400 films)</option>
+                <option value={5}>5 pages (100 films) - ~30s</option>
+                <option value={10}>10 pages (200 films) - ~1min</option>
+                <option value={20}>20 pages (400 films) - ~2min</option>
+                <option value={30}>30 pages (600 films) - ~3min</option>
+                <option value={50}>50 pages (1000 films) - ~5min</option>
               </select>
             </div>
 
@@ -412,19 +437,23 @@ export default function BulkImportPage() {
         <CardContent>
           <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
             <li>
-              Les elements existants sont automatiquement ignores (base sur l&apos;ID TMDB/IGDB).
+              Les éléments existants sont automatiquement ignorés (basé sur l&apos;ID TMDB/IGDB).
             </li>
             <li>
-              Commencez par &quot;Enfants&quot; ou &quot;Famille&quot; pour un contenu adapte aux plus jeunes.
+              <strong>Pour remplir rapidement votre base</strong>, importez depuis plusieurs sources différentes :
+              Populaires, Mieux notés, Récents, Films français, Classiques, etc.
             </li>
             <li>
-              L&apos;import peut prendre quelques minutes selon le nombre d&apos;elements.
+              Commencez par &quot;Enfants&quot; ou &quot;Famille&quot; pour un contenu adapté aux plus jeunes.
             </li>
             <li>
-              Les certifications (CSA, PEGI) sont automatiquement importees quand disponibles.
+              L&apos;import peut prendre plusieurs minutes selon le nombre d&apos;éléments (50 pages ≈ 5 min).
             </li>
             <li>
-              Vous pouvez lancer plusieurs imports successifs pour enrichir votre base.
+              Les certifications (CSA, PEGI) sont automatiquement importées quand disponibles.
+            </li>
+            <li>
+              <strong>Objectif recommandé</strong> : 1000-2000 films pour une bonne base de départ.
             </li>
           </ul>
         </CardContent>
