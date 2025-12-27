@@ -14,6 +14,7 @@ import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
+import { MediaActions } from "@/components/media/MediaActions"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -470,7 +471,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </div>
 
               {/* Watch Providers & Trailer - Compact */}
-              <WatchProviders providers={watchProviders} trailer={trailer} className="mb-6" />
+              <WatchProviders providers={watchProviders} trailer={trailer} className="mb-4" />
+
+              {/* Favorite & Watchlist Actions */}
+              {dbId && <MediaActions mediaId={dbId} className="mb-6" />}
 
               {/* Rating Summary */}
               <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">

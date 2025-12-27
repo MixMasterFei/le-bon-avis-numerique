@@ -2,14 +2,47 @@
 
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { User, Mail, Calendar, Shield, Star, MessageSquare } from "lucide-react"
+import { useState, useEffect } from "react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FamilyMembers } from "@/components/profile/FamilyMembers"
+import Link from "next/link"
+
+interface UserStats {
+  reviews: number
+  favorites: number
+  watchlist: number
+  familyMembers: number
+  reactions: number
+  memberSince: string
+}
 
 export default function ProfilPage() {
   const { data: session, status } = useSession()
+  const [stats, setStats] = useState<UserStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/user/stats")
+        if (res.ok) {
+          const data = await res.json()
+          setStats(data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats:", err)
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+
+    if (session?.user) {
+      fetchStats()
+    }
+  }, [session])
 
   if (status === "loading") {
     return (
@@ -27,6 +60,11 @@ export default function ProfilPage() {
   }
 
   const isAdmin = session.user.role === "ADMIN"
+
+  const formatMemberSince = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
@@ -62,6 +100,12 @@ export default function ProfilPage() {
                 <Mail className="h-4 w-4" />
                 {session.user.email}
               </p>
+              {stats && (
+                <p className="text-sm text-gray-500 flex items-center gap-2 justify-center sm:justify-start mt-1">
+                  <Calendar className="h-4 w-4" />
+                  Membre depuis {formatMemberSince(stats.memberSince)}
+                </p>
+              )}
             </div>
 
             <Button variant="outline">Modifier le profil</Button>
@@ -70,36 +114,52 @@ export default function ProfilPage() {
       </Card>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-6 text-center">
             <div className="inline-flex p-3 bg-amber-100 rounded-full mb-3">
               <Star className="h-6 w-6 text-amber-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">0</p>
-            <p className="text-sm text-gray-600">Avis donnes</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.reviews || 0}
+            </p>
+            <p className="text-sm text-gray-600">Avis</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="inline-flex p-3 bg-red-100 rounded-full mb-3">
+              <Heart className="h-6 w-6 text-red-600" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.favorites || 0}
+            </p>
+            <p className="text-sm text-gray-600">Favoris</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6 text-center">
             <div className="inline-flex p-3 bg-blue-100 rounded-full mb-3">
-              <MessageSquare className="h-6 w-6 text-blue-600" />
+              <Bookmark className="h-6 w-6 text-blue-600" />
             </div>
-            <p className="text-2xl font-bold text-gray-900">0</p>
-            <p className="text-sm text-gray-600">Commentaires</p>
+            <p className="text-2xl font-bold text-gray-900">
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.watchlist || 0}
+            </p>
+            <p className="text-sm text-gray-600">A voir</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-6 text-center">
             <div className="inline-flex p-3 bg-green-100 rounded-full mb-3">
-              <Calendar className="h-6 w-6 text-green-600" />
+              <Users className="h-6 w-6 text-green-600" />
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {new Date().toLocaleDateString("fr-FR", { month: "short", year: "numeric" })}
+              {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.reactions || 0}
             </p>
-            <p className="text-sm text-gray-600">Membre depuis</p>
+            <p className="text-sm text-gray-600">Reactions</p>
           </CardContent>
         </Card>
       </div>
@@ -107,22 +167,36 @@ export default function ProfilPage() {
       {/* Family Members */}
       <FamilyMembers />
 
-      {/* Recent Activity */}
+      {/* Quick Links */}
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Activité récente</CardTitle>
-          <CardDescription>Vos derniers avis et interactions</CardDescription>
+          <CardTitle>Mes listes</CardTitle>
+          <CardDescription>Accedez a vos contenus sauvegardes</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-gray-500">
-            <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium">Aucune activité pour le moment</p>
-            <p className="text-sm mt-1">
-              Commencez par donner votre avis sur un film ou une série !
-            </p>
-            <Button className="mt-4" asChild>
-              <a href="/films">Découvrir des films</a>
-            </Button>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Link href="/mes-favoris">
+              <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div className="p-3 bg-red-100 rounded-full">
+                  <Heart className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-medium">Mes favoris</p>
+                  <p className="text-sm text-gray-500">{stats?.favorites || 0} contenus</p>
+                </div>
+              </div>
+            </Link>
+            <Link href="/ma-liste">
+              <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <Bookmark className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium">Ma liste a voir</p>
+                  <p className="text-sm text-gray-500">{stats?.watchlist || 0} contenus</p>
+                </div>
+              </div>
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -147,7 +221,7 @@ export default function ProfilPage() {
               <p className="text-sm text-gray-500">Modifier vos preferences de cookies</p>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <a href="/cookies">Gerer</a>
+              <Link href="/cookies">Gerer</Link>
             </Button>
           </div>
 

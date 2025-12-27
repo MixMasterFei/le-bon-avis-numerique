@@ -62,8 +62,9 @@ export async function middleware(request: NextRequest) {
 
   // Check admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
-    // Development bypass - set ADMIN_BYPASS_AUTH=true in env to skip auth
-    const bypassAuth = process.env.ADMIN_BYPASS_AUTH === "true"
+    // Development-only bypass - NEVER works in production
+    const isDev = process.env.NODE_ENV === "development"
+    const bypassAuth = isDev && process.env.ADMIN_BYPASS_AUTH === "true"
 
     if (!bypassAuth) {
       const session = await auth()
