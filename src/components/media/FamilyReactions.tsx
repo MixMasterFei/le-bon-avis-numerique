@@ -43,14 +43,16 @@ const REACTIONS: {
   icon: React.ComponentType<{ className?: string }>
   color: string
   bgColor: string
+  selectedBg: string
+  ringColor: string
 }[] = [
-  { value: "LOVED", label: "Adoré", icon: Heart, color: "text-red-500", bgColor: "bg-red-50 hover:bg-red-100" },
-  { value: "LIKED", label: "Bien aimé", icon: ThumbsUp, color: "text-green-500", bgColor: "bg-green-50 hover:bg-green-100" },
-  { value: "OK", label: "Bof", icon: Meh, color: "text-yellow-500", bgColor: "bg-yellow-50 hover:bg-yellow-100" },
-  { value: "SCARED", label: "A eu peur", icon: Ghost, color: "text-purple-500", bgColor: "bg-purple-50 hover:bg-purple-100" },
-  { value: "BORED", label: "S'est ennuyé", icon: Frown, color: "text-gray-500", bgColor: "bg-gray-50 hover:bg-gray-100" },
-  { value: "TOO_YOUNG", label: "Trop jeune", icon: Baby, color: "text-blue-500", bgColor: "bg-blue-50 hover:bg-blue-100" },
-  { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100" },
+  { value: "LOVED", label: "Adoré", icon: Heart, color: "text-red-500", bgColor: "bg-red-50 hover:bg-red-100", selectedBg: "bg-red-100", ringColor: "ring-red-400" },
+  { value: "LIKED", label: "Bien aimé", icon: ThumbsUp, color: "text-green-500", bgColor: "bg-green-50 hover:bg-green-100", selectedBg: "bg-green-100", ringColor: "ring-green-400" },
+  { value: "OK", label: "Bof", icon: Meh, color: "text-yellow-500", bgColor: "bg-yellow-50 hover:bg-yellow-100", selectedBg: "bg-yellow-100", ringColor: "ring-yellow-400" },
+  { value: "SCARED", label: "A eu peur", icon: Ghost, color: "text-purple-500", bgColor: "bg-purple-50 hover:bg-purple-100", selectedBg: "bg-purple-100", ringColor: "ring-purple-400" },
+  { value: "BORED", label: "S'est ennuyé", icon: Frown, color: "text-gray-500", bgColor: "bg-gray-50 hover:bg-gray-100", selectedBg: "bg-gray-200", ringColor: "ring-gray-400" },
+  { value: "TOO_YOUNG", label: "Trop jeune", icon: Baby, color: "text-blue-500", bgColor: "bg-blue-50 hover:bg-blue-100", selectedBg: "bg-blue-100", ringColor: "ring-blue-400" },
+  { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100", selectedBg: "bg-orange-100", ringColor: "ring-orange-400" },
 ]
 
 export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
@@ -267,7 +269,7 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
                         disabled={isLoading}
                         className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-all ${
                           isSelected
-                            ? `${reaction.bgColor} ring-2 ring-offset-1 ring-${reaction.color.replace("text-", "")}/50`
+                            ? `${reaction.selectedBg} ring-2 ring-offset-1 ${reaction.ringColor}`
                             : "bg-gray-50 hover:bg-gray-100"
                         } ${isLoading ? "opacity-50" : ""}`}
                       >
@@ -276,7 +278,7 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
                         ) : (
                           <Icon className={`h-3.5 w-3.5 ${isSelected ? reaction.color : "text-gray-400"}`} />
                         )}
-                        <span className={isSelected ? "font-medium" : ""}>{reaction.label}</span>
+                        <span className={isSelected ? `font-medium ${reaction.color}` : ""}>{reaction.label}</span>
                       </button>
                     )
                   })}
