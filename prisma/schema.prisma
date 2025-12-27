@@ -124,18 +124,39 @@ model MediaItem {
   igdbId       Int?    @unique @map("igdb_id")
   googleBookId String? @unique @map("google_book_id")
 
+  // Data quality tracking
+  dataSource       DataSource @default(TMDB) @map("data_source")
+  dataQualityScore Int        @default(0) @map("data_quality_score") // 0-100
+  isEnriched       Boolean    @default(false) @map("is_enriched") // Has expert content
+  lastVerifiedAt   DateTime?  @map("last_verified_at")
+  enrichedBy       String?    @map("enriched_by") // User ID who enriched
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  contentMetrics ContentMetrics?
-  reviews        Review[]
-  favorites      Favorite[]
-  watchlist      Watchlist[]
-  reactions      MediaReaction[]
+  contentMetrics       ContentMetrics?
+  reviews              Review[]
+  favorites            Favorite[]
+  watchlist            Watchlist[]
+  reactions            MediaReaction[]
+  credits              MediaCredit[]
+  similarToA           MediaSimilarity[] @relation("SimilarMediaA")
+  similarToB           MediaSimilarity[] @relation("SimilarMediaB")
+  streamingAvailability StreamingAvailability[]
 
   @@index([type])
   @@index([expertAgeRec])
+  @@index([dataQualityScore])
+  @@index([isEnriched])
   @@map("media_items")
+}
+
+enum DataSource {
+  TMDB
+  IGDB
+  GOOGLE_BOOKS
+  EXPERT      // Manually entered by expert
+  COMMUNITY   // User-submitted
 }
 
 model ContentMetrics {
@@ -290,4 +311,151 @@ model MediaReaction {
   @@unique([familyMemberId, mediaId])
   @@index([mediaId])
   @@map("media_reactions")
+}
+
+// ============================================
+// TAXONOMY - Normalized Genres & Topics
+// ============================================
+
+model Genre {
+  id        String  @id @default(uuid())
+  slug      String  @unique // "animation", "comedy"
+  name      String  // "Animation"
+  nameFr    String  @map("name_fr") // "Animation"
+  tmdbId    Int?    @unique @map("tmdb_id")
+  igdbId    Int?    @unique @map("igdb_id")
+  parentId  String? @map("parent_id") // For hierarchy
+
+  parent   Genre?  @relation("GenreHierarchy", fields: [parentId], references: [id])
+  children Genre[] @relation("GenreHierarchy")
+
+  @@map("genres")
+}
+
+model Topic {
+  id        String      @id @default(uuid())
+  slug      String      @unique // "aviation", "friendship"
+  name      String      // "Aviation"
+  nameFr    String      @map("name_fr") // "Aviation"
+  category  TopicCategory // theme, emotion, setting, activity
+  synonyms  String[]    // ["avion", "pilote", "vol"]
+  icon      String?     // Emoji or icon name
+
+  @@index([category])
+  @@map("topics")
+}
+
+enum TopicCategory {
+  THEME       // Aviation, Space, Magic
+  EMOTION     // Friendship, Love, Fear
+  SETTING     // City, Nature, Fantasy World
+  ACTIVITY    // Sport, Music, Cooking
+  CHARACTER   // Princesses, Dinosaurs, Robots
+}
+
+// ============================================
+// CAST & CREW
+// ============================================
+
+model Person {
+  id          String  @id @default(uuid())
+  name        String
+  tmdbId      Int?    @unique @map("tmdb_id")
+  igdbId      Int?    @unique @map("igdb_id")
+  imageUrl    String? @map("image_url")
+  knownFor    String? @map("known_for") // "Director", "Actor"
+
+  credits MediaCredit[]
+
+  @@index([name])
+  @@map("persons")
+}
+
+model MediaCredit {
+  id        String  @id @default(uuid())
+  mediaId   String  @map("media_id")
+  personId  String  @map("person_id")
+  role      CreditRole
+  character String? // For actors: character name
+  order     Int?    // Billing order
+
+  media  MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  person Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, personId, role])
+  @@index([personId])
+  @@map("media_credits")
+}
+
+enum CreditRole {
+  DIRECTOR
+  ACTOR
+  WRITER
+  COMPOSER
+  PRODUCER
+  DEVELOPER  // For games
+  AUTHOR     // For books
+}
+
+// ============================================
+// MEDIA SIMILARITY (for recommendations)
+// ============================================
+
+model MediaSimilarity {
+  id              String   @id @default(uuid())
+  mediaIdA        String   @map("media_id_a")
+  mediaIdB        String   @map("media_id_b")
+  similarityScore Float    @map("similarity_score") // 0.0 - 1.0
+  reasons         String[] // ["same_director", "similar_themes", "same_studio"]
+  source          SimilaritySource @default(ALGORITHM)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  mediaA MediaItem @relation("SimilarMediaA", fields: [mediaIdA], references: [id], onDelete: Cascade)
+  mediaB MediaItem @relation("SimilarMediaB", fields: [mediaIdB], references: [id], onDelete: Cascade)
+
+  @@unique([mediaIdA, mediaIdB])
+  @@index([mediaIdA])
+  @@index([mediaIdB])
+  @@index([similarityScore])
+  @@map("media_similarities")
+}
+
+enum SimilaritySource {
+  ALGORITHM   // Auto-computed
+  TMDB        // From TMDB similar movies
+  EXPERT      // Manually curated
+  COMMUNITY   // User-suggested
+}
+
+// ============================================
+// STREAMING AVAILABILITY
+// ============================================
+
+model StreamingAvailability {
+  id             String    @id @default(uuid())
+  mediaId        String    @map("media_id")
+  provider       String    // "Netflix", "Disney+"
+  providerId     Int?      @map("provider_id") // TMDB/JustWatch provider ID
+  country        String    @default("FR") // ISO country code
+  type           StreamingType
+  availableFrom  DateTime? @map("available_from")
+  availableUntil DateTime? @map("available_until")
+  link           String?   // Direct link to watch
+  lastChecked    DateTime  @default(now()) @map("last_checked")
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, provider, country, type])
+  @@index([provider])
+  @@index([country])
+  @@index([lastChecked])
+  @@map("streaming_availability")
+}
+
+enum StreamingType {
+  SUBSCRIPTION  // Flatrate (Netflix, Disney+)
+  RENT
+  BUY
+  FREE
+  ADS           // Free with ads
 }
