@@ -12,7 +12,7 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewSummary } from "@/components/media/ReviewCard"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
-import { WatchProviders, WatchProvidersCompact } from "@/components/media/WatchProviders"
+import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
@@ -467,13 +467,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <ReviewSummary reviews={media.reviews} />
               </div>
 
-              {/* Trailer & Quick Streaming Info */}
-              <div className="mb-6">
-                <WatchProvidersCompact providers={watchProviders} trailer={trailer} />
-              </div>
-
-              {/* Full Watch Providers Section */}
-              <WatchProviders providers={watchProviders} trailer={null} className="mb-6" />
+              {/* Watch Providers & Trailer - Compact */}
+              <WatchProviders providers={watchProviders} trailer={trailer} className="mb-6" />
 
               {/* Rating Summary */}
               <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
