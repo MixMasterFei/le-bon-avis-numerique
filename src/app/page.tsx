@@ -9,6 +9,7 @@ import { FeaturedMovies } from "@/components/home/FeaturedMovies"
 import { RecentMovies } from "@/components/home/RecentMovies"
 import { FamilyImageSection, TestimonialsSection } from "@/components/home/FamilyImageSection"
 import { FamilyRecommendations } from "@/components/home/FamilyRecommendations"
+import { FamilyMovieNight } from "@/components/home/FamilyMovieNight"
 
 const categories = [
   { name: "Films", href: "/films", icon: Film, color: "bg-red-500" },
@@ -148,7 +149,14 @@ export default function HomePage() {
       <TestimonialsSection />
 
       {/* Family Recommendations - Only shows if logged in with family data */}
-      <FamilyRecommendations />
+      <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-8">
+            <FamilyRecommendations />
+            <FamilyMovieNight />
+          </div>
+        </div>
+      </section>
 
       {/* Recent Movies Section */}
       <section className="py-16 bg-white">

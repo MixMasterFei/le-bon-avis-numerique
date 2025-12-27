@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20")
   const maxAge = searchParams.get("maxAge")
   const genres = searchParams.get("genres")
+  const topics = searchParams.get("topics")
   const platforms = searchParams.get("platforms")
   const search = searchParams.get("q")
 
@@ -33,6 +34,26 @@ export async function GET(request: NextRequest) {
       where.genres = { hasSome: genreList }
     }
 
+    // Filter by topics/themes (search in topics array AND in genres for flexibility)
+    // This allows filtering by themes like "Aviation", "Famille", etc.
+    if (topics) {
+      const topicList = topics.split(",").map(t => t.trim())
+      // Search in both topics and genres arrays, and also in synopsis for keyword matching
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        {
+          OR: [
+            { topics: { hasSome: topicList } },
+            { genres: { hasSome: topicList } },
+            // Also search in synopsis for theme keywords
+            ...topicList.map(topic => ({
+              synopsisFr: { contains: topic, mode: "insensitive" as const }
+            })),
+          ]
+        }
+      ]
+    }
+
     // Filter by platforms (any match)
     if (platforms) {
       const platformList = platforms.split(",").map(p => p.trim())
@@ -42,6 +63,7 @@ export async function GET(request: NextRequest) {
     // Search by title
     if (search) {
       where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         {
           OR: [
             { title: { contains: search, mode: "insensitive" } },

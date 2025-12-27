@@ -17,16 +17,26 @@ const platforms = [
 ]
 
 const topics = [
-  "Famille",
-  "Aventure",
+  // Genres populaires
   "Animation",
-  "Éducatif",
+  "Aventure",
+  "Comédie",
   "Fantastique",
   "Science-Fiction",
-  "Comédie",
+  // Thèmes famille
+  "Famille",
+  "Éducatif",
   "Animaux",
   "Super-héros",
+  // Thèmes spécifiques
+  "Aviation",
+  "Espace",
+  "Magie",
+  "Nature",
+  "Sport",
+  "Musique",
   "Histoire",
+  "Amitié",
 ]
 
 interface FilterSidebarProps {

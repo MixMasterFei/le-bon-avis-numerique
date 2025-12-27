@@ -42,7 +42,7 @@ export default function FilmsPage() {
           dbParams.set("platforms", filters.platforms.join(","))
         }
         if (filters.topics.length > 0) {
-          dbParams.set("genres", filters.topics.join(","))
+          dbParams.set("topics", filters.topics.join(","))
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
