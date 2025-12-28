@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Film,
   Gamepad2,
@@ -13,9 +13,12 @@ import {
   Loader2,
   Star,
   MessageSquare,
+  Sparkles,
+  Square,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 
 interface ImportStats {
   total: number
@@ -80,6 +83,18 @@ const GAME_SOURCES: { value: ImportSource; label: string; description: string }[
   { value: "recent", label: "Récents", description: "Jeux sortis dans les 6 derniers mois" },
 ]
 
+interface AutoImportProgress {
+  isRunning: boolean
+  currentSource: string
+  sourceIndex: number
+  totalSources: number
+  currentPage: number
+  totalPages: number
+  totalImported: number
+  totalSkipped: number
+  totalErrors: number
+}
+
 export default function BulkImportPage() {
   const [stats, setStats] = useState<DbStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -92,6 +107,14 @@ export default function BulkImportPage() {
   const [tvPages, setTvPages] = useState(5)
   const [gameSource, setGameSource] = useState<ImportSource>("popular")
   const [gameLimit, setGameLimit] = useState(100)
+
+  // Auto-import state
+  const [autoImportMovies, setAutoImportMovies] = useState<AutoImportProgress | null>(null)
+  const [autoImportTV, setAutoImportTV] = useState<AutoImportProgress | null>(null)
+  const [autoImportGames, setAutoImportGames] = useState<AutoImportProgress | null>(null)
+  const stopMoviesRef = useRef(false)
+  const stopTVRef = useRef(false)
+  const stopGamesRef = useRef(false)
 
   const fetchStats = async () => {
     setLoading(true)
@@ -141,13 +164,244 @@ export default function BulkImportPage() {
       }
 
       setLastResult({ type, stats: data.stats })
-      fetchStats() // Refresh stats
+      fetchStats()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
       setImporting(null)
     }
   }
+
+  // Auto-import movies through all sources
+  const handleAutoImportMovies = async () => {
+    stopMoviesRef.current = false
+    const sources = MOVIE_SOURCES
+    const pagesPerSource = 10 // Max pages per source
+
+    setAutoImportMovies({
+      isRunning: true,
+      currentSource: sources[0].label,
+      sourceIndex: 0,
+      totalSources: sources.length,
+      currentPage: 1,
+      totalPages: pagesPerSource,
+      totalImported: 0,
+      totalSkipped: 0,
+      totalErrors: 0,
+    })
+
+    let totalImported = 0
+    let totalSkipped = 0
+    let totalErrors = 0
+
+    for (let sourceIdx = 0; sourceIdx < sources.length; sourceIdx++) {
+      if (stopMoviesRef.current) break
+
+      const source = sources[sourceIdx]
+
+      // Import pages for this source
+      for (let startPage = 1; startPage <= 50; startPage += pagesPerSource) {
+        if (stopMoviesRef.current) break
+
+        setAutoImportMovies(prev => prev ? {
+          ...prev,
+          currentSource: source.label,
+          sourceIndex: sourceIdx,
+          currentPage: startPage,
+        } : null)
+
+        try {
+          const res = await fetch("/api/admin/import/movies", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              source: source.value,
+              pages: pagesPerSource,
+              startPage,
+              skipExisting: true,
+            }),
+          })
+
+          const data = await res.json()
+
+          if (res.ok && data.stats) {
+            totalImported += data.stats.imported
+            totalSkipped += data.stats.skipped
+            totalErrors += data.stats.errors
+
+            setAutoImportMovies(prev => prev ? {
+              ...prev,
+              totalImported,
+              totalSkipped,
+              totalErrors,
+            } : null)
+
+            // If nothing new was imported, move to next source
+            if (data.stats.imported === 0) {
+              break
+            }
+          }
+        } catch (err) {
+          totalErrors++
+        }
+
+        // Small delay between requests
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    setAutoImportMovies(null)
+    fetchStats()
+  }
+
+  // Auto-import TV through all sources
+  const handleAutoImportTV = async () => {
+    stopTVRef.current = false
+    const sources = TV_SOURCES
+    const pagesPerSource = 10
+
+    setAutoImportTV({
+      isRunning: true,
+      currentSource: sources[0].label,
+      sourceIndex: 0,
+      totalSources: sources.length,
+      currentPage: 1,
+      totalPages: pagesPerSource,
+      totalImported: 0,
+      totalSkipped: 0,
+      totalErrors: 0,
+    })
+
+    let totalImported = 0
+    let totalSkipped = 0
+    let totalErrors = 0
+
+    for (let sourceIdx = 0; sourceIdx < sources.length; sourceIdx++) {
+      if (stopTVRef.current) break
+
+      const source = sources[sourceIdx]
+
+      for (let startPage = 1; startPage <= 50; startPage += pagesPerSource) {
+        if (stopTVRef.current) break
+
+        setAutoImportTV(prev => prev ? {
+          ...prev,
+          currentSource: source.label,
+          sourceIndex: sourceIdx,
+          currentPage: startPage,
+        } : null)
+
+        try {
+          const res = await fetch("/api/admin/import/tv", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              source: source.value,
+              pages: pagesPerSource,
+              startPage,
+              skipExisting: true,
+            }),
+          })
+
+          const data = await res.json()
+
+          if (res.ok && data.stats) {
+            totalImported += data.stats.imported
+            totalSkipped += data.stats.skipped
+            totalErrors += data.stats.errors
+
+            setAutoImportTV(prev => prev ? {
+              ...prev,
+              totalImported,
+              totalSkipped,
+              totalErrors,
+            } : null)
+
+            if (data.stats.imported === 0) {
+              break
+            }
+          }
+        } catch (err) {
+          totalErrors++
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+    }
+
+    setAutoImportTV(null)
+    fetchStats()
+  }
+
+  // Auto-import games through all sources
+  const handleAutoImportGames = async () => {
+    stopGamesRef.current = false
+    const sources = GAME_SOURCES
+
+    setAutoImportGames({
+      isRunning: true,
+      currentSource: sources[0].label,
+      sourceIndex: 0,
+      totalSources: sources.length,
+      currentPage: 1,
+      totalPages: 1,
+      totalImported: 0,
+      totalSkipped: 0,
+      totalErrors: 0,
+    })
+
+    let totalImported = 0
+    let totalSkipped = 0
+    let totalErrors = 0
+
+    for (let sourceIdx = 0; sourceIdx < sources.length; sourceIdx++) {
+      if (stopGamesRef.current) break
+
+      const source = sources[sourceIdx]
+
+      setAutoImportGames(prev => prev ? {
+        ...prev,
+        currentSource: source.label,
+        sourceIndex: sourceIdx,
+      } : null)
+
+      try {
+        const res = await fetch("/api/admin/import/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: source.value,
+            limit: 500,
+            skipExisting: true,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (res.ok && data.stats) {
+          totalImported += data.stats.imported
+          totalSkipped += data.stats.skipped
+          totalErrors += data.stats.errors
+
+          setAutoImportGames(prev => prev ? {
+            ...prev,
+            totalImported,
+            totalSkipped,
+            totalErrors,
+          } : null)
+        }
+      } catch (err) {
+        totalErrors++
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    setAutoImportGames(null)
+    fetchStats()
+  }
+
+  const isAnyAutoRunning = autoImportMovies?.isRunning || autoImportTV?.isRunning || autoImportGames?.isRunning
 
   return (
     <div className="container mx-auto py-8 px-4">
@@ -281,7 +535,7 @@ export default function BulkImportPage() {
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center gap-3">
             <CheckCircle className="h-5 w-5 text-green-600" />
-            <CardTitle className="text-lg">Dernier import ({lastResult.type === "movies" ? "Films" : "Jeux"})</CardTitle>
+            <CardTitle className="text-lg">Dernier import ({lastResult.type === "movies" ? "Films" : lastResult.type === "tv" ? "Séries" : "Jeux"})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4 text-center">
@@ -347,13 +601,38 @@ export default function BulkImportPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Auto-import progress */}
+            {autoImportMovies && (
+              <div className="space-y-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-purple-700">
+                    {autoImportMovies.currentSource}
+                  </span>
+                  <span className="text-purple-600">
+                    Source {autoImportMovies.sourceIndex + 1}/{autoImportMovies.totalSources}
+                  </span>
+                </div>
+                <Progress
+                  value={(autoImportMovies.sourceIndex / autoImportMovies.totalSources) * 100}
+                  className="h-2"
+                />
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span className="text-green-600">+{autoImportMovies.totalImported} importés</span>
+                  <span className="text-blue-600">{autoImportMovies.totalSkipped} existants</span>
+                  {autoImportMovies.totalErrors > 0 && (
+                    <span className="text-red-500">{autoImportMovies.totalErrors} erreurs</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-2">Source</label>
               <select
                 value={movieSource}
                 onChange={(e) => setMovieSource(e.target.value as ImportSource)}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "movies"}
+                disabled={importing === "movies" || !!autoImportMovies}
               >
                 {MOVIE_SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -371,7 +650,7 @@ export default function BulkImportPage() {
                 value={moviePages}
                 onChange={(e) => setMoviePages(Number(e.target.value))}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "movies"}
+                disabled={importing === "movies" || !!autoImportMovies}
               >
                 <option value={2}>2 pages (40 films)</option>
                 <option value={5}>5 pages (100 films)</option>
@@ -379,23 +658,46 @@ export default function BulkImportPage() {
               </select>
             </div>
 
-            <Button
-              onClick={() => handleImport("movies")}
-              disabled={importing !== null}
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {importing === "movies" ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Import en cours...
-                </>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleImport("movies")}
+                disabled={importing !== null || isAnyAutoRunning}
+                variant="outline"
+                className="flex-1"
+              >
+                {importing === "movies" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Import...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Un lot
+                  </>
+                )}
+              </Button>
+
+              {autoImportMovies ? (
+                <Button
+                  onClick={() => stopMoviesRef.current = true}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Arrêter
+                </Button>
               ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Lancer l&apos;import
-                </>
+                <Button
+                  onClick={handleAutoImportMovies}
+                  disabled={importing !== null || isAnyAutoRunning}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Auto
+                </Button>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -408,13 +710,38 @@ export default function BulkImportPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Auto-import progress */}
+            {autoImportTV && (
+              <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-blue-700">
+                    {autoImportTV.currentSource}
+                  </span>
+                  <span className="text-blue-600">
+                    Source {autoImportTV.sourceIndex + 1}/{autoImportTV.totalSources}
+                  </span>
+                </div>
+                <Progress
+                  value={(autoImportTV.sourceIndex / autoImportTV.totalSources) * 100}
+                  className="h-2"
+                />
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span className="text-green-600">+{autoImportTV.totalImported} importés</span>
+                  <span className="text-blue-600">{autoImportTV.totalSkipped} existants</span>
+                  {autoImportTV.totalErrors > 0 && (
+                    <span className="text-red-500">{autoImportTV.totalErrors} erreurs</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-2">Source</label>
               <select
                 value={tvSource}
                 onChange={(e) => setTvSource(e.target.value as ImportSource)}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "tv"}
+                disabled={importing === "tv" || !!autoImportTV}
               >
                 {TV_SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -432,7 +759,7 @@ export default function BulkImportPage() {
                 value={tvPages}
                 onChange={(e) => setTvPages(Number(e.target.value))}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "tv"}
+                disabled={importing === "tv" || !!autoImportTV}
               >
                 <option value={2}>2 pages (40 séries)</option>
                 <option value={5}>5 pages (100 séries)</option>
@@ -440,23 +767,46 @@ export default function BulkImportPage() {
               </select>
             </div>
 
-            <Button
-              onClick={() => handleImport("tv")}
-              disabled={importing !== null}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              {importing === "tv" ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Import en cours...
-                </>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleImport("tv")}
+                disabled={importing !== null || isAnyAutoRunning}
+                variant="outline"
+                className="flex-1"
+              >
+                {importing === "tv" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Import...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Un lot
+                  </>
+                )}
+              </Button>
+
+              {autoImportTV ? (
+                <Button
+                  onClick={() => stopTVRef.current = true}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Arrêter
+                </Button>
               ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Lancer l&apos;import
-                </>
+                <Button
+                  onClick={handleAutoImportTV}
+                  disabled={importing !== null || isAnyAutoRunning}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Auto
+                </Button>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -469,13 +819,38 @@ export default function BulkImportPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Auto-import progress */}
+            {autoImportGames && (
+              <div className="space-y-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-green-700">
+                    {autoImportGames.currentSource}
+                  </span>
+                  <span className="text-green-600">
+                    Source {autoImportGames.sourceIndex + 1}/{autoImportGames.totalSources}
+                  </span>
+                </div>
+                <Progress
+                  value={(autoImportGames.sourceIndex / autoImportGames.totalSources) * 100}
+                  className="h-2"
+                />
+                <div className="flex justify-between text-xs text-gray-600">
+                  <span className="text-green-600">+{autoImportGames.totalImported} importés</span>
+                  <span className="text-blue-600">{autoImportGames.totalSkipped} existants</span>
+                  {autoImportGames.totalErrors > 0 && (
+                    <span className="text-red-500">{autoImportGames.totalErrors} erreurs</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium mb-2">Source</label>
               <select
                 value={gameSource}
                 onChange={(e) => setGameSource(e.target.value as ImportSource)}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "games"}
+                disabled={importing === "games" || !!autoImportGames}
               >
                 {GAME_SOURCES.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -491,7 +866,7 @@ export default function BulkImportPage() {
                 value={gameLimit}
                 onChange={(e) => setGameLimit(Number(e.target.value))}
                 className="w-full p-2 border rounded-lg"
-                disabled={importing === "games"}
+                disabled={importing === "games" || !!autoImportGames}
               >
                 <option value={50}>50 jeux</option>
                 <option value={100}>100 jeux</option>
@@ -500,23 +875,46 @@ export default function BulkImportPage() {
               </select>
             </div>
 
-            <Button
-              onClick={() => handleImport("games")}
-              disabled={importing !== null}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              {importing === "games" ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Import en cours...
-                </>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => handleImport("games")}
+                disabled={importing !== null || isAnyAutoRunning}
+                variant="outline"
+                className="flex-1"
+              >
+                {importing === "games" ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Import...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Un lot
+                  </>
+                )}
+              </Button>
+
+              {autoImportGames ? (
+                <Button
+                  onClick={() => stopGamesRef.current = true}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Square className="h-4 w-4 mr-2" />
+                  Arrêter
+                </Button>
               ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Lancer l&apos;import
-                </>
+                <Button
+                  onClick={handleAutoImportGames}
+                  disabled={importing !== null || isAnyAutoRunning}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Auto
+                </Button>
               )}
-            </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -529,17 +927,16 @@ export default function BulkImportPage() {
         <CardContent>
           <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
             <li>
+              <strong>Mode Auto</strong>: Parcourt automatiquement toutes les sources (Populaires, Mieux notés, Récents, etc.) et importe le maximum de contenu.
+            </li>
+            <li>
               Les éléments existants sont automatiquement ignorés (basé sur l&apos;ID TMDB/IGDB).
             </li>
             <li>
-              <strong>Pour remplir rapidement votre base</strong>, importez depuis plusieurs sources différentes :
-              Populaires, Mieux notés, Récents, Films français, Classiques, etc.
+              Vous pouvez arrêter l&apos;import auto à tout moment avec le bouton &quot;Arrêter&quot;.
             </li>
             <li>
-              Commencez par &quot;Enfants&quot; ou &quot;Famille&quot; pour un contenu adapté aux plus jeunes.
-            </li>
-            <li>
-              Limite de 200 films par import (contrainte serveur). Lancez plusieurs imports avec différentes sources.
+              Limite de 200 films par lot (contrainte serveur). Le mode auto enchaîne plusieurs lots.
             </li>
             <li>
               Les certifications (CSA, PEGI) sont automatiquement importées quand disponibles.
