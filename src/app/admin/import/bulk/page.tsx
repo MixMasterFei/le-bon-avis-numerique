@@ -340,11 +340,9 @@ export default function BulkImportPage() {
                 className="w-full p-2 border rounded-lg"
                 disabled={importing === "movies"}
               >
-                <option value={5}>5 pages (100 films) - ~30s</option>
-                <option value={10}>10 pages (200 films) - ~1min</option>
-                <option value={20}>20 pages (400 films) - ~2min</option>
-                <option value={30}>30 pages (600 films) - ~3min</option>
-                <option value={50}>50 pages (1000 films) - ~5min</option>
+                <option value={2}>2 pages (40 films)</option>
+                <option value={5}>5 pages (100 films)</option>
+                <option value={10}>10 pages (200 films) - max</option>
               </select>
             </div>
 
@@ -447,7 +445,7 @@ export default function BulkImportPage() {
               Commencez par &quot;Enfants&quot; ou &quot;Famille&quot; pour un contenu adapté aux plus jeunes.
             </li>
             <li>
-              L&apos;import peut prendre plusieurs minutes selon le nombre d&apos;éléments (50 pages ≈ 5 min).
+              Limite de 200 films par import (contrainte serveur). Lancez plusieurs imports avec différentes sources.
             </li>
             <li>
               Les certifications (CSA, PEGI) sont automatiquement importées quand disponibles.

@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+
+// Vercel serverless function config - max duration for hobby is 10s, pro is 60s
+export const maxDuration = 60 // seconds
 import {
   getPopularMovies,
   getTopRatedMovies,
@@ -56,7 +59,8 @@ export async function POST(request: Request) {
 
     // Collect all movies from multiple pages
     const allMovies: Array<{ id: number; title: string }> = []
-    const maxPages = Math.min(pages, 50) // Allow up to 50 pages (1000 movies per import)
+    // Limit to 10 pages (200 movies) to stay within Vercel's 60s timeout
+    const maxPages = Math.min(pages, 10)
 
     for (let page = startPage; page < startPage + maxPages; page++) {
       let response
@@ -216,8 +220,8 @@ export async function POST(request: Request) {
 
         stats.imported++
 
-        // Delay to avoid TMDB rate limiting (40 requests per 10 seconds = ~250ms between requests)
-        await new Promise((resolve) => setTimeout(resolve, 300))
+        // Minimal delay - TMDB allows 40 req/10s, we need speed for serverless timeout
+        await new Promise((resolve) => setTimeout(resolve, 150))
       } catch (error) {
         stats.errors++
         stats.details.push(
