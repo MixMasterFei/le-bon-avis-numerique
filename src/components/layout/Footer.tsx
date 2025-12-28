@@ -19,6 +19,7 @@ const ages = [
 ]
 
 const legal = [
+  { name: "Tarifs", href: "/tarifs" },
   { name: "Mentions Légales", href: "/mentions-legales" },
   { name: "Politique de Confidentialité", href: "/confidentialite" },
   { name: "Gestion des Cookies", href: "/cookies" },
