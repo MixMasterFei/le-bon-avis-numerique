@@ -170,10 +170,11 @@ export async function POST(request: Request) {
 
     stats.details.push(`Fetched ${allShows.length} TV shows from TMDB (${source})`)
 
-    // Pre-filter existing - check ANY media item with this tmdbId (unique constraint is global)
+    // Pre-filter existing - only check TV items (unique constraint is now per type)
     const existingTmdbIds = new Set(
       (await prisma.mediaItem.findMany({
         where: {
+          type: "TV",
           tmdbId: { in: allShows.map(s => s.id) }
         },
         select: { tmdbId: true }

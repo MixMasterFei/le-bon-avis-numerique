@@ -166,10 +166,11 @@ export async function POST(request: Request) {
 
     stats.details.push(`Fetched ${allMovies.length} movies from TMDB (${source})`)
 
-    // Pre-filter: Get all existing tmdbIds in one query to avoid N+1
+    // Pre-filter: Get all existing tmdbIds for MOVIES only (unique constraint is per type)
     const existingTmdbIds = new Set(
       (await prisma.mediaItem.findMany({
         where: {
+          type: "MOVIE",
           tmdbId: { in: allMovies.map(m => m.id) }
         },
         select: { tmdbId: true }

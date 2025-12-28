@@ -120,7 +120,8 @@ model MediaItem {
   topics          String[] // Princesses, Dinosaurs, History, etc.
 
   // External API IDs for syncing
-  tmdbId       Int?    @unique @map("tmdb_id")
+  // Note: tmdbId is unique per type (movies and TV have separate namespaces in TMDB)
+  tmdbId       Int?    @map("tmdb_id")
   igdbId       Int?    @unique @map("igdb_id")
   googleBookId String? @unique @map("google_book_id")
 
@@ -144,10 +145,12 @@ model MediaItem {
   similarToB           MediaSimilarity[] @relation("SimilarMediaB")
   streamingAvailability StreamingAvailability[]
 
+  @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
   @@index([expertAgeRec])
   @@index([dataQualityScore])
   @@index([isEnriched])
+  @@index([tmdbId])
   @@map("media_items")
 }
 
