@@ -37,8 +37,10 @@ interface DbStats {
   coverage: {
     moviesWithAgeRec: number
     gamesWithAgeRec: number
+    tvWithAgeRec: number
     moviesPercent: number
     gamesPercent: number
+    tvPercent: number
   }
   recent: {
     movies: Array<{ id: string; title: string; posterUrl: string; tmdbId: number }>
@@ -217,10 +219,10 @@ export default function BulkImportPage() {
                   <Star className="h-4 w-4" />
                   Couverture des recommandations d&apos;âge
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Films avec âge recommandé</span>
+                      <span className="text-gray-600">Films</span>
                       <span className="font-medium">{stats.coverage.moviesWithAgeRec} / {stats.counts.movies}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -229,11 +231,24 @@ export default function BulkImportPage() {
                         style={{ width: `${stats.coverage.moviesPercent}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.moviesPercent}% couverts</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.moviesPercent}%</p>
                   </div>
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Jeux avec âge recommandé</span>
+                      <span className="text-gray-600">Séries</span>
+                      <span className="font-medium">{stats.coverage.tvWithAgeRec} / {stats.counts.tv}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all"
+                        style={{ width: `${stats.coverage.tvPercent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.tvPercent}%</p>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-600">Jeux</span>
                       <span className="font-medium">{stats.coverage.gamesWithAgeRec} / {stats.counts.games}</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
@@ -242,7 +257,7 @@ export default function BulkImportPage() {
                         style={{ width: `${stats.coverage.gamesPercent}%` }}
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.gamesPercent}% couverts</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats.coverage.gamesPercent}%</p>
                   </div>
                 </div>
               </div>

@@ -170,12 +170,11 @@ export async function POST(request: Request) {
 
     stats.details.push(`Fetched ${allShows.length} TV shows from TMDB (${source})`)
 
-    // Pre-filter existing
+    // Pre-filter existing - check ANY media item with this tmdbId (unique constraint is global)
     const existingTmdbIds = new Set(
       (await prisma.mediaItem.findMany({
         where: {
-          tmdbId: { in: allShows.map(s => s.id) },
-          type: "TV"
+          tmdbId: { in: allShows.map(s => s.id) }
         },
         select: { tmdbId: true }
       })).map(m => m.tmdbId)
@@ -187,7 +186,7 @@ export async function POST(request: Request) {
 
     stats.total = allShows.length
     stats.skipped = existingTmdbIds.size
-    stats.details.push(`${newShows.length} nouvelles séries à importer (${existingTmdbIds.size} déjà en base)`)
+    stats.details.push(`${newShows.length} nouvelles séries à importer (${existingTmdbIds.size} déjà en base ou conflit ID)`)
 
     for (const show of newShows) {
       try {

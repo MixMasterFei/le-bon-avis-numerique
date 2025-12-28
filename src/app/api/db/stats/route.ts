@@ -13,6 +13,7 @@ export async function GET() {
       recentGames,
       moviesWithAgeRec,
       gamesWithAgeRec,
+      tvWithAgeRec,
       // Data quality metrics
       enrichedCount,
       highQualityCount,
@@ -56,6 +57,9 @@ export async function GET() {
       }),
       prisma.mediaItem.count({
         where: { type: "GAME", expertAgeRec: { not: null } },
+      }),
+      prisma.mediaItem.count({
+        where: { type: "TV", expertAgeRec: { not: null } },
       }),
       // Enriched items (has expert content)
       prisma.mediaItem.count({
@@ -105,8 +109,10 @@ export async function GET() {
       coverage: {
         moviesWithAgeRec,
         gamesWithAgeRec,
+        tvWithAgeRec,
         moviesPercent: movieCount > 0 ? Math.round((moviesWithAgeRec / movieCount) * 100) : 0,
         gamesPercent: gameCount > 0 ? Math.round((gamesWithAgeRec / gameCount) * 100) : 0,
+        tvPercent: tvCount > 0 ? Math.round((tvWithAgeRec / tvCount) * 100) : 0,
       },
       quality: {
         enriched: enrichedCount,
