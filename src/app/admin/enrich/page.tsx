@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Sparkles,
   Film,
@@ -48,10 +48,14 @@ export default function EnrichPage() {
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [selectedType, setSelectedType] = useState<MediaType>("all")
-  const [batchSize, setBatchSize] = useState(10)
+  const [batchSize, setBatchSize] = useState(25)
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Auto-enrich mode
+  const [autoMode, setAutoMode] = useState(false)
+  const [autoProgress, setAutoProgress] = useState({ total: 0, done: 0, errors: 0 })
+  const stopRequestedRef = useRef(false)
 
   const fetchStats = async () => {
     try {
@@ -70,11 +74,7 @@ export default function EnrichPage() {
     fetchStats()
   }, [])
 
-  const handleEnrich = async () => {
-    setEnriching(true)
-    setError(null)
-    setResult(null)
-
+  const runSingleBatch = async (): Promise<EnrichmentResult | null> => {
     try {
       const res = await fetch("/api/admin/enrich", {
         method: "POST",
@@ -92,13 +92,85 @@ export default function EnrichPage() {
         throw new Error(data.error || "Enrichment failed")
       }
 
-      setResult(data.result)
-      fetchStats() // Refresh stats
+      return data.result
+    } catch (err) {
+      throw err
+    }
+  }
+
+  const handleEnrich = async () => {
+    setEnriching(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const batchResult = await runSingleBatch()
+      setResult(batchResult)
+      fetchStats()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
       setEnriching(false)
     }
+  }
+
+  // Auto-enrich: runs batches continuously until done or stopped
+  const handleAutoEnrich = async () => {
+    setAutoMode(true)
+    stopRequestedRef.current = false
+    setError(null)
+    setEnriching(true)
+
+    const totalToEnrich = stats?.enrichment.withoutMetrics || 0
+    setAutoProgress({ total: totalToEnrich, done: 0, errors: 0 })
+
+    let totalDone = 0
+    let totalErrors = 0
+
+    while (!stopRequestedRef.current) {
+      try {
+        const batchResult = await runSingleBatch()
+
+        if (!batchResult || batchResult.processed === 0) {
+          // No more items to process
+          break
+        }
+
+        totalDone += batchResult.enriched
+        totalErrors += batchResult.errors
+        setAutoProgress({ total: totalToEnrich, done: totalDone, errors: totalErrors })
+        setResult(batchResult)
+
+        // If nothing was enriched, we're done
+        if (batchResult.enriched === 0 && batchResult.skipped === 0) {
+          break
+        }
+
+        // Check if stop was requested
+        if (stopRequestedRef.current) break
+
+        // Small delay between batches to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 1000))
+
+        // Refresh stats to get updated count
+        await fetchStats()
+
+      } catch (err) {
+        totalErrors++
+        setAutoProgress(prev => ({ ...prev, errors: totalErrors }))
+        setError(err instanceof Error ? err.message : "Erreur")
+        // Continue despite errors
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      }
+    }
+
+    setEnriching(false)
+    setAutoMode(false)
+    fetchStats()
+  }
+
+  const handleStopAuto = () => {
+    stopRequestedRef.current = true
   }
 
   const typeIcons = {
@@ -262,27 +334,90 @@ export default function EnrichPage() {
               </div>
             )}
 
-            <Button
-              onClick={handleEnrich}
-              disabled={
-                enriching ||
-                Object.values(stats?.stats || {}).reduce((a, b) => a + b, 0) === 0 ||
-                (!forceReenrich && (stats?.enrichment.withoutMetrics || 0) === 0)
-              }
-              className="w-full bg-purple-600 hover:bg-purple-700"
-            >
-              {enriching ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Enrichissement en cours...
-                </>
+            {/* Auto-enrich progress bar */}
+            {autoMode && (
+              <div className="space-y-2 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium text-purple-700">
+                    Enrichissement automatique en cours...
+                  </span>
+                  <span className="text-purple-600">
+                    {autoProgress.done} / {autoProgress.total}
+                  </span>
+                </div>
+                <Progress
+                  value={autoProgress.total > 0 ? (autoProgress.done / autoProgress.total) * 100 : 0}
+                  className="h-3"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>
+                    {autoProgress.total > 0
+                      ? Math.round((autoProgress.done / autoProgress.total) * 100)
+                      : 0}% complete
+                  </span>
+                  {autoProgress.errors > 0 && (
+                    <span className="text-red-500">{autoProgress.errors} erreurs</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              {/* Single batch button */}
+              <Button
+                onClick={handleEnrich}
+                disabled={
+                  enriching ||
+                  Object.values(stats?.stats || {}).reduce((a, b) => a + b, 0) === 0 ||
+                  (!forceReenrich && (stats?.enrichment.withoutMetrics || 0) === 0)
+                }
+                variant="outline"
+                className="flex-1"
+              >
+                {enriching && !autoMode ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    En cours...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="h-4 w-4 mr-2" />
+                    Un lot ({batchSize})
+                  </>
+                )}
+              </Button>
+
+              {/* Auto-enrich button or Stop button */}
+              {autoMode ? (
+                <Button
+                  onClick={handleStopAuto}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Arreter
+                </Button>
               ) : (
-                <>
-                  <Brain className="h-4 w-4 mr-2" />
-                  Lancer l&apos;enrichissement IA
-                </>
+                <Button
+                  onClick={handleAutoEnrich}
+                  disabled={
+                    enriching ||
+                    Object.values(stats?.stats || {}).reduce((a, b) => a + b, 0) === 0 ||
+                    (!forceReenrich && (stats?.enrichment.withoutMetrics || 0) === 0)
+                  }
+                  className="flex-1 bg-purple-600 hover:bg-purple-700"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Tout enrichir auto
+                </Button>
               )}
-            </Button>
+            </div>
+
+            {!autoMode && (stats?.enrichment.withoutMetrics || 0) > 0 && (
+              <p className="text-xs text-center text-gray-500">
+                &quot;Tout enrichir&quot; traitera les {stats?.enrichment.withoutMetrics} elements restants automatiquement
+              </p>
+            )}
           </CardContent>
         </Card>
 
