@@ -7,6 +7,7 @@ import {
   getImageUrl,
   discoverMovies,
   TVGenres,
+  mapCertificationToInternal,
 } from "@/lib/tmdb"
 
 // Vercel serverless function config
@@ -212,7 +213,7 @@ export async function POST(request: Request) {
             duration: details.episode_run_time?.[0] || null,
             director: creator,
             genres: details.genres.map((g) => g.name),
-            officialRating: rating,
+            officialRating: mapCertificationToInternal(rating),
             expertAgeRec: certificationToAge(rating),
             platforms: [],
             topics: [],

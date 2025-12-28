@@ -13,6 +13,7 @@ import {
   getDirector,
   getImageUrl,
   MovieGenres,
+  mapCertificationToInternal,
 } from "@/lib/tmdb"
 
 // Map French CSA certification to recommended age
@@ -212,7 +213,7 @@ export async function POST(request: Request) {
             duration: details.runtime || null,
             director: director,
             genres: details.genres.map((g) => g.name),
-            officialRating: certification,
+            officialRating: mapCertificationToInternal(certification),
             expertAgeRec: certificationToAge(certification),
             platforms: [],
             topics: [],
