@@ -50,8 +50,11 @@ export interface FilterState {
   topics: string[]
 }
 
+// Default to family-friendly content (12 years) - can be increased to 18 by user
+export const DEFAULT_MAX_AGE = 12
+
 export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps) {
-  const [maxAge, setMaxAge] = useState(18)
+  const [maxAge, setMaxAge] = useState(DEFAULT_MAX_AGE)
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
 
@@ -89,17 +92,17 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
   }
 
   const clearFilters = () => {
-    setMaxAge(18)
+    setMaxAge(DEFAULT_MAX_AGE)
     setSelectedPlatforms([])
     setSelectedTopics([])
     onFiltersChange?.({
-      maxAge: 18,
+      maxAge: DEFAULT_MAX_AGE,
       platforms: [],
       topics: [],
     })
   }
 
-  const hasFilters = maxAge < 18 || selectedPlatforms.length > 0 || selectedTopics.length > 0
+  const hasFilters = maxAge !== DEFAULT_MAX_AGE || selectedPlatforms.length > 0 || selectedTopics.length > 0
 
   return (
     <aside className={cn("space-y-6", className)}>

@@ -3,12 +3,12 @@
 import { useState, useMemo } from "react"
 import { BookOpen } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { mockMediaItems } from "@/lib/mock-data"
 
 export default function LivresPage() {
   const [filters, setFilters] = useState<FilterState>({
-    maxAge: 18,
+    maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
   })

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Film, Database } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
@@ -12,7 +12,7 @@ const ITEMS_PER_PAGE = 12
 export default function FilmsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
-    maxAge: 18,
+    maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
   })
