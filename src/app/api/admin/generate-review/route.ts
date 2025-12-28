@@ -237,9 +237,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if already exists in database
+    // Check if already exists in database (use composite unique: tmdbId + type)
+    const dbType = type === "tv" ? "TV" : "MOVIE"
     const existingItem = await prisma.mediaItem.findUnique({
-      where: { tmdbId: Number(tmdbId) },
+      where: {
+        tmdbId_type: {
+          tmdbId: Number(tmdbId),
+          type: dbType,
+        },
+      },
       include: { contentMetrics: true },
     })
 
@@ -325,13 +331,17 @@ export async function POST(request: NextRequest) {
       analysisMethod = "heuristic"
     }
 
-    // Save to database
+    // Save to database (use composite unique: tmdbId + type)
     const savedItem = await prisma.mediaItem.upsert({
-      where: { tmdbId: movie.id },
+      where: {
+        tmdbId_type: {
+          tmdbId: movie.id,
+          type: dbType,
+        },
+      },
       update: {
         title: movie.title,
         originalTitle: movie.original_title,
-        type: mediaType.toUpperCase() as "MOVIE" | "TV",
         releaseDate: movie.release_date ? new Date(movie.release_date) : null,
         posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.medium),
         backdropUrl: getImageUrl(movie.backdrop_path, ImageSize.backdrop.large),
@@ -346,7 +356,7 @@ export async function POST(request: NextRequest) {
         tmdbId: movie.id,
         title: movie.title,
         originalTitle: movie.original_title,
-        type: mediaType.toUpperCase() as "MOVIE" | "TV",
+        type: dbType,
         releaseDate: movie.release_date ? new Date(movie.release_date) : null,
         posterUrl: getImageUrl(movie.poster_path, ImageSize.poster.medium),
         backdropUrl: getImageUrl(movie.backdrop_path, ImageSize.backdrop.large),
