@@ -61,10 +61,21 @@ const MOVIE_SOURCES: { value: ImportSource; label: string; description: string }
   { value: "highly_rated", label: "Très bien notés", description: "Films avec note > 7/10" },
 ]
 
+const TV_SOURCES: { value: ImportSource; label: string; description: string }[] = [
+  { value: "popular", label: "Populaires", description: "Séries les plus populaires" },
+  { value: "top_rated", label: "Mieux notées", description: "Séries les mieux notées" },
+  { value: "recent", label: "Récentes", description: "Séries des 2 dernières années" },
+  { value: "animation", label: "Animation", description: "Séries d'animation" },
+  { value: "kids", label: "Enfants", description: "Séries pour enfants" },
+  { value: "family", label: "Famille", description: "Séries familiales" },
+  { value: "french", label: "Françaises", description: "Séries françaises" },
+  { value: "highly_rated", label: "Très bien notées", description: "Séries avec note > 7/10" },
+]
+
 const GAME_SOURCES: { value: ImportSource; label: string; description: string }[] = [
   { value: "popular", label: "Populaires", description: "Jeux les plus populaires" },
   { value: "family", label: "Famille", description: "Jeux PEGI 3 et PEGI 7" },
-  { value: "recent", label: "Recents", description: "Jeux sortis dans les 6 derniers mois" },
+  { value: "recent", label: "Récents", description: "Jeux sortis dans les 6 derniers mois" },
 ]
 
 export default function BulkImportPage() {
@@ -75,6 +86,8 @@ export default function BulkImportPage() {
   const [error, setError] = useState<string | null>(null)
   const [movieSource, setMovieSource] = useState<ImportSource>("popular")
   const [moviePages, setMoviePages] = useState(5)
+  const [tvSource, setTvSource] = useState<ImportSource>("popular")
+  const [tvPages, setTvPages] = useState(5)
   const [gameSource, setGameSource] = useState<ImportSource>("popular")
   const [gameLimit, setGameLimit] = useState(100)
 
@@ -96,17 +109,22 @@ export default function BulkImportPage() {
     fetchStats()
   }, [])
 
-  const handleImport = async (type: "movies" | "games") => {
+  const handleImport = async (type: "movies" | "tv" | "games") => {
     setImporting(type)
     setError(null)
     setLastResult(null)
 
     try {
       const endpoint = `/api/admin/import/${type}`
-      const body =
-        type === "movies"
-          ? { source: movieSource, pages: moviePages, skipExisting: true }
-          : { source: gameSource, limit: gameLimit, skipExisting: true }
+      let body
+
+      if (type === "movies") {
+        body = { source: movieSource, pages: moviePages, skipExisting: true }
+      } else if (type === "tv") {
+        body = { source: tvSource, pages: tvPages, skipExisting: true }
+      } else {
+        body = { source: gameSource, limit: gameLimit, skipExisting: true }
+      }
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -304,7 +322,7 @@ export default function BulkImportPage() {
       )}
 
       {/* Import Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Movies Import */}
         <Card>
           <CardHeader>
@@ -352,6 +370,67 @@ export default function BulkImportPage() {
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
               {importing === "movies" ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Import en cours...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Lancer l&apos;import
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* TV Series Import */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Tv className="h-5 w-5 text-blue-600" />
+              Importer des Séries (TMDB)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Source</label>
+              <select
+                value={tvSource}
+                onChange={(e) => setTvSource(e.target.value as ImportSource)}
+                className="w-full p-2 border rounded-lg"
+                disabled={importing === "tv"}
+              >
+                {TV_SOURCES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label} - {s.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Nombre de pages (20 séries/page)
+              </label>
+              <select
+                value={tvPages}
+                onChange={(e) => setTvPages(Number(e.target.value))}
+                className="w-full p-2 border rounded-lg"
+                disabled={importing === "tv"}
+              >
+                <option value={2}>2 pages (40 séries)</option>
+                <option value={5}>5 pages (100 séries)</option>
+                <option value={10}>10 pages (200 séries) - max</option>
+              </select>
+            </div>
+
+            <Button
+              onClick={() => handleImport("tv")}
+              disabled={importing !== null}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              {importing === "tv" ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Import en cours...

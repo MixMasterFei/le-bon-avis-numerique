@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+
+// Vercel serverless function config
+export const maxDuration = 60
+
 import {
   getPopularGames,
   getFamilyGames,
@@ -71,46 +75,38 @@ export async function POST(request: Request) {
         games = await getPopularGames(limit)
     }
 
-    stats.total = games.length
     stats.details.push(`Fetched ${games.length} games from IGDB (${source})`)
 
-    // Process each game
-    for (const game of games) {
-      try {
-        // Check if already exists
-        if (skipExisting) {
-          const existing = await prisma.mediaItem.findUnique({
-            where: { igdbId: game.id },
-          })
-          if (existing) {
-            stats.skipped++
-            continue
-          }
-        }
+    // Pre-filter existing games
+    const existingIgdbIds = new Set(
+      (await prisma.mediaItem.findMany({
+        where: {
+          igdbId: { in: games.map(g => g.id) }
+        },
+        select: { igdbId: true }
+      })).map(m => m.igdbId)
+    )
 
+    const newGames = skipExisting
+      ? games.filter(g => !existingIgdbIds.has(g.id))
+      : games
+
+    stats.total = games.length
+    stats.skipped = existingIgdbIds.size
+    stats.details.push(`${newGames.length} nouveaux jeux à importer (${existingIgdbIds.size} déjà en base)`)
+
+    // Process only NEW games
+    for (const game of newGames) {
+      try {
         const data = transformGameToMediaItem(game)
 
-        // Upsert the game
-        await prisma.mediaItem.upsert({
-          where: { igdbId: game.id },
-          create: {
+        await prisma.mediaItem.create({
+          data: {
             ...data,
             originalTitle: null,
             backdropUrl: null,
             duration: null,
             communityAgeRec: null,
-          },
-          update: {
-            title: data.title,
-            synopsisFr: data.synopsisFr,
-            posterUrl: data.posterUrl,
-            releaseDate: data.releaseDate,
-            genres: data.genres,
-            platforms: data.platforms,
-            officialRating: data.officialRating,
-            expertAgeRec: data.expertAgeRec,
-            director: data.director,
-            topics: data.topics,
           },
         })
 
