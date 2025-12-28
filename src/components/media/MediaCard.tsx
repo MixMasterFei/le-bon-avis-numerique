@@ -84,7 +84,7 @@ export function MediaCard({ media, className }: MediaCardProps) {
           </div>
 
           {/* Safety Bar - quick family-friendliness indicator */}
-          <SafetyBar metrics={media.contentMetrics} />
+          <SafetyBar metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
         </div>
       </Card>
     </Link>
@@ -139,7 +139,7 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
           </div>
 
           {/* Safety Bar */}
-          <SafetyBar metrics={media.contentMetrics} className="mt-3" />
+          <SafetyBar metrics={media.contentMetrics} ageRec={media.expertAgeRec} className="mt-3" />
         </div>
       </Card>
     </Link>

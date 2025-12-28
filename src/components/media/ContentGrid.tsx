@@ -155,9 +155,11 @@ export function ContentGridDots({
 // Simple safety bar - shows overall family-friendliness at a glance
 export function SafetyBar({
   metrics,
+  ageRec,
   className,
 }: {
   metrics: ContentMetrics | null | undefined
+  ageRec?: number | null
   className?: string
 }) {
   if (!metrics) {
@@ -170,29 +172,52 @@ export function SafetyBar({
     )
   }
 
-  // Calculate overall "concern" score (0-5)
-  // Higher negative metrics = more concern
-  const negativeScore = (
+  // Use MAX of negative metrics instead of average
+  // This ensures any single high-concern metric triggers appropriate warning
+  const maxNegativeScore = Math.max(
+    metrics.violence,
+    metrics.sexNudity,
+    metrics.language,
+    metrics.substanceUse
+  )
+
+  // Also calculate average for bar width (smoother visual)
+  const avgNegativeScore = (
     metrics.violence +
     metrics.sexNudity +
     metrics.language +
     metrics.substanceUse
   ) / 4
 
-  // Determine color and label
+  // Determine minimum score based on age rating
+  // 15+ content should never show as "Familial" or "Adapté"
+  // 12+ content should never show as "Familial"
+  let minScoreFromAge = 0
+  if (ageRec && ageRec >= 16) {
+    minScoreFromAge = 4 // At least "Attention"
+  } else if (ageRec && ageRec >= 13) {
+    minScoreFromAge = 3 // At least "Modéré"
+  } else if (ageRec && ageRec >= 10) {
+    minScoreFromAge = 2 // At least "Adapté" (not "Familial")
+  }
+
+  // Use the higher of: max metric score OR age-implied minimum
+  const effectiveScore = Math.max(maxNegativeScore, minScoreFromAge)
+
+  // Determine color and label based on effective score
   let color: string
   let label: string
 
-  if (negativeScore <= 1) {
+  if (effectiveScore <= 1) {
     color = "bg-emerald-500"
     label = "Familial"
-  } else if (negativeScore <= 2) {
+  } else if (effectiveScore <= 2) {
     color = "bg-emerald-400"
     label = "Adapté"
-  } else if (negativeScore <= 3) {
+  } else if (effectiveScore <= 3) {
     color = "bg-amber-500"
     label = "Modéré"
-  } else if (negativeScore <= 4) {
+  } else if (effectiveScore <= 4) {
     color = "bg-orange-500"
     label = "Attention"
   } else {
@@ -200,8 +225,9 @@ export function SafetyBar({
     label = "Mature"
   }
 
-  // Calculate bar width (inverse - lower score = fuller green bar)
-  const safetyPercent = Math.max(0, Math.min(100, (5 - negativeScore) / 5 * 100))
+  // Calculate bar width using average (smoother) but capped by effective score
+  const displayScore = Math.max(avgNegativeScore, effectiveScore * 0.8)
+  const safetyPercent = Math.max(0, Math.min(100, (5 - displayScore) / 5 * 100))
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
@@ -212,8 +238,8 @@ export function SafetyBar({
         />
       </div>
       <span className={cn("text-xs font-medium",
-        negativeScore <= 2 ? "text-emerald-600" :
-        negativeScore <= 3 ? "text-amber-600" : "text-red-600"
+        effectiveScore <= 2 ? "text-emerald-600" :
+        effectiveScore <= 3 ? "text-amber-600" : "text-red-600"
       )}>
         {label}
       </span>
