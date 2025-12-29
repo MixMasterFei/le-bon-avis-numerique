@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Filter, X } from "lucide-react"
+import { Filter, X, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-const platforms = [
+// Streaming platforms for movies/TV
+const streamingPlatforms = [
   "Netflix France",
   "Disney+",
   "Prime Video",
@@ -16,7 +18,19 @@ const platforms = [
   "Apple TV+",
 ]
 
-const topics = [
+// Gaming platforms (modern consoles only)
+const gamingPlatforms = [
+  "Switch",
+  "PS5",
+  "PS4",
+  "Xbox Series",
+  "Xbox One",
+  "PC",
+  "Mac",
+]
+
+// Topics for movies/TV
+const movieTopics = [
   // Genres populaires
   "Animation",
   "Aventure",
@@ -39,24 +53,58 @@ const topics = [
   "Amitié",
 ]
 
+// Topics/themes for games
+const gameTopics = [
+  "Aventure",
+  "Action",
+  "RPG",
+  "Plateforme",
+  "Puzzle",
+  "Sport",
+  "Course",
+  "Simulation",
+  "Éducatif",
+  "Famille",
+  "Multijoueur",
+  "Coopératif",
+]
+
+export type MediaType = "MOVIE" | "TV" | "GAME"
+
 interface FilterSidebarProps {
   className?: string
   onFiltersChange?: (filters: FilterState) => void
+  mediaType?: MediaType
 }
 
 export interface FilterState {
   maxAge: number
   platforms: string[]
   topics: string[]
+  searchQuery?: string
 }
 
 // Default to family-friendly content (12 years) - can be increased to 18 by user
 export const DEFAULT_MAX_AGE = 12
 
-export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps) {
+export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE" }: FilterSidebarProps) {
+  // Select appropriate platforms and topics based on media type
+  const platforms = mediaType === "GAME" ? gamingPlatforms : streamingPlatforms
+  const topics = mediaType === "GAME" ? gameTopics : movieTopics
   const [maxAge, setMaxAge] = useState(DEFAULT_MAX_AGE)
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    onFiltersChange?.({
+      maxAge,
+      platforms: selectedPlatforms,
+      topics: selectedTopics,
+      searchQuery: value,
+    })
+  }
 
   const handleAgeChange = (value: number[]) => {
     setMaxAge(value[0])
@@ -64,6 +112,7 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
       maxAge: value[0],
       platforms: selectedPlatforms,
       topics: selectedTopics,
+      searchQuery,
     })
   }
 
@@ -76,6 +125,7 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
       maxAge,
       platforms: updated,
       topics: selectedTopics,
+      searchQuery,
     })
   }
 
@@ -88,6 +138,7 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
       maxAge,
       platforms: selectedPlatforms,
       topics: updated,
+      searchQuery,
     })
   }
 
@@ -95,14 +146,16 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
     setMaxAge(DEFAULT_MAX_AGE)
     setSelectedPlatforms([])
     setSelectedTopics([])
+    setSearchQuery("")
     onFiltersChange?.({
       maxAge: DEFAULT_MAX_AGE,
       platforms: [],
       topics: [],
+      searchQuery: "",
     })
   }
 
-  const hasFilters = maxAge !== DEFAULT_MAX_AGE || selectedPlatforms.length > 0 || selectedTopics.length > 0
+  const hasFilters = maxAge !== DEFAULT_MAX_AGE || selectedPlatforms.length > 0 || selectedTopics.length > 0 || searchQuery.length > 0
 
   return (
     <aside className={cn("space-y-6", className)}>
@@ -122,6 +175,20 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
             Effacer
           </Button>
         )}
+      </div>
+
+      {/* Search within category */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            type="search"
+            placeholder={mediaType === "GAME" ? "Rechercher un jeu..." : "Rechercher..."}
+            className="pl-9 pr-4 bg-gray-50 border-gray-200 focus:bg-white"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Age Slider */}
@@ -189,6 +256,7 @@ export function FilterSidebar({ className, onFiltersChange }: FilterSidebarProps
     </aside>
   )
 }
+
 
 
 

@@ -15,6 +15,7 @@ export default function SeriesPage() {
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
+    searchQuery: "",
   })
   const [source, setSource] = useState<"db" | "mock">("mock")
   const [dbSeries, setDbSeries] = useState<MockMediaItem[]>([])
@@ -94,32 +95,43 @@ export default function SeriesPage() {
   }, [currentPage, filters.maxAge])
 
   const filteredSeries = useMemo(() => {
-    // In DB mode, filtering is handled server-side
-    if (source === "db") return dbSeries
+    // Start with appropriate source
+    let items = source === "db"
+      ? dbSeries
+      : mockMediaItems.filter((m) => m.type === "TV")
 
-    let items = mockMediaItems.filter((m) => m.type === "TV")
-
-    if (filters.maxAge < 18) {
-      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-    }
-
-    if (filters.platforms.length > 0) {
+    // Apply search filter (client-side for all sources)
+    if (filters.searchQuery && filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase().trim()
       items = items.filter((m) =>
-        m.platforms.some((p) =>
-          filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-        )
+        m.title.toLowerCase().includes(query)
       )
     }
 
-    if (filters.topics.length > 0) {
-      items = items.filter((m) =>
-        m.topics.some((t) =>
-          filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-        ) ||
-        m.genres.some((g) =>
-          filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+    // For mock data, apply additional filters
+    if (source === "mock") {
+      if (filters.maxAge < 18) {
+        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
+      }
+
+      if (filters.platforms.length > 0) {
+        items = items.filter((m) =>
+          m.platforms.some((p) =>
+            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
+          )
         )
-      )
+      }
+
+      if (filters.topics.length > 0) {
+        items = items.filter((m) =>
+          m.topics.some((t) =>
+            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
+          ) ||
+          m.genres.some((g) =>
+            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+          )
+        )
+      }
     }
 
     return items
@@ -156,7 +168,7 @@ export default function SeriesPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="TV" />
           </div>
         </div>
 
@@ -212,6 +224,7 @@ export default function SeriesPage() {
     </div>
   )
 }
+
 
 
 

@@ -15,6 +15,7 @@ export default function JeuxPage() {
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
+    searchQuery: "",
   })
   const [source, setSource] = useState<"db" | "api" | "mock">("mock")
   const [apiGames, setApiGames] = useState<MockMediaItem[]>([])
@@ -147,30 +148,50 @@ export default function JeuxPage() {
   }, [currentPage, filters.maxAge])
 
   const filteredGames = useMemo(() => {
-    // In DB or API mode, filtering is handled server-side
-    if (source === "db" || source === "api") return apiGames
+    // Start with appropriate source
+    let items = (source === "db" || source === "api")
+      ? apiGames
+      : mockMediaItems.filter((m) => m.type === "GAME")
 
-    let items = mockMediaItems.filter((m) => m.type === "GAME")
-
-    if (filters.maxAge < 18) {
-      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-    }
-
-    if (filters.platforms.length > 0) {
+    // Apply search filter (client-side for all sources)
+    if (filters.searchQuery && filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase().trim()
       items = items.filter((m) =>
-        m.platforms.some((p) =>
-          filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-        )
+        m.title.toLowerCase().includes(query)
       )
     }
 
-    if (filters.topics.length > 0) {
+    // For mock data, apply additional filters
+    if (source === "mock") {
+      if (filters.maxAge < 18) {
+        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
+      }
+
+      if (filters.platforms.length > 0) {
+        items = items.filter((m) =>
+          m.platforms.some((p) =>
+            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
+          )
+        )
+      }
+
+      if (filters.topics.length > 0) {
+        items = items.filter((m) =>
+          m.topics.some((t) =>
+            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
+          ) ||
+          m.genres.some((g) =>
+            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+          )
+        )
+      }
+    }
+
+    // For DB/API data, also apply platform filter client-side
+    if ((source === "db" || source === "api") && filters.platforms.length > 0) {
       items = items.filter((m) =>
-        m.topics.some((t) =>
-          filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-        ) ||
-        m.genres.some((g) =>
-          filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+        m.platforms.some((p) =>
+          filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
         )
       )
     }
@@ -207,7 +228,7 @@ export default function JeuxPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="GAME" />
           </div>
         </div>
 
@@ -266,6 +287,7 @@ export default function JeuxPage() {
     </div>
   )
 }
+
 
 
 

@@ -320,29 +320,25 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
 // Normalize platform names for cleaner display
 const PLATFORM_NAMES: Record<string, string> = {
   "Nintendo Switch": "Switch",
+  "Nintendo Switch 2": "Switch 2",
   "PC (Microsoft Windows)": "PC",
   "PlayStation 4": "PS4",
   "PlayStation 5": "PS5",
   "Xbox One": "Xbox One",
   "Xbox Series X|S": "Xbox Series",
   "Mac": "Mac",
-  "Linux": "Linux",
-  "iOS": "iOS",
-  "Android": "Android",
 }
 
-// Priority platforms to keep (filter out retro platforms)
+// Priority platforms to keep (modern consoles only - no mobile/Linux)
 const PRIORITY_PLATFORMS = new Set([
   "Nintendo Switch",
+  "Nintendo Switch 2",
   "PC (Microsoft Windows)",
   "PlayStation 4",
   "PlayStation 5",
   "Xbox One",
   "Xbox Series X|S",
   "Mac",
-  "Linux",
-  "iOS",
-  "Android",
 ])
 
 /**

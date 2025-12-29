@@ -15,6 +15,7 @@ export default function FilmsPage() {
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
+    searchQuery: "",
   })
   const [source, setSource] = useState<"db" | "api" | "mock">("mock")
   const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
@@ -147,35 +148,46 @@ export default function FilmsPage() {
   }, [currentPage, filters.maxAge, filters.platforms, filters.topics])
 
   const filteredMovies = useMemo(() => {
-    // In DB or API mode, filtering is handled server-side
-    if (source === "db" || source === "api") return apiMovies
+    // Start with appropriate source
+    let items = (source === "db" || source === "api")
+      ? apiMovies
+      : mockMediaItems.filter((m) => m.type === "MOVIE")
 
-    let items = mockMediaItems.filter((m) => m.type === "MOVIE")
-
-    // Filter by age
-    if (filters.maxAge < 18) {
-      items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-    }
-
-    // Filter by platform
-    if (filters.platforms.length > 0) {
+    // Apply search filter (client-side for all sources)
+    if (filters.searchQuery && filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase().trim()
       items = items.filter((m) =>
-        m.platforms.some((p) =>
-          filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-        )
+        m.title.toLowerCase().includes(query)
       )
     }
 
-    // Filter by topics
-    if (filters.topics.length > 0) {
-      items = items.filter((m) =>
-        m.topics.some((t) =>
-          filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-        ) ||
-        m.genres.some((g) =>
-          filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+    // For mock data, apply additional filters
+    if (source === "mock") {
+      // Filter by age
+      if (filters.maxAge < 18) {
+        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
+      }
+
+      // Filter by platform
+      if (filters.platforms.length > 0) {
+        items = items.filter((m) =>
+          m.platforms.some((p) =>
+            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
+          )
         )
-      )
+      }
+
+      // Filter by topics
+      if (filters.topics.length > 0) {
+        items = items.filter((m) =>
+          m.topics.some((t) =>
+            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
+          ) ||
+          m.genres.some((g) =>
+            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+          )
+        )
+      }
     }
 
     return items
@@ -214,7 +226,7 @@ export default function FilmsPage() {
         {/* Sidebar */}
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" />
           </div>
         </div>
 
