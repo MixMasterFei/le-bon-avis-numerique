@@ -58,8 +58,9 @@ export function RecentMovies() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch recently added movies from database
-        const res = await fetch("/api/db/movies?limit=14")
+        // Fetch recently added movies - exclude 15+ and 18+ content for home page
+        // maxAge=12 ensures family-friendly content on the landing page
+        const res = await fetch("/api/db/movies?limit=14&maxAge=12")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
