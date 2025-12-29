@@ -76,6 +76,7 @@ interface FilterSidebarProps {
   onFiltersChange?: (filters: FilterState) => void
   mediaType?: MediaType
   availableTitles?: string[] // For autocomplete suggestions
+  initialFilters?: FilterState // For pre-setting filters from URL
 }
 
 export interface FilterState {
@@ -88,14 +89,14 @@ export interface FilterState {
 // Default to family-friendly content (12 years) - can be increased to 18 by user
 export const DEFAULT_MAX_AGE = 12
 
-export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", availableTitles = [] }: FilterSidebarProps) {
+export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", availableTitles = [], initialFilters }: FilterSidebarProps) {
   // Select appropriate platforms and topics based on media type
   const platforms = mediaType === "GAME" ? gamingPlatforms : streamingPlatforms
   const topics = mediaType === "GAME" ? gameTopics : movieTopics
-  const [maxAge, setMaxAge] = useState(DEFAULT_MAX_AGE)
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
-  const [searchQuery, setSearchQuery] = useState("")
+  const [maxAge, setMaxAge] = useState(initialFilters?.maxAge ?? DEFAULT_MAX_AGE)
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(initialFilters?.platforms ?? [])
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(initialFilters?.topics ?? [])
+  const [searchQuery, setSearchQuery] = useState(initialFilters?.searchQuery ?? "")
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)

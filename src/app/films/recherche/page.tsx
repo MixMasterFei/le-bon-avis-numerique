@@ -1,0 +1,422 @@
+"use client"
+
+import { Suspense, useEffect, useMemo, useState, useCallback } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { Film, Database, ArrowLeft, X } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { MediaCard } from "@/components/media/MediaCard"
+import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { Pagination } from "@/components/ui/pagination"
+import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+
+const ITEMS_PER_PAGE = 35 // 7 columns x 5 rows
+
+function FilmsRechercheContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  // Parse URL params for initial state
+  const initialMaxAge = searchParams.get("maxAge") ? parseInt(searchParams.get("maxAge")!) : DEFAULT_MAX_AGE
+  const initialTopics = searchParams.get("topics")?.split(",").filter(Boolean) || []
+  const initialPlatforms = searchParams.get("platforms")?.split(",").filter(Boolean) || []
+  const initialSearch = searchParams.get("q") || ""
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [filters, setFilters] = useState<FilterState>({
+    maxAge: initialMaxAge,
+    platforms: initialPlatforms,
+    topics: initialTopics,
+    searchQuery: initialSearch,
+  })
+  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
+  const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
+  const [apiTotalPages, setApiTotalPages] = useState(1)
+  const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
+  const [apiLoading, setApiLoading] = useState(false)
+
+  // Update URL when filters change
+  const updateUrl = useCallback((newFilters: FilterState) => {
+    const params = new URLSearchParams()
+    if (newFilters.maxAge < 18) {
+      params.set("maxAge", newFilters.maxAge.toString())
+    }
+    if (newFilters.topics.length > 0) {
+      params.set("topics", newFilters.topics.join(","))
+    }
+    if (newFilters.platforms.length > 0) {
+      params.set("platforms", newFilters.platforms.join(","))
+    }
+    if (newFilters.searchQuery) {
+      params.set("q", newFilters.searchQuery)
+    }
+    const newUrl = params.toString() ? `/films/recherche?${params}` : "/films/recherche"
+    router.replace(newUrl, { scroll: false })
+  }, [router])
+
+  // Priority: 1. Database, 2. External API, 3. Mock data
+  useEffect(() => {
+    let cancelled = false
+    const controller = new AbortController()
+
+    async function load() {
+      setApiLoading(true)
+      try {
+        // First, try to fetch from database
+        const dbParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: ITEMS_PER_PAGE.toString(),
+        })
+        if (filters.maxAge < 18) {
+          dbParams.set("maxAge", filters.maxAge.toString())
+        }
+        if (filters.platforms.length > 0) {
+          dbParams.set("platforms", filters.platforms.join(","))
+        }
+        if (filters.topics.length > 0) {
+          dbParams.set("topics", filters.topics.join(","))
+        }
+        if (filters.searchQuery) {
+          dbParams.set("q", filters.searchQuery)
+        }
+
+        const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
+        if (dbRes.ok) {
+          const dbData = await dbRes.json()
+          if (dbData.movies && dbData.movies.length > 0) {
+            const mapped: MockMediaItem[] = dbData.movies.map((m: any) => ({
+              id: String(m.id),
+              title: String(m.title || ""),
+              originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
+              type: "MOVIE",
+              releaseDate: m.releaseDate ?? null,
+              posterUrl: String(m.posterUrl || ""),
+              synopsisFr: m.synopsisFr ?? null,
+              officialRating: m.officialRating ?? null,
+              expertAgeRec: m.expertAgeRec ?? null,
+              communityAgeRec: m.communityAgeRec ?? null,
+              genres: m.genres || [],
+              platforms: m.platforms || [],
+              topics: m.topics || [],
+              contentMetrics: m.contentMetrics || {
+                violence: 0,
+                sexNudity: 0,
+                language: 0,
+                consumerism: 0,
+                substanceUse: 0,
+                positiveMessages: 0,
+                roleModels: 0,
+                whatParentsNeedToKnow: [],
+              },
+              reviews: [],
+            }))
+
+            if (!cancelled) {
+              setSource("db")
+              setApiMovies(mapped)
+              setApiTotalPages(dbData.pagination?.totalPages || 1)
+              setApiTotalResults(dbData.pagination?.total || mapped.length)
+              setApiLoading(false)
+            }
+            return
+          }
+        }
+
+        // Fallback to external API if database is empty
+        const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
+        const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
+        if (!res.ok) {
+          setSource("mock")
+          return
+        }
+        const data = await res.json()
+        const movies = Array.isArray(data?.movies) ? data.movies : []
+        const mapped: MockMediaItem[] = movies.map((m: any) => ({
+          id: String(m.id),
+          title: String(m.title || ""),
+          originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
+          type: "MOVIE",
+          releaseDate: m.releaseDate ?? null,
+          posterUrl: String(m.posterUrl || ""),
+          synopsisFr: m.synopsisFr ?? null,
+          officialRating: null,
+          expertAgeRec: null,
+          communityAgeRec: m.rating ?? null,
+          genres: [],
+          platforms: [],
+          topics: [],
+          contentMetrics: {
+            violence: 0,
+            sexNudity: 0,
+            language: 0,
+            consumerism: 0,
+            substanceUse: 0,
+            positiveMessages: 0,
+            roleModels: 0,
+            whatParentsNeedToKnow: [],
+          },
+          reviews: [],
+        }))
+
+        if (!cancelled) {
+          setSource("api")
+          setApiMovies(mapped)
+          setApiTotalPages(Math.max(1, Number(data?.totalPages) || 1))
+          setApiTotalResults(typeof data?.totalResults === "number" ? data.totalResults : null)
+        }
+      } catch {
+        if (!cancelled) {
+          setSource("mock")
+        }
+      } finally {
+        if (!cancelled) setApiLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery])
+
+  const filteredMovies = useMemo(() => {
+    // Start with appropriate source
+    let items = (source === "db" || source === "api")
+      ? apiMovies
+      : mockMediaItems.filter((m) => m.type === "MOVIE")
+
+    // Apply search filter (client-side for all sources)
+    if (filters.searchQuery && filters.searchQuery.trim()) {
+      const query = filters.searchQuery.toLowerCase().trim()
+      items = items.filter((m) =>
+        m.title.toLowerCase().includes(query)
+      )
+    }
+
+    // For mock data, apply additional filters
+    if (source === "mock") {
+      // Filter by age
+      if (filters.maxAge < 18) {
+        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
+      }
+
+      // Filter by platform
+      if (filters.platforms.length > 0) {
+        items = items.filter((m) =>
+          m.platforms.some((p) =>
+            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
+          )
+        )
+      }
+
+      // Filter by topics
+      if (filters.topics.length > 0) {
+        items = items.filter((m) =>
+          m.topics.some((t) =>
+            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
+          ) ||
+          m.genres.some((g) =>
+            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
+          )
+        )
+      }
+    }
+
+    return items
+  }, [apiMovies, filters, source])
+
+  // Reset to page 1 when filters change
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+    setCurrentPage(1)
+    updateUrl(newFilters)
+  }
+
+  // Clear all filters
+  const clearFilters = () => {
+    const cleared: FilterState = {
+      maxAge: DEFAULT_MAX_AGE,
+      platforms: [],
+      topics: [],
+      searchQuery: "",
+    }
+    setFilters(cleared)
+    setCurrentPage(1)
+    router.replace("/films/recherche", { scroll: false })
+  }
+
+  // Get all available titles for autocomplete
+  const availableTitles = useMemo(() => {
+    const titles = (source === "db" || source === "api")
+      ? apiMovies.map(m => m.title)
+      : mockMediaItems.filter(m => m.type === "MOVIE").map(m => m.title)
+    return [...new Set(titles)] // Remove duplicates
+  }, [apiMovies, source])
+
+  // Pagination
+  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
+  const paginatedMovies = useMemo(() => {
+    if (source === "db" || source === "api") return filteredMovies
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
+  }, [filteredMovies, currentPage, source])
+
+  // Check if any filters are active
+  const hasActiveFilters = filters.maxAge < 18 || filters.platforms.length > 0 || filters.topics.length > 0 || filters.searchQuery !== ""
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-4 mb-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/films">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Retour
+            </Link>
+          </Button>
+        </div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-3 bg-red-500 rounded-xl text-white">
+            <Film className="h-6 w-6" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Rechercher des films</h1>
+        </div>
+        <p className="text-gray-600">
+          Utilisez les filtres pour trouver les films adaptés à votre famille.
+        </p>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar */}
+        <div className="lg:w-64 shrink-0">
+          <div className="lg:sticky lg:top-24">
+            <FilterSidebar
+              onFiltersChange={handleFiltersChange}
+              mediaType="MOVIE"
+              availableTitles={availableTitles}
+              initialFilters={filters}
+            />
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="w-full mt-4"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Effacer les filtres
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              {source === "db" && (
+                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  <Database className="h-3 w-3" /> Base locale
+                </span>
+              )}
+              <p className="text-gray-600">
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
+                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
+                trouvé{((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {totalPages > 1 && (
+              <p className="text-sm text-gray-500">
+                Page {currentPage} sur {totalPages}
+              </p>
+            )}
+          </div>
+
+          {apiLoading ? (
+            <div className="text-center py-16 text-gray-500">
+              <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">Chargement...</p>
+              <p className="text-sm">Récupération du catalogue</p>
+            </div>
+          ) : paginatedMovies.length > 0 ? (
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                {paginatedMovies.map((movie) => (
+                  <MediaCard key={movie.id} media={movie} />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="mt-8"
+              />
+            </>
+          ) : (
+            <div className="text-center py-16 text-gray-500">
+              <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">Aucun film trouvé</p>
+              <p className="text-sm">Essayez de modifier vos filtres</p>
+              {hasActiveFilters && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="mt-4"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Effacer les filtres
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Loading fallback for Suspense
+function FilmsRechercheLoading() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <div className="h-8 w-24 bg-gray-200 rounded animate-pulse mb-4" />
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-3 bg-gray-200 rounded-xl w-12 h-12 animate-pulse" />
+          <div className="h-8 w-64 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="h-5 w-96 bg-gray-100 rounded animate-pulse mt-2" />
+      </div>
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="lg:w-64 shrink-0">
+          <div className="space-y-6">
+            <div className="h-6 w-24 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+            <div className="h-20 w-full bg-gray-100 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+            {[...Array(21)].map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function FilmsRecherchePage() {
+  return (
+    <Suspense fallback={<FilmsRechercheLoading />}>
+      <FilmsRechercheContent />
+    </Suspense>
+  )
+}

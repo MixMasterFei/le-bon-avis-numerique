@@ -1,297 +1,125 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { Film, Database } from "lucide-react"
-import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
-import { Pagination } from "@/components/ui/pagination"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import { Film, Search, SlidersHorizontal } from "lucide-react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { MovieCategoryRow, type CategoryConfig } from "@/components/media/MovieCategoryRow"
 
-const ITEMS_PER_PAGE = 12
+// Define all movie categories with their API parameters
+const MOVIE_CATEGORIES: CategoryConfig[] = [
+  {
+    id: "family-favorites",
+    title: "Films pour les enfants",
+    subtitle: "Adaptés aux plus jeunes, évalués par nos experts",
+    apiParams: "limit=20&maxAge=8&genres=Animation,Famille,Aventure,Comédie",
+    linkHref: "/films/recherche?maxAge=8",
+  },
+  {
+    id: "recent",
+    title: "Récemment évalués",
+    subtitle: "Les dernières critiques de notre équipe",
+    apiParams: "limit=20&maxAge=12",
+    linkHref: "/films/recherche?maxAge=12",
+  },
+  {
+    id: "animation",
+    title: "Films d'animation",
+    subtitle: "Dessins animés et films animés pour tous les âges",
+    apiParams: "limit=20&genres=Animation",
+    linkHref: "/films/recherche?topics=Animation",
+  },
+  {
+    id: "adventure",
+    title: "Films d'aventure",
+    subtitle: "Action et aventures pour toute la famille",
+    apiParams: "limit=20&genres=Aventure&maxAge=12",
+    linkHref: "/films/recherche?topics=Aventure&maxAge=12",
+  },
+  {
+    id: "comedy",
+    title: "Comédies familiales",
+    subtitle: "Des films drôles à regarder ensemble",
+    apiParams: "limit=20&genres=Comédie&maxAge=12",
+    linkHref: "/films/recherche?topics=Comédie&maxAge=12",
+  },
+  {
+    id: "teens",
+    title: "Pour les adolescents",
+    subtitle: "Films adaptés aux 12 ans et plus",
+    apiParams: "limit=20&maxAge=16",
+    linkHref: "/films/recherche?maxAge=16",
+  },
+  {
+    id: "fantasy",
+    title: "Fantastique et Science-Fiction",
+    subtitle: "Mondes imaginaires et aventures épiques",
+    apiParams: "limit=20&genres=Fantastique,Science-Fiction&maxAge=14",
+    linkHref: "/films/recherche?topics=Fantastique,Science-Fiction",
+  },
+  {
+    id: "drama",
+    title: "Drames familiaux",
+    subtitle: "Des histoires touchantes pour réfléchir ensemble",
+    apiParams: "limit=20&genres=Drame&maxAge=12",
+    linkHref: "/films/recherche?topics=Drame&maxAge=12",
+  },
+]
 
 export default function FilmsPage() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [filters, setFilters] = useState<FilterState>({
-    maxAge: DEFAULT_MAX_AGE,
-    platforms: [],
-    topics: [],
-    searchQuery: "",
-  })
-  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
-  const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
-  const [apiTotalPages, setApiTotalPages] = useState(1)
-  const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
-  const [apiLoading, setApiLoading] = useState(false)
-
-  // Priority: 1. Database, 2. External API, 3. Mock data
-  useEffect(() => {
-    let cancelled = false
-    const controller = new AbortController()
-
-    async function load() {
-      setApiLoading(true)
-      try {
-        // First, try to fetch from database
-        const dbParams = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: ITEMS_PER_PAGE.toString(),
-        })
-        if (filters.maxAge < 18) {
-          dbParams.set("maxAge", filters.maxAge.toString())
-        }
-        if (filters.platforms.length > 0) {
-          dbParams.set("platforms", filters.platforms.join(","))
-        }
-        if (filters.topics.length > 0) {
-          dbParams.set("topics", filters.topics.join(","))
-        }
-
-        const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
-        if (dbRes.ok) {
-          const dbData = await dbRes.json()
-          if (dbData.movies && dbData.movies.length > 0) {
-            const mapped: MockMediaItem[] = dbData.movies.map((m: any) => ({
-              id: String(m.id),
-              title: String(m.title || ""),
-              originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
-              type: "MOVIE",
-              releaseDate: m.releaseDate ?? null,
-              posterUrl: String(m.posterUrl || ""),
-              synopsisFr: m.synopsisFr ?? null,
-              officialRating: m.officialRating ?? null,
-              expertAgeRec: m.expertAgeRec ?? null,
-              communityAgeRec: m.communityAgeRec ?? null,
-              genres: m.genres || [],
-              platforms: m.platforms || [],
-              topics: m.topics || [],
-              contentMetrics: m.contentMetrics || {
-                violence: 0,
-                sexNudity: 0,
-                language: 0,
-                consumerism: 0,
-                substanceUse: 0,
-                positiveMessages: 0,
-                roleModels: 0,
-                whatParentsNeedToKnow: [],
-              },
-              reviews: [],
-            }))
-
-            if (!cancelled) {
-              setSource("db")
-              setApiMovies(mapped)
-              setApiTotalPages(dbData.pagination?.totalPages || 1)
-              setApiTotalResults(dbData.pagination?.total || mapped.length)
-              setApiLoading(false)
-            }
-            return
-          }
-        }
-
-        // Fallback to external API if database is empty
-        const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
-        const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
-        if (!res.ok) {
-          setSource("mock")
-          return
-        }
-        const data = await res.json()
-        const movies = Array.isArray(data?.movies) ? data.movies : []
-        const mapped: MockMediaItem[] = movies.map((m: any) => ({
-          id: String(m.id),
-          title: String(m.title || ""),
-          originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
-          type: "MOVIE",
-          releaseDate: m.releaseDate ?? null,
-          posterUrl: String(m.posterUrl || ""),
-          synopsisFr: m.synopsisFr ?? null,
-          officialRating: null,
-          expertAgeRec: null,
-          communityAgeRec: m.rating ?? null,
-          genres: [],
-          platforms: [],
-          topics: [],
-          contentMetrics: {
-            violence: 0,
-            sexNudity: 0,
-            language: 0,
-            consumerism: 0,
-            substanceUse: 0,
-            positiveMessages: 0,
-            roleModels: 0,
-            whatParentsNeedToKnow: [],
-          },
-          reviews: [],
-        }))
-
-        if (!cancelled) {
-          setSource("api")
-          setApiMovies(mapped)
-          setApiTotalPages(Math.max(1, Number(data?.totalPages) || 1))
-          setApiTotalResults(typeof data?.totalResults === "number" ? data.totalResults : null)
-        }
-      } catch {
-        if (!cancelled) {
-          setSource("mock")
-        }
-      } finally {
-        if (!cancelled) setApiLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-      controller.abort()
-    }
-  }, [currentPage, filters.maxAge, filters.platforms, filters.topics])
-
-  const filteredMovies = useMemo(() => {
-    // Start with appropriate source
-    let items = (source === "db" || source === "api")
-      ? apiMovies
-      : mockMediaItems.filter((m) => m.type === "MOVIE")
-
-    // Apply search filter (client-side for all sources)
-    if (filters.searchQuery && filters.searchQuery.trim()) {
-      const query = filters.searchQuery.toLowerCase().trim()
-      items = items.filter((m) =>
-        m.title.toLowerCase().includes(query)
-      )
-    }
-
-    // For mock data, apply additional filters
-    if (source === "mock") {
-      // Filter by age
-      if (filters.maxAge < 18) {
-        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-      }
-
-      // Filter by platform
-      if (filters.platforms.length > 0) {
-        items = items.filter((m) =>
-          m.platforms.some((p) =>
-            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-          )
-        )
-      }
-
-      // Filter by topics
-      if (filters.topics.length > 0) {
-        items = items.filter((m) =>
-          m.topics.some((t) =>
-            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-          ) ||
-          m.genres.some((g) =>
-            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
-          )
-        )
-      }
-    }
-
-    return items
-  }, [apiMovies, filters, source])
-
-  // Reset to page 1 when filters change
-  const handleFiltersChange = (newFilters: FilterState) => {
-    setFilters(newFilters)
-    setCurrentPage(1)
-  }
-
-  // Get all available titles for autocomplete
-  const availableTitles = useMemo(() => {
-    const titles = (source === "db" || source === "api")
-      ? apiMovies.map(m => m.title)
-      : mockMediaItems.filter(m => m.type === "MOVIE").map(m => m.title)
-    return [...new Set(titles)] // Remove duplicates
-  }, [apiMovies, source])
-
-  // Pagination
-  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
-  const paginatedMovies = useMemo(() => {
-    if (source === "db" || source === "api") return filteredMovies
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredMovies, currentPage, source])
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-3 bg-red-500 rounded-xl text-white">
-            <Film className="h-6 w-6" />
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Header */}
+      <div className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-3 bg-white/20 rounded-xl">
+                  <Film className="h-8 w-8" />
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold">Films</h1>
+              </div>
+              <p className="text-red-100 text-lg max-w-xl">
+                Découvrez les meilleurs films pour toute la famille avec nos critiques
+                et recommandations par âge.
+              </p>
+            </div>
+
+            {/* Search & Filter Actions */}
+            <div className="flex gap-3">
+              <Button
+                asChild
+                variant="secondary"
+                size="lg"
+                className="bg-white/20 hover:bg-white/30 text-white border-0"
+              >
+                <Link href="/films/recherche">
+                  <Search className="h-5 w-5 mr-2" />
+                  Rechercher
+                </Link>
+              </Button>
+              <Button
+                asChild
+                variant="secondary"
+                size="lg"
+                className="bg-white hover:bg-white/90 text-red-600"
+              >
+                <Link href="/films/recherche">
+                  <SlidersHorizontal className="h-5 w-5 mr-2" />
+                  Filtrer
+                </Link>
+              </Button>
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Films</h1>
         </div>
-        <p className="text-gray-600">
-          Decouvrez les meilleurs films pour toute la famille avec nos critiques et recommandations par age.
-        </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="lg:w-64 shrink-0">
-          <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} />
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2">
-              {source === "db" && (
-                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  <Database className="h-3 w-3" /> Base locale
-                </span>
-              )}
-              <p className="text-gray-600">
-                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
-                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
-                trouve{((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
-              </p>
-            </div>
-            {totalPages > 1 && (
-              <p className="text-sm text-gray-500">
-                Page {currentPage} sur {totalPages}
-              </p>
-            )}
-          </div>
-
-          {apiLoading ? (
-            <div className="text-center py-16 text-gray-500">
-              <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Chargement...</p>
-              <p className="text-sm">Récupération du catalogue</p>
-            </div>
-          ) : paginatedMovies.length > 0 ? (
-            <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-                {paginatedMovies.map((movie) => (
-                  <MediaCard key={movie.id} media={movie} />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                className="mt-8"
-              />
-            </>
-          ) : (
-            <div className="text-center py-16 text-gray-500">
-              <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucun film trouve</p>
-              <p className="text-sm">Essayez de modifier vos filtres</p>
-            </div>
-          )}
-        </div>
+      {/* Category Sections */}
+      <div className="container mx-auto px-4 py-8">
+        {MOVIE_CATEGORIES.map((category) => (
+          <MovieCategoryRow key={category.id} category={category} />
+        ))}
       </div>
     </div>
   )
 }
-
