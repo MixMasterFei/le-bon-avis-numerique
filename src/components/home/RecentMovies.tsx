@@ -76,8 +76,8 @@ export function RecentMovies() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
           <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
         ))}
       </div>
@@ -106,7 +106,7 @@ export function RecentMovies() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
         {movies.map((item) => (
           <MediaCard key={item.id} media={item} />
         ))}

@@ -1,98 +1,320 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Scale, Building2, Server, FileText, Shield, AlertTriangle, Mail } from "lucide-react"
+import Link from "next/link"
 
 export default function MentionsLegalesPage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Mentions Légales</h1>
+      <div className="text-center mb-12">
+        <div className="inline-flex p-4 bg-primary/10 rounded-full mb-4">
+          <Scale className="h-8 w-8 text-primary" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Mentions Légales</h1>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Conformément aux dispositions des articles 6-III et 19 de la Loi n°2004-575
+          du 21 juin 2004 pour la Confiance dans l&apos;économie numérique (LCEN).
+        </p>
+      </div>
 
       <div className="space-y-6">
+        {/* Éditeur du site */}
         <Card>
           <CardHeader>
-            <CardTitle>Éditeur du site</CardTitle>
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-primary" />
+              <CardTitle>1. Éditeur du site</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le site Le Bon Avis Numérique est édité par [Nom de la société],
-              société [forme juridique] au capital de [montant] euros,
-              immatriculée au Registre du Commerce et des Sociétés de [ville]
-              sous le numéro [numéro RCS].
+              Le site <strong>Le Bon Sens Numérique</strong> accessible à l&apos;adresse
+              www.lebonsens-numerique.fr est édité par :
             </p>
-            <p>
-              <strong>Siège social :</strong> [Adresse complète]
-            </p>
-            <p>
-              <strong>Numéro de TVA intracommunautaire :</strong> [Numéro TVA]
-            </p>
-            <p>
-              <strong>Directeur de la publication :</strong> [Nom du directeur]
+            <div className="bg-gray-50 p-4 rounded-lg mt-4">
+              <p className="mb-2">
+                <strong>Raison sociale :</strong> Le Bon Sens Numérique SAS
+              </p>
+              <p className="mb-2">
+                <strong>Forme juridique :</strong> Société par Actions Simplifiée (SAS)
+              </p>
+              <p className="mb-2">
+                <strong>Capital social :</strong> [À compléter] euros
+              </p>
+              <p className="mb-2">
+                <strong>Siège social :</strong> [Adresse à compléter], France
+              </p>
+              <p className="mb-2">
+                <strong>RCS :</strong> [Ville] [Numéro à compléter]
+              </p>
+              <p className="mb-2">
+                <strong>SIRET :</strong> [Numéro à compléter]
+              </p>
+              <p className="mb-2">
+                <strong>Numéro de TVA intracommunautaire :</strong> FR [Numéro à compléter]
+              </p>
+            </div>
+            <div className="mt-4">
+              <p className="mb-2">
+                <strong>Directeur de la publication :</strong> [Nom et prénom du responsable]
+              </p>
+              <p className="text-sm text-gray-500">
+                En sa qualité de représentant légal de la société.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Hébergement */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Server className="h-5 w-5 text-primary" />
+              <CardTitle>2. Hébergement</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Le site est hébergé par :</p>
+            <div className="bg-gray-50 p-4 rounded-lg mt-4">
+              <p className="mb-2">
+                <strong>Vercel Inc.</strong>
+              </p>
+              <p className="mb-2">
+                340 S Lemon Ave #4133<br />
+                Walnut, CA 91789<br />
+                États-Unis
+              </p>
+              <p className="mb-2">
+                <strong>Site web :</strong>{" "}
+                <a
+                  href="https://vercel.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  vercel.com
+                </a>
+              </p>
+            </div>
+            <p className="mt-4 text-sm text-gray-600">
+              Les données sont hébergées dans des centres de données sécurisés.
+              Des mesures de protection appropriées sont mises en place conformément
+              au RGPD pour les transferts de données vers les États-Unis.
             </p>
           </CardContent>
         </Card>
 
+        {/* Propriété intellectuelle */}
         <Card>
           <CardHeader>
-            <CardTitle>Hébergement</CardTitle>
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-primary" />
+              <CardTitle>3. Propriété intellectuelle</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le site est hébergé par [Nom de l&apos;hébergeur],
-              [Adresse de l&apos;hébergeur].
+              L&apos;ensemble du contenu de ce site (structure, textes, logos, images,
+              vidéos, sons, logiciels, bases de données, etc.) est protégé par le
+              droit d&apos;auteur et le droit des marques, conformément aux dispositions
+              du Code de la Propriété Intellectuelle.
+            </p>
+            <h4 className="font-semibold mt-4 mb-2">Droits d&apos;auteur</h4>
+            <p>
+              Toute reproduction, représentation, modification, publication, adaptation
+              de tout ou partie des éléments du site, quel que soit le moyen ou le
+              procédé utilisé, est interdite sans autorisation écrite préalable de
+              Le Bon Sens Numérique.
+            </p>
+            <h4 className="font-semibold mt-4 mb-2">Marques et logos</h4>
+            <p>
+              Les marques, logos et signes distinctifs présents sur le site sont
+              la propriété de Le Bon Sens Numérique ou font l&apos;objet d&apos;une
+              autorisation d&apos;utilisation. Toute utilisation non autorisée constitue
+              une contrefaçon sanctionnée par les articles L.335-2 et suivants du
+              Code de la Propriété Intellectuelle.
+            </p>
+            <h4 className="font-semibold mt-4 mb-2">Contenus tiers</h4>
+            <p>
+              Les affiches de films, images et autres contenus relatifs aux œuvres
+              cinématographiques et audiovisuelles présentées sur ce site appartiennent
+              à leurs ayants droit respectifs (studios, distributeurs, producteurs).
+              Ils sont utilisés à des fins d&apos;information et de critique dans le
+              cadre du droit de citation.
             </p>
           </CardContent>
         </Card>
 
+        {/* Responsabilité */}
         <Card>
           <CardHeader>
-            <CardTitle>Propriété intellectuelle</CardTitle>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-primary" />
+              <CardTitle>4. Limitation de responsabilité</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
+            <h4 className="font-semibold mb-2">Informations et recommandations</h4>
             <p>
-              L&apos;ensemble du contenu de ce site (textes, images, vidéos, etc.)
-              est protégé par le droit d&apos;auteur. Toute reproduction, même
-              partielle, est soumise à autorisation préalable.
-            </p>
-            <p>
-              Les marques et logos présents sur le site sont la propriété de
-              leurs détenteurs respectifs.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Responsabilité</CardTitle>
-          </CardHeader>
-          <CardContent className="prose prose-gray">
-            <p>
-              Les informations et recommandations présentes sur ce site sont
-              fournies à titre indicatif. Le Bon Avis Numérique s&apos;efforce de
-              fournir des informations exactes et à jour, mais ne peut garantir
-              l&apos;exactitude, la complétude ou l&apos;actualité des informations
+              Les informations, recommandations d&apos;âge et avis présents sur ce site
+              sont fournis à titre indicatif et informatif. Le Bon Sens Numérique
+              s&apos;efforce de fournir des informations exactes et à jour, mais ne peut
+              garantir l&apos;exactitude, la complétude ou l&apos;actualité des informations
               diffusées.
             </p>
             <p>
-              Les décisions prises sur la base des informations de ce site
-              relèvent de la responsabilité exclusive de l&apos;utilisateur.
+              Les décisions prises sur la base des informations de ce site, notamment
+              concernant le visionnage de contenus par des enfants, relèvent de la
+              responsabilité exclusive des parents ou tuteurs légaux.
+            </p>
+
+            <h4 className="font-semibold mt-4 mb-2">Disponibilité du site</h4>
+            <p>
+              Le Bon Sens Numérique ne peut garantir que le site sera disponible de
+              manière ininterrompue et sans erreur. L&apos;éditeur se réserve le droit
+              de suspendre, modifier ou interrompre l&apos;accès au site à tout moment,
+              notamment pour des raisons de maintenance.
+            </p>
+
+            <h4 className="font-semibold mt-4 mb-2">Liens hypertextes</h4>
+            <p>
+              Le site peut contenir des liens vers d&apos;autres sites web. Le Bon Sens
+              Numérique n&apos;exerce aucun contrôle sur ces sites et décline toute
+              responsabilité quant à leur contenu.
+            </p>
+
+            <h4 className="font-semibold mt-4 mb-2">Contributions des utilisateurs</h4>
+            <p>
+              Les avis et commentaires publiés par les utilisateurs n&apos;engagent que
+              leurs auteurs. Le Bon Sens Numérique se réserve le droit de modérer
+              ou supprimer tout contenu contraire aux bonnes mœurs, à la loi ou
+              aux conditions d&apos;utilisation du site.
             </p>
           </CardContent>
         </Card>
 
+        {/* Protection des données */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact</CardTitle>
+            <div className="flex items-center gap-3">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle>5. Protection des données personnelles</CardTitle>
+            </div>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Pour toute question concernant le site, vous pouvez nous contacter :
+              Le Bon Sens Numérique s&apos;engage à protéger la vie privée des
+              utilisateurs de son site, conformément au Règlement Général sur la
+              Protection des Données (RGPD) et à la loi Informatique et Libertés.
             </p>
-            <ul>
-              <li>Par email : contact@lebonavis-numerique.fr</li>
-              <li>Par courrier : [Adresse postale]</li>
-            </ul>
+            <p className="mt-4">
+              Pour connaître en détail nos pratiques en matière de collecte et de
+              traitement des données personnelles, veuillez consulter notre{" "}
+              <Link href="/confidentialite" className="text-primary hover:underline">
+                Politique de Confidentialité
+              </Link>
+              .
+            </p>
+            <p className="mt-4">
+              Pour gérer vos préférences concernant les cookies, rendez-vous sur
+              notre page{" "}
+              <Link href="/cookies" className="text-primary hover:underline">
+                Gestion des cookies
+              </Link>
+              .
+            </p>
+            <div className="bg-blue-50 p-4 rounded-lg mt-4">
+              <p className="text-sm">
+                <strong>Délégué à la Protection des Données (DPO) :</strong><br />
+                Email : dpo@lebonsens-numerique.fr
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Droit applicable */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Scale className="h-5 w-5 text-primary" />
+              <CardTitle>6. Droit applicable et juridiction</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Les présentes mentions légales sont régies par le droit français.
+            </p>
+            <p className="mt-4">
+              En cas de litige relatif à l&apos;interprétation ou l&apos;exécution des
+              présentes, et à défaut de résolution amiable, les tribunaux français
+              seront seuls compétents.
+            </p>
+            <p className="mt-4">
+              Conformément aux dispositions du Code de la consommation concernant
+              le règlement amiable des litiges, l&apos;utilisateur peut recourir au
+              service de médiation suivant :
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg mt-4">
+              <p className="text-sm">
+                <strong>Plateforme de règlement en ligne des litiges :</strong><br />
+                <a
+                  href="https://ec.europa.eu/consumers/odr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  https://ec.europa.eu/consumers/odr
+                </a>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-primary" />
+              <CardTitle>7. Contact</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Pour toute question concernant le site ou les présentes mentions
+              légales, vous pouvez nous contacter :
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg mt-4">
+              <p className="mb-2">
+                <strong>Par email :</strong>{" "}
+                <a
+                  href="mailto:contact@lebonsens-numerique.fr"
+                  className="text-primary hover:underline"
+                >
+                  contact@lebonsens-numerique.fr
+                </a>
+              </p>
+              <p className="mb-2">
+                <strong>Par courrier :</strong><br />
+                Le Bon Sens Numérique<br />
+                [Adresse à compléter]<br />
+                France
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Mise à jour */}
+        <Card className="bg-gray-50">
+          <CardContent className="pt-6">
+            <p className="text-sm text-gray-600 text-center">
+              <strong>Dernière mise à jour :</strong> {new Date().toLocaleDateString("fr-FR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+              })}
+            </p>
           </CardContent>
         </Card>
       </div>
     </div>
   )
 }
-

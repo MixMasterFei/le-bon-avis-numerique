@@ -203,14 +203,14 @@ export function FamilyRecommendations() {
             )}
 
             {/* Media Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
               {recommendations.recommendations.map((media) => (
                 <Link
                   key={media.id}
                   href={`/media/${media.id}`}
                   className="group"
                 >
-                  <Card className="overflow-hidden hover:shadow-lg transition-all">
+                  <Card className="overflow-hidden hover:shadow-md transition-all">
                     <div className="relative aspect-[2/3]">
                       {media.posterUrl ? (
                         <Image
@@ -221,17 +221,17 @@ export function FamilyRecommendations() {
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <Film className="h-8 w-8 text-gray-400" />
+                          <Film className="h-6 w-6 text-gray-400" />
                         </div>
                       )}
                       {media.expertAgeRec !== null && (
-                        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
                           {media.expertAgeRec}+
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-medium text-sm line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                    <CardContent className="p-2">
+                      <h3 className="font-medium text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">
                         {media.title}
                       </h3>
                     </CardContent>

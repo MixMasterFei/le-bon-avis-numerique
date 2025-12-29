@@ -3,10 +3,21 @@
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2 } from "lucide-react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, BellOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { FamilyMembers } from "@/components/profile/FamilyMembers"
 import Link from "next/link"
 
@@ -23,6 +34,20 @@ export default function ProfilPage() {
   const { data: session, status } = useSession()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
+
+  // Profile edit state
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [profileName, setProfileName] = useState("")
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileSaved, setProfileSaved] = useState(false)
+
+  // Email notifications state
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [emailNewsletter, setEmailNewsletter] = useState(true)
+  const [emailRecommendations, setEmailRecommendations] = useState(true)
+  const [emailComments, setEmailComments] = useState(false)
+  const [savingNotifications, setSavingNotifications] = useState(false)
+  const [notificationsSaved, setNotificationsSaved] = useState(false)
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -60,6 +85,63 @@ export default function ProfilPage() {
   }
 
   const isAdmin = session.user.role === "ADMIN"
+
+  // Initialize profile name when session loads
+  useEffect(() => {
+    if (session?.user?.name) {
+      setProfileName(session.user.name)
+    }
+  }, [session])
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true)
+    setProfileSaved(false)
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: profileName }),
+      })
+      if (res.ok) {
+        setProfileSaved(true)
+        setTimeout(() => {
+          setEditProfileOpen(false)
+          setProfileSaved(false)
+        }, 1500)
+      }
+    } catch (err) {
+      console.error("Failed to save profile:", err)
+    } finally {
+      setSavingProfile(false)
+    }
+  }
+
+  const handleSaveNotifications = async () => {
+    setSavingNotifications(true)
+    setNotificationsSaved(false)
+    try {
+      const res = await fetch("/api/user/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newsletter: emailNewsletter,
+          recommendations: emailRecommendations,
+          comments: emailComments,
+        }),
+      })
+      if (res.ok) {
+        setNotificationsSaved(true)
+        setTimeout(() => {
+          setNotificationsOpen(false)
+          setNotificationsSaved(false)
+        }, 1500)
+      }
+    } catch (err) {
+      console.error("Failed to save notifications:", err)
+    } finally {
+      setSavingNotifications(false)
+    }
+  }
 
   const formatMemberSince = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -108,7 +190,56 @@ export default function ProfilPage() {
               )}
             </div>
 
-            <Button variant="outline">Modifier le profil</Button>
+            <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">Modifier le profil</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Modifier le profil</DialogTitle>
+                  <DialogDescription>
+                    Modifiez les informations de votre profil
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profileName">Nom</Label>
+                    <Input
+                      id="profileName"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="Votre nom"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profileEmail">Email</Label>
+                    <Input
+                      id="profileEmail"
+                      type="email"
+                      value={session.user.email || ""}
+                      disabled
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-gray-500">
+                      L&apos;email ne peut pas etre modifie
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile || profileSaved}
+                  >
+                    {savingProfile ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : profileSaved ? (
+                      <Check className="h-4 w-4 mr-2" />
+                    ) : null}
+                    {profileSaved ? "Enregistre!" : "Enregistrer"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -212,7 +343,81 @@ export default function ProfilPage() {
               <p className="font-medium">Notifications par email</p>
               <p className="text-sm text-gray-500">Recevoir les nouveautes et recommandations</p>
             </div>
-            <Button variant="outline" size="sm">Configurer</Button>
+            <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">Configurer</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Notifications par email</DialogTitle>
+                  <DialogDescription>
+                    Choisissez les emails que vous souhaitez recevoir
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium">Newsletter</p>
+                        <p className="text-sm text-gray-500">Actualites et nouveautes du site</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={emailNewsletter}
+                      onChange={(e) => setEmailNewsletter(e.target.checked)}
+                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <Heart className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium">Recommandations</p>
+                        <p className="text-sm text-gray-500">Suggestions basees sur vos gouts</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={emailRecommendations}
+                      onChange={(e) => setEmailRecommendations(e.target.checked)}
+                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <p className="font-medium">Commentaires</p>
+                        <p className="text-sm text-gray-500">Reponses a vos avis</p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={emailComments}
+                      onChange={(e) => setEmailComments(e.target.checked)}
+                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                  </label>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleSaveNotifications}
+                    disabled={savingNotifications || notificationsSaved}
+                  >
+                    {savingNotifications ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : notificationsSaved ? (
+                      <Check className="h-4 w-4 mr-2" />
+                    ) : null}
+                    {notificationsSaved ? "Enregistre!" : "Enregistrer"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="flex items-center justify-between py-3 border-b">

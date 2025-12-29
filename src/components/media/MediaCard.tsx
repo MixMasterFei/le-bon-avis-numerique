@@ -32,7 +32,7 @@ export function MediaCard({ media, className }: MediaCardProps) {
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
       <Card
         className={cn(
-          "group overflow-hidden hover:shadow-lg transition-all duration-300 h-full",
+          "group overflow-hidden hover:shadow-md transition-all duration-300 h-full",
           className
         )}
       >
@@ -44,40 +44,33 @@ export function MediaCard({ media, className }: MediaCardProps) {
             alt={media.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+            sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
 
           {/* Age Badge Overlay - single age recommendation */}
-          <div className="absolute top-2 left-2">
-            <AgeBadge age={media.expertAgeRec} size="sm" />
+          <div className="absolute top-1.5 left-1.5">
+            <AgeBadge age={media.expertAgeRec} size="xs" />
           </div>
 
           {/* Type Badge */}
-          <div className="absolute top-2 right-2">
-            <Badge variant="secondary" className="bg-white/90 text-gray-700 gap-1">
-              <Icon className="h-3 w-3" />
-              {mediaTypeLabels[media.type]}
+          <div className="absolute top-1.5 right-1.5">
+            <Badge variant="secondary" className="bg-white/90 text-gray-700 gap-0.5 text-[10px] px-1.5 py-0.5">
+              <Icon className="h-2.5 w-2.5" />
+              <span className="hidden sm:inline">{mediaTypeLabels[media.type]}</span>
             </Badge>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-3 space-y-2">
-          <div>
-            <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
-              {media.title}
-            </h3>
-            {media.originalTitle && media.originalTitle !== media.title && (
-              <p className="text-xs text-gray-500 line-clamp-1">
-                {media.originalTitle}
-              </p>
-            )}
-          </div>
+        {/* Content - Compact */}
+        <div className="p-2 space-y-1">
+          <h3 className="font-medium text-sm text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+            {media.title}
+          </h3>
 
-          {/* Genres */}
-          <div className="flex flex-wrap gap-1">
+          {/* Genres - Compact */}
+          <div className="flex flex-wrap gap-0.5">
             {media.genres.slice(0, 2).map((genre) => (
-              <Badge key={genre} variant="outline" className="text-xs">
+              <Badge key={genre} variant="outline" className="text-[10px] px-1.5 py-0">
                 {genre}
               </Badge>
             ))}

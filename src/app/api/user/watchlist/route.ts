@@ -75,21 +75,48 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all user watchlist
-    const watchlist = await prisma.watchlist.findMany({
+    const watchlistItems = await prisma.watchlist.findMany({
       where: { userId: session.user.id },
       include: {
         media: {
           select: {
             id: true,
             title: true,
+            originalTitle: true,
             posterUrl: true,
             type: true,
+            releaseDate: true,
+            synopsisFr: true,
+            officialRating: true,
             expertAgeRec: true,
+            communityAgeRec: true,
+            genres: true,
+            platforms: true,
+            topics: true,
           },
         },
       },
       orderBy: { createdAt: "desc" },
     })
+
+    // Map to the format expected by the page
+    const watchlist = watchlistItems.map((w) => ({
+      id: w.media.id,
+      title: w.media.title,
+      originalTitle: w.media.originalTitle,
+      type: w.media.type,
+      releaseDate: w.media.releaseDate,
+      posterUrl: w.media.posterUrl || "",
+      synopsisFr: w.media.synopsisFr,
+      officialRating: w.media.officialRating,
+      expertAgeRec: w.media.expertAgeRec,
+      communityAgeRec: w.media.communityAgeRec,
+      genres: w.media.genres || [],
+      platforms: w.media.platforms || [],
+      topics: w.media.topics || [],
+      contentMetrics: null,
+      reviews: [],
+    }))
 
     return NextResponse.json({ watchlist })
   } catch (error) {

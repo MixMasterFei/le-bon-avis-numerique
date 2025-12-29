@@ -1,165 +1,506 @@
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Shield, Mail, FileText, ExternalLink } from "lucide-react"
 
 export default function ConfidentialitePage() {
+  const lastUpdate = "29 decembre 2024"
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
-        Politique de Confidentialité
-      </h1>
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-3 bg-green-100 rounded-xl">
+            <Shield className="h-6 w-6 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Politique de Confidentialite
+          </h1>
+        </div>
+        <p className="text-gray-600">
+          Derniere mise a jour : {lastUpdate}
+        </p>
+      </div>
 
       <div className="space-y-6">
+        {/* Introduction */}
         <Card>
           <CardHeader>
-            <CardTitle>Introduction</CardTitle>
+            <CardTitle>1. Introduction</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le Bon Avis Numérique s&apos;engage à protéger la vie privée des
-              utilisateurs de son site. Cette politique de confidentialité
-              explique comment nous collectons, utilisons et protégeons vos
-              données personnelles conformément au Règlement Général sur la
-              Protection des Données (RGPD).
+              Le Bon Sens Numerique (ci-apres &quot;nous&quot;, &quot;notre&quot; ou &quot;le Site&quot;) s&apos;engage
+              a proteger la vie privee des utilisateurs de son site internet. Cette politique
+              de confidentialite explique comment nous collectons, utilisons, stockons et
+              protegeons vos donnees personnelles conformement au Reglement General sur la
+              Protection des Donnees (RGPD - Reglement UE 2016/679) et a la loi francaise
+              Informatique et Libertes du 6 janvier 1978 modifiee.
+            </p>
+            <p>
+              Cette politique s&apos;applique a tous les utilisateurs du site, qu&apos;ils soient
+              visiteurs, membres inscrits ou parents/tuteurs d&apos;enfants mineurs utilisant
+              nos services.
             </p>
           </CardContent>
         </Card>
 
+        {/* Data Controller */}
         <Card>
           <CardHeader>
-            <CardTitle>Données collectées</CardTitle>
+            <CardTitle>2. Responsable du traitement</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-gray">
-            <p>Nous pouvons collecter les types de données suivants :</p>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Le responsable du traitement des donnees personnelles est :</p>
+            <div className="bg-gray-50 p-4 rounded-lg not-prose">
+              <p className="font-semibold">Le Bon Sens Numerique</p>
+              <p className="text-sm text-gray-600">Association loi 1901</p>
+              <p className="text-sm text-gray-600">Siege social : Paris, France</p>
+              <p className="text-sm text-gray-600 mt-2">
+                <strong>Email :</strong> contact@lebonsens-numerique.fr
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>DPO :</strong> dpo@lebonsens-numerique.fr
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data Collected */}
+        <Card>
+          <CardHeader>
+            <CardTitle>3. Donnees collectees</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Nous collectons les categories de donnees suivantes :</p>
+
+            <h4 className="font-semibold mt-4">3.1 Donnees d&apos;identification</h4>
+            <ul>
+              <li>Nom et prenom (lors de la creation de compte)</li>
+              <li>Adresse email</li>
+              <li>Mot de passe (stocke de maniere chiffree)</li>
+              <li>Photo de profil (optionnelle)</li>
+            </ul>
+
+            <h4 className="font-semibold mt-4">3.2 Donnees relatives aux membres de la famille</h4>
+            <ul>
+              <li>Prenoms des enfants (optionnel)</li>
+              <li>Annee de naissance des enfants (pour les recommandations par age)</li>
+              <li>Reactions des enfants aux contenus (aime, pas aime, trop effrayant, etc.)</li>
+            </ul>
+
+            <h4 className="font-semibold mt-4">3.3 Donnees de contribution</h4>
+            <ul>
+              <li>Avis et commentaires publies</li>
+              <li>Notes attribuees aux contenus</li>
+              <li>Listes de favoris et contenus a voir</li>
+            </ul>
+
+            <h4 className="font-semibold mt-4">3.4 Donnees techniques</h4>
+            <ul>
+              <li>Adresse IP</li>
+              <li>Type et version du navigateur</li>
+              <li>Systeme d&apos;exploitation</li>
+              <li>Pages visitees et duree de visite</li>
+              <li>Date et heure de connexion</li>
+            </ul>
+
+            <h4 className="font-semibold mt-4">3.5 Donnees de connexion tierce</h4>
+            <p>
+              Si vous utilisez la connexion via Google, nous recevons : votre nom,
+              adresse email et photo de profil associes a votre compte Google.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Legal Basis */}
+        <Card>
+          <CardHeader>
+            <CardTitle>4. Bases legales du traitement</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Conformement a l&apos;article 6 du RGPD, nous traitons vos donnees sur les
+              bases legales suivantes :
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 pr-4">Traitement</th>
+                    <th className="text-left py-2">Base legale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Gestion de votre compte</td>
+                    <td className="py-2">Execution du contrat</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Publication de vos avis</td>
+                    <td className="py-2">Execution du contrat</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Envoi de newsletters</td>
+                    <td className="py-2">Consentement</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Cookies analytiques</td>
+                    <td className="py-2">Consentement</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Securite du site</td>
+                    <td className="py-2">Interet legitime</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Amelioration des services</td>
+                    <td className="py-2">Interet legitime</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4">Reponse aux obligations legales</td>
+                    <td className="py-2">Obligation legale</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="mt-4">
+              <strong>Interet legitime :</strong> Notre interet legitime consiste a
+              assurer le bon fonctionnement et la securite de notre site, ainsi qu&apos;a
+              ameliorer nos services pour mieux repondre aux attentes de nos utilisateurs.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Data Usage */}
+        <Card>
+          <CardHeader>
+            <CardTitle>5. Utilisation des donnees</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Vos donnees personnelles sont utilisees pour :</p>
+            <ul>
+              <li>Creer et gerer votre compte utilisateur</li>
+              <li>Personnaliser les recommandations en fonction de l&apos;age de vos enfants</li>
+              <li>Publier vos avis et contributions sur le site</li>
+              <li>Sauvegarder vos favoris et listes personnelles</li>
+              <li>Vous envoyer des communications (newsletters, mises a jour) si vous y avez consenti</li>
+              <li>Repondre a vos demandes de support</li>
+              <li>Ameliorer nos services et notre site</li>
+              <li>Assurer la securite et prevenir les fraudes</li>
+              <li>Respecter nos obligations legales</li>
+            </ul>
+            <p>
+              <strong>Nous ne vendons jamais vos donnees personnelles a des tiers.</strong>
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Data Sharing */}
+        <Card>
+          <CardHeader>
+            <CardTitle>6. Partage des donnees</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <h4 className="font-semibold">6.1 Donnees rendues publiques</h4>
+            <p>
+              Les avis, notes et commentaires que vous publiez sont visibles par tous
+              les utilisateurs du site. Votre nom d&apos;affichage (pseudonyme ou prenom)
+              sera associe a vos contributions.
+            </p>
+
+            <h4 className="font-semibold mt-4">6.2 Sous-traitants</h4>
+            <p>Nous partageons vos donnees avec les prestataires suivants :</p>
+            <ul>
+              <li><strong>Vercel</strong> (Etats-Unis) : Hebergement du site</li>
+              <li><strong>Neon/PostgreSQL</strong> : Base de donnees</li>
+              <li><strong>Google</strong> (si connexion Google) : Authentification</li>
+            </ul>
+            <p>
+              Ces prestataires sont contractuellement tenus de proteger vos donnees
+              conformement au RGPD.
+            </p>
+
+            <h4 className="font-semibold mt-4">6.3 Transferts hors UE</h4>
+            <p>
+              Certains de nos prestataires sont situes aux Etats-Unis. Ces transferts
+              sont encadres par des Clauses Contractuelles Types (CCT) approuvees par
+              la Commission europeenne, garantissant un niveau de protection adequat.
+            </p>
+
+            <h4 className="font-semibold mt-4">6.4 Autorites</h4>
+            <p>
+              Nous pouvons divulguer vos donnees aux autorites competentes si la loi
+              l&apos;exige ou en cas de decision judiciaire.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Data Retention */}
+        <Card>
+          <CardHeader>
+            <CardTitle>7. Duree de conservation</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Nous conservons vos donnees selon les durees suivantes :</p>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 pr-4">Type de donnees</th>
+                    <th className="text-left py-2">Duree de conservation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Donnees de compte</td>
+                    <td className="py-2">Duree de l&apos;inscription + 3 ans apres suppression</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Avis et contributions</td>
+                    <td className="py-2">Duree de publication + 1 an apres suppression</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Donnees de navigation (cookies)</td>
+                    <td className="py-2">13 mois maximum</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-2 pr-4">Logs de securite</td>
+                    <td className="py-2">1 an</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4">Donnees de facturation (si applicable)</td>
+                    <td className="py-2">10 ans (obligation legale)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cookies */}
+        <Card>
+          <CardHeader>
+            <CardTitle>8. Cookies</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>Notre site utilise des cookies. Pour plus de details, consultez notre :</p>
+            <Link
+              href="/cookies"
+              className="inline-flex items-center gap-2 text-green-600 hover:underline font-medium not-prose"
+            >
+              <FileText className="h-4 w-4" />
+              Politique de gestion des cookies
+            </Link>
+
+            <h4 className="font-semibold mt-4">Resume des cookies utilises :</h4>
             <ul>
               <li>
-                <strong>Données d&apos;identification :</strong> nom, prénom, adresse
-                email lors de la création d&apos;un compte
+                <strong>Cookies essentiels :</strong> Necessaires au fonctionnement
+                (session, securite). Pas de consentement requis.
               </li>
               <li>
-                <strong>Données de navigation :</strong> adresse IP, type de
-                navigateur, pages visitées (via cookies)
-              </li>
-              <li>
-                <strong>Données de contribution :</strong> avis, notes et
-                commentaires que vous publiez
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Utilisation des données</CardTitle>
-          </CardHeader>
-          <CardContent className="prose prose-gray">
-            <p>Vos données sont utilisées pour :</p>
-            <ul>
-              <li>Gérer votre compte utilisateur</li>
-              <li>Publier vos avis et contributions</li>
-              <li>Améliorer nos services et notre site</li>
-              <li>Vous envoyer des communications (avec votre consentement)</li>
-              <li>Assurer la sécurité du site</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Cookies</CardTitle>
-          </CardHeader>
-          <CardContent className="prose prose-gray">
-            <p>Notre site utilise des cookies pour :</p>
-            <ul>
-              <li>
-                <strong>Cookies essentiels :</strong> nécessaires au
-                fonctionnement du site (session, préférences)
-              </li>
-              <li>
-                <strong>Cookies analytiques :</strong> pour comprendre comment
-                vous utilisez le site (avec votre consentement)
+                <strong>Cookies analytiques :</strong> Pour comprendre l&apos;utilisation
+                du site. Soumis a votre consentement.
               </li>
             </ul>
             <p>
-              Vous pouvez gérer vos préférences de cookies à tout moment via
-              notre bannière de consentement.
+              Vous pouvez modifier vos preferences de cookies a tout moment via notre
+              page de gestion des cookies ou via le lien &quot;Gerer les cookies&quot; en bas de page.
             </p>
           </CardContent>
         </Card>
 
+        {/* Minors */}
         <Card>
           <CardHeader>
-            <CardTitle>Vos droits</CardTitle>
+            <CardTitle>9. Protection des mineurs</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Conformément au RGPD, vous disposez des droits suivants sur vos
-              données :
+              <strong>Notre site est destine aux parents et adultes.</strong> La creation
+              d&apos;un compte est reservee aux personnes de 18 ans et plus.
+            </p>
+            <p>
+              Conformement a l&apos;article 8 du RGPD et a l&apos;article 45 de la loi Informatique
+              et Libertes, le traitement des donnees personnelles d&apos;un enfant de moins
+              de 15 ans n&apos;est licite que si le consentement est donne par le titulaire
+              de l&apos;autorite parentale.
+            </p>
+            <p>
+              Les donnees relatives aux enfants (prenom, age, reactions) sont saisies
+              par les parents dans le cadre de la fonctionnalite &quot;Ma famille&quot; et restent
+              sous leur controle total. Ces donnees ne sont jamais partagees publiquement.
+            </p>
+            <p>
+              Si vous etes parent et souhaitez supprimer les donnees de vos enfants,
+              vous pouvez le faire directement depuis votre espace &quot;Profil&quot; ou nous
+              contacter.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* User Rights */}
+        <Card>
+          <CardHeader>
+            <CardTitle>10. Vos droits</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Conformement au RGPD, vous disposez des droits suivants sur vos donnees
+              personnelles :
             </p>
             <ul>
               <li>
-                <strong>Droit d&apos;accès :</strong> obtenir une copie de vos données
+                <strong>Droit d&apos;acces (art. 15) :</strong> Obtenir la confirmation que
+                vos donnees sont traitees et en recevoir une copie.
               </li>
               <li>
-                <strong>Droit de rectification :</strong> corriger vos données
+                <strong>Droit de rectification (art. 16) :</strong> Corriger vos donnees
+                inexactes ou incompletes.
               </li>
               <li>
-                <strong>Droit à l&apos;effacement :</strong> demander la suppression
-                de vos données
+                <strong>Droit a l&apos;effacement (art. 17) :</strong> Demander la suppression
+                de vos donnees (&quot;droit a l&apos;oubli&quot;).
               </li>
               <li>
-                <strong>Droit à la portabilité :</strong> recevoir vos données
-                dans un format structuré
+                <strong>Droit a la limitation (art. 18) :</strong> Limiter le traitement
+                de vos donnees dans certains cas.
               </li>
               <li>
-                <strong>Droit d&apos;opposition :</strong> vous opposer au traitement
-                de vos données
+                <strong>Droit a la portabilite (art. 20) :</strong> Recevoir vos donnees
+                dans un format structure et lisible par machine.
+              </li>
+              <li>
+                <strong>Droit d&apos;opposition (art. 21) :</strong> Vous opposer au traitement
+                de vos donnees, notamment pour le marketing.
+              </li>
+              <li>
+                <strong>Droit de retirer votre consentement :</strong> A tout moment,
+                sans affecter la liceite du traitement anterieur.
+              </li>
+            </ul>
+
+            <h4 className="font-semibold mt-4">Comment exercer vos droits ?</h4>
+            <ul>
+              <li>
+                <strong>En ligne :</strong> Via votre espace &quot;Profil&quot; pour modifier
+                ou supprimer vos donnees
+              </li>
+              <li>
+                <strong>Par email :</strong> privacy@lebonsens-numerique.fr
               </li>
             </ul>
             <p>
-              Pour exercer ces droits, contactez-nous à :
-              privacy@lebonavis-numerique.fr
+              Nous repondrons a votre demande dans un delai d&apos;un mois. Ce delai peut
+              etre prolonge de deux mois en cas de demande complexe.
             </p>
           </CardContent>
         </Card>
 
+        {/* CNIL */}
         <Card>
           <CardHeader>
-            <CardTitle>Conservation des données</CardTitle>
+            <CardTitle>11. Reclamation aupres de la CNIL</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Nous conservons vos données personnelles pendant la durée de votre
-              utilisation de nos services, puis pendant les durées légales
-              applicables.
+              Si vous estimez que le traitement de vos donnees personnelles constitue
+              une violation du RGPD, vous avez le droit d&apos;introduire une reclamation
+              aupres de la CNIL :
             </p>
-            <p>
-              Les données de navigation sont conservées pendant 13 mois maximum.
-            </p>
+            <div className="bg-gray-50 p-4 rounded-lg not-prose">
+              <p className="font-semibold">Commission Nationale de l&apos;Informatique et des Libertes (CNIL)</p>
+              <p className="text-sm text-gray-600">3 Place de Fontenoy</p>
+              <p className="text-sm text-gray-600">TSA 80715</p>
+              <p className="text-sm text-gray-600">75334 PARIS CEDEX 07</p>
+              <a
+                href="https://www.cnil.fr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-green-600 hover:underline mt-2"
+              >
+                www.cnil.fr
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </CardContent>
         </Card>
 
+        {/* Security */}
         <Card>
           <CardHeader>
-            <CardTitle>Contact</CardTitle>
+            <CardTitle>12. Securite des donnees</CardTitle>
           </CardHeader>
-          <CardContent className="prose prose-gray">
+          <CardContent className="prose prose-gray max-w-none">
             <p>
-              Pour toute question concernant cette politique de confidentialité
-              ou vos données personnelles :
+              Nous mettons en oeuvre des mesures techniques et organisationnelles
+              appropriees pour proteger vos donnees :
             </p>
             <ul>
-              <li>Email : privacy@lebonavis-numerique.fr</li>
-              <li>
-                Délégué à la protection des données : dpo@lebonavis-numerique.fr
-              </li>
+              <li>Chiffrement des donnees en transit (HTTPS/TLS)</li>
+              <li>Chiffrement des mots de passe (bcrypt)</li>
+              <li>Acces restreint aux donnees (principe du moindre privilege)</li>
+              <li>Sauvegardes regulieres</li>
+              <li>Surveillance et detection des intrusions</li>
             </ul>
             <p>
-              Vous pouvez également introduire une réclamation auprès de la CNIL
-              (Commission Nationale de l&apos;Informatique et des Libertés).
+              En cas de violation de donnees susceptible d&apos;engendrer un risque eleve
+              pour vos droits et libertes, nous vous en informerons dans les meilleurs
+              delais, conformement a l&apos;article 34 du RGPD.
             </p>
+          </CardContent>
+        </Card>
+
+        {/* Updates */}
+        <Card>
+          <CardHeader>
+            <CardTitle>13. Modifications de cette politique</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Nous pouvons modifier cette politique de confidentialite a tout moment.
+              Les modifications importantes seront notifiees par email ou via une
+              notification sur le site.
+            </p>
+            <p>
+              Nous vous encourageons a consulter regulierement cette page. La date de
+              derniere mise a jour est indiquee en haut de ce document.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Contact */}
+        <Card>
+          <CardHeader>
+            <CardTitle>14. Contact</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-gray max-w-none">
+            <p>
+              Pour toute question concernant cette politique de confidentialite ou
+              vos donnees personnelles, contactez-nous :
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 not-prose mt-4">
+              <a
+                href="mailto:privacy@lebonsens-numerique.fr"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                privacy@lebonsens-numerique.fr
+              </a>
+              <a
+                href="mailto:dpo@lebonsens-numerique.fr"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <Shield className="h-4 w-4" />
+                DPO : dpo@lebonsens-numerique.fr
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   )
 }
-

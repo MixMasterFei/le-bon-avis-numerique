@@ -4,42 +4,79 @@ import { useState } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Loader2, Mail, Lock, User, Eye, EyeOff, Check } from "lucide-react"
+import {
+  Loader2,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Check,
+  Film,
+  Gamepad2,
+  BookOpen,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 
 export default function InscriptionPage() {
   const router = useRouter()
 
-  const [name, setName] = useState("")
+  // Form state
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+
+  // Newsletter preferences
+  const [newsletterWeekly, setNewsletterWeekly] = useState<boolean | null>(null)
+  const [newsletterMission, setNewsletterMission] = useState<boolean | null>(null)
+  const [newsletterUpdates, setNewsletterUpdates] = useState<boolean | null>(null)
+
+  // Terms
+  const [acceptTerms, setAcceptTerms] = useState(false)
+
+  // Loading & errors
   const [isLoading, setIsLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Password validation
   const passwordChecks = {
     length: password.length >= 8,
-    match: password === confirmPassword && password.length > 0,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
   }
+  const passwordValid = Object.values(passwordChecks).every(Boolean)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setErrorMessage(null)
 
-    // Client-side validation
-    if (!passwordChecks.length) {
-      setErrorMessage("Le mot de passe doit contenir au moins 8 caracteres")
+    // Validate all required fields
+    if (!firstName.trim() || !lastName.trim()) {
+      setErrorMessage("Le prenom et le nom sont requis")
       setIsLoading(false)
       return
     }
 
-    if (!passwordChecks.match) {
-      setErrorMessage("Les mots de passe ne correspondent pas")
+    if (!passwordValid) {
+      setErrorMessage("Le mot de passe ne respecte pas les criteres requis")
+      setIsLoading(false)
+      return
+    }
+
+    if (newsletterWeekly === null || newsletterMission === null || newsletterUpdates === null) {
+      setErrorMessage("Veuillez repondre a toutes les questions sur les emails")
+      setIsLoading(false)
+      return
+    }
+
+    if (!acceptTerms) {
+      setErrorMessage("Vous devez accepter les conditions d'utilisation")
       setIsLoading(false)
       return
     }
@@ -48,7 +85,16 @@ export default function InscriptionPage() {
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          password,
+          preferences: {
+            newsletterWeekly,
+            newsletterMission,
+            newsletterUpdates,
+          },
+        }),
       })
 
       const data = await response.json()
@@ -79,191 +125,359 @@ export default function InscriptionPage() {
   }
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true)
+    setGoogleLoading(true)
     await signIn("google", { callbackUrl: "/" })
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center py-12 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-700 text-white font-bold text-xl">
-              BA
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Creer un compte</CardTitle>
-          <CardDescription>
-            Rejoignez notre communaute de parents engages
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      <div className="container mx-auto px-4 py-8 lg:py-12">
+        <div className="max-w-5xl mx-auto">
+          <Card className="overflow-hidden shadow-xl">
+            <div className="grid lg:grid-cols-2">
+              {/* Left side - Illustration & Benefits */}
+              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8 lg:p-12 text-white flex flex-col justify-center order-2 lg:order-1">
+                <div className="mb-8">
+                  <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl mb-6 mx-auto lg:mx-0">
+                    👋
+                  </div>
+                  <h2 className="text-2xl lg:text-3xl font-bold mb-4 text-center lg:text-left">
+                    Bienvenue !
+                  </h2>
+                  <p className="text-green-100 text-lg text-center lg:text-left">
+                    Informez-vous. Inspirez-vous. Partagez vos avis. Avec un compte gratuit, sauvegardez vos critiques, ajoutez vos propres notes et bien plus.
+                  </p>
+                </div>
 
-        <CardContent className="space-y-6">
-          {errorMessage && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
-              {errorMessage}
-            </div>
-          )}
+                {/* Benefits */}
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <Film className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Films & Series</p>
+                      <p className="text-sm text-green-200">Critiques detaillees par age</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <Gamepad2 className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Jeux Video</p>
+                      <p className="text-sm text-green-200">Analyses des contenus sensibles</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
+                    <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                      <BookOpen className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Livres</p>
+                      <p className="text-sm text-green-200">Recommandations personnalisees</p>
+                    </div>
+                  </div>
+                </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium text-gray-700">
-                Nom (optionnel)
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Votre nom"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
-                  disabled={isLoading}
-                />
+                <p className="text-sm text-green-200 text-center lg:text-left">
+                  Deja un compte ?{" "}
+                  <Link href="/connexion" className="text-white underline hover:no-underline font-medium">
+                    Se connecter
+                  </Link>
+                </p>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="vous@exemple.fr"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+              {/* Right side - Form */}
+              <div className="p-8 lg:p-12 order-1 lg:order-2">
+                <div className="mb-6">
+                  <Link href="/" className="inline-flex items-center gap-2 mb-6">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white font-bold text-lg">
+                      BS
+                    </div>
+                    <span className="font-semibold text-gray-900">Le Bon Sens</span>
+                  </Link>
+                </div>
 
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Mot de passe
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
-                  required
-                  disabled={isLoading}
-                />
-                <button
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+                  Creer votre compte gratuit
+                </h1>
+                <p className="text-gray-600 mb-6">
+                  Deja un compte ?{" "}
+                  <Link href="/connexion" className="text-green-600 hover:underline font-medium">
+                    Se connecter
+                  </Link>
+                </p>
+
+                {/* Google Sign Up */}
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  variant="outline"
+                  className="w-full h-12 text-base mb-6 border-2 hover:bg-gray-50"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading || googleLoading}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                  {googleLoading ? (
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
                   )}
-                </button>
+                  S&apos;inscrire avec Google
+                </Button>
+
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-white text-gray-500">ou par email</span>
+                  </div>
+                </div>
+
+                {errorMessage && (
+                  <div className="mb-6 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                    {errorMessage}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Name fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Prenom <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Nom <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Adresse email <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="pl-10 h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Mot de passe <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pl-10 pr-10 h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Au moins 8 caracteres avec une majuscule, une minuscule et un chiffre
+                    </p>
+                  </div>
+
+                  {/* Password validation indicators */}
+                  {password.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className={`flex items-center gap-1 ${passwordChecks.length ? "text-green-600" : "text-gray-400"}`}>
+                        <Check className="h-3 w-3" /> 8 caracteres min.
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasUppercase ? "text-green-600" : "text-gray-400"}`}>
+                        <Check className="h-3 w-3" /> Une majuscule
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasLowercase ? "text-green-600" : "text-gray-400"}`}>
+                        <Check className="h-3 w-3" /> Une minuscule
+                      </div>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasNumber ? "text-green-600" : "text-gray-400"}`}>
+                        <Check className="h-3 w-3" /> Un chiffre
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Newsletter preferences */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Recevoir les emails &quot;Soiree Cine en Famille&quot; chaque semaine. <span className="text-red-500">*</span>
+                      </p>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterWeekly"
+                            checked={newsletterWeekly === true}
+                            onChange={() => setNewsletterWeekly(true)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Oui</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterWeekly"
+                            checked={newsletterWeekly === false}
+                            onChange={() => setNewsletterWeekly(false)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Non</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Recevoir des emails sur notre mission pour un numerique plus sur pour les enfants. <span className="text-red-500">*</span>
+                      </p>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterMission"
+                            checked={newsletterMission === true}
+                            onChange={() => setNewsletterMission(true)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Oui</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterMission"
+                            checked={newsletterMission === false}
+                            onChange={() => setNewsletterMission(false)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Non</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Recevoir des actualites et mises a jour periodiques. <span className="text-red-500">*</span>
+                      </p>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterUpdates"
+                            checked={newsletterUpdates === true}
+                            onChange={() => setNewsletterUpdates(true)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Oui</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="newsletterUpdates"
+                            checked={newsletterUpdates === false}
+                            onChange={() => setNewsletterUpdates(false)}
+                            className="h-4 w-4 text-green-600"
+                          />
+                          <span className="text-sm">Non</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terms */}
+                  <div className="pt-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={acceptTerms}
+                        onChange={(e) => setAcceptTerms(e.target.checked)}
+                        className="h-5 w-5 mt-0.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      <span className="text-sm text-gray-600">
+                        J&apos;accepte les{" "}
+                        <Link href="/conditions" className="text-green-600 hover:underline">
+                          conditions d&apos;utilisation
+                        </Link>{" "}
+                        et la{" "}
+                        <Link href="/confidentialite" className="text-green-600 hover:underline">
+                          politique de confidentialite
+                        </Link>
+                        . <span className="text-red-500">*</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Submit */}
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+                    disabled={isLoading || googleLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Creation en cours...
+                      </>
+                    ) : (
+                      "Rejoindre"
+                    )}
+                  </Button>
+
+                  {/* Privacy note */}
+                  <p className="text-xs text-gray-500 text-center">
+                    Nous respectons votre vie privee. A l&apos;exception de votre pseudo public,
+                    nous ne partagerons jamais vos informations sans votre autorisation.{" "}
+                    <Link href="/confidentialite" className="text-green-600 hover:underline">
+                      Voir notre politique de confidentialite
+                    </Link>
+                  </p>
+                </form>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                Confirmer le mot de passe
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-
-            {/* Password requirements */}
-            <div className="space-y-2 text-sm">
-              <div className={`flex items-center gap-2 ${passwordChecks.length ? "text-green-600" : "text-gray-500"}`}>
-                <Check className={`h-4 w-4 ${passwordChecks.length ? "opacity-100" : "opacity-30"}`} />
-                Au moins 8 caracteres
-              </div>
-              <div className={`flex items-center gap-2 ${passwordChecks.match ? "text-green-600" : "text-gray-500"}`}>
-                <Check className={`h-4 w-4 ${passwordChecks.match ? "opacity-100" : "opacity-30"}`} />
-                Les mots de passe correspondent
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creation...
-                </>
-              ) : (
-                "Creer mon compte"
-              )}
-            </Button>
-          </form>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">ou</span>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-          >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            Continuer avec Google
-          </Button>
-
-          <p className="text-center text-sm text-gray-600">
-            Deja un compte ?{" "}
-            <Link
-              href="/connexion"
-              className="font-medium text-primary hover:underline"
-            >
-              Se connecter
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

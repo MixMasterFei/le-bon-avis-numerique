@@ -2,13 +2,14 @@ import { cn } from "@/lib/utils"
 
 interface AgeBadgeProps {
   age: number | null | undefined
-  size?: "sm" | "md" | "lg"
+  size?: "xs" | "sm" | "md" | "lg"
   label?: string
   className?: string
 }
 
 export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) {
   const sizeClasses = {
+    xs: "h-6 w-6 text-[10px]",
     sm: "h-8 w-8 text-sm",
     md: "h-12 w-12 text-lg",
     lg: "h-16 w-16 text-2xl",

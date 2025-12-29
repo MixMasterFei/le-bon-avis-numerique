@@ -207,7 +207,7 @@ export default function SeriesPage() {
             </div>
           ) : paginatedSeries.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
                 {paginatedSeries.map((item) => (
                   <MediaCard key={item.id} media={item} />
                 ))}

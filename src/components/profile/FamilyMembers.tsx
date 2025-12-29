@@ -49,7 +49,20 @@ interface FamilyMember {
   }
 }
 
-const EMOJI_OPTIONS = ["👧", "👦", "👶", "🧒", "👩", "👨", "🧑", "👴", "👵"]
+const EMOJI_OPTIONS = [
+  // Children
+  "👧", "👦", "👶", "🧒",
+  // Adults
+  "👩", "👨", "🧑", "👴", "👵",
+  // Diverse skin tones
+  "👧🏻", "👦🏻", "👧🏽", "👦🏽", "👧🏿", "👦🏿",
+  "👩🏻", "👨🏻", "👩🏽", "👨🏽", "👩🏿", "👨🏿",
+  // Fun alternatives
+  "🧒🏻", "🧒🏽", "🧒🏿",
+  "🧑🏻", "🧑🏽", "🧑🏿",
+  // Animals (for fun kid profiles)
+  "🐱", "🐶", "🐰", "🦊", "🐻", "🐼", "🦁", "🐸", "🦄", "🐲",
+]
 
 const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
   LOVED: { label: "Adoré", icon: Heart, color: "text-red-500" },
