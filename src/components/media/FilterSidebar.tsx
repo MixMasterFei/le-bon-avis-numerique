@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import { Filter, X, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -75,6 +75,7 @@ interface FilterSidebarProps {
   className?: string
   onFiltersChange?: (filters: FilterState) => void
   mediaType?: MediaType
+  availableTitles?: string[] // For autocomplete suggestions
 }
 
 export interface FilterState {
@@ -87,7 +88,7 @@ export interface FilterState {
 // Default to family-friendly content (12 years) - can be increased to 18 by user
 export const DEFAULT_MAX_AGE = 12
 
-export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE" }: FilterSidebarProps) {
+export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", availableTitles = [] }: FilterSidebarProps) {
   // Select appropriate platforms and topics based on media type
   const platforms = mediaType === "GAME" ? gamingPlatforms : streamingPlatforms
   const topics = mediaType === "GAME" ? gameTopics : movieTopics
@@ -95,15 +96,76 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE" 
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const suggestionsRef = useRef<HTMLDivElement>(null)
+
+  // Compute suggestions based on search query
+  const suggestions = useMemo(() => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return []
+    const query = searchQuery.toLowerCase().trim()
+    return availableTitles
+      .filter(title => title.toLowerCase().includes(query))
+      .slice(0, 8) // Limit to 8 suggestions
+  }, [searchQuery, availableTitles])
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value)
+    setShowSuggestions(value.length >= 2)
+    setSelectedSuggestionIndex(-1)
     onFiltersChange?.({
       maxAge,
       platforms: selectedPlatforms,
       topics: selectedTopics,
       searchQuery: value,
     })
+  }
+
+  const selectSuggestion = (title: string) => {
+    setSearchQuery(title)
+    setShowSuggestions(false)
+    onFiltersChange?.({
+      maxAge,
+      platforms: selectedPlatforms,
+      topics: selectedTopics,
+      searchQuery: title,
+    })
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) return
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setSelectedSuggestionIndex(prev =>
+        prev < suggestions.length - 1 ? prev + 1 : prev
+      )
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1)
+    } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
+      e.preventDefault()
+      selectSuggestion(suggestions[selectedSuggestionIndex])
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false)
+    }
   }
 
   const handleAgeChange = (value: number[]) => {
@@ -180,14 +242,58 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE" 
       {/* Search within category */}
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
           <Input
+            ref={searchInputRef}
             type="search"
             placeholder={mediaType === "GAME" ? "Rechercher un jeu..." : "Rechercher..."}
             className="pl-9 pr-4 bg-gray-50 border-gray-200 focus:bg-white"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
+            onFocus={() => searchQuery.length >= 2 && setShowSuggestions(true)}
+            onKeyDown={handleKeyDown}
           />
+          {/* Autocomplete suggestions */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div
+              ref={suggestionsRef}
+              className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+            >
+              {suggestions.map((title, index) => {
+                // Highlight matching text
+                const query = searchQuery.toLowerCase()
+                const titleLower = title.toLowerCase()
+                const matchIndex = titleLower.indexOf(query)
+
+                return (
+                  <button
+                    key={title}
+                    type="button"
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors",
+                      index === selectedSuggestionIndex && "bg-primary/10 text-primary",
+                      index === 0 && "rounded-t-lg",
+                      index === suggestions.length - 1 && "rounded-b-lg"
+                    )}
+                    onClick={() => selectSuggestion(title)}
+                    onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                  >
+                    {matchIndex >= 0 ? (
+                      <>
+                        {title.slice(0, matchIndex)}
+                        <span className="font-semibold text-primary">
+                          {title.slice(matchIndex, matchIndex + query.length)}
+                        </span>
+                        {title.slice(matchIndex + query.length)}
+                      </>
+                    ) : (
+                      title
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 

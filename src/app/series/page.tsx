@@ -142,6 +142,14 @@ export default function SeriesPage() {
     setCurrentPage(1)
   }
 
+  // Get all available titles for autocomplete
+  const availableTitles = useMemo(() => {
+    const titles = source === "db"
+      ? dbSeries.map(s => s.title)
+      : mockMediaItems.filter(m => m.type === "TV").map(s => s.title)
+    return [...new Set(titles)] // Remove duplicates
+  }, [dbSeries, source])
+
   const totalPages = source === "db" ? dbTotalPages : Math.ceil(filteredSeries.length / ITEMS_PER_PAGE)
   const paginatedSeries = useMemo(() => {
     if (source === "db") return filteredSeries
@@ -168,7 +176,7 @@ export default function SeriesPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="TV" />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="TV" availableTitles={availableTitles} />
           </div>
         </div>
 

@@ -204,6 +204,14 @@ export default function JeuxPage() {
     setCurrentPage(1)
   }
 
+  // Get all available titles for autocomplete
+  const availableTitles = useMemo(() => {
+    const titles = (source === "db" || source === "api")
+      ? apiGames.map(g => g.title)
+      : mockMediaItems.filter(m => m.type === "GAME").map(g => g.title)
+    return [...new Set(titles)] // Remove duplicates
+  }, [apiGames, source])
+
   const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
   const paginatedGames = useMemo(() => {
     if (source === "db" || source === "api") return filteredGames
@@ -228,7 +236,7 @@ export default function JeuxPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="GAME" />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="GAME" availableTitles={availableTitles} />
           </div>
         </div>
 

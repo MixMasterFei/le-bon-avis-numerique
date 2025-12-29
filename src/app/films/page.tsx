@@ -199,6 +199,14 @@ export default function FilmsPage() {
     setCurrentPage(1)
   }
 
+  // Get all available titles for autocomplete
+  const availableTitles = useMemo(() => {
+    const titles = (source === "db" || source === "api")
+      ? apiMovies.map(m => m.title)
+      : mockMediaItems.filter(m => m.type === "MOVIE").map(m => m.title)
+    return [...new Set(titles)] // Remove duplicates
+  }, [apiMovies, source])
+
   // Pagination
   const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
   const paginatedMovies = useMemo(() => {
@@ -226,7 +234,7 @@ export default function FilmsPage() {
         {/* Sidebar */}
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} />
           </div>
         </div>
 
