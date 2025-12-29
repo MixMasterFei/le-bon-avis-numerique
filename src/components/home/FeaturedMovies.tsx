@@ -59,7 +59,7 @@ export function FeaturedMovies() {
     async function fetchMovies() {
       try {
         // Fetch from database - get family-friendly movies (age <= 12)
-        const res = await fetch("/api/db/movies?limit=4&maxAge=12")
+        const res = await fetch("/api/db/movies?limit=14&maxAge=12")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {

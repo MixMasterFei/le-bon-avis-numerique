@@ -30,14 +30,14 @@ export function MediaCard({ media, className }: MediaCardProps) {
 
   return (
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
-      <Card
+      <div
         className={cn(
-          "group overflow-hidden hover:shadow-md transition-all duration-300 h-full",
+          "group overflow-hidden transition-all duration-300 h-full",
           className
         )}
       >
         {/* Poster Image */}
-        <div className="relative aspect-[2/3] overflow-hidden bg-gray-100">
+        <div className="relative aspect-[2/3] overflow-hidden bg-gray-100 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
           <SafeImage
             fallbackClassName="absolute inset-0"
             src={media.posterUrl}
@@ -47,39 +47,26 @@ export function MediaCard({ media, className }: MediaCardProps) {
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
 
-          {/* Age Badge Overlay - single age recommendation */}
-          <div className="absolute top-1.5 left-1.5">
+          {/* Age Badge Overlay */}
+          <div className="absolute top-1 left-1">
             <AgeBadge age={media.expertAgeRec} size="xs" />
           </div>
 
-          {/* Type Badge */}
-          <div className="absolute top-1.5 right-1.5">
-            <Badge variant="secondary" className="bg-white/90 text-gray-700 gap-0.5 text-[10px] px-1.5 py-0.5">
+          {/* Type Badge - only icon on mobile */}
+          <div className="absolute top-1 right-1">
+            <span className="inline-flex items-center gap-0.5 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded">
               <Icon className="h-2.5 w-2.5" />
-              <span className="hidden sm:inline">{mediaTypeLabels[media.type]}</span>
-            </Badge>
+            </span>
           </div>
         </div>
 
-        {/* Content - Compact */}
-        <div className="p-2 space-y-1">
-          <h3 className="font-medium text-sm text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
+        {/* Title only - minimal */}
+        <div className="pt-1.5 px-0.5">
+          <h3 className="font-medium text-xs text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight">
             {media.title}
           </h3>
-
-          {/* Genres - Compact */}
-          <div className="flex flex-wrap gap-0.5">
-            {media.genres.slice(0, 2).map((genre) => (
-              <Badge key={genre} variant="outline" className="text-[10px] px-1.5 py-0">
-                {genre}
-              </Badge>
-            ))}
-          </div>
-
-          {/* Safety Bar - quick family-friendliness indicator */}
-          <SafetyBar metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
         </div>
-      </Card>
+      </div>
     </Link>
   )
 }

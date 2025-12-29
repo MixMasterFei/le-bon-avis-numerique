@@ -59,7 +59,7 @@ export function RecentMovies() {
     async function fetchMovies() {
       try {
         // Fetch recently added movies from database
-        const res = await fetch("/api/db/movies?limit=8")
+        const res = await fetch("/api/db/movies?limit=14")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
