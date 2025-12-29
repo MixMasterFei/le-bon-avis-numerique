@@ -6,7 +6,26 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-const plans = [
+interface PlanFeature {
+  text: string
+  included: boolean
+  highlight?: boolean
+}
+
+interface Plan {
+  name: string
+  description: string
+  price: string
+  period: string
+  highlight: boolean
+  badge?: string
+  features: PlanFeature[]
+  cta: string
+  ctaHref: string
+  ctaDisabled?: boolean
+}
+
+const plans: Plan[] = [
   {
     name: "Gratuit",
     description: "Tout ce dont vous avez besoin pour faire les bons choix",
