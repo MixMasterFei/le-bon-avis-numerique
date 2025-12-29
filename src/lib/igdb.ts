@@ -313,6 +313,158 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
   return igdbFetch<IGDBGame[]>("/games", body)
 }
 
+// Platform IDs for specific platform queries
+const PLATFORM_IDS = {
+  SWITCH: 130,
+  PS5: 167,
+  PS4: 48,
+  XBOX_SERIES: 169,
+  XBOX_ONE: 49,
+  PC: 6,
+  MAC: 14,
+}
+
+/**
+ * Get games for a specific platform
+ */
+export async function getGamesByPlatform(platformId: number, limit = 100): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
+  const safePlatformId = sanitizeNumber(platformId, 1)
+
+  if (!safePlatformId) return []
+
+  const body = `
+    fields name, summary, cover.url, cover.image_id, first_release_date,
+           genres.name, platforms.name, platforms.abbreviation,
+           age_ratings.category, age_ratings.rating,
+           involved_companies.company.name, involved_companies.developer,
+           themes.name,
+           total_rating, total_rating_count;
+    where platforms = ${safePlatformId} & cover != null & total_rating_count > 20;
+    sort total_rating desc;
+    limit ${safeLimit};
+  `
+
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
+/**
+ * Get Nintendo Switch exclusives and popular Switch games
+ */
+export async function getSwitchGames(limit = 100): Promise<IGDBGame[]> {
+  return getGamesByPlatform(PLATFORM_IDS.SWITCH, limit)
+}
+
+/**
+ * Get PlayStation 5 games
+ */
+export async function getPS5Games(limit = 100): Promise<IGDBGame[]> {
+  return getGamesByPlatform(PLATFORM_IDS.PS5, limit)
+}
+
+/**
+ * Get PlayStation 4 games
+ */
+export async function getPS4Games(limit = 100): Promise<IGDBGame[]> {
+  return getGamesByPlatform(PLATFORM_IDS.PS4, limit)
+}
+
+/**
+ * Get Xbox Series X|S games
+ */
+export async function getXboxSeriesGames(limit = 100): Promise<IGDBGame[]> {
+  return getGamesByPlatform(PLATFORM_IDS.XBOX_SERIES, limit)
+}
+
+/**
+ * Get PC games
+ */
+export async function getPCGames(limit = 100): Promise<IGDBGame[]> {
+  return getGamesByPlatform(PLATFORM_IDS.PC, limit)
+}
+
+/**
+ * Search games by franchise/collection name (e.g., "Zelda", "Mario", "Pokemon")
+ */
+export async function getGamesByFranchise(franchiseName: string, limit = 100): Promise<IGDBGame[]> {
+  const safeName = escapeIGDBQuery(franchiseName)
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
+
+  if (!safeName) return []
+
+  // First search for the franchise/collection
+  const franchiseBody = `
+    search "${safeName}";
+    fields id, name, games;
+    limit 5;
+  `
+
+  try {
+    // Try franchises first
+    const franchises = await igdbFetch<{ id: number; name: string; games?: number[] }[]>("/franchises", franchiseBody)
+
+    if (franchises.length > 0 && franchises[0].games && franchises[0].games.length > 0) {
+      const gameIds = franchises[0].games.slice(0, safeLimit)
+
+      const gamesBody = `
+        fields name, summary, cover.url, cover.image_id, first_release_date,
+               genres.name, platforms.name, platforms.abbreviation,
+               age_ratings.category, age_ratings.rating,
+               involved_companies.company.name, involved_companies.developer,
+               themes.name,
+               total_rating, total_rating_count;
+        where id = (${gameIds.join(",")}) & platforms = ${PLATFORM_FILTER};
+        sort first_release_date desc;
+        limit ${safeLimit};
+      `
+
+      return igdbFetch<IGDBGame[]>("/games", gamesBody)
+    }
+
+    // Fallback: search games directly with the name
+    const searchBody = `
+      search "${safeName}";
+      fields name, summary, cover.url, cover.image_id, first_release_date,
+             genres.name, platforms.name, platforms.abbreviation,
+             age_ratings.category, age_ratings.rating,
+             involved_companies.company.name, involved_companies.developer,
+             themes.name,
+             total_rating, total_rating_count;
+      where platforms = ${PLATFORM_FILTER} & cover != null;
+      limit ${safeLimit};
+    `
+
+    return igdbFetch<IGDBGame[]>("/games", searchBody)
+  } catch {
+    // If franchise search fails, fall back to regular search
+    return searchGames(franchiseName, limit)
+  }
+}
+
+/**
+ * Get highly-rated games across all modern platforms
+ */
+export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
+
+  const body = `
+    fields name, summary, cover.url, cover.image_id, first_release_date,
+           genres.name, platforms.name, platforms.abbreviation,
+           age_ratings.category, age_ratings.rating,
+           involved_companies.company.name, involved_companies.developer,
+           themes.name,
+           total_rating, total_rating_count;
+    where total_rating > 85 & total_rating_count > 100 & cover != null & platforms = ${PLATFORM_FILTER};
+    sort total_rating desc;
+    limit ${safeLimit};
+  `
+
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
+// Export platform IDs for use in route
+export { PLATFORM_IDS }
+
 // ============================================
 // TRANSFORM HELPERS
 // ============================================

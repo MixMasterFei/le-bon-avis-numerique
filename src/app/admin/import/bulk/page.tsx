@@ -77,10 +77,19 @@ const TV_SOURCES: { value: ImportSource; label: string; description: string }[] 
   { value: "highly_rated", label: "Très bien notées", description: "Séries avec note > 7/10" },
 ]
 
-const GAME_SOURCES: { value: ImportSource; label: string; description: string }[] = [
+type GameImportSource = "popular" | "family" | "recent" | "switch" | "ps5" | "ps4" | "xbox" | "pc" | "top_rated" | "franchise"
+
+const GAME_SOURCES: { value: GameImportSource; label: string; description: string }[] = [
   { value: "popular", label: "Populaires", description: "Jeux les plus populaires" },
   { value: "family", label: "Famille", description: "Jeux PEGI 3 et PEGI 7" },
   { value: "recent", label: "Récents", description: "Jeux sortis dans les 6 derniers mois" },
+  { value: "top_rated", label: "Mieux notés", description: "Jeux les mieux notés (>85%)" },
+  { value: "switch", label: "Nintendo Switch", description: "Meilleurs jeux Switch" },
+  { value: "ps5", label: "PlayStation 5", description: "Meilleurs jeux PS5" },
+  { value: "ps4", label: "PlayStation 4", description: "Meilleurs jeux PS4" },
+  { value: "xbox", label: "Xbox Series", description: "Meilleurs jeux Xbox Series X|S" },
+  { value: "pc", label: "PC", description: "Meilleurs jeux PC" },
+  { value: "franchise", label: "Franchise", description: "Par franchise (Zelda, Mario, etc.)" },
 ]
 
 interface AutoImportProgress {
@@ -105,8 +114,9 @@ export default function BulkImportPage() {
   const [moviePages, setMoviePages] = useState(5)
   const [tvSource, setTvSource] = useState<ImportSource>("popular")
   const [tvPages, setTvPages] = useState(5)
-  const [gameSource, setGameSource] = useState<ImportSource>("popular")
+  const [gameSource, setGameSource] = useState<GameImportSource>("popular")
   const [gameLimit, setGameLimit] = useState(100)
+  const [gameFranchise, setGameFranchise] = useState("")
 
   // Auto-import state
   const [autoImportMovies, setAutoImportMovies] = useState<AutoImportProgress | null>(null)
@@ -148,7 +158,12 @@ export default function BulkImportPage() {
       } else if (type === "tv") {
         body = { source: tvSource, pages: tvPages, skipExisting: true }
       } else {
-        body = { source: gameSource, limit: gameLimit, skipExisting: true }
+        body = {
+          source: gameSource,
+          limit: gameLimit,
+          skipExisting: true,
+          ...(gameSource === "franchise" && gameFranchise ? { franchise: gameFranchise } : {}),
+        }
       }
 
       const res = await fetch(endpoint, {
@@ -333,10 +348,11 @@ export default function BulkImportPage() {
     fetchStats()
   }
 
-  // Auto-import games through all sources
+  // Auto-import games through all sources (excluding franchise which requires user input)
   const handleAutoImportGames = async () => {
     stopGamesRef.current = false
-    const sources = GAME_SOURCES
+    // Filter out "franchise" from auto-import since it requires user input
+    const sources = GAME_SOURCES.filter(s => s.value !== "franchise")
 
     setAutoImportGames({
       isRunning: true,
@@ -848,7 +864,7 @@ export default function BulkImportPage() {
               <label className="block text-sm font-medium mb-2">Source</label>
               <select
                 value={gameSource}
-                onChange={(e) => setGameSource(e.target.value as ImportSource)}
+                onChange={(e) => setGameSource(e.target.value as GameImportSource)}
                 className="w-full p-2 border rounded-lg"
                 disabled={importing === "games" || !!autoImportGames}
               >
@@ -859,6 +875,24 @@ export default function BulkImportPage() {
                 ))}
               </select>
             </div>
+
+            {/* Franchise input - shown only when "franchise" is selected */}
+            {gameSource === "franchise" && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Nom de la franchise</label>
+                <input
+                  type="text"
+                  value={gameFranchise}
+                  onChange={(e) => setGameFranchise(e.target.value)}
+                  placeholder="Ex: Zelda, Mario, Pokemon, Final Fantasy..."
+                  className="w-full p-2 border rounded-lg"
+                  disabled={importing === "games" || !!autoImportGames}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Entrez le nom d&apos;une franchise pour importer tous ses jeux
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium mb-2">Nombre de jeux</label>

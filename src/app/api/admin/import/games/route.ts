@@ -8,6 +8,13 @@ import {
   getPopularGames,
   getFamilyGames,
   getRecentGames,
+  getSwitchGames,
+  getPS5Games,
+  getPS4Games,
+  getXboxSeriesGames,
+  getPCGames,
+  getGamesByFranchise,
+  getTopRatedGames,
   getIGDBImageUrl,
   getPegiRating,
   normalizePlatforms,
@@ -48,9 +55,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const {
-      source = "popular", // popular, family, recent
+      source = "popular", // popular, family, recent, switch, ps5, ps4, xbox, pc, top_rated, franchise
       limit = 100,
       skipExisting = true,
+      franchise = "", // For franchise search (e.g., "Zelda", "Mario", "Pokemon")
     } = body
 
     const stats: ImportStats = {
@@ -70,6 +78,33 @@ export async function POST(request: Request) {
         break
       case "recent":
         games = await getRecentGames(limit)
+        break
+      case "switch":
+        games = await getSwitchGames(limit)
+        break
+      case "ps5":
+        games = await getPS5Games(limit)
+        break
+      case "ps4":
+        games = await getPS4Games(limit)
+        break
+      case "xbox":
+        games = await getXboxSeriesGames(limit)
+        break
+      case "pc":
+        games = await getPCGames(limit)
+        break
+      case "top_rated":
+        games = await getTopRatedGames(limit)
+        break
+      case "franchise":
+        if (!franchise) {
+          return NextResponse.json(
+            { success: false, error: "Franchise name required for franchise import" },
+            { status: 400 }
+          )
+        }
+        games = await getGamesByFranchise(franchise, limit)
         break
       default:
         games = await getPopularGames(limit)
