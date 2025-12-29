@@ -69,7 +69,7 @@ export default function FilmsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+      <div className="bg-gradient-to-br from-slate-700 to-slate-800 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
@@ -102,7 +102,7 @@ export default function FilmsPage() {
                 asChild
                 variant="secondary"
                 size="lg"
-                className="bg-white hover:bg-white/90 text-red-600"
+                className="bg-white hover:bg-white/90 text-slate-700"
               >
                 <Link href="/films/recherche">
                   <SlidersHorizontal className="h-5 w-5 mr-2" />
