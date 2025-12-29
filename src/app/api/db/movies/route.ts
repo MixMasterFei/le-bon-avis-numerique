@@ -22,10 +22,8 @@ export async function GET(request: NextRequest) {
     // Filter by age recommendation
     if (maxAge) {
       const age = parseInt(maxAge)
-      where.OR = [
-        { expertAgeRec: { lte: age } },
-        { expertAgeRec: null },
-      ]
+      // Only include films that have an age rating set (exclude nulls for strict filtering)
+      where.expertAgeRec = { lte: age, not: null }
     }
 
     // Filter by genres (any match)

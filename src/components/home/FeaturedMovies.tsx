@@ -58,12 +58,25 @@ export function FeaturedMovies() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch from database - get family-friendly movies (age <= 12)
-        const res = await fetch("/api/db/movies?limit=14&maxAge=12")
+        // Fetch truly family-friendly movies:
+        // - Age <= 8 for young children
+        // - Filter by family-friendly genres (Animation, Famille, Aventure)
+        const familyGenres = encodeURIComponent("Animation,Famille,Aventure,Comédie")
+        const res = await fetch(`/api/db/movies?limit=14&maxAge=8&genres=${familyGenres}`)
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
+
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
           setMovies(data.movies.map(mapDbToMockFormat))
+        } else {
+          // Fallback: try with just age filter if no genre matches
+          const fallbackRes = await fetch("/api/db/movies?limit=14&maxAge=10")
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json()
+            if (Array.isArray(fallbackData?.movies)) {
+              setMovies(fallbackData.movies.map(mapDbToMockFormat))
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to fetch featured movies:", error)
