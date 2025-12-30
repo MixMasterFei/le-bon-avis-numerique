@@ -27,10 +27,24 @@ export async function GET(request: NextRequest) {
       where.expertAgeRec = { lte: age, not: null }
     }
 
-    // Filter by genres (any match)
+    // Filter by genres
+    // Use requireAllGenres=true to require ALL genres (AND logic), otherwise any match (OR logic)
     if (genres) {
       const genreList = genres.split(",").map(g => g.trim())
-      where.genres = { hasSome: genreList }
+      const requireAll = searchParams.get("requireAllGenres") === "true"
+
+      if (requireAll) {
+        // Require ALL specified genres (AND logic)
+        where.AND = [
+          ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+          ...genreList.map(genre => ({
+            genres: { has: genre }
+          }))
+        ]
+      } else {
+        // Any of the genres matches (OR logic) - default behavior
+        where.genres = { hasSome: genreList }
+      }
     }
 
     // Exclude certain genres (useful for family sections to exclude action, horror, etc.)
