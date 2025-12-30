@@ -68,17 +68,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Collect genre preferences per member
+    // Collect genre preferences per member (from reactions AND explicit preferences)
     const memberPreferences: Record<string, {
       genres: Record<string, number>
+      dislikedGenres: string[]
       mediaIds: Set<string>
-      hasReactions: boolean
+      hasPreferences: boolean
     }> = {}
 
     for (const member of familyMembers) {
       const genres: Record<string, number> = {}
       const mediaIds = new Set<string>()
 
+      // Add explicit favorite genres with high weight
+      const favoriteGenres = (member as any).favoriteGenres || []
+      for (const genre of favoriteGenres) {
+        genres[genre] = (genres[genre] || 0) + 3 // High weight for explicit preferences
+      }
+
+      // Add genres from reactions
       for (const reaction of member.reactions) {
         mediaIds.add(reaction.media.id)
         const weight = reaction.reaction === "LOVED" ? 2 : 1
@@ -92,10 +100,13 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const dislikedGenres = (member as any).dislikedGenres || []
+
       memberPreferences[member.id] = {
         genres,
+        dislikedGenres,
         mediaIds,
-        hasReactions: member.reactions.length > 0,
+        hasPreferences: member.reactions.length > 0 || favoriteGenres.length > 0,
       }
     }
 
@@ -173,71 +184,92 @@ export async function GET(request: NextRequest) {
       take: 20,
     })
 
+    // Collect all disliked genres to filter out
+    const allDislikedGenres = new Set<string>()
+    for (const prefs of Object.values(memberPreferences)) {
+      for (const genre of prefs.dislikedGenres) {
+        allDislikedGenres.add(genre)
+      }
+    }
+
     // Score each recommendation and calculate match percentage per member
-    const scoredRecommendations = recommendations.map((media) => {
-      const allGenresAndTopics = [...media.genres, ...media.topics]
+    const scoredRecommendations = recommendations
+      .filter((media) => {
+        // Exclude media with disliked genres
+        const allGenresAndTopics = [...media.genres, ...media.topics]
+        return !allGenresAndTopics.some(g => allDislikedGenres.has(g))
+      })
+      .map((media) => {
+        const allGenresAndTopics = [...media.genres, ...media.topics]
 
-      // Calculate per-member match
-      const memberMatches: Record<string, {
-        name: string
-        avatarEmoji: string
-        matchScore: number
-        matchPercentage: number
-      }> = {}
+        // Calculate per-member match
+        const memberMatches: Record<string, {
+          name: string
+          avatarEmoji: string
+          matchScore: number
+          matchPercentage: number
+        }> = {}
 
-      let totalMatchScore = 0
-      let membersWithReactions = 0
+        let totalMatchScore = 0
+        let membersWithPreferences = 0
 
-      for (const member of familyMembers) {
-        const prefs = memberPreferences[member.id]
+        for (const member of familyMembers) {
+          const prefs = memberPreferences[member.id]
 
-        if (!prefs.hasReactions) {
-          // Member has no reactions, neutral match
+          if (!prefs.hasPreferences) {
+            // Member has no preferences, neutral match
+            memberMatches[member.id] = {
+              name: member.name,
+              avatarEmoji: member.avatarEmoji,
+              matchScore: 0,
+              matchPercentage: 50, // Neutral
+            }
+            continue
+          }
+
+          membersWithPreferences++
+          let memberScore = 0
+          let maxPossibleScore = 0
+
+          for (const [genre, weight] of Object.entries(prefs.genres)) {
+            maxPossibleScore += weight
+            if (allGenresAndTopics.includes(genre)) {
+              memberScore += weight
+            }
+          }
+
+          // Penalty for disliked genres (per member)
+          for (const disliked of prefs.dislikedGenres) {
+            if (allGenresAndTopics.includes(disliked)) {
+              memberScore -= 2 // Penalty
+            }
+          }
+
+          const matchPercentage = maxPossibleScore > 0
+            ? Math.min(100, Math.max(0, Math.round((memberScore / maxPossibleScore) * 100)))
+            : 50
+
           memberMatches[member.id] = {
             name: member.name,
             avatarEmoji: member.avatarEmoji,
-            matchScore: 0,
-            matchPercentage: 50, // Neutral
+            matchScore: memberScore,
+            matchPercentage,
           }
-          continue
+
+          totalMatchScore += matchPercentage
         }
 
-        membersWithReactions++
-        let memberScore = 0
-        let maxPossibleScore = 0
-
-        for (const [genre, weight] of Object.entries(prefs.genres)) {
-          maxPossibleScore += weight
-          if (allGenresAndTopics.includes(genre)) {
-            memberScore += weight
-          }
-        }
-
-        const matchPercentage = maxPossibleScore > 0
-          ? Math.round((memberScore / maxPossibleScore) * 100)
+        // Overall family match (average of all members with preferences)
+        const familyMatchPercentage = membersWithPreferences > 0
+          ? Math.round(totalMatchScore / membersWithPreferences)
           : 50
 
-        memberMatches[member.id] = {
-          name: member.name,
-          avatarEmoji: member.avatarEmoji,
-          matchScore: memberScore,
-          matchPercentage,
+        return {
+          ...media,
+          memberMatches,
+          familyMatchPercentage,
         }
-
-        totalMatchScore += matchPercentage
-      }
-
-      // Overall family match (average of all members with reactions)
-      const familyMatchPercentage = membersWithReactions > 0
-        ? Math.round(totalMatchScore / membersWithReactions)
-        : 50
-
-      return {
-        ...media,
-        memberMatches,
-        familyMatchPercentage,
-      }
-    })
+      })
 
     // Sort by family match percentage
     scoredRecommendations.sort((a, b) => b.familyMatchPercentage - a.familyMatchPercentage)
@@ -248,7 +280,7 @@ export async function GET(request: NextRequest) {
         name: m.name,
         avatarEmoji: m.avatarEmoji,
         birthYear: m.birthYear,
-        hasReactions: memberPreferences[m.id].hasReactions,
+        hasReactions: memberPreferences[m.id].hasPreferences,
       })),
       recommendations: scoredRecommendations.slice(0, 12),
       sharedGenres: sortedGenres,

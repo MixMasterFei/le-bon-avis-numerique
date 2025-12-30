@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Users, Popcorn, ChevronRight, Check, Sparkles, Film } from "lucide-react"
+import { Users, Popcorn, ChevronRight, ChevronDown, ChevronUp, Check, Sparkles, Film, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -42,6 +42,7 @@ export function FamilyMovieNight() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
+  const [showAllResults, setShowAllResults] = useState(false)
 
   // Fetch family members on mount
   useEffect(() => {
@@ -66,6 +67,7 @@ export function FamilyMovieNight() {
         : [...prev, memberId]
     )
     setShowResults(false)
+    setShowAllResults(false)
   }
 
   const fetchRecommendations = async () => {
@@ -183,7 +185,7 @@ export function FamilyMovieNight() {
 
             {/* Recommendation Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {recommendations.slice(0, 4).map((media) => (
+              {recommendations.slice(0, showAllResults ? 12 : 4).map((media) => (
                 <Link
                   key={media.id}
                   href={`/media/${toMediaRouteId(media.type, media.id)}`}
@@ -258,16 +260,40 @@ export function FamilyMovieNight() {
               ))}
             </div>
 
+            {/* Show more/less button */}
             {recommendations.length > 4 && (
               <Button
                 variant="ghost"
                 className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                onClick={() => setShowResults(false)}
+                onClick={() => setShowAllResults(!showAllResults)}
               >
-                Voir plus de suggestions
-                <ChevronRight className="h-4 w-4 ml-1" />
+                {showAllResults ? (
+                  <>
+                    Voir moins
+                    <ChevronUp className="h-4 w-4 ml-1" />
+                  </>
+                ) : (
+                  <>
+                    Voir plus de suggestions ({recommendations.length - 4} de plus)
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </>
+                )}
               </Button>
             )}
+
+            {/* Retry button */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-gray-600"
+              onClick={() => {
+                setShowResults(false)
+                setShowAllResults(false)
+              }}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Nouvelle recherche
+            </Button>
           </div>
         )}
 

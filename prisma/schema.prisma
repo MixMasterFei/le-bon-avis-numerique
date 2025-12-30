@@ -274,13 +274,15 @@ model ReviewReport {
 // ============================================
 
 model FamilyMember {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  name        String
-  birthYear   Int?     @map("birth_year")
-  avatarEmoji String   @default("👧") @map("avatar_emoji")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  name            String
+  birthYear       Int?     @map("birth_year")
+  avatarEmoji     String   @default("👧") @map("avatar_emoji")
+  favoriteGenres  String[] @default([]) @map("favorite_genres")  // Genres préférés
+  dislikedGenres  String[] @default([]) @map("disliked_genres")  // Genres à éviter
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   reactions MediaReaction[]

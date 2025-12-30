@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, birthYear, avatarEmoji } = body
+    const { name, birthYear, avatarEmoji, favoriteGenres, dislikedGenres } = body
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Nom requis" }, { status: 400 })
@@ -75,6 +75,8 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         birthYear: birthYear ? parseInt(birthYear) : null,
         avatarEmoji: avatarEmoji || "👧",
+        favoriteGenres: Array.isArray(favoriteGenres) ? favoriteGenres : [],
+        dislikedGenres: Array.isArray(dislikedGenres) ? dislikedGenres : [],
       },
     })
 
