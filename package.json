@@ -34,6 +34,7 @@
     "react": "19.2.3",
     "react-cookie-consent": "^9.0.0",
     "react-dom": "19.2.3",
+    "resend": "^6.6.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

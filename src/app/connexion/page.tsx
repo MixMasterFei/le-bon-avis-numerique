@@ -4,11 +4,10 @@ import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Heart, Star, Users } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Heart, Star, Users, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 
 function ConnexionForm() {
   const router = useRouter()
@@ -22,6 +21,9 @@ function ConnexionForm() {
   const [isAdminLogin, setIsAdminLogin] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [resendingVerification, setResendingVerification] = useState(false)
+  const [verificationSent, setVerificationSent] = useState(false)
+  const [emailNotVerified, setEmailNotVerified] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(
     error === "CredentialsSignin" ? "Email ou mot de passe incorrect" : null
   )
@@ -30,6 +32,8 @@ function ConnexionForm() {
     e.preventDefault()
     setIsLoading(true)
     setErrorMessage(null)
+    setEmailNotVerified(false)
+    setVerificationSent(false)
 
     try {
       const result = await signIn("credentials", {
@@ -39,7 +43,13 @@ function ConnexionForm() {
       })
 
       if (result?.error) {
-        setErrorMessage("Email ou mot de passe incorrect")
+        // Check if the error is about email not verified
+        if (result.error.includes("EMAIL_NOT_VERIFIED")) {
+          setEmailNotVerified(true)
+          setErrorMessage("Votre email n'est pas encore vérifié")
+        } else {
+          setErrorMessage("Email ou mot de passe incorrect")
+        }
       } else {
         const redirectUrl = isAdminLogin ? "/admin" : callbackUrl
         router.push(redirectUrl)
@@ -49,6 +59,34 @@ function ConnexionForm() {
       setErrorMessage("Une erreur est survenue")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setErrorMessage("Entrez votre email pour renvoyer le lien de vérification")
+      return
+    }
+
+    setResendingVerification(true)
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      })
+
+      if (res.ok) {
+        setVerificationSent(true)
+        setErrorMessage(null)
+      } else {
+        const data = await res.json()
+        setErrorMessage(data.error || "Erreur lors de l'envoi")
+      }
+    } catch {
+      setErrorMessage("Erreur de connexion")
+    } finally {
+      setResendingVerification(false)
     }
   }
 
@@ -80,7 +118,45 @@ function ConnexionForm() {
                   </p>
                 </div>
 
-                {errorMessage && (
+                {verificationSent && (
+                  <div className="mb-6 p-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
+                    <p>Un nouveau lien de vérification a été envoyé à votre adresse email.</p>
+                    <p className="text-xs mt-1 text-green-500">Vérifiez également vos spams.</p>
+                  </div>
+                )}
+
+                {emailNotVerified && !verificationSent && (
+                  <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm text-amber-800 font-medium">Email non vérifié</p>
+                        <p className="text-sm text-amber-600 mt-1">
+                          Vous devez vérifier votre email avant de pouvoir vous connecter.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-100"
+                          onClick={handleResendVerification}
+                          disabled={resendingVerification}
+                        >
+                          {resendingVerification ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                              Envoi...
+                            </>
+                          ) : (
+                            "Renvoyer le lien de vérification"
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {errorMessage && !emailNotVerified && (
                   <div className="mb-6 p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
                     {errorMessage}
                   </div>

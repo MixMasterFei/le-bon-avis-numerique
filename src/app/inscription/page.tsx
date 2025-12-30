@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Loader2,
@@ -14,14 +13,13 @@ import {
   Film,
   Gamepad2,
   BookOpen,
+  CheckCircle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 export default function InscriptionPage() {
-  const router = useRouter()
-
   // Form state
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -41,6 +39,8 @@ export default function InscriptionPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState("")
 
   // Password validation
   const passwordChecks = {
@@ -105,19 +105,9 @@ export default function InscriptionPage() {
         return
       }
 
-      // Auto sign-in after registration
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        router.push("/connexion")
-      } else {
-        router.push("/")
-        router.refresh()
-      }
+      // Show success message - user needs to verify email
+      setRegisteredEmail(email)
+      setRegistrationSuccess(true)
     } catch {
       setErrorMessage("Une erreur est survenue")
       setIsLoading(false)
@@ -127,6 +117,47 @@ export default function InscriptionPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
     await signIn("google", { callbackUrl: "/" })
+  }
+
+  // Show success screen after registration
+  if (registrationSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-4 bg-green-100 rounded-full w-fit">
+              <CheckCircle className="h-10 w-10 text-green-600" />
+            </div>
+            <CardTitle className="text-green-700 text-2xl">Compte créé avec succès !</CardTitle>
+            <CardDescription className="text-base">
+              Un email de vérification a été envoyé à <strong>{registeredEmail}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-medium text-blue-800 mb-2">Prochaines étapes :</h3>
+              <ol className="text-sm text-blue-700 space-y-2 list-decimal list-inside">
+                <li>Ouvrez votre boîte de réception</li>
+                <li>Cliquez sur le lien de vérification</li>
+                <li>Connectez-vous à votre compte</li>
+              </ol>
+            </div>
+
+            <p className="text-sm text-gray-500 text-center">
+              Vous ne trouvez pas l&apos;email ? Vérifiez vos spams ou{" "}
+              <Link href="/connexion" className="text-green-600 hover:underline">
+                connectez-vous pour renvoyer le lien
+              </Link>
+              .
+            </p>
+
+            <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+              <Link href="/connexion">Aller à la page de connexion</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

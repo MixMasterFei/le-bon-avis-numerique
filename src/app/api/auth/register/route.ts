@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { prisma } from "@/lib/db"
 import { sanitizeInput } from "@/lib/security"
+import { createVerificationToken } from "@/lib/tokens"
+import { sendVerificationEmail } from "@/lib/email"
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,12 +54,13 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hash(password, 12)
 
-    // Create user
+    // Create user (without email verification)
     const user = await prisma.user.create({
       data: {
         name: sanitizedName,
         email: sanitizedEmail,
         password: hashedPassword,
+        // emailVerified is null by default - user needs to verify
       },
       select: {
         id: true,
@@ -67,9 +70,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Send verification email
+    try {
+      const token = await createVerificationToken(sanitizedEmail)
+      await sendVerificationEmail(sanitizedEmail, token, sanitizedName || undefined)
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError)
+      // Don't fail registration if email fails - user can request resend
+    }
+
     return NextResponse.json({
-      message: "Compte cree avec succes",
+      message: "Compte cree avec succes. Verifiez votre email pour activer votre compte.",
       user,
+      requiresVerification: true,
     })
   } catch (error) {
     console.error("Registration error:", error)
