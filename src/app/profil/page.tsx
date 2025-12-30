@@ -1,9 +1,9 @@
 "use client"
 
-import { useSession } from "next-auth/react"
-import { redirect } from "next/navigation"
+import { useSession, signOut } from "next-auth/react"
+import { redirect, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, BellOff } from "lucide-react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -48,6 +48,13 @@ export default function ProfilPage() {
   const [emailComments, setEmailComments] = useState(false)
   const [savingNotifications, setSavingNotifications] = useState(false)
   const [notificationsSaved, setNotificationsSaved] = useState(false)
+
+  // Delete account state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState("")
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
+  const router = useRouter()
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -437,9 +444,97 @@ export default function ProfilPage() {
               <p className="font-medium text-red-600">Supprimer mon compte</p>
               <p className="text-sm text-gray-500">Cette action est irreversible</p>
             </div>
-            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
-              Supprimer
-            </Button>
+            <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
+              setDeleteDialogOpen(open)
+              if (!open) {
+                setDeleteConfirmText("")
+                setDeleteError("")
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                  Supprimer
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-red-600">
+                    <AlertTriangle className="h-5 w-5" />
+                    Supprimer votre compte
+                  </DialogTitle>
+                  <DialogDescription>
+                    Cette action est <strong>definitive et irreversible</strong>. Toutes vos donnees seront supprimees :
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                    <li>Votre profil et informations personnelles</li>
+                    <li>Vos membres de famille et leurs reactions</li>
+                    <li>Vos favoris et liste a voir</li>
+                    <li>Tous vos avis et commentaires</li>
+                  </ul>
+
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-sm text-red-700">
+                      Pour confirmer, tapez <strong>SUPPRIMER</strong> ci-dessous :
+                    </p>
+                    <Input
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      placeholder="SUPPRIMER"
+                      className="mt-2"
+                      disabled={deleting}
+                    />
+                  </div>
+
+                  {deleteError && (
+                    <p className="text-sm text-red-600">{deleteError}</p>
+                  )}
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDeleteDialogOpen(false)}
+                    disabled={deleting}
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteConfirmText !== "SUPPRIMER" || deleting}
+                    onClick={async () => {
+                      setDeleting(true)
+                      setDeleteError("")
+                      try {
+                        const res = await fetch("/api/user/delete", {
+                          method: "DELETE",
+                        })
+                        if (res.ok) {
+                          await signOut({ redirect: false })
+                          router.push("/?deleted=true")
+                        } else {
+                          const data = await res.json()
+                          setDeleteError(data.error || "Erreur lors de la suppression")
+                        }
+                      } catch {
+                        setDeleteError("Erreur de connexion au serveur")
+                      } finally {
+                        setDeleting(false)
+                      }
+                    }}
+                  >
+                    {deleting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Suppression...
+                      </>
+                    ) : (
+                      "Supprimer definitivement"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
