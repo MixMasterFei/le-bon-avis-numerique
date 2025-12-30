@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma, MediaType } from "@prisma/client"
 
 export const maxDuration = 60
 
@@ -9,12 +10,12 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1")
   const limit = parseInt(searchParams.get("limit") || "50")
   const maxScore = parseInt(searchParams.get("maxScore") || "30")
-  const type = searchParams.get("type") || undefined
+  const type = searchParams.get("type") as MediaType | null
 
   const skip = (page - 1) * limit
 
   try {
-    const where = {
+    const where: Prisma.MediaItemWhereInput = {
       dataQualityScore: { lt: maxScore },
       ...(type && { type }),
     }
