@@ -167,6 +167,13 @@ export default function AdminDashboard() {
       icon: Settings,
       color: "bg-green-500",
     },
+    {
+      title: "Gestion qualite",
+      description: "Voir et supprimer les fiches de faible qualite",
+      href: "/admin/quality",
+      icon: AlertTriangle,
+      color: "bg-red-500",
+    },
   ]
 
   return (
