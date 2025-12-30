@@ -33,6 +33,7 @@ model User {
   watchlist     Watchlist[]
   reports       ReviewReport[]
   familyMembers FamilyMember[]
+  corrections   MediaCorrection[]
 
   @@map("users")
 }
@@ -144,6 +145,7 @@ model MediaItem {
   similarToA           MediaSimilarity[] @relation("SimilarMediaA")
   similarToB           MediaSimilarity[] @relation("SimilarMediaB")
   streamingAvailability StreamingAvailability[]
+  corrections          MediaCorrection[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -463,4 +465,52 @@ enum StreamingType {
   BUY
   FREE
   ADS           // Free with ads
+}
+
+// ============================================
+// USER CORRECTIONS & ERROR REPORTS
+// ============================================
+
+model MediaCorrection {
+  id          String           @id @default(uuid())
+  mediaId     String           @map("media_id")
+  userId      String           @map("user_id")
+  type        CorrectionType
+  field       String?          // Which field needs correction (e.g., "title", "synopsis", "age_rating")
+  currentValue String?         @map("current_value") @db.Text // Current incorrect value
+  suggestedValue String?       @map("suggested_value") @db.Text // User's suggested correction
+  description String           @db.Text // User's explanation of the error
+  status      CorrectionStatus @default(PENDING)
+  adminNotes  String?          @map("admin_notes") @db.Text
+  reviewedAt  DateTime?        @map("reviewed_at")
+  reviewedBy  String?          @map("reviewed_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("media_corrections")
+}
+
+enum CorrectionType {
+  WRONG_INFO      // Information incorrecte
+  MISSING_INFO    // Information manquante
+  AGE_RATING      // Recommandation d'âge incorrecte
+  CONTENT_WARNING // Avertissement de contenu manquant
+  BROKEN_LINK     // Lien cassé (streaming, poster)
+  DUPLICATE       // Doublon dans la base
+  OTHER           // Autre
+}
+
+enum CorrectionStatus {
+  PENDING   // En attente de revue
+  REVIEWED  // Revue en cours
+  APPROVED  // Approuvée et appliquée
+  REJECTED  // Rejetée
+  DUPLICATE // Déjà signalé
 }

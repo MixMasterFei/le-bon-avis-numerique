@@ -15,6 +15,7 @@ import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { MediaActions } from "@/components/media/MediaActions"
+import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -577,6 +578,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <ContentGrid metrics={media.contentMetrics} />
               </CardContent>
             </Card>
+
+            {/* Report Correction Button */}
+            {dbId && (
+              <ReportCorrectionButton mediaId={dbId} mediaTitle={media.title} />
+            )}
 
             {/* Related (only for demo/mock items for now) */}
             {source === "mock" && (
