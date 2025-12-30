@@ -6,15 +6,25 @@ import { prisma } from "@/lib/prisma"
 export async function GET() {
   try {
     const session = await auth()
+
     if (!session?.user?.id) {
+      console.error("Family API: No user ID in session", { session })
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }
 
     const familyMembers = await prisma.familyMember.findMany({
       where: { userId: session.user.id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        birthYear: true,
+        avatarEmoji: true,
+        createdAt: true,
+        updatedAt: true,
         reactions: {
-          include: {
+          select: {
+            id: true,
+            reaction: true,
             media: {
               select: {
                 id: true,
@@ -38,7 +48,10 @@ export async function GET() {
     return NextResponse.json({ familyMembers })
   } catch (error) {
     console.error("Error fetching family members:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    return NextResponse.json({
+      error: "Erreur serveur",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 })
   }
 }
 
