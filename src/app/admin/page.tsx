@@ -94,11 +94,17 @@ export default function AdminDashboard() {
     setComputingQuality(true)
     try {
       const res = await fetch("/api/admin/quality/compute", { method: "POST" })
+      const data = await res.json()
+      console.log("Quality computation result:", data)
       if (res.ok) {
+        alert(`Recalcul termine!\n\nTraites: ${data.processed}\nMis a jour: ${data.updated}\nErreurs: ${data.errors || 0}\n\nDistribution des scores:\n${JSON.stringify(data.scoreDistribution, null, 2)}`)
         fetchStats()
+      } else {
+        alert(`Erreur: ${data.error || "Echec du recalcul"}`)
       }
     } catch (err) {
       console.error("Failed to compute quality:", err)
+      alert("Erreur de connexion au serveur")
     } finally {
       setComputingQuality(false)
     }
