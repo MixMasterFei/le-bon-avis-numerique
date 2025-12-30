@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma"
 export const maxDuration = 60 // seconds
 
 /**
- * Compute data quality scores for all media items
+ * Compute data quality scores for all media items using raw SQL for speed
  *
  * Quality score (0-100) is based on:
  * - Has title: +10
  * - Has poster: +10
- * - Has synopsis: +15
+ * - Has synopsis (>50 chars): +15, (1-50 chars): +7
  * - Has release date: +5
  * - Has genres: +10
  * - Has expert age recommendation: +15
@@ -20,104 +20,73 @@ export const maxDuration = 60 // seconds
  */
 export async function POST() {
   try {
-    console.log("Starting quality score computation...")
+    console.log("Starting quality score computation with raw SQL...")
 
-    // Get all media items with related data
-    const mediaItems = await prisma.mediaItem.findMany({
-      include: {
-        contentMetrics: true,
-        streamingAvailability: { take: 1 },
-        credits: { take: 1 },
-      },
-    })
+    // Use raw SQL for much faster bulk update
+    const result = await prisma.$executeRaw`
+      UPDATE "MediaItem"
+      SET
+        "data_quality_score" = (
+          CASE WHEN title IS NOT NULL AND title != '' THEN 10 ELSE 0 END +
+          CASE WHEN poster_url IS NOT NULL THEN 10 ELSE 0 END +
+          CASE WHEN synopsis_fr IS NOT NULL AND LENGTH(synopsis_fr) > 50 THEN 15
+               WHEN synopsis_fr IS NOT NULL AND LENGTH(synopsis_fr) > 0 THEN 7
+               ELSE 0 END +
+          CASE WHEN release_date IS NOT NULL THEN 5 ELSE 0 END +
+          CASE WHEN genres IS NOT NULL AND array_length(genres, 1) > 0 THEN 10 ELSE 0 END +
+          CASE WHEN expert_age_rec IS NOT NULL THEN 15 ELSE 0 END +
+          CASE WHEN EXISTS (SELECT 1 FROM "ContentMetrics" cm WHERE cm."media_item_id" = "MediaItem".id) THEN 15 ELSE 0 END +
+          CASE WHEN EXISTS (SELECT 1 FROM "StreamingAvailability" sa WHERE sa."media_item_id" = "MediaItem".id) THEN 10 ELSE 0 END +
+          CASE WHEN EXISTS (SELECT 1 FROM "Credit" c WHERE c."media_item_id" = "MediaItem".id) THEN 10 ELSE 0 END
+        ),
+        "is_enriched" = (
+          expert_age_rec IS NOT NULL AND
+          EXISTS (SELECT 1 FROM "ContentMetrics" cm WHERE cm."media_item_id" = "MediaItem".id)
+        ),
+        "last_verified_at" = NOW()
+    `
 
-    console.log(`Fetched ${mediaItems.length} media items`)
+    console.log(`Updated ${result} media items`)
 
-    let updated = 0
-    let errors = 0
-    const batchSize = 50 // Smaller batches for reliability
+    // Get the score distribution for reporting
+    const distribution = await prisma.$queryRaw<Array<{ score: number; count: bigint }>>`
+      SELECT "data_quality_score" as score, COUNT(*) as count
+      FROM "MediaItem"
+      GROUP BY "data_quality_score"
+      ORDER BY "data_quality_score"
+    `
+
     const scoreDistribution: Record<number, number> = {}
-
-    // Process in batches
-    for (let i = 0; i < mediaItems.length; i += batchSize) {
-      const batch = mediaItems.slice(i, i + batchSize)
-
-      const results = await Promise.allSettled(
-        batch.map(async (item) => {
-          let score = 0
-
-          // Has title (+10)
-          if (item.title && item.title.trim()) score += 10
-
-          // Has poster (+10)
-          if (item.posterUrl) score += 10
-
-          // Has synopsis (+15)
-          if (item.synopsisFr && item.synopsisFr.length > 50) score += 15
-          else if (item.synopsisFr && item.synopsisFr.length > 0) score += 7
-
-          // Has release date (+5)
-          if (item.releaseDate) score += 5
-
-          // Has genres (+10)
-          if (item.genres && item.genres.length > 0) score += 10
-
-          // Has expert age recommendation (+15)
-          if (item.expertAgeRec !== null) score += 15
-
-          // Has content metrics (+15)
-          if (item.contentMetrics) score += 15
-
-          // Has streaming availability (+10)
-          if (item.streamingAvailability && item.streamingAvailability.length > 0) score += 10
-
-          // Has credits (+10)
-          if (item.credits && item.credits.length > 0) score += 10
-
-          // Track score distribution
-          scoreDistribution[score] = (scoreDistribution[score] || 0) + 1
-
-          // Determine if enriched (has expert age rec AND content metrics)
-          const isEnriched = item.expertAgeRec !== null && item.contentMetrics !== null
-
-          // Always update to ensure scores are set (don't skip based on current value)
-          await prisma.mediaItem.update({
-            where: { id: item.id },
-            data: {
-              dataQualityScore: score,
-              isEnriched,
-              lastVerifiedAt: new Date(),
-            },
-          })
-
-          return { score, isEnriched }
-        })
-      )
-
-      // Count successes and failures
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          updated++
-        } else {
-          errors++
-          console.error("Update failed:", result.reason)
-        }
-      }
-
-      // Log progress every 500 items
-      if ((i + batchSize) % 500 === 0 || i + batchSize >= mediaItems.length) {
-        console.log(`Progress: ${Math.min(i + batchSize, mediaItems.length)}/${mediaItems.length}`)
-      }
+    for (const row of distribution) {
+      scoreDistribution[row.score ?? 0] = Number(row.count)
     }
 
-    console.log("Quality computation complete:", { updated, errors, scoreDistribution })
+    // Get summary stats
+    const stats = await prisma.$queryRaw<Array<{ total: bigint; high: bigint; medium: bigint; low: bigint; avg: number }>>`
+      SELECT
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE "data_quality_score" >= 70) as high,
+        COUNT(*) FILTER (WHERE "data_quality_score" >= 30 AND "data_quality_score" < 70) as medium,
+        COUNT(*) FILTER (WHERE "data_quality_score" < 30) as low,
+        ROUND(AVG("data_quality_score")::numeric, 1) as avg
+      FROM "MediaItem"
+    `
+
+    const summary = stats[0]
 
     return NextResponse.json({
       success: true,
-      processed: mediaItems.length,
-      updated,
-      errors,
+      processed: Number(summary.total),
+      updated: result,
+      errors: 0,
       scoreDistribution,
+      summary: {
+        total: Number(summary.total),
+        highQuality: Number(summary.high),
+        mediumQuality: Number(summary.medium),
+        lowQuality: Number(summary.low),
+        avgScore: summary.avg,
+      },
     })
   } catch (error) {
     console.error("Quality compute error:", error)
