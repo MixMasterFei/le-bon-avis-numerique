@@ -24,9 +24,9 @@ export async function POST() {
 
     // Use raw SQL for much faster bulk update
     const result = await prisma.$executeRaw`
-      UPDATE "MediaItem"
+      UPDATE media_items
       SET
-        "data_quality_score" = (
+        data_quality_score = (
           CASE WHEN title IS NOT NULL AND title != '' THEN 10 ELSE 0 END +
           CASE WHEN poster_url IS NOT NULL THEN 10 ELSE 0 END +
           CASE WHEN synopsis_fr IS NOT NULL AND LENGTH(synopsis_fr) > 50 THEN 15
@@ -35,25 +35,25 @@ export async function POST() {
           CASE WHEN release_date IS NOT NULL THEN 5 ELSE 0 END +
           CASE WHEN genres IS NOT NULL AND array_length(genres, 1) > 0 THEN 10 ELSE 0 END +
           CASE WHEN expert_age_rec IS NOT NULL THEN 15 ELSE 0 END +
-          CASE WHEN EXISTS (SELECT 1 FROM "ContentMetrics" cm WHERE cm."media_item_id" = "MediaItem".id) THEN 15 ELSE 0 END +
-          CASE WHEN EXISTS (SELECT 1 FROM "StreamingAvailability" sa WHERE sa."media_item_id" = "MediaItem".id) THEN 10 ELSE 0 END +
-          CASE WHEN EXISTS (SELECT 1 FROM "Credit" c WHERE c."media_item_id" = "MediaItem".id) THEN 10 ELSE 0 END
+          CASE WHEN EXISTS (SELECT 1 FROM content_metrics cm WHERE cm.media_item_id = media_items.id) THEN 15 ELSE 0 END +
+          CASE WHEN EXISTS (SELECT 1 FROM streaming_availability sa WHERE sa.media_item_id = media_items.id) THEN 10 ELSE 0 END +
+          CASE WHEN EXISTS (SELECT 1 FROM media_credits c WHERE c.media_item_id = media_items.id) THEN 10 ELSE 0 END
         ),
-        "is_enriched" = (
+        is_enriched = (
           expert_age_rec IS NOT NULL AND
-          EXISTS (SELECT 1 FROM "ContentMetrics" cm WHERE cm."media_item_id" = "MediaItem".id)
+          EXISTS (SELECT 1 FROM content_metrics cm WHERE cm.media_item_id = media_items.id)
         ),
-        "last_verified_at" = NOW()
+        last_verified_at = NOW()
     `
 
     console.log(`Updated ${result} media items`)
 
     // Get the score distribution for reporting
     const distribution = await prisma.$queryRaw<Array<{ score: number; count: bigint }>>`
-      SELECT "data_quality_score" as score, COUNT(*) as count
-      FROM "MediaItem"
-      GROUP BY "data_quality_score"
-      ORDER BY "data_quality_score"
+      SELECT data_quality_score as score, COUNT(*) as count
+      FROM media_items
+      GROUP BY data_quality_score
+      ORDER BY data_quality_score
     `
 
     const scoreDistribution: Record<number, number> = {}
@@ -65,11 +65,11 @@ export async function POST() {
     const stats = await prisma.$queryRaw<Array<{ total: bigint; high: bigint; medium: bigint; low: bigint; avg: number }>>`
       SELECT
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE "data_quality_score" >= 70) as high,
-        COUNT(*) FILTER (WHERE "data_quality_score" >= 30 AND "data_quality_score" < 70) as medium,
-        COUNT(*) FILTER (WHERE "data_quality_score" < 30) as low,
-        ROUND(AVG("data_quality_score")::numeric, 1) as avg
-      FROM "MediaItem"
+        COUNT(*) FILTER (WHERE data_quality_score >= 70) as high,
+        COUNT(*) FILTER (WHERE data_quality_score >= 30 AND data_quality_score < 70) as medium,
+        COUNT(*) FILTER (WHERE data_quality_score < 30) as low,
+        ROUND(AVG(data_quality_score)::numeric, 1) as avg
+      FROM media_items
     `
 
     const summary = stats[0]
