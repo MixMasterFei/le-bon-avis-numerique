@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header"
 import { Footer } from "@/components/layout/Footer"
 import { CookieConsent } from "@/components/CookieConsent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
+import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({
     <html lang="fr" className={`${inter.variable} ${poppins.variable}`}>
       <body className="min-h-screen flex flex-col">
         <SessionProvider>
+          <ScrollRestoration />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
