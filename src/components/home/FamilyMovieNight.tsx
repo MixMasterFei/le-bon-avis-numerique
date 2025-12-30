@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
 import { Users, Popcorn, ChevronRight, ChevronDown, ChevronUp, Check, Sparkles, Film, RefreshCw } from "lucide-react"
@@ -35,6 +36,7 @@ interface MediaRecommendation {
 }
 
 export function FamilyMovieNight() {
+  const { data: session } = useSession()
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [recommendations, setRecommendations] = useState<MediaRecommendation[]>([])
@@ -44,8 +46,10 @@ export function FamilyMovieNight() {
   const [showResults, setShowResults] = useState(false)
   const [showAllResults, setShowAllResults] = useState(false)
 
-  // Fetch family members on mount
+  // Fetch family members on mount (only if logged in)
   useEffect(() => {
+    if (!session?.user) return
+
     async function loadFamily() {
       try {
         const res = await fetch("/api/user/family")
@@ -54,11 +58,11 @@ export function FamilyMovieNight() {
           setFamilyMembers(data.familyMembers || [])
         }
       } catch {
-        // User not logged in or no family members
+        // No family members
       }
     }
     loadFamily()
-  }, [])
+  }, [session])
 
   const toggleMember = (memberId: string) => {
     setSelectedMembers(prev =>
