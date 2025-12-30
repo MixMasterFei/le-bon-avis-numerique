@@ -31,7 +31,7 @@ interface UserStats {
 }
 
 export default function ProfilPage() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
 
@@ -104,6 +104,8 @@ export default function ProfilPage() {
       })
       if (res.ok) {
         setProfileSaved(true)
+        // Trigger session update to refresh the name in the JWT
+        await update()
         setTimeout(() => {
           setEditProfileOpen(false)
           setProfileSaved(false)
