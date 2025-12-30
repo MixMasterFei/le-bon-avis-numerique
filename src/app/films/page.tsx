@@ -32,15 +32,15 @@ const MOVIE_CATEGORIES: CategoryConfig[] = [
     id: "adventure",
     title: "Films d'aventure",
     subtitle: "Action et aventures pour toute la famille",
-    apiParams: "limit=20&genres=Aventure&maxAge=12",
+    apiParams: "limit=20&genres=Aventure,Famille&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre",
     linkHref: "/films/recherche?topics=Aventure&maxAge=12",
   },
   {
     id: "comedy",
     title: "Comédies familiales",
     subtitle: "Des films drôles à regarder ensemble",
-    apiParams: "limit=20&genres=Comédie&maxAge=12",
-    linkHref: "/films/recherche?topics=Comédie&maxAge=12",
+    apiParams: "limit=20&genres=Comédie,Famille&maxAge=10&excludeGenres=Action,Horreur,Thriller,Crime,Guerre,Animation",
+    linkHref: "/films/recherche?topics=Comédie&maxAge=10",
   },
   {
     id: "teens",
@@ -60,7 +60,7 @@ const MOVIE_CATEGORIES: CategoryConfig[] = [
     id: "drama",
     title: "Drames familiaux",
     subtitle: "Des histoires touchantes pour réfléchir ensemble",
-    apiParams: "limit=20&genres=Drame&maxAge=12",
+    apiParams: "limit=20&genres=Drame,Famille&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre",
     linkHref: "/films/recherche?topics=Drame&maxAge=12",
   },
 ]

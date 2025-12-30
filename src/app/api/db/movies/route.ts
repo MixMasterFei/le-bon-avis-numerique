@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20")
   const maxAge = searchParams.get("maxAge")
   const genres = searchParams.get("genres")
+  const excludeGenres = searchParams.get("excludeGenres")
   const topics = searchParams.get("topics")
   const platforms = searchParams.get("platforms")
   const search = searchParams.get("q")
@@ -30,6 +31,20 @@ export async function GET(request: NextRequest) {
     if (genres) {
       const genreList = genres.split(",").map(g => g.trim())
       where.genres = { hasSome: genreList }
+    }
+
+    // Exclude certain genres (useful for family sections to exclude action, horror, etc.)
+    if (excludeGenres) {
+      const excludeList = excludeGenres.split(",").map(g => g.trim())
+      // Use AND with NOT to exclude films that have ANY of these genres
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        {
+          NOT: {
+            genres: { hasSome: excludeList }
+          }
+        }
+      ]
     }
 
     // Filter by topics/themes (search in topics array AND in genres for flexibility)
