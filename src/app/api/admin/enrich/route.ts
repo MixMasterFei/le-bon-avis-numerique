@@ -84,7 +84,15 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
   "tags": ["<tag1>", "<tag2>"]
 }
 
-Tags possibles: "famille", "noel", "halloween", "ete", "comedie-ado", "action", "educatif", "classique", "animation", "aventure", "fantastique", "super-heros", "disney", "pixar", "dreamworks", "studio-ghibli", "nintendo", "playstation", "xbox", "pc"${releaseYear && releaseYear >= currentYear - 1 ? `, "meilleur-${releaseYear}"` : ""}
+Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse):
+- Themes: "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Aviation", "Espace", "Magie", "Sport", "Musique", "Histoire", "Amitié"
+- "Animaux" (SEULEMENT si les animaux sont les personnages principaux, ex: Le Roi Lion, Babe)
+- "Nature" (SEULEMENT pour documentaires nature ou films sur l'environnement)
+- Studios: "Disney", "Pixar", "DreamWorks", "Studio Ghibli"
+- Saisonnier: "Noël", "Halloween"
+- Jeux: "Nintendo", "PlayStation", "Xbox", "PC"${releaseYear && releaseYear >= currentYear - 1 ? `\n- "Meilleur ${releaseYear}"` : ""}
+
+ATTENTION: Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
 
 Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 

@@ -115,17 +115,13 @@ export async function GET(request: NextRequest) {
     // This allows filtering by themes like "Aviation", "Famille", etc.
     if (topics) {
       const topicList = topics.split(",").map(t => t.trim())
-      // Search in both topics and genres arrays, and also in synopsis for keyword matching
+      // Search in both topics and genres arrays only (not synopsis - too many false positives)
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         {
           OR: [
             { topics: { hasSome: topicList } },
             { genres: { hasSome: topicList } },
-            // Also search in synopsis for theme keywords
-            ...topicList.map(topic => ({
-              synopsisFr: { contains: topic, mode: "insensitive" as const }
-            })),
           ]
         }
       ]
