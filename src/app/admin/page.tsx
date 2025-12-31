@@ -102,7 +102,7 @@ export default function AdminDashboard() {
         const res = await fetch("/api/admin/quality/compute", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ offset, limit: 1000 }),
+          body: JSON.stringify({ offset, limit: 200 }),
         })
         const data = await res.json()
         console.log("Quality computation chunk:", data)
