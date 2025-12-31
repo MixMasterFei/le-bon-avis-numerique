@@ -17,6 +17,7 @@ import {
   Database,
   ChevronDown,
   ChevronUp,
+  Tag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -269,6 +270,13 @@ export default function AdminDashboard() {
       href: "/admin/quality",
       icon: AlertTriangle,
       color: "bg-red-500",
+    },
+    {
+      title: "Gestion des tags",
+      description: "Verifier et nettoyer les tags thematiques",
+      href: "/admin/tags",
+      icon: Tag,
+      color: "bg-teal-500",
     },
   ]
 
