@@ -12,12 +12,24 @@ export async function GET(request: NextRequest) {
   const topics = searchParams.get("topics")
   const platforms = searchParams.get("platforms")
   const search = searchParams.get("q")
+  const requirePoster = searchParams.get("requirePoster") === "true"
+  const minQuality = searchParams.get("minQuality")
 
   const skip = (page - 1) * limit
 
   try {
     const where: Prisma.MediaItemWhereInput = {
       type: "MOVIE",
+    }
+
+    // Require poster for homepage/featured sections
+    if (requirePoster) {
+      where.posterUrl = { not: null }
+    }
+
+    // Minimum quality score filter
+    if (minQuality) {
+      where.dataQualityScore = { gte: parseInt(minQuality) }
     }
 
     // Filter by age recommendation

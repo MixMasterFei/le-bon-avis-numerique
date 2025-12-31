@@ -58,13 +58,15 @@ export function FeaturedMovies() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch truly family-friendly movies:
+        // Fetch truly family-friendly movies for homepage:
         // - Age <= 7 for young children (excludes 8+ films)
         // - Filter by family-friendly genres (Animation, Famille)
         // - Exclude Romance/Drame
+        // - Require poster image (no broken images on homepage)
+        // - Minimum quality score of 70
         const familyGenres = encodeURIComponent("Animation,Famille")
         const excludeGenres = encodeURIComponent("Romance,Drame,Horreur,Thriller,Crime,Guerre")
-        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}`)
+        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70`)
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
 
