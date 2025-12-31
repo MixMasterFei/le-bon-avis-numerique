@@ -3,23 +3,27 @@ import { prisma } from "@/lib/prisma"
 
 export const maxDuration = 30
 
+// Helper to safely run a query that might fail if table doesn't exist
+async function safeQuery<T>(query: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await query
+  } catch (error) {
+    // If table doesn't exist, return fallback
+    console.warn("Query failed (table may not exist):", error)
+    return fallback
+  }
+}
+
 export async function GET() {
   try {
-    // Run all queries in parallel for performance
+    // Run queries that should always work
     const [
-      // Media stats
       mediaStats,
-      // Pending action items
       pendingCorrections,
-      pendingContentRequests,
       lowQualityCount,
       pendingReports,
-      // Recent admin activity
-      recentActivity,
-      // User activity stats
       topContributors,
       recentReviews,
-      // Language distribution
       languageStats,
     ] = await Promise.all([
       // Media counts by type
@@ -30,11 +34,6 @@ export async function GET() {
 
       // Pending corrections count
       prisma.mediaCorrection.count({
-        where: { status: "PENDING" },
-      }),
-
-      // Pending content requests count
-      prisma.contentRequest.count({
         where: { status: "PENDING" },
       }),
 
@@ -49,17 +48,6 @@ export async function GET() {
       // Pending review reports
       prisma.reviewReport.count({
         where: { status: "PENDING" },
-      }),
-
-      // Recent admin activity (last 20)
-      prisma.adminActivity.findMany({
-        take: 20,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true, image: true },
-          },
-        },
       }),
 
       // Top contributors (users with most reviews)
@@ -93,6 +81,28 @@ export async function GET() {
         take: 10,
         where: { originalLanguage: { not: null } },
       }),
+    ])
+
+    // Run queries for new tables with fallbacks (they might not exist yet)
+    const [pendingContentRequests, recentActivity] = await Promise.all([
+      safeQuery(
+        prisma.contentRequest.count({
+          where: { status: "PENDING" },
+        }),
+        0
+      ),
+      safeQuery(
+        prisma.adminActivity.findMany({
+          take: 20,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+          },
+        }),
+        []
+      ),
     ])
 
     // Get user details for top contributors
