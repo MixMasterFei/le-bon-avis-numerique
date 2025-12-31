@@ -47,16 +47,14 @@ export async function POST(request: NextRequest) {
 
     for (const item of items) {
       try {
-        // Fetch from TMDB
-        const endpoint = item.type === "MOVIE"
+        // Fetch from TMDB using api_key query parameter (v3 API)
+        const baseEndpoint = item.type === "MOVIE"
           ? `https://api.themoviedb.org/3/movie/${item.tmdbId}`
           : `https://api.themoviedb.org/3/tv/${item.tmdbId}`
 
-        const res = await fetch(endpoint, {
-          headers: {
-            Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-          },
-        })
+        const endpoint = `${baseEndpoint}?api_key=${process.env.TMDB_API_KEY}`
+
+        const res = await fetch(endpoint)
 
         if (res.ok) {
           const data = await res.json()
