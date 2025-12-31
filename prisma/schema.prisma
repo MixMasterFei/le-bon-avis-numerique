@@ -26,14 +26,17 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  accounts      Account[]
-  sessions      Session[]
-  reviews       Review[]
-  favorites     Favorite[]
-  watchlist     Watchlist[]
-  reports       ReviewReport[]
-  familyMembers FamilyMember[]
-  corrections   MediaCorrection[]
+  accounts           Account[]
+  sessions           Session[]
+  reviews            Review[]
+  favorites          Favorite[]
+  watchlist          Watchlist[]
+  reports            ReviewReport[]
+  familyMembers      FamilyMember[]
+  corrections        MediaCorrection[]
+  contentRequests    ContentRequest[]
+  userContentMetrics UserContentMetrics[]
+  adminActivities    AdminActivity[]
 
   @@map("users")
 }
@@ -138,16 +141,18 @@ model MediaItem {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  contentMetrics       ContentMetrics?
-  reviews              Review[]
-  favorites            Favorite[]
-  watchlist            Watchlist[]
-  reactions            MediaReaction[]
-  credits              MediaCredit[]
-  similarToA           MediaSimilarity[] @relation("SimilarMediaA")
-  similarToB           MediaSimilarity[] @relation("SimilarMediaB")
+  contentMetrics        ContentMetrics?
+  reviews               Review[]
+  favorites             Favorite[]
+  watchlist             Watchlist[]
+  reactions             MediaReaction[]
+  credits               MediaCredit[]
+  similarToA            MediaSimilarity[] @relation("SimilarMediaA")
+  similarToB            MediaSimilarity[] @relation("SimilarMediaB")
   streamingAvailability StreamingAvailability[]
-  corrections          MediaCorrection[]
+  corrections           MediaCorrection[]
+  userContentMetrics    UserContentMetrics[]
+  contentRequests       ContentRequest[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -516,4 +521,87 @@ enum CorrectionStatus {
   APPROVED  // Approuvée et appliquée
   REJECTED  // Rejetée
   DUPLICATE // Déjà signalé
+}
+
+// ============================================
+// CONTENT REQUESTS (User requests for new content)
+// ============================================
+
+enum ContentRequestStatus {
+  PENDING   // En attente
+  REVIEWING // En cours de revue
+  APPROVED  // Approuvé
+  ADDED     // Ajouté à la base
+  REJECTED  // Rejeté
+  DUPLICATE // Déjà présent
+}
+
+model ContentRequest {
+  id          String               @id @default(uuid())
+  userId      String               @map("user_id")
+  title       String
+  mediaType   MediaType            @map("media_type")
+  externalId  String?              @map("external_id") // TMDB/IGDB ID if known
+  description String?              @db.Text
+  status      ContentRequestStatus @default(PENDING)
+  priority    Int                  @default(0)
+  adminNotes  String?              @map("admin_notes") @db.Text
+  resolvedAt  DateTime?            @map("resolved_at")
+  resolvedBy  String?              @map("resolved_by")
+  mediaId     String?              @map("media_id") // Link to created media item
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem? @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("content_requests")
+}
+
+// ============================================
+// USER CONTENT METRICS (Community ratings)
+// ============================================
+
+model UserContentMetrics {
+  id               String   @id @default(uuid())
+  mediaId          String   @map("media_id")
+  userId           String   @map("user_id")
+  violence         Int      @default(0) // 0-5 scale
+  sexNudity        Int      @default(0) @map("sex_nudity")
+  language         Int      @default(0)
+  consumerism      Int      @default(0)
+  substanceUse     Int      @default(0) @map("substance_use")
+  positiveMessages Int      @default(0) @map("positive_messages")
+  roleModels       Int      @default(0) @map("role_models")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, userId])
+  @@index([mediaId])
+  @@map("user_content_metrics")
+}
+
+// ============================================
+// ADMIN ACTIVITY LOGGING
+// ============================================
+
+model AdminActivity {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  action     String   // IMPORT, ENRICH, DELETE, APPROVE_CORRECTION, etc.
+  entityType String   @map("entity_type") // MEDIA, REVIEW, CORRECTION, etc.
+  entityId   String?  @map("entity_id")
+  details    String?  @db.Text // JSON or text details
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("admin_activities")
 }

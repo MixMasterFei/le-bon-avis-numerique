@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AgeBadge, OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
+import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
+import { UserMetricsButton } from "@/components/media/UserMetricsButton"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewSummary } from "@/components/media/ReviewCard"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
@@ -569,15 +571,30 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* Family Reactions */}
             {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
 
-            {/* Content Grid */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Analyse du contenu</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ContentGrid metrics={media.contentMetrics} />
-              </CardContent>
-            </Card>
+            {/* Dual Content Metrics (Expert vs Community) */}
+            {dbId && (
+              <DualMetricsDisplay
+                mediaId={dbId}
+                expertMetrics={media.contentMetrics}
+              />
+            )}
+
+            {/* Fallback to single ContentGrid if no dbId */}
+            {!dbId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Analyse du contenu</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ContentGrid metrics={media.contentMetrics} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* User Metrics Button */}
+            {dbId && (
+              <UserMetricsButton mediaId={dbId} mediaTitle={media.title} />
+            )}
 
             {/* Report Correction Button */}
             {dbId && (
