@@ -11,8 +11,8 @@ const MOVIE_CATEGORIES: CategoryConfig[] = [
     id: "family-favorites",
     title: "Films pour les enfants",
     subtitle: "Adaptés aux plus jeunes, évalués par nos experts",
-    apiParams: "limit=20&maxAge=8&genres=Animation,Famille,Aventure,Comédie",
-    linkHref: "/films/recherche?maxAge=8",
+    apiParams: "limit=20&maxAge=7&genres=Animation,Famille&excludeGenres=Romance,Drame,Horreur,Thriller,Crime,Guerre",
+    linkHref: "/films/recherche?maxAge=7",
   },
   {
     id: "recent",
