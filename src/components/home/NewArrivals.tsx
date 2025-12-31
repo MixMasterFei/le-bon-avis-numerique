@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Sparkles } from "lucide-react"
+import { ArrowRight, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { MediaCard } from "@/components/media/MediaCard"
 import { type MockMediaItem } from "@/lib/mock-data"
 
@@ -95,20 +94,17 @@ export function NewArrivals() {
     <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl text-white">
-            <Sparkles className="h-5 w-5" />
+          <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white">
+            <Clock className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                Nouveautés
+                Derniers Ajouts
               </h2>
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                Nouveau
-              </Badge>
             </div>
             <p className="text-gray-600 text-sm">
-              Derniers ajouts à notre catalogue
+              Les films recemment ajoutes a notre catalogue
             </p>
           </div>
         </div>

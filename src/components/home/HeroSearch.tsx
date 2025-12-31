@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button"
 
 // Popular search suggestions shown below the search bar
 const popularSearches = [
-  { label: "Films pour enfants", href: "/films?maxAge=7" },
-  { label: "Animation", href: "/films?genres=Animation" },
-  { label: "Aventure", href: "/films?genres=Aventure" },
-  { label: "Comedie", href: "/films?genres=Comedie" },
+  { label: "Films pour enfants", href: "/films/recherche?maxAge=7" },
+  { label: "Animation", href: "/films/recherche?genres=Animation" },
+  { label: "Aventure", href: "/films/recherche?genres=Aventure" },
+  { label: "Comedie", href: "/films/recherche?genres=Comedie" },
 ]
 
 interface Suggestion {
@@ -152,47 +152,50 @@ export function HeroSearch() {
           e.preventDefault()
           submit()
         }}
+        className="relative"
       >
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-        {loading && (
-          <Loader2 className="absolute right-36 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin z-10" />
-        )}
-        {query && !loading && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("")
-              setSuggestions([])
-              setShowDropdown(false)
-              inputRef.current?.focus()
+        <div className="relative flex items-center bg-white rounded-xl shadow-xl">
+          <Search className="absolute left-4 h-5 w-5 text-gray-400 pointer-events-none" />
+          {loading && (
+            <Loader2 className="absolute right-32 h-4 w-4 text-gray-400 animate-spin" />
+          )}
+          {query && !loading && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("")
+                setSuggestions([])
+                setShowDropdown(false)
+                inputRef.current?.focus()
+              }}
+              className="absolute right-32 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="Rechercher un film, une série, un jeu..."
+            className="w-full pl-12 pr-32 h-14 text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onFocus={() => {
+              if (suggestions.length > 0 && query.trim().length >= 2) {
+                setShowDropdown(true)
+              }
             }}
-            className="absolute right-36 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600 z-10"
+            autoComplete="off"
+          />
+          <Button
+            type="submit"
+            className="absolute right-2 h-10"
+            disabled={query.trim().length < 2}
           >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-        <Input
-          ref={inputRef}
-          type="text"
-          placeholder="Rechercher un film, une série, un jeu..."
-          className="pl-12 pr-36 h-14 text-lg bg-white text-gray-900 border-0 shadow-xl rounded-xl"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (suggestions.length > 0 && query.trim().length >= 2) {
-              setShowDropdown(true)
-            }
-          }}
-          autoComplete="off"
-        />
-        <Button
-          type="submit"
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-10 z-10"
-          disabled={query.trim().length < 2}
-        >
-          Rechercher
-        </Button>
+            Rechercher
+          </Button>
+        </div>
       </form>
 
       {/* Autocomplete dropdown - positioned fixed to avoid overflow clipping */}

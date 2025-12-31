@@ -19,14 +19,17 @@ function FilmsRechercheContent() {
   // Parse URL params for initial state
   const initialMaxAge = searchParams.get("maxAge") ? parseInt(searchParams.get("maxAge")!) : DEFAULT_MAX_AGE
   const initialTopics = searchParams.get("topics")?.split(",").filter(Boolean) || []
+  const initialGenres = searchParams.get("genres")?.split(",").filter(Boolean) || []
   const initialPlatforms = searchParams.get("platforms")?.split(",").filter(Boolean) || []
   const initialSearch = searchParams.get("q") || ""
+  // Merge genres into topics for filtering (they work the same way in the API)
+  const mergedTopics = [...new Set([...initialTopics, ...initialGenres])]
 
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
     maxAge: initialMaxAge,
     platforms: initialPlatforms,
-    topics: initialTopics,
+    topics: mergedTopics,
     searchQuery: initialSearch,
   })
   const [source, setSource] = useState<"db" | "api" | "mock">("mock")
@@ -266,6 +269,40 @@ function FilmsRechercheContent() {
   // Check if any filters are active
   const hasActiveFilters = filters.maxAge < 18 || filters.platforms.length > 0 || filters.topics.length > 0 || filters.searchQuery !== ""
 
+  // Generate dynamic page title based on active filters
+  const getPageTitle = () => {
+    if (filters.topics.length > 0) {
+      // Show the selected topics/genres as the title
+      return `Films - ${filters.topics.join(", ")}`
+    }
+    if (filters.platforms.length > 0) {
+      return `Films sur ${filters.platforms.join(", ")}`
+    }
+    if (filters.searchQuery) {
+      return `Recherche: "${filters.searchQuery}"`
+    }
+    if (filters.maxAge <= 7) {
+      return "Films pour enfants"
+    }
+    if (filters.maxAge < 12) {
+      return `Films pour les ${filters.maxAge} ans et moins`
+    }
+    return "Rechercher des films"
+  }
+
+  const getPageSubtitle = () => {
+    if (filters.topics.length > 0 || filters.platforms.length > 0) {
+      return "Films correspondant à vos critères"
+    }
+    if (filters.maxAge <= 7) {
+      return "Adaptés aux plus jeunes, évalués par nos experts"
+    }
+    if (filters.maxAge < 12) {
+      return `Films adaptés aux enfants de ${filters.maxAge} ans et moins`
+    }
+    return "Utilisez les filtres pour trouver les films adaptés à votre famille."
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -282,10 +319,10 @@ function FilmsRechercheContent() {
           <div className="p-3 bg-red-500 rounded-xl text-white">
             <Film className="h-6 w-6" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Rechercher des films</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
         </div>
         <p className="text-gray-600">
-          Utilisez les filtres pour trouver les films adaptés à votre famille.
+          {getPageSubtitle()}
         </p>
       </div>
 
