@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("q")
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
+  const sortBy = searchParams.get("sortBy") || "createdAt" // createdAt, releaseDate, title
 
   const skip = (page - 1) * limit
 
@@ -118,10 +119,20 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // Determine sort order
+    let orderBy: any = { createdAt: "desc" }
+    if (sortBy === "releaseDate") {
+      orderBy = { releaseDate: "desc" }
+    } else if (sortBy === "title") {
+      orderBy = { title: "asc" }
+    } else if (sortBy === "quality") {
+      orderBy = { dataQualityScore: "desc" }
+    }
+
     const [movies, total] = await Promise.all([
       prisma.mediaItem.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         include: {

@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { Shield, Star, Users, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
@@ -10,37 +9,24 @@ import { RecentMovies } from "@/components/home/RecentMovies"
 import { FamilyImageSection, TestimonialsSection } from "@/components/home/FamilyImageSection"
 import { FamilyRecommendations } from "@/components/home/FamilyRecommendations"
 import { FamilyMovieNight } from "@/components/home/FamilyMovieNight"
+import { NewArrivals } from "@/components/home/NewArrivals"
+import { ExpertPicks } from "@/components/home/ExpertPicks"
+import { CuratedCollections } from "@/components/home/CuratedCollections"
+import { TrustBanner } from "@/components/home/TrustBanner"
+import { StreamingSection } from "@/components/home/StreamingSection"
 
 const categories = [
-  { name: "Films", href: "/films", icon: Film, color: "bg-red-500" },
-  { name: "Séries TV", href: "/series", icon: Tv, color: "bg-blue-500" },
-  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2, color: "bg-green-500" },
-  { name: "Livres", href: "/livres", icon: BookOpen, color: "bg-amber-500" },
-  { name: "Applications", href: "/apps", icon: Smartphone, color: "bg-purple-500" },
-]
-
-const features = [
-  {
-    icon: Shield,
-    title: "Évaluations indépendantes",
-    description: "Des experts analysent chaque contenu pour vous donner des avis objectifs et fiables.",
-  },
-  {
-    icon: Users,
-    title: "Avis de la communauté",
-    description: "Parents, enfants et éducateurs partagent leurs expériences pour vous guider.",
-  },
-  {
-    icon: Star,
-    title: "Recommandations par âge",
-    description: "Trouvez facilement ce qui convient à l'âge de votre enfant grâce à notre système de notation.",
-  },
+  { name: "Films", href: "/films", icon: Film, color: "bg-red-500", textColor: "text-red-600" },
+  { name: "Series", href: "/series", icon: Tv, color: "bg-blue-500", textColor: "text-blue-600" },
+  { name: "Jeux", href: "/jeux", icon: Gamepad2, color: "bg-green-500", textColor: "text-green-600" },
+  { name: "Livres", href: "/livres", icon: BookOpen, color: "bg-amber-500", textColor: "text-amber-600" },
+  { name: "Apps", href: "/apps", icon: Smartphone, color: "bg-purple-500", textColor: "text-purple-600" },
 ]
 
 export default function HomePage() {
   return (
     <div className="flex flex-col">
-      {/* Hero Section - Compact */}
+      {/* Hero Section - Bolder messaging */}
       <section className="relative bg-gradient-to-br from-primary via-blue-700 to-blue-900 text-white overflow-visible">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10 overflow-hidden">
@@ -51,18 +37,21 @@ export default function HomePage() {
 
         <div className="container mx-auto px-4 py-8 md:py-12 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <Badge className="mb-3 bg-white/20 text-white border-white/30 backdrop-blur-sm text-xs">
-              🇫🇷 Le guide média pour les familles françaises
-            </Badge>
+            {/* Trust Badge */}
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-white/15 backdrop-blur-sm rounded-full border border-white/20">
+              <Shield className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium">Le guide independant pour les parents numeriques</span>
+            </div>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
-              Des choix médias
-              <span className="text-emerald-400"> éclairés </span>
-              pour vos enfants
+              Les evaluations que
+              <span className="text-emerald-400"> les parents </span>
+              peuvent faire confiance
             </h1>
 
             <p className="text-base md:text-lg text-blue-100 mb-5 max-w-2xl mx-auto">
-              Films, séries, jeux et livres adaptés à chaque âge grâce à nos avis experts.
+              Des avis experts et independants sur les films, series, jeux et livres.
+              Nous ne sommes pas payes par les studios.
             </p>
 
             {/* Search Bar */}
@@ -75,81 +64,73 @@ export default function HomePage() {
         {/* Wave Separator - Smaller */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 50" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-4">
-            <path d="M0 25L60 22.8C120 20.5 240 16.5 360 18.8C480 21 600 29 720 31.3C840 33.5 960 29 1080 25C1200 21 1320 16.5 1380 14.6L1440 12.5V50H1380C1320 50 1200 50 1080 50C960 50 840 50 720 50C600 50 480 50 360 50C240 50 120 50 60 50H0V25Z" fill="#f8fafc"/>
+            <path d="M0 25L60 22.8C120 20.5 240 16.5 360 18.8C480 21 600 29 720 31.3C840 33.5 960 29 1080 25C1200 21 1320 16.5 1380 14.6L1440 12.5V50H1380C1320 50 1200 50 1080 50C960 50 840 50 720 50C600 50 480 50 360 50C240 50 120 50 60 50H0V25Z" fill="#ffffff"/>
           </svg>
         </div>
       </section>
 
-      {/* Categories Section - Compact */}
-      <section className="pt-4 pb-6 bg-slate-50">
+      {/* Categories Section - Slim horizontal bar */}
+      <section className="py-3 bg-white border-b border-gray-100">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {categories.map((category) => (
               <Link key={category.name} href={category.href}>
-                <Card className="group hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 h-full">
-                  <CardContent className="p-4 text-center">
-                    <div className={`inline-flex p-3 rounded-xl ${category.color} text-white mb-2 group-hover:scale-105 transition-transform`}>
-                      <category.icon className="h-6 w-6" />
-                    </div>
-                    <h3 className="font-medium text-gray-900 text-sm">{category.name}</h3>
-                  </CardContent>
-                </Card>
+                <div className="group flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-all whitespace-nowrap">
+                  <div className={`p-1.5 rounded-lg ${category.color} text-white group-hover:scale-110 transition-transform`}>
+                    <category.icon className="h-4 w-4" />
+                  </div>
+                  <span className={`font-medium text-sm text-gray-700 group-hover:${category.textColor}`}>{category.name}</span>
+                </div>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Featured Movies Section */}
+      {/* Expert Picks Section - NEW */}
       <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <ExpertPicks />
+        </div>
+      </section>
+
+      {/* Featured Movies Section - Films pour enfants */}
+      <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
           <FeaturedMovies />
         </div>
       </section>
 
-      {/* Recommendation Wizard */}
+      {/* Streaming Section - What's on Netflix/Disney+ */}
+      <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <StreamingSection />
+        </div>
+      </section>
+
+      {/* Curated Collections - NEW */}
       <section className="py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <CuratedCollections />
+        </div>
+      </section>
+
+      {/* New Arrivals Section - NEW */}
+      <section className="py-8 bg-white">
+        <div className="container mx-auto px-4">
+          <NewArrivals />
+        </div>
+      </section>
+
+      {/* Recommendation Wizard */}
+      <section className="py-8 bg-white">
         <div className="container mx-auto px-4">
           <RecommendationWizard />
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Pourquoi nous faire confiance ?
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Nous aidons les familles à naviguer dans l&apos;univers des médias numériques avec confiance et sérénité.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <Card key={feature.title} className="border-0 shadow-lg">
-                <CardContent className="p-8 text-center">
-                  <div className="inline-flex p-4 rounded-2xl bg-primary/10 text-primary mb-6">
-                    <feature.icon className="h-8 w-8" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Family Image Section */}
-      <FamilyImageSection />
-
-      {/* Testimonials Section */}
-      <TestimonialsSection />
-
       {/* Family Recommendations - Only shows if logged in with family data */}
-      <section className="py-8 bg-white">
+      <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-8">
             <FamilyRecommendations />
@@ -159,25 +140,34 @@ export default function HomePage() {
       </section>
 
       {/* Recent Movies Section */}
-      <section className="py-16 bg-white">
+      <section className="py-8 bg-white">
         <div className="container mx-auto px-4">
           <RecentMovies />
         </div>
       </section>
 
+      {/* Family Image Section */}
+      <FamilyImageSection />
+
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+
+      {/* Trust Banner - NEW */}
+      <TrustBanner />
+
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
+      <section className="py-12 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">
-            Rejoignez notre communauté de parents
+            Rejoignez notre communaute de parents
           </h2>
           <p className="text-emerald-100 mb-8 max-w-2xl mx-auto">
-            Partagez vos avis, recevez des recommandations personnalisées et aidez d&apos;autres familles à faire les bons choix.
+            Partagez vos avis, recevez des recommandations personnalisees et aidez d&apos;autres familles a faire les bons choix.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/inscription">
               <Button size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50">
-                Créer un compte gratuit
+                Creer un compte gratuit
               </Button>
             </Link>
             <Link href="/contact">

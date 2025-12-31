@@ -2,9 +2,18 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X } from "lucide-react"
+import Link from "next/link"
+import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingUp } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+
+// Popular search suggestions shown below the search bar
+const popularSearches = [
+  { label: "Films pour enfants", href: "/films?maxAge=7" },
+  { label: "Animation", href: "/films?genres=Animation" },
+  { label: "Aventure", href: "/films?genres=Aventure" },
+  { label: "Comedie", href: "/films?genres=Comedie" },
+]
 
 interface Suggestion {
   id: string
@@ -212,6 +221,23 @@ export function HeroSearch() {
           </ul>
         </div>
       )}
+
+      {/* Popular searches - quick links */}
+      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+        <span className="text-blue-200 text-xs flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          Populaire:
+        </span>
+        {popularSearches.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full transition-colors backdrop-blur-sm"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
