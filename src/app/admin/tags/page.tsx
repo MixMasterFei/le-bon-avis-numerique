@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowLeft, Tag, Trash2, Check, X, AlertTriangle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -36,7 +36,7 @@ interface MediaItem {
   releaseDate?: string
 }
 
-export default function TagsAdminPage() {
+function TagsAdminContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const selectedTag = searchParams.get("tag")
@@ -410,5 +410,25 @@ export default function TagsAdminPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  )
+}
+
+// Loading fallback for Suspense
+function TagsLoadingFallback() {
+  return (
+    <div className="container mx-auto py-8 px-4">
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function TagsAdminPage() {
+  return (
+    <Suspense fallback={<TagsLoadingFallback />}>
+      <TagsAdminContent />
+    </Suspense>
   )
 }
