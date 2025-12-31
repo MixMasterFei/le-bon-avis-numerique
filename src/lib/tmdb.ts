@@ -91,6 +91,7 @@ export interface TMDBMovie {
   id: number
   title: string // French title
   original_title: string
+  original_language: string // ISO 639-1 code (en, fr, de, etc.)
   overview: string // French synopsis
   poster_path: string | null
   backdrop_path: string | null
@@ -158,6 +159,7 @@ export interface TMDBTVShow {
   id: number
   name: string // French title
   original_name: string
+  original_language: string // ISO 639-1 code (en, fr, de, etc.)
   overview: string
   poster_path: string | null
   backdrop_path: string | null
