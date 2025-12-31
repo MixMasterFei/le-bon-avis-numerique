@@ -40,10 +40,13 @@ export default function SeriesPage() {
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
+          requirePoster: "true",
         })
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
+        // Filter to French/English content only (relevant for French audience)
+        dbParams.set("language", "fr,en")
 
         const dbRes = await fetch(`/api/db/series?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {

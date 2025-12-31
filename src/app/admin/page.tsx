@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
+  Globe,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -53,6 +54,8 @@ export default function AdminDashboard() {
   const [cachingStreaming, setCachingStreaming] = useState(false)
   const [computingSimilarity, setComputingSimilarity] = useState(false)
   const [syncingDb, setSyncingDb] = useState(false)
+  const [backfillingLanguage, setBackfillingLanguage] = useState(false)
+  const [languageStats, setLanguageStats] = useState<{ missingByType: Record<string, number>; languageDistribution: { language: string; count: number }[] } | null>(null)
 
   const fetchStats = async () => {
     try {
@@ -89,7 +92,20 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchStats()
+    fetchLanguageStats()
   }, [])
+
+  const fetchLanguageStats = async () => {
+    try {
+      const res = await fetch("/api/admin/db/backfill-language")
+      if (res.ok) {
+        const data = await res.json()
+        setLanguageStats(data)
+      }
+    } catch (err) {
+      console.error("Failed to fetch language stats:", err)
+    }
+  }
 
   const handleComputeQuality = async () => {
     setComputingQuality(true)
@@ -175,6 +191,7 @@ export default function AdminDashboard() {
       if (data.success) {
         alert("Schema synchronise avec succes!")
         fetchStats()
+        fetchLanguageStats()
       } else {
         alert(`Erreur: ${data.error}`)
       }
@@ -183,6 +200,45 @@ export default function AdminDashboard() {
       alert("Erreur de synchronisation")
     } finally {
       setSyncingDb(false)
+    }
+  }
+
+  const handleBackfillLanguage = async () => {
+    setBackfillingLanguage(true)
+    let totalProcessed = 0
+    let totalErrors = 0
+    let offset = 0
+
+    try {
+      while (true) {
+        const res = await fetch("/api/admin/db/backfill-language", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ limit: 50, offset }),
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          alert(`Erreur: ${data.error || "Echec du backfill"}`)
+          break
+        }
+
+        totalProcessed += data.processed || 0
+        totalErrors += data.errors || 0
+
+        if (data.done || !data.nextOffset) {
+          alert(`Backfill termine!\n\nTotal traite: ${totalProcessed}\nErreurs: ${totalErrors}\nRestant: ${data.remaining || 0}`)
+          fetchLanguageStats()
+          break
+        }
+
+        offset = data.nextOffset
+      }
+    } catch (err) {
+      console.error("Failed to backfill language:", err)
+      alert(`Erreur de connexion\n\nTraites avant erreur: ${totalProcessed}`)
+    } finally {
+      setBackfillingLanguage(false)
     }
   }
 
@@ -387,8 +443,34 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* Language Stats */}
+          {languageStats && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Globe className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-blue-800">Statistiques langues</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-blue-600">Films sans langue:</span>
+                  <span className="ml-2 font-bold">{languageStats.missingByType?.MOVIE || 0}</span>
+                </div>
+                <div>
+                  <span className="text-blue-600">Series sans langue:</span>
+                  <span className="ml-2 font-bold">{languageStats.missingByType?.TV || 0}</span>
+                </div>
+                {languageStats.languageDistribution?.slice(0, 5).map((l) => (
+                  <div key={l.language}>
+                    <span className="text-gray-600">{l.language?.toUpperCase() || "?"}: </span>
+                    <span className="font-bold">{l.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Quality Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <Button
               onClick={handleSyncDb}
               disabled={syncingDb}
@@ -401,6 +483,20 @@ export default function AdminDashboard() {
                 <Database className="h-4 w-4 mr-2" />
               )}
               Sync schema DB
+            </Button>
+
+            <Button
+              onClick={handleBackfillLanguage}
+              disabled={backfillingLanguage}
+              variant="outline"
+              className="border-blue-300 hover:bg-blue-50"
+            >
+              {backfillingLanguage ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Globe className="h-4 w-4 mr-2" />
+              )}
+              Backfill langues
             </Button>
 
             <Button

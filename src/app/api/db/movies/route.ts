@@ -52,9 +52,17 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Filter by specific language
+    // Filter by specific language (supports comma-separated for multiple languages)
     if (language) {
-      where.originalLanguage = language
+      const languages = language.split(",").map(l => l.trim())
+      if (languages.length === 1) {
+        where.originalLanguage = languages[0]
+      } else {
+        where.AND = [
+          ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+          { originalLanguage: { in: languages } },
+        ]
+      }
     }
 
     // Only French content

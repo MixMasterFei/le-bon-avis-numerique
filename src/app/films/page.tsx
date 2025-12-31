@@ -6,61 +6,62 @@ import { Button } from "@/components/ui/button"
 import { MovieCategoryRow, type CategoryConfig } from "@/components/media/MovieCategoryRow"
 
 // Define all movie categories with their API parameters
+// All categories filter to French/English content (language=fr,en) for French audience relevance
 const MOVIE_CATEGORIES: CategoryConfig[] = [
   {
     id: "family-favorites",
     title: "Films pour les enfants",
     subtitle: "Adaptés aux plus jeunes, évalués par nos experts",
-    apiParams: "limit=20&maxAge=7&genres=Animation,Famille&excludeGenres=Romance,Drame,Horreur,Thriller,Crime,Guerre",
+    apiParams: "limit=20&maxAge=7&genres=Animation,Famille&excludeGenres=Romance,Drame,Horreur,Thriller,Crime,Guerre&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?maxAge=7",
   },
   {
     id: "recent",
     title: "Récemment évalués",
     subtitle: "Les dernières critiques de notre équipe",
-    apiParams: "limit=20&maxAge=12",
+    apiParams: "limit=20&maxAge=12&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?maxAge=12",
   },
   {
     id: "animation",
     title: "Films d'animation",
     subtitle: "Dessins animés et films animés pour tous les âges",
-    apiParams: "limit=20&genres=Animation",
+    apiParams: "limit=20&genres=Animation&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?topics=Animation",
   },
   {
     id: "adventure",
     title: "Films d'aventure",
     subtitle: "Action et aventures pour toute la famille",
-    apiParams: "limit=20&genres=Aventure,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre",
+    apiParams: "limit=20&genres=Aventure,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?topics=Aventure&maxAge=12",
   },
   {
     id: "comedy",
     title: "Comédies familiales",
     subtitle: "Des films drôles à regarder ensemble",
-    apiParams: "limit=20&genres=Comédie,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Action,Horreur,Thriller,Crime,Guerre,Drame,Romance",
+    apiParams: "limit=20&genres=Comédie,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Action,Horreur,Thriller,Crime,Guerre,Drame,Romance&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?topics=Comédie&maxAge=12",
   },
   {
     id: "teens",
     title: "Pour les adolescents",
     subtitle: "Films adaptés aux 12 ans et plus",
-    apiParams: "limit=20&maxAge=16",
+    apiParams: "limit=20&maxAge=16&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?maxAge=16",
   },
   {
     id: "fantasy",
     title: "Fantastique et Science-Fiction",
     subtitle: "Mondes imaginaires et aventures épiques",
-    apiParams: "limit=20&genres=Fantastique,Science-Fiction&maxAge=14",
+    apiParams: "limit=20&genres=Fantastique,Science-Fiction&maxAge=14&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?topics=Fantastique,Science-Fiction",
   },
   {
     id: "drama",
     title: "Drames familiaux",
     subtitle: "Des histoires touchantes pour réfléchir ensemble",
-    apiParams: "limit=20&genres=Drame,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre",
+    apiParams: "limit=20&genres=Drame,Famille&requireAllGenres=true&maxAge=12&excludeGenres=Horreur,Thriller,Crime,Guerre&language=fr,en&requirePoster=true",
     linkHref: "/films/recherche?topics=Drame&maxAge=12",
   },
 ]
