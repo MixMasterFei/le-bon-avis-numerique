@@ -23,8 +23,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Require poster for homepage/featured sections
+    // Must have a real poster URL (not null, not empty, must start with http)
     if (requirePoster) {
-      where.posterUrl = { not: null }
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { posterUrl: { not: null } },
+        { posterUrl: { not: "" } },
+        { posterUrl: { startsWith: "http" } },
+      ]
     }
 
     // Minimum quality score filter
