@@ -215,6 +215,7 @@ export async function POST(request: Request) {
             genres: details.genres.map((g) => g.name),
             officialRating: mapCertificationToInternal(certification),
             expertAgeRec: certificationToAge(certification),
+            originalLanguage: details.original_language || null,
             platforms: [],
             topics: [],
           },

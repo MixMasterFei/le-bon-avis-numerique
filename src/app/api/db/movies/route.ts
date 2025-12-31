@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
   const sortBy = searchParams.get("sortBy") || "createdAt" // createdAt, releaseDate, title
+  const featured = searchParams.get("featured") === "true" // Featured/popular movies
+  const language = searchParams.get("language") // Filter by original language
+  const frenchOnly = searchParams.get("frenchOnly") === "true"
 
   const skip = (page - 1) * limit
 
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     // Require poster for homepage/featured sections
     // Must have a real poster URL (not null, not empty, must start with http)
-    if (requirePoster) {
+    if (requirePoster || featured) {
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         { posterUrl: { not: null } },
@@ -37,6 +40,26 @@ export async function GET(request: NextRequest) {
     // Minimum quality score filter
     if (minQuality) {
       where.dataQualityScore = { gte: parseInt(minQuality) }
+    }
+
+    // Featured movies: high quality, with poster, French/English content only
+    if (featured) {
+      where.dataQualityScore = { gte: 50 }
+      // Only show content relevant to French audience (French or English)
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { originalLanguage: { in: ["fr", "en"] } },
+      ]
+    }
+
+    // Filter by specific language
+    if (language) {
+      where.originalLanguage = language
+    }
+
+    // Only French content
+    if (frenchOnly) {
+      where.originalLanguage = "fr"
     }
 
     // Filter by age recommendation
@@ -161,6 +184,8 @@ export async function GET(request: NextRequest) {
       expertAgeRec: movie.expertAgeRec,
       communityAgeRec: movie.communityAgeRec,
       contentMetrics: movie.contentMetrics,
+      originalLanguage: movie.originalLanguage,
+      dataQualityScore: movie.dataQualityScore,
     }))
 
     return NextResponse.json({

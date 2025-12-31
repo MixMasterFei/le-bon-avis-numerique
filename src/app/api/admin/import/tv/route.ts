@@ -211,10 +211,12 @@ export async function POST(request: Request) {
               ? new Date(details.first_air_date)
               : null,
             duration: details.episode_run_time?.[0] || null,
+            numberOfSeasons: details.number_of_seasons || null,
             director: creator,
             genres: details.genres.map((g) => g.name),
             officialRating: mapCertificationToInternal(rating),
             expertAgeRec: certificationToAge(rating),
+            originalLanguage: details.original_language || null,
             platforms: [],
             topics: [],
           },

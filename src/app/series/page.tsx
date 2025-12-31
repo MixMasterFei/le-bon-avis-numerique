@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Tv, Database } from "lucide-react"
+import { Tv, Database, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
 const ITEMS_PER_PAGE = 12
+const FEATURED_COUNT = 7
 
 export default function SeriesPage() {
   const [currentPage, setCurrentPage] = useState(1)
@@ -22,6 +23,10 @@ export default function SeriesPage() {
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Featured series (high quality, separate fetch)
+  const [featuredSeries, setFeaturedSeries] = useState<MockMediaItem[]>([])
+  const [featuredLoading, setFeaturedLoading] = useState(true)
 
   // Priority: 1. Database, 2. Mock data
   useEffect(() => {
@@ -93,6 +98,44 @@ export default function SeriesPage() {
       controller.abort()
     }
   }, [currentPage, filters.maxAge])
+
+  // Fetch featured series (high quality, sorted by quality score)
+  useEffect(() => {
+    async function loadFeatured() {
+      setFeaturedLoading(true)
+      try {
+        const res = await fetch(`/api/db/series?limit=${FEATURED_COUNT}&featured=true&sortBy=quality&maxAge=${filters.maxAge}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.series && data.series.length > 0) {
+            const mapped: MockMediaItem[] = data.series.map((s: any) => ({
+              id: String(s.id),
+              title: String(s.title || ""),
+              originalTitle: s.originalTitle ? String(s.originalTitle) : undefined,
+              type: "TV" as const,
+              releaseDate: s.releaseDate ?? null,
+              posterUrl: String(s.posterUrl || ""),
+              synopsisFr: s.synopsisFr ?? null,
+              officialRating: s.officialRating ?? null,
+              expertAgeRec: s.expertAgeRec ?? null,
+              communityAgeRec: s.communityAgeRec ?? null,
+              genres: s.genres || [],
+              platforms: s.platforms || [],
+              topics: s.topics || [],
+              contentMetrics: s.contentMetrics || null,
+              reviews: [],
+            }))
+            setFeaturedSeries(mapped)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured series:", error)
+      } finally {
+        setFeaturedLoading(false)
+      }
+    }
+    loadFeatured()
+  }, [filters.maxAge])
 
   const filteredSeries = useMemo(() => {
     // Start with appropriate source
@@ -181,22 +224,49 @@ export default function SeriesPage() {
         </div>
 
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-6">
+          {/* Featured Section - Top quality series */}
+          {currentPage === 1 && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
+            <div className="mb-10">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
+                  <Star className="h-4 w-4" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-900">Selection qualite</h2>
+                <span className="text-xs text-gray-500">Series bien notees et adaptees aux familles</span>
+              </div>
+              {featuredLoading ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                  {[...Array(FEATURED_COUNT)].map((_, i) => (
+                    <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : featuredSeries.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                  {featuredSeries.map((series) => (
+                    <MediaCard key={`featured-${series.id}`} media={series} />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* All Series Section */}
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gray-200 rounded-lg text-gray-600">
+                <Clock className="h-4 w-4" />
+              </div>
+              <h2 className="text-lg font-bold text-gray-900">Toutes les series</h2>
               {source === "db" && (
                 <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                   <Database className="h-3 w-3" /> Base locale
                 </span>
               )}
-              <p className="text-gray-600">
-                {totalCount} serie{totalCount !== 1 ? "s" : ""} trouvee{totalCount !== 1 ? "s" : ""}
-              </p>
             </div>
-            {totalPages > 1 && (
-              <p className="text-sm text-gray-500">
-                Page {currentPage} sur {totalPages}
-              </p>
-            )}
+            <p className="text-sm text-gray-500">
+              {totalCount} serie{totalCount !== 1 ? "s" : ""}
+              {totalPages > 1 && ` • Page ${currentPage}/${totalPages}`}
+            </p>
           </div>
 
           {loading ? (

@@ -52,6 +52,7 @@ export default function AdminDashboard() {
   const [computingQuality, setComputingQuality] = useState(false)
   const [cachingStreaming, setCachingStreaming] = useState(false)
   const [computingSimilarity, setComputingSimilarity] = useState(false)
+  const [syncingDb, setSyncingDb] = useState(false)
 
   const fetchStats = async () => {
     try {
@@ -163,6 +164,25 @@ export default function AdminDashboard() {
       console.error("Failed to compute similarity:", err)
     } finally {
       setComputingSimilarity(false)
+    }
+  }
+
+  const handleSyncDb = async () => {
+    setSyncingDb(true)
+    try {
+      const res = await fetch("/api/admin/db/sync", { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        alert("Schema synchronise avec succes!")
+        fetchStats()
+      } else {
+        alert(`Erreur: ${data.error}`)
+      }
+    } catch (err) {
+      console.error("Failed to sync database:", err)
+      alert("Erreur de synchronisation")
+    } finally {
+      setSyncingDb(false)
     }
   }
 
@@ -368,7 +388,21 @@ export default function AdminDashboard() {
           )}
 
           {/* Quality Action Buttons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Button
+              onClick={handleSyncDb}
+              disabled={syncingDb}
+              variant="outline"
+              className="border-green-300 hover:bg-green-50"
+            >
+              {syncingDb ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Database className="h-4 w-4 mr-2" />
+              )}
+              Sync schema DB
+            </Button>
+
             <Button
               onClick={handleComputeQuality}
               disabled={computingQuality}

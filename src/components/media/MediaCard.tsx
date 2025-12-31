@@ -82,13 +82,33 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
 }
 
 // Calculate quality score from content metrics (0-5 stars)
+// This represents "family-friendly quality" - balancing positive values vs concerning content
 function calculateQualityScore(metrics: MockMediaItem["contentMetrics"]): number {
   if (!metrics) return 0
 
-  // Weight positive aspects more
-  const positiveScore = (metrics.positiveMessages || 0) + (metrics.roleModels || 0)
-  // Average of positive aspects, scaled to 5
-  return Math.min(5, Math.round((positiveScore / 2) * 10) / 10)
+  // Positive factors (0-5 each, higher is better)
+  const positiveMessages = metrics.positiveMessages || 0
+  const roleModels = metrics.roleModels || 0
+
+  // Negative factors (0-5 each, higher is worse for families)
+  const violence = metrics.violence || 0
+  const sexNudity = metrics.sexNudity || 0
+  const language = metrics.language || 0
+  const substanceUse = metrics.substanceUse || 0
+
+  // Calculate positive score (average of positive factors)
+  const positiveAvg = (positiveMessages + roleModels) / 2
+
+  // Calculate penalty from negative factors (weighted)
+  // Violence and sex/nudity are weighted more heavily
+  const negativePenalty = (violence * 0.3 + sexNudity * 0.3 + language * 0.2 + substanceUse * 0.2) / 5
+
+  // Final score: positive average minus penalty, scaled to 0-5
+  // Only show stars if we have meaningful data (at least some positive metrics)
+  if (positiveMessages === 0 && roleModels === 0) return 0
+
+  const score = Math.max(0, positiveAvg - negativePenalty)
+  return Math.round(score * 10) / 10
 }
 
 export function MediaCard({ media, className, variant = "default" }: MediaCardProps) {

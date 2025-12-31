@@ -115,10 +115,12 @@ model MediaItem {
   expertAgeRec    Int?      @map("expert_age_rec")
   communityAgeRec Float?    @map("community_age_rec")
   duration        Int? // minutes for movies/shows, null for others
+  numberOfSeasons Int?      @map("number_of_seasons") // For TV shows only
   director        String?
   genres          String[]
   platforms       String[] // Netflix, Disney+, Canal+, etc.
   topics          String[] // Princesses, Dinosaurs, History, etc.
+  originalLanguage String? @map("original_language") // ISO 639-1 code (fr, en, de, etc.)
 
   // External API IDs for syncing
   // Note: tmdbId is unique per type (movies and TV have separate namespaces in TMDB)
@@ -153,6 +155,7 @@ model MediaItem {
   @@index([dataQualityScore])
   @@index([isEnriched])
   @@index([tmdbId])
+  @@index([originalLanguage])
   @@map("media_items")
 }
 

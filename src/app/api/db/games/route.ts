@@ -9,6 +9,10 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const platform = searchParams.get("platform")
   const search = searchParams.get("q")
+  const sortBy = searchParams.get("sortBy") || "createdAt" // createdAt, releaseDate, quality, title
+  const requirePoster = searchParams.get("requirePoster") === "true"
+  const minQuality = searchParams.get("minQuality")
+  const featured = searchParams.get("featured") === "true" // Get featured/popular games
 
   const skip = (page - 1) * limit
 
@@ -17,13 +21,30 @@ export async function GET(request: NextRequest) {
       type: "GAME",
     }
 
+    // Require poster for featured sections
+    if (requirePoster || featured) {
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { posterUrl: { not: null } },
+        { posterUrl: { not: "" } },
+        { posterUrl: { startsWith: "http" } },
+      ]
+    }
+
+    // Minimum quality score filter
+    if (minQuality) {
+      where.dataQualityScore = { gte: parseInt(minQuality) }
+    }
+
+    // Featured games: high quality, with poster
+    if (featured) {
+      where.dataQualityScore = { gte: 50 }
+    }
+
     // Filter by age recommendation
     if (maxAge) {
       const age = parseInt(maxAge)
-      where.OR = [
-        { expertAgeRec: { lte: age } },
-        { expertAgeRec: null },
-      ]
+      where.expertAgeRec = { lte: age, not: null }
     }
 
     // Filter by platform
@@ -34,6 +55,7 @@ export async function GET(request: NextRequest) {
     // Search by title
     if (search) {
       where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         {
           OR: [
             { title: { contains: search, mode: "insensitive" } },
@@ -42,10 +64,20 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // Determine sort order
+    let orderBy: any = { createdAt: "desc" }
+    if (sortBy === "releaseDate") {
+      orderBy = { releaseDate: "desc" }
+    } else if (sortBy === "title") {
+      orderBy = { title: "asc" }
+    } else if (sortBy === "quality") {
+      orderBy = { dataQualityScore: "desc" }
+    }
+
     const [games, total] = await Promise.all([
       prisma.mediaItem.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: limit,
         include: {
@@ -72,6 +104,7 @@ export async function GET(request: NextRequest) {
       developer: game.director, // We stored developer in director field
       topics: game.topics,
       contentMetrics: game.contentMetrics,
+      dataQualityScore: game.dataQualityScore,
     }))
 
     return NextResponse.json({
