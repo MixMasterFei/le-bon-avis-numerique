@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, Tag, Trash2, Check, X, AlertTriangle, Loader2 } from "lucide-react"
+import { ArrowLeft, Tag, Trash2, Check, X, AlertTriangle, Loader2, Sparkles, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -50,6 +50,13 @@ function TagsAdminContent() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [confirmAction, setConfirmAction] = useState<"selected" | "all">("selected")
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [aiReviewLoading, setAiReviewLoading] = useState(false)
+  const [aiReviewProgress, setAiReviewProgress] = useState<{
+    reviewed: number
+    removed: number
+    kept: number
+    totalRemaining: number
+  } | null>(null)
 
   // Load tags or items based on selection
   useEffect(() => {
@@ -141,8 +148,89 @@ function TagsAdminContent() {
     }
   }
 
+  // AI-powered tag review
+  const handleAiReview = async (dryRun: boolean = false) => {
+    if (!selectedTag) return
+
+    setAiReviewLoading(true)
+    setMessage(null)
+    setAiReviewProgress(null)
+
+    let totalReviewed = 0
+    let totalRemoved = 0
+    let totalKept = 0
+    let offset = 0
+    let hasMore = true
+
+    try {
+      while (hasMore) {
+        const response = await fetch("/api/admin/tags/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tag: selectedTag,
+            type: mediaType,
+            limit: 20,
+            offset,
+            dryRun,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!data.success) {
+          throw new Error(data.error || "AI review failed")
+        }
+
+        totalReviewed += data.reviewed
+        totalRemoved += data.removed
+        totalKept += data.kept
+        hasMore = data.hasMore
+        offset = data.nextOffset
+
+        setAiReviewProgress({
+          reviewed: totalReviewed,
+          removed: totalRemoved,
+          kept: totalKept,
+          totalRemaining: data.totalRemaining,
+        })
+
+        // Stop after first batch for dry run
+        if (dryRun) {
+          hasMore = false
+        }
+      }
+
+      setMessage({
+        type: "success",
+        text: dryRun
+          ? `Aperçu: ${totalRemoved} films à retirer, ${totalKept} à garder`
+          : `Nettoyage terminé: ${totalRemoved} films retirés, ${totalKept} gardés`,
+      })
+
+      // Reload items if not dry run
+      if (!dryRun) {
+        const reloadResponse = await fetch(
+          `/api/admin/tags?tag=${encodeURIComponent(selectedTag)}&type=${mediaType}`
+        )
+        const reloadData = await reloadResponse.json()
+        if (reloadData.success) {
+          setItems(reloadData.items || [])
+          setSelectedItems(new Set())
+        }
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "AI review failed",
+      })
+    } finally {
+      setAiReviewLoading(false)
+    }
+  }
+
   // Problematic tags that might have false positives
-  const problematicTags = ["Animaux", "Nature", "animaux", "nature"]
+  const problematicTags = ["Animaux", "Nature", "animaux", "nature", "Famille"]
 
   if (loading) {
     return (
@@ -267,7 +355,74 @@ function TagsAdminContent() {
         </div>
       )}
 
-      {/* Actions bar */}
+      {/* AI Review Section */}
+      <Card className="mb-6 border-purple-200 bg-purple-50/50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              <div>
+                <h3 className="font-medium text-purple-900">Nettoyage IA (GPT-4o)</h3>
+                <p className="text-xs text-purple-700">
+                  L&apos;IA analyse chaque film et retire les tags inappropriés
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAiReview(true)}
+                disabled={aiReviewLoading || items.length === 0}
+                className="border-purple-300 text-purple-700 hover:bg-purple-100"
+              >
+                {aiReviewLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Play className="h-4 w-4 mr-2" />
+                )}
+                Aperçu (20 premiers)
+              </Button>
+
+              <Button
+                size="sm"
+                onClick={() => handleAiReview(false)}
+                disabled={aiReviewLoading || items.length === 0}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {aiReviewLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Sparkles className="h-4 w-4 mr-2" />
+                )}
+                Nettoyer TOUT ({items.length})
+              </Button>
+            </div>
+          </div>
+
+          {aiReviewProgress && (
+            <div className="mt-3 p-3 bg-white rounded border border-purple-200">
+              <div className="flex items-center gap-4 text-sm">
+                <span className="text-gray-600">
+                  Analysés: <strong>{aiReviewProgress.reviewed}</strong>
+                </span>
+                <span className="text-green-600">
+                  Gardés: <strong>{aiReviewProgress.kept}</strong>
+                </span>
+                <span className="text-red-600">
+                  Retirés: <strong>{aiReviewProgress.removed}</strong>
+                </span>
+                <span className="text-gray-500">
+                  Restants: <strong>{aiReviewProgress.totalRemaining}</strong>
+                </span>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Manual Actions bar */}
       <div className="flex flex-wrap items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
         <div className="flex items-center gap-2">
           <Checkbox
@@ -290,7 +445,7 @@ function TagsAdminContent() {
             disabled={selectedItems.size === 0 || actionLoading}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Retirer le tag des sélectionnés
+            Retirer manuellement
           </Button>
 
           <Button
@@ -303,7 +458,7 @@ function TagsAdminContent() {
             disabled={items.length === 0 || actionLoading}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Retirer de TOUS ({items.length})
+            Retirer TOUS (manuel)
           </Button>
         </div>
       </div>
