@@ -92,19 +92,47 @@ export default function AdminDashboard() {
 
   const handleComputeQuality = async () => {
     setComputingQuality(true)
+    let totalProcessed = 0
+    let offset = 0
+    const allScores: Record<number, number> = {}
+
     try {
-      const res = await fetch("/api/admin/quality/compute", { method: "POST" })
-      const data = await res.json()
-      console.log("Quality computation result:", data)
-      if (res.ok) {
-        alert(`Recalcul termine!\n\nTraites: ${data.processed}\nMis a jour: ${data.updated}\nErreurs: ${data.errors || 0}\n\nDistribution des scores:\n${JSON.stringify(data.scoreDistribution, null, 2)}`)
-        fetchStats()
-      } else {
-        alert(`Erreur: ${data.error || "Echec du recalcul"}`)
+      // Process in chunks until done
+      while (true) {
+        const res = await fetch("/api/admin/quality/compute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ offset, limit: 1000 }),
+        })
+        const data = await res.json()
+        console.log("Quality computation chunk:", data)
+
+        if (!res.ok) {
+          alert(`Erreur: ${data.error || "Echec du recalcul"}`)
+          break
+        }
+
+        totalProcessed += data.processed || 0
+
+        // Merge score distribution
+        if (data.scoreDistribution) {
+          for (const [score, count] of Object.entries(data.scoreDistribution)) {
+            allScores[Number(score)] = (allScores[Number(score)] || 0) + (count as number)
+          }
+        }
+
+        if (data.done || !data.nextOffset) {
+          // All done!
+          alert(`Recalcul termine!\n\nTotal traite: ${totalProcessed}\n\nDistribution des scores:\n${JSON.stringify(allScores, null, 2)}`)
+          fetchStats()
+          break
+        }
+
+        offset = data.nextOffset
       }
     } catch (err) {
       console.error("Failed to compute quality:", err)
-      alert("Erreur de connexion au serveur")
+      alert(`Erreur de connexion au serveur\n\nTraites avant erreur: ${totalProcessed}`)
     } finally {
       setComputingQuality(false)
     }
