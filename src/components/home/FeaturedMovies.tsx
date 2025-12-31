@@ -59,10 +59,12 @@ export function FeaturedMovies() {
     async function fetchMovies() {
       try {
         // Fetch truly family-friendly movies:
-        // - Age <= 8 for young children
-        // - Filter by family-friendly genres (Animation, Famille, Aventure)
-        const familyGenres = encodeURIComponent("Animation,Famille,Aventure,Comédie")
-        const res = await fetch(`/api/db/movies?limit=14&maxAge=8&genres=${familyGenres}`)
+        // - Age <= 7 for young children (excludes 8+ films)
+        // - Filter by family-friendly genres (Animation, Famille)
+        // - Exclude Romance/Drame
+        const familyGenres = encodeURIComponent("Animation,Famille")
+        const excludeGenres = encodeURIComponent("Romance,Drame,Horreur,Thriller,Crime,Guerre")
+        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}`)
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
 
