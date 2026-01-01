@@ -15,7 +15,8 @@ const MAINSTREAM_PLATFORMS = [
 ]
 
 // Default minimum quality to filter out obscure indie games
-const DEFAULT_MIN_QUALITY = 30
+// Higher = more strict, only well-known mainstream games
+const DEFAULT_MIN_QUALITY = 60
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
