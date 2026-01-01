@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
 
+// Console platforms that mainstream families care about
+const MAINSTREAM_PLATFORMS = [
+  "Switch",
+  "PS5",
+  "PS4",
+  "Xbox Series",
+  "Xbox One",
+  "Nintendo Switch",
+  "PlayStation 5",
+  "PlayStation 4",
+]
+
+// Default minimum quality to filter out obscure indie games
+const DEFAULT_MIN_QUALITY = 30
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const page = parseInt(searchParams.get("page") || "1")
@@ -13,6 +28,8 @@ export async function GET(request: NextRequest) {
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
   const featured = searchParams.get("featured") === "true" // Get featured/popular games
+  const includeAll = searchParams.get("includeAll") === "true" // Bypass quality filter (for admin)
+  const consoleOnly = searchParams.get("consoleOnly") !== "false" // Default to console games only
 
   const skip = (page - 1) * limit
 
@@ -31,14 +48,30 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Minimum quality score filter
-    if (minQuality) {
+    // Apply minimum quality filter (unless includeAll is set)
+    if (!includeAll) {
+      const qualityThreshold = minQuality ? parseInt(minQuality) : DEFAULT_MIN_QUALITY
+      where.dataQualityScore = { gte: qualityThreshold }
+    } else if (minQuality) {
+      // If includeAll but minQuality specified, still apply it
       where.dataQualityScore = { gte: parseInt(minQuality) }
     }
 
-    // Featured games: high quality, with poster
+    // Featured games: higher quality, with poster
     if (featured) {
       where.dataQualityScore = { gte: 50 }
+    }
+
+    // Filter to console platforms only (excludes PC-only indie games)
+    if (consoleOnly && !platform) {
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        {
+          OR: MAINSTREAM_PLATFORMS.map(p => ({
+            platforms: { has: p }
+          }))
+        }
+      ]
     }
 
     // Filter by age recommendation
