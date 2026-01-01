@@ -33,6 +33,7 @@ model User {
   watchlist          Watchlist[]
   reports            ReviewReport[]
   familyMembers      FamilyMember[]
+  familySettings     FamilySettings?
   corrections        MediaCorrection[]
   contentRequests    ContentRequest[]
   userContentMetrics UserContentMetrics[]
@@ -291,8 +292,27 @@ model FamilyMember {
   avatarEmoji     String   @default("👧") @map("avatar_emoji")
   favoriteGenres  String[] @default([]) @map("favorite_genres")  // Genres préférés
   dislikedGenres  String[] @default([]) @map("disliked_genres")  // Genres à éviter
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Content sensitivity preferences (0 = don't care, 1 = low tolerance, 2 = moderate, 3 = strict)
+  sensitivityViolence   Int @default(2) @map("sensitivity_violence")
+  sensitivityScary      Int @default(2) @map("sensitivity_scary")
+  sensitivitySexual     Int @default(3) @map("sensitivity_sexual")
+  sensitivityLanguage   Int @default(2) @map("sensitivity_language")
+  sensitivitySubstances Int @default(2) @map("sensitivity_substances")
+
+  // Positive content preferences (0 = don't care, 1 = nice to have, 2 = prefer, 3 = must have)
+  preferPositiveMessages Int @default(1) @map("prefer_positive_messages")
+  preferRoleModels       Int @default(1) @map("prefer_role_models")
+  preferEducational      Int @default(1) @map("prefer_educational")
+
+  // Topics/themes to avoid (explicit list)
+  avoidTopics String[] @default([]) @map("avoid_topics")
+
+  // Use custom settings or inherit from account defaults
+  useCustomSettings Boolean @default(false) @map("use_custom_settings")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   reactions MediaReaction[]
@@ -584,6 +604,40 @@ model UserContentMetrics {
   @@unique([mediaId, userId])
   @@index([mediaId])
   @@map("user_content_metrics")
+}
+
+// ============================================
+// FAMILY SETTINGS (Account-wide defaults)
+// ============================================
+
+model FamilySettings {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  // Default sensitivity levels for the whole family (0 = don't care, 1 = low tolerance, 2 = moderate, 3 = strict)
+  defaultSensitivityViolence   Int @default(2) @map("default_sensitivity_violence")
+  defaultSensitivityScary      Int @default(2) @map("default_sensitivity_scary")
+  defaultSensitivitySexual     Int @default(3) @map("default_sensitivity_sexual")
+  defaultSensitivityLanguage   Int @default(2) @map("default_sensitivity_language")
+  defaultSensitivitySubstances Int @default(2) @map("default_sensitivity_substances")
+
+  // Default positive preferences (0 = don't care, 1 = nice to have, 2 = prefer, 3 = must have)
+  defaultPreferPositiveMessages Int @default(1) @map("default_prefer_positive_messages")
+  defaultPreferRoleModels       Int @default(1) @map("default_prefer_role_models")
+  defaultPreferEducational      Int @default(1) @map("default_prefer_educational")
+
+  // Account-wide blocked topics
+  blockedTopics String[] @default([]) @map("blocked_topics")
+
+  // Streaming platforms available in this family
+  availablePlatforms String[] @default([]) @map("available_platforms")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("family_settings")
 }
 
 // ============================================

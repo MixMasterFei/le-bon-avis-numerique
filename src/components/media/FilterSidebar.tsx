@@ -1,12 +1,21 @@
 "use client"
 
 import { useState, useMemo, useRef, useEffect } from "react"
-import { Filter, X, Search } from "lucide-react"
+import { Filter, X, Search, Users, ChevronDown, ChevronUp } from "lucide-react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+
+interface FamilyMember {
+  id: string
+  name: string
+  birthYear: number | null
+  avatarEmoji: string
+}
 
 // Streaming platforms for movies/TV
 const streamingPlatforms = [
@@ -84,12 +93,15 @@ export interface FilterState {
   platforms: string[]
   topics: string[]
   searchQuery?: string
+  familyMemberIds?: string[]
+  useFamilyFilter?: boolean
 }
 
 // Default to family-friendly content (12 years) - can be increased to 18 by user
 export const DEFAULT_MAX_AGE = 12
 
 export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", availableTitles = [], initialFilters }: FilterSidebarProps) {
+  const { data: session } = useSession()
   // Select appropriate platforms and topics based on media type
   const platforms = mediaType === "GAME" ? gamingPlatforms : streamingPlatforms
   const topics = mediaType === "GAME" ? gameTopics : movieTopics
@@ -98,6 +110,33 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
   const [selectedTopics, setSelectedTopics] = useState<string[]>(initialFilters?.topics ?? [])
   const [searchQuery, setSearchQuery] = useState(initialFilters?.searchQuery ?? "")
   const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Family filter state
+  const [useFamilyFilter, setUseFamilyFilter] = useState(initialFilters?.useFamilyFilter ?? false)
+  const [selectedFamilyMembers, setSelectedFamilyMembers] = useState<string[]>(initialFilters?.familyMemberIds ?? [])
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [loadingFamily, setLoadingFamily] = useState(false)
+  const [showFamilySection, setShowFamilySection] = useState(false)
+
+  // Load family members when user is logged in
+  useEffect(() => {
+    const fetchFamilyMembers = async () => {
+      if (!session?.user) return
+      setLoadingFamily(true)
+      try {
+        const res = await fetch("/api/user/family")
+        if (res.ok) {
+          const data = await res.json()
+          setFamilyMembers(data.familyMembers || [])
+        }
+      } catch (err) {
+        console.error("Failed to load family members:", err)
+      } finally {
+        setLoadingFamily(false)
+      }
+    }
+    fetchFamilyMembers()
+  }, [session])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)
@@ -205,20 +244,65 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     })
   }
 
+  const toggleFamilyMember = (memberId: string) => {
+    const updated = selectedFamilyMembers.includes(memberId)
+      ? selectedFamilyMembers.filter((id) => id !== memberId)
+      : [...selectedFamilyMembers, memberId]
+    setSelectedFamilyMembers(updated)
+    onFiltersChange?.({
+      maxAge,
+      platforms: selectedPlatforms,
+      topics: selectedTopics,
+      searchQuery,
+      familyMemberIds: updated,
+      useFamilyFilter: useFamilyFilter && updated.length > 0,
+    })
+  }
+
+  const toggleFamilyFilter = (enabled: boolean) => {
+    setUseFamilyFilter(enabled)
+    if (enabled && selectedFamilyMembers.length === 0 && familyMembers.length > 0) {
+      // Auto-select all members when enabling
+      const allIds = familyMembers.map(m => m.id)
+      setSelectedFamilyMembers(allIds)
+      onFiltersChange?.({
+        maxAge,
+        platforms: selectedPlatforms,
+        topics: selectedTopics,
+        searchQuery,
+        familyMemberIds: allIds,
+        useFamilyFilter: true,
+      })
+    } else {
+      onFiltersChange?.({
+        maxAge,
+        platforms: selectedPlatforms,
+        topics: selectedTopics,
+        searchQuery,
+        familyMemberIds: enabled ? selectedFamilyMembers : [],
+        useFamilyFilter: enabled,
+      })
+    }
+  }
+
   const clearFilters = () => {
     setMaxAge(DEFAULT_MAX_AGE)
     setSelectedPlatforms([])
     setSelectedTopics([])
     setSearchQuery("")
+    setUseFamilyFilter(false)
+    setSelectedFamilyMembers([])
     onFiltersChange?.({
       maxAge: DEFAULT_MAX_AGE,
       platforms: [],
       topics: [],
       searchQuery: "",
+      familyMemberIds: [],
+      useFamilyFilter: false,
     })
   }
 
-  const hasFilters = maxAge !== DEFAULT_MAX_AGE || selectedPlatforms.length > 0 || selectedTopics.length > 0 || searchQuery.length > 0
+  const hasFilters = maxAge !== DEFAULT_MAX_AGE || selectedPlatforms.length > 0 || selectedTopics.length > 0 || searchQuery.length > 0 || useFamilyFilter
 
   return (
     <aside className={cn("space-y-6", className)}>
@@ -298,9 +382,85 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
         </div>
       </div>
 
+      {/* Family Filter - Only show for logged in users with family members */}
+      {session?.user && familyMembers.length > 0 && (
+        <div className="space-y-3 p-3 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border border-primary/20">
+          <button
+            onClick={() => setShowFamilySection(!showFamilySection)}
+            className="flex items-center justify-between w-full"
+          >
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="font-medium text-sm text-gray-700">Filtrer pour ma famille</span>
+              {useFamilyFilter && (
+                <Badge variant="default" className="text-xs bg-primary">
+                  Actif
+                </Badge>
+              )}
+            </div>
+            {showFamilySection ? (
+              <ChevronUp className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            )}
+          </button>
+
+          {showFamilySection && (
+            <div className="space-y-3 pt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={useFamilyFilter}
+                  onCheckedChange={(checked) => toggleFamilyFilter(Boolean(checked))}
+                />
+                <span className="text-sm">
+                  Adapter aux preferences de la famille
+                </span>
+              </label>
+
+              {useFamilyFilter && (
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-500">Selectionner les membres :</p>
+                  <div className="flex flex-wrap gap-2">
+                    {familyMembers.map((member) => {
+                      const isSelected = selectedFamilyMembers.includes(member.id)
+                      const age = member.birthYear
+                        ? new Date().getFullYear() - member.birthYear
+                        : null
+                      return (
+                        <button
+                          key={member.id}
+                          onClick={() => toggleFamilyMember(member.id)}
+                          className={cn(
+                            "flex items-center gap-1.5 px-2 py-1 rounded-full text-sm transition-all",
+                            isSelected
+                              ? "bg-primary text-white"
+                              : "bg-white border border-gray-200 hover:border-primary"
+                          )}
+                        >
+                          <span>{member.avatarEmoji}</span>
+                          <span>{member.name}</span>
+                          {age && (
+                            <span className={cn(
+                              "text-xs",
+                              isSelected ? "text-white/80" : "text-gray-400"
+                            )}>
+                              ({age}a)
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Age Slider */}
       <div className="space-y-4">
-        <h3 className="font-medium text-sm text-gray-700">Âge maximum</h3>
+        <h3 className="font-medium text-sm text-gray-700">Age maximum</h3>
         <div className="px-2">
           <Slider
             value={[maxAge]}
@@ -363,6 +523,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     </aside>
   )
 }
+
 
 
 

@@ -19,7 +19,10 @@ import {
   X,
   Check,
   Film,
+  Settings,
+  Sliders,
 } from "lucide-react"
+import { MemberPreferencesModal } from "./MemberPreferencesModal"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -86,6 +89,8 @@ export function FamilyMembers() {
     avatarEmoji: "👧",
   })
   const [saving, setSaving] = useState(false)
+  const [preferencesModalOpen, setPreferencesModalOpen] = useState(false)
+  const [selectedMemberForPrefs, setSelectedMemberForPrefs] = useState<FamilyMember | null>(null)
 
   const fetchMembers = async () => {
     try {
@@ -186,15 +191,23 @@ export function FamilyMembers() {
               Ma famille
             </CardTitle>
             <CardDescription>
-              Ajoutez les membres de votre famille pour enregistrer leurs réactions aux films
+              Ajoutez les membres de votre famille pour enregistrer leurs reactions aux films
             </CardDescription>
           </div>
-          {!showAddForm && (
-            <Button onClick={() => setShowAddForm(true)} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              Ajouter
-            </Button>
-          )}
+          <div className="flex gap-2">
+            <Link href="/profil/parametres-famille">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-1" />
+                Parametres
+              </Button>
+            </Link>
+            {!showAddForm && (
+              <Button onClick={() => setShowAddForm(true)} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Ajouter
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -355,8 +368,21 @@ export function FamilyMembers() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => {
+                        setSelectedMemberForPrefs(member)
+                        setPreferencesModalOpen(true)
+                      }}
+                      className="h-8 w-8 p-0"
+                      title="Preferences de filtrage"
+                    >
+                      <Sliders className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => handleEdit(member)}
                       className="h-8 w-8 p-0"
+                      title="Modifier"
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -365,6 +391,7 @@ export function FamilyMembers() {
                       size="sm"
                       onClick={() => handleDelete(member.id)}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      title="Supprimer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -373,6 +400,19 @@ export function FamilyMembers() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Member Preferences Modal */}
+        {selectedMemberForPrefs && (
+          <MemberPreferencesModal
+            open={preferencesModalOpen}
+            onOpenChange={(open) => {
+              setPreferencesModalOpen(open)
+              if (!open) setSelectedMemberForPrefs(null)
+            }}
+            memberId={selectedMemberForPrefs.id}
+            memberName={selectedMemberForPrefs.name}
+          />
         )}
       </CardContent>
     </Card>

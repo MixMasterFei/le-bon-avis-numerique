@@ -110,7 +110,7 @@ function MetricsColumn({
             <div key={key} className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="text-xs text-gray-600 w-20 truncate cursor-help">
+                  <span className="text-[11px] text-gray-600 w-[85px] shrink-0 cursor-help">
                     {label}
                   </span>
                 </TooltipTrigger>
@@ -118,7 +118,7 @@ function MetricsColumn({
                   <p>{description}</p>
                 </TooltipContent>
               </Tooltip>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <MetricBar
                   value={Math.round((metrics[key as keyof ContentMetrics] || 0) * 10) / 10}
                   isPositive={isPositive}

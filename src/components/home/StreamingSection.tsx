@@ -87,12 +87,12 @@ const streamingServices = [
     textColor: "text-gray-900",
   },
   {
-    id: "arte",
-    name: "Arte",
-    logo: "/streaming/arte.svg",
-    color: "bg-orange-500",
-    hoverColor: "hover:bg-orange-600",
-    textColor: "text-orange-500",
+    id: "apple",
+    name: "Apple TV+",
+    logo: "/streaming/apple.svg",
+    color: "bg-gray-800",
+    hoverColor: "hover:bg-gray-900",
+    textColor: "text-gray-800",
   },
 ]
 
