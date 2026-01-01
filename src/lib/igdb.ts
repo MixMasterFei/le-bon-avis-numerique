@@ -180,21 +180,30 @@ export function getIGDBImageUrl(
 // PLATFORM PRIORITIES
 // ============================================
 
-// Priority 1: Modern platforms (Switch, PS5/PS4, Xbox Series/One, PC)
+// Priority 1: Console platforms only (no PC/Mac to avoid indie flood)
 // Platform IDs from IGDB
-const PRIORITY_PLATFORM_IDS = [
+const CONSOLE_PLATFORM_IDS = [
   130, // Nintendo Switch
-  // 544, // Nintendo Switch 2 (not in IGDB yet)
   167, // PlayStation 5
   48,  // PlayStation 4
   169, // Xbox Series X|S
   49,  // Xbox One
+]
+
+// All modern platforms including PC/Mac (for search only)
+const ALL_PLATFORM_IDS = [
+  ...CONSOLE_PLATFORM_IDS,
   6,   // PC (Windows)
   14,  // Mac
 ]
 
-// Platform filter for queries (includes these platforms)
-const PLATFORM_FILTER = `(${PRIORITY_PLATFORM_IDS.join(",")})`
+// Minimum rating count to filter out obscure/indie games
+const MIN_RATING_COUNT = 100
+
+// Platform filter for queries - consoles only for browsing
+const CONSOLE_FILTER = `(${CONSOLE_PLATFORM_IDS.join(",")})`
+// All platforms for search (includes PC/Mac)
+const ALL_PLATFORM_FILTER = `(${ALL_PLATFORM_IDS.join(",")})`
 
 // ============================================
 // API FUNCTIONS
@@ -203,6 +212,7 @@ const PLATFORM_FILTER = `(${PRIORITY_PLATFORM_IDS.join(",")})`
 /**
  * Search for games
  * Query is escaped to prevent IGDB query injection
+ * Includes PC/Mac but requires minimum rating count to filter indie games
  */
 export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]> {
   // Sanitize and escape user input
@@ -219,6 +229,7 @@ export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
+    where platforms = ${ALL_PLATFORM_FILTER} & total_rating_count > 20;
     limit ${safeLimit};
   `
 
@@ -255,7 +266,8 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
 }
 
 /**
- * Get popular games on modern platforms (Switch, PS4/5, Xbox One/Series, PC)
+ * Get popular games on console platforms (Switch, PS4/5, Xbox One/Series)
+ * Excludes PC/Mac indie games, requires high rating count for mainstream appeal
  */
 export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -265,7 +277,7 @@ export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where total_rating_count > 50 & cover != null & platforms = ${PLATFORM_FILTER};
+    where total_rating_count > ${MIN_RATING_COUNT} & cover != null & platforms = ${CONSOLE_FILTER};
     sort total_rating desc;
     limit ${safeLimit};
   `
@@ -274,7 +286,8 @@ export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
 }
 
 /**
- * Get family-friendly games (PEGI 3 or PEGI 7) on modern platforms
+ * Get family-friendly games (PEGI 3 or PEGI 7) on console platforms
+ * Requires minimum rating count to ensure mainstream games only
  */
 export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -284,7 +297,7 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null & platforms = ${PLATFORM_FILTER};
+    where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 50;
     sort total_rating desc;
     limit ${safeLimit};
   `
@@ -293,7 +306,8 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
 }
 
 /**
- * Get recently released games on modern platforms
+ * Get recently released games on console platforms
+ * Requires minimum rating count to filter out obscure releases
  */
 export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -305,7 +319,7 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
            total_rating, total_rating_count;
-    where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null & platforms = ${PLATFORM_FILTER};
+    where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 20;
     sort first_release_date desc;
     limit ${safeLimit};
   `
@@ -326,6 +340,7 @@ const PLATFORM_IDS = {
 
 /**
  * Get games for a specific platform
+ * Requires higher rating count for mainstream games only
  */
 export async function getGamesByPlatform(platformId: number, limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -340,7 +355,7 @@ export async function getGamesByPlatform(platformId: number, limit = 100): Promi
            involved_companies.company.name, involved_companies.developer,
            themes.name,
            total_rating, total_rating_count;
-    where platforms = ${safePlatformId} & cover != null & total_rating_count > 20;
+    where platforms = ${safePlatformId} & cover != null & total_rating_count > ${MIN_RATING_COUNT};
     sort total_rating desc;
     limit ${safeLimit};
   `
@@ -413,7 +428,7 @@ export async function getGamesByFranchise(franchiseName: string, limit = 100): P
                involved_companies.company.name, involved_companies.developer,
                themes.name,
                total_rating, total_rating_count;
-        where id = (${gameIds.join(",")}) & platforms = ${PLATFORM_FILTER};
+        where id = (${gameIds.join(",")}) & platforms = ${CONSOLE_FILTER};
         sort first_release_date desc;
         limit ${safeLimit};
       `
@@ -430,7 +445,7 @@ export async function getGamesByFranchise(franchiseName: string, limit = 100): P
              involved_companies.company.name, involved_companies.developer,
              themes.name,
              total_rating, total_rating_count;
-      where platforms = ${PLATFORM_FILTER} & cover != null;
+      where platforms = ${CONSOLE_FILTER} & cover != null & total_rating_count > 20;
       limit ${safeLimit};
     `
 
@@ -442,7 +457,8 @@ export async function getGamesByFranchise(franchiseName: string, limit = 100): P
 }
 
 /**
- * Get highly-rated games across all modern platforms
+ * Get highly-rated games across console platforms
+ * Stricter filters for mainstream appeal
  */
 export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
   const safeLimit = sanitizeNumber(limit, 1, 500) || 100
@@ -454,7 +470,7 @@ export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
            involved_companies.company.name, involved_companies.developer,
            themes.name,
            total_rating, total_rating_count;
-    where total_rating > 85 & total_rating_count > 100 & cover != null & platforms = ${PLATFORM_FILTER};
+    where total_rating > 85 & total_rating_count > 200 & cover != null & platforms = ${CONSOLE_FILTER};
     sort total_rating desc;
     limit ${safeLimit};
   `
