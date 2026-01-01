@@ -486,7 +486,7 @@ export default function AdminDashboard() {
                   Series
                 </Link>
                 <Link
-                  href="/jeux-video"
+                  href="/jeux"
                   className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm transition-colors"
                 >
                   Jeux
