@@ -100,7 +100,8 @@ export default function AdminDashboard() {
   const [syncingDb, setSyncingDb] = useState(false)
   const [backfillingLanguage, setBackfillingLanguage] = useState(false)
   const [importingScreenshots, setImportingScreenshots] = useState(false)
-  const [screenshotStats, setScreenshotStats] = useState<{ total: number; withScreenshots: number } | null>(null)
+  const [screenshotProgress, setScreenshotProgress] = useState<number>(0)
+  const [screenshotStats, setScreenshotStats] = useState<{ total: number; withScreenshots: number; totalMedia: number } | null>(null)
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -247,39 +248,69 @@ export default function AdminDashboard() {
 
   const handleImportScreenshots = async () => {
     setImportingScreenshots(true)
-    try {
-      // Import for all media types
-      const res = await fetch("/api/admin/screenshots/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mediaType: "ALL",
-          limit: 50,
-          screenshotsPerMedia: 6,
-          skipExisting: true,
-        }),
-      })
-      const data = await res.json()
+    setScreenshotProgress(0)
+    let totalImported = 0
+    let totalProcessed = 0
+    let hasMore = true
+    const chunkSize = 30
 
-      if (res.ok && data.success) {
-        alert(`Import termine!\n\n${data.stats.details.join("\n")}`)
-        // Refresh screenshot stats
+    try {
+      while (hasMore) {
+        const res = await fetch("/api/admin/screenshots/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mediaType: "ALL",
+            limit: chunkSize,
+            screenshotsPerMedia: 6,
+            skipExisting: true,
+          }),
+        })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          alert(`Erreur: ${data.error || "Echec de l'import"}`)
+          break
+        }
+
+        totalImported += data.stats.imported || 0
+        totalProcessed += data.stats.total || 0
+
+        // If we processed fewer items than chunk size, we're done
+        if (data.stats.total < chunkSize) {
+          hasMore = false
+        }
+
+        // Update stats and progress after each chunk
         const statsRes = await fetch("/api/admin/screenshots/import")
         if (statsRes.ok) {
           const statsData = await statsRes.json()
+          const newWithScreenshots = statsData.mediaWithScreenshots
+          const totalMedia = statsData.mediaByType?.reduce((sum: number, t: { _count: { id: number } }) => sum + t._count.id, 0) || 0
           setScreenshotStats({
             total: statsData.totalScreenshots,
-            withScreenshots: statsData.mediaWithScreenshots,
+            withScreenshots: newWithScreenshots,
+            totalMedia,
           })
+          // Calculate progress percentage
+          if (totalMedia > 0) {
+            setScreenshotProgress(Math.round((newWithScreenshots / totalMedia) * 100))
+          }
         }
-      } else {
-        alert(`Erreur: ${data.error || "Echec de l'import"}`)
+
+        // Small delay to avoid rate limiting
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
       }
+
+      alert(`Import termine!\n\nTotal traite: ${totalProcessed}\nScreenshots importes: ${totalImported}`)
     } catch (err) {
       console.error("Failed to import screenshots:", err)
-      alert("Erreur lors de l'import des screenshots")
+      alert(`Erreur lors de l'import des screenshots\n\nImportes avant erreur: ${totalImported}`)
     } finally {
       setImportingScreenshots(false)
+      setScreenshotProgress(0)
     }
   }
 
@@ -290,9 +321,11 @@ export default function AdminDashboard() {
         const res = await fetch("/api/admin/screenshots/import")
         if (res.ok) {
           const data = await res.json()
+          const totalMedia = data.mediaByType?.reduce((sum: number, t: { _count: { id: number } }) => sum + t._count.id, 0) || 0
           setScreenshotStats({
             total: data.totalScreenshots,
             withScreenshots: data.mediaWithScreenshots,
+            totalMedia,
           })
         }
       } catch (err) {
@@ -540,11 +573,17 @@ export default function AdminDashboard() {
                 ) : (
                   <Camera className="h-4 w-4 mr-2" />
                 )}
-                Screenshots
-                {screenshotStats && (
-                  <span className="ml-1 text-xs text-gray-500">
-                    ({screenshotStats.withScreenshots})
-                  </span>
+                {importingScreenshots && screenshotProgress > 0 ? (
+                  <span>{screenshotProgress}%</span>
+                ) : (
+                  <>
+                    Screenshots
+                    {screenshotStats && (
+                      <span className="ml-1 text-xs text-gray-500">
+                        ({screenshotStats.withScreenshots}/{screenshotStats.totalMedia})
+                      </span>
+                    )}
+                  </>
                 )}
               </Button>
             </div>
