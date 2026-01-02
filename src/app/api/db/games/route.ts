@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { Prisma } from "@prisma/client"
 
-// Console platforms that mainstream families care about
-const MAINSTREAM_PLATFORMS = [
+// Console platforms that mainstream families care about (no PC/Mac)
+const CONSOLE_PLATFORMS = [
   "Switch",
   "PS5",
   "PS4",
@@ -13,6 +13,9 @@ const MAINSTREAM_PLATFORMS = [
   "PlayStation 5",
   "PlayStation 4",
 ]
+
+// Exclude PC-only games (games that ONLY have these platforms)
+const PC_ONLY_PLATFORMS = ["PC", "Mac", "Linux"]
 
 // Default minimum quality to filter out obscure indie games
 // Higher = more strict, only well-known mainstream games
@@ -68,7 +71,7 @@ export async function GET(request: NextRequest) {
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         {
-          OR: MAINSTREAM_PLATFORMS.map(p => ({
+          OR: CONSOLE_PLATFORMS.map(p => ({
             platforms: { has: p }
           }))
         }

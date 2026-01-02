@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "./AgeBadge"
 import { SafetyBar } from "./ContentGrid"
+import { PlatformIcons } from "./PlatformIcons"
 import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MockMediaItem } from "@/lib/mock-data"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -138,6 +139,10 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             <h3 className="font-medium text-xs text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight">
               {media.title}
             </h3>
+            {/* Platform icons for games */}
+            {media.type === "GAME" && media.platforms.length > 0 && (
+              <PlatformIcons platforms={media.platforms} variant="compact" maxDisplay={3} className="mt-1" />
+            )}
           </div>
         </div>
       </Link>

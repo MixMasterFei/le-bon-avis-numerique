@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, Calendar, Star, ExternalLink, Play, Tv } from "lucide-react"
+import { Clock, Calendar, Star, ExternalLink, Play, Tv, Gamepad2 } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -18,6 +18,9 @@ import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { MediaActions } from "@/components/media/MediaActions"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
+import { PlatformIcons } from "@/components/media/PlatformIcons"
+import { PEGIDescriptors, InGamePurchasesWarning } from "@/components/media/PEGIDescriptors"
+import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -450,13 +453,20 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </div>
 
               {/* Genres */}
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-2 mb-4">
                 {media.genres.map((genre) => (
                   <Badge key={genre} variant="outline" className="border-white/30 text-white">
                     {genre}
                   </Badge>
                 ))}
               </div>
+
+              {/* Platforms for games */}
+              {media.type === "GAME" && media.platforms.length > 0 && (
+                <div className="mb-6">
+                  <PlatformIcons platforms={media.platforms} variant="hero" />
+                </div>
+              )}
 
               {/* Synopsis */}
               <p className="text-gray-300 leading-relaxed mb-8 max-w-3xl">
@@ -503,6 +513,31 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* What Parents Need to Know */}
             <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
 
+            {/* Game-specific warnings */}
+            {media.type === "GAME" && (
+              <div className="space-y-4">
+                {/* PEGI Content Descriptors */}
+                <PEGIDescriptors
+                  metrics={media.contentMetrics}
+                  variant="full"
+                />
+
+                {/* In-game purchases warning */}
+                <InGamePurchasesWarning
+                  consumerismScore={media.contentMetrics.consumerism}
+                />
+              </div>
+            )}
+
+            {/* Talk to Your Kids - for all media types */}
+            <TalkToYourKids
+              title={media.title}
+              type={media.type}
+              metrics={media.contentMetrics}
+              genres={media.genres}
+              topics={media.topics}
+            />
+
             {/* Tabs */}
             <Tabs defaultValue="reviews" className="w-full">
               <TabsList className="w-full justify-start">
@@ -541,12 +576,17 @@ export default async function MediaPage({ params }: MediaPageProps) {
                       {media.director && (
                         <div>
                           <h4 className="text-sm font-medium text-gray-500 mb-1">
-                            {media.type === "BOOK" ? "Auteur" : "Réalisateur"}
+                            {media.type === "BOOK" ? "Auteur" : media.type === "GAME" ? "Développeur" : "Réalisateur"}
                           </h4>
                           <p className="font-medium">{media.director}</p>
                         </div>
                       )}
                     </div>
+
+                    {/* Platforms with nice styling for games */}
+                    {media.type === "GAME" && media.platforms.length > 0 && (
+                      <PlatformIcons platforms={media.platforms} variant="full" />
+                    )}
 
                     {media.topics.length > 0 && (
                       <div>
