@@ -21,7 +21,7 @@ interface TalkToYourKidsProps {
   className?: string
 }
 
-// Generate discussion points based on content
+// Generate discussion points based on content - ONLY for movies/TV/books (not games)
 function generateDiscussionPoints(
   title: string,
   type: string,
@@ -36,9 +36,7 @@ function generateDiscussionPoints(
     points.push({
       icon: Shield,
       category: "Violence",
-      question: type === "GAME"
-        ? "Parlez de la difference entre la violence dans les jeux et dans la vraie vie. Comment reagirais-tu si quelqu'un agissait comme ca en vrai ?"
-        : "Discutez de comment les conflits pourraient etre resolus differemment dans la vraie vie."
+      question: "Discutez de comment les conflits pourraient etre resolus differemment dans la vraie vie."
     })
   }
 
@@ -60,23 +58,12 @@ function generateDiscussionPoints(
     })
   }
 
-  // Consumerism / In-game purchases
+  // Consumerism
   if (metrics?.consumerism && metrics.consumerism >= 3) {
     points.push({
       icon: Clock,
-      category: "Achats et argent",
-      question: type === "GAME"
-        ? "Parlons des achats dans les jeux. As-tu vraiment besoin de ces objets pour t'amuser ? Comment etablir un budget ?"
-        : "Comment les publicites essaient-elles de nous faire acheter des choses ?"
-    })
-  }
-
-  // Time management for games
-  if (type === "GAME") {
-    points.push({
-      icon: Clock,
-      category: "Temps d'ecran",
-      question: "Combien de temps est raisonnable pour jouer ? Comment savoir quand il est temps d'arreter ?"
+      category: "Consommation",
+      question: "Comment les publicites essaient-elles de nous faire acheter des choses ?"
     })
   }
 
@@ -89,21 +76,12 @@ function generateDiscussionPoints(
     })
   }
 
-  // Online interactions for games
-  if (type === "GAME") {
-    points.push({
-      icon: Users,
-      category: "Jeu en ligne",
-      question: "Si tu joues avec d'autres personnes en ligne, que ferais-tu si quelqu'un etait mechant ou te mettait mal a l'aise ?"
-    })
-  }
-
   // Default discussion point if none generated
   if (points.length === 0) {
     points.push({
       icon: Lightbulb,
       category: "Reflexion",
-      question: `Qu'est-ce que tu as aime ou moins aime dans ${type === "GAME" ? "ce jeu" : type === "MOVIE" ? "ce film" : "cette histoire"} ?`
+      question: `Qu'est-ce que tu as aime ou moins aime dans ${type === "MOVIE" ? "ce film" : type === "TV" ? "cette serie" : "cette histoire"} ?`
     })
   }
 
@@ -118,6 +96,11 @@ export function TalkToYourKids({
   topics,
   className
 }: TalkToYourKidsProps) {
+  // Don't show for games - they have their own GameInfoCard
+  if (type === "GAME") {
+    return null
+  }
+
   const discussionPoints = generateDiscussionPoints(title, type, metrics, genres, topics)
 
   return (
@@ -128,7 +111,7 @@ export function TalkToYourKids({
           Parler avec vos enfants
         </CardTitle>
         <p className="text-sm text-gray-500">
-          Points de discussion pour accompagner {type === "GAME" ? "cette experience de jeu" : "ce visionnage"}
+          Points de discussion pour accompagner ce visionnage
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

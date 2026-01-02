@@ -19,8 +19,8 @@ import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { MediaActions } from "@/components/media/MediaActions"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
-import { PEGIDescriptors, InGamePurchasesWarning } from "@/components/media/PEGIDescriptors"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
+import { GameInfoCard } from "@/components/media/GameInfoCard"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -513,23 +513,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* What Parents Need to Know */}
             <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
 
-            {/* Game-specific warnings */}
-            {media.type === "GAME" && (
-              <div className="space-y-4">
-                {/* PEGI Content Descriptors */}
-                <PEGIDescriptors
-                  metrics={media.contentMetrics}
-                  variant="full"
-                />
-
-                {/* In-game purchases warning */}
-                <InGamePurchasesWarning
-                  consumerismScore={media.contentMetrics.consumerism}
-                />
-              </div>
-            )}
-
-            {/* Talk to Your Kids - for all media types */}
+            {/* Talk to Your Kids - for movies/TV/books only (not games) */}
             <TalkToYourKids
               title={media.title}
               type={media.type}
@@ -608,19 +592,29 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Game Info Card - for games only */}
+            {media.type === "GAME" && (
+              <GameInfoCard
+                platforms={media.platforms}
+                genres={media.genres}
+                consumerism={media.contentMetrics.consumerism}
+                violence={media.contentMetrics.violence}
+              />
+            )}
+
             {/* Family Reactions */}
             {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
 
-            {/* Dual Content Metrics (Expert vs Community) */}
-            {dbId && (
+            {/* Dual Content Metrics (Expert vs Community) - NOT for games */}
+            {dbId && media.type !== "GAME" && (
               <DualMetricsDisplay
                 mediaId={dbId}
                 expertMetrics={media.contentMetrics}
               />
             )}
 
-            {/* Fallback to single ContentGrid if no dbId */}
-            {!dbId && (
+            {/* Fallback to single ContentGrid if no dbId - NOT for games */}
+            {!dbId && media.type !== "GAME" && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Analyse du contenu</CardTitle>
