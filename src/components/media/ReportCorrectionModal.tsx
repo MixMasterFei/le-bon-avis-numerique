@@ -166,14 +166,14 @@ export function ReportCorrectionModal({ mediaId, mediaTitle, isLoggedIn }: Repor
                 <SelectContent>
                   {CORRECTION_TYPES.map((t) => (
                     <SelectItem key={t.value} value={t.value}>
-                      <div>
-                        <div className="font-medium">{t.label}</div>
-                        <div className="text-xs text-gray-500">{t.description}</div>
-                      </div>
+                      {t.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedType && (
+                <p className="text-xs text-gray-500">{selectedType.description}</p>
+              )}
             </div>
 
             {/* Champ concerné (optionnel) */}
