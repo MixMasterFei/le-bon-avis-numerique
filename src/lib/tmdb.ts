@@ -574,6 +574,76 @@ export function getProviderLogoUrl(logoPath: string, size: "w45" | "w92" | "w154
   return `${TMDB_IMAGE_BASE}/${size}${logoPath}`
 }
 
+// ============================================
+// IMAGES API
+// ============================================
+
+export interface TMDBImage {
+  aspect_ratio: number
+  height: number
+  width: number
+  file_path: string
+  vote_average: number
+  vote_count: number
+}
+
+export interface TMDBImagesResponse {
+  id: number
+  backdrops: TMDBImage[]
+  posters: TMDBImage[]
+  logos?: TMDBImage[]
+}
+
+/**
+ * Get images (backdrops, posters) for a movie
+ * Returns highest rated backdrops first
+ */
+export async function getMovieImages(movieId: number, limit = 6): Promise<TMDBImage[]> {
+  try {
+    // Fetch with include_image_language to get both French and English images
+    const response = await tmdbFetch<TMDBImagesResponse>(`/movie/${movieId}/images`, {
+      include_image_language: "fr,en,null"
+    })
+
+    // Sort by vote_average and return top backdrops
+    const backdrops = (response.backdrops || [])
+      .sort((a, b) => b.vote_average - a.vote_average)
+      .slice(0, limit)
+
+    return backdrops
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get images for a TV show
+ */
+export async function getTVImages(tvId: number, limit = 6): Promise<TMDBImage[]> {
+  try {
+    const response = await tmdbFetch<TMDBImagesResponse>(`/tv/${tvId}/images`, {
+      include_image_language: "fr,en,null"
+    })
+
+    const backdrops = (response.backdrops || [])
+      .sort((a, b) => b.vote_average - a.vote_average)
+      .slice(0, limit)
+
+    return backdrops
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get backdrop URL with size
+ */
+export function getBackdropUrl(path: string | null, size: keyof typeof ImageSize.backdrop = "medium"): string {
+  if (!path) return "/placeholder-backdrop.jpg"
+  return `${TMDB_IMAGE_BASE}/${ImageSize.backdrop[size]}${path}`
+}
+
+
 
 
 

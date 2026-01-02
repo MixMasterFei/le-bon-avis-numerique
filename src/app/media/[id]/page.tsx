@@ -21,6 +21,7 @@ import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButto
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
+import { MediaScreenshots } from "@/components/media/MediaScreenshots"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -51,14 +52,23 @@ interface MediaPageProps {
   params: Promise<{ id: string }>
 }
 
+// Extended type for database items with screenshots
+interface DatabaseMediaItem extends MockMediaItem {
+  screenshots?: { id: string; url: string; width: number | null; height: number | null; order: number }[]
+}
+
 // Helper to fetch from database directly
-async function fetchFromDatabase(id: string): Promise<MockMediaItem | null> {
+async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> {
   try {
     // Try to find by UUID first
     let dbMedia = await prisma.mediaItem.findUnique({
       where: { id },
       include: {
         contentMetrics: true,
+        screenshots: {
+          orderBy: { order: "asc" },
+          take: 6,
+        },
         reviews: {
           include: {
             user: {
@@ -79,6 +89,10 @@ async function fetchFromDatabase(id: string): Promise<MockMediaItem | null> {
           where: { tmdbId: numericId },
           include: {
             contentMetrics: true,
+            screenshots: {
+              orderBy: { order: "asc" },
+              take: 6,
+            },
             reviews: {
               include: {
                 user: {
@@ -101,6 +115,10 @@ async function fetchFromDatabase(id: string): Promise<MockMediaItem | null> {
           where: { igdbId: numericId },
           include: {
             contentMetrics: true,
+            screenshots: {
+              orderBy: { order: "asc" },
+              take: 6,
+            },
             reviews: {
               include: {
                 user: {
@@ -161,6 +179,13 @@ async function fetchFromDatabase(id: string): Promise<MockMediaItem | null> {
         ageSuggestion: r.ageSuggestion ?? 0,
         comment: r.comment || "",
       })),
+      screenshots: dbMedia.screenshots?.map((s) => ({
+        id: s.id,
+        url: s.url,
+        width: s.width,
+        height: s.height,
+        order: s.order,
+      })) || [],
     }
   } catch (error) {
     console.error("Failed to fetch from database:", error)
@@ -172,7 +197,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const { id } = await params
   const { type, id: rawId } = parseMediaRouteId(id)
 
-  let media: MockMediaItem | null = null
+  let media: DatabaseMediaItem | null = null
   let source: "mock" | "external" | "database" = "mock"
   let watchProviders: TMDBWatchProviderResult | null = null
   let trailer: TMDBVideo | null = null
@@ -510,8 +535,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* What Parents Need to Know */}
-            <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
+            {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
+            {media.type !== "GAME" && (
+              <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
+            )}
 
             {/* Talk to Your Kids - for movies/TV/books only (not games) */}
             <TalkToYourKids
@@ -521,6 +548,14 @@ export default async function MediaPage({ params }: MediaPageProps) {
               genres={media.genres}
               topics={media.topics}
             />
+
+            {/* Screenshots - from local database */}
+            {media.screenshots && media.screenshots.length > 0 && (
+              <MediaScreenshots
+                screenshots={media.screenshots}
+                title={media.title}
+              />
+            )}
 
             {/* Tabs */}
             <Tabs defaultValue="reviews" className="w-full">

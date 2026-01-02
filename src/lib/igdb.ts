@@ -482,6 +482,61 @@ export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
 export { PLATFORM_IDS }
 
 // ============================================
+// SCREENSHOT HELPERS
+// ============================================
+
+export interface IGDBScreenshot {
+  id: number
+  game?: number
+  url: string
+  image_id: string
+  width?: number
+  height?: number
+}
+
+export const IGDBScreenshotSize = {
+  thumb: "t_thumb",           // 90x90
+  small: "t_screenshot_med",  // 569x320
+  medium: "t_720p",           // 1280x720
+  large: "t_1080p",           // 1920x1080
+  original: "t_original",     // Original size
+} as const
+
+/**
+ * Get full screenshot URL from IGDB image_id
+ */
+export function getIGDBScreenshotUrl(
+  imageId: string | undefined,
+  size: keyof typeof IGDBScreenshotSize = "medium"
+): string {
+  if (!imageId) return "/placeholder-game.jpg"
+  return `https://images.igdb.com/igdb/image/upload/${IGDBScreenshotSize[size]}/${imageId}.jpg`
+}
+
+/**
+ * Get screenshots for a game by IGDB game ID
+ */
+export async function getGameScreenshots(gameId: number, limit = 6): Promise<IGDBScreenshot[]> {
+  const safeId = sanitizeNumber(gameId, 1)
+  if (!safeId) return []
+
+  const safeLimit = sanitizeNumber(limit, 1, 20) || 6
+
+  const body = `
+    fields game, url, image_id, width, height;
+    where game = ${safeId};
+    limit ${safeLimit};
+  `
+
+  try {
+    const screenshots = await igdbFetch<IGDBScreenshot[]>("/screenshots", body)
+    return screenshots
+  } catch {
+    return []
+  }
+}
+
+// ============================================
 // TRANSFORM HELPERS
 // ============================================
 

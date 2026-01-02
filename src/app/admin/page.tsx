@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronUp,
   Tag,
+  Camera,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -98,6 +99,8 @@ export default function AdminDashboard() {
   const [computingSimilarity, setComputingSimilarity] = useState(false)
   const [syncingDb, setSyncingDb] = useState(false)
   const [backfillingLanguage, setBackfillingLanguage] = useState(false)
+  const [importingScreenshots, setImportingScreenshots] = useState(false)
+  const [screenshotStats, setScreenshotStats] = useState<{ total: number; withScreenshots: number } | null>(null)
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -241,6 +244,63 @@ export default function AdminDashboard() {
       setBackfillingLanguage(false)
     }
   }
+
+  const handleImportScreenshots = async () => {
+    setImportingScreenshots(true)
+    try {
+      // Import for all media types
+      const res = await fetch("/api/admin/screenshots/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mediaType: "ALL",
+          limit: 50,
+          screenshotsPerMedia: 6,
+          skipExisting: true,
+        }),
+      })
+      const data = await res.json()
+
+      if (res.ok && data.success) {
+        alert(`Import termine!\n\n${data.stats.details.join("\n")}`)
+        // Refresh screenshot stats
+        const statsRes = await fetch("/api/admin/screenshots/import")
+        if (statsRes.ok) {
+          const statsData = await statsRes.json()
+          setScreenshotStats({
+            total: statsData.totalScreenshots,
+            withScreenshots: statsData.mediaWithScreenshots,
+          })
+        }
+      } else {
+        alert(`Erreur: ${data.error || "Echec de l'import"}`)
+      }
+    } catch (err) {
+      console.error("Failed to import screenshots:", err)
+      alert("Erreur lors de l'import des screenshots")
+    } finally {
+      setImportingScreenshots(false)
+    }
+  }
+
+  // Fetch screenshot stats on mount
+  useEffect(() => {
+    const fetchScreenshotStats = async () => {
+      try {
+        const res = await fetch("/api/admin/screenshots/import")
+        if (res.ok) {
+          const data = await res.json()
+          setScreenshotStats({
+            total: data.totalScreenshots,
+            withScreenshots: data.mediaWithScreenshots,
+          })
+        }
+      } catch (err) {
+        console.error("Failed to fetch screenshot stats:", err)
+      }
+    }
+    fetchScreenshotStats()
+  }, [])
 
   const adminSections = [
     {
@@ -466,6 +526,26 @@ export default function AdminDashboard() {
                   <Sparkles className="h-4 w-4 mr-2" />
                 )}
                 Similarites
+              </Button>
+
+              <Button
+                onClick={handleImportScreenshots}
+                disabled={importingScreenshots}
+                variant="outline"
+                size="sm"
+                className="border-cyan-300 hover:bg-cyan-50"
+              >
+                {importingScreenshots ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4 mr-2" />
+                )}
+                Screenshots
+                {screenshotStats && (
+                  <span className="ml-1 text-xs text-gray-500">
+                    ({screenshotStats.withScreenshots})
+                  </span>
+                )}
               </Button>
             </div>
 

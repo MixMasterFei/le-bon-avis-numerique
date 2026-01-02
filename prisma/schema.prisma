@@ -154,6 +154,7 @@ model MediaItem {
   corrections           MediaCorrection[]
   userContentMetrics    UserContentMetrics[]
   contentRequests       ContentRequest[]
+  screenshots           MediaScreenshot[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -638,6 +639,27 @@ model FamilySettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("family_settings")
+}
+
+// ============================================
+// MEDIA SCREENSHOTS (Cached from TMDB/IGDB)
+// ============================================
+
+model MediaScreenshot {
+  id        String   @id @default(uuid())
+  mediaId   String   @map("media_id")
+  url       String   // Full URL or external path
+  width     Int?
+  height    Int?
+  order     Int      @default(0) // Display order
+  source    DataSource @default(TMDB) // TMDB, IGDB, etc.
+  externalId String? @map("external_id") // Original ID from source API
+  createdAt DateTime @default(now()) @map("created_at")
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@map("media_screenshots")
 }
 
 // ============================================
