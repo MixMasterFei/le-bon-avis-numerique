@@ -54,7 +54,12 @@ export async function POST(request: Request) {
         type: { in: ["MOVIE", "TV"] },
         // Add family-friendly filter if requested
         ...(familyOnly || maxAge
-          ? { expertAgeRec: { lte: maxAge || 10, not: null } }
+          ? {
+              AND: [
+                { expertAgeRec: { not: null } },
+                { expertAgeRec: { lte: maxAge || 10 } }
+              ]
+            }
           : {}),
         ...(forceRefresh
           ? {}
