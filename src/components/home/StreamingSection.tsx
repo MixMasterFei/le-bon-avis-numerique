@@ -110,9 +110,10 @@ export function StreamingSection() {
     async function fetchMovies() {
       setLoading(true)
       try {
-        // Fetch movies from the streaming availability table
+        // Fetch 5 family-friendly movies from the streaming availability table
+        // Using maxAge=10 for truly family-friendly content (same as Expert Picks)
         const res = await fetch(
-          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=6&maxAge=12&type=SUBSCRIPTION`
+          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=5&maxAge=10&type=SUBSCRIPTION`
         )
         if (!res.ok) throw new Error("API error")
         const data = await res.json()
@@ -196,16 +197,16 @@ export function StreamingSection() {
         ))}
       </div>
 
-      {/* Content area */}
+      {/* Content area - always 5 suggestions */}
       {loading ? (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          {[1, 2, 3, 4, 5].map((i) => (
             <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
           ))}
         </div>
       ) : movies.length > 0 ? (
         <>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {movies.map((item) => (
               <MediaCard key={item.id} media={item} variant="compact" />
             ))}
@@ -215,7 +216,7 @@ export function StreamingSection() {
               {totalAvailable} films disponibles sur {selectedService.name}
             </span>
             <Button variant="outline" asChild>
-              <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.name)}`}>
+              <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.name)}&maxAge=10`}>
                 Voir tout sur {selectedService.name} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
