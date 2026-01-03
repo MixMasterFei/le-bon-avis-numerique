@@ -57,27 +57,42 @@ async function getAccessToken(): Promise<string> {
 }
 
 /**
- * Make authenticated request to IGDB
+ * Make authenticated request to IGDB with timeout
  */
 async function igdbFetch<T>(endpoint: string, body: string): Promise<T> {
   const token = await getAccessToken()
   const clientId = process.env.IGDB_CLIENT_ID!
 
-  const response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Client-ID": clientId,
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "text/plain",
-    },
-    body,
-  })
+  // Add timeout using AbortController
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-  if (!response.ok) {
-    throw new Error(`IGDB API error: ${response.status}`)
+  try {
+    const response = await fetch(`${IGDB_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Client-ID": clientId,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "text/plain",
+      },
+      body,
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`IGDB API error: ${response.status}`)
+    }
+
+    return response.json()
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("IGDB request timeout")
+    }
+    throw error
   }
-
-  return response.json()
 }
 
 // ============================================

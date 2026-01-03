@@ -2,8 +2,8 @@ import { Info, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Notre histoire | Le Bon Avis Numerique",
-  description: "Decouvrez l'histoire et les origines du Bon Avis Numerique",
+  title: "Notre histoire | Le Bon Avis Numérique",
+  description: "Découvrez l'histoire et les origines du Bon Avis Numérique",
 }
 
 export default function AProposPage() {
@@ -15,7 +15,7 @@ export default function AProposPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Notre histoire</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Comment Le Bon Avis Numerique est ne et pourquoi nous existons.
+          Comment Le Bon Avis Numérique est né et pourquoi nous existons.
         </p>
       </div>
 
@@ -24,8 +24,8 @@ export default function AProposPage() {
           <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">Page en construction</h2>
           <p className="text-gray-500 max-w-md mx-auto">
-            Cette page sera bientot disponible avec l'histoire complete de notre projet
-            et les motivations qui nous ont pousse a creer Le Bon Avis Numerique.
+            Cette page sera bientôt disponible avec l&apos;histoire complète de notre projet
+            et les motivations qui nous ont poussé à créer Le Bon Avis Numérique.
           </p>
         </CardContent>
       </Card>

@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Nos valeurs & notations | Le Bon Avis Numerique",
-  description: "Comprendre notre systeme d'evaluation et nos criteres pour aider les parents a choisir des contenus adaptes",
+  title: "Nos valeurs & notations | Le Bon Avis Numérique",
+  description: "Comprendre notre système d'évaluation et nos critères pour aider les parents à choisir des contenus adaptés",
 }
 
 const contentMetrics = [
@@ -14,30 +14,30 @@ const contentMetrics = [
     icon: Shield,
     color: "text-red-500",
     bgColor: "bg-red-50",
-    description: "Mesure la presence de violence physique, verbale ou psychologique dans le contenu.",
+    description: "Mesure la présence de violence physique, verbale ou psychologique dans le contenu.",
     scale: [
-      { level: 0, label: "Aucune violence", example: "Aucune scene de conflit physique ou verbal agressif" },
-      { level: 1, label: "Violence tres legere", example: "Conflits resolus pacifiquement, slapstick cartoon" },
-      { level: 2, label: "Violence legere", example: "Bagarres sans consequences, tensions dramatiques" },
-      { level: 3, label: "Violence moderee", example: "Combats avec consequences visibles, scenes de danger" },
-      { level: 4, label: "Violence intense", example: "Scenes de bataille, violence realiste, blessures" },
-      { level: 5, label: "Violence extreme", example: "Violence graphique, gore, cruaute explicite" },
+      { level: 0, label: "Aucune violence", example: "Aucune scène de conflit physique ou verbal agressif" },
+      { level: 1, label: "Violence très légère", example: "Conflits résolus pacifiquement, slapstick cartoon" },
+      { level: 2, label: "Violence légère", example: "Bagarres sans conséquences, tensions dramatiques" },
+      { level: 3, label: "Violence modérée", example: "Combats avec conséquences visibles, scènes de danger" },
+      { level: 4, label: "Violence intense", example: "Scènes de bataille, violence réaliste, blessures" },
+      { level: 5, label: "Violence extrême", example: "Violence graphique, gore, cruauté explicite" },
     ],
   },
   {
     id: "sexNudity",
-    name: "Sexe / Nudite",
+    name: "Sexe / Nudité",
     icon: Eye,
     color: "text-pink-500",
     bgColor: "bg-pink-50",
-    description: "Evalue la presence de contenu sexuel, scenes romantiques explicites ou nudite.",
+    description: "Évalue la présence de contenu sexuel, scènes romantiques explicites ou nudité.",
     scale: [
-      { level: 0, label: "Aucun contenu", example: "Pas de romance ou nudite" },
-      { level: 1, label: "Romance legere", example: "Baisers, mains tenues, romance innocente" },
-      { level: 2, label: "Romance plus explicite", example: "Scenes de baisers prolonges, flirt marque" },
-      { level: 3, label: "Contenu suggestif", example: "Sous-entendus, tenues revelatrices, nudite partielle" },
-      { level: 4, label: "Contenu sexuel", example: "Scenes de nudite, allusions sexuelles explicites" },
-      { level: 5, label: "Contenu explicite", example: "Scenes sexuelles explicites, nudite complete" },
+      { level: 0, label: "Aucun contenu", example: "Pas de romance ou nudité" },
+      { level: 1, label: "Romance légère", example: "Baisers, mains tenues, romance innocente" },
+      { level: 2, label: "Romance plus explicite", example: "Scènes de baisers prolongés, flirt marqué" },
+      { level: 3, label: "Contenu suggestif", example: "Sous-entendus, tenues révélatrices, nudité partielle" },
+      { level: 4, label: "Contenu sexuel", example: "Scènes de nudité, allusions sexuelles explicites" },
+      { level: 5, label: "Contenu explicite", example: "Scènes sexuelles explicites, nudité complète" },
     ],
   },
   {
@@ -46,30 +46,30 @@ const contentMetrics = [
     icon: MessageCircle,
     color: "text-orange-500",
     bgColor: "bg-orange-50",
-    description: "Indique la frequence de langage grossier, insultes ou jurons.",
+    description: "Indique la fréquence de langage grossier, insultes ou jurons.",
     scale: [
-      { level: 0, label: "Langage adapte a tous", example: "Aucun mot grossier ou inapproprie" },
-      { level: 1, label: "Langage tres leger", example: "Expressions legeres type 'zut', 'mince'" },
-      { level: 2, label: "Langage leger", example: "Quelques jurons doux, insultes legeres" },
-      { level: 3, label: "Langage modere", example: "Jurons reguliers, insultes occasionnelles" },
-      { level: 4, label: "Langage grossier", example: "Gros mots frequents, insultes vulgaires" },
-      { level: 5, label: "Langage tres vulgaire", example: "Langage extremement grossier et constant" },
+      { level: 0, label: "Langage adapté à tous", example: "Aucun mot grossier ou inapproprié" },
+      { level: 1, label: "Langage très léger", example: "Expressions légères type 'zut', 'mince'" },
+      { level: 2, label: "Langage léger", example: "Quelques jurons doux, insultes légères" },
+      { level: 3, label: "Langage modéré", example: "Jurons réguliers, insultes occasionnelles" },
+      { level: 4, label: "Langage grossier", example: "Gros mots fréquents, insultes vulgaires" },
+      { level: 5, label: "Langage très vulgaire", example: "Langage extrêmement grossier et constant" },
     ],
   },
   {
     id: "consumerism",
-    name: "Consumerisme",
+    name: "Consumérisme",
     icon: Zap,
     color: "text-yellow-500",
     bgColor: "bg-yellow-50",
-    description: "Mesure la presence de messages incitant a la consommation, placement de produits ou materialisme.",
+    description: "Mesure la présence de messages incitant à la consommation, placement de produits ou matérialisme.",
     scale: [
-      { level: 0, label: "Pas de messages commerciaux", example: "Aucun placement produit, pas de materialisme" },
-      { level: 1, label: "Mentions mineures", example: "Marques visibles en arriere-plan" },
-      { level: 2, label: "Quelques placements", example: "Produits identifies, mentions de marques" },
-      { level: 3, label: "Placements notables", example: "Integration de produits dans l'histoire" },
-      { level: 4, label: "Messages commerciaux forts", example: "Incitation claire a l'achat, merchandising" },
-      { level: 5, label: "Tres commercial", example: "Contenu principalement promotionnel, achats in-app" },
+      { level: 0, label: "Pas de messages commerciaux", example: "Aucun placement produit, pas de matérialisme" },
+      { level: 1, label: "Mentions mineures", example: "Marques visibles en arrière-plan" },
+      { level: 2, label: "Quelques placements", example: "Produits identifiés, mentions de marques" },
+      { level: 3, label: "Placements notables", example: "Intégration de produits dans l'histoire" },
+      { level: 4, label: "Messages commerciaux forts", example: "Incitation claire à l'achat, merchandising" },
+      { level: 5, label: "Très commercial", example: "Contenu principalement promotionnel, achats in-app" },
     ],
   },
   {
@@ -78,14 +78,14 @@ const contentMetrics = [
     icon: Shield,
     color: "text-purple-500",
     bgColor: "bg-purple-50",
-    description: "Evalue la representation d'alcool, tabac, drogues ou autres substances.",
+    description: "Évalue la représentation d'alcool, tabac, drogues ou autres substances.",
     scale: [
-      { level: 0, label: "Aucune representation", example: "Pas d'alcool, tabac ou drogues" },
-      { level: 1, label: "Presence en arriere-plan", example: "Verres de vin au diner, bar en fond" },
+      { level: 0, label: "Aucune représentation", example: "Pas d'alcool, tabac ou drogues" },
+      { level: 1, label: "Présence en arrière-plan", example: "Verres de vin au dîner, bar en fond" },
       { level: 2, label: "Consommation occasionnelle", example: "Personnages qui boivent socialement" },
-      { level: 3, label: "Consommation reguliere", example: "Scenes de bar, cigarettes visibles" },
-      { level: 4, label: "Usage problematique aborde", example: "Ivresse, dependance montree" },
-      { level: 5, label: "Usage frequemment montre", example: "Drogues, alcoolisme banalise ou glorifie" },
+      { level: 3, label: "Consommation régulière", example: "Scènes de bar, cigarettes visibles" },
+      { level: 4, label: "Usage problématique abordé", example: "Ivresse, dépendance montrée" },
+      { level: 5, label: "Usage fréquemment montré", example: "Drogues, alcoolisme banalisé ou glorifié" },
     ],
   },
 ]
@@ -97,30 +97,30 @@ const positiveMetrics = [
     icon: Heart,
     color: "text-green-500",
     bgColor: "bg-green-50",
-    description: "Note la presence de valeurs positives : amitie, courage, perseverance, empathie, entraide.",
+    description: "Note la présence de valeurs positives : amitié, courage, persévérance, empathie, entraide.",
     scale: [
-      { level: 0, label: "Pas de message particulier", example: "Divertissement sans theme educatif" },
-      { level: 1, label: "Messages implicites", example: "Valeurs suggerees mais non developpees" },
-      { level: 2, label: "Quelques messages positifs", example: "Themes d'amitie ou de cooperation" },
-      { level: 3, label: "Messages clairs", example: "Valeurs explicitement presentees" },
-      { level: 4, label: "Messages forts", example: "Themes educatifs bien developpes" },
-      { level: 5, label: "Tres enrichissant", example: "Contenu profondement educatif et inspirant" },
+      { level: 0, label: "Pas de message particulier", example: "Divertissement sans thème éducatif" },
+      { level: 1, label: "Messages implicites", example: "Valeurs suggérées mais non développées" },
+      { level: 2, label: "Quelques messages positifs", example: "Thèmes d'amitié ou de coopération" },
+      { level: 3, label: "Messages clairs", example: "Valeurs explicitement présentées" },
+      { level: 4, label: "Messages forts", example: "Thèmes éducatifs bien développés" },
+      { level: 5, label: "Très enrichissant", example: "Contenu profondément éducatif et inspirant" },
     ],
   },
   {
     id: "roleModels",
-    name: "Modeles positifs",
+    name: "Modèles positifs",
     icon: Star,
     color: "text-blue-500",
     bgColor: "bg-blue-50",
-    description: "Evalue la qualite des personnages comme modeles : comportements admirables, resolution de problemes, respect des autres.",
+    description: "Évalue la qualité des personnages comme modèles : comportements admirables, résolution de problèmes, respect des autres.",
     scale: [
-      { level: 0, label: "Pas de modele positif", example: "Personnages sans qualites admirables" },
-      { level: 1, label: "Modeles faibles", example: "Quelques comportements positifs isoles" },
-      { level: 2, label: "Modeles occasionnels", example: "Personnages parfois admirables" },
-      { level: 3, label: "Bons modeles", example: "Personnages avec des qualites claires" },
-      { level: 4, label: "Tres bons modeles", example: "Personnages inspirants et exemplaires" },
-      { level: 5, label: "Modeles exceptionnels", example: "Personnages profondement inspirants" },
+      { level: 0, label: "Pas de modèle positif", example: "Personnages sans qualités admirables" },
+      { level: 1, label: "Modèles faibles", example: "Quelques comportements positifs isolés" },
+      { level: 2, label: "Modèles occasionnels", example: "Personnages parfois admirables" },
+      { level: 3, label: "Bons modèles", example: "Personnages avec des qualités claires" },
+      { level: 4, label: "Très bons modèles", example: "Personnages inspirants et exemplaires" },
+      { level: 5, label: "Modèles exceptionnels", example: "Personnages profondément inspirants" },
     ],
   },
 ]
@@ -135,7 +135,7 @@ export default function NosValeursPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Nos valeurs & notations</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Comprendre notre systeme d'evaluation pour vous aider a choisir des contenus adaptes a vos enfants.
+          Comprendre notre système d&apos;évaluation pour vous aider à choisir des contenus adaptés à vos enfants.
         </p>
       </div>
 
@@ -148,19 +148,19 @@ export default function NosValeursPage() {
           </h2>
           <div className="space-y-4 text-gray-600">
             <p>
-              <strong>Le Bon Avis Numerique</strong> a ete cree avec une conviction simple : les parents meritent
-              des informations claires et detaillees pour guider les choix mediatiques de leurs enfants.
+              <strong>Le Bon Avis Numérique</strong> a été créé avec une conviction simple : les parents méritent
+              des informations claires et détaillées pour guider les choix médiatiques de leurs enfants.
             </p>
             <p>
-              Contrairement aux classifications d'age officielles (PEGI, CSA) qui donnent une indication generale,
-              nous fournissons une <strong>analyse detaillee du contenu</strong> selon plusieurs criteres.
-              Chaque famille a ses propres valeurs et sensibilites - notre role est de vous donner
-              les informations necessaires pour faire vos propres choix eclaires.
+              Contrairement aux classifications d&apos;âge officielles (PEGI, CSA) qui donnent une indication générale,
+              nous fournissons une <strong>analyse détaillée du contenu</strong> selon plusieurs critères.
+              Chaque famille a ses propres valeurs et sensibilités - notre rôle est de vous donner
+              les informations nécessaires pour faire vos propres choix éclairés.
             </p>
             <p>
-              Nos evaluations sont realisees par une combinaison d'<strong>analyses expertes</strong> et
-              d'<strong>intelligence artificielle</strong>, puis enrichies par les <strong>avis de la communaute</strong>
-              de parents et d'educateurs.
+              Nos évaluations sont réalisées par une combinaison d&apos;<strong>analyses expertes</strong> et
+              d&apos;<strong>intelligence artificielle</strong>, puis enrichies par les <strong>avis de la communauté</strong>
+              de parents et d&apos;éducateurs.
             </p>
           </div>
         </CardContent>
@@ -171,38 +171,38 @@ export default function NosValeursPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Nos recommandations d'age
+            Nos recommandations d&apos;âge
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            Pour chaque contenu, nous fournissons deux types de recommandations d'age :
+            Pour chaque contenu, nous fournissons deux types de recommandations d&apos;âge :
           </p>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Award className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900">Age recommande (Expert)</h3>
+                <h3 className="font-semibold text-blue-900">Âge recommandé (Expert)</h3>
               </div>
               <p className="text-sm text-blue-800">
-                Base sur notre analyse du contenu selon les criteres ci-dessous.
-                Prend en compte la maturite emotionnelle necessaire pour apprecier le contenu.
+                Basé sur notre analyse du contenu selon les critères ci-dessous.
+                Prend en compte la maturité émotionnelle nécessaire pour apprécier le contenu.
               </p>
             </div>
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Users className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-green-900">Age suggere (Communaute)</h3>
+                <h3 className="font-semibold text-green-900">Âge suggéré (Communauté)</h3>
               </div>
               <p className="text-sm text-green-800">
-                Moyenne des suggestions des parents et educateurs de notre communaute.
-                Reflete l'experience reelle des familles.
+                Moyenne des suggestions des parents et éducateurs de notre communauté.
+                Reflète l&apos;expérience réelle des familles.
               </p>
             </div>
           </div>
           <p className="text-sm text-gray-500 italic">
-            Note : Ces ages sont des suggestions. Vous connaissez votre enfant mieux que quiconque.
-            Un enfant mature de 9 ans peut etre pret pour un contenu suggere a 10 ans, et inversement.
+            Note : Ces âges sont des suggestions. Vous connaissez votre enfant mieux que quiconque.
+            Un enfant mature de 9 ans peut être prêt pour un contenu suggéré à 10 ans, et inversement.
           </p>
         </CardContent>
       </Card>
@@ -210,11 +210,11 @@ export default function NosValeursPage() {
       {/* Content Metrics - Negative */}
       <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
         <BarChart3 className="h-6 w-6 text-primary" />
-        Criteres d'evaluation du contenu
+        Critères d&apos;évaluation du contenu
       </h2>
       <p className="text-gray-600 mb-6">
-        Ces criteres mesurent la presence d'elements potentiellement sensibles.
-        Une note elevee (4-5) indique une forte presence de cet element.
+        Ces critères mesurent la présence d&apos;éléments potentiellement sensibles.
+        Une note élevée (4-5) indique une forte présence de cet élément.
       </p>
 
       <div className="space-y-6 mb-12">
@@ -267,11 +267,11 @@ export default function NosValeursPage() {
       {/* Positive Metrics */}
       <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
         <Heart className="h-6 w-6 text-green-500" />
-        Criteres positifs
+        Critères positifs
       </h2>
       <p className="text-gray-600 mb-6">
-        Ces criteres mesurent les aspects educatifs et inspirants du contenu.
-        Une note elevee (4-5) est <strong>positive</strong> et indique un contenu enrichissant.
+        Ces critères mesurent les aspects éducatifs et inspirants du contenu.
+        Une note élevée (4-5) est <strong>positive</strong> et indique un contenu enrichissant.
       </p>
 
       <div className="space-y-6 mb-12">
@@ -326,24 +326,24 @@ export default function NosValeursPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            La communaute
+            La communauté
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            En plus de nos evaluations expertes, nous affichons les <strong>moyennes de la communaute</strong> :
-            les notes donnees par les parents et educateurs qui ont utilise ces contenus avec leurs enfants.
+            En plus de nos évaluations expertes, nous affichons les <strong>moyennes de la communauté</strong> :
+            les notes données par les parents et éducateurs qui ont utilisé ces contenus avec leurs enfants.
           </p>
           <p className="text-gray-600">
-            Vous pouvez <strong>contribuer</strong> en evaluant vous-meme les contenus que vous connaissez.
-            Chaque avis aide d'autres familles a faire de meilleurs choix.
+            Vous pouvez <strong>contribuer</strong> en évaluant vous-même les contenus que vous connaissez.
+            Chaque avis aide d&apos;autres familles à faire de meilleurs choix.
           </p>
           <div className="flex gap-4 pt-4">
             <Link
               href="/inscription"
               className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Rejoindre la communaute
+              Rejoindre la communauté
             </Link>
             <Link
               href="/films"
@@ -358,18 +358,18 @@ export default function NosValeursPage() {
       {/* FAQ */}
       <Card>
         <CardHeader>
-          <CardTitle>Questions frequentes</CardTitle>
+          <CardTitle>Questions fréquentes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">
-              Comment sont realisees vos evaluations ?
+              Comment sont réalisées vos évaluations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Nos evaluations combinent une analyse initiale par intelligence artificielle
-              (basee sur les synopsis, classifications officielles et metadonnees),
-              puis sont verifiees et ajustees par notre equipe. Les avis de la communaute
-              viennent enrichir ces evaluations au fil du temps.
+              Nos évaluations combinent une analyse initiale par intelligence artificielle
+              (basée sur les synopsis, classifications officielles et métadonnées),
+              puis sont vérifiées et ajustées par notre équipe. Les avis de la communauté
+              viennent enrichir ces évaluations au fil du temps.
             </p>
           </div>
           <div>
@@ -377,20 +377,20 @@ export default function NosValeursPage() {
               Pourquoi une note de 3 en violence est-elle orange et non verte ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Pour les criteres sensibles (violence, sexe, langage, etc.), nous utilisons
+              Pour les critères sensibles (violence, sexe, langage, etc.), nous utilisons
               un code couleur prudent : vert (0-1), jaune (2), orange (3), rouge (4-5).
-              Une note de 3 indique une presence moderee qui peut necessiter une discussion
-              avec l'enfant ou une supervision.
+              Une note de 3 indique une présence modérée qui peut nécessiter une discussion
+              avec l&apos;enfant ou une supervision.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">
-              Quelle est la difference avec PEGI ou les classifications CSA ?
+              Quelle est la différence avec PEGI ou les classifications CSA ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Les classifications officielles donnent un age minimum recommande.
-              Nous fournissons une analyse plus detaillee : vous pouvez voir exactement
-              pourquoi un contenu est recommande a un certain age, et decider si cela
+              Les classifications officielles donnent un âge minimum recommandé.
+              Nous fournissons une analyse plus détaillée : vous pouvez voir exactement
+              pourquoi un contenu est recommandé à un certain âge, et décider si cela
               correspond aux valeurs de votre famille.
             </p>
           </div>

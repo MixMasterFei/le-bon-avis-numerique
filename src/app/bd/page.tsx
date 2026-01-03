@@ -2,8 +2,8 @@ import { BookOpen, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Bandes Dessinees | Le Bon Avis Numerique",
-  description: "Evaluations de bandes dessinees et comics pour enfants et adolescents",
+  title: "Bandes Dessinées | Le Bon Avis Numérique",
+  description: "Évaluations de bandes dessinées et comics pour enfants et adolescents",
 }
 
 export default function BDPage() {
@@ -13,19 +13,19 @@ export default function BDPage() {
         <div className="inline-flex p-4 bg-yellow-100 rounded-full mb-6">
           <BookOpen className="h-8 w-8 text-yellow-600" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Bandes Dessinees</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Bandes Dessinées</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Evaluations de bandes dessinees, mangas et comics pour enfants et adolescents.
+          Évaluations de bandes dessinées, mangas et comics pour enfants et adolescents.
         </p>
       </div>
 
       <Card>
         <CardContent className="p-8 text-center">
           <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Bientot disponible</h2>
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">Bientôt disponible</h2>
           <p className="text-gray-500 max-w-md mx-auto">
-            Nous travaillons sur l'ajout de bandes dessinees, mangas et comics a notre base de donnees.
-            Vous pourrez bientot consulter nos evaluations pour ces contenus.
+            Nous travaillons sur l&apos;ajout de bandes dessinées, mangas et comics à notre base de données.
+            Vous pourrez bientôt consulter nos évaluations pour ces contenus.
           </p>
         </CardContent>
       </Card>

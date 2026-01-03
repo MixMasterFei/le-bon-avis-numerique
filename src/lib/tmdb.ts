@@ -52,13 +52,13 @@ export function getImageUrl(
   return `${TMDB_IMAGE_BASE}/${size}${path}`
 }
 
-// Generic fetch helper
+// Generic fetch helper with timeout
 async function tmdbFetch<T>(
   endpoint: string,
   params: Record<string, string> = {}
 ): Promise<T> {
   const apiKey = process.env.TMDB_API_KEY
-  
+
   if (!apiKey) {
     throw new Error("TMDB_API_KEY is not configured. Get one at https://www.themoviedb.org/settings/api")
   }
@@ -67,20 +67,35 @@ async function tmdbFetch<T>(
   url.searchParams.set("api_key", apiKey)
   url.searchParams.set("language", defaultConfig.language!)
   url.searchParams.set("region", defaultConfig.region!)
-  
+
   Object.entries(params).forEach(([key, value]) => {
     url.searchParams.set(key, value)
   })
 
-  const response = await fetch(url.toString(), {
-    next: { revalidate: 3600 }, // Cache for 1 hour
-  })
+  // Add timeout using AbortController
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
 
-  if (!response.ok) {
-    throw new Error(`TMDB API error: ${response.status} ${response.statusText}`)
+  try {
+    const response = await fetch(url.toString(), {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status} ${response.statusText}`)
+    }
+
+    return response.json()
+  } catch (error) {
+    clearTimeout(timeoutId)
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("TMDB request timeout after 10 seconds")
+    }
+    throw error
   }
-
-  return response.json()
 }
 
 // ============================================

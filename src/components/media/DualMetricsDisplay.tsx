@@ -31,39 +31,39 @@ interface CommunityData {
 const METRIC_LABELS: Record<string, { label: string; description: string; example: string; isPositive?: boolean }> = {
   violence: {
     label: "Violence",
-    description: "Mesure la presence de violence physique, verbale ou psychologique dans le contenu.",
+    description: "Mesure la présence de violence physique, verbale ou psychologique dans le contenu.",
     example: "0 = Aucune violence. 5 = Violence intense et/ou graphique (combats, armes, sang)."
   },
   sexNudity: {
-    label: "Sexe/Nudite",
-    description: "Evalue la presence de contenu sexuel, scenes romantiques explicites ou nudite.",
-    example: "0 = Aucun contenu. 5 = Scenes sexuelles explicites ou nudite complete."
+    label: "Sexe/Nudité",
+    description: "Évalue la présence de contenu sexuel, scènes romantiques explicites ou nudité.",
+    example: "0 = Aucun contenu. 5 = Scènes sexuelles explicites ou nudité complète."
   },
   language: {
     label: "Langage",
-    description: "Indique la frequence de langage grossier, insultes ou jurons.",
-    example: "0 = Langage adapte a tous. 5 = Insultes frequentes, langage tres vulgaire."
+    description: "Indique la fréquence de langage grossier, insultes ou jurons.",
+    example: "0 = Langage adapté à tous. 5 = Insultes fréquentes, langage très vulgaire."
   },
   consumerism: {
-    label: "Consumerisme",
-    description: "Mesure la presence de messages incitant a la consommation, placement de produits ou materialisme.",
-    example: "0 = Pas de messages commerciaux. 5 = Forte incitation a l'achat, nombreux placements produits."
+    label: "Consumérisme",
+    description: "Mesure la présence de messages incitant à la consommation, placement de produits ou matérialisme.",
+    example: "0 = Pas de messages commerciaux. 5 = Forte incitation à l'achat, nombreux placements produits."
   },
   substanceUse: {
     label: "Substances",
-    description: "Evalue la representation d'alcool, tabac, drogues ou autres substances.",
-    example: "0 = Aucune representation. 5 = Consommation frequente ou banalisee."
+    description: "Évalue la représentation d'alcool, tabac, drogues ou autres substances.",
+    example: "0 = Aucune représentation. 5 = Consommation fréquente ou banalisée."
   },
   positiveMessages: {
     label: "Messages +",
-    description: "Note la presence de valeurs positives : amitie, courage, perseverance, empathie, entraide.",
+    description: "Note la présence de valeurs positives : amitié, courage, persévérance, empathie, entraide.",
     example: "0 = Pas de message particulier. 5 = Messages forts sur des valeurs importantes.",
     isPositive: true
   },
   roleModels: {
-    label: "Modeles +",
-    description: "Evalue la qualite des personnages comme modeles : comportements admirables, resolution de problemes, respect des autres.",
-    example: "0 = Pas de modele positif. 5 = Personnages exemplaires et inspirants.",
+    label: "Modèles +",
+    description: "Évalue la qualité des personnages comme modèles : comportements admirables, résolution de problèmes, respect des autres.",
+    example: "0 = Pas de modèle positif. 5 = Personnages exemplaires et inspirants.",
     isPositive: true
   },
 }
