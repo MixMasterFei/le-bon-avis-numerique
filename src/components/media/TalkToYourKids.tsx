@@ -96,11 +96,11 @@ export function TalkToYourKids({
   topics,
   className
 }: TalkToYourKidsProps) {
-  // Don't show for games - they have their own GameInfoCard
-  if (type === "GAME") {
-    return null
-  }
+  // Disabled: too generic and redundant with "Ce que les parents doivent savoir"
+  // The discussion points are always the same and don't add value
+  return null
 
+  // Keep code below for potential future use with more specific/AI-generated content
   const discussionPoints = generateDiscussionPoints(title, type, metrics, genres, topics)
 
   return (
