@@ -1,3 +1,6 @@
+// Force dynamic rendering to avoid stale cached data
+export const dynamic = 'force-dynamic'
+
 import Image from "next/image"
 import Link from "next/link"
 import { Clock, Calendar, Star, ExternalLink, Play, Tv, Gamepad2 } from "lucide-react"
