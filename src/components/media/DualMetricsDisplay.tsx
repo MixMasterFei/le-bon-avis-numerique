@@ -28,14 +28,44 @@ interface CommunityData {
   averages: ContentMetrics | null
 }
 
-const METRIC_LABELS: Record<string, { label: string; description: string; isPositive?: boolean }> = {
-  violence: { label: "Violence", description: "Niveau de violence physique ou verbale" },
-  sexNudity: { label: "Sexe/Nudite", description: "Contenu sexuel ou nudite" },
-  language: { label: "Langage", description: "Langage grossier ou inapproprie" },
-  consumerism: { label: "Consumerisme", description: "Messages commerciaux ou materialistes" },
-  substanceUse: { label: "Substances", description: "Alcool, tabac ou drogues" },
-  positiveMessages: { label: "Messages +", description: "Messages positifs et valeurs", isPositive: true },
-  roleModels: { label: "Modeles +", description: "Bons exemples de comportement", isPositive: true },
+const METRIC_LABELS: Record<string, { label: string; description: string; example: string; isPositive?: boolean }> = {
+  violence: {
+    label: "Violence",
+    description: "Mesure la presence de violence physique, verbale ou psychologique dans le contenu.",
+    example: "0 = Aucune violence. 5 = Violence intense et/ou graphique (combats, armes, sang)."
+  },
+  sexNudity: {
+    label: "Sexe/Nudite",
+    description: "Evalue la presence de contenu sexuel, scenes romantiques explicites ou nudite.",
+    example: "0 = Aucun contenu. 5 = Scenes sexuelles explicites ou nudite complete."
+  },
+  language: {
+    label: "Langage",
+    description: "Indique la frequence de langage grossier, insultes ou jurons.",
+    example: "0 = Langage adapte a tous. 5 = Insultes frequentes, langage tres vulgaire."
+  },
+  consumerism: {
+    label: "Consumerisme",
+    description: "Mesure la presence de messages incitant a la consommation, placement de produits ou materialisme.",
+    example: "0 = Pas de messages commerciaux. 5 = Forte incitation a l'achat, nombreux placements produits."
+  },
+  substanceUse: {
+    label: "Substances",
+    description: "Evalue la representation d'alcool, tabac, drogues ou autres substances.",
+    example: "0 = Aucune representation. 5 = Consommation frequente ou banalisee."
+  },
+  positiveMessages: {
+    label: "Messages +",
+    description: "Note la presence de valeurs positives : amitie, courage, perseverance, empathie, entraide.",
+    example: "0 = Pas de message particulier. 5 = Messages forts sur des valeurs importantes.",
+    isPositive: true
+  },
+  roleModels: {
+    label: "Modeles +",
+    description: "Evalue la qualite des personnages comme modeles : comportements admirables, resolution de problemes, respect des autres.",
+    example: "0 = Pas de modele positif. 5 = Personnages exemplaires et inspirants.",
+    isPositive: true
+  },
 }
 
 function MetricBar({
@@ -108,16 +138,18 @@ function MetricsColumn({
 
       <TooltipProvider>
         <div className="space-y-2">
-          {Object.entries(METRIC_LABELS).map(([key, { label, description, isPositive }]) => (
+          {Object.entries(METRIC_LABELS).map(([key, { label, description, example, isPositive }]) => (
             <div key={key} className="flex items-center gap-2">
-              <Tooltip>
+              <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <span className="text-[11px] text-gray-600 w-[85px] shrink-0 cursor-help">
+                  <span className="text-[11px] text-gray-600 w-[85px] shrink-0 cursor-help underline decoration-dotted decoration-gray-400">
                     {label}
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>{description}</p>
+                <TooltipContent side="left" className="max-w-xs p-3">
+                  <p className="font-medium text-sm mb-1">{label}</p>
+                  <p className="text-xs text-gray-600 mb-2">{description}</p>
+                  <p className="text-xs text-gray-500 italic">{example}</p>
                 </TooltipContent>
               </Tooltip>
               <div className="flex-1 min-w-0">

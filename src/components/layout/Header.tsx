@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Smartphone, Users, User, LogOut, Settings } from "lucide-react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Users, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -13,8 +13,15 @@ const navigation = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
   { name: "Séries TV", href: "/series", icon: Tv },
-  { name: "Livres", href: "/livres", icon: BookOpen, comingSoon: true },
-  { name: "Applications", href: "/apps", icon: Smartphone, comingSoon: true },
+  { name: "BD", href: "/bd", icon: BookOpen, comingSoon: true },
+]
+
+const moreNavigation = [
+  { name: "Notre histoire", href: "/a-propos", icon: Info },
+  { name: "Notre objectif", href: "/objectif", icon: Target },
+  { name: "Nos valeurs & notations", href: "/nos-valeurs", icon: Heart },
+  { name: "Nos guides", href: "/guides", icon: BookText, comingSoon: true },
+  { name: "Notre blog", href: "/blog", icon: Newspaper, comingSoon: true },
 ]
 
 export function Header() {
@@ -22,7 +29,20 @@ export function Header() {
   const { data: session, status } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close more menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setIsMoreMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +102,48 @@ export function Header() {
                 </Link>
               )
             )}
+
+            {/* More Dropdown */}
+            <div ref={moreMenuRef} className="relative">
+              <button
+                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+              >
+                Plus
+                <ChevronDown className={`h-4 w-4 transition-transform ${isMoreMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isMoreMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border py-2 z-50">
+                  {moreNavigation.map((item) =>
+                    item.comingSoon ? (
+                      <div
+                        key={item.name}
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-400 cursor-not-allowed"
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          {item.name}
+                        </div>
+                        <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                          Bientôt
+                        </span>
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsMoreMenuOpen(false)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.name}
+                      </Link>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Search Bar */}
@@ -232,6 +294,38 @@ export function Header() {
                 </Link>
               )
             )}
+
+            {/* More section in mobile */}
+            <div className="pt-2 mt-2 border-t">
+              <p className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Plus</p>
+              {moreNavigation.map((item) =>
+                item.comingSoon ? (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between px-4 py-3 text-gray-400 cursor-not-allowed"
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className="h-5 w-5" />
+                      {item.name}
+                    </div>
+                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
+                      Bientôt
+                    </span>
+                  </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </Link>
+                )
+              )}
+            </div>
+
             {session?.user ? (
               <>
                 <hr className="my-2" />
