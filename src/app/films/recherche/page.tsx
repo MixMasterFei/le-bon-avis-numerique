@@ -22,6 +22,9 @@ function FilmsRechercheContent() {
   const initialGenres = searchParams.get("genres")?.split(",").filter(Boolean) || []
   const initialPlatforms = searchParams.get("platforms")?.split(",").filter(Boolean) || []
   const initialSearch = searchParams.get("q") || ""
+  const initialMinQuality = searchParams.get("minQuality") ? parseInt(searchParams.get("minQuality")!) : undefined
+  const initialSortBy = searchParams.get("sortBy") || undefined
+  const initialExcludeGenres = searchParams.get("excludeGenres")?.split(",").filter(Boolean) || []
   // Merge genres into topics for filtering (they work the same way in the API)
   const mergedTopics = [...new Set([...initialTopics, ...initialGenres])]
 
@@ -81,6 +84,16 @@ function FilmsRechercheContent() {
         }
         if (filters.searchQuery) {
           dbParams.set("q", filters.searchQuery)
+        }
+        // Pass quality and sort filters from URL params
+        if (initialMinQuality) {
+          dbParams.set("minQuality", initialMinQuality.toString())
+        }
+        if (initialSortBy) {
+          dbParams.set("sortBy", initialSortBy)
+        }
+        if (initialExcludeGenres.length > 0) {
+          dbParams.set("excludeGenres", initialExcludeGenres.join(","))
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })

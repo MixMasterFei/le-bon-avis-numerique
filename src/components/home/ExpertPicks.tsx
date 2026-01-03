@@ -174,7 +174,7 @@ export function ExpertPicks() {
           </div>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex border-emerald-200 hover:bg-emerald-50">
-          <Link href="/films/recherche?maxAge=12&genres=Animation,Famille,Aventure,Comedie">
+          <Link href="/films/recherche?maxAge=12&minQuality=80&sortBy=quality&genres=Animation,Famille,Aventure,Comedie&excludeGenres=Horreur,Thriller">
             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -189,7 +189,7 @@ export function ExpertPicks() {
       {/* Mobile CTA */}
       <div className="mt-6 text-center sm:hidden">
         <Button variant="outline" asChild className="border-emerald-200 hover:bg-emerald-50">
-          <Link href="/films/recherche?maxAge=12&genres=Animation,Famille,Aventure,Comedie">
+          <Link href="/films/recherche?maxAge=12&minQuality=80&sortBy=quality&genres=Animation,Famille,Aventure,Comedie&excludeGenres=Horreur,Thriller">
             Voir toutes les selections <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
