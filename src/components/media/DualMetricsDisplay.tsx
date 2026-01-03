@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Users, Award, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { UserMetricsButton } from "./UserMetricsButton"
 
 interface ContentMetrics {
   violence: number
@@ -17,6 +18,7 @@ interface ContentMetrics {
 
 interface DualMetricsDisplayProps {
   mediaId: string
+  mediaTitle: string
   expertMetrics?: ContentMetrics | null
 }
 
@@ -132,25 +134,25 @@ function MetricsColumn({
   )
 }
 
-export function DualMetricsDisplay({ mediaId, expertMetrics }: DualMetricsDisplayProps) {
+export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualMetricsDisplayProps) {
   const [communityData, setCommunityData] = useState<CommunityData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchCommunityMetrics = async () => {
-      try {
-        const res = await fetch(`/api/media/${mediaId}/community-metrics`)
-        if (res.ok) {
-          const data = await res.json()
-          setCommunityData(data)
-        }
-      } catch (err) {
-        console.error("Failed to fetch community metrics:", err)
-      } finally {
-        setLoading(false)
+  const fetchCommunityMetrics = async () => {
+    try {
+      const res = await fetch(`/api/media/${mediaId}/community-metrics`)
+      if (res.ok) {
+        const data = await res.json()
+        setCommunityData(data)
       }
+    } catch (err) {
+      console.error("Failed to fetch community metrics:", err)
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchCommunityMetrics()
   }, [mediaId])
 
@@ -176,7 +178,7 @@ export function DualMetricsDisplay({ mediaId, expertMetrics }: DualMetricsDispla
           </TooltipProvider>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="flex gap-4">
           {/* Expert metrics */}
           <MetricsColumn
@@ -199,6 +201,13 @@ export function DualMetricsDisplay({ mediaId, expertMetrics }: DualMetricsDispla
             />
           )}
         </div>
+
+        {/* Evaluate button inside the card */}
+        <UserMetricsButton
+          mediaId={mediaId}
+          mediaTitle={mediaTitle}
+          onSubmit={() => fetchCommunityMetrics()}
+        />
       </CardContent>
     </Card>
   )

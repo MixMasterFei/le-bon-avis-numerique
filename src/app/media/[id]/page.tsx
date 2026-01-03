@@ -9,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AgeBadge, OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
-import { UserMetricsButton } from "@/components/media/UserMetricsButton"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewSummary } from "@/components/media/ReviewCard"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
@@ -644,6 +643,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {dbId && media.type !== "GAME" && (
               <DualMetricsDisplay
                 mediaId={dbId}
+                mediaTitle={media.title}
                 expertMetrics={media.contentMetrics}
               />
             )}
@@ -658,11 +658,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   <ContentGrid metrics={media.contentMetrics} />
                 </CardContent>
               </Card>
-            )}
-
-            {/* User Metrics Button */}
-            {dbId && (
-              <UserMetricsButton mediaId={dbId} mediaTitle={media.title} />
             )}
 
             {/* Report Correction Button */}
