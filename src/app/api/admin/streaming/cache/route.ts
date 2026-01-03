@@ -41,6 +41,8 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}))
     const limit = Math.min(body.limit || 50, 100) // Max 100 items per batch
     const forceRefresh = body.forceRefresh || false
+    const familyOnly = body.familyOnly || false // Filter for family-friendly content
+    const maxAge = body.maxAge || null // Optional age filter
 
     // Find media items needing streaming data update
     const sevenDaysAgo = new Date()
@@ -50,6 +52,10 @@ export async function POST(request: Request) {
       where: {
         tmdbId: { not: null },
         type: { in: ["MOVIE", "TV"] },
+        // Add family-friendly filter if requested
+        ...(familyOnly || maxAge
+          ? { expertAgeRec: { lte: maxAge || 10, not: null } }
+          : {}),
         ...(forceRefresh
           ? {}
           : {
