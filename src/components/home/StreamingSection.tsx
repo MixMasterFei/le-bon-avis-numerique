@@ -56,11 +56,13 @@ function mapToMockFormat(movie: StreamingMovie): MockMediaItem {
 }
 
 // French streaming services with their brand colors and TMDB provider names
+// filterName must match the filter sidebar platform names exactly for pre-selection
 const streamingServices = [
   {
     id: "netflix",
     name: "Netflix",
-    searchName: "Netflix",
+    searchName: "Netflix", // TMDB API search term
+    filterName: "Netflix France", // Filter sidebar name
     color: "bg-red-600",
     hoverColor: "hover:bg-red-700",
     textColor: "text-red-600",
@@ -69,6 +71,7 @@ const streamingServices = [
     id: "disney",
     name: "Disney+",
     searchName: "Disney Plus",
+    filterName: "Disney+",
     color: "bg-blue-700",
     hoverColor: "hover:bg-blue-800",
     textColor: "text-blue-700",
@@ -77,6 +80,7 @@ const streamingServices = [
     id: "prime",
     name: "Prime Video",
     searchName: "Amazon Prime Video",
+    filterName: "Prime Video",
     color: "bg-cyan-600",
     hoverColor: "hover:bg-cyan-700",
     textColor: "text-cyan-600",
@@ -85,6 +89,7 @@ const streamingServices = [
     id: "canal",
     name: "Canal+",
     searchName: "Canal",
+    filterName: "Canal+",
     color: "bg-black",
     hoverColor: "hover:bg-gray-800",
     textColor: "text-gray-900",
@@ -93,6 +98,7 @@ const streamingServices = [
     id: "apple",
     name: "Apple TV+",
     searchName: "Apple TV Plus",
+    filterName: "Apple TV+",
     color: "bg-gray-800",
     hoverColor: "hover:bg-gray-900",
     textColor: "text-gray-800",
@@ -216,7 +222,7 @@ export function StreamingSection() {
               {totalAvailable} films disponibles sur {selectedService.name}
             </span>
             <Button variant="outline" asChild>
-              <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.name)}&maxAge=10`}>
+              <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.filterName)}&maxAge=10`}>
                 Voir tout sur {selectedService.name} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
