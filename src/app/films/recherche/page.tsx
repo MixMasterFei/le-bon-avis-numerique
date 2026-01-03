@@ -25,6 +25,7 @@ function FilmsRechercheContent() {
   const initialMinQuality = searchParams.get("minQuality") ? parseInt(searchParams.get("minQuality")!) : undefined
   const initialSortBy = searchParams.get("sortBy") || undefined
   const initialExcludeGenres = searchParams.get("excludeGenres")?.split(",").filter(Boolean) || []
+  const initialRequirePoster = searchParams.get("requirePoster") === "true"
   // Merge genres into topics for filtering (they work the same way in the API)
   const mergedTopics = [...new Set([...initialTopics, ...initialGenres])]
 
@@ -94,6 +95,9 @@ function FilmsRechercheContent() {
         }
         if (initialExcludeGenres.length > 0) {
           dbParams.set("excludeGenres", initialExcludeGenres.join(","))
+        }
+        if (initialRequirePoster) {
+          dbParams.set("requirePoster", "true")
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
