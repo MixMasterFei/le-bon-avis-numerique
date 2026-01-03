@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Find movies available on the specified streaming provider
+    // Fetch extra to account for deduplication (same movie may have multiple provider variants)
     const streamingEntries = await prisma.streamingAvailability.findMany({
       where: {
         provider: { contains: provider, mode: "insensitive" },
@@ -45,44 +46,56 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      take: limit,
+      take: limit * 3, // Fetch extra to account for deduplication
       orderBy: {
         lastChecked: "desc",
       },
     })
 
-    // Transform results
-    const movies = streamingEntries.map((entry) => ({
-      id: entry.media.id,
-      tmdbId: entry.media.tmdbId,
-      title: entry.media.title,
-      originalTitle: entry.media.originalTitle,
-      type: entry.media.type,
-      synopsisFr: entry.media.synopsisFr,
-      posterUrl: entry.media.posterUrl,
-      backdropUrl: entry.media.backdropUrl,
-      releaseDate: entry.media.releaseDate?.toISOString().split("T")[0] || null,
-      expertAgeRec: entry.media.expertAgeRec,
-      communityAgeRec: entry.media.communityAgeRec,
-      genres: entry.media.genres,
-      contentMetrics: entry.media.contentMetrics,
-      streaming: {
-        provider: entry.provider,
-        type: entry.type,
-        link: entry.link,
-        lastChecked: entry.lastChecked,
-      },
-    }))
+    // Transform results and deduplicate by movie ID
+    // (same movie can have multiple provider variants like "Netflix" and "Netflix Standard with Ads")
+    const seenIds = new Set<string>()
+    const movies = streamingEntries
+      .filter((entry) => {
+        if (seenIds.has(entry.media.id)) return false
+        seenIds.add(entry.media.id)
+        return true
+      })
+      .slice(0, limit) // Apply the limit after deduplication
+      .map((entry) => ({
+        id: entry.media.id,
+        tmdbId: entry.media.tmdbId,
+        title: entry.media.title,
+        originalTitle: entry.media.originalTitle,
+        type: entry.media.type,
+        synopsisFr: entry.media.synopsisFr,
+        posterUrl: entry.media.posterUrl,
+        backdropUrl: entry.media.backdropUrl,
+        releaseDate: entry.media.releaseDate?.toISOString().split("T")[0] || null,
+        expertAgeRec: entry.media.expertAgeRec,
+        communityAgeRec: entry.media.communityAgeRec,
+        genres: entry.media.genres,
+        contentMetrics: entry.media.contentMetrics,
+        streaming: {
+          provider: entry.provider,
+          type: entry.type,
+          link: entry.link,
+          lastChecked: entry.lastChecked,
+        },
+      }))
 
-    // Get total count for this provider
-    const total = await prisma.streamingAvailability.count({
+    // Get total count of unique movies for this provider
+    const uniqueMediaIds = await prisma.streamingAvailability.findMany({
       where: {
         provider: { contains: provider, mode: "insensitive" },
         country: "FR",
         type: type as any,
         media: mediaWhere,
       },
+      select: { mediaId: true },
+      distinct: ["mediaId"],
     })
+    const total = uniqueMediaIds.length
 
     return NextResponse.json({
       provider,
