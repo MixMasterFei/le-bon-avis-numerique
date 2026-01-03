@@ -62,25 +62,28 @@ interface DatabaseMediaItem extends MockMediaItem {
 // Helper to fetch from database directly
 async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> {
   try {
+    // Common include configuration - simplified to avoid potential schema mismatches
+    const includeConfig = {
+      contentMetrics: true,
+      screenshots: {
+        orderBy: { order: "asc" as const },
+        take: 6,
+      },
+      reviews: {
+        include: {
+          user: {
+            select: { id: true, name: true, image: true },
+          },
+        },
+        orderBy: { createdAt: "desc" as const },
+        take: 10,
+      },
+    }
+
     // Try to find by UUID first
     let dbMedia = await prisma.mediaItem.findUnique({
       where: { id },
-      include: {
-        contentMetrics: true,
-        screenshots: {
-          orderBy: { order: "asc" },
-          take: 6,
-        },
-        reviews: {
-          include: {
-            user: {
-              select: { id: true, name: true, image: true },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
-      },
+      include: includeConfig,
     })
 
     // If not found by UUID, try by tmdbId
@@ -89,22 +92,7 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
       if (!isNaN(numericId)) {
         dbMedia = await prisma.mediaItem.findFirst({
           where: { tmdbId: numericId },
-          include: {
-            contentMetrics: true,
-            screenshots: {
-              orderBy: { order: "asc" },
-              take: 6,
-            },
-            reviews: {
-              include: {
-                user: {
-                  select: { id: true, name: true, image: true },
-                },
-              },
-              orderBy: { createdAt: "desc" },
-              take: 10,
-            },
-          },
+          include: includeConfig,
         })
       }
     }
@@ -115,22 +103,7 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
       if (!isNaN(numericId)) {
         dbMedia = await prisma.mediaItem.findFirst({
           where: { igdbId: numericId },
-          include: {
-            contentMetrics: true,
-            screenshots: {
-              orderBy: { order: "asc" },
-              take: 6,
-            },
-            reviews: {
-              include: {
-                user: {
-                  select: { id: true, name: true, image: true },
-                },
-              },
-              orderBy: { createdAt: "desc" },
-              take: 10,
-            },
-          },
+          include: includeConfig,
         })
       }
     }
@@ -195,6 +168,10 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
     }
   } catch (error) {
     console.error("Failed to fetch from database:", error)
+    // Re-throw in development to see the actual error
+    if (process.env.NODE_ENV === "development") {
+      throw error
+    }
     return null
   }
 }
