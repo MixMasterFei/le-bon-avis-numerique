@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { ArrowRight, Play } from "lucide-react"
+import { ArrowRight, Play, RefreshCw, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
 import { type MockMediaItem } from "@/lib/mock-data"
 
-interface DbMovie {
+interface StreamingMovie {
   id: string
   title: string
   originalTitle?: string
@@ -18,12 +17,16 @@ interface DbMovie {
   expertAgeRec?: number | null
   communityAgeRec?: number | null
   genres?: string[]
-  platforms?: string[]
-  topics?: string[]
   contentMetrics?: any
+  streaming?: {
+    provider: string
+    type: string
+    link?: string
+    lastChecked?: string
+  }
 }
 
-function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
+function mapToMockFormat(movie: StreamingMovie): MockMediaItem {
   return {
     id: movie.id,
     title: movie.title,
@@ -36,8 +39,8 @@ function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
     expertAgeRec: movie.expertAgeRec ?? null,
     communityAgeRec: movie.communityAgeRec ?? null,
     genres: movie.genres || [],
-    platforms: movie.platforms || [],
-    topics: movie.topics || [],
+    platforms: movie.streaming ? [movie.streaming.provider] : [],
+    topics: [],
     contentMetrics: movie.contentMetrics || {
       violence: 0,
       sexNudity: 0,
@@ -52,12 +55,12 @@ function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
   }
 }
 
-// French streaming services with their brand colors
+// French streaming services with their brand colors and TMDB provider names
 const streamingServices = [
   {
     id: "netflix",
     name: "Netflix",
-    logo: "/streaming/netflix.svg",
+    searchName: "Netflix",
     color: "bg-red-600",
     hoverColor: "hover:bg-red-700",
     textColor: "text-red-600",
@@ -65,7 +68,7 @@ const streamingServices = [
   {
     id: "disney",
     name: "Disney+",
-    logo: "/streaming/disney.svg",
+    searchName: "Disney Plus",
     color: "bg-blue-700",
     hoverColor: "hover:bg-blue-800",
     textColor: "text-blue-700",
@@ -73,7 +76,7 @@ const streamingServices = [
   {
     id: "prime",
     name: "Prime Video",
-    logo: "/streaming/prime.svg",
+    searchName: "Amazon Prime Video",
     color: "bg-cyan-600",
     hoverColor: "hover:bg-cyan-700",
     textColor: "text-cyan-600",
@@ -81,7 +84,7 @@ const streamingServices = [
   {
     id: "canal",
     name: "Canal+",
-    logo: "/streaming/canal.svg",
+    searchName: "Canal",
     color: "bg-black",
     hoverColor: "hover:bg-gray-800",
     textColor: "text-gray-900",
@@ -89,7 +92,7 @@ const streamingServices = [
   {
     id: "apple",
     name: "Apple TV+",
-    logo: "/streaming/apple.svg",
+    searchName: "Apple TV Plus",
     color: "bg-gray-800",
     hoverColor: "hover:bg-gray-900",
     textColor: "text-gray-800",
@@ -100,32 +103,53 @@ export function StreamingSection() {
   const [selectedService, setSelectedService] = useState(streamingServices[0])
   const [movies, setMovies] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [totalAvailable, setTotalAvailable] = useState(0)
 
   useEffect(() => {
     async function fetchMovies() {
       setLoading(true)
       try {
-        // Fetch movies available on the selected streaming platform
-        // Filter by family-friendly content (maxAge=12)
+        // Fetch movies from the streaming availability table
         const res = await fetch(
-          `/api/db/movies?limit=6&maxAge=12&platforms=${selectedService.name}&requirePoster=true&minQuality=50`
+          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=6&maxAge=12&type=SUBSCRIPTION`
         )
-        if (!res.ok) throw new Error("DB error")
+        if (!res.ok) throw new Error("API error")
         const data = await res.json()
-        if (Array.isArray(data?.movies)) {
-          setMovies(data.movies.map(mapDbToMockFormat))
+
+        if (Array.isArray(data?.movies) && data.movies.length > 0) {
+          setMovies(data.movies.map(mapToMockFormat))
+          setTotalAvailable(data.total || data.movies.length)
+          if (data.lastUpdated) {
+            setLastUpdated(new Date(data.lastUpdated))
+          }
         } else {
           setMovies([])
+          setTotalAvailable(0)
         }
       } catch (error) {
         console.error("Failed to fetch streaming movies:", error)
         setMovies([])
+        setTotalAvailable(0)
       } finally {
         setLoading(false)
       }
     }
     fetchMovies()
   }, [selectedService])
+
+  // Format last updated date
+  const formatLastUpdated = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffHours < 1) return "Mis à jour il y a moins d'une heure"
+    if (diffHours < 24) return `Mis à jour il y a ${diffHours}h`
+    if (diffDays === 1) return "Mis à jour hier"
+    return `Mis à jour il y a ${diffDays} jours`
+  }
 
   return (
     <div>
@@ -139,10 +163,16 @@ export function StreamingSection() {
               Quoi regarder ce soir ?
             </h2>
             <p className="text-gray-600 text-sm">
-              Films adaptes aux enfants sur vos plateformes
+              Films adaptés aux enfants sur vos plateformes
             </p>
           </div>
         </div>
+        {lastUpdated && (
+          <div className="flex items-center gap-1 text-xs text-gray-400">
+            <Clock className="h-3 w-3" />
+            <span>{formatLastUpdated(lastUpdated)}</span>
+          </div>
+        )}
       </div>
 
       {/* Streaming service tabs */}
@@ -180,9 +210,12 @@ export function StreamingSection() {
               <MediaCard key={item.id} media={item} variant="compact" />
             ))}
           </div>
-          <div className="mt-4 text-center">
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-sm text-gray-500">
+              {totalAvailable} films disponibles sur {selectedService.name}
+            </span>
             <Button variant="outline" asChild>
-              <Link href={`/films?platforms=${selectedService.name}`}>
+              <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.name)}`}>
                 Voir tout sur {selectedService.name} <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -190,11 +223,12 @@ export function StreamingSection() {
         </>
       ) : (
         <div className="text-center py-8 bg-gray-50 rounded-xl">
+          <RefreshCw className="h-8 w-8 mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500">
-            Pas encore de films indexes pour {selectedService.name}.
+            Pas encore de données pour {selectedService.name}.
           </p>
           <p className="text-sm text-gray-400 mt-1">
-            Nous ajoutons regulierement de nouveaux contenus.
+            Les données de streaming sont mises à jour quotidiennement.
           </p>
         </div>
       )}
