@@ -94,15 +94,6 @@ const streamingServices = [
     hoverColor: "hover:bg-gray-800",
     textColor: "text-gray-900",
   },
-  {
-    id: "apple",
-    name: "Apple TV+",
-    searchName: "Apple TV Plus",
-    filterName: "Apple TV+",
-    color: "bg-gray-800",
-    hoverColor: "hover:bg-gray-900",
-    textColor: "text-gray-800",
-  },
 ]
 
 export function StreamingSection() {
