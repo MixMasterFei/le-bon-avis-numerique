@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Star, X, User, GraduationCap, Baby } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Star, User, GraduationCap, Baby, Users, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -10,8 +10,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
 
 interface ReviewModalProps {
   open: boolean
@@ -22,6 +23,13 @@ interface ReviewModalProps {
 }
 
 type Role = "PARENT" | "KID" | "EDUCATOR"
+
+interface FamilyMember {
+  id: string
+  name: string
+  avatarEmoji: string
+  birthYear?: number | null
+}
 
 const roleOptions: { value: Role; label: string; icon: typeof User }[] = [
   { value: "PARENT", label: "Parent", icon: User },
@@ -48,6 +56,7 @@ export function ReviewModal({
   mediaTitle,
   onSuccess,
 }: ReviewModalProps) {
+  const { data: session } = useSession()
   const [rating, setRating] = useState(0)
   const [hoveredRating, setHoveredRating] = useState(0)
   const [role, setRole] = useState<Role>("PARENT")
@@ -55,6 +64,33 @@ export function ReviewModal({
   const [comment, setComment] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Family member selection
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
+  const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null)
+  const [loadingFamily, setLoadingFamily] = useState(false)
+
+  // Load family members when modal opens
+  useEffect(() => {
+    if (open && session?.user) {
+      loadFamilyMembers()
+    }
+  }, [open, session])
+
+  const loadFamilyMembers = async () => {
+    setLoadingFamily(true)
+    try {
+      const res = await fetch("/api/user/family")
+      if (res.ok) {
+        const data = await res.json()
+        setFamilyMembers(data.members || [])
+      }
+    } catch {
+      // Silent fail - family members are optional
+    } finally {
+      setLoadingFamily(false)
+    }
+  }
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -75,6 +111,7 @@ export function ReviewModal({
           role,
           ageSuggestion,
           comment: comment.trim() || null,
+          familyMemberId: selectedFamilyMember,
         }),
       })
 
@@ -88,6 +125,7 @@ export function ReviewModal({
       setRole("PARENT")
       setAgeSuggestion(null)
       setComment("")
+      setSelectedFamilyMember(null)
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
@@ -97,15 +135,80 @@ export function ReviewModal({
     }
   }
 
+  // Get display info for reviewer
+  const getReviewerDisplay = () => {
+    if (selectedFamilyMember) {
+      const member = familyMembers.find(m => m.id === selectedFamilyMember)
+      if (member) {
+        return { name: member.name, avatar: member.avatarEmoji }
+      }
+    }
+    return { name: session?.user?.name || "Vous", avatar: null }
+  }
+
+  const reviewerDisplay = getReviewerDisplay()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Donner mon avis</DialogTitle>
           <p className="text-sm text-muted-foreground">{mediaTitle}</p>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Who is reviewing? - Only show if family members exist */}
+          {familyMembers.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-base font-medium flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Qui donne cet avis ?
+              </Label>
+              <div className="flex flex-wrap gap-2">
+                {/* Account owner option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedFamilyMember(null)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-full border transition-colors text-sm",
+                    selectedFamilyMember === null
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted border-input"
+                  )}
+                >
+                  <span className="text-lg">👤</span>
+                  <span>{session?.user?.name || "Moi"}</span>
+                </button>
+
+                {/* Family members */}
+                {familyMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => setSelectedFamilyMember(member.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-full border transition-colors text-sm",
+                      selectedFamilyMember === member.id
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background hover:bg-muted border-input"
+                    )}
+                  >
+                    <span className="text-lg">{member.avatarEmoji}</span>
+                    <span>{member.name}</span>
+                    {member.birthYear && (
+                      <span className="text-xs opacity-70">
+                        ({new Date().getFullYear() - member.birthYear} ans)
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                L&apos;avis sera publié au nom de : <strong>{reviewerDisplay.avatar} {reviewerDisplay.name}</strong>
+              </p>
+            </div>
+          )}
+
           {/* Rating */}
           <div className="space-y-2">
             <Label className="text-base font-medium">Ma note *</Label>
@@ -192,18 +295,17 @@ export function ReviewModal({
             </div>
           </div>
 
-          {/* Comment */}
+          {/* Comment with Rich Text Editor */}
           <div className="space-y-2">
-            <Label htmlFor="comment" className="text-base font-medium">
+            <Label className="text-base font-medium">
               Mon commentaire (optionnel)
             </Label>
-            <Textarea
-              id="comment"
+            <RichTextEditor
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={setComment}
               placeholder="Partagez votre expérience avec ce contenu..."
               rows={4}
-              className="resize-none"
+              maxLength={2000}
             />
           </div>
 
@@ -225,7 +327,14 @@ export function ReviewModal({
               Annuler
             </Button>
             <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Envoi..." : "Publier mon avis"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Envoi...
+                </>
+              ) : (
+                "Publier mon avis"
+              )}
             </Button>
           </div>
         </div>

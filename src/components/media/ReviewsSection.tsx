@@ -9,11 +9,18 @@ interface Review {
   rating: number
   ageSuggestion: number
   comment: string
+  createdAt?: string
+  editedAt?: string | null
   user?: {
     id: string
     name: string | null
     image: string | null
   }
+  familyMember?: {
+    id: string
+    name: string
+    avatarEmoji: string
+  } | null
 }
 
 interface ReviewsSectionProps {

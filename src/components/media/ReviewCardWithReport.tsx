@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { ReportModal } from "./ReportModal"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { renderFormattedText } from "@/components/ui/rich-text-editor"
 
 const roleIcons = {
   PARENT: User,
@@ -192,7 +193,9 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
 
                 {/* Show family icon if this is a family member */}
                 {review.familyMember && (
-                  <Users className="h-3 w-3 text-gray-400" title="Membre de la famille" />
+                  <span title="Membre de la famille">
+                    <Users className="h-3 w-3 text-gray-400" />
+                  </span>
                 )}
               </div>
 
@@ -286,7 +289,10 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
               </div>
             </div>
           ) : review.comment ? (
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{review.comment}</p>
+            <p
+              className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: renderFormattedText(review.comment) }}
+            />
           ) : null}
 
           {/* Footer with date and edited indicator */}

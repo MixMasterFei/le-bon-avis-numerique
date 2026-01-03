@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { mediaId, role, rating, ageSuggestion, comment } = body
+    const { mediaId, role, rating, ageSuggestion, comment, familyMemberId } = body
 
     if (!mediaId || !role || !rating) {
       return NextResponse.json(
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
           rating,
           ageSuggestion,
           comment,
+          familyMemberId: familyMemberId || null,
         },
       })
       return NextResponse.json({ success: true, review: updated, updated: true })
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
         rating,
         ageSuggestion,
         comment,
+        familyMemberId: familyMemberId || null,
       },
     })
 
