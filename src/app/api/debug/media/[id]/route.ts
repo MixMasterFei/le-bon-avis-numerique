@@ -8,8 +8,8 @@ export async function GET(
   const { id } = await params
 
   try {
-    // Try direct UUID lookup
-    const media = await prisma.mediaItem.findUnique({
+    // Test 1: Simple lookup
+    const simpleMedia = await prisma.mediaItem.findUnique({
       where: { id },
       select: {
         id: true,
@@ -19,46 +19,54 @@ export async function GET(
       },
     })
 
-    if (media) {
-      return NextResponse.json({
-        success: true,
-        source: "uuid",
-        media,
-      })
-    }
-
-    // Try tmdbId lookup
-    const numericId = parseInt(id)
-    if (!isNaN(numericId)) {
-      const mediaByTmdb = await prisma.mediaItem.findFirst({
-        where: { tmdbId: numericId },
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          posterUrl: true,
-          tmdbId: true,
+    // Test 2: Full lookup with includes (like the page does)
+    let fullMedia = null
+    let fullError = null
+    try {
+      fullMedia = await prisma.mediaItem.findUnique({
+        where: { id },
+        include: {
+          contentMetrics: true,
+          screenshots: {
+            orderBy: { order: "asc" },
+            take: 6,
+          },
+          reviews: {
+            include: {
+              user: {
+                select: { id: true, name: true, image: true },
+              },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+          },
         },
       })
-
-      if (mediaByTmdb) {
-        return NextResponse.json({
-          success: true,
-          source: "tmdbId",
-          media: mediaByTmdb,
-        })
-      }
+    } catch (e) {
+      fullError = e instanceof Error ? e.message : "Unknown error"
     }
 
     return NextResponse.json({
-      success: false,
-      error: "Not found",
       searchedId: id,
+      simpleQuery: {
+        success: !!simpleMedia,
+        media: simpleMedia,
+      },
+      fullQuery: {
+        success: !!fullMedia,
+        error: fullError,
+        hasMedia: !!fullMedia,
+        title: fullMedia?.title,
+        reviewsCount: fullMedia?.reviews?.length ?? 0,
+        hasContentMetrics: !!fullMedia?.contentMetrics,
+        screenshotsCount: fullMedia?.screenshots?.length ?? 0,
+      },
     })
   } catch (error) {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
       searchedId: id,
     }, { status: 500 })
   }
