@@ -76,9 +76,6 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
             user: {
               select: { id: true, name: true, image: true },
             },
-            familyMember: {
-              select: { id: true, name: true, avatarEmoji: true },
-            },
           },
           orderBy: { createdAt: "desc" },
           take: 10,
@@ -102,9 +99,6 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
               include: {
                 user: {
                   select: { id: true, name: true, image: true },
-                },
-                familyMember: {
-                  select: { id: true, name: true, avatarEmoji: true },
                 },
               },
               orderBy: { createdAt: "desc" },
@@ -131,9 +125,6 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
               include: {
                 user: {
                   select: { id: true, name: true, image: true },
-                },
-                familyMember: {
-                  select: { id: true, name: true, avatarEmoji: true },
                 },
               },
               orderBy: { createdAt: "desc" },
@@ -190,9 +181,9 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
         ageSuggestion: r.ageSuggestion ?? 0,
         comment: r.comment || "",
         createdAt: r.createdAt.toISOString(),
-        editedAt: r.editedAt?.toISOString() || null,
+        editedAt: (r as any).editedAt?.toISOString() || null,
         user: r.user ? { id: r.user.id, name: r.user.name, image: r.user.image } : undefined,
-        familyMember: r.familyMember ? { id: r.familyMember.id, name: r.familyMember.name, avatarEmoji: r.familyMember.avatarEmoji } : null,
+        familyMember: (r as any).familyMember ? { id: (r as any).familyMember.id, name: (r as any).familyMember.name, avatarEmoji: (r as any).familyMember.avatarEmoji } : null,
       })),
       screenshots: dbMedia.screenshots?.map((s) => ({
         id: s.id,
