@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Search, Loader2, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Search, Loader2, Film, Tv, Gamepad2, BookOpen, Database } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,16 +11,31 @@ import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
 type MediaType = "all" | "movie" | "tv" | "game" | "book"
 
-interface SearchResult {
+interface DbMediaItem {
   id: string
+  tmdbId?: number | null
+  igdbId?: number | null
   title: string
-  originalTitle?: string
-  synopsisFr: string | null
-  posterUrl: string
-  releaseDate: string | null
-  rating: number | null
+  originalTitle?: string | null
   type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
-  source?: "TMDB" | "IGDB" | "GOOGLE_BOOKS"
+  synopsisFr: string | null
+  posterUrl: string | null
+  releaseDate: string | null
+  expertAgeRec: number | null
+  communityAgeRec: number | null
+  genres: string[]
+  platforms: string[]
+  topics: string[]
+  contentMetrics?: {
+    violence: number
+    sexNudity: number
+    language: number
+    consumerism: number
+    substanceUse: number
+    positiveMessages: number
+    roleModels: number
+    whatParentsNeedToKnow: string[]
+  } | null
 }
 
 function RechercheContent() {
@@ -30,9 +45,10 @@ function RechercheContent() {
 
   const [query, setQuery] = useState(initialQuery)
   const [activeTab, setActiveTab] = useState<MediaType>("all")
-  const [results, setResults] = useState<SearchResult[]>([])
+  const [results, setResults] = useState<MockMediaItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const [source, setSource] = useState<"db" | "mock">("db")
 
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {
@@ -44,59 +60,64 @@ function RechercheContent() {
     setHasSearched(true)
 
     try {
-      // Primary: aggregated API (movies + tv + games + books)
-      const apiRes = await fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
-      if (apiRes.ok) {
-        const data = await apiRes.json()
-        const apiResults: SearchResult[] = data.results || []
-        if (Array.isArray(apiResults) && apiResults.length > 0) {
-          setResults(apiResults)
+      // Search in local database only
+      const dbRes = await fetch(`/api/db/media?q=${encodeURIComponent(searchQuery)}&limit=50`)
+      if (dbRes.ok) {
+        const data = await dbRes.json()
+        const items: DbMediaItem[] = data.items || []
+
+        if (items.length > 0) {
+          const mapped: MockMediaItem[] = items.map((item) => ({
+            id: item.id,
+            title: item.title,
+            originalTitle: item.originalTitle || undefined,
+            type: item.type,
+            posterUrl: item.posterUrl || "/placeholder-poster.jpg",
+            synopsisFr: item.synopsisFr,
+            releaseDate: item.releaseDate,
+            expertAgeRec: item.expertAgeRec,
+            communityAgeRec: item.communityAgeRec,
+            officialRating: null,
+            genres: item.genres || [],
+            platforms: item.platforms || [],
+            topics: item.topics || [],
+            contentMetrics: item.contentMetrics || {
+              violence: 0,
+              sexNudity: 0,
+              language: 0,
+              consumerism: 0,
+              substanceUse: 0,
+              positiveMessages: 0,
+              roleModels: 0,
+              whatParentsNeedToKnow: [],
+            },
+            reviews: [],
+          }))
+          setResults(mapped)
+          setSource("db")
           return
         }
       }
 
-      // Fallback: search in mock data (demo mode / missing API keys)
-      const mockResults = mockMediaItems.filter((item) => {
-        const q = searchQuery.toLowerCase()
-        return (
-          item.title.toLowerCase().includes(q) ||
-          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
-        )
-      })
-
-      const transformedMock: SearchResult[] = mockResults.map((item) => ({
-        id: item.id,
-        title: item.title,
-        originalTitle: item.originalTitle,
-        synopsisFr: item.synopsisFr,
-        posterUrl: item.posterUrl,
-        releaseDate: item.releaseDate,
-        rating: item.communityAgeRec,
-        type: item.type,
-        source: "TMDB", // demo only
-      }))
-
-      setResults(transformedMock)
-    } catch {
-      // Last resort: keep showing mock results on error
+      // Fallback: search in mock data if database is empty
       const q = searchQuery.toLowerCase()
       const mockResults = mockMediaItems.filter(
         (item) =>
           item.title.toLowerCase().includes(q) ||
           (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
       )
-      setResults(
-        mockResults.map((item) => ({
-          id: item.id,
-          title: item.title,
-          originalTitle: item.originalTitle,
-          synopsisFr: item.synopsisFr,
-          posterUrl: item.posterUrl,
-          releaseDate: item.releaseDate,
-          rating: item.communityAgeRec,
-          type: item.type,
-        }))
+      setResults(mockResults)
+      setSource("mock")
+    } catch {
+      // Last resort: search mock data on error
+      const q = searchQuery.toLowerCase()
+      const mockResults = mockMediaItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
       )
+      setResults(mockResults)
+      setSource("mock")
     } finally {
       setIsLoading(false)
     }
@@ -131,40 +152,6 @@ function RechercheContent() {
 
   const counts = getCounts()
 
-  // Convert SearchResult to MockMediaItem format for MediaCard
-  const convertToMockItem = (result: SearchResult): MockMediaItem => {
-    const mockItem = mockMediaItems.find((m) => m.id === result.id)
-    if (mockItem) return mockItem
-
-    // Create a minimal mock item for API results
-    return {
-      id: result.id,
-      title: result.title,
-      originalTitle: result.originalTitle || result.title,
-      type: result.type,
-      posterUrl: result.posterUrl,
-      synopsisFr: result.synopsisFr || null,
-      releaseDate: result.releaseDate || null,
-      expertAgeRec: null,
-      communityAgeRec: result.rating ?? null,
-      officialRating: null,
-      genres: [],
-      platforms: [],
-      topics: [],
-      contentMetrics: {
-        violence: 0,
-        sexNudity: 0,
-        language: 0,
-        consumerism: 0,
-        substanceUse: 0,
-        positiveMessages: 0,
-        roleModels: 0,
-        whatParentsNeedToKnow: [],
-      },
-      reviews: [],
-    }
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Search Header */}
@@ -176,7 +163,7 @@ function RechercheContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input
               type="search"
-              placeholder="Rechercher un film, une serie, un jeu..."
+              placeholder="Rechercher un film, une série, un jeu..."
               className="pl-11 h-12 text-lg"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -204,10 +191,12 @@ function RechercheContent() {
             <div className="text-center py-16">
               <Search className="h-16 w-16 mx-auto text-gray-300 mb-4" />
               <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                Aucun resultat trouve
+                Aucun résultat trouvé
               </h2>
               <p className="text-gray-500">
-                Essayez avec d&apos;autres termes de recherche
+                Ce contenu n&apos;est pas encore dans notre base de données.
+                <br />
+                Contactez-nous pour demander son ajout !
               </p>
             </div>
           ) : (
@@ -223,7 +212,7 @@ function RechercheContent() {
                   </TabsTrigger>
                   <TabsTrigger value="tv" className="gap-1">
                     <Tv className="h-4 w-4" />
-                    Series ({counts.tv})
+                    Séries ({counts.tv})
                   </TabsTrigger>
                   <TabsTrigger value="game" className="gap-1">
                     <Gamepad2 className="h-4 w-4" />
@@ -236,15 +225,22 @@ function RechercheContent() {
                 </TabsList>
 
                 <TabsContent value={activeTab} className="mt-0">
-                  <p className="text-gray-600 mb-6">
-                    {filteredResults.length} resultat{filteredResults.length !== 1 ? "s" : ""} pour &ldquo;{initialQuery}&rdquo;
-                  </p>
+                  <div className="flex items-center gap-2 mb-6">
+                    <p className="text-gray-600">
+                      {filteredResults.length} résultat{filteredResults.length !== 1 ? "s" : ""} pour &ldquo;{initialQuery}&rdquo;
+                    </p>
+                    {source === "db" && (
+                      <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        <Database className="h-3 w-3" /> Base locale
+                      </span>
+                    )}
+                  </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
                     {filteredResults.map((result) => (
                       <MediaCard
                         key={result.id}
-                        media={convertToMockItem(result)}
+                        media={result}
                       />
                     ))}
                   </div>
@@ -260,10 +256,10 @@ function RechercheContent() {
         <div className="text-center py-16">
           <Search className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            Recherchez des medias
+            Recherchez des médias
           </h2>
           <p className="text-gray-500">
-            Trouvez des films, series, jeux et livres pour toute la famille
+            Trouvez des films, séries, jeux et livres dans notre catalogue
           </p>
         </div>
       )}

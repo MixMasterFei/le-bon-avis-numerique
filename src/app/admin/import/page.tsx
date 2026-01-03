@@ -146,14 +146,30 @@ export default function ImportPage() {
   }
 
   const handleImport = async (item: MediaResult) => {
-    // In a real app, this would save to your database
-    setImported((prev) => new Set(prev).add(item.id))
-    
-    // Here you would call your API to save to database:
-    // await fetch('/api/media/import', {
-    //   method: 'POST',
-    //   body: JSON.stringify(item)
-    // })
+    try {
+      const response = await fetch("/api/admin/import/single", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: item.type,
+          externalId: item.id,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setImported((prev) => new Set(prev).add(item.id))
+        if (data.alreadyExists) {
+          // Already in database, still mark as imported
+          console.log(`${item.title} was already in database`)
+        }
+      } else {
+        setError(`Erreur lors de l'import de ${item.title}: ${data.error}`)
+      }
+    } catch (err) {
+      setError(`Erreur lors de l'import de ${item.title}`)
+    }
   }
 
   const getApiKeyName = () => {

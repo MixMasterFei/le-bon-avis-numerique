@@ -18,31 +18,33 @@ export default function JeuxPage() {
     topics: [],
     searchQuery: "",
   })
-  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
-  const [apiGames, setApiGames] = useState<MockMediaItem[]>([])
-  const [apiTotalPages, setApiTotalPages] = useState(1)
-  const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
-  const [apiLoading, setApiLoading] = useState(false)
+  const [source, setSource] = useState<"db" | "mock">("mock")
+  const [dbGames, setDbGames] = useState<MockMediaItem[]>([])
+  const [dbTotalPages, setDbTotalPages] = useState(1)
+  const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
+  const [dbLoading, setDbLoading] = useState(false)
 
   // Featured games (high quality, separate fetch)
   const [featuredGames, setFeaturedGames] = useState<MockMediaItem[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(true)
 
-  // Priority: 1. Database, 2. External API, 3. Mock data
+  // Fetch games from local database only
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
 
     async function load() {
-      setApiLoading(true)
+      setDbLoading(true)
       try {
-        // First, try to fetch from database
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
         })
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
+        }
+        if (filters.searchQuery && filters.searchQuery.trim().length >= 2) {
+          dbParams.set("q", filters.searchQuery.trim())
         }
 
         const dbRes = await fetch(`/api/db/games?${dbParams}`, { signal: controller.signal })
@@ -78,69 +80,25 @@ export default function JeuxPage() {
 
             if (!cancelled) {
               setSource("db")
-              setApiGames(mapped)
-              setApiTotalPages(dbData.pagination?.totalPages || 1)
-              setApiTotalResults(dbData.pagination?.total || mapped.length)
-              setApiLoading(false)
+              setDbGames(mapped)
+              setDbTotalPages(dbData.pagination?.totalPages || 1)
+              setDbTotalResults(dbData.pagination?.total || mapped.length)
+              setDbLoading(false)
             }
             return
           }
         }
 
-        // Fallback to external API if database is empty
-        const endpoint = filters.maxAge <= 12 ? "/api/games/family" : "/api/games/popular"
-        const res = await fetch(endpoint, { signal: controller.signal })
-        if (!res.ok) {
-          setSource("mock")
-          return
-        }
-        const data = await res.json()
-        const games = Array.isArray(data?.games) ? data.games : []
-
-        if (games.length === 0) {
-          setSource("mock")
-          return
-        }
-
-        const mapped: MockMediaItem[] = games.map((g: Record<string, unknown>) => ({
-          id: String(g.id),
-          title: String(g.title || ""),
-          originalTitle: undefined,
-          type: "GAME" as const,
-          releaseDate: g.releaseDate ? String(g.releaseDate) : null,
-          posterUrl: String(g.posterUrl || ""),
-          synopsisFr: g.synopsisFr ? String(g.synopsisFr) : null,
-          officialRating: g.officialRating ? String(g.officialRating) : null,
-          expertAgeRec: typeof g.expertAgeRec === "number" ? g.expertAgeRec : null,
-          communityAgeRec: typeof g.rating === "number" ? g.rating : null,
-          genres: Array.isArray(g.genres) ? g.genres.map(String) : [],
-          platforms: Array.isArray(g.platforms) ? g.platforms.map(String) : [],
-          topics: [],
-          contentMetrics: {
-            violence: 0,
-            sexNudity: 0,
-            language: 0,
-            consumerism: 0,
-            substanceUse: 0,
-            positiveMessages: 0,
-            roleModels: 0,
-            whatParentsNeedToKnow: [],
-          },
-          reviews: [],
-        }))
-
+        // Fallback to mock data if database is empty
         if (!cancelled) {
-          setSource("api")
-          setApiGames(mapped)
-          setApiTotalPages(1)
-          setApiTotalResults(mapped.length)
+          setSource("mock")
         }
       } catch {
         if (!cancelled) {
           setSource("mock")
         }
       } finally {
-        if (!cancelled) setApiLoading(false)
+        if (!cancelled) setDbLoading(false)
       }
     }
 
@@ -150,7 +108,7 @@ export default function JeuxPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge])
+  }, [currentPage, filters.maxAge, filters.searchQuery])
 
   // Fetch featured games (high quality, sorted by quality score)
   useEffect(() => {
@@ -191,21 +149,21 @@ export default function JeuxPage() {
   }, [filters.maxAge])
 
   const filteredGames = useMemo(() => {
-    // Start with appropriate source
-    let items = (source === "db" || source === "api")
-      ? apiGames
+    // Use database games if available
+    let items = source === "db"
+      ? dbGames
       : mockMediaItems.filter((m) => m.type === "GAME")
 
-    // Apply search filter (client-side for all sources)
-    if (filters.searchQuery && filters.searchQuery.trim()) {
-      const query = filters.searchQuery.toLowerCase().trim()
-      items = items.filter((m) =>
-        m.title.toLowerCase().includes(query)
-      )
-    }
-
-    // For mock data, apply additional filters
+    // For mock data, apply client-side filters
     if (source === "mock") {
+      // Apply search filter
+      if (filters.searchQuery && filters.searchQuery.trim()) {
+        const query = filters.searchQuery.toLowerCase().trim()
+        items = items.filter((m) =>
+          m.title.toLowerCase().includes(query)
+        )
+      }
+
       if (filters.maxAge < 18) {
         items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
       }
@@ -230,8 +188,8 @@ export default function JeuxPage() {
       }
     }
 
-    // For DB/API data, also apply platform filter client-side
-    if ((source === "db" || source === "api") && filters.platforms.length > 0) {
+    // For DB data, also apply platform filter client-side
+    if (source === "db" && filters.platforms.length > 0) {
       items = items.filter((m) =>
         m.platforms.some((p) =>
           filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
@@ -240,7 +198,7 @@ export default function JeuxPage() {
     }
 
     return items
-  }, [apiGames, filters, source])
+  }, [dbGames, filters, source])
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters)
@@ -249,15 +207,15 @@ export default function JeuxPage() {
 
   // Get all available titles for autocomplete
   const availableTitles = useMemo(() => {
-    const titles = (source === "db" || source === "api")
-      ? apiGames.map(g => g.title)
+    const titles = source === "db"
+      ? dbGames.map(g => g.title)
       : mockMediaItems.filter(m => m.type === "GAME").map(g => g.title)
     return [...new Set(titles)] // Remove duplicates
-  }, [apiGames, source])
+  }, [dbGames, source])
 
-  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
+  const totalPages = source === "db" ? dbTotalPages : Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
   const paginatedGames = useMemo(() => {
-    if (source === "db" || source === "api") return filteredGames
+    if (source === "db") return filteredGames
     const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filteredGames.slice(start, start + ITEMS_PER_PAGE)
   }, [filteredGames, currentPage, source])
@@ -269,10 +227,10 @@ export default function JeuxPage() {
           <div className="p-3 bg-green-500 rounded-xl text-white">
             <Gamepad2 className="h-6 w-6" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Jeux Video</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Jeux Vidéo</h1>
         </div>
         <p className="text-gray-600">
-          Explorez notre selection de jeux video avec classifications PEGI et avis de la communaute.
+          Explorez notre sélection de jeux vidéo avec classifications PEGI et avis de la communauté.
         </p>
       </div>
 
@@ -291,8 +249,8 @@ export default function JeuxPage() {
                 <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
                   <Star className="h-4 w-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900">Selection qualite</h2>
-                <span className="text-xs text-gray-500">Jeux bien notes et adaptes aux familles</span>
+                <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
+                <span className="text-xs text-gray-500">Jeux bien notés et adaptés aux familles</span>
               </div>
               {featuredLoading ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
@@ -313,10 +271,12 @@ export default function JeuxPage() {
           {/* All Games Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gray-200 rounded-lg text-gray-600">
+              <div className="p-1.5 rounded-lg bg-gray-200 text-gray-600">
                 <Clock className="h-4 w-4" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900">Tous les jeux</h2>
+              <h2 className="text-lg font-bold text-gray-900">
+                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : "Tous les jeux"}
+              </h2>
               {source === "db" && (
                 <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
                   <Database className="h-3 w-3" /> Base locale
@@ -324,17 +284,16 @@ export default function JeuxPage() {
               )}
             </div>
             <p className="text-sm text-gray-500">
-              {((source === "db" || source === "api") ? apiTotalResults ?? filteredGames.length : filteredGames.length)} jeu
-              {((source === "db" || source === "api") ? apiTotalResults ?? filteredGames.length : filteredGames.length) !== 1 ? "x" : ""}
+              {(source === "db" ? dbTotalResults ?? filteredGames.length : filteredGames.length)} jeu{(source === "db" ? dbTotalResults ?? filteredGames.length : filteredGames.length) !== 1 ? "x" : ""}
               {totalPages > 1 && ` • Page ${currentPage}/${totalPages}`}
             </p>
           </div>
 
-          {apiLoading ? (
+          {dbLoading ? (
             <div className="text-center py-16 text-gray-500">
               <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50 animate-pulse" />
               <p className="text-lg font-medium">Chargement...</p>
-              <p className="text-sm">Recuperation du catalogue</p>
+              <p className="text-sm">Récupération du catalogue</p>
             </div>
           ) : paginatedGames.length > 0 ? (
             <>
@@ -354,8 +313,8 @@ export default function JeuxPage() {
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucun jeu trouve</p>
-              <p className="text-sm">Essayez de modifier vos filtres</p>
+              <p className="text-lg font-medium">Aucun jeu trouvé</p>
+              <p className="text-sm">Essayez de modifier vos filtres ou importez plus de jeux</p>
             </div>
           )}
         </div>
@@ -363,13 +322,3 @@ export default function JeuxPage() {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
