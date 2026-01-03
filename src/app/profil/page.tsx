@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { redirect, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle } from "lucide-react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle, Camera } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -38,8 +38,17 @@ export default function ProfilPage() {
   // Profile edit state
   const [editProfileOpen, setEditProfileOpen] = useState(false)
   const [profileName, setProfileName] = useState("")
+  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null)
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+
+  // Preset avatars for selection
+  const avatarOptions = [
+    "👨‍👩‍👧‍👦", "👨‍👩‍👦", "👩‍👧", "👨‍👦", "👪",
+    "🧑", "👩", "👨", "👧", "👦",
+    "🦸", "🦹", "🧙", "🧝", "🧚",
+    "🐻", "🦊", "🐱", "🐶", "🦁",
+  ]
 
   // Email notifications state
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -93,10 +102,14 @@ export default function ProfilPage() {
 
   const isAdmin = session.user.role === "ADMIN"
 
-  // Initialize profile name when session loads
+  // Initialize profile data when session loads
   useEffect(() => {
     if (session?.user?.name) {
       setProfileName(session.user.name)
+    }
+    // Check if image is an emoji (avatar)
+    if (session?.user?.image && !session.user.image.startsWith("http")) {
+      setSelectedAvatar(session.user.image)
     }
   }, [session])
 
@@ -107,11 +120,14 @@ export default function ProfilPage() {
       const res = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: profileName }),
+        body: JSON.stringify({
+          name: profileName,
+          image: selectedAvatar || undefined,
+        }),
       })
       if (res.ok) {
         setProfileSaved(true)
-        // Trigger session update to refresh the name in the JWT
+        // Trigger session update to refresh the data in the JWT
         await update()
         setTimeout(() => {
           setEditProfileOpen(false)
@@ -163,11 +179,16 @@ export default function ProfilPage() {
       <Card className="mb-8">
         <CardContent className="p-8">
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {session.user.image ? (
+            {/* Avatar - emoji or image */}
+            {session.user.image && !session.user.image.startsWith("http") ? (
+              <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-5xl">
+                {session.user.image}
+              </div>
+            ) : session.user.image ? (
               <img
                 src={session.user.image}
                 alt={session.user.name || "Profil"}
-                className="h-24 w-24 rounded-full"
+                className="h-24 w-24 rounded-full object-cover"
               />
             ) : (
               <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
@@ -203,23 +224,69 @@ export default function ProfilPage() {
               <DialogTrigger asChild>
                 <Button variant="outline">Modifier le profil</Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Modifier le profil</DialogTitle>
                   <DialogDescription>
                     Modifiez les informations de votre profil
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-6 py-4">
+                  {/* Avatar Selection */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <Camera className="h-4 w-4" />
+                      Avatar
+                    </Label>
+                    <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg">
+                      {avatarOptions.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => setSelectedAvatar(emoji)}
+                          className={`w-10 h-10 rounded-full text-xl flex items-center justify-center transition-all hover:scale-110 ${
+                            selectedAvatar === emoji
+                              ? "bg-primary/20 ring-2 ring-primary"
+                              : "bg-white hover:bg-gray-100"
+                          }`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                      {/* Option to clear/use default */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAvatar(null)}
+                        className={`w-10 h-10 rounded-full text-xs flex items-center justify-center transition-all hover:scale-110 ${
+                          selectedAvatar === null
+                            ? "bg-primary/20 ring-2 ring-primary"
+                            : "bg-white hover:bg-gray-100 border-2 border-dashed border-gray-300"
+                        }`}
+                        title="Aucun avatar"
+                      >
+                        <User className="h-5 w-5 text-gray-400" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Choisissez un emoji comme avatar ou laissez vide pour afficher vos initiales
+                    </p>
+                  </div>
+
+                  {/* Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="profileName">Nom</Label>
+                    <Label htmlFor="profileName">Nom d&apos;affichage</Label>
                     <Input
                       id="profileName"
                       value={profileName}
                       onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="Votre nom"
+                      placeholder="Votre nom ou pseudo"
                     />
+                    <p className="text-xs text-gray-500">
+                      Ce nom sera affiché sur vos avis et commentaires
+                    </p>
                   </div>
+
+                  {/* Email (read-only) */}
                   <div className="space-y-2">
                     <Label htmlFor="profileEmail">Email</Label>
                     <Input
@@ -230,7 +297,7 @@ export default function ProfilPage() {
                       className="bg-gray-50"
                     />
                     <p className="text-xs text-gray-500">
-                      L&apos;email ne peut pas etre modifie
+                      L&apos;email ne peut pas être modifié
                     </p>
                   </div>
                 </div>

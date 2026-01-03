@@ -103,6 +103,55 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { reviewId, comment } = body
+
+    if (!reviewId) {
+      return NextResponse.json({ error: "reviewId requis" }, { status: 400 })
+    }
+
+    // Find the review and verify ownership
+    const review = await prisma.review.findUnique({
+      where: { id: reviewId },
+    })
+
+    if (!review) {
+      return NextResponse.json({ error: "Avis non trouvé" }, { status: 404 })
+    }
+
+    if (review.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Vous ne pouvez modifier que vos propres avis" },
+        { status: 403 }
+      )
+    }
+
+    // Update the review with editedAt timestamp
+    const updated = await prisma.review.update({
+      where: { id: reviewId },
+      data: {
+        comment: comment?.trim() || review.comment,
+        editedAt: new Date(),
+      },
+    })
+
+    return NextResponse.json({ success: true, review: updated })
+  } catch (error) {
+    console.error("Edit review error:", error)
+    return NextResponse.json(
+      { error: "Erreur lors de la modification" },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth()

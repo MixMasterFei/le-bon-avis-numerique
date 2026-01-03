@@ -194,22 +194,26 @@ model ContentMetrics {
 }
 
 model Review {
-  id            String       @id @default(uuid())
-  userId        String?      @map("user_id")
-  mediaId       String       @map("media_id")
-  role          ReviewerRole
-  rating        Int // 1-5 stars
-  ageSuggestion Int?         @map("age_suggestion")
-  comment       String?      @db.Text
-  isVerified    Boolean      @default(false) @map("is_verified")
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id              String        @id @default(uuid())
+  userId          String?       @map("user_id")
+  mediaId         String        @map("media_id")
+  familyMemberId  String?       @map("family_member_id") // Optional: which family member wrote this
+  role            ReviewerRole
+  rating          Int // 1-5 stars
+  ageSuggestion   Int?          @map("age_suggestion")
+  comment         String?       @db.Text
+  isVerified      Boolean       @default(false) @map("is_verified")
+  editedAt        DateTime?     @map("edited_at") // Null if never edited
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  user  User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  media        MediaItem     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  familyMember FamilyMember? @relation(fields: [familyMemberId], references: [id], onDelete: SetNull)
 
   @@index([mediaId])
   @@index([userId])
+  @@index([familyMemberId])
   @@map("reviews")
 }
 
@@ -317,6 +321,7 @@ model FamilyMember {
 
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   reactions MediaReaction[]
+  reviews   Review[]
 
   @@index([userId])
   @@map("family_members")

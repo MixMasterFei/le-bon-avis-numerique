@@ -16,12 +16,20 @@
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
   --color-ring: #1e40af;
-  
+
+  /* Popover/Dropdown colors */
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+
+  /* Destructive colors */
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+
   /* French Brand Colors */
   --color-safe: #16a34a;
   --color-caution: #ea580c;
   --color-danger: #dc2626;
-  
+
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-heading: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }

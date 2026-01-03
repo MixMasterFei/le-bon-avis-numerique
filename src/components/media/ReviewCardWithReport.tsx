@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Star, User, GraduationCap, Baby, Flag, MoreVertical, Trash2 } from "lucide-react"
+import Image from "next/image"
+import { Star, User, GraduationCap, Baby, Flag, MoreVertical, Trash2, Pencil, Users, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,29 +43,50 @@ interface Review {
   rating: number
   ageSuggestion: number
   comment: string
+  createdAt?: string
+  editedAt?: string | null
   user?: {
     id: string
     name: string | null
     image: string | null
   }
+  familyMember?: {
+    id: string
+    name: string
+    avatarEmoji: string
+  } | null
 }
 
 interface ReviewCardWithReportProps {
   review: Review
   className?: string
   onDeleted?: () => void
+  onUpdated?: () => void
 }
 
-export function ReviewCardWithReport({ review, className, onDeleted }: ReviewCardWithReportProps) {
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  })
+}
+
+export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }: ReviewCardWithReportProps) {
   const Icon = roleIcons[review.role]
   const { data: session } = useSession()
   const router = useRouter()
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedComment, setEditedComment] = useState(review.comment)
+  const [isSaving, setIsSaving] = useState(false)
 
   const isOwnReview = session?.user?.id === review.user?.id
   const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "MODERATOR"
   const canDelete = isOwnReview || isAdmin
+  const canEdit = isOwnReview
 
   const handleReportClick = () => {
     if (!session?.user) {
@@ -86,7 +109,6 @@ export function ReviewCardWithReport({ review, className, onDeleted }: ReviewCar
 
       if (res.ok) {
         onDeleted?.()
-        // Reload to refresh the reviews list
         window.location.reload()
       } else {
         const data = await res.json()
@@ -100,6 +122,53 @@ export function ReviewCardWithReport({ review, className, onDeleted }: ReviewCar
     }
   }
 
+  const handleEditClick = () => {
+    setEditedComment(review.comment)
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditedComment(review.comment)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editedComment.trim()) {
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const res = await fetch(`/api/user/review`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewId: review.id,
+          comment: editedComment.trim(),
+        }),
+      })
+
+      if (res.ok) {
+        setIsEditing(false)
+        onUpdated?.()
+        window.location.reload()
+      } else {
+        const data = await res.json()
+        alert(data.error || "Erreur lors de la modification")
+      }
+    } catch (error) {
+      console.error("Failed to update review:", error)
+      alert("Erreur lors de la modification")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Get display name
+  const displayName = review.familyMember?.name || review.user?.name || "Anonyme"
+  const avatarEmoji = review.familyMember?.avatarEmoji
+  const userImage = review.user?.image
+
   return (
     <>
       <Card className={cn("", className)}>
@@ -107,20 +176,42 @@ export function ReviewCardWithReport({ review, className, onDeleted }: ReviewCar
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Badge className={cn("gap-1", roleColors[review.role])}>
-                <Icon className="h-3 w-3" />
-                {roleLabels[review.role]}
-              </Badge>
-              {review.user?.name && (
-                <span className="text-sm text-gray-500">
-                  par {review.user.name}
-                  {isOwnReview && <span className="text-primary ml-1">(vous)</span>}
+              {/* Avatar */}
+              <div className="flex items-center gap-1.5">
+                {avatarEmoji ? (
+                  <span className="text-lg" title={displayName}>{avatarEmoji}</span>
+                ) : userImage ? (
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden">
+                    <Image src={userImage} alt={displayName} fill className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="h-3.5 w-3.5 text-gray-500" />
+                  </div>
+                )}
+
+                {/* Show family icon if this is a family member */}
+                {review.familyMember && (
+                  <Users className="h-3 w-3 text-gray-400" title="Membre de la famille" />
+                )}
+              </div>
+
+              {/* Name and role */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {displayName}
+                  {isOwnReview && <span className="text-primary ml-1 font-normal">(vous)</span>}
                 </span>
-              )}
+                <Badge className={cn("gap-1 text-xs", roleColors[review.role])}>
+                  <Icon className="h-3 w-3" />
+                  {roleLabels[review.role]}
+                </Badge>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+              {/* Stars */}
+              <div className="flex items-center gap-0.5">
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
@@ -134,53 +225,92 @@ export function ReviewCardWithReport({ review, className, onDeleted }: ReviewCar
                 ))}
               </div>
 
-              {/* Actions dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canDelete && (
-                    <>
+              {/* Actions dropdown - only show if there are actions */}
+              {(canDelete || canEdit || !isOwnReview) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-white">
+                    {canEdit && (
+                      <DropdownMenuItem onClick={handleEditClick}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Modifier
+                      </DropdownMenuItem>
+                    )}
+                    {canDelete && (
                       <DropdownMenuItem
                         onClick={handleDeleteClick}
                         disabled={isDeleting}
-                        className="text-red-600 focus:text-red-600"
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         {isDeleting ? "Suppression..." : "Supprimer"}
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  {!isOwnReview && (
-                    <DropdownMenuItem
-                      onClick={handleReportClick}
-                      className="text-orange-600 focus:text-orange-600"
-                    >
-                      <Flag className="h-4 w-4 mr-2" />
-                      Signaler
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    )}
+                    {(canEdit || canDelete) && !isOwnReview && <DropdownMenuSeparator />}
+                    {!isOwnReview && (
+                      <DropdownMenuItem
+                        onClick={handleReportClick}
+                        className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                      >
+                        <Flag className="h-4 w-4 mr-2" />
+                        Signaler
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
           </div>
 
-          {/* Comment */}
-          {review.comment && (
-            <p className="text-sm text-gray-700 leading-relaxed">{review.comment}</p>
-          )}
-
-          {/* Age Suggestion */}
-          {review.ageSuggestion > 0 && (
-            <div className="flex items-center justify-between pt-2 border-t text-sm">
-              <span className="text-gray-500">Âge recommandé :</span>
-              <span className="font-semibold text-primary">{review.ageSuggestion}+ ans</span>
+          {/* Comment - Edit mode or display mode */}
+          {isEditing ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                placeholder="Votre commentaire..."
+                rows={3}
+                className="resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={handleCancelEdit} disabled={isSaving}>
+                  Annuler
+                </Button>
+                <Button size="sm" onClick={handleSaveEdit} disabled={isSaving || !editedComment.trim()}>
+                  {isSaving ? "Enregistrement..." : "Enregistrer"}
+                </Button>
+              </div>
             </div>
-          )}
+          ) : review.comment ? (
+            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{review.comment}</p>
+          ) : null}
+
+          {/* Footer with date and edited indicator */}
+          <div className="flex items-center justify-between pt-2 border-t text-sm">
+            <div className="flex items-center gap-3 text-gray-400 text-xs">
+              {review.createdAt && (
+                <span>{formatDate(review.createdAt)}</span>
+              )}
+              {review.editedAt && (
+                <span className="flex items-center gap-1 italic">
+                  <Clock className="h-3 w-3" />
+                  modifié le {formatDate(review.editedAt)}
+                </span>
+              )}
+            </div>
+
+            {/* Age Suggestion */}
+            {review.ageSuggestion > 0 && (
+              <div className="flex items-center gap-1">
+                <span className="text-gray-500">Âge :</span>
+                <span className="font-semibold text-primary">{review.ageSuggestion}+</span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
