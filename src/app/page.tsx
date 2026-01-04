@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
 import { FeaturedMovies } from "@/components/home/FeaturedMovies"
-import { RecentMovies } from "@/components/home/RecentMovies"
 import { FamilyImageSection, TestimonialsSection } from "@/components/home/FamilyImageSection"
 import { FamilyRecommendations } from "@/components/home/FamilyRecommendations"
 import { FamilyMovieNight } from "@/components/home/FamilyMovieNight"
@@ -136,13 +135,6 @@ export default function HomePage() {
             <FamilyRecommendations />
             <FamilyMovieNight />
           </div>
-        </div>
-      </section>
-
-      {/* Recent Movies Section */}
-      <section className="py-8 bg-white">
-        <div className="container mx-auto px-4">
-          <RecentMovies />
         </div>
       </section>
 
