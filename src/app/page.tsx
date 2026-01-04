@@ -39,7 +39,7 @@ export default function HomePage() {
             {/* Trust Badge */}
             <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-white/15 backdrop-blur-sm rounded-full border border-white/20">
               <Shield className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-medium">Le guide independant pour les parents numeriques</span>
+              <span className="text-sm font-medium">Le guide de référence pour choisir les médias de vos enfants</span>
             </div>
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
@@ -47,11 +47,6 @@ export default function HomePage() {
               <span className="text-emerald-400"> les parents </span>
               peuvent faire confiance
             </h1>
-
-            <p className="text-base md:text-lg text-blue-100 mb-5 max-w-2xl mx-auto">
-              Des avis experts et independants sur les films, series, jeux et livres.
-              Nous ne sommes pas payes par les studios.
-            </p>
 
             {/* Search Bar */}
             <div className="max-w-xl mx-auto relative z-50">
@@ -100,6 +95,9 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Family Image Section */}
+      <FamilyImageSection />
+
       {/* Streaming Section - What's on Netflix/Disney+ */}
       <section className="py-8 bg-white">
         <div className="container mx-auto px-4">
@@ -137,9 +135,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Family Image Section */}
-      <FamilyImageSection />
 
       {/* Trust Banner - NEW */}
       <TrustBanner />
