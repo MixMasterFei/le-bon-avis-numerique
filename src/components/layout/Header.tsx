@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Users, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper } from "lucide-react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Users, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -196,6 +196,15 @@ export function Header() {
                     />
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
                       <Link
+                        href="/chez-vous"
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Home className="h-4 w-4" />
+                        Chez vous
+                      </Link>
+                      <hr className="my-1" />
+                      <Link
                         href="/profil"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                         onClick={() => setIsUserMenuOpen(false)}
@@ -329,6 +338,14 @@ export function Header() {
             {session?.user ? (
               <>
                 <hr className="my-2" />
+                <Link
+                  href="/chez-vous"
+                  className="flex items-center gap-3 px-4 py-3 font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Home className="h-5 w-5" />
+                  Chez vous
+                </Link>
                 <Link
                   href="/profil"
                   className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
