@@ -42,12 +42,6 @@ export default function HomePage() {
               <span className="text-sm font-medium">Le guide de référence pour choisir les médias de vos enfants</span>
             </div>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-3 leading-tight">
-              Les evaluations que
-              <span className="text-emerald-400"> les parents </span>
-              peuvent faire confiance
-            </h1>
-
             {/* Search Bar */}
             <div className="max-w-xl mx-auto relative z-50">
               <HeroSearch />
