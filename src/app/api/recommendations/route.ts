@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// GET /api/recommendations?familyMemberId=xxx - Get AI-based recommendations for a family member
+// GET /api/recommendations?familyMemberId=xxx - Get recommendations for a family member
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       ? currentYear - familyMember.birthYear
       : null
 
-    // Collect genres from loved/liked media
+    // Collect data from loved/liked media
     const lovedGenres: Record<string, number> = {}
     const lovedMediaIds = new Set<string>()
     const mediaTypes: Set<string> = new Set()
@@ -88,55 +88,146 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
       .map(([genre]) => genre)
 
-    // Build age filter - recommend within appropriate age range
-    let ageFilter = {}
-    if (childAge !== null) {
-      // Recommend for their age ± 2 years
-      ageFilter = {
+    // Build age filter
+    const ageFilter = childAge !== null ? {
+      OR: [
+        { expertAgeRec: null },
+        { expertAgeRec: { lte: childAge + 2 } },
+      ],
+    } : {}
+
+    // Step 1: Try to find similar media from MediaSimilarity table
+    const lovedMediaIdsArray = Array.from(lovedMediaIds)
+    const similarMedia = await prisma.mediaSimilarity.findMany({
+      where: {
         OR: [
-          { expertAgeRec: null },
-          { expertAgeRec: { lte: childAge + 1 } },
+          { mediaIdA: { in: lovedMediaIdsArray } },
+          { mediaIdB: { in: lovedMediaIdsArray } },
         ],
+      },
+      include: {
+        mediaA: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            posterUrl: true,
+            genres: true,
+            expertAgeRec: true,
+            dataQualityScore: true,
+          },
+        },
+        mediaB: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            posterUrl: true,
+            genres: true,
+            expertAgeRec: true,
+            dataQualityScore: true,
+          },
+        },
+      },
+      orderBy: {
+        similarityScore: "desc",
+      },
+      take: 20,
+    })
+
+    // Extract unique similar items (not already in loved list)
+    const similarItems = new Map<string, typeof similarMedia[0]["mediaA"] & { similarityScore: number }>()
+    for (const sim of similarMedia) {
+      const item = lovedMediaIds.has(sim.mediaIdA) ? sim.mediaB : sim.mediaA
+      if (!lovedMediaIds.has(item.id) && !similarItems.has(item.id)) {
+        // Check age appropriateness
+        if (childAge === null || item.expertAgeRec === null || item.expertAgeRec <= childAge + 2) {
+          similarItems.set(item.id, { ...item, similarityScore: sim.similarityScore })
+        }
       }
     }
 
-    // Find similar media
-    const recommendations = await prisma.mediaItem.findMany({
-      where: {
-        id: { notIn: Array.from(lovedMediaIds) }, // Exclude already rated
-        type: { in: Array.from(mediaTypes) as ("MOVIE" | "TV" | "GAME" | "BOOK" | "APP")[] },
-        genres: { hasSome: topGenres }, // At least one matching genre
-        ...ageFilter,
-      },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        posterUrl: true,
-        genres: true,
-        expertAgeRec: true,
-        releaseDate: true,
-      },
-      orderBy: [
-        { expertAgeRec: "asc" }, // Prioritize age-appropriate content
-        { releaseDate: "desc" }, // Then newer content
-      ],
-      take: 12,
-    })
+    // Step 2: If not enough similar items, fall back to genre-based recommendations
+    let recommendations: Array<{
+      id: string
+      title: string
+      type: string
+      posterUrl: string | null
+      genres: string[]
+      expertAgeRec: number | null
+      score: number
+    }> = []
 
-    // Score recommendations by genre match
-    const scoredRecommendations = recommendations.map((media) => {
-      let score = 0
-      for (const genre of media.genres) {
-        if (lovedGenres[genre]) {
-          score += lovedGenres[genre]
+    // Add similar items first (they're the best matches)
+    for (const [, item] of similarItems) {
+      recommendations.push({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        posterUrl: item.posterUrl,
+        genres: item.genres,
+        expertAgeRec: item.expertAgeRec,
+        score: 100 + (item.similarityScore * 50) + (item.dataQualityScore / 10), // High base score for similar items
+      })
+    }
+
+    // If we need more recommendations, do genre-based search
+    if (recommendations.length < 12) {
+      const excludeIds = [...lovedMediaIdsArray, ...recommendations.map(r => r.id)]
+
+      const genreBasedMedia = await prisma.mediaItem.findMany({
+        where: {
+          id: { notIn: excludeIds },
+          type: { in: Array.from(mediaTypes) as ("MOVIE" | "TV" | "GAME" | "BOOK" | "APP")[] },
+          genres: { hasSome: topGenres },
+          // Prioritize quality content - require minimum quality score for mainstream feel
+          dataQualityScore: { gte: 30 },
+          ...ageFilter,
+        },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          posterUrl: true,
+          genres: true,
+          expertAgeRec: true,
+          dataQualityScore: true,
+          releaseDate: true,
+        },
+        orderBy: [
+          { dataQualityScore: "desc" }, // Prioritize mainstream/quality content
+          { releaseDate: "desc" },
+        ],
+        take: 20,
+      })
+
+      // Score by genre match + quality
+      for (const media of genreBasedMedia) {
+        let genreScore = 0
+        for (const genre of media.genres) {
+          if (lovedGenres[genre]) {
+            genreScore += lovedGenres[genre]
+          }
         }
-      }
-      return { ...media, score }
-    })
 
-    // Sort by score and take top recommendations
-    scoredRecommendations.sort((a, b) => b.score - a.score)
+        // Combine genre match score with quality score
+        const totalScore = genreScore * 10 + (media.dataQualityScore / 2)
+
+        recommendations.push({
+          id: media.id,
+          title: media.title,
+          type: media.type,
+          posterUrl: media.posterUrl,
+          genres: media.genres,
+          expertAgeRec: media.expertAgeRec,
+          score: totalScore,
+        })
+      }
+    }
+
+    // Sort by score and take top 8
+    recommendations.sort((a, b) => b.score - a.score)
+    const finalRecommendations = recommendations.slice(0, 8).map(({ score, ...media }) => media)
 
     return NextResponse.json({
       familyMember: {
@@ -145,7 +236,7 @@ export async function GET(request: NextRequest) {
         avatarEmoji: familyMember.avatarEmoji,
         birthYear: familyMember.birthYear,
       },
-      recommendations: scoredRecommendations.slice(0, 8).map(({ score, ...media }) => media),
+      recommendations: finalRecommendations,
       basedOn: {
         genres: topGenres,
         lovedCount: familyMember.reactions.filter((r) => r.reaction === "LOVED").length,
