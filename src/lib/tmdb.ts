@@ -590,6 +590,60 @@ export function getProviderLogoUrl(logoPath: string, size: "w45" | "w92" | "w154
 }
 
 // ============================================
+// PERSON TYPES & API
+// ============================================
+
+export interface TMDBPerson {
+  id: number
+  name: string
+  known_for_department: string
+  profile_path: string | null
+  popularity: number
+  known_for: TMDBMovie[]
+}
+
+export interface TMDBPersonDetails {
+  id: number
+  name: string
+  biography: string
+  birthday: string | null
+  deathday: string | null
+  place_of_birth: string | null
+  profile_path: string | null
+  known_for_department: string
+}
+
+export interface TMDBPersonCredits {
+  id: number
+  cast: (TMDBMovie & { character: string })[]
+  crew: (TMDBMovie & { job: string; department: string })[]
+}
+
+/**
+ * Search for people (actors, directors, etc.)
+ */
+export async function searchPerson(query: string, page = 1) {
+  return tmdbFetch<TMDBSearchResult<TMDBPerson>>("/search/person", {
+    query,
+    page: page.toString(),
+  })
+}
+
+/**
+ * Get person details
+ */
+export async function getPersonDetails(personId: number): Promise<TMDBPersonDetails> {
+  return tmdbFetch<TMDBPersonDetails>(`/person/${personId}`)
+}
+
+/**
+ * Get person's movie credits (films they directed or acted in)
+ */
+export async function getPersonMovieCredits(personId: number): Promise<TMDBPersonCredits> {
+  return tmdbFetch<TMDBPersonCredits>(`/person/${personId}/movie_credits`)
+}
+
+// ============================================
 // IMAGES API
 // ============================================
 

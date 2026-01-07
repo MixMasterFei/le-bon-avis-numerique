@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Search, Plus, Check, Film, Tv, Gamepad2, BookOpen, Loader2, AlertCircle, ExternalLink } from "lucide-react"
+import { Search, Plus, Check, Film, Tv, Gamepad2, BookOpen, Loader2, AlertCircle, ExternalLink, User, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,6 +21,15 @@ interface MediaResult {
   officialRating?: string | null
   author?: string | null
   developer?: string | null
+  role?: string
+}
+
+interface PersonResult {
+  id: string
+  name: string
+  department: string
+  profileUrl: string
+  knownFor: string
 }
 
 type MediaType = "movie" | "tv" | "game" | "book"
@@ -68,6 +77,8 @@ export default function ImportPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchType, setSearchType] = useState<MediaType>("movie")
   const [results, setResults] = useState<MediaResult[]>([])
+  const [personResults, setPersonResults] = useState<PersonResult[]>([])
+  const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imported, setImported] = useState<Set<string>>(new Set())
@@ -76,27 +87,79 @@ export default function ImportPage() {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
-    
+
     setLoading(true)
     setError(null)
-    
+    setSelectedPerson(null)
+    setPersonResults([])
+
     try {
-      const endpoint = `${config.searchEndpoint}?q=${encodeURIComponent(searchQuery)}`
-      const response = await fetch(endpoint)
-      
-      if (!response.ok) {
+      // For movies, also search for directors/people in parallel
+      if (searchType === "movie") {
+        const [mediaResponse, personResponse] = await Promise.all([
+          fetch(`${config.searchEndpoint}?q=${encodeURIComponent(searchQuery)}`),
+          fetch(`/api/movies/person?q=${encodeURIComponent(searchQuery)}`),
+        ])
+
+        if (!mediaResponse.ok) {
+          const data = await mediaResponse.json()
+          throw new Error(data.error || "Erreur lors de la recherche")
+        }
+
+        const mediaData = await mediaResponse.json()
+        setResults(mediaData[config.resultKey] || [])
+
+        if (personResponse.ok) {
+          const personData = await personResponse.json()
+          setPersonResults(personData.people || [])
+        }
+      } else {
+        const endpoint = `${config.searchEndpoint}?q=${encodeURIComponent(searchQuery)}`
+        const response = await fetch(endpoint)
+
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || "Erreur lors de la recherche")
+        }
+
         const data = await response.json()
-        throw new Error(data.error || "Erreur lors de la recherche")
+        setResults(data[config.resultKey] || [])
       }
-      
-      const data = await response.json()
-      setResults(data[config.resultKey] || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue")
       setResults([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadPersonFilms = async (person: PersonResult) => {
+    setLoading(true)
+    setError(null)
+    setSelectedPerson(person)
+    setPersonResults([])
+
+    try {
+      const response = await fetch(`/api/movies/person/${person.id}/films`)
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Erreur lors du chargement")
+      }
+
+      const data = await response.json()
+      setResults(data.movies || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const clearPersonSelection = () => {
+    setSelectedPerson(null)
+    setResults([])
+    setPersonResults([])
   }
 
   const loadPopular = async () => {
@@ -333,6 +396,83 @@ export default function ImportPage() {
           </div>
         )}
 
+        {/* Person Results (Directors/Actors found) */}
+        {!loading && personResults.length > 0 && searchType === "movie" && (
+          <Card className="mb-6 border-purple-200 bg-purple-50">
+            <CardContent className="p-4">
+              <h3 className="font-medium text-purple-900 mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Réalisateurs / Acteurs trouvés
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {personResults.map((person) => (
+                  <button
+                    key={person.id}
+                    onClick={() => loadPersonFilms(person)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-purple-200 hover:border-purple-400 hover:shadow-sm transition-all"
+                  >
+                    {person.profileUrl && !person.profileUrl.includes("placeholder") ? (
+                      <Image
+                        src={person.profileUrl}
+                        alt={person.name}
+                        width={32}
+                        height={32}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-purple-600" />
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <p className="font-medium text-sm text-gray-900">{person.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {person.department === "Directing" ? "Réalisateur" : person.department === "Acting" ? "Acteur" : "Auteur"}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Selected Person Header */}
+        {selectedPerson && (
+          <Card className="mb-6 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={clearPersonSelection}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Retour
+                </Button>
+                <div className="flex items-center gap-3">
+                  {selectedPerson.profileUrl && !selectedPerson.profileUrl.includes("placeholder") ? (
+                    <Image
+                      src={selectedPerson.profileUrl}
+                      alt={selectedPerson.name}
+                      width={48}
+                      height={48}
+                      className="rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-purple-600" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{selectedPerson.name}</h3>
+                    <p className="text-sm text-gray-600">
+                      {selectedPerson.department === "Directing" ? "Réalisateur" : selectedPerson.department === "Acting" ? "Acteur" : "Auteur"}
+                      {results.length > 0 && ` - ${results.length} films`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Results */}
         {!loading && results.length > 0 && (
           <div className="space-y-4">
@@ -431,7 +571,7 @@ export default function ImportPage() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && results.length === 0 && searchQuery && (
+        {!loading && !error && results.length === 0 && personResults.length === 0 && searchQuery && !selectedPerson && (
           <div className="text-center py-12 text-gray-500">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Aucun résultat trouvé pour &ldquo;{searchQuery}&rdquo;</p>
@@ -439,13 +579,18 @@ export default function ImportPage() {
         )}
 
         {/* Initial State */}
-        {!loading && !error && results.length === 0 && !searchQuery && (
+        {!loading && !error && results.length === 0 && !searchQuery && !selectedPerson && (
           <div className="text-center py-12 text-gray-500">
             <Icon className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Recherchez {config.label.toLowerCase()} à importer</p>
             <p className="text-sm mt-1">
               ou utilisez les boutons d&apos;accès rapide ci-dessus
             </p>
+            {searchType === "movie" && (
+              <p className="text-xs mt-2 text-gray-400">
+                Vous pouvez aussi rechercher par réalisateur (ex: Miyazaki, Spielberg)
+              </p>
+            )}
           </div>
         )}
       </div>
