@@ -227,7 +227,7 @@ const ALL_PLATFORM_FILTER = `(${ALL_PLATFORM_IDS.join(",")})`
 /**
  * Search for games
  * Query is escaped to prevent IGDB query injection
- * Includes PC/Mac but requires minimum rating count to filter indie games
+ * No rating filter to allow finding new/recent games (FIFA 25, etc.)
  */
 export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]> {
   // Sanitize and escape user input
@@ -238,13 +238,15 @@ export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]
     return []
   }
 
+  // No rating filter - allows finding new games that haven't been rated yet
   const body = `
     search "${safeQuery}";
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
            age_ratings.category, age_ratings.rating,
+           involved_companies.company.name, involved_companies.developer,
            total_rating, total_rating_count;
-    where platforms = ${ALL_PLATFORM_FILTER} & total_rating_count > 20;
+    where platforms = ${ALL_PLATFORM_FILTER};
     limit ${safeLimit};
   `
 
@@ -549,6 +551,74 @@ export async function getGameScreenshots(gameId: number, limit = 6): Promise<IGD
   } catch {
     return []
   }
+}
+
+// ============================================
+// COMPANY TYPES & API
+// ============================================
+
+export interface IGDBCompany {
+  id: number
+  name: string
+  logo?: {
+    id: number
+    url: string
+    image_id: string
+  }
+  developed?: number[] // Game IDs
+  published?: number[] // Game IDs
+  description?: string
+  url?: string
+}
+
+/**
+ * Search for game companies/studios (e.g., FromSoftware, Nintendo, Ubisoft)
+ */
+export async function searchCompanies(query: string, limit = 10): Promise<IGDBCompany[]> {
+  const safeName = escapeIGDBQuery(query)
+  const safeLimit = sanitizeNumber(limit, 1, 50) || 10
+
+  if (!safeName) return []
+
+  const body = `
+    search "${safeName}";
+    fields id, name, logo.image_id, logo.url, description, url;
+    limit ${safeLimit};
+  `
+
+  return igdbFetch<IGDBCompany[]>("/companies", body)
+}
+
+/**
+ * Get all games developed by a specific company
+ */
+export async function getGamesByCompany(companyId: number, limit = 50): Promise<IGDBGame[]> {
+  const safeId = sanitizeNumber(companyId, 1)
+  const safeLimit = sanitizeNumber(limit, 1, 100) || 50
+
+  if (!safeId) return []
+
+  const body = `
+    fields name, summary, cover.url, cover.image_id, first_release_date,
+           genres.name, platforms.name, platforms.abbreviation,
+           age_ratings.category, age_ratings.rating,
+           involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
+           themes.name,
+           total_rating, total_rating_count;
+    where involved_companies.company = ${safeId} & involved_companies.developer = true & cover != null;
+    sort first_release_date desc;
+    limit ${safeLimit};
+  `
+
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
+/**
+ * Get company logo URL
+ */
+export function getCompanyLogoUrl(imageId: string | undefined, size: keyof typeof IGDBImageSize = "medium"): string {
+  if (!imageId) return "/placeholder-company.png"
+  return `https://images.igdb.com/igdb/image/upload/${IGDBImageSize[size]}/${imageId}.png`
 }
 
 // ============================================

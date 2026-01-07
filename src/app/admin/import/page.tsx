@@ -32,6 +32,13 @@ interface PersonResult {
   knownFor: string
 }
 
+interface CompanyResult {
+  id: string
+  name: string
+  logoUrl: string
+  description: string
+}
+
 type MediaType = "movie" | "tv" | "game" | "book"
 
 const mediaTypeConfig = {
@@ -79,6 +86,8 @@ export default function ImportPage() {
   const [results, setResults] = useState<MediaResult[]>([])
   const [personResults, setPersonResults] = useState<PersonResult[]>([])
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null)
+  const [companyResults, setCompanyResults] = useState<CompanyResult[]>([])
+  const [selectedCompany, setSelectedCompany] = useState<CompanyResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imported, setImported] = useState<Set<string>>(new Set())
@@ -92,6 +101,8 @@ export default function ImportPage() {
     setError(null)
     setSelectedPerson(null)
     setPersonResults([])
+    setSelectedCompany(null)
+    setCompanyResults([])
 
     try {
       // For movies, also search for directors/people in parallel
@@ -112,6 +123,25 @@ export default function ImportPage() {
         if (personResponse.ok) {
           const personData = await personResponse.json()
           setPersonResults(personData.people || [])
+        }
+      } else if (searchType === "game") {
+        // For games, also search for studios/companies in parallel
+        const [mediaResponse, companyResponse] = await Promise.all([
+          fetch(`${config.searchEndpoint}?q=${encodeURIComponent(searchQuery)}`),
+          fetch(`/api/games/company?q=${encodeURIComponent(searchQuery)}`),
+        ])
+
+        if (!mediaResponse.ok) {
+          const data = await mediaResponse.json()
+          throw new Error(data.error || "Erreur lors de la recherche")
+        }
+
+        const mediaData = await mediaResponse.json()
+        setResults(mediaData[config.resultKey] || [])
+
+        if (companyResponse.ok) {
+          const companyData = await companyResponse.json()
+          setCompanyResults(companyData.companies || [])
         }
       } else {
         const endpoint = `${config.searchEndpoint}?q=${encodeURIComponent(searchQuery)}`
@@ -158,8 +188,33 @@ export default function ImportPage() {
 
   const clearPersonSelection = () => {
     setSelectedPerson(null)
+    setSelectedCompany(null)
     setResults([])
     setPersonResults([])
+    setCompanyResults([])
+  }
+
+  const loadCompanyGames = async (company: CompanyResult) => {
+    setLoading(true)
+    setError(null)
+    setSelectedCompany(company)
+    setCompanyResults([])
+
+    try {
+      const response = await fetch(`/api/games/company/${company.id}/games`)
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || "Erreur lors du chargement")
+      }
+
+      const data = await response.json()
+      setResults(data.games || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadPopular = async () => {
@@ -437,6 +492,81 @@ export default function ImportPage() {
           </Card>
         )}
 
+        {/* Company Results (Studios found) */}
+        {!loading && companyResults.length > 0 && searchType === "game" && (
+          <Card className="mb-6 border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <h3 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+                <Gamepad2 className="h-4 w-4" />
+                Studios / Éditeurs trouvés
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {companyResults.map((company) => (
+                  <button
+                    key={company.id}
+                    onClick={() => loadCompanyGames(company)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-green-200 hover:border-green-400 hover:shadow-sm transition-all"
+                  >
+                    {company.logoUrl && !company.logoUrl.includes("placeholder") ? (
+                      <Image
+                        src={company.logoUrl}
+                        alt={company.name}
+                        width={32}
+                        height={32}
+                        className="rounded object-contain"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                        <Gamepad2 className="h-4 w-4 text-green-600" />
+                      </div>
+                    )}
+                    <div className="text-left">
+                      <p className="font-medium text-sm text-gray-900">{company.name}</p>
+                      <p className="text-xs text-gray-500">Studio</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Selected Company Header */}
+        {selectedCompany && (
+          <Card className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" onClick={clearPersonSelection}>
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Retour
+                </Button>
+                <div className="flex items-center gap-3">
+                  {selectedCompany.logoUrl && !selectedCompany.logoUrl.includes("placeholder") ? (
+                    <Image
+                      src={selectedCompany.logoUrl}
+                      alt={selectedCompany.name}
+                      width={48}
+                      height={48}
+                      className="rounded object-contain"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-green-100 rounded flex items-center justify-center">
+                      <Gamepad2 className="h-6 w-6 text-green-600" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{selectedCompany.name}</h3>
+                    <p className="text-sm text-gray-600">
+                      Studio
+                      {results.length > 0 && ` - ${results.length} jeux`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Selected Person Header */}
         {selectedPerson && (
           <Card className="mb-6 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
@@ -571,7 +701,7 @@ export default function ImportPage() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && results.length === 0 && personResults.length === 0 && searchQuery && !selectedPerson && (
+        {!loading && !error && results.length === 0 && personResults.length === 0 && companyResults.length === 0 && searchQuery && !selectedPerson && !selectedCompany && (
           <div className="text-center py-12 text-gray-500">
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Aucun résultat trouvé pour &ldquo;{searchQuery}&rdquo;</p>
@@ -579,7 +709,7 @@ export default function ImportPage() {
         )}
 
         {/* Initial State */}
-        {!loading && !error && results.length === 0 && !searchQuery && !selectedPerson && (
+        {!loading && !error && results.length === 0 && !searchQuery && !selectedPerson && !selectedCompany && (
           <div className="text-center py-12 text-gray-500">
             <Icon className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Recherchez {config.label.toLowerCase()} à importer</p>
@@ -589,6 +719,11 @@ export default function ImportPage() {
             {searchType === "movie" && (
               <p className="text-xs mt-2 text-gray-400">
                 Vous pouvez aussi rechercher par réalisateur (ex: Miyazaki, Spielberg)
+              </p>
+            )}
+            {searchType === "game" && (
+              <p className="text-xs mt-2 text-gray-400">
+                Vous pouvez aussi rechercher par studio (ex: FromSoftware, Nintendo, EA)
               </p>
             )}
           </div>
