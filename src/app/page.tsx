@@ -6,7 +6,6 @@ import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
 import { FeaturedMovies } from "@/components/home/FeaturedMovies"
 import { FamilyImageSection, TestimonialsSection } from "@/components/home/FamilyImageSection"
-import { FamilyRecommendations } from "@/components/home/FamilyRecommendations"
 import { FamilyMovieNight } from "@/components/home/FamilyMovieNight"
 import { NewArrivals } from "@/components/home/NewArrivals"
 import { ExpertPicks } from "@/components/home/ExpertPicks"
@@ -120,11 +119,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Family Recommendations - Only shows if logged in with family data */}
+      {/* Family Movie Night - Only shows if logged in with family data */}
       <section className="py-8 bg-gray-50">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-8">
-            <FamilyRecommendations />
+          <div className="max-w-2xl mx-auto">
             <FamilyMovieNight />
           </div>
         </div>
