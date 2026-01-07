@@ -89,15 +89,9 @@ export async function GET(request: NextRequest) {
       .map(([genre]) => genre)
 
     // Build age filter - strict: only recommend content appropriate for child's age
+    // Do NOT include items with null age rating - they haven't been reviewed
     const ageFilter = childAge !== null ? {
-      AND: [
-        {
-          OR: [
-            { expertAgeRec: null },
-            { expertAgeRec: { lte: childAge } }, // Strict: must be <= child's age
-          ],
-        },
-      ],
+      expertAgeRec: { lte: childAge }, // Strict: must have age rating AND be <= child's age
     } : {}
 
     // Step 1: Try to find similar media from MediaSimilarity table
@@ -144,11 +138,13 @@ export async function GET(request: NextRequest) {
     for (const sim of similarMedia) {
       const item = lovedMediaIds.has(sim.mediaIdA) ? sim.mediaB : sim.mediaA
       if (!lovedMediaIds.has(item.id) && !similarItems.has(item.id)) {
-        // Check age appropriateness and quality - strict filtering
-        const isAgeAppropriate = childAge === null || item.expertAgeRec === null || item.expertAgeRec <= childAge
-        const isHighQuality = item.dataQualityScore >= 50 // Filter out low-quality/indie items
+        // Check age appropriateness and quality - very strict filtering
+        // Must have an age rating AND be appropriate for child's age
+        const hasAgeRating = item.expertAgeRec !== null
+        const isAgeAppropriate = childAge === null || (hasAgeRating && item.expertAgeRec! <= childAge)
+        const isHighQuality = item.dataQualityScore >= 70 // Only mainstream titles
 
-        if (isAgeAppropriate && isHighQuality) {
+        if (hasAgeRating && isAgeAppropriate && isHighQuality) {
           similarItems.set(item.id, { ...item, similarityScore: sim.similarityScore })
         }
       }
@@ -187,9 +183,9 @@ export async function GET(request: NextRequest) {
           id: { notIn: excludeIds },
           type: { in: Array.from(mediaTypes) as ("MOVIE" | "TV" | "GAME" | "BOOK" | "APP")[] },
           genres: { hasSome: topGenres },
-          // Require high quality score to filter out obscure indie games
+          // Require very high quality score to filter out obscure indie games
           // Only show mainstream titles that people would find in stores
-          dataQualityScore: { gte: 60 },
+          dataQualityScore: { gte: 70 },
           ...ageFilter,
         },
         select: {
