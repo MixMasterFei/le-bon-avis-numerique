@@ -88,11 +88,15 @@ export async function GET(request: NextRequest) {
       .slice(0, 5)
       .map(([genre]) => genre)
 
-    // Build age filter
+    // Build age filter - strict: only recommend content appropriate for child's age
     const ageFilter = childAge !== null ? {
-      OR: [
-        { expertAgeRec: null },
-        { expertAgeRec: { lte: childAge + 2 } },
+      AND: [
+        {
+          OR: [
+            { expertAgeRec: null },
+            { expertAgeRec: { lte: childAge } }, // Strict: must be <= child's age
+          ],
+        },
       ],
     } : {}
 
@@ -140,8 +144,11 @@ export async function GET(request: NextRequest) {
     for (const sim of similarMedia) {
       const item = lovedMediaIds.has(sim.mediaIdA) ? sim.mediaB : sim.mediaA
       if (!lovedMediaIds.has(item.id) && !similarItems.has(item.id)) {
-        // Check age appropriateness
-        if (childAge === null || item.expertAgeRec === null || item.expertAgeRec <= childAge + 2) {
+        // Check age appropriateness and quality - strict filtering
+        const isAgeAppropriate = childAge === null || item.expertAgeRec === null || item.expertAgeRec <= childAge
+        const isHighQuality = item.dataQualityScore >= 50 // Filter out low-quality/indie items
+
+        if (isAgeAppropriate && isHighQuality) {
           similarItems.set(item.id, { ...item, similarityScore: sim.similarityScore })
         }
       }
@@ -180,8 +187,9 @@ export async function GET(request: NextRequest) {
           id: { notIn: excludeIds },
           type: { in: Array.from(mediaTypes) as ("MOVIE" | "TV" | "GAME" | "BOOK" | "APP")[] },
           genres: { hasSome: topGenres },
-          // Prioritize quality content - require minimum quality score for mainstream feel
-          dataQualityScore: { gte: 30 },
+          // Require high quality score to filter out obscure indie games
+          // Only show mainstream titles that people would find in stores
+          dataQualityScore: { gte: 60 },
           ...ageFilter,
         },
         select: {
