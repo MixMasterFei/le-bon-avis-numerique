@@ -154,10 +154,10 @@ export function HeroSearch() {
         }}
         className="relative"
       >
-        <div className="relative flex items-center bg-white rounded-xl shadow-xl">
-          <Search className="absolute left-4 h-5 w-5 text-gray-400 pointer-events-none" />
+        <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-violet-900/30 ring-4 ring-white/20">
+          <Search className="absolute left-5 h-5 w-5 text-violet-400 pointer-events-none" />
           {loading && (
-            <Loader2 className="absolute right-32 h-4 w-4 text-gray-400 animate-spin" />
+            <Loader2 className="absolute right-36 h-4 w-4 text-violet-400 animate-spin" />
           )}
           {query && !loading && (
             <button
@@ -168,7 +168,7 @@ export function HeroSearch() {
                 setShowDropdown(false)
                 inputRef.current?.focus()
               }}
-              className="absolute right-32 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600"
+              className="absolute right-36 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-violet-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -177,7 +177,7 @@ export function HeroSearch() {
             ref={inputRef}
             type="text"
             placeholder="Rechercher un film, une série, un jeu..."
-            className="w-full pl-12 pr-32 h-14 text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="w-full pl-14 pr-36 h-16 text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-2xl"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -190,7 +190,7 @@ export function HeroSearch() {
           />
           <Button
             type="submit"
-            className="absolute right-2 h-10"
+            className="absolute right-2 h-12 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-700 hover:to-pink-600 shadow-lg shadow-violet-500/30 font-semibold transition-all duration-300 hover:scale-105"
             disabled={query.trim().length < 2}
           >
             Rechercher
@@ -198,25 +198,27 @@ export function HeroSearch() {
         </div>
       </form>
 
-      {/* Autocomplete dropdown - positioned fixed to avoid overflow clipping */}
+      {/* Autocomplete dropdown - Bold styling */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-2xl border border-gray-200 z-[100]">
-          <ul className="py-1 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-violet-100 z-[100] overflow-hidden">
+          <ul className="py-2 max-h-72 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
               return (
                 <li key={`${suggestion.type}:${suggestion.id}`}>
                   <button
                     type="button"
-                    className={`w-full px-4 py-2.5 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${
-                      index === selectedIndex ? "bg-blue-50" : ""
+                    className={`w-full px-5 py-3 flex items-center gap-4 text-left hover:bg-violet-50 transition-all duration-200 ${
+                      index === selectedIndex ? "bg-violet-50 border-l-4 border-violet-500" : ""
                     }`}
                     onClick={() => goToMedia(suggestion)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <Icon className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                    <span className="font-medium text-gray-900 truncate flex-1">{suggestion.title}</span>
-                    <span className="text-xs text-gray-400 flex-shrink-0">{typeLabels[suggestion.type]}</span>
+                    <div className="p-2 rounded-xl bg-gradient-to-br from-violet-100 to-pink-100">
+                      <Icon className="h-4 w-4 text-violet-600 flex-shrink-0" />
+                    </div>
+                    <span className="font-semibold text-gray-800 truncate flex-1">{suggestion.title}</span>
+                    <span className="text-xs text-violet-500 bg-violet-100 px-2 py-1 rounded-full font-medium flex-shrink-0">{typeLabels[suggestion.type]}</span>
                   </button>
                 </li>
               )
@@ -225,17 +227,17 @@ export function HeroSearch() {
         </div>
       )}
 
-      {/* Popular searches - quick links */}
-      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-        <span className="text-blue-200 text-xs flex items-center gap-1">
-          <TrendingUp className="h-3 w-3" />
+      {/* Popular searches - Playful pills */}
+      <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+        <span className="text-white/80 text-sm flex items-center gap-1.5 font-medium">
+          <TrendingUp className="h-4 w-4" />
           Populaire:
         </span>
         {popularSearches.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="text-xs bg-white/20 hover:bg-white/30 text-white px-2.5 py-1 rounded-full transition-colors backdrop-blur-sm"
+            className="text-sm bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-full transition-all duration-300 backdrop-blur-sm border border-white/20 hover:border-white/40 hover:scale-105 font-medium"
           >
             {item.label}
           </Link>

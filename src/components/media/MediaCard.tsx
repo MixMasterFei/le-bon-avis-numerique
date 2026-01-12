@@ -122,21 +122,23 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
     return (
       <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
         <div className={cn("group overflow-hidden transition-all duration-300 h-full", className)}>
-          <div className="relative aspect-[2/3] overflow-hidden bg-gray-100 rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+          <div className="relative aspect-[2/3] overflow-hidden bg-violet-100 rounded-2xl shadow-md group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
             <SafeImage
               fallbackClassName="absolute inset-0"
               src={media.posterUrl}
               alt={media.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
             />
-            <div className="absolute top-1 left-1">
+            {/* Gradient overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-t from-violet-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <div className="absolute top-2 left-2">
               <AgeBadge age={media.expertAgeRec} size="xs" />
             </div>
           </div>
-          <div className="pt-1.5 px-0.5">
-            <h3 className="font-medium text-xs text-gray-900 line-clamp-2 group-hover:text-primary transition-colors leading-tight">
+          <div className="pt-2 px-1">
+            <h3 className="font-semibold text-xs text-gray-800 line-clamp-2 group-hover:text-violet-700 transition-colors leading-tight">
               {media.title}
             </h3>
             {/* Platform icons for games */}
@@ -157,48 +159,51 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
           className
         )}
       >
-        {/* Poster Image */}
-        <div className="relative aspect-[2/3] overflow-hidden bg-gray-100 rounded-t-lg shadow-sm group-hover:shadow-md transition-shadow">
+        {/* Poster Image - Bold rounded corners, dramatic hover */}
+        <div className="relative aspect-[2/3] overflow-hidden bg-violet-100 rounded-2xl rounded-br-sm shadow-md group-hover:shadow-2xl group-hover:shadow-violet-200/50 group-hover:-translate-y-2 transition-all duration-300">
           <SafeImage
             fallbackClassName="absolute inset-0"
             src={media.posterUrl}
             alt={media.title}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-cover group-hover:scale-110 transition-transform duration-500"
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
 
-          {/* Type Badge - top right */}
-          <div className="absolute top-1.5 right-1.5">
-            <span className="inline-flex items-center gap-0.5 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded-full backdrop-blur-sm">
-              <Icon className="h-2.5 w-2.5" />
+          {/* Gradient overlay on hover */}
+          <div className="absolute inset-0 bg-gradient-to-t from-violet-900/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+          {/* Type Badge - top right with gradient */}
+          <div className="absolute top-2 right-2">
+            <span className="inline-flex items-center gap-0.5 bg-gradient-to-br from-violet-600 to-pink-500 text-white text-[10px] px-2 py-1 rounded-full shadow-md">
+              <Icon className="h-3 w-3" />
             </span>
           </div>
         </div>
 
-        {/* Info Section Below Image */}
-        <div className="bg-white rounded-b-lg border border-t-0 border-gray-100 p-2 space-y-1.5">
+        {/* Info Section Below Image - Cleaner, bolder */}
+        <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 space-y-2 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300">
           {/* Title */}
-          <h3 className="font-semibold text-xs text-gray-900 line-clamp-1 group-hover:text-primary transition-colors leading-tight">
+          <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-violet-700 transition-colors leading-tight">
             {media.title}
           </h3>
 
           {/* Ratings Row: Age + Stars */}
           <div className="flex items-center justify-between gap-1">
-            {/* Age Badge - Compact inline version */}
+            {/* Age Badge - Playful pill design */}
             <div className={cn(
-              "inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold text-white",
+              "inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm",
               media.expertAgeRec === null || media.expertAgeRec === undefined || media.expertAgeRec === 0
                 ? "bg-gray-400"
                 : media.expertAgeRec <= 3
-                ? "bg-emerald-500"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-400"
                 : media.expertAgeRec <= 7
-                ? "bg-emerald-600"
+                ? "bg-gradient-to-r from-emerald-600 to-emerald-500"
                 : media.expertAgeRec <= 10
-                ? "bg-amber-500"
+                ? "bg-gradient-to-r from-amber-500 to-yellow-400"
                 : media.expertAgeRec <= 13
-                ? "bg-orange-500"
-                : "bg-red-500"
+                ? "bg-gradient-to-r from-orange-500 to-amber-400"
+                : "bg-gradient-to-r from-rose-500 to-red-400"
             )}>
               {media.expertAgeRec && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : "?"}
             </div>
@@ -207,14 +212,14 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             {qualityScore > 0 && <StarRating score={qualityScore} />}
           </div>
 
-          {/* Content Tags */}
+          {/* Content Tags - More colorful pills */}
           {contentTags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {contentTags.map((tag, i) => (
                 <span
                   key={i}
                   className={cn(
-                    "text-[9px] px-1.5 py-0.5 rounded-full font-medium",
+                    "text-[10px] px-2 py-0.5 rounded-full font-semibold",
                     tag.color
                   )}
                 >

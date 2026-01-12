@@ -28,22 +28,26 @@ const legal = [
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-gradient-to-br from-gray-900 via-violet-950 to-gray-900 text-gray-300 relative overflow-hidden">
+      {/* Decorative gradient orbs */}
+      <div className="absolute top-0 left-1/4 w-64 h-64 bg-violet-600/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-pink-600/10 rounded-full blur-3xl" />
+
       {/* Main Footer */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-16 relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-blue-700 text-white font-bold text-lg">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl rounded-br-sm bg-gradient-to-br from-violet-500 via-pink-500 to-orange-400 text-white font-black text-xl shadow-lg shadow-violet-500/30">
                 BA
               </div>
               <div>
-                <span className="text-lg font-bold text-white">Le Bon Avis</span>
-                <span className="text-lg font-light text-gray-400"> Numérique</span>
+                <span className="text-xl font-black text-white">Le Bon Avis</span>
+                <span className="text-xl font-light text-violet-300"> Numérique</span>
               </div>
             </div>
-            <p className="text-sm text-gray-400 mb-4">
+            <p className="text-sm text-gray-400 mb-4 leading-relaxed">
               Aider les parents à faire les meilleurs choix médias pour leurs enfants grâce à des critiques indépendantes et des recommandations par âge.
             </p>
             <p className="text-xs text-gray-500 mb-4">
@@ -88,15 +92,15 @@ export function Footer() {
 
           {/* Categories */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Catégories</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-bold mb-5 text-lg">Catégories</h3>
+            <ul className="space-y-3">
               {categories.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    className="flex items-center gap-3 text-sm text-gray-400 hover:text-violet-300 transition-colors group"
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 group-hover:scale-110 transition-transform" />
                     {item.name}
                   </Link>
                 </li>
@@ -106,14 +110,15 @@ export function Footer() {
 
           {/* Age Groups */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Par Âge</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-bold mb-5 text-lg">Par Âge</h3>
+            <ul className="space-y-3">
               {ages.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-gray-400 hover:text-pink-300 transition-colors inline-flex items-center gap-2 group"
                   >
+                    <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-pink-500 group-hover:scale-150 transition-transform" />
                     {item.name}
                   </Link>
                 </li>
@@ -123,13 +128,13 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Informations</h3>
-            <ul className="space-y-2">
+            <h3 className="text-white font-bold mb-5 text-lg">Informations</h3>
+            <ul className="space-y-3">
               {legal.map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}
-                    className="text-sm text-gray-400 hover:text-white transition-colors"
+                    className="text-sm text-gray-400 hover:text-orange-300 transition-colors"
                   >
                     {item.name}
                   </Link>
@@ -141,21 +146,21 @@ export function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-800">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="border-t border-violet-800/30 relative">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <p className="text-sm text-gray-500">
               © {new Date().getFullYear()} Le Bon Avis Numérique. Tous droits réservés.
             </p>
-            <div className="flex items-center gap-4">
-              <p className="flex items-center gap-1 text-sm text-gray-500">
-                Fait avec <Heart className="h-4 w-4 text-red-500 fill-red-500" /> pour les familles francophones
+            <div className="flex items-center gap-6">
+              <p className="flex items-center gap-2 text-sm text-gray-400">
+                Fait avec <Heart className="h-4 w-4 text-pink-500 fill-pink-500 animate-pulse" /> pour les familles francophones
               </p>
               <a
                 href="https://www.themoviedb.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-violet-300 transition-colors"
               >
                 <svg className="h-4 w-auto" viewBox="0 0 185 133" fill="currentColor">
                   <path d="M51.77 112.5c0 5.385-4.388 9.75-9.8 9.75H9.8c-5.412 0-9.8-4.365-9.8-9.75V20.25C0 14.865 4.388 10.5 9.8 10.5h32.17c5.412 0 9.8 4.365 9.8 9.75v92.25zM9.8 17.25c-1.65 0-2.995 1.343-2.995 2.99v92.27c0 1.65 1.345 2.99 2.995 2.99h32.17c1.65 0 2.995-1.34 2.995-2.99V20.24c0-1.647-1.345-2.99-2.995-2.99H9.8z"/>
