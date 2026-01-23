@@ -24,6 +24,7 @@ import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
 import { MediaScreenshots } from "@/components/media/MediaScreenshots"
+import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -411,11 +412,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* Poster */}
             <div className="lg:w-1/3 xl:w-1/4 shrink-0">
               <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl">
-                <Image
+                <BlurredPoster
                   src={media.posterUrl}
                   alt={media.title}
-                  fill
-                  className="object-cover"
+                  expertAgeRec={media.expertAgeRec}
                   priority
                 />
               </div>

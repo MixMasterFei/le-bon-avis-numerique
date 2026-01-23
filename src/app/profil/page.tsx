@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { redirect, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle, Camera } from "lucide-react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle, Camera, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +19,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { FamilyMembers } from "@/components/profile/FamilyMembers"
+import { useSettings } from "@/contexts/SettingsContext"
 import Link from "next/link"
 
 interface UserStats {
@@ -57,6 +58,9 @@ export default function ProfilPage() {
   const [emailComments, setEmailComments] = useState(false)
   const [savingNotifications, setSavingNotifications] = useState(false)
   const [notificationsSaved, setNotificationsSaved] = useState(false)
+
+  // Settings context
+  const { settings, updateSettings } = useSettings()
 
   // Delete account state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -494,6 +498,31 @@ export default function ProfilPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </div>
+
+          <div className="flex items-center justify-between py-3 border-b">
+            <div>
+              <p className="font-medium flex items-center gap-2">
+                {settings.blur18Plus ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
+                Flouter les contenus 18+
+              </p>
+              <p className="text-sm text-gray-500">Les affiches des contenus 18+ seront floutes</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.blur18Plus}
+              onClick={() => updateSettings({ blur18Plus: !settings.blur18Plus })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                settings.blur18Plus ? "bg-primary" : "bg-gray-200"
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  settings.blur18Plus ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
 
           <div className="flex items-center justify-between py-3 border-b">

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, AlertTriangle, Heart, Swords } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, AlertTriangle, Heart, Swords, EyeOff } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
@@ -12,6 +12,7 @@ import { PlatformIcons } from "./PlatformIcons"
 import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MockMediaItem } from "@/lib/mock-data"
 import { toMediaRouteId } from "@/lib/media-route"
+import { useSettings } from "@/contexts/SettingsContext"
 
 const typeIcons = {
   MOVIE: Film,
@@ -116,6 +117,10 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   const Icon = typeIcons[media.type]
   const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
+  const { settings } = useSettings()
+
+  // Check if content should be blurred (18+ with blur setting enabled)
+  const shouldBlur = settings.blur18Plus && media.expertAgeRec !== null && media.expertAgeRec >= 18
 
   // Compact variant - just poster and minimal info (for grids with many items)
   if (variant === "compact") {
@@ -128,9 +133,19 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
               src={media.posterUrl}
               alt={media.title}
               fill
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
+              className={cn(
+                "object-cover group-hover:scale-110 transition-transform duration-500",
+                shouldBlur && "blur-xl scale-110"
+              )}
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
             />
+            {shouldBlur && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="bg-black/60 rounded-full p-2">
+                  <EyeOff className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            )}
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-violet-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute top-2 left-2">
@@ -166,9 +181,19 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             src={media.posterUrl}
             alt={media.title}
             fill
-            className="object-cover group-hover:scale-110 transition-transform duration-500"
+            className={cn(
+              "object-cover group-hover:scale-110 transition-transform duration-500",
+              shouldBlur && "blur-xl scale-110"
+            )}
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
+          {shouldBlur && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="bg-black/60 rounded-full p-2">
+                <EyeOff className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          )}
 
           {/* Gradient overlay on hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-violet-900/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -239,6 +264,8 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
   const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
+  const { settings } = useSettings()
+  const shouldBlur = settings.blur18Plus && media.expertAgeRec !== null && media.expertAgeRec >= 18
 
   return (
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
@@ -255,9 +282,16 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
             src={media.posterUrl}
             alt={media.title}
             fill
-            className="object-cover"
+            className={cn("object-cover", shouldBlur && "blur-xl scale-110")}
             sizes="128px"
           />
+          {shouldBlur && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="bg-black/60 rounded-full p-1.5">
+                <EyeOff className="h-4 w-4 text-white" />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}
