@@ -169,7 +169,13 @@ export async function GET(request: NextRequest) {
         },
       })
     )
-    const total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
+    let total = movies.length
+    try {
+      total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
+    } catch (countError) {
+      console.warn("Movies count failed, using fallback total:", countError)
+      total = skip + movies.length
+    }
 
     // Transform to API format
     const transformedMovies = movies.map((movie) => ({
@@ -205,9 +211,63 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Database error:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch movies from database" },
-      { status: 500 }
-    )
+    // Degraded mode: return simple movie payload without joins/count.
+    try {
+      const fallbackMovies = await withPrismaRetry(() =>
+        prisma.mediaItem.findMany({
+          where: {
+            type: "MOVIE",
+            ...(requirePoster
+              ? {
+                  posterUrl: {
+                    not: null,
+                    startsWith: "http",
+                  },
+                }
+              : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        })
+      )
+
+      return NextResponse.json({
+        movies: fallbackMovies.map((movie) => ({
+          id: movie.id,
+          tmdbId: movie.tmdbId,
+          title: movie.title,
+          originalTitle: movie.originalTitle,
+          type: movie.type,
+          synopsisFr: movie.synopsisFr,
+          posterUrl: movie.posterUrl,
+          backdropUrl: movie.backdropUrl,
+          releaseDate: movie.releaseDate?.toISOString().split("T")[0] || null,
+          duration: movie.duration,
+          director: movie.director,
+          genres: movie.genres,
+          platforms: movie.platforms,
+          officialRating: movie.officialRating,
+          expertAgeRec: movie.expertAgeRec,
+          communityAgeRec: movie.communityAgeRec,
+          contentMetrics: null,
+          originalLanguage: movie.originalLanguage,
+          dataQualityScore: movie.dataQualityScore,
+        })),
+        pagination: {
+          page,
+          limit,
+          total: skip + fallbackMovies.length,
+          totalPages: fallbackMovies.length === 0 ? 0 : page,
+        },
+        degraded: true,
+      })
+    } catch (fallbackError) {
+      console.error("Movies fallback failed:", fallbackError)
+      return NextResponse.json(
+        { error: "Failed to fetch movies from database" },
+        { status: 500 }
+      )
+    }
   }
 }

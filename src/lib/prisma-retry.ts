@@ -8,6 +8,17 @@ function isPreparedStatementPoolerError(error: unknown) {
   )
 }
 
+function isTransientPrismaNetworkError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return (
+    message.includes("Can't reach database server") ||
+    message.includes("Connection terminated unexpectedly") ||
+    message.includes("Timed out") ||
+    message.includes("ECONNRESET") ||
+    message.includes("P1001")
+  )
+}
+
 /**
  * Retry after reconnect when pooled Postgres prepared statements desync.
  */
@@ -19,7 +30,9 @@ export async function withPrismaRetry<T>(operation: () => Promise<T>): Promise<T
     try {
       return await operation()
     } catch (error) {
-      if (!isPreparedStatementPoolerError(error)) {
+      const retriable =
+        isPreparedStatementPoolerError(error) || isTransientPrismaNetworkError(error)
+      if (!retriable) {
         throw error
       }
 
@@ -30,7 +43,7 @@ export async function withPrismaRetry<T>(operation: () => Promise<T>): Promise<T
         break
       }
 
-      console.warn(`[prisma] Prepared statement desync detected, retry ${attempt}/4`)
+      console.warn(`[prisma] Retriable database error detected, retry ${attempt}/4`)
 
       try {
         await prisma.$disconnect()

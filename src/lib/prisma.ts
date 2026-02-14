@@ -7,17 +7,11 @@ const globalForPrisma = globalThis as unknown as {
 function getRuntimeDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL
   if (!databaseUrl) return undefined
-  let selectedUrl = databaseUrl
-
-  // Supabase transaction pooler can trigger prepared statement issues with Prisma in some environments.
-  // Prefer DIRECT_URL when available for runtime stability.
-  if (databaseUrl.includes("pooler.supabase.com") && process.env.DIRECT_URL) {
-    selectedUrl = process.env.DIRECT_URL
-  }
 
   // Otherwise, force pooler-safe params.
-  if (selectedUrl.includes("pooler.supabase.com")) {
-    const parsed = new URL(selectedUrl)
+  // NOTE: runtime should always use DATABASE_URL; DIRECT_URL is for migrations only.
+  if (databaseUrl.includes("pooler.supabase.com")) {
+    const parsed = new URL(databaseUrl)
     if (!parsed.searchParams.has("pgbouncer")) {
       parsed.searchParams.set("pgbouncer", "true")
     }
@@ -30,7 +24,7 @@ function getRuntimeDatabaseUrl() {
     return parsed.toString()
   }
 
-  return selectedUrl
+  return databaseUrl
 }
 
 export const prisma =

@@ -64,7 +64,13 @@ export async function GET(request: NextRequest) {
         },
       })
     )
-    const total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
+    let total = items.length
+    try {
+      total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
+    } catch (countError) {
+      console.warn("Media count failed, using fallback total:", countError)
+      total = skip + items.length
+    }
 
     // Transform to API format
     const transformedItems = items.map((item) => ({
@@ -100,9 +106,57 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Database error:", error)
-    return NextResponse.json(
-      { error: "Failed to fetch media from database" },
-      { status: 500 }
-    )
+    // Degraded mode: return basic media rows without joins/count to keep homepage usable.
+    try {
+      const fallbackItems = await withPrismaRetry(() =>
+        prisma.mediaItem.findMany({
+          where: {
+            ...(type && ["MOVIE", "TV", "GAME", "BOOK", "APP"].includes(type)
+              ? { type: type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" }
+              : {}),
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        })
+      )
+
+      return NextResponse.json({
+        items: fallbackItems.map((item) => ({
+          id: item.id,
+          tmdbId: item.tmdbId,
+          igdbId: item.igdbId,
+          title: item.title,
+          originalTitle: item.originalTitle,
+          type: item.type,
+          synopsisFr: item.synopsisFr,
+          posterUrl: item.posterUrl,
+          backdropUrl: item.backdropUrl,
+          releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+          duration: item.duration,
+          director: item.director,
+          genres: item.genres,
+          platforms: item.platforms,
+          topics: item.topics,
+          officialRating: item.officialRating,
+          expertAgeRec: item.expertAgeRec,
+          communityAgeRec: item.communityAgeRec,
+          contentMetrics: null,
+        })),
+        pagination: {
+          page,
+          limit,
+          total: skip + fallbackItems.length,
+          totalPages: fallbackItems.length === 0 ? 0 : page,
+        },
+        degraded: true,
+      })
+    } catch (fallbackError) {
+      console.error("Media fallback failed:", fallbackError)
+      return NextResponse.json(
+        { error: "Failed to fetch media from database" },
+        { status: 500 }
+      )
+    }
   }
 }
