@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { auth } from "@/lib/auth"
 import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
 
@@ -33,30 +32,42 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
   admin: { maxRequests: 50, windowMs: 60000 },
 }
 
-// Use Upstash Redis when configured, otherwise fall back to in-memory
-const useUpstash =
-  !!process.env.UPSTASH_REDIS_REST_URL &&
-  !!process.env.UPSTASH_REDIS_REST_TOKEN
-
-// Create Upstash rate limiters per limit type
+// Use Upstash Redis only when explicitly enabled, otherwise fall back to in-memory.
+// This prevents global API failures if Upstash config or SDK behavior changes.
+const enableUpstashRateLimit = process.env.ENABLE_UPSTASH_RATE_LIMIT === "true"
+let useUpstash = false
 const upstashLimiters: Record<string, Ratelimit> = {}
 
-if (useUpstash) {
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  })
-
-  for (const [type, config] of Object.entries(RATE_LIMITS)) {
-    upstashLimiters[type] = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(
-        config.maxRequests,
-        `${config.windowMs}ms`
-      ),
-      prefix: `ratelimit:${type}`,
+if (
+  enableUpstashRateLimit &&
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+) {
+  try {
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
     })
+
+    for (const [type, config] of Object.entries(RATE_LIMITS)) {
+      upstashLimiters[type] = new Ratelimit({
+        redis,
+        limiter: Ratelimit.slidingWindow(
+          config.maxRequests,
+          `${config.windowMs}ms`
+        ),
+        prefix: `ratelimit:${type}`,
+      })
+    }
+
+    useUpstash = true
+  } catch (error) {
+    // Never crash middleware initialization because of optional rate limit backend.
+    console.error("[middleware] Upstash init failed, fallback in-memory:", error)
+    useUpstash = false
   }
+} else if (!enableUpstashRateLimit) {
+  console.warn("[middleware] Upstash rate limiting disabled (ENABLE_UPSTASH_RATE_LIMIT != true)")
 }
 
 // In-memory fallback for development (per-instance only)
@@ -103,6 +114,7 @@ export async function middleware(request: NextRequest) {
     const bypassAuth = isDev && process.env.ADMIN_BYPASS_AUTH === "true"
 
     if (!bypassAuth) {
+      const { auth } = await import("@/lib/auth")
       const session = await auth()
 
       if (!session?.user) {
@@ -125,6 +137,7 @@ export async function middleware(request: NextRequest) {
 
   // Check protected routes
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
+    const { auth } = await import("@/lib/auth")
     const session = await auth()
 
     if (!session?.user) {

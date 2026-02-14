@@ -6,6 +6,19 @@ import { compare } from "bcryptjs"
 import { prisma } from "./db"
 import type { Adapter } from "next-auth/adapters"
 
+const oauthProviders = []
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  oauthProviders.push(
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    })
+  )
+} else {
+  console.warn("[auth] Google OAuth disabled: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET missing")
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
   session: { strategy: "jwt" },
@@ -14,10 +27,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/connexion",
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
+    ...oauthProviders,
     Credentials({
       name: "credentials",
       credentials: {

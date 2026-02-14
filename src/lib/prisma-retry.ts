@@ -15,7 +15,7 @@ export async function withPrismaRetry<T>(operation: () => Promise<T>): Promise<T
   let attempt = 0
   let lastError: unknown
 
-  while (attempt < 3) {
+  while (attempt < 5) {
     try {
       return await operation()
     } catch (error) {
@@ -26,17 +26,20 @@ export async function withPrismaRetry<T>(operation: () => Promise<T>): Promise<T
       lastError = error
       attempt += 1
 
-      if (attempt >= 3) {
+      if (attempt >= 5) {
         break
       }
 
-      console.warn(`[prisma] Prepared statement desync detected, retry ${attempt}/2`)
+      console.warn(`[prisma] Prepared statement desync detected, retry ${attempt}/4`)
 
       try {
         await prisma.$disconnect()
       } catch {
         // Ignore disconnect errors; retry anyway.
       }
+
+      // Small backoff to let pooled connection state settle.
+      await new Promise((resolve) => setTimeout(resolve, attempt * 50))
     }
   }
 
