@@ -1,6 +1,6 @@
 # Phase 0 - Foundation & Tech Debt
 
-**Status:** In Progress
+**Status:** Complete
 **Goal:** Fix critical technical gaps before starting the UX/UI redesign.
 **Reference:** See `docs/tech-audit.md` for full audit details.
 
@@ -8,16 +8,16 @@
 
 ## P0 - Critical (Do First)
 
-- [ ] Add `error.tsx` at app root for graceful error handling
-- [ ] Add `not-found.tsx` at app root for custom 404 page
-- [ ] Add environment variable validation at startup (fail fast if missing)
+- [x] Add `error.tsx` at app root for graceful error handling
+- [x] Add `not-found.tsx` at app root for custom 404 page
+- [x] Add environment variable validation at startup (fail fast if missing)
 
 ## P1 - Important (Before Feature Work)
 
-- [ ] Set up Vitest + React Testing Library (basic test infrastructure)
-- [ ] Add GitHub Actions workflow (lint + type-check + build on PRs)
-- [ ] Move rate limiting from in-memory to Upstash Redis / Vercel KV
-- [ ] Add `loading.tsx` to main routes (`/films`, `/jeux`, `/series`, `/livres`, `/media/[id]`)
+- [x] Set up Vitest + React Testing Library (basic test infrastructure)
+- [x] Add GitHub Actions workflow (lint + type-check + build on PRs)
+- [x] Move rate limiting from in-memory to Upstash Redis / Vercel KV
+- [x] Add `loading.tsx` to main routes (`/films`, `/jeux`, `/series`, `/livres`, `/media/[id]`)
 
 ## P2 - Recommended (When Convenient)
 

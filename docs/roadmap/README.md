@@ -1,6 +1,6 @@
 # Roadmap - Le Bon Sens Numerique
 
-## Current Phase: Phase 0 - Foundation
+## Current Phase: Phase 1 - UX/UI Redesign
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Phase | Name | Status | Description |
 |---|---|---|---|
-| 0 | Foundation & Tech Debt | **In Progress** | Fix critical gaps identified in the tech audit |
-| 1 | UX/UI Redesign | Upcoming | Full user experience and interface overhaul |
+| 0 | Foundation & Tech Debt | **Complete** | Fix critical gaps identified in the tech audit |
+| 1 | UX/UI Redesign | **In Progress** | Full user experience and interface overhaul |
 | 2 | Content & Features | Planned | Expand content, recommendations, community features |
 | 3 | Growth & Scale | Planned | Performance, SEO, analytics, marketing pages |
 

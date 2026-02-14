@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { auth } from "@/lib/auth"
+import { Ratelimit } from "@upstash/ratelimit"
+import { Redis } from "@upstash/redis"
 
 // Routes that require authentication
 const protectedRoutes = ["/profil", "/mes-avis"]
@@ -23,6 +25,46 @@ const rateLimitedRoutes: Record<string, string> = {
   "/api/media": "api",
 }
 
+// Rate limit configuration
+const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
+  auth: { maxRequests: 5, windowMs: 60000 },
+  search: { maxRequests: 30, windowMs: 60000 },
+  api: { maxRequests: 100, windowMs: 60000 },
+  admin: { maxRequests: 50, windowMs: 60000 },
+}
+
+// Use Upstash Redis when configured, otherwise fall back to in-memory
+const useUpstash =
+  !!process.env.UPSTASH_REDIS_REST_URL &&
+  !!process.env.UPSTASH_REDIS_REST_TOKEN
+
+// Create Upstash rate limiters per limit type
+const upstashLimiters: Record<string, Ratelimit> = {}
+
+if (useUpstash) {
+  const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  })
+
+  for (const [type, config] of Object.entries(RATE_LIMITS)) {
+    upstashLimiters[type] = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(
+        config.maxRequests,
+        `${config.windowMs}ms`
+      ),
+      prefix: `ratelimit:${type}`,
+    })
+  }
+}
+
+// In-memory fallback for development (per-instance only)
+const rateLimitStore = new Map<
+  string,
+  { count: number; resetTime: number }
+>()
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -31,13 +73,7 @@ export async function middleware(request: NextRequest) {
     const clientIp = getClientIp(request)
     const limitType = getRateLimitType(pathname)
 
-    // Simple in-memory rate limiting for middleware
-    // For production, use Redis or Upstash
-    const rateLimitResult = await checkMiddlewareRateLimit(
-      clientIp,
-      limitType,
-      pathname
-    )
+    const rateLimitResult = await checkRateLimit(clientIp, limitType)
 
     if (!rateLimitResult.allowed) {
       return new NextResponse(
@@ -125,26 +161,30 @@ function getRateLimitType(pathname: string): string {
   return "api"
 }
 
-// Rate limit configuration
-const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
-  auth: { maxRequests: 5, windowMs: 60000 },
-  search: { maxRequests: 30, windowMs: 60000 },
-  api: { maxRequests: 100, windowMs: 60000 },
-  admin: { maxRequests: 50, windowMs: 60000 },
+// Unified rate limit check: Upstash Redis or in-memory fallback
+async function checkRateLimit(
+  clientIp: string,
+  limitType: string
+): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
+  // Use Upstash when configured (production)
+  if (useUpstash) {
+    const limiter = upstashLimiters[limitType] || upstashLimiters.api
+    const result = await limiter.limit(clientIp)
+    return {
+      allowed: result.success,
+      remaining: result.remaining,
+      resetIn: Math.max(0, result.reset - Date.now()),
+    }
+  }
+
+  // In-memory fallback (development / single instance)
+  return checkInMemoryRateLimit(clientIp, limitType)
 }
 
-// Simple in-memory rate limit store for edge runtime
-// Note: This is per-instance. For production, use Redis/Upstash
-const rateLimitStore = new Map<
-  string,
-  { count: number; resetTime: number }
->()
-
-async function checkMiddlewareRateLimit(
+function checkInMemoryRateLimit(
   clientIp: string,
-  limitType: string,
-  pathname: string
-): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
+  limitType: string
+): { allowed: boolean; remaining: number; resetIn: number } {
   const config = RATE_LIMITS[limitType] || RATE_LIMITS.api
   const now = Date.now()
   const key = `${clientIp}:${limitType}`

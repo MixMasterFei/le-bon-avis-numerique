@@ -8,14 +8,14 @@
   --color-secondary-foreground: #92400e;
   --color-accent: #06b6d4;
   --color-accent-foreground: #ffffff;
-  --color-muted: #faf5ff;
+  --color-muted: #faf8f5;
   --color-muted-foreground: #6b7280;
   --color-card: #ffffff;
   --color-card-foreground: #1f2937;
   --color-background: #fffbf5;
   --color-foreground: #1f2937;
-  --color-border: #e9d5ff;
-  --color-input: #f3e8ff;
+  --color-border: #e5e0db;
+  --color-input: #f5f3f0;
   --color-ring: #7c3aed;
 
   /* Popover/Dropdown colors */
@@ -67,7 +67,7 @@
 
   /* Signature gradient text */
   .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-pink-500 to-orange-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-600 to-pink-500;
   }
 
   /* Playful underline accent */
@@ -81,7 +81,7 @@
     left: 0;
     width: 100%;
     height: 4px;
-    background: linear-gradient(90deg, #7c3aed, #ec4899, #fb923c);
+    background: linear-gradient(90deg, #7c3aed, #ec4899);
     border-radius: 2px;
   }
 }
@@ -94,11 +94,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-violet-50 rounded-full;
+    @apply bg-gray-100 rounded-full;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-violet-300 rounded-full hover:bg-violet-400;
+    @apply bg-gray-300 rounded-full hover:bg-gray-400;
   }
 
   /* Card hover lift effect */
@@ -107,7 +107,7 @@
   }
   .card-hover:hover {
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 0 20px 40px -12px rgba(124, 58, 237, 0.25);
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
   }
 
   /* Blob background shapes */

@@ -154,10 +154,10 @@ export function HeroSearch() {
         }}
         className="relative"
       >
-        <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-violet-900/30 ring-4 ring-white/20">
-          <Search className="absolute left-5 h-5 w-5 text-violet-400 pointer-events-none" />
+        <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20 ring-4 ring-white/10">
+          <Search className="absolute left-5 h-5 w-5 text-gray-400 pointer-events-none" />
           {loading && (
-            <Loader2 className="absolute right-36 h-4 w-4 text-violet-400 animate-spin" />
+            <Loader2 className="absolute right-36 h-4 w-4 text-gray-400 animate-spin" />
           )}
           {query && !loading && (
             <button
@@ -168,7 +168,7 @@ export function HeroSearch() {
                 setShowDropdown(false)
                 inputRef.current?.focus()
               }}
-              className="absolute right-36 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-violet-600 transition-colors"
+              className="absolute right-36 h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -190,7 +190,7 @@ export function HeroSearch() {
           />
           <Button
             type="submit"
-            className="absolute right-2 h-12 px-6 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-700 hover:to-pink-600 shadow-lg shadow-violet-500/30 font-semibold transition-all duration-300 hover:scale-105"
+            className="absolute right-2 h-12 px-6 rounded-xl shadow-lg font-semibold transition-all duration-300 hover:scale-105"
             disabled={query.trim().length < 2}
           >
             Rechercher
@@ -200,7 +200,7 @@ export function HeroSearch() {
 
       {/* Autocomplete dropdown - Bold styling */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-violet-100 z-[100] overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
           <ul className="py-2 max-h-72 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
@@ -208,17 +208,17 @@ export function HeroSearch() {
                 <li key={`${suggestion.type}:${suggestion.id}`}>
                   <button
                     type="button"
-                    className={`w-full px-5 py-3 flex items-center gap-4 text-left hover:bg-violet-50 transition-all duration-200 ${
-                      index === selectedIndex ? "bg-violet-50 border-l-4 border-violet-500" : ""
+                    className={`w-full px-5 py-3 flex items-center gap-4 text-left hover:bg-gray-50 transition-all duration-200 ${
+                      index === selectedIndex ? "bg-gray-50 border-l-4 border-primary" : ""
                     }`}
                     onClick={() => goToMedia(suggestion)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-violet-100 to-pink-100">
-                      <Icon className="h-4 w-4 text-violet-600 flex-shrink-0" />
+                    <div className="p-2 rounded-xl bg-gray-100">
+                      <Icon className="h-4 w-4 text-gray-600 flex-shrink-0" />
                     </div>
                     <span className="font-semibold text-gray-800 truncate flex-1">{suggestion.title}</span>
-                    <span className="text-xs text-violet-500 bg-violet-100 px-2 py-1 rounded-full font-medium flex-shrink-0">{typeLabels[suggestion.type]}</span>
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium flex-shrink-0">{typeLabels[suggestion.type]}</span>
                   </button>
                 </li>
               )
@@ -229,7 +229,7 @@ export function HeroSearch() {
 
       {/* Popular searches - Playful pills */}
       <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
-        <span className="text-white/80 text-sm flex items-center gap-1.5 font-medium">
+        <span className="text-white/60 text-sm flex items-center gap-1.5 font-medium">
           <TrendingUp className="h-4 w-4" />
           Populaire:
         </span>
@@ -237,7 +237,7 @@ export function HeroSearch() {
           <Link
             key={item.href}
             href={item.href}
-            className="text-sm bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-full transition-all duration-300 backdrop-blur-sm border border-white/20 hover:border-white/40 hover:scale-105 font-medium"
+            className="text-sm bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-4 py-1.5 rounded-full transition-all duration-300 border border-white/10 hover:border-white/25 font-medium"
           >
             {item.label}
           </Link>
@@ -246,6 +246,8 @@ export function HeroSearch() {
     </div>
   )
 }
+
+
 
 
 
