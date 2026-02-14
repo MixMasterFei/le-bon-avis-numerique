@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { Ratelimit } from "@upstash/ratelimit"
-import { Redis } from "@upstash/redis"
 
 // Routes that require authentication
 const protectedRoutes = ["/profil", "/mes-avis"]
@@ -32,45 +30,7 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
   admin: { maxRequests: 50, windowMs: 60000 },
 }
 
-// Use Upstash Redis only when explicitly enabled, otherwise fall back to in-memory.
-// This prevents global API failures if Upstash config or SDK behavior changes.
-const enableUpstashRateLimit = process.env.ENABLE_UPSTASH_RATE_LIMIT === "true"
-let useUpstash = false
-const upstashLimiters: Record<string, Ratelimit> = {}
-
-if (
-  enableUpstashRateLimit &&
-  process.env.UPSTASH_REDIS_REST_URL &&
-  process.env.UPSTASH_REDIS_REST_TOKEN
-) {
-  try {
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    })
-
-    for (const [type, config] of Object.entries(RATE_LIMITS)) {
-      upstashLimiters[type] = new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(
-          config.maxRequests,
-          `${config.windowMs}ms`
-        ),
-        prefix: `ratelimit:${type}`,
-      })
-    }
-
-    useUpstash = true
-  } catch (error) {
-    // Never crash middleware initialization because of optional rate limit backend.
-    console.error("[middleware] Upstash init failed, fallback in-memory:", error)
-    useUpstash = false
-  }
-} else if (!enableUpstashRateLimit) {
-  console.warn("[middleware] Upstash rate limiting disabled (ENABLE_UPSTASH_RATE_LIMIT != true)")
-}
-
-// In-memory fallback for development (per-instance only)
+// In-memory rate limiting (per-instance only).
 const rateLimitStore = new Map<
   string,
   { count: number; resetTime: number }
@@ -174,27 +134,11 @@ function getRateLimitType(pathname: string): string {
   return "api"
 }
 
-// Unified rate limit check: Upstash Redis or in-memory fallback
+// Unified rate limit check: in-memory only
 async function checkRateLimit(
   clientIp: string,
   limitType: string
 ): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
-  try {
-    // Use Upstash when configured (production)
-    if (useUpstash) {
-      const limiter = upstashLimiters[limitType] || upstashLimiters.api
-      const result = await limiter.limit(clientIp)
-      return {
-        allowed: result.success,
-        remaining: result.remaining,
-        resetIn: Math.max(0, result.reset - Date.now()),
-      }
-    }
-  } catch (error) {
-    console.error("[middleware] Rate limit backend error, fallback in-memory:", error)
-  }
-
-  // In-memory fallback (development / single instance)
   return checkInMemoryRateLimit(clientIp, limitType)
 }
 

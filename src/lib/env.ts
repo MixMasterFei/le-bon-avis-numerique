@@ -22,8 +22,6 @@ const optionalVars = [
   "FROM_EMAIL",
   "TMDB_API_KEY",
   "NEXT_PUBLIC_APP_URL",
-  "UPSTASH_REDIS_REST_URL",
-  "UPSTASH_REDIS_REST_TOKEN",
 ] as const
 
 export function validateEnv() {
