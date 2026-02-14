@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { logCronRun } from "@/lib/cron-log"
 import {
   getPopularMovies,
   getNowPlayingMovies,
@@ -234,6 +235,14 @@ export async function GET(req: NextRequest) {
 
     console.log(`[cron] Weekly import complete: ${totalImported} new items in ${duration}s`)
 
+    await logCronRun({
+      task: "import",
+      status: totalImported > 0 ? "success" : "partial",
+      summary: `${totalImported} nouveaux contenus importes en ${duration}s`,
+      details: results,
+      startTime,
+    })
+
     return NextResponse.json({
       success: true,
       duration: `${duration}s`,
@@ -242,6 +251,14 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error("[cron] Weekly import failed:", error)
+
+    await logCronRun({
+      task: "import",
+      status: "error",
+      summary: error instanceof Error ? error.message : "Import failed",
+      startTime,
+    })
+
     return NextResponse.json(
       { error: "Import failed", message: error instanceof Error ? error.message : "Unknown" },
       { status: 500 }

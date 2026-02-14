@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { logCronRun } from "@/lib/cron-log"
 
 export const maxDuration = 60
 
@@ -11,6 +12,8 @@ export const maxDuration = 60
  * Processes up to 50 items per call to stay within timeout.
  */
 export async function POST(req: NextRequest) {
+  const startTime = Date.now()
+
   if (!(await isCronOrAdminAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -24,10 +27,16 @@ export async function POST(req: NextRequest) {
     },
     select: { id: true, tmdbId: true, type: true },
     take: 50,
-    orderBy: { dataQualityScore: "desc" }, // Prioritize higher quality items
+    orderBy: { dataQualityScore: "desc" },
   })
 
   if (items.length === 0) {
+    await logCronRun({
+      task: "backfill-ratings",
+      status: "success",
+      summary: "Tous les items ont deja des notes TMDB",
+      startTime,
+    })
     return NextResponse.json({ message: "All items already have ratings", updated: 0 })
   }
 
@@ -57,7 +66,6 @@ export async function POST(req: NextRequest) {
         updated++
       }
 
-      // Rate limit TMDB API calls
       await new Promise((resolve) => setTimeout(resolve, 150))
     } catch {
       errors++
@@ -66,6 +74,14 @@ export async function POST(req: NextRequest) {
 
   const remaining = await prisma.mediaItem.count({
     where: { tmdbId: { not: null }, tmdbRating: null, type: { in: ["MOVIE", "TV"] } },
+  })
+
+  await logCronRun({
+    task: "backfill-ratings",
+    status: errors > 0 ? "partial" : "success",
+    summary: `${updated} notes TMDB ajoutees, ${remaining} restants`,
+    details: { updated, errors, remaining },
+    startTime,
   })
 
   return NextResponse.json({

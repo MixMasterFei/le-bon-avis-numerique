@@ -2,12 +2,12 @@ name: Scheduled Maintenance
 
 on:
   schedule:
-    # ┌─── Weekly import: Monday 3:00 AM UTC (backup for Vercel cron)
+    # Monday 3:00 AM UTC — Import + Enrichment batch 1
     - cron: "0 3 * * 1"
-    # ┌─── Enrichment + quality: Wednesday 4:00 AM UTC
-    - cron: "0 4 * * 3"
-    # ┌─── Streaming + ratings: Friday 4:00 AM UTC
-    - cron: "0 4 * * 5"
+    # Thursday 4:00 AM UTC — Enrichment batch 2 + quality scores
+    - cron: "0 4 * * 4"
+    # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
+    - cron: "0 5 * * 6"
   workflow_dispatch:
     inputs:
       task:
@@ -28,16 +28,19 @@ env:
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
-  # ── Monday: Import new content from TMDB ──────────────────────────
-  import:
-    name: Weekly Import
+  # ── Monday: Import new content + first enrichment pass ────────────
+  monday:
+    name: Import & Enrich (batch 1)
     runs-on: ubuntu-latest
     if: >-
       github.event.schedule == '0 3 * * 1' ||
       github.event.inputs.task == 'import' ||
+      github.event.inputs.task == 'enrich' ||
       github.event.inputs.task == 'all'
     steps:
       - name: Import movies & TV shows
+        if: >-
+          github.event.inputs.task != 'enrich'
         run: |
           echo "::group::Weekly import"
           response=$(curl -sf -w "\n%{http_code}" \
@@ -52,17 +55,53 @@ jobs:
           fi
           echo "::endgroup::"
 
-  # ── Wednesday: AI enrichment + quality scores ─────────────────────
-  enrich:
-    name: AI Enrichment & Quality
+      - name: Enrich movies (batch of 30)
+        if: >-
+          github.event.inputs.task != 'import'
+        run: |
+          echo "::group::Enrich movies"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"movie","limit":30}' \
+            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Enrich TV shows (batch of 20)
+        if: >-
+          github.event.inputs.task != 'import'
+        run: |
+          echo "::group::Enrich TV"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"tv","limit":20}' \
+            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Enrich games (batch of 10)
+        if: >-
+          github.event.inputs.task != 'import'
+        run: |
+          echo "::group::Enrich games"
+          curl -sf -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"game","limit":10}' \
+            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
+  # ── Thursday: Second enrichment pass + quality scores ─────────────
+  thursday:
+    name: Enrich (batch 2) & Quality
     runs-on: ubuntu-latest
     if: >-
-      github.event.schedule == '0 4 * * 3' ||
+      github.event.schedule == '0 4 * * 4' ||
       github.event.inputs.task == 'enrich' ||
       github.event.inputs.task == 'quality' ||
       github.event.inputs.task == 'all'
     steps:
-      - name: Enrich movies (batch of 20)
+      - name: Enrich movies (batch of 30)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
@@ -70,7 +109,7 @@ jobs:
           curl -sf -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"type":"movie","limit":20}' \
+            -d '{"type":"movie","limit":30}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           echo "::endgroup::"
 
@@ -121,19 +160,21 @@ jobs:
           done
           echo "::endgroup::"
 
-  # ── Friday: TMDB ratings backfill + streaming platforms ───────────
-  backfill:
-    name: Ratings & Streaming
+  # ── Saturday: TMDB ratings + streaming platforms + similarity ─────
+  saturday:
+    name: Ratings, Streaming & Similarity
     runs-on: ubuntu-latest
     if: >-
-      github.event.schedule == '0 4 * * 5' ||
+      github.event.schedule == '0 5 * * 6' ||
       github.event.inputs.task == 'backfill-ratings' ||
       github.event.inputs.task == 'streaming' ||
+      github.event.inputs.task == 'similarity' ||
       github.event.inputs.task == 'all'
     steps:
       - name: Backfill TMDB ratings (loop until done)
         if: >-
-          github.event.inputs.task != 'streaming'
+          github.event.inputs.task != 'streaming' &&
+          github.event.inputs.task != 'similarity'
         run: |
           echo "::group::Backfill ratings"
           for i in $(seq 1 20); do
@@ -153,7 +194,8 @@ jobs:
 
       - name: Update streaming platforms - Movies
         if: >-
-          github.event.inputs.task != 'backfill-ratings'
+          github.event.inputs.task != 'backfill-ratings' &&
+          github.event.inputs.task != 'similarity'
         run: |
           echo "::group::Streaming movies"
           for offset in 0 50 100; do
@@ -168,7 +210,8 @@ jobs:
 
       - name: Update streaming platforms - TV
         if: >-
-          github.event.inputs.task != 'backfill-ratings'
+          github.event.inputs.task != 'backfill-ratings' &&
+          github.event.inputs.task != 'similarity'
         run: |
           echo "::group::Streaming TV"
           for offset in 0 50 100; do

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { SimilaritySource } from "@prisma/client"
+import { logCronRun } from "@/lib/cron-log"
 
 /**
  * Compute media similarities based on:
@@ -11,6 +12,7 @@ import { SimilaritySource } from "@prisma/client"
  * - Same franchise/series
  */
 export async function POST(request: Request) {
+  const startTime = Date.now()
   try {
     const body = await request.json().catch(() => ({}))
     const limit = Math.min(body.limit || 50, 100) // Max 100 items per batch
@@ -96,15 +98,31 @@ export async function POST(request: Request) {
       }
     }
 
+    await logCronRun({
+      task: "similarity",
+      status: "success",
+      summary: `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`,
+      details: { processed, created, updated },
+      startTime,
+    })
+
     return NextResponse.json({
       success: true,
       processed,
       created,
       updated,
-      details: details.slice(0, 50), // Limit details
+      details: details.slice(0, 50),
     })
   } catch (error) {
     console.error("Similarity compute error:", error)
+
+    await logCronRun({
+      task: "similarity",
+      status: "error",
+      summary: error instanceof Error ? error.message : "Similarity compute failed",
+      startTime,
+    })
+
     return NextResponse.json(
       { error: "Failed to compute similarities" },
       { status: 500 }

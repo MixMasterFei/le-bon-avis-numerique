@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getMovieDetails, getTVDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
 import { getGameDetails, getIGDBImageUrl, getPegiRating } from "@/lib/igdb"
+import { logCronRun } from "@/lib/cron-log"
 import OpenAI from "openai"
 
 // Batch enrichment API - Enrich items that don't have content metrics
@@ -166,6 +167,7 @@ Sois precis et base ton analyse sur les informations fournies ET ta connaissance
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const body = await request.json()
     const {
@@ -281,12 +283,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    await logCronRun({
+      task: "enrich",
+      status: result.errors > 0 ? "partial" : "success",
+      summary: `${result.enriched} enrichis sur ${result.processed} (${type})`,
+      details: { ...result, type },
+      startTime,
+    })
+
     return NextResponse.json({
       success: true,
       result,
     })
   } catch (error) {
     console.error("Enrichment error:", error)
+
+    await logCronRun({
+      task: "enrich",
+      status: "error",
+      summary: error instanceof Error ? error.message : "Enrichment failed",
+      startTime,
+    })
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Enrichment failed" },
       { status: 500 }

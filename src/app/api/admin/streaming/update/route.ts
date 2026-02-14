@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getMovieWatchProviders, getTVWatchProviders } from "@/lib/tmdb"
+import { logCronRun } from "@/lib/cron-log"
 
 export const maxDuration = 60 // seconds
 
@@ -88,6 +89,7 @@ function extractProviders(watchData: Awaited<ReturnType<typeof getMovieWatchProv
 
 // POST /api/admin/streaming/update - Update streaming platforms for movies
 export async function POST(request: Request) {
+  const startTime = Date.now()
   try {
     const body = await request.json()
     const {
@@ -161,6 +163,14 @@ export async function POST(request: Request) {
     // Get total count for pagination info
     const totalCount = await prisma.mediaItem.count({ where: whereClause })
 
+    await logCronRun({
+      task: "streaming",
+      status: stats.errors > 0 ? "partial" : "success",
+      summary: `${stats.updated} plateformes MAJ (${mediaType}), ${stats.noProviders} sans provider`,
+      details: { ...stats, mediaType, offset },
+      startTime,
+    })
+
     return NextResponse.json({
       success: true,
       stats,
@@ -173,6 +183,14 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error("Streaming update error:", error)
+
+    await logCronRun({
+      task: "streaming",
+      status: "error",
+      summary: error instanceof Error ? error.message : "Streaming update failed",
+      startTime,
+    })
+
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Update failed" },
       { status: 500 }

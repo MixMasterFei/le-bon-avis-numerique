@@ -693,3 +693,17 @@ model AdminActivity {
   @@index([userId])
   @@map("admin_activities")
 }
+
+model CronLog {
+  id        String   @id @default(uuid())
+  task      String // "import", "enrich", "backfill-ratings", "quality", "streaming", "similarity"
+  status    String // "success", "error", "partial"
+  summary   String? // Human-readable one-liner
+  details   Json? // { imported: 5, errors: 0, duration: 12345, ... }
+  duration  Int? // milliseconds
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([task])
+  @@map("cron_logs")
+}

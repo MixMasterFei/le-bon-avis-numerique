@@ -29,6 +29,7 @@ import {
   StatsCollapsible,
   ActivityFeed,
   UserAnalytics,
+  CronLogsSection,
 } from "@/components/admin"
 
 interface DashboardData {
@@ -420,6 +421,11 @@ export default function AdminDashboard() {
           languageDistribution={dashboardData.languageDistribution}
         />
       )}
+
+      {/* Cron Jobs - Automated task history */}
+      <div className="mb-6">
+        <CronLogsSection />
+      </div>
 
       {/* Two columns: Activity Feed & User Analytics */}
       <div className="grid lg:grid-cols-2 gap-6 mb-6">

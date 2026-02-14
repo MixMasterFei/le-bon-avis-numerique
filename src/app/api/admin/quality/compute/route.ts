@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { logCronRun } from "@/lib/cron-log"
 
 // Extend Vercel serverless timeout
 export const maxDuration = 60 // seconds
@@ -9,6 +10,7 @@ export const maxDuration = 60 // seconds
  * Processes in small chunks to avoid timeout
  */
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   try {
     const body = await request.json().catch(() => ({}))
     const limit = body.limit || 200 // Small batch to fit in timeout
@@ -74,6 +76,17 @@ export async function POST(request: NextRequest) {
 
     const hasMore = offset + mediaItems.length < totalCount
 
+    // Log only on the last batch (when done)
+    if (!hasMore) {
+      await logCronRun({
+        task: "quality",
+        status: "success",
+        summary: `Scores recalcules pour ${offset + mediaItems.length} items`,
+        details: { total: totalCount, scoreDistribution },
+        startTime,
+      })
+    }
+
     return NextResponse.json({
       success: true,
       done: !hasMore,
@@ -85,6 +98,14 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Quality compute error:", error)
+
+    await logCronRun({
+      task: "quality",
+      status: "error",
+      summary: error instanceof Error ? error.message : "Quality compute failed",
+      startTime,
+    })
+
     return NextResponse.json(
       {
         error: "Failed to compute quality scores",
