@@ -54,13 +54,6 @@ export function FamilyRecommendationsSection() {
         .then((res) => res.json())
         .then((data) => {
           setMembers(data.familyMembers || [])
-          // Auto-select first member with reactions
-          const memberWithReactions = data.familyMembers?.find(
-            (m: FamilyMember) => (m._count?.reactions || 0) > 0
-          )
-          if (memberWithReactions) {
-            setSelectedMember(memberWithReactions.id)
-          }
         })
         .finally(() => setLoading(false))
     } else {
@@ -130,35 +123,16 @@ export function FamilyRecommendationsSection() {
     )
   }
 
-  // Check if any member has reactions
-  const membersWithReactions = members.filter((m) => (m._count?.reactions || 0) > 0)
+  // Show all members - those without reactions will see a prompt to add feedback
+  const hasAnyReactions = members.some((m) => (m._count?.reactions || 0) > 0)
 
-  if (membersWithReactions.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-indigo-500" />
-            Recommandations personnalisées
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-gray-600 mb-4">
-              Regardez des films et notez les réactions de {members.length > 1 ? "vos enfants" : members[0].name} pour débloquer
-              des recommandations personnalisées !
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/films">
-                <Film className="h-4 w-4 mr-2" />
-                Découvrir des films
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  // Auto-select first member if none selected yet
+  useEffect(() => {
+    if (members.length > 0 && !selectedMember) {
+      const memberWithReactions = members.find((m) => (m._count?.reactions || 0) > 0)
+      setSelectedMember(memberWithReactions?.id || members[0].id)
+    }
+  }, [members, selectedMember])
 
   return (
     <Card>
@@ -167,32 +141,39 @@ export function FamilyRecommendationsSection() {
           <Sparkles className="h-5 w-5 text-indigo-500" />
           Recommandations personnalisées
         </CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/recommandations">
-            Voir tout <ChevronRight className="h-4 w-4 ml-1" />
-          </Link>
-        </Button>
+        {hasAnyReactions && (
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/recommandations">
+              Voir tout <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
-        {/* Family Member Tabs */}
+        {/* Family Member Tabs - show ALL members */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-4 border-b">
-          {membersWithReactions.map((member) => (
-            <button
-              key={member.id}
-              onClick={() => setSelectedMember(member.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                selectedMember === member.id
-                  ? "bg-indigo-600 text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              <span className="text-lg">{member.avatarEmoji}</span>
-              <span className="font-medium">{member.name}</span>
-              <span className="text-xs opacity-70">
-                ({member._count?.reactions || 0})
-              </span>
-            </button>
-          ))}
+          {members.map((member) => {
+            const reactionCount = member._count?.reactions || 0
+            return (
+              <button
+                key={member.id}
+                onClick={() => setSelectedMember(member.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${
+                  selectedMember === member.id
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <span className="text-lg">{member.avatarEmoji}</span>
+                <span className="font-medium">{member.name}</span>
+                {reactionCount > 0 && (
+                  <span className="text-xs opacity-70">
+                    ({reactionCount})
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {/* Recommendations */}
@@ -205,7 +186,7 @@ export function FamilyRecommendationsSection() {
             {/* Based on info */}
             {recommendations.basedOn && (
               <div className="mb-4 flex flex-wrap gap-2 items-center text-sm text-gray-600">
-                <span>Basé sur {recommendations.basedOn.lovedCount + recommendations.basedOn.likedCount} films aimés :</span>
+                <span>Basé sur {recommendations.basedOn.lovedCount + recommendations.basedOn.likedCount} avis :</span>
                 {recommendations.basedOn.genres.slice(0, 3).map((genre) => (
                   <Badge key={genre} variant="secondary">
                     {genre}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
+import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -19,8 +20,10 @@ export async function GET(request: NextRequest) {
   const featured = searchParams.get("featured") === "true" // Featured/popular movies
   const language = searchParams.get("language") // Filter by original language
   const frenchOnly = searchParams.get("frenchOnly") === "true"
+  const shuffle = searchParams.get("shuffle") // "weekly" for week-seeded rotation
 
   const skip = (page - 1) * limit
+  const useWeeklyShuffle = shuffle === "weekly" && page === 1
 
   try {
     const where: Prisma.MediaItemWhereInput = {
@@ -43,12 +46,17 @@ export async function GET(request: NextRequest) {
       where.dataQualityScore = { gte: parseInt(minQuality) }
     }
 
-    // Featured movies: high quality, with poster, French/English content only
+    // Featured movies: genuinely well-rated, well-known, family-appropriate
     if (featured) {
       where.dataQualityScore = { gte: 50 }
-      // Only show content relevant to French audience (French or English)
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        // Must have a good TMDB rating (6.5+ out of 10) with meaningful vote count
+        { tmdbRating: { gte: 6.5 } },
+        { tmdbVoteCount: { gte: 200 } },
+        // Must have an expert age rating
+        { expertAgeRec: { not: null } },
+        // Only French/English content
         { originalLanguage: { in: ["fr", "en"] } },
       ]
     }
@@ -154,21 +162,31 @@ export async function GET(request: NextRequest) {
     } else if (sortBy === "title") {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {
-      orderBy = { dataQualityScore: "desc" }
+      // Sort by TMDB audience rating (actual movie quality), then data completeness as tiebreaker
+      orderBy = [{ tmdbRating: { sort: "desc", nulls: "last" } }, { dataQualityScore: "desc" }]
     }
 
+    // When weekly shuffle is active, fetch a larger pool then shuffle deterministically
+    const fetchLimit = useWeeklyShuffle ? limit * 5 : limit
+
     // Run sequentially for compatibility with pooled Postgres backends.
-    const movies = await withPrismaRetry(() =>
+    let movies = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
         orderBy,
         skip,
-        take: limit,
+        take: fetchLimit,
         include: {
           contentMetrics: true,
         },
       })
     )
+
+    // Apply weekly shuffle: deterministic reorder based on ISO week number
+    if (useWeeklyShuffle && movies.length > limit) {
+      movies = seededShuffle(movies, getWeekSeed()).slice(0, limit)
+    }
+
     let total = movies.length
     try {
       total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))

@@ -66,7 +66,7 @@ export function FeaturedMovies() {
         // - Minimum quality score of 70
         const familyGenres = encodeURIComponent("Animation,Famille")
         const excludeGenres = encodeURIComponent("Romance,Drame,Horreur,Thriller,Crime,Guerre")
-        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70`)
+        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70&shuffle=weekly`)
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
 

@@ -30,20 +30,20 @@ export function WelcomeHeader() {
       try {
         // Fetch family members count
         const familyRes = await fetch("/api/user/family")
-        const familyData = familyRes.ok ? await familyRes.json() : { members: [] }
+        const familyData = familyRes.ok ? await familyRes.json() : { familyMembers: [] }
 
         // Fetch favorites count
         const favRes = await fetch("/api/user/favorites")
-        const favData = favRes.ok ? await favRes.json() : { items: [] }
+        const favData = favRes.ok ? await favRes.json() : { favorites: [] }
 
         // Fetch watchlist count
         const watchRes = await fetch("/api/user/watchlist")
-        const watchData = watchRes.ok ? await watchRes.json() : { items: [] }
+        const watchData = watchRes.ok ? await watchRes.json() : { watchlist: [] }
 
         setStats({
-          familyMembers: familyData.members?.length || 0,
-          favorites: favData.items?.length || 0,
-          watchlist: watchData.items?.length || 0,
+          familyMembers: familyData.familyMembers?.length || 0,
+          favorites: favData.favorites?.length || 0,
+          watchlist: watchData.watchlist?.length || 0,
         })
       } catch (error) {
         console.error("Failed to fetch stats:", error)

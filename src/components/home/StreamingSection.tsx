@@ -110,7 +110,7 @@ export function StreamingSection() {
         // Fetch 5 family-friendly movies from the streaming availability table
         // Using maxAge=10 for truly family-friendly content (same as Expert Picks)
         const res = await fetch(
-          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=5&maxAge=10&type=SUBSCRIPTION`
+          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=5&maxAge=10&type=SUBSCRIPTION&shuffle=weekly`
         )
         if (!res.ok) throw new Error("API error")
         const data = await res.json()

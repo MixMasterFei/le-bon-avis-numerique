@@ -132,6 +132,10 @@ model MediaItem {
   igdbId       Int?    @unique @map("igdb_id")
   googleBookId String? @unique @map("google_book_id")
 
+  // TMDB audience ratings (used internally for quality ranking, not displayed)
+  tmdbRating     Float? @map("tmdb_rating")      // vote_average (0-10 scale)
+  tmdbVoteCount  Int?   @map("tmdb_vote_count")  // number of votes
+
   // Data quality tracking
   dataSource       DataSource @default(TMDB) @map("data_source")
   dataQualityScore Int        @default(0) @map("data_quality_score") // 0-100

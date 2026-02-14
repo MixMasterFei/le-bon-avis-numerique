@@ -70,17 +70,19 @@ export async function GET(request: NextRequest) {
     // Collect data from loved/liked media
     const lovedGenres: Record<string, number> = {}
     const lovedMediaIds = new Set<string>()
-    const mediaTypes: Set<string> = new Set()
 
     for (const reaction of familyMember.reactions) {
       lovedMediaIds.add(reaction.media.id)
-      mediaTypes.add(reaction.media.type)
 
       const weight = reaction.reaction === "LOVED" ? 2 : 1
       for (const genre of reaction.media.genres) {
         lovedGenres[genre] = (lovedGenres[genre] || 0) + weight
       }
     }
+
+    // Always recommend across all main media types for diversity
+    // (not just the types the user already reacted to)
+    const mediaTypes = ["MOVIE", "TV", "GAME"] as const
 
     // Sort genres by weight
     const topGenres = Object.entries(lovedGenres)
@@ -181,10 +183,10 @@ export async function GET(request: NextRequest) {
       const genreBasedMedia = await prisma.mediaItem.findMany({
         where: {
           id: { notIn: excludeIds },
-          type: { in: Array.from(mediaTypes) as ("MOVIE" | "TV" | "GAME" | "BOOK" | "APP")[] },
+          type: { in: [...mediaTypes] },
           genres: { hasSome: topGenres },
-          // Require very high quality score to filter out obscure indie games
-          // Only show mainstream titles that people would find in stores
+          // Require poster and high quality to filter out obscure indie titles
+          posterUrl: { not: null, startsWith: "http" },
           dataQualityScore: { gte: 70 },
           ...ageFilter,
         },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
+import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 
 /**
  * Get movies available on specific streaming platforms
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "10")
   const maxAge = searchParams.get("maxAge")
   const type = searchParams.get("type") || "SUBSCRIPTION" // SUBSCRIPTION, RENT, BUY, FREE, ADS
+  const shuffle = searchParams.get("shuffle") // "weekly" for week-seeded rotation
 
   if (!provider) {
     return NextResponse.json(
@@ -33,6 +35,8 @@ export async function GET(request: NextRequest) {
 
     // Find movies available on the specified streaming provider
     // Fetch extra to account for deduplication (same movie may have multiple provider variants)
+    const useWeeklyShuffle = shuffle === "weekly"
+    const fetchMultiplier = useWeeklyShuffle ? 5 : 3
     const streamingEntries = await withPrismaRetry(() =>
       prisma.streamingAvailability.findMany({
         where: {
@@ -48,23 +52,29 @@ export async function GET(request: NextRequest) {
             },
           },
         },
-        take: limit * 3, // Fetch extra to account for deduplication
+        take: limit * fetchMultiplier,
         orderBy: {
           lastChecked: "desc",
         },
       })
     )
 
-    // Transform results and deduplicate by movie ID
+    // Deduplicate by movie ID
     // (same movie can have multiple provider variants like "Netflix" and "Netflix Standard with Ads")
     const seenIds = new Set<string>()
-    const movies = streamingEntries
-      .filter((entry) => {
-        if (seenIds.has(entry.media.id)) return false
-        seenIds.add(entry.media.id)
-        return true
-      })
-      .slice(0, limit) // Apply the limit after deduplication
+    let dedupedEntries = streamingEntries.filter((entry) => {
+      if (seenIds.has(entry.media.id)) return false
+      seenIds.add(entry.media.id)
+      return true
+    })
+
+    // Apply weekly shuffle for homepage rotation
+    if (useWeeklyShuffle && dedupedEntries.length > limit) {
+      dedupedEntries = seededShuffle(dedupedEntries, getWeekSeed())
+    }
+
+    const movies = dedupedEntries
+      .slice(0, limit)
       .map((entry) => ({
         id: entry.media.id,
         tmdbId: entry.media.tmdbId,

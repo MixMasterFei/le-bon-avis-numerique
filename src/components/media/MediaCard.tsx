@@ -63,12 +63,12 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
   if (metrics.violence >= 4) {
     tags.push({ label: "Violence", color: "bg-red-100 text-red-700" })
   }
-  // Positive messages
-  if (metrics.positiveMessages >= 4) {
+  // Truly educational content (5 = central theme, not just "has some positive messages")
+  if (metrics.positiveMessages >= 5) {
     tags.push({ label: "Educatif", color: "bg-emerald-100 text-emerald-700" })
   }
-  // Good role models
-  if (metrics.roleModels >= 4) {
+  // Exceptional role models
+  if (metrics.roleModels >= 5) {
     tags.push({ label: "Modeles+", color: "bg-blue-100 text-blue-700" })
   }
   // Language issues

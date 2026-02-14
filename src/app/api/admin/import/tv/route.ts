@@ -217,6 +217,8 @@ export async function POST(request: Request) {
             officialRating: mapCertificationToInternal(rating),
             expertAgeRec: certificationToAge(rating),
             originalLanguage: details.original_language || null,
+            tmdbRating: details.vote_average || null,
+            tmdbVoteCount: details.vote_count || null,
             platforms: [],
             topics: [],
           },
