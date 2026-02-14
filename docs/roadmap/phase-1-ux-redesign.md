@@ -1,21 +1,41 @@
 # Phase 1 - UX/UI Redesign
 
-**Status:** Upcoming (waiting for Phase 0 completion + design direction)
+**Status:** In Progress
 **Goal:** Complete visual and interaction overhaul of the platform.
 
 ---
 
-## Prerequisites
+## Completed
 
-- [ ] Phase 0 P0 items completed
-- [ ] Phase 0 P1 items completed
-- [ ] Design direction defined by owner
+### Homepage
+- [x] Weekly content rotation (seeded shuffle — changes every Monday)
+- [x] Featured content selection using TMDB audience ratings (not data completeness)
+- [x] ExpertPicks, FeaturedMovies, StreamingSection rotate weekly
+- [x] NewArrivals stays recency-based (intentional)
+- [x] Content tag tuning (Educatif/Modeles+ thresholds raised to avoid false positives)
+
+### Content Pages
+- [x] FilterSidebar on `/films` page
+- [x] 18+ content blur fix (violence >= 5 trigger)
+
+### Chez Vous (Personalized Hub)
+- [x] Fix dashboard stats (property name mismatch)
+- [x] Show all family members in recommendation tabs (not just those with reactions)
+- [x] Recommendations include all media types (movies + TV + games, not just reacted types)
+- [x] Quality filter: only recommend well-known titles (dataQualityScore >= 70)
+
+### Admin Dashboard
+- [x] Cron job activity log ("Jobs automatiques" section)
+- [x] Per-task summary cards with error rates and last run times
+
+### Automation
+- [x] GitHub Actions cron: Mon=import+enrich, Thu=enrich+quality, Sat=ratings+streaming+similarity
+- [x] ~120 items enriched per week via OpenAI
+- [x] All automated routes log to cron_logs table
 
 ---
 
-## Scope (To Be Defined)
-
-This phase will be scoped once the user provides design direction. Potential areas:
+## Remaining (To Be Scoped)
 
 ### Navigation & Layout
 - [ ] Header/navigation redesign
@@ -24,31 +44,24 @@ This phase will be scoped once the user provides design direction. Potential are
 - [ ] Page layout consistency
 
 ### Content Pages
-- [ ] Homepage redesign
-- [ ] Media listing pages (`/films`, `/jeux`, `/series`, `/livres`)
-- [ ] Media detail page (`/media/[id]`)
-- [ ] Search & filter experience
+- [ ] Media listing pages (`/jeux`, `/series`, `/livres`) — FilterSidebar parity with `/films`
+- [ ] Media detail page redesign (`/media/[id]`)
+- [ ] Search & filter experience improvements
 
 ### User Features
-- [ ] Profile page
-- [ ] Family management
-- [ ] Favorites & watchlist
+- [ ] Profile page redesign
+- [ ] Family management UX
+- [ ] Favorites & watchlist UX
 - [ ] Review experience
 
-### Chez Vous (Personalized Hub)
-- [ ] Personalized homepage
-- [ ] Family recommendations
-- [ ] Movie night feature
-
 ### Visual Identity
-- [ ] Color palette
+- [ ] Color palette refinement (violet dominance reduced, but more work needed)
 - [ ] Typography
 - [ ] Component design system
-- [ ] Iconography
-- [ ] Illustrations / empty states
+- [ ] Empty states and illustrations
 
 ---
 
 ## Notes
 
-_This document will be updated when the UX/UI redesign begins. The owner will define priorities and design direction._
+Design direction to be defined by owner for remaining items. Current work focused on making existing features work well before visual overhaul.

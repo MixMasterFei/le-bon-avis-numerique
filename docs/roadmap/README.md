@@ -1,6 +1,6 @@
 # Roadmap - Le Bon Sens Numerique
 
-## Current Phase: Phase 1 - UX/UI Redesign
+## Current Phase: Phase 1 - UX/UI Redesign (+ ongoing automation)
 
 ---
 
@@ -18,10 +18,23 @@
 ## Phase Details
 
 ### [Phase 0 - Foundation & Tech Debt](phase-0-foundation.md)
-Fix the critical technical gaps before building new features. Focus on error handling, testing setup, CI/CD, and production readiness. This ensures a clean base for the UX/UI redesign.
+All P0 and P1 items completed. Remaining P2/P3 items tracked in `docs/tech-audit.md`.
 
 ### [Phase 1 - UX/UI Redesign](phase-1-ux-redesign.md)
-Complete visual and interaction overhaul. Will be scoped once Phase 0 is complete and the user defines design direction.
+Visual and interaction overhaul in progress. Homepage rotation, quality selection, and dashboard fixes completed.
+
+---
+
+## Recent Completed Work (Feb 2026)
+
+- Weekly homepage content rotation (seeded shuffle, changes every Monday)
+- TMDB ratings integration for quality-based content selection
+- Family dashboard fixes (stats, recommendations diversity, missing members)
+- Content tag threshold tuning (Educatif, Modeles+)
+- GitHub Actions automation (import, AI enrichment, quality, streaming, similarity)
+- Cron job activity logging in admin dashboard
+- FilterSidebar on Films page
+- 18+ content blur fix
 
 ---
 
