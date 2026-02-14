@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
@@ -156,7 +157,8 @@ export async function GET(request: NextRequest) {
       orderBy = { dataQualityScore: "desc" }
     }
 
-    const [movies, total] = await Promise.all([
+    // Run sequentially for compatibility with pooled Postgres backends.
+    const movies = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
         orderBy,
@@ -165,9 +167,9 @@ export async function GET(request: NextRequest) {
         include: {
           contentMetrics: true,
         },
-      }),
-      prisma.mediaItem.count({ where }),
-    ])
+      })
+    )
+    const total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
 
     // Transform to API format
     const transformedMovies = movies.map((movie) => ({

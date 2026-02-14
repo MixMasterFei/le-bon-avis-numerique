@@ -166,15 +166,19 @@ async function checkRateLimit(
   clientIp: string,
   limitType: string
 ): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
-  // Use Upstash when configured (production)
-  if (useUpstash) {
-    const limiter = upstashLimiters[limitType] || upstashLimiters.api
-    const result = await limiter.limit(clientIp)
-    return {
-      allowed: result.success,
-      remaining: result.remaining,
-      resetIn: Math.max(0, result.reset - Date.now()),
+  try {
+    // Use Upstash when configured (production)
+    if (useUpstash) {
+      const limiter = upstashLimiters[limitType] || upstashLimiters.api
+      const result = await limiter.limit(clientIp)
+      return {
+        allowed: result.success,
+        remaining: result.remaining,
+        resetIn: Math.max(0, result.reset - Date.now()),
+      }
     }
+  } catch (error) {
+    console.error("[middleware] Rate limit backend error, fallback in-memory:", error)
   }
 
   // In-memory fallback (development / single instance)

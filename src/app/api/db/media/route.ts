@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
 
 // Unified media endpoint - fetches all types with filtering
@@ -48,7 +49,8 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const [items, total] = await Promise.all([
+    // Run sequentially for compatibility with pooled Postgres backends.
+    const items = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
         orderBy: [
@@ -60,9 +62,9 @@ export async function GET(request: NextRequest) {
         include: {
           contentMetrics: true,
         },
-      }),
-      prisma.mediaItem.count({ where }),
-    ])
+      })
+    )
+    const total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
 
     // Transform to API format
     const transformedItems = items.map((item) => ({

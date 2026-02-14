@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { withPrismaRetry } from "@/lib/prisma-retry"
 
 /**
  * Get movies available on specific streaming platforms
@@ -32,25 +33,27 @@ export async function GET(request: NextRequest) {
 
     // Find movies available on the specified streaming provider
     // Fetch extra to account for deduplication (same movie may have multiple provider variants)
-    const streamingEntries = await prisma.streamingAvailability.findMany({
-      where: {
-        provider: { contains: provider, mode: "insensitive" },
-        country: "FR",
-        type: type as any,
-        media: mediaWhere,
-      },
-      include: {
-        media: {
-          include: {
-            contentMetrics: true,
+    const streamingEntries = await withPrismaRetry(() =>
+      prisma.streamingAvailability.findMany({
+        where: {
+          provider: { contains: provider, mode: "insensitive" },
+          country: "FR",
+          type: type as any,
+          media: mediaWhere,
+        },
+        include: {
+          media: {
+            include: {
+              contentMetrics: true,
+            },
           },
         },
-      },
-      take: limit * 3, // Fetch extra to account for deduplication
-      orderBy: {
-        lastChecked: "desc",
-      },
-    })
+        take: limit * 3, // Fetch extra to account for deduplication
+        orderBy: {
+          lastChecked: "desc",
+        },
+      })
+    )
 
     // Transform results and deduplicate by movie ID
     // (same movie can have multiple provider variants like "Netflix" and "Netflix Standard with Ads")
@@ -85,16 +88,18 @@ export async function GET(request: NextRequest) {
       }))
 
     // Get total count of unique movies for this provider
-    const uniqueMediaIds = await prisma.streamingAvailability.findMany({
-      where: {
-        provider: { contains: provider, mode: "insensitive" },
-        country: "FR",
-        type: type as any,
-        media: mediaWhere,
-      },
-      select: { mediaId: true },
-      distinct: ["mediaId"],
-    })
+    const uniqueMediaIds = await withPrismaRetry(() =>
+      prisma.streamingAvailability.findMany({
+        where: {
+          provider: { contains: provider, mode: "insensitive" },
+          country: "FR",
+          type: type as any,
+          media: mediaWhere,
+        },
+        select: { mediaId: true },
+        distinct: ["mediaId"],
+      })
+    )
     const total = uniqueMediaIds.length
 
     return NextResponse.json({
