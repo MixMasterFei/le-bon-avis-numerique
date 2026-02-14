@@ -119,8 +119,11 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
 
-  // Check if content should be blurred (18+ with blur setting enabled)
-  const shouldBlur = settings.blur18Plus && media.expertAgeRec !== null && media.expertAgeRec >= 18
+  // Check if content should be blurred (18+ age or extreme violence with blur setting enabled)
+  const shouldBlur = settings.blur18Plus && (
+    (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
+    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
+  )
 
   // Compact variant - just poster and minimal info (for grids with many items)
   if (variant === "compact") {
@@ -265,7 +268,10 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
-  const shouldBlur = settings.blur18Plus && media.expertAgeRec !== null && media.expertAgeRec >= 18
+  const shouldBlur = settings.blur18Plus && (
+    (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
+    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
+  )
 
   return (
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
