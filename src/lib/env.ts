@@ -5,8 +5,7 @@
 
 const requiredVars = [
   "DATABASE_URL",
-  "NEXTAUTH_SECRET",
-  "TMDB_API_KEY",
+  "AUTH_SECRET",
 ] as const
 
 const optionalVars = [
@@ -21,6 +20,7 @@ const optionalVars = [
   "OPENAI_API_KEY",
   "ADMIN_SEED_SECRET",
   "FROM_EMAIL",
+  "TMDB_API_KEY",
   "NEXT_PUBLIC_APP_URL",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
