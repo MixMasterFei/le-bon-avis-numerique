@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { type Prisma } from "@prisma/client"
 
 /**
  * Log a cron/automated job execution to the database.
@@ -17,7 +18,7 @@ export async function logCronRun(params: {
         task: params.task,
         status: params.status,
         summary: params.summary,
-        details: params.details ?? undefined,
+        details: (params.details as Prisma.InputJsonValue) ?? undefined,
         duration: Date.now() - params.startTime,
       },
     })
