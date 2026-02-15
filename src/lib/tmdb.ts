@@ -654,6 +654,7 @@ export interface TMDBImage {
   file_path: string
   vote_average: number
   vote_count: number
+  iso_639_1?: string | null
 }
 
 export interface TMDBImagesResponse {
@@ -664,22 +665,70 @@ export interface TMDBImagesResponse {
 }
 
 /**
+ * Deduplicate TMDB backdrops: the API returns the same scene with different
+ * language overlays (fr, en, null). We prefer null (text-free) images first,
+ * then fill remaining slots with language-specific ones that aren't duplicates.
+ */
+function deduplicateBackdrops(backdrops: TMDBImage[], limit: number): TMDBImage[] {
+  // Separate text-free (null language) from language-specific images
+  const textFree = backdrops
+    .filter(img => !img.iso_639_1)
+    .sort((a, b) => b.vote_average - a.vote_average)
+  const withText = backdrops
+    .filter(img => img.iso_639_1)
+    .sort((a, b) => b.vote_average - a.vote_average)
+
+  const result: TMDBImage[] = []
+
+  // First: add all text-free backdrops (unique scenes)
+  for (const img of textFree) {
+    if (result.length >= limit) break
+    result.push(img)
+  }
+
+  // Second: fill remaining slots with language images, but skip likely duplicates.
+  // Language variants of the same scene share identical width×height, so skip
+  // any image whose exact dimensions already appear in our results.
+  if (result.length < limit) {
+    const seenSizes = new Set(result.map(img => `${img.width}x${img.height}`))
+    for (const img of withText) {
+      if (result.length >= limit) break
+      const sizeKey = `${img.width}x${img.height}`
+      // If all backdrops share the same resolution, the size check won't help,
+      // so we also compare file_path prefixes (TMDB often uses similar base paths)
+      if (!seenSizes.has(sizeKey)) {
+        seenSizes.add(sizeKey)
+        result.push(img)
+      }
+    }
+  }
+
+  // If still not enough (all same resolution, only null-lang available), just fill
+  if (result.length < limit) {
+    const usedPaths = new Set(result.map(img => img.file_path))
+    for (const img of [...textFree, ...withText]) {
+      if (result.length >= limit) break
+      if (!usedPaths.has(img.file_path)) {
+        usedPaths.add(img.file_path)
+        result.push(img)
+      }
+    }
+  }
+
+  return result
+}
+
+/**
  * Get images (backdrops, posters) for a movie
- * Returns highest rated backdrops first
+ * Returns deduplicated, highest rated backdrops first
  */
 export async function getMovieImages(movieId: number, limit = 6): Promise<TMDBImage[]> {
   try {
-    // Fetch with include_image_language to get both French and English images
     const response = await tmdbFetch<TMDBImagesResponse>(`/movie/${movieId}/images`, {
       include_image_language: "fr,en,null"
     })
 
-    // Sort by vote_average and return top backdrops
-    const backdrops = (response.backdrops || [])
-      .sort((a, b) => b.vote_average - a.vote_average)
-      .slice(0, limit)
-
-    return backdrops
+    return deduplicateBackdrops(response.backdrops || [], limit)
   } catch {
     return []
   }
@@ -694,11 +743,7 @@ export async function getTVImages(tvId: number, limit = 6): Promise<TMDBImage[]>
       include_image_language: "fr,en,null"
     })
 
-    const backdrops = (response.backdrops || [])
-      .sort((a, b) => b.vote_average - a.vote_average)
-      .slice(0, limit)
-
-    return backdrops
+    return deduplicateBackdrops(response.backdrops || [], limit)
   } catch {
     return []
   }

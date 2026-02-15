@@ -42,7 +42,7 @@ function FilmsRechercheContent() {
   const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
   const [apiLoading, setApiLoading] = useState(false)
 
-  // Update URL when filters change
+  // Update URL when filters change, preserving sort/quality params
   const updateUrl = useCallback((newFilters: FilterState) => {
     const params = new URLSearchParams()
     if (newFilters.maxAge < 18) {
@@ -57,9 +57,22 @@ function FilmsRechercheContent() {
     if (newFilters.searchQuery) {
       params.set("q", newFilters.searchQuery)
     }
+    // Preserve sort/quality params from the original URL
+    if (initialSortBy) {
+      params.set("sortBy", initialSortBy)
+    }
+    if (initialRequirePoster) {
+      params.set("requirePoster", "true")
+    }
+    if (initialMinQuality) {
+      params.set("minQuality", initialMinQuality.toString())
+    }
+    if (initialExcludeGenres.length > 0) {
+      params.set("excludeGenres", initialExcludeGenres.join(","))
+    }
     const newUrl = params.toString() ? `/films/recherche?${params}` : "/films/recherche"
     router.replace(newUrl, { scroll: false })
-  }, [router])
+  }, [router, initialSortBy, initialRequirePoster, initialMinQuality, initialExcludeGenres])
 
   // Priority: 1. Database, 2. External API, 3. Mock data
   useEffect(() => {

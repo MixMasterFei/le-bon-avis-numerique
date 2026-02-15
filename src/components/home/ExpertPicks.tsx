@@ -114,40 +114,24 @@ export function ExpertPicks() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Cascading fallback: try strict criteria first, relax if no results
-        // Attempt 1: Featured + genre filters + French/English only
-        let res = await fetch(
-          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&genres=Animation,Familial,Famille,Comedie&excludeGenres=Horreur,Thriller,Action&shuffle=weekly&language=fr,en"
-        )
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data?.movies) && data.movies.length > 0) {
-            setMovies(data.movies.map(mapDbToMockFormat))
-            return
-          }
-        }
+        // Fire all 3 fallback queries in parallel for speed, then use strictest non-empty result
+        const [res1, res2, res3] = await Promise.all([
+          // Attempt 1: Featured + genre filters + French/English only
+          fetch("/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&genres=Animation,Familial,Famille,Comedie&excludeGenres=Horreur,Thriller,Action&shuffle=weekly&language=fr,en"),
+          // Attempt 2: Featured, no genre filters
+          fetch("/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&shuffle=weekly&language=fr,en"),
+          // Attempt 3: Just high-quality family movies
+          fetch("/api/db/movies?limit=5&maxAge=10&requirePoster=true&minQuality=50&sortBy=quality&shuffle=weekly&language=fr,en"),
+        ])
 
-        // Attempt 2: Remove genre filters, keep featured=true
-        res = await fetch(
-          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&shuffle=weekly&language=fr,en"
-        )
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data?.movies) && data.movies.length > 0) {
-            setMovies(data.movies.map(mapDbToMockFormat))
-            return
-          }
-        }
-
-        // Attempt 3: Remove featured=true, just high-quality family movies
-        res = await fetch(
-          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&minQuality=50&sortBy=quality&shuffle=weekly&language=fr,en"
-        )
-        if (res.ok) {
-          const data = await res.json()
-          if (Array.isArray(data?.movies) && data.movies.length > 0) {
-            setMovies(data.movies.map(mapDbToMockFormat))
-            return
+        // Use strictest query that returned results
+        for (const res of [res1, res2, res3]) {
+          if (res.ok) {
+            const data = await res.json()
+            if (Array.isArray(data?.movies) && data.movies.length > 0) {
+              setMovies(data.movies.map(mapDbToMockFormat))
+              return
+            }
           }
         }
       } catch (error) {
