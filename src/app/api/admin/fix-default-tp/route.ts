@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+
+export const maxDuration = 60
+
 import {
   getMovieDetails,
   getTVDetails,

@@ -195,15 +195,17 @@ const OPERATIONS: Array<{
       key: "cacheStreaming",
       endpoint: "/api/admin/streaming/cache",
       method: "POST",
-      body: { limit: 50 },
-      chunked: false,
+      body: { limit: 10 },
+      chunked: true,
+      delayMs: 1000,
       accumKeys: ["processed", "updated", "errors"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
-        total: null,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
         updated: data.updated || 0,
         errors: data.errors || 0,
       }),
+      isDone: (data) => data.done === true,
       buildSummary: (stats) => {
         const errs = stats.errors || 0
         return `${stats.processed || 0} traites, ${stats.updated || 0} mis a jour${errs ? `, ${errs} erreurs` : ""}`
@@ -220,14 +222,21 @@ const OPERATIONS: Array<{
       key: "computeSimilarity",
       endpoint: "/api/admin/similarity/compute",
       method: "POST",
-      body: { limit: 50 },
-      chunked: false,
+      body: { limit: 20 },
+      chunked: true,
+      delayMs: 500,
       accumKeys: ["processed", "updated"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
-        total: null,
+        total: data.total || null,
         updated: (data.created || 0) + (data.updated || 0),
       }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.nextOffset) return null
+        params.set("offset", String(data.nextOffset))
+        return params
+      },
       buildSummary: (stats) =>
         `${stats.processed || 0} paires, ${stats.updated || 0} similarites`,
     },

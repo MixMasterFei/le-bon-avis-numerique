@@ -66,50 +66,73 @@ export async function POST(request: Request) {
     stats.total = mediaItems.length
     stats.details.push(`Found ${mediaItems.length} media items to process`)
 
+    let consecutiveRateLimits = 0
+
     for (let i = 0; i < mediaItems.length; i++) {
       const media = mediaItems[i]
 
       // Delay between items to respect TMDB rate limits (40 req/10s)
-      // Use 500ms base delay + extra pause every 10 items
       if (i > 0) {
         await new Promise((r) => setTimeout(r, 500))
-        if (i % 10 === 0) {
-          await new Promise((r) => setTimeout(r, 2000))
+        if (i % 5 === 0) {
+          await new Promise((r) => setTimeout(r, 1500))
         }
       }
 
       try {
-        let screenshots: { url: string; width?: number; height?: number; externalId?: string }[] = []
-
-        // Fetch screenshots based on media type
-        if (media.type === "MOVIE" && media.tmdbId) {
-          const tmdbImages = await getMovieImages(media.tmdbId, screenshotsPerMedia)
-          screenshots = tmdbImages.map((img: TMDBImage, index: number) => ({
-            url: getBackdropUrl(img.file_path, "large"),
-            width: img.width,
-            height: img.height,
-            externalId: img.file_path,
-            order: index,
-          }))
-        } else if (media.type === "TV" && media.tmdbId) {
-          const tmdbImages = await getTVImages(media.tmdbId, screenshotsPerMedia)
-          screenshots = tmdbImages.map((img: TMDBImage, index: number) => ({
-            url: getBackdropUrl(img.file_path, "large"),
-            width: img.width,
-            height: img.height,
-            externalId: img.file_path,
-            order: index,
-          }))
-        } else if (media.type === "GAME" && media.igdbId) {
-          const igdbScreenshots = await getGameScreenshots(media.igdbId, screenshotsPerMedia)
-          screenshots = igdbScreenshots.map((img: IGDBScreenshot, index: number) => ({
-            url: getIGDBScreenshotUrl(img.image_id, "large"),
-            width: img.width,
-            height: img.height,
-            externalId: img.image_id,
-            order: index,
-          }))
+        // Helper to fetch images for this item
+        const fetchImages = async () => {
+          if (media.type === "MOVIE" && media.tmdbId) {
+            const imgs = await getMovieImages(media.tmdbId, screenshotsPerMedia)
+            return imgs.map((img: TMDBImage, idx: number) => ({
+              url: getBackdropUrl(img.file_path, "large"),
+              width: img.width, height: img.height,
+              externalId: img.file_path, order: idx,
+            }))
+          } else if (media.type === "TV" && media.tmdbId) {
+            const imgs = await getTVImages(media.tmdbId, screenshotsPerMedia)
+            return imgs.map((img: TMDBImage, idx: number) => ({
+              url: getBackdropUrl(img.file_path, "large"),
+              width: img.width, height: img.height,
+              externalId: img.file_path, order: idx,
+            }))
+          } else if (media.type === "GAME" && media.igdbId) {
+            const imgs = await getGameScreenshots(media.igdbId, screenshotsPerMedia)
+            return imgs.map((img: IGDBScreenshot, idx: number) => ({
+              url: getIGDBScreenshotUrl(img.image_id, "large"),
+              width: img.width, height: img.height,
+              externalId: img.image_id, order: idx,
+            }))
+          }
+          return []
         }
+
+        let screenshots: { url: string; width?: number; height?: number; externalId?: string; order?: number }[]
+        try {
+          screenshots = await fetchImages()
+        } catch (fetchErr) {
+          const msg = fetchErr instanceof Error ? fetchErr.message : ""
+          if (msg.includes("rate limit") || msg.includes("429")) {
+            // Back off 10s and retry once
+            await new Promise((r) => setTimeout(r, 10000))
+            try {
+              screenshots = await fetchImages()
+            } catch {
+              consecutiveRateLimits++
+              stats.errors++
+              stats.details.push(`Rate limit: ${media.title}`)
+              if (consecutiveRateLimits >= 3) {
+                stats.details.push("Arret: rate limit persistant")
+                break
+              }
+              continue
+            }
+          } else {
+            throw fetchErr
+          }
+        }
+
+        consecutiveRateLimits = 0
 
         if (screenshots.length === 0) {
           stats.skipped++

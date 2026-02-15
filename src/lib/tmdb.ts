@@ -741,30 +741,22 @@ function deduplicateBackdrops(backdrops: TMDBImage[], limit: number): TMDBImage[
  * Returns deduplicated, highest rated backdrops first
  */
 export async function getMovieImages(movieId: number, limit = 6): Promise<TMDBImage[]> {
-  try {
-    const response = await tmdbFetch<TMDBImagesResponse>(`/movie/${movieId}/images`, {
-      include_image_language: "fr,en,null"
-    })
+  const response = await tmdbFetch<TMDBImagesResponse>(`/movie/${movieId}/images`, {
+    include_image_language: "fr,en,null"
+  })
 
-    return deduplicateBackdrops(response.backdrops || [], limit)
-  } catch {
-    return []
-  }
+  return deduplicateBackdrops(response.backdrops || [], limit)
 }
 
 /**
  * Get images for a TV show
  */
 export async function getTVImages(tvId: number, limit = 6): Promise<TMDBImage[]> {
-  try {
-    const response = await tmdbFetch<TMDBImagesResponse>(`/tv/${tvId}/images`, {
-      include_image_language: "fr,en,null"
-    })
+  const response = await tmdbFetch<TMDBImagesResponse>(`/tv/${tvId}/images`, {
+    include_image_language: "fr,en,null"
+  })
 
-    return deduplicateBackdrops(response.backdrops || [], limit)
-  } catch {
-    return []
-  }
+  return deduplicateBackdrops(response.backdrops || [], limit)
 }
 
 /**

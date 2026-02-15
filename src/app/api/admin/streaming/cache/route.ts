@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
 
+export const maxDuration = 60
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
@@ -26,54 +28,68 @@ interface TMDBWatchProviders {
 }
 
 /**
- * Cache streaming availability from TMDB for movies/TV shows
- * Processes items without recent streaming data (older than 7 days)
+ * Cache streaming availability from TMDB for movies/TV shows.
+ * Chunked: processes a small batch per call, frontend loops until done.
  */
 export async function POST(request: Request) {
   if (!TMDB_API_KEY) {
     return NextResponse.json(
-      { error: "TMDB API key not configured" },
+      { success: false, error: "TMDB API key not configured" },
       { status: 500 }
     )
   }
 
   try {
     const body = await request.json().catch(() => ({}))
-    const limit = Math.min(body.limit || 50, 100) // Max 100 items per batch
+    const limit = Math.min(body.limit || 10, 30)
     const forceRefresh = body.forceRefresh || false
-    const familyOnly = body.familyOnly || false // Filter for family-friendly content
-    const maxAge = body.maxAge || null // Optional age filter
+    const familyOnly = body.familyOnly || false
+    const maxAge = body.maxAge || null
 
-    // Find media items needing streaming data update
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    const mediaItems = await prisma.mediaItem.findMany({
-      where: {
-        tmdbId: { not: null },
-        type: { in: ["MOVIE", "TV"] },
-        // Add family-friendly filter if requested
-        ...(familyOnly || maxAge
-          ? {
-              AND: [
-                { expertAgeRec: { not: null } },
-                { expertAgeRec: { lte: maxAge || 10 } }
-              ]
-            }
-          : {}),
-        ...(forceRefresh
-          ? {}
-          : {
-              OR: [
-                { streamingAvailability: { none: {} } },
-                {
-                  streamingAvailability: {
-                    every: { lastChecked: { lt: sevenDaysAgo } },
-                  },
+    const whereClause = {
+      tmdbId: { not: null },
+      type: { in: ["MOVIE", "TV"] as ("MOVIE" | "TV")[] },
+      ...(familyOnly || maxAge
+        ? {
+            AND: [
+              { expertAgeRec: { not: null } },
+              { expertAgeRec: { lte: maxAge || 10 } },
+            ],
+          }
+        : {}),
+      ...(forceRefresh
+        ? {}
+        : {
+            OR: [
+              { streamingAvailability: { none: {} } },
+              {
+                streamingAvailability: {
+                  every: { lastChecked: { lt: sevenDaysAgo } },
                 },
-              ],
-            }),
-      },
+              },
+            ],
+          }),
+    }
+
+    // Count remaining to show progress
+    const remaining = await prisma.mediaItem.count({ where: whereClause })
+
+    if (remaining === 0) {
+      return NextResponse.json({
+        success: true,
+        done: true,
+        processed: 0,
+        updated: 0,
+        errors: 0,
+        remaining: 0,
+      })
+    }
+
+    const mediaItems = await prisma.mediaItem.findMany({
+      where: whereClause,
       select: {
         id: true,
         tmdbId: true,
@@ -87,7 +103,6 @@ export async function POST(request: Request) {
     let processed = 0
     let updated = 0
     let errors = 0
-    const details: string[] = []
 
     for (const item of mediaItems) {
       processed++
@@ -99,24 +114,32 @@ export async function POST(request: Request) {
         const response = await fetch(url)
         if (!response.ok) {
           errors++
-          details.push(`✗ ${item.title}: TMDB API error ${response.status}`)
           continue
         }
 
         const data: TMDBWatchProviders = await response.json()
         const frProviders = data.results?.FR
 
-        if (!frProviders) {
-          details.push(`○ ${item.title}: Pas de streaming FR`)
-          continue
-        }
-
-        // Delete old streaming data for this item
+        // Delete old streaming data
         await prisma.streamingAvailability.deleteMany({
           where: { mediaId: item.id },
         })
 
-        // Map TMDB provider types to our StreamingType enum
+        if (!frProviders) {
+          // Mark as checked so it's not re-queried next chunk
+          await prisma.streamingAvailability.create({
+            data: {
+              mediaId: item.id,
+              provider: "_none",
+              providerId: 0,
+              country: "FR",
+              type: "SUBSCRIPTION" as StreamingType,
+              lastChecked: new Date(),
+            },
+          })
+          continue
+        }
+
         const providerMappings: Array<{
           providers: TMDBProvider[] | undefined
           type: StreamingType
@@ -128,53 +151,57 @@ export async function POST(request: Request) {
           { providers: frProviders.ads, type: "ADS" },
         ]
 
-        let addedCount = 0
+        const records: Array<{
+          mediaId: string
+          provider: string
+          providerId: number
+          country: string
+          type: StreamingType
+          link: string | undefined
+          lastChecked: Date
+        }> = []
 
         for (const { providers, type } of providerMappings) {
-          if (!providers || providers.length === 0) continue
-
+          if (!providers?.length) continue
           for (const provider of providers) {
-            await prisma.streamingAvailability.create({
-              data: {
-                mediaId: item.id,
-                provider: provider.provider_name,
-                providerId: provider.provider_id,
-                country: "FR",
-                type,
-                link: frProviders.link,
-                lastChecked: new Date(),
-              },
+            records.push({
+              mediaId: item.id,
+              provider: provider.provider_name,
+              providerId: provider.provider_id,
+              country: "FR",
+              type,
+              link: frProviders.link,
+              lastChecked: new Date(),
             })
-            addedCount++
           }
         }
 
-        if (addedCount > 0) {
+        if (records.length > 0) {
+          await prisma.streamingAvailability.createMany({ data: records })
           updated++
-          details.push(`✓ ${item.title}: ${addedCount} providers cached`)
         }
 
-        // Small delay to avoid rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      } catch (err) {
+        // Respect TMDB rate limits (40 req/10s)
+        await new Promise((r) => setTimeout(r, 300))
+      } catch {
         errors++
-        details.push(
-          `✗ ${item.title}: ${err instanceof Error ? err.message : "Erreur"}`
-        )
       }
     }
 
+    const newRemaining = remaining - processed
+
     return NextResponse.json({
       success: true,
+      done: newRemaining <= 0,
       processed,
       updated,
       errors,
-      details: details.slice(0, 50), // Limit details to 50 items
+      remaining: Math.max(0, newRemaining),
     })
   } catch (error) {
     console.error("Streaming cache error:", error)
     return NextResponse.json(
-      { error: "Failed to cache streaming availability" },
+      { success: false, error: "Failed to cache streaming availability" },
       { status: 500 }
     )
   }

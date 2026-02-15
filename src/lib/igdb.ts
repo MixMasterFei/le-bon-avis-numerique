@@ -545,12 +545,8 @@ export async function getGameScreenshots(gameId: number, limit = 6): Promise<IGD
     limit ${safeLimit};
   `
 
-  try {
-    const screenshots = await igdbFetch<IGDBScreenshot[]>("/screenshots", body)
-    return screenshots
-  } catch {
-    return []
-  }
+  const screenshots = await igdbFetch<IGDBScreenshot[]>("/screenshots", body)
+  return screenshots
 }
 
 // ============================================

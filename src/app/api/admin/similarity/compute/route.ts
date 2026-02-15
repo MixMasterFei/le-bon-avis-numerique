@@ -3,22 +3,33 @@ import { prisma } from "@/lib/prisma"
 import { SimilaritySource } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
 
+export const maxDuration = 60
+
 /**
  * Compute media similarities based on:
  * - Same director
  * - Shared genres
  * - Similar age recommendation
  * - Shared topics
- * - Same franchise/series
+ *
+ * Chunked: processes a batch of items, compares all pairs within the batch.
+ * Frontend loops with increasing offset until done.
  */
 export async function POST(request: Request) {
   const startTime = Date.now()
   try {
     const body = await request.json().catch(() => ({}))
-    const limit = Math.min(body.limit || 50, 100) // Max 100 items per batch
-    const minScore = body.minScore || 0.3 // Minimum similarity score to save
+    // Read offset from URL params (set by getNextParams in hook) or body
+    const url = new URL(request.url)
+    const limit = Math.min(body.limit || 20, 50)
+    const offset = parseInt(url.searchParams.get("offset") || "0") || body.offset || 0
+    const minScore = body.minScore || 0.3
 
-    // Get media items with genres and topics for comparison
+    // Count total items for progress
+    const totalItems = await prisma.mediaItem.count({
+      where: { type: { in: ["MOVIE", "TV"] } },
+    })
+
     const mediaItems = await prisma.mediaItem.findMany({
       where: {
         type: { in: ["MOVIE", "TV"] },
@@ -32,6 +43,7 @@ export async function POST(request: Request) {
         director: true,
         expertAgeRec: true,
       },
+      skip: offset,
       take: limit,
       orderBy: { updatedAt: "desc" },
     })
@@ -39,9 +51,8 @@ export async function POST(request: Request) {
     let processed = 0
     let created = 0
     let updated = 0
-    const details: string[] = []
 
-    // Compare each pair of media items
+    // Compare each pair within this batch
     for (let i = 0; i < mediaItems.length; i++) {
       const itemA = mediaItems[i]
 
@@ -51,10 +62,8 @@ export async function POST(request: Request) {
 
         const { score, reasons } = computeSimilarity(itemA, itemB)
 
-        // Only save if score is above threshold
         if (score < minScore) continue
 
-        // Check if similarity already exists
         const existing = await prisma.mediaSimilarity.findFirst({
           where: {
             OR: [
@@ -65,7 +74,6 @@ export async function POST(request: Request) {
         })
 
         if (existing) {
-          // Update if score changed significantly
           if (Math.abs(existing.similarityScore - score) > 0.05) {
             await prisma.mediaSimilarity.update({
               where: { id: existing.id },
@@ -76,9 +84,6 @@ export async function POST(request: Request) {
               },
             })
             updated++
-            details.push(
-              `↻ ${itemA.title} ↔ ${itemB.title}: ${Math.round(score * 100)}%`
-            )
           }
         } else {
           await prisma.mediaSimilarity.create({
@@ -91,27 +96,31 @@ export async function POST(request: Request) {
             },
           })
           created++
-          details.push(
-            `✓ ${itemA.title} ↔ ${itemB.title}: ${Math.round(score * 100)}%`
-          )
         }
       }
     }
 
-    await logCronRun({
-      task: "similarity",
-      status: "success",
-      summary: `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`,
-      details: { processed, created, updated },
-      startTime,
-    })
+    const nextOffset = offset + limit
+    const done = nextOffset >= totalItems || mediaItems.length < limit
+
+    if (done) {
+      await logCronRun({
+        task: "similarity",
+        status: "success",
+        summary: `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`,
+        details: { processed, created, updated },
+        startTime,
+      })
+    }
 
     return NextResponse.json({
       success: true,
+      done,
       processed,
       created,
       updated,
-      details: details.slice(0, 50),
+      total: totalItems,
+      nextOffset: done ? null : nextOffset,
     })
   } catch (error) {
     console.error("Similarity compute error:", error)
@@ -124,7 +133,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(
-      { error: "Failed to compute similarities" },
+      { success: false, error: "Failed to compute similarities" },
       { status: 500 }
     )
   }
