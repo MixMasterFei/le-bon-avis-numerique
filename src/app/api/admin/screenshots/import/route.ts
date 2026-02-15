@@ -27,6 +27,10 @@ export async function POST(request: Request) {
       skipExisting = true, // Skip items that already have screenshots
     } = body
 
+    // Cursor-based pagination: afterId from URL params to progress past items
+    const url = new URL(request.url)
+    const afterId = url.searchParams.get("afterId") || null
+
     const stats: ImportStats = {
       total: 0,
       imported: 0,
@@ -40,20 +44,28 @@ export async function POST(request: Request) {
       ? { type: { in: ["MOVIE", "TV", "GAME"] as ("MOVIE" | "TV" | "GAME")[] } }
       : { type: mediaType as "MOVIE" | "TV" | "GAME" }
 
+    const whereClause = {
+      ...typeFilter,
+      ...(skipExisting ? {
+        screenshots: { none: {} }
+      } : {}),
+      // Only get items with external IDs
+      OR: [
+        { tmdbId: { not: null } },
+        { igdbId: { not: null } },
+      ],
+      // Cursor: skip items we already checked in previous chunks
+      ...(afterId ? { id: { gt: afterId } } : {}),
+    }
+
+    // Count total remaining for progress
+    const remaining = await prisma.mediaItem.count({ where: whereClause })
+
     // Get media items that need screenshots
     const mediaItems = await prisma.mediaItem.findMany({
-      where: {
-        ...typeFilter,
-        ...(skipExisting ? {
-          screenshots: { none: {} }
-        } : {}),
-        // Only get items with external IDs
-        OR: [
-          { tmdbId: { not: null } },
-          { igdbId: { not: null } },
-        ],
-      },
+      where: whereClause,
       take: limit,
+      orderBy: { id: "asc" },
       select: {
         id: true,
         title: true,
@@ -64,7 +76,6 @@ export async function POST(request: Request) {
     })
 
     stats.total = mediaItems.length
-    stats.details.push(`Found ${mediaItems.length} media items to process`)
 
     let consecutiveRateLimits = 0
 
@@ -169,12 +180,15 @@ export async function POST(request: Request) {
       }
     }
 
-    stats.details.push(
-      `Import complete: ${stats.imported} media processed, ${stats.skipped} skipped, ${stats.errors} errors`
-    )
+    // Last processed item ID for cursor pagination
+    const lastId = mediaItems.length > 0 ? mediaItems[mediaItems.length - 1].id : null
+    const done = mediaItems.length < limit
 
     return NextResponse.json({
       success: true,
+      done,
+      lastId,
+      remaining: Math.max(0, remaining - mediaItems.length),
       stats,
     })
   } catch (error) {

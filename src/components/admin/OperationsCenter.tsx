@@ -262,12 +262,17 @@ const OPERATIONS: Array<{
       accumKeys: ["processed", "updated", "skipped", "errors"],
       extractProgress: (data) => ({
         processed: data.stats?.total || 0,
-        total: null,
+        total: data.remaining ? (data.stats?.total || 0) + data.remaining : null,
         updated: data.stats?.imported || 0,
         skipped: data.stats?.skipped || 0,
         errors: data.stats?.errors || 0,
       }),
-      isDone: (data) => (data.stats?.total || 0) < 10,
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
       detectRateLimit: (_data, consecutiveEmpty) => consecutiveEmpty >= 2,
       buildSummary: (stats) => {
         const errs = stats.errors || 0
