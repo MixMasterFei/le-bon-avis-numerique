@@ -336,24 +336,49 @@ export default function AdminDashboard() {
 
   const handleFixTP = async () => {
     setFixingTP(true)
+    let totalProcessed = 0
+    let totalResetToNull = 0
+    let totalUpdatedToReal = 0
+    let totalKeptAsTP = 0
+    let totalErrors = 0
+
     try {
-      const res = await fetch("/api/admin/fix-default-tp", { method: "POST" })
-      const data = await res.json()
-      if (data.success) {
-        alert(`Correction terminee!\n\nTraites: ${data.processed}\nRemis a null: ${data.resetToNull}\nMis a jour: ${data.updatedToReal}\nConfirmes TP: ${data.keptAsTP}\nErreurs: ${data.errors}`)
-        handleRefresh()
-        // Refresh TP stats
-        const statsRes = await fetch("/api/admin/fix-default-tp")
-        if (statsRes.ok) {
-          const stats = await statsRes.json()
-          setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+      while (true) {
+        const res = await fetch("/api/admin/fix-default-tp", { method: "POST" })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          alert(`Erreur: ${data.error || "Echec de la correction"}`)
+          break
         }
-      } else {
-        alert(`Erreur: ${data.error}`)
+
+        totalProcessed += data.processed || 0
+        totalResetToNull += data.resetToNull || 0
+        totalUpdatedToReal += data.updatedToReal || 0
+        totalKeptAsTP += data.keptAsTP || 0
+        totalErrors += data.errors || 0
+
+        // Update stats live
+        if (data.remainingTP !== undefined) {
+          setFixTPStats({ tousPublics: data.remainingTP, nonClasse: 0 })
+        }
+
+        if (data.done) {
+          alert(`Correction terminee!\n\nTraites: ${totalProcessed}\nRemis a null: ${totalResetToNull}\nMis a jour: ${totalUpdatedToReal}\nConfirmes TP: ${totalKeptAsTP}\nErreurs: ${totalErrors}`)
+          handleRefresh()
+          const statsRes = await fetch("/api/admin/fix-default-tp")
+          if (statsRes.ok) {
+            const stats = await statsRes.json()
+            setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+          }
+          break
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
     } catch (err) {
       console.error("Failed to fix TP:", err)
-      alert("Erreur lors de la correction des faux Tous Publics")
+      alert(`Erreur lors de la correction\n\nTraites avant erreur: ${totalProcessed}\nRemis a null: ${totalResetToNull}`)
     } finally {
       setFixingTP(false)
     }
@@ -361,24 +386,46 @@ export default function AdminDashboard() {
 
   const handleImportCNC = async () => {
     setImportingCNC(true)
+    let totalProcessed = 0
+    let totalMatched = 0
+    let totalUpdated = 0
+    let totalNoMatch = 0
+    let totalErrors = 0
+
     try {
-      const res = await fetch("/api/admin/import-cnc-ratings", { method: "POST" })
-      const data = await res.json()
-      if (data.success) {
-        alert(`Import CNC termine!\n\nRecords CNC: ${data.cncRecords}\nTitres uniques: ${data.uniqueTitles}\nFilms en base: ${data.dbMovies}\nCorrespondances: ${data.matched}\nMis a jour: ${data.updated}\nDeja corrects: ${data.skipped}\nSans correspondance: ${data.noMatch}`)
-        handleRefresh()
-        // Refresh TP stats
-        const statsRes = await fetch("/api/admin/fix-default-tp")
-        if (statsRes.ok) {
-          const stats = await statsRes.json()
-          setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+      while (true) {
+        const res = await fetch("/api/admin/import-cnc-ratings", { method: "POST" })
+        const data = await res.json()
+
+        if (!res.ok || !data.success) {
+          alert(`Erreur: ${data.error || "Echec de l'import CNC"}`)
+          break
         }
-      } else {
-        alert(`Erreur: ${data.error}`)
+
+        totalProcessed += data.processed || 0
+        totalMatched += data.matched || 0
+        totalUpdated += data.updated || 0
+        totalNoMatch += data.noMatch || 0
+        totalErrors += data.errors || 0
+
+        if (data.done || !data.nextOffset) {
+          alert(`Import CNC termine!\n\nTraites: ${totalProcessed}\nCorrespondances: ${totalMatched}\nMis a jour: ${totalUpdated}\nSans correspondance: ${totalNoMatch}\nErreurs: ${totalErrors}`)
+          handleRefresh()
+          // Refresh TP stats
+          const statsRes = await fetch("/api/admin/fix-default-tp")
+          if (statsRes.ok) {
+            const stats = await statsRes.json()
+            setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+          }
+          break
+        }
+
+        // Small delay between chunks
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
     } catch (err) {
       console.error("Failed to import CNC:", err)
-      alert("Erreur lors de l'import CNC")
+      alert(`Erreur lors de l'import CNC\n\nTraites avant erreur: ${totalProcessed}\nMis a jour: ${totalUpdated}`)
     } finally {
       setImportingCNC(false)
     }

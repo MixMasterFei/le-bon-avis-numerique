@@ -139,13 +139,16 @@ export async function POST(request: Request) {
     const url = new URL(request.url)
     const dryRun = url.searchParams.get("dry") === "true"
     const onlyMissing = url.searchParams.get("only_missing") !== "false"
-    const limit = parseInt(url.searchParams.get("limit") || "500")
+    const limit = parseInt(url.searchParams.get("limit") || "30") // small batches for Vercel 60s limit
+    const offset = parseInt(url.searchParams.get("offset") || "0")
 
     // Get DB movies to match
     const whereClause: any = { type: "MOVIE" }
     if (onlyMissing) {
       whereClause.officialRating = null
     }
+
+    const totalRemaining = await prisma.mediaItem.count({ where: whereClause })
 
     const movies = await prisma.mediaItem.findMany({
       where: whereClause,
@@ -156,7 +159,9 @@ export async function POST(request: Request) {
         releaseDate: true,
         officialRating: true,
       },
+      skip: offset,
       take: limit,
+      orderBy: { createdAt: "asc" },
     })
 
     let matched = 0
@@ -218,17 +223,23 @@ export async function POST(request: Request) {
       }
     }
 
+    const done = movies.length < limit
+    const nextOffset = done ? null : offset + limit
+
     return NextResponse.json({
       success: true,
       dryRun,
       onlyMissing,
-      dbMovies: movies.length,
+      processed: movies.length,
+      totalRemaining,
       matched,
       updated,
       skipped,
       noMatch,
       errors,
-      changes: changes.slice(0, 200),
+      done,
+      nextOffset,
+      changes: changes.slice(0, 50),
     })
   } catch (error) {
     console.error("[CNC Import] Error:", error)

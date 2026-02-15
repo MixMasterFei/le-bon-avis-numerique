@@ -45,10 +45,13 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const url = new URL(request.url)
-    const limit = parseInt(url.searchParams.get("limit") || "200")
+    const limit = parseInt(url.searchParams.get("limit") || "30")
     const dryRun = url.searchParams.get("dry") === "true"
 
-    // Get all MOVIE/TV items currently marked TOUS_PUBLICS
+    // Get MOVIE/TV items currently marked TOUS_PUBLICS
+    const totalTP = await prisma.mediaItem.count({
+      where: { type: { in: ["MOVIE", "TV"] }, officialRating: "TOUS_PUBLICS", tmdbId: { not: null } },
+    })
     const items = await prisma.mediaItem.findMany({
       where: {
         type: { in: ["MOVIE", "TV"] },
@@ -123,15 +126,24 @@ export async function POST(request: Request) {
       }
     }
 
+    // After processing, check if there are more TP items left
+    const remainingTP = await prisma.mediaItem.count({
+      where: { type: { in: ["MOVIE", "TV"] }, officialRating: "TOUS_PUBLICS", tmdbId: { not: null } },
+    })
+    const done = remainingTP === 0 || items.length < limit
+
     return NextResponse.json({
       success: true,
       dryRun,
       processed: items.length,
+      totalTP,
+      remainingTP,
       resetToNull,
       updatedToReal,
       keptAsTP,
       errors,
-      changes: changes.slice(0, 100), // limit response size
+      done,
+      changes: changes.slice(0, 50),
     })
   } catch (error) {
     console.error("Fix default TP error:", error)
