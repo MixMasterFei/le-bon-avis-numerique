@@ -66,7 +66,7 @@ export function FeaturedMovies() {
         // - Minimum quality score of 70
         const familyGenres = encodeURIComponent("Animation,Famille")
         const excludeGenres = encodeURIComponent("Romance,Drame,Horreur,Thriller,Crime,Guerre")
-        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70&shuffle=weekly`)
+        const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70&shuffle=weekly&language=fr,en`)
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
 
@@ -74,7 +74,7 @@ export function FeaturedMovies() {
           setMovies(data.movies.map(mapDbToMockFormat))
         } else {
           // Fallback: try with just age filter if no genre matches
-          const fallbackRes = await fetch("/api/db/movies?limit=14&maxAge=10")
+          const fallbackRes = await fetch("/api/db/movies?limit=14&maxAge=10&language=fr,en")
           if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json()
             if (Array.isArray(fallbackData?.movies)) {

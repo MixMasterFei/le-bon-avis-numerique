@@ -17,12 +17,17 @@
 ### Content Pages
 - [x] FilterSidebar on `/films` page
 - [x] 18+ content blur fix (violence >= 5 trigger)
+- [x] Blur toggle: click eye icon to reveal content without navigating away
+- [x] French/English language filter on all homepage sections (no more Japanese titles)
+- [x] /nos-valeurs page rewritten for broader family audience
 
 ### Chez Vous (Personalized Hub)
 - [x] Fix dashboard stats (property name mismatch)
 - [x] Show all family members in recommendation tabs (not just those with reactions)
 - [x] Recommendations include all media types (movies + TV + games, not just reacted types)
 - [x] Quality filter: only recommend well-known titles (dataQualityScore >= 70)
+- [x] Fix React Hooks order violation causing page crashes
+- [x] Language filter on recommendations (French/English only)
 
 ### Admin Dashboard
 - [x] Cron job activity log ("Jobs automatiques" section)
@@ -37,7 +42,14 @@
 
 ## Remaining (To Be Scoped)
 
+### Homepage
+- [x] Remove redundant category buttons (Films/Series/Jeux/Livres/Apps)
+- [x] ExpertPicks cascading fallback queries (never shows empty section)
+- [x] Streaming section stale data indicator (amber warning >7 days)
+- [x] Plus dropdown z-index fix (header always above hero content)
+
 ### Navigation & Layout
+- [x] Remove "Pour votre enfant" from top nav (redundant with Chez Vous)
 - [ ] Header/navigation redesign
 - [ ] Mobile navigation experience
 - [ ] Footer redesign
@@ -59,6 +71,12 @@
 - [ ] Typography
 - [ ] Component design system
 - [ ] Empty states and illustrations
+
+### Performance
+- [ ] Media detail page loading optimization (TMDB response caching, Suspense boundaries)
+
+### Future Features (from feedback)
+- [ ] Theater movies section (currently in French cinemas via Pathe + TMDB)
 
 ---
 

@@ -4,7 +4,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Nos valeurs & notations | Le Bon Avis Numérique",
-  description: "Comprendre notre système d'évaluation et nos critères pour aider les parents à choisir des contenus adaptés",
+  description: "Comprendre notre système d'évaluation et nos critères pour vous aider à choisir des contenus adaptés pour votre famille",
 }
 
 const contentMetrics = [
@@ -135,7 +135,7 @@ export default function NosValeursPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Nos valeurs & notations</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Comprendre notre système d&apos;évaluation pour vous aider à choisir des contenus adaptés à vos enfants.
+          Comprendre notre système d&apos;évaluation pour vous aider à choisir des contenus adaptés à votre famille.
         </p>
       </div>
 
@@ -148,8 +148,8 @@ export default function NosValeursPage() {
           </h2>
           <div className="space-y-4 text-gray-600">
             <p>
-              <strong>Le Bon Avis Numérique</strong> a été créé avec une conviction simple : les parents méritent
-              des informations claires et détaillées pour guider les choix médiatiques de leurs enfants.
+              <strong>Le Bon Avis Numérique</strong> a été créé avec une conviction simple : chaque famille mérite
+              des informations claires et détaillées pour faire des choix médiatiques éclairés.
             </p>
             <p>
               Contrairement aux classifications d&apos;âge officielles (PEGI, CSA) qui donnent une indication générale,
@@ -160,7 +160,7 @@ export default function NosValeursPage() {
             <p>
               Nos évaluations sont réalisées par une combinaison d&apos;<strong>analyses expertes</strong> et
               d&apos;<strong>intelligence artificielle</strong>, puis enrichies par les <strong>avis de la communauté</strong>
-              de parents et d&apos;éducateurs.
+              de membres et de familles.
             </p>
           </div>
         </CardContent>
@@ -195,14 +195,14 @@ export default function NosValeursPage() {
                 <h3 className="font-semibold text-green-900">Âge suggéré (Communauté)</h3>
               </div>
               <p className="text-sm text-green-800">
-                Moyenne des suggestions des parents et éducateurs de notre communauté.
-                Reflète l&apos;expérience réelle des familles.
+                Moyenne des suggestions des membres de notre communauté.
+                Reflète l&apos;expérience réelle des spectateurs et des familles.
               </p>
             </div>
           </div>
           <p className="text-sm text-gray-500 italic">
-            Note : Ces âges sont des suggestions. Vous connaissez votre enfant mieux que quiconque.
-            Un enfant mature de 9 ans peut être prêt pour un contenu suggéré à 10 ans, et inversement.
+            Note : Ces âges sont des suggestions indicatives. Chaque personne et chaque famille est différente.
+            Un contenu suggéré pour un âge donné peut convenir plus tôt ou plus tard selon la maturité et les sensibilités de chacun.
           </p>
         </CardContent>
       </Card>
@@ -332,11 +332,11 @@ export default function NosValeursPage() {
         <CardContent className="space-y-4">
           <p className="text-gray-600">
             En plus de nos évaluations expertes, nous affichons les <strong>moyennes de la communauté</strong> :
-            les notes données par les parents et éducateurs qui ont utilisé ces contenus avec leurs enfants.
+            les notes données par les membres de notre communauté qui connaissent ces contenus.
           </p>
           <p className="text-gray-600">
             Vous pouvez <strong>contribuer</strong> en évaluant vous-même les contenus que vous connaissez.
-            Chaque avis aide d&apos;autres familles à faire de meilleurs choix.
+            Chaque avis aide d&apos;autres personnes et familles à faire de meilleurs choix.
           </p>
           <div className="flex gap-4 pt-4">
             <Link
@@ -379,8 +379,8 @@ export default function NosValeursPage() {
             <p className="text-gray-600 text-sm">
               Pour les critères sensibles (violence, sexe, langage, etc.), nous utilisons
               un code couleur prudent : vert (0-1), jaune (2), orange (3), rouge (4-5).
-              Une note de 3 indique une présence modérée qui peut nécessiter une discussion
-              avec l&apos;enfant ou une supervision.
+              Une note de 3 indique une présence modérée qui peut nécessiter une réflexion
+              ou une discussion en famille.
             </p>
           </div>
           <div>

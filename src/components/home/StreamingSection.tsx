@@ -110,7 +110,7 @@ export function StreamingSection() {
         // Fetch 5 family-friendly movies from the streaming availability table
         // Using maxAge=10 for truly family-friendly content (same as Expert Picks)
         const res = await fetch(
-          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=5&maxAge=10&type=SUBSCRIPTION&shuffle=weekly`
+          `/api/db/streaming?provider=${encodeURIComponent(selectedService.searchName)}&limit=5&maxAge=10&type=SUBSCRIPTION&shuffle=weekly&language=fr,en`
         )
         if (!res.ok) throw new Error("API error")
         const data = await res.json()
@@ -146,8 +146,11 @@ export function StreamingSection() {
     if (diffHours < 1) return "Mis à jour il y a moins d'une heure"
     if (diffHours < 24) return `Mis à jour il y a ${diffHours}h`
     if (diffDays === 1) return "Mis à jour hier"
-    return `Mis à jour il y a ${diffDays} jours`
+    if (diffDays <= 7) return `Mis à jour il y a ${diffDays} jours`
+    return "Données en cours de mise à jour"
   }
+
+  const isStale = lastUpdated && (Date.now() - lastUpdated.getTime()) > 7 * 24 * 60 * 60 * 1000
 
   return (
     <div>
@@ -161,13 +164,13 @@ export function StreamingSection() {
               Quoi regarder ce soir ?
             </h2>
             <p className="text-gray-600 text-sm">
-              Films adaptés aux enfants sur vos plateformes
+              Films pour toute la famille sur vos plateformes
             </p>
           </div>
         </div>
         {lastUpdated && (
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            <Clock className="h-3 w-3" />
+          <div className={`flex items-center gap-1 text-xs ${isStale ? "text-amber-500" : "text-gray-400"}`}>
+            {isStale ? <RefreshCw className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
             <span>{formatLastUpdated(lastUpdated)}</span>
           </div>
         )}

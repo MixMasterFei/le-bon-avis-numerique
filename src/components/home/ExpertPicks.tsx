@@ -114,19 +114,41 @@ export function ExpertPicks() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch high-quality family-friendly content
-        // Expert picks criteria:
-        // - High quality scores (minQuality=80) for well-documented content
-        // - Family-friendly (maxAge=10) - truly family-friendly, excluding 12+ content
-        // - Exclude action-heavy and horror genres for a calmer family selection
-        // - Prioritize films with good educational/positive values (Animation, Famille)
-        const res = await fetch(
-          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&genres=Animation,Familial,Famille,Comedie&excludeGenres=Horreur,Thriller,Action&shuffle=weekly"
+        // Cascading fallback: try strict criteria first, relax if no results
+        // Attempt 1: Featured + genre filters + French/English only
+        let res = await fetch(
+          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&genres=Animation,Familial,Famille,Comedie&excludeGenres=Horreur,Thriller,Action&shuffle=weekly&language=fr,en"
         )
-        if (!res.ok) throw new Error("DB error")
-        const data = await res.json()
-        if (Array.isArray(data?.movies) && data.movies.length > 0) {
-          setMovies(data.movies.map(mapDbToMockFormat))
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data?.movies) && data.movies.length > 0) {
+            setMovies(data.movies.map(mapDbToMockFormat))
+            return
+          }
+        }
+
+        // Attempt 2: Remove genre filters, keep featured=true
+        res = await fetch(
+          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&featured=true&sortBy=quality&shuffle=weekly&language=fr,en"
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data?.movies) && data.movies.length > 0) {
+            setMovies(data.movies.map(mapDbToMockFormat))
+            return
+          }
+        }
+
+        // Attempt 3: Remove featured=true, just high-quality family movies
+        res = await fetch(
+          "/api/db/movies?limit=5&maxAge=10&requirePoster=true&minQuality=50&sortBy=quality&shuffle=weekly&language=fr,en"
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data?.movies) && data.movies.length > 0) {
+            setMovies(data.movies.map(mapDbToMockFormat))
+            return
+          }
         }
       } catch (error) {
         console.error("Failed to fetch expert picks:", error)
@@ -148,7 +170,19 @@ export function ExpertPicks() {
   }
 
   if (movies.length === 0) {
-    return null
+    return (
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white shadow-lg">
+            <Award className="h-5 w-5" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Selection Expert</h2>
+        </div>
+        <p className="text-gray-600 text-sm">
+          Nos selections sont en cours de préparation. Revenez bientôt !
+        </p>
+      </div>
+    )
   }
 
   return (

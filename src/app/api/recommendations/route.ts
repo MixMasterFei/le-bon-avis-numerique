@@ -188,6 +188,8 @@ export async function GET(request: NextRequest) {
           // Require poster and high quality to filter out obscure indie titles
           posterUrl: { not: null, startsWith: "http" },
           dataQualityScore: { gte: 70 },
+          // Only recommend French/English content for French audience
+          originalLanguage: { in: ["fr", "en"] },
           ...ageFilter,
         },
         select: {

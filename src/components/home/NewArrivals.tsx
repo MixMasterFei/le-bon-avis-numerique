@@ -61,7 +61,7 @@ export function NewArrivals() {
       try {
         // Fetch the most recently added movies to the database
         // These are the newest additions, sorted by createdAt
-        const res = await fetch("/api/db/movies?limit=7&requirePoster=true&minQuality=50&sortBy=createdAt")
+        const res = await fetch("/api/db/movies?limit=7&requirePoster=true&minQuality=50&sortBy=createdAt&language=fr,en")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {

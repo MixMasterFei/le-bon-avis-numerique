@@ -74,6 +74,18 @@ export function FamilyRecommendationsSection() {
     }
   }, [selectedMember])
 
+  // Auto-select first member if none selected yet
+  // (must be before conditional returns to respect Rules of Hooks)
+  useEffect(() => {
+    if (members.length > 0 && !selectedMember) {
+      const memberWithReactions = members.find((m) => (m._count?.reactions || 0) > 0)
+      setSelectedMember(memberWithReactions?.id || members[0].id)
+    }
+  }, [members, selectedMember])
+
+  // Derived state (after all hooks, before conditional returns)
+  const hasAnyReactions = members.some((m) => (m._count?.reactions || 0) > 0)
+
   // Still loading
   if (loading) {
     return (
@@ -122,17 +134,6 @@ export function FamilyRecommendationsSection() {
       </Card>
     )
   }
-
-  // Show all members - those without reactions will see a prompt to add feedback
-  const hasAnyReactions = members.some((m) => (m._count?.reactions || 0) > 0)
-
-  // Auto-select first member if none selected yet
-  useEffect(() => {
-    if (members.length > 0 && !selectedMember) {
-      const memberWithReactions = members.find((m) => (m._count?.reactions || 0) > 0)
-      setSelectedMember(memberWithReactions?.id || members[0].id)
-    }
-  }, [members, selectedMember])
 
   return (
     <Card>

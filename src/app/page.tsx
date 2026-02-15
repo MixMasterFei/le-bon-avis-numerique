@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Shield } from "lucide-react"
+import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
@@ -12,14 +12,6 @@ import { CuratedCollections } from "@/components/home/CuratedCollections"
 import { TrustBanner } from "@/components/home/TrustBanner"
 import { StreamingSection } from "@/components/home/StreamingSection"
 
-const categories = [
-  { name: "Films", href: "/films", icon: Film, color: "bg-rose-500", textColor: "text-rose-600" },
-  { name: "Séries", href: "/series", icon: Tv, color: "bg-violet-500", textColor: "text-violet-600" },
-  { name: "Jeux", href: "/jeux", icon: Gamepad2, color: "bg-emerald-500", textColor: "text-emerald-600" },
-  { name: "Livres", href: "/livres", icon: BookOpen, color: "bg-amber-500", textColor: "text-amber-600" },
-  { name: "Apps", href: "/apps", icon: Smartphone, color: "bg-cyan-500", textColor: "text-cyan-600" },
-]
-
 export default function HomePage() {
   return (
     <div className="flex flex-col">
@@ -29,10 +21,10 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/15">
               <Shield className="h-5 w-5 text-emerald-400" />
-              <span className="text-sm font-medium text-white/90">Le guide de référence pour choisir les médias de vos enfants</span>
+              <span className="text-sm font-medium text-white/90">Le guide de référence pour choisir vos médias en famille</span>
             </div>
 
-            <div className="max-w-xl mx-auto relative z-50">
+            <div className="max-w-xl mx-auto relative z-40">
               <HeroSearch />
             </div>
           </div>
@@ -42,24 +34,6 @@ export default function HomePage() {
           <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-8">
             <path d="M0 30C120 50 240 10 480 30C720 50 960 10 1200 30C1320 40 1380 35 1440 30V60H0V30Z" fill="#fffbf5"/>
           </svg>
-        </div>
-      </section>
-
-      {/* Categories */}
-      <section className="py-6 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {categories.map((category) => (
-              <Link key={category.name} href={category.href}>
-                <div className="group flex items-center gap-3 px-5 py-3 bg-white hover:bg-gray-50 rounded-2xl shadow-sm hover:shadow-md border border-gray-200 hover:border-gray-300 transition-all duration-300 whitespace-nowrap hover:-translate-y-0.5">
-                  <div className={`p-2 rounded-xl ${category.color} text-white group-hover:scale-110 transition-transform duration-300`}>
-                    <category.icon className="h-5 w-5" />
-                  </div>
-                  <span className="font-semibold text-sm text-gray-700 group-hover:text-gray-900">{category.name}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 

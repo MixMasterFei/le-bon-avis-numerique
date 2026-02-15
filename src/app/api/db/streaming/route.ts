@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const type = searchParams.get("type") || "SUBSCRIPTION" // SUBSCRIPTION, RENT, BUY, FREE, ADS
   const shuffle = searchParams.get("shuffle") // "weekly" for week-seeded rotation
+  const language = searchParams.get("language") // Filter by original language (e.g. "fr,en")
 
   if (!provider) {
     return NextResponse.json(
@@ -31,6 +32,12 @@ export async function GET(request: NextRequest) {
 
     if (maxAge) {
       mediaWhere.expertAgeRec = { lte: parseInt(maxAge), not: null }
+    }
+
+    // Filter by original language
+    if (language) {
+      const languages = language.split(",").map((l: string) => l.trim())
+      mediaWhere.originalLanguage = { in: languages }
     }
 
     // Find movies available on the specified streaming provider

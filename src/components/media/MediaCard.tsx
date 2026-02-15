@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 
 import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, AlertTriangle, Heart, Swords, EyeOff } from "lucide-react"
@@ -118,12 +119,14 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
+  const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
   // Check if content should be blurred (18+ age or extreme violence with blur setting enabled)
   const shouldBlur = settings.blur18Plus && (
     (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
     (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
   )
+  const effectiveBlur = shouldBlur && !isBlurRemoved
 
   // Compact variant - just poster and minimal info (for grids with many items)
   if (variant === "compact") {
@@ -138,12 +141,21 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
               fill
               className={cn(
                 "object-cover group-hover:scale-110 transition-transform duration-500",
-                shouldBlur && "blur-xl scale-110"
+                effectiveBlur && "blur-xl scale-110"
               )}
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
             />
-            {shouldBlur && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
+            {effectiveBlur && (
+              <div
+                className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setIsBlurRemoved(true)
+                }}
+                role="button"
+                aria-label="Afficher le contenu"
+              >
                 <div className="bg-black/60 rounded-full p-2">
                   <EyeOff className="h-5 w-5 text-white" />
                 </div>
@@ -186,12 +198,21 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             fill
             className={cn(
               "object-cover group-hover:scale-110 transition-transform duration-500",
-              shouldBlur && "blur-xl scale-110"
+              effectiveBlur && "blur-xl scale-110"
             )}
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
-          {shouldBlur && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
+          {effectiveBlur && (
+            <div
+              className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsBlurRemoved(true)
+              }}
+              role="button"
+              aria-label="Afficher le contenu"
+            >
               <div className="bg-black/60 rounded-full p-2">
                 <EyeOff className="h-5 w-5 text-white" />
               </div>
@@ -268,10 +289,12 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
+  const [isBlurRemoved, setIsBlurRemoved] = useState(false)
   const shouldBlur = settings.blur18Plus && (
     (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
     (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
   )
+  const effectiveBlur = shouldBlur && !isBlurRemoved
 
   return (
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
@@ -288,11 +311,20 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
             src={media.posterUrl}
             alt={media.title}
             fill
-            className={cn("object-cover", shouldBlur && "blur-xl scale-110")}
+            className={cn("object-cover", effectiveBlur && "blur-xl scale-110")}
             sizes="128px"
           />
-          {shouldBlur && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
+          {effectiveBlur && (
+            <div
+              className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setIsBlurRemoved(true)
+              }}
+              role="button"
+              aria-label="Afficher le contenu"
+            >
               <div className="bg-black/60 rounded-full p-1.5">
                 <EyeOff className="h-4 w-4 text-white" />
               </div>

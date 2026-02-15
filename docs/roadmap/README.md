@@ -34,7 +34,14 @@ Visual and interaction overhaul in progress. Homepage rotation, quality selectio
 - GitHub Actions automation (import, AI enrichment, quality, streaming, similarity)
 - Cron job activity logging in admin dashboard
 - FilterSidebar on Films page
-- 18+ content blur fix
+- 18+ content blur fix with toggle (click eye icon to reveal)
+- Fix Chez Vous crash (React Hooks order violation)
+- Remove redundant category buttons and "Pour votre enfant" from navigation
+- ExpertPicks cascading fallback queries (always shows content)
+- French/English language filter on all homepage sections
+- Streaming section stale data indicator (amber warning after 7 days)
+- /nos-valeurs page rewritten for broader family audience (not just children)
+- Plus dropdown z-index fix (no longer goes behind hero search)
 
 ---
 

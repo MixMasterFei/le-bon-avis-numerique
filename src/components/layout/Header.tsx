@@ -4,12 +4,11 @@ import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, Users, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home } from "lucide-react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const navigation = [
-  { name: "Pour votre enfant", href: "/recommandations", icon: Users },
   { name: "Films", href: "/films", icon: Film },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
   { name: "Séries TV", href: "/series", icon: Tv },
