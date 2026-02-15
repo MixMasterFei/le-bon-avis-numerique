@@ -19,6 +19,8 @@ import {
   ChevronUp,
   Tag,
   Camera,
+  Shield,
+  FileDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -103,6 +105,9 @@ export default function AdminDashboard() {
   const [importingScreenshots, setImportingScreenshots] = useState(false)
   const [screenshotProgress, setScreenshotProgress] = useState<number>(0)
   const [screenshotStats, setScreenshotStats] = useState<{ total: number; withScreenshots: number; totalMedia: number } | null>(null)
+  const [fixingTP, setFixingTP] = useState(false)
+  const [fixTPStats, setFixTPStats] = useState<{ tousPublics: number; nonClasse: number } | null>(null)
+  const [importingCNC, setImportingCNC] = useState(false)
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -329,6 +334,56 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleFixTP = async () => {
+    setFixingTP(true)
+    try {
+      const res = await fetch("/api/admin/fix-default-tp", { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        alert(`Correction terminee!\n\nTraites: ${data.processed}\nRemis a null: ${data.resetToNull}\nMis a jour: ${data.updatedToReal}\nConfirmes TP: ${data.keptAsTP}\nErreurs: ${data.errors}`)
+        handleRefresh()
+        // Refresh TP stats
+        const statsRes = await fetch("/api/admin/fix-default-tp")
+        if (statsRes.ok) {
+          const stats = await statsRes.json()
+          setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+        }
+      } else {
+        alert(`Erreur: ${data.error}`)
+      }
+    } catch (err) {
+      console.error("Failed to fix TP:", err)
+      alert("Erreur lors de la correction des faux Tous Publics")
+    } finally {
+      setFixingTP(false)
+    }
+  }
+
+  const handleImportCNC = async () => {
+    setImportingCNC(true)
+    try {
+      const res = await fetch("/api/admin/import-cnc-ratings", { method: "POST" })
+      const data = await res.json()
+      if (data.success) {
+        alert(`Import CNC termine!\n\nRecords CNC: ${data.cncRecords}\nTitres uniques: ${data.uniqueTitles}\nFilms en base: ${data.dbMovies}\nCorrespondances: ${data.matched}\nMis a jour: ${data.updated}\nDeja corrects: ${data.skipped}\nSans correspondance: ${data.noMatch}`)
+        handleRefresh()
+        // Refresh TP stats
+        const statsRes = await fetch("/api/admin/fix-default-tp")
+        if (statsRes.ok) {
+          const stats = await statsRes.json()
+          setFixTPStats({ tousPublics: stats.tousPublics, nonClasse: stats.nonClasse })
+        }
+      } else {
+        alert(`Erreur: ${data.error}`)
+      }
+    } catch (err) {
+      console.error("Failed to import CNC:", err)
+      alert("Erreur lors de l'import CNC")
+    } finally {
+      setImportingCNC(false)
+    }
+  }
+
   // Fetch screenshot stats on mount
   useEffect(() => {
     const fetchScreenshotStats = async () => {
@@ -348,6 +403,19 @@ export default function AdminDashboard() {
       }
     }
     fetchScreenshotStats()
+
+    const fetchTPStats = async () => {
+      try {
+        const res = await fetch("/api/admin/fix-default-tp")
+        if (res.ok) {
+          const data = await res.json()
+          setFixTPStats({ tousPublics: data.tousPublics, nonClasse: data.nonClasse })
+        }
+      } catch (err) {
+        console.error("Failed to fetch TP stats:", err)
+      }
+    }
+    fetchTPStats()
   }, [])
 
   const adminSections = [
@@ -605,6 +673,41 @@ export default function AdminDashboard() {
                     )}
                   </>
                 )}
+              </Button>
+
+              <Button
+                onClick={handleFixTP}
+                disabled={fixingTP}
+                variant="outline"
+                size="sm"
+                className="border-amber-300 hover:bg-amber-50"
+              >
+                {fixingTP ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Shield className="h-4 w-4 mr-2" />
+                )}
+                Fix faux TP
+                {fixTPStats && (
+                  <span className="ml-1 text-xs text-gray-500">
+                    ({fixTPStats.tousPublics} TP)
+                  </span>
+                )}
+              </Button>
+
+              <Button
+                onClick={handleImportCNC}
+                disabled={importingCNC}
+                variant="outline"
+                size="sm"
+                className="border-emerald-300 hover:bg-emerald-50"
+              >
+                {importingCNC ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Import CNC
               </Button>
             </div>
 

@@ -25,9 +25,14 @@ export async function GET(request: NextRequest) {
 
   try {
     // Build where clause for media items
+    const mediaType = searchParams.get("mediaType") // "MOVIE", "TV", or null for both
     const mediaWhere: any = {
-      type: "MOVIE",
       posterUrl: { not: null, startsWith: "http" },
+    }
+    if (mediaType) {
+      mediaWhere.type = mediaType
+    } else {
+      mediaWhere.type = { in: ["MOVIE", "TV"] }
     }
 
     if (maxAge) {
@@ -138,7 +143,7 @@ export async function GET(request: NextRequest) {
       const fallbackMovies = await withPrismaRetry(() =>
         prisma.mediaItem.findMany({
           where: {
-            type: "MOVIE",
+            type: { in: ["MOVIE", "TV"] },
             posterUrl: { not: null, startsWith: "http" },
             ...(maxAge ? { expertAgeRec: { lte: parseInt(maxAge), not: null } } : {}),
           },

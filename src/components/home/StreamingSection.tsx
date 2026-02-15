@@ -11,6 +11,7 @@ interface StreamingMovie {
   id: string
   title: string
   originalTitle?: string
+  type?: string
   synopsisFr?: string
   posterUrl: string
   releaseDate?: string
@@ -31,7 +32,7 @@ function mapToMockFormat(movie: StreamingMovie): MockMediaItem {
     id: movie.id,
     title: movie.title,
     originalTitle: movie.originalTitle,
-    type: "MOVIE",
+    type: (movie.type as any) || "MOVIE",
     releaseDate: movie.releaseDate ?? null,
     posterUrl: movie.posterUrl || "/placeholder-poster.jpg",
     synopsisFr: movie.synopsisFr ?? null,
@@ -164,7 +165,7 @@ export function StreamingSection() {
               Quoi regarder ce soir ?
             </h2>
             <p className="text-gray-600 text-sm">
-              Films pour toute la famille sur vos plateformes
+              Films et séries pour toute la famille sur vos plateformes
             </p>
           </div>
         </div>
@@ -213,7 +214,7 @@ export function StreamingSection() {
           </div>
           <div className="mt-4 flex items-center justify-between">
             <span className="text-sm text-gray-500">
-              {totalAvailable} films disponibles sur {selectedService.name}
+              {totalAvailable} titres disponibles sur {selectedService.name}
             </span>
             <Button variant="outline" asChild>
               <Link href={`/films/recherche?platforms=${encodeURIComponent(selectedService.filterName)}&maxAge=10`}>
