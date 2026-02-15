@@ -3,13 +3,13 @@ export const dynamic = 'force-dynamic'
 
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, Calendar, Star, ExternalLink, Play, Tv, Gamepad2 } from "lucide-react"
+import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AgeBadge, OfficialRatingBadge } from "@/components/media/AgeBadge"
+import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
@@ -23,7 +23,8 @@ import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButto
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
-import { MediaScreenshots } from "@/components/media/MediaScreenshots"
+import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
+import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
@@ -49,6 +50,7 @@ import {
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
+import { isAdmin as checkIsAdmin } from "@/lib/auth"
 import type { MockMediaItem } from "@/lib/mock-data"
 
 interface MediaPageProps {
@@ -389,6 +391,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
       ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
       : 0
 
+  const adminUser = await checkIsAdmin()
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section with Backdrop */}
@@ -433,41 +437,18 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 />
               </div>
 
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">
-                {media.title}
-              </h1>
-
-              {media.originalTitle && media.originalTitle !== media.title && (
-                <p className="text-xl text-gray-400 mb-4">{media.originalTitle}</p>
-              )}
-
-              {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-4 text-gray-300 mb-6">
-                {media.releaseDate && (
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
-                    {formatDateFr(media.releaseDate)}
-                  </span>
-                )}
-                {media.duration && (
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" />
-                    {media.duration} min
-                  </span>
-                )}
-                {media.director && (
-                  <span>Réalisé par {media.director}</span>
-                )}
-              </div>
-
-              {/* Genres */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {media.genres.map((genre) => (
-                  <Badge key={genre} variant="outline" className="border-white/30 text-white">
-                    {genre}
-                  </Badge>
-                ))}
-              </div>
+              <MediaHeroEditable
+                isAdmin={adminUser}
+                mediaId={media.id}
+                title={media.title}
+                synopsisFr={media.synopsisFr}
+                expertAgeRec={media.expertAgeRec}
+                genres={media.genres}
+                director={media.director || null}
+                duration={media.duration || null}
+                releaseDate={media.releaseDate}
+                originalTitle={media.originalTitle || null}
+              />
 
               {/* Platforms for games */}
               {media.type === "GAME" && media.platforms.length > 0 && (
@@ -476,20 +457,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 </div>
               )}
 
-              {/* Synopsis */}
-              <p className="text-gray-300 leading-relaxed mb-8 max-w-3xl">
-                {media.synopsisFr}
-              </p>
-
-              {/* Age Ratings */}
-              <div className="flex flex-wrap items-center gap-8 mb-6">
-                <AgeBadge
-                  age={media.expertAgeRec}
-                  size="lg"
-                  label="Âge expert"
-                />
-                <ReviewSummary reviews={media.reviews} />
-              </div>
+              <ReviewSummary reviews={media.reviews} />
 
               {/* Watch Providers & Trailer - Compact */}
               <WatchProviders providers={watchProviders} trailer={trailer} className="mb-4" />
@@ -534,9 +502,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
             {/* Screenshots - from local database */}
             {media.screenshots && media.screenshots.length > 0 && (
-              <MediaScreenshots
+              <AdminScreenshotsWrapper
                 screenshots={media.screenshots}
                 title={media.title}
+                isAdmin={adminUser}
               />
             )}
 

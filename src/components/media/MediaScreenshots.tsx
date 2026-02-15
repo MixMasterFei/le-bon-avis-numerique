@@ -18,9 +18,11 @@ interface MediaScreenshotsProps {
   screenshots: Screenshot[]
   title: string
   className?: string
+  isAdmin?: boolean
+  onDeleteScreenshot?: (id: string) => void
 }
 
-export function MediaScreenshots({ screenshots, title, className }: MediaScreenshotsProps) {
+export function MediaScreenshots({ screenshots, title, className, isAdmin, onDeleteScreenshot }: MediaScreenshotsProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -78,19 +80,34 @@ export function MediaScreenshots({ screenshots, title, className }: MediaScreens
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {sortedScreenshots.map((screenshot, index) => (
-              <button
-                key={screenshot.id}
-                onClick={() => openLightbox(index)}
-                className="relative aspect-video overflow-hidden rounded-lg bg-gray-100 hover:ring-2 hover:ring-blue-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <Image
-                  src={screenshot.url}
-                  alt={`${title} - Capture ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 33vw"
-                />
-              </button>
+              <div key={screenshot.id} className="relative group">
+                <button
+                  onClick={() => openLightbox(index)}
+                  className="relative w-full aspect-video overflow-hidden rounded-lg bg-gray-100 hover:ring-2 hover:ring-blue-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <Image
+                    src={screenshot.url}
+                    alt={`${title} - Capture ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                  />
+                </button>
+                {isAdmin && onDeleteScreenshot && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm("Supprimer cette capture ?")) {
+                        onDeleteScreenshot(screenshot.id)
+                      }
+                    }}
+                    className="absolute top-1 right-1 z-10 p-1 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    aria-label="Supprimer cette capture"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </CardContent>
