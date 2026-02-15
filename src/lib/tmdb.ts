@@ -72,30 +72,48 @@ async function tmdbFetch<T>(
     url.searchParams.set(key, value)
   })
 
-  // Add timeout using AbortController
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+  // Retry logic for rate limits (429)
+  const maxRetries = 2
 
-  try {
-    const response = await fetch(url.toString(), {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-      signal: controller.signal,
-    })
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-    clearTimeout(timeoutId)
+    try {
+      const response = await fetch(url.toString(), {
+        next: { revalidate: 3600 },
+        signal: controller.signal,
+      })
 
-    if (!response.ok) {
-      throw new Error(`TMDB API error: ${response.status} ${response.statusText}`)
+      clearTimeout(timeoutId)
+
+      if (response.status === 429) {
+        // TMDB rate limit — wait and retry
+        const retryAfter = parseInt(response.headers.get("Retry-After") || "2")
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, retryAfter * 1000))
+          continue
+        }
+        throw new Error("TMDB rate limit exceeded after retries")
+      }
+
+      if (!response.ok) {
+        throw new Error(`TMDB API error: ${response.status} ${response.statusText}`)
+      }
+
+      return response.json()
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("TMDB request timeout after 10 seconds")
+      }
+      // On last attempt, throw; otherwise retry
+      if (attempt >= maxRetries) throw error
+      await new Promise((r) => setTimeout(r, 1000))
     }
-
-    return response.json()
-  } catch (error) {
-    clearTimeout(timeoutId)
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new Error("TMDB request timeout after 10 seconds")
-    }
-    throw error
   }
+
+  throw new Error("TMDB fetch failed after retries")
 }
 
 // ============================================

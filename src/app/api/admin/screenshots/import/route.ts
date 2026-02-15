@@ -66,7 +66,14 @@ export async function POST(request: Request) {
     stats.total = mediaItems.length
     stats.details.push(`Found ${mediaItems.length} media items to process`)
 
-    for (const media of mediaItems) {
+    for (let i = 0; i < mediaItems.length; i++) {
+      const media = mediaItems[i]
+
+      // Delay between items to respect TMDB rate limits (40 req/10s)
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, 350))
+      }
+
       try {
         let screenshots: { url: string; width?: number; height?: number; externalId?: string }[] = []
 

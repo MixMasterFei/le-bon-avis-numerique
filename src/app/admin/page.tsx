@@ -253,7 +253,8 @@ export default function AdminDashboard() {
     let totalImported = 0
     let totalProcessed = 0
     let hasMore = true
-    const chunkSize = 30
+    const chunkSize = 20
+    let consecutiveEmpty = 0
 
     try {
       while (hasMore) {
@@ -282,6 +283,18 @@ export default function AdminDashboard() {
           hasMore = false
         }
 
+        // If nothing was imported this chunk, track consecutive failures
+        if ((data.stats.imported || 0) === 0) {
+          consecutiveEmpty++
+          // After 3 consecutive empty chunks, API is likely rate-limited — stop
+          if (consecutiveEmpty >= 3) {
+            alert(`Import suspendu: l'API externe semble limiter les requetes.\n\nImportes: ${totalImported}\nRelancez plus tard pour continuer.`)
+            break
+          }
+        } else {
+          consecutiveEmpty = 0
+        }
+
         // Update stats and progress after each chunk
         const statsRes = await fetch("/api/admin/screenshots/import")
         if (statsRes.ok) {
@@ -293,19 +306,20 @@ export default function AdminDashboard() {
             withScreenshots: newWithScreenshots,
             totalMedia,
           })
-          // Calculate progress percentage
           if (totalMedia > 0) {
             setScreenshotProgress(Math.round((newWithScreenshots / totalMedia) * 100))
           }
         }
 
-        // Small delay to avoid rate limiting
+        // Delay between chunks to avoid rate limiting
         if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 2000))
         }
       }
 
-      alert(`Import termine!\n\nTotal traite: ${totalProcessed}\nScreenshots importes: ${totalImported}`)
+      if (consecutiveEmpty < 3) {
+        alert(`Import termine!\n\nTotal traite: ${totalProcessed}\nScreenshots importes: ${totalImported}`)
+      }
     } catch (err) {
       console.error("Failed to import screenshots:", err)
       alert(`Erreur lors de l'import des screenshots\n\nImportes avant erreur: ${totalImported}`)
