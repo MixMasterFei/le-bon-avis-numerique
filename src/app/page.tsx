@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,22 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-slate-900 to-slate-800 text-white overflow-visible">
+      <section className="relative text-white overflow-visible">
+        {/* Banner background image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/hero-banner.jpeg"
+            alt=""
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-slate-900/60" />
+          {/* Gradient fade at bottom to blend with wave */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/30" />
+        </div>
+
         <div className="container mx-auto px-4 py-14 md:py-20 relative">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/15">
