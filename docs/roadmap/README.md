@@ -27,6 +27,14 @@ Visual and interaction overhaul in progress. Homepage rotation, quality selectio
 
 ## Recent Completed Work (Feb 2026)
 
+### Feb 15 — Site Audit & Polish Pass
+- Contact form connected to real Resend API (was fake setTimeout)
+- Auth pages (inscription/connexion) color palette aligned: green → emerald/teal
+- Placeholder pages replaced with real content: /objectif, /a-propos, /guides
+- Dual age rating UX improved: "Classif. officielle" / "Recommandation experts" labels
+- Homepage hero banner illustration added
+
+### Earlier
 - Weekly homepage content rotation (seeded shuffle, changes every Monday)
 - TMDB ratings integration for quality-based content selection
 - Family dashboard fixes (stats, recommendations diversity, missing members)
@@ -42,6 +50,22 @@ Visual and interaction overhaul in progress. Homepage rotation, quality selectio
 - Streaming section stale data indicator (amber warning after 7 days)
 - /nos-valeurs page rewritten for broader family audience (not just children)
 - Plus dropdown z-index fix (no longer goes behind hero search)
+
+---
+
+## Next Steps: Official CSA Rating System
+
+The site currently labels most movies "Tous publics" because TMDB lacks French CSA data for most films. Unknown defaults to "Tous publics", which is misleading for a platform dedicated to accurate ratings.
+
+**Source:** The CNC (Centre national du cinéma) publishes the official French visa/classification database as open data on data.gouv.fr — 95,000+ records, open license.
+
+See **[Official Ratings Plan](official-ratings.md)** for full implementation details.
+
+| Step | What | Impact |
+|------|------|--------|
+| 1 | Stop defaulting unknown → "Tous publics" | Unknown shows "Non classé" instead of false TP |
+| 2 | CNC open data import (95K+ films) | Bulk-fill correct official classifications |
+| 3 | TMDB re-fetch for remaining items | Catch items CNC doesn't cover (TV, recent films) |
 
 ---
 

@@ -66,8 +66,15 @@
 - [ ] Favorites & watchlist UX
 - [ ] Review experience
 
+### Site Audit & Polish (Feb 15)
+- [x] Contact form connected to real Resend API (was fake setTimeout)
+- [x] Auth pages (inscription/connexion) color palette aligned: green → emerald/teal
+- [x] Placeholder pages replaced with real content: /objectif, /a-propos, /guides
+- [x] Dual age rating UX improved: "Classif. officielle" / "Recommandation experts" labels
+- [x] Homepage hero banner illustration added
+
 ### Visual Identity
-- [ ] Color palette refinement (violet dominance reduced, but more work needed)
+- [x] Color palette refinement — auth pages aligned to emerald/teal palette
 - [ ] Typography
 - [ ] Component design system
 - [ ] Empty states and illustrations

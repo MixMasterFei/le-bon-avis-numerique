@@ -388,9 +388,9 @@ export function getDirector(credits?: TMDBMovieDetails["credits"]): string | nul
 /**
  * Convert TMDB certification to our internal format
  */
-export function mapCertificationToInternal(cert: string | null): string {
-  if (!cert) return "TOUS_PUBLICS"
-  
+export function mapCertificationToInternal(cert: string | null): string | null {
+  if (!cert) return null
+
   const certMap: Record<string, string> = {
     "U": "TOUS_PUBLICS",
     "TP": "TOUS_PUBLICS",
@@ -399,8 +399,8 @@ export function mapCertificationToInternal(cert: string | null): string {
     "16": "CSA_16",
     "18": "CSA_18",
   }
-  
-  return certMap[cert] || "TOUS_PUBLICS"
+
+  return certMap[cert] || null
 }
 
 /**

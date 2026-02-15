@@ -2,14 +2,15 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 // Mapping from raw TMDB values to internal format
-const certificationMap: Record<string, string> = {
+// NR (Not Rated) maps to null — unknown ≠ "Tous publics"
+const certificationMap: Record<string, string | null> = {
   "U": "TOUS_PUBLICS",
   "TP": "TOUS_PUBLICS",
   "10": "CSA_10",
   "12": "CSA_12",
   "16": "CSA_16",
   "18": "CSA_18",
-  "NR": "TOUS_PUBLICS",
+  "NR": null,
 }
 
 export async function POST() {
@@ -32,15 +33,15 @@ export async function POST() {
     const details: string[] = []
 
     for (const item of mediaItems) {
-      const newRating = certificationMap[item.officialRating!]
+      const raw = item.officialRating!
+      if (!(raw in certificationMap)) continue
 
-      if (newRating) {
-        await prisma.mediaItem.update({
-          where: { id: item.id },
-          data: { officialRating: newRating },
-        })
-        fixed++
-      }
+      const newRating = certificationMap[raw]
+      await prisma.mediaItem.update({
+        where: { id: item.id },
+        data: { officialRating: newRating },
+      })
+      fixed++
     }
 
     details.push(`Fixed ${fixed} items with raw certification values`)
