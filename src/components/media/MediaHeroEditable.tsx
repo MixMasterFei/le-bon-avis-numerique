@@ -242,7 +242,7 @@ export function MediaHeroEditable({
           <AgeBadge
             age={initialAge}
             size="lg"
-            label="Âge expert"
+            label="Recommandation experts"
           />
         )}
       </div>

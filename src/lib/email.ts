@@ -175,3 +175,91 @@ ${APP_NAME} - Guide parental des médias numériques
 
   return data
 }
+
+export async function sendContactEmail(
+  name: string,
+  email: string,
+  subject: string,
+  message: string
+) {
+  const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "contact@lebonavis-numerique.fr"
+
+  const subjectLabels: Record<string, string> = {
+    question: "Question générale",
+    feedback: "Suggestion / Feedback",
+    bug: "Signalement de problème",
+    other: "Autre",
+  }
+
+  const subjectLine = `[Contact] ${subjectLabels[subject] || subject} - de ${name}`
+
+  const { data, error } = await getResend().emails.send({
+    from: `${APP_NAME} <${FROM_EMAIL}>`,
+    to: CONTACT_EMAIL,
+    replyTo: email,
+    subject: subjectLine,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Nouveau message de contact</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">📬 Nouveau message de contact</h1>
+          </div>
+
+          <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr>
+                <td style="padding: 8px 12px; font-weight: 600; color: #475569; width: 100px;">Nom</td>
+                <td style="padding: 8px 12px; color: #1e293b;">${name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; font-weight: 600; color: #475569;">Email</td>
+                <td style="padding: 8px 12px; color: #1e293b;"><a href="mailto:${email}" style="color: #2563eb;">${email}</a></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; font-weight: 600; color: #475569;">Sujet</td>
+                <td style="padding: 8px 12px; color: #1e293b;">${subjectLabels[subject] || subject}</td>
+              </tr>
+            </table>
+
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+            <h3 style="color: #1e293b; margin-top: 0;">Message :</h3>
+            <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap;">${message}</div>
+          </div>
+
+          <div style="background: #1e293b; padding: 20px; border-radius: 0 0 12px 12px; text-align: center;">
+            <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+              Message envoyé depuis le formulaire de contact de ${APP_NAME}
+            </p>
+          </div>
+        </body>
+      </html>
+    `,
+    text: `
+Nouveau message de contact
+
+Nom: ${name}
+Email: ${email}
+Sujet: ${subjectLabels[subject] || subject}
+
+Message:
+${message}
+
+---
+Envoyé depuis le formulaire de contact de ${APP_NAME}
+    `.trim(),
+  })
+
+  if (error) {
+    console.error("Error sending contact email:", error)
+    throw new Error("Failed to send contact email")
+  }
+
+  return data
+}

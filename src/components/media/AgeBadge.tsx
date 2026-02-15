@@ -35,6 +35,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
           sizeClasses[size],
           getBgColor(age)
         )}
+        title={label || "Âge recommandé par nos experts"}
       >
         {isRated ? `${age}+` : "?"}
       </div>
@@ -49,6 +50,7 @@ interface OfficialRatingBadgeProps {
   rating: string | null | undefined
   type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
   size?: "sm" | "md"
+  showLabel?: boolean
   className?: string
 }
 
@@ -56,6 +58,7 @@ export function OfficialRatingBadge({
   rating,
   type,
   size = "md",
+  showLabel = false,
   className,
 }: OfficialRatingBadgeProps) {
   const sizeClasses = {
@@ -106,18 +109,27 @@ export function OfficialRatingBadge({
 
   const { label, color } = getRatingDisplay()
 
+  const tooltipText = (type === "MOVIE" || type === "TV")
+    ? "Classification officielle du CSA"
+    : (type === "GAME" || type === "APP")
+    ? "Classification officielle PEGI"
+    : "Classification officielle"
+
   return (
-    <span
-      className={cn(
-        "inline-flex items-center font-semibold text-white rounded-md shadow-sm",
-        sizeClasses[size],
-        color,
-        className
+    <div className={cn("flex flex-col items-center gap-1", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center font-semibold text-white rounded-md shadow-sm",
+          sizeClasses[size],
+          color
+        )}
+        title={tooltipText}
+      >
+        {label}
+      </span>
+      {showLabel && (
+        <span className="text-xs text-gray-500 font-medium">Classif. officielle</span>
       )}
-    >
-      {label}
-    </span>
+    </div>
   )
 }
-
-

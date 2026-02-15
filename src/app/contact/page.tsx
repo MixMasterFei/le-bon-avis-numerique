@@ -22,16 +22,33 @@ export default function ContactPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setErrorMessage(null)
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
 
-    setIsSubmitting(false)
-    setIsSubmitted(true)
+      const data = await response.json()
+
+      if (!response.ok) {
+        setErrorMessage(data.error || "Une erreur est survenue lors de l'envoi.")
+        return
+      }
+
+      setIsSubmitted(true)
+    } catch {
+      setErrorMessage("Erreur de connexion. Veuillez réessayer.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSubmitted) {
@@ -171,6 +188,12 @@ export default function ContactPage() {
                   required
                 />
               </div>
+
+              {errorMessage && (
+                <div className="p-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
+                  {errorMessage}
+                </div>
+              )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (

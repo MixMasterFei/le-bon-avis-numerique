@@ -434,6 +434,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <OfficialRatingBadge
                   rating={media.officialRating}
                   type={media.type}
+                  showLabel
                 />
               </div>
 

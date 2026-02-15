@@ -122,13 +122,13 @@ export default function InscriptionPage() {
   // Show success screen after registration
   if (registrationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-blue-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-blue-50 px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 p-4 bg-green-100 rounded-full w-fit">
-              <CheckCircle className="h-10 w-10 text-green-600" />
+            <div className="mx-auto mb-4 p-4 bg-emerald-100 rounded-full w-fit">
+              <CheckCircle className="h-10 w-10 text-emerald-600" />
             </div>
-            <CardTitle className="text-green-700 text-2xl">Compte créé avec succès !</CardTitle>
+            <CardTitle className="text-teal-700 text-2xl">Compte créé avec succès !</CardTitle>
             <CardDescription className="text-base">
               Un email de vérification a été envoyé à <strong>{registeredEmail}</strong>
             </CardDescription>
@@ -145,13 +145,13 @@ export default function InscriptionPage() {
 
             <p className="text-sm text-gray-500 text-center">
               Vous ne trouvez pas l&apos;email ? Vérifiez vos spams ou{" "}
-              <Link href="/connexion" className="text-green-600 hover:underline">
+              <Link href="/connexion" className="text-emerald-600 hover:underline">
                 connectez-vous pour renvoyer le lien
               </Link>
               .
             </p>
 
-            <Button asChild className="w-full bg-green-600 hover:bg-green-700">
+            <Button asChild className="w-full bg-emerald-600 hover:bg-teal-700">
               <Link href="/connexion">Aller à la page de connexion</Link>
             </Button>
           </CardContent>
@@ -161,13 +161,13 @@ export default function InscriptionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <div className="max-w-5xl mx-auto">
           <Card className="overflow-hidden shadow-xl">
             <div className="grid lg:grid-cols-2">
               {/* Left side - Illustration & Benefits */}
-              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8 lg:p-12 text-white flex flex-col justify-center order-2 lg:order-1">
+              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-8 lg:p-12 text-white flex flex-col justify-center order-2 lg:order-1">
                 <div className="mb-8">
                   <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl mb-6 mx-auto lg:mx-0">
                     👋
@@ -175,7 +175,7 @@ export default function InscriptionPage() {
                   <h2 className="text-2xl lg:text-3xl font-bold mb-4 text-center lg:text-left">
                     Bienvenue !
                   </h2>
-                  <p className="text-green-100 text-lg text-center lg:text-left">
+                  <p className="text-emerald-100 text-lg text-center lg:text-left">
                     Informez-vous. Inspirez-vous. Partagez vos avis. Avec un compte gratuit, sauvegardez vos critiques, ajoutez vos propres notes et bien plus.
                   </p>
                 </div>
@@ -188,7 +188,7 @@ export default function InscriptionPage() {
                     </div>
                     <div>
                       <p className="font-medium">Films & Series</p>
-                      <p className="text-sm text-green-200">Critiques detaillees par age</p>
+                      <p className="text-sm text-emerald-200">Critiques detaillees par age</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
@@ -197,7 +197,7 @@ export default function InscriptionPage() {
                     </div>
                     <div>
                       <p className="font-medium">Jeux Video</p>
-                      <p className="text-sm text-green-200">Analyses des contenus sensibles</p>
+                      <p className="text-sm text-emerald-200">Analyses des contenus sensibles</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
@@ -206,12 +206,12 @@ export default function InscriptionPage() {
                     </div>
                     <div>
                       <p className="font-medium">Livres</p>
-                      <p className="text-sm text-green-200">Recommandations personnalisees</p>
+                      <p className="text-sm text-emerald-200">Recommandations personnalisees</p>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-sm text-green-200 text-center lg:text-left">
+                <p className="text-sm text-emerald-200 text-center lg:text-left">
                   Deja un compte ?{" "}
                   <Link href="/connexion" className="text-white underline hover:no-underline font-medium">
                     Se connecter
@@ -223,7 +223,7 @@ export default function InscriptionPage() {
               <div className="p-8 lg:p-12 order-1 lg:order-2">
                 <div className="mb-6">
                   <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white font-bold text-lg">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-bold text-lg">
                       BS
                     </div>
                     <span className="font-semibold text-gray-900">Le Bon Sens</span>
@@ -235,7 +235,7 @@ export default function InscriptionPage() {
                 </h1>
                 <p className="text-gray-600 mb-6">
                   Deja un compte ?{" "}
-                  <Link href="/connexion" className="text-green-600 hover:underline font-medium">
+                  <Link href="/connexion" className="text-emerald-600 hover:underline font-medium">
                     Se connecter
                   </Link>
                 </p>
@@ -354,16 +354,16 @@ export default function InscriptionPage() {
                   {/* Password validation indicators */}
                   {password.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className={`flex items-center gap-1 ${passwordChecks.length ? "text-green-600" : "text-gray-400"}`}>
+                      <div className={`flex items-center gap-1 ${passwordChecks.length ? "text-emerald-600" : "text-gray-400"}`}>
                         <Check className="h-3 w-3" /> 8 caracteres min.
                       </div>
-                      <div className={`flex items-center gap-1 ${passwordChecks.hasUppercase ? "text-green-600" : "text-gray-400"}`}>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasUppercase ? "text-emerald-600" : "text-gray-400"}`}>
                         <Check className="h-3 w-3" /> Une majuscule
                       </div>
-                      <div className={`flex items-center gap-1 ${passwordChecks.hasLowercase ? "text-green-600" : "text-gray-400"}`}>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasLowercase ? "text-emerald-600" : "text-gray-400"}`}>
                         <Check className="h-3 w-3" /> Une minuscule
                       </div>
-                      <div className={`flex items-center gap-1 ${passwordChecks.hasNumber ? "text-green-600" : "text-gray-400"}`}>
+                      <div className={`flex items-center gap-1 ${passwordChecks.hasNumber ? "text-emerald-600" : "text-gray-400"}`}>
                         <Check className="h-3 w-3" /> Un chiffre
                       </div>
                     </div>
@@ -382,7 +382,7 @@ export default function InscriptionPage() {
                             name="newsletterWeekly"
                             checked={newsletterWeekly === true}
                             onChange={() => setNewsletterWeekly(true)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Oui</span>
                         </label>
@@ -392,7 +392,7 @@ export default function InscriptionPage() {
                             name="newsletterWeekly"
                             checked={newsletterWeekly === false}
                             onChange={() => setNewsletterWeekly(false)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Non</span>
                         </label>
@@ -410,7 +410,7 @@ export default function InscriptionPage() {
                             name="newsletterMission"
                             checked={newsletterMission === true}
                             onChange={() => setNewsletterMission(true)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Oui</span>
                         </label>
@@ -420,7 +420,7 @@ export default function InscriptionPage() {
                             name="newsletterMission"
                             checked={newsletterMission === false}
                             onChange={() => setNewsletterMission(false)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Non</span>
                         </label>
@@ -438,7 +438,7 @@ export default function InscriptionPage() {
                             name="newsletterUpdates"
                             checked={newsletterUpdates === true}
                             onChange={() => setNewsletterUpdates(true)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Oui</span>
                         </label>
@@ -448,7 +448,7 @@ export default function InscriptionPage() {
                             name="newsletterUpdates"
                             checked={newsletterUpdates === false}
                             onChange={() => setNewsletterUpdates(false)}
-                            className="h-4 w-4 text-green-600"
+                            className="h-4 w-4 text-emerald-600"
                           />
                           <span className="text-sm">Non</span>
                         </label>
@@ -463,15 +463,15 @@ export default function InscriptionPage() {
                         type="checkbox"
                         checked={acceptTerms}
                         onChange={(e) => setAcceptTerms(e.target.checked)}
-                        className="h-5 w-5 mt-0.5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        className="h-5 w-5 mt-0.5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                       />
                       <span className="text-sm text-gray-600">
                         J&apos;accepte les{" "}
-                        <Link href="/conditions" className="text-green-600 hover:underline">
+                        <Link href="/conditions" className="text-emerald-600 hover:underline">
                           conditions d&apos;utilisation
                         </Link>{" "}
                         et la{" "}
-                        <Link href="/confidentialite" className="text-green-600 hover:underline">
+                        <Link href="/confidentialite" className="text-emerald-600 hover:underline">
                           politique de confidentialite
                         </Link>
                         . <span className="text-red-500">*</span>
@@ -482,7 +482,7 @@ export default function InscriptionPage() {
                   {/* Submit */}
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+                    className="w-full h-12 text-base bg-emerald-600 hover:bg-teal-700"
                     disabled={isLoading || googleLoading}
                   >
                     {isLoading ? (
@@ -499,7 +499,7 @@ export default function InscriptionPage() {
                   <p className="text-xs text-gray-500 text-center">
                     Nous respectons votre vie privee. A l&apos;exception de votre pseudo public,
                     nous ne partagerons jamais vos informations sans votre autorisation.{" "}
-                    <Link href="/confidentialite" className="text-green-600 hover:underline">
+                    <Link href="/confidentialite" className="text-emerald-600 hover:underline">
                       Voir notre politique de confidentialite
                     </Link>
                   </p>

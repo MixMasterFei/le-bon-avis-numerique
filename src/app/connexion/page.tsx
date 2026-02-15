@@ -96,7 +96,7 @@ function ConnexionForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-8 lg:py-12">
         <div className="max-w-5xl mx-auto">
           <Card className="overflow-hidden shadow-xl">
@@ -105,7 +105,7 @@ function ConnexionForm() {
               <div className="p-8 lg:p-12">
                 <div className="mb-8">
                   <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-600 to-green-700 text-white font-bold text-lg">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-bold text-lg">
                       BS
                     </div>
                     <span className="font-semibold text-gray-900">Le Bon Sens</span>
@@ -119,9 +119,9 @@ function ConnexionForm() {
                 </div>
 
                 {verificationSent && (
-                  <div className="mb-6 p-4 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="mb-6 p-4 text-sm text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <p>Un nouveau lien de vérification a été envoyé à votre adresse email.</p>
-                    <p className="text-xs mt-1 text-green-500">Vérifiez également vos spams.</p>
+                    <p className="text-xs mt-1 text-emerald-500">Vérifiez également vos spams.</p>
                   </div>
                 )}
 
@@ -248,7 +248,7 @@ function ConnexionForm() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
-                    <Link href="/mot-de-passe-oublie" className="text-sm text-green-600 hover:underline">
+                    <Link href="/mot-de-passe-oublie" className="text-sm text-emerald-600 hover:underline">
                       Mot de passe oublie ?
                     </Link>
                   </div>
@@ -259,7 +259,7 @@ function ConnexionForm() {
                       id="adminLogin"
                       checked={isAdminLogin}
                       onChange={(e) => setIsAdminLogin(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                       disabled={isLoading || googleLoading}
                     />
                     <label htmlFor="adminLogin" className="flex items-center text-sm text-gray-600 cursor-pointer">
@@ -270,7 +270,7 @@ function ConnexionForm() {
 
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base bg-green-600 hover:bg-green-700"
+                    className="w-full h-12 text-base bg-emerald-600 hover:bg-teal-700"
                     disabled={isLoading || googleLoading}
                   >
                     {isLoading ? (
@@ -291,11 +291,11 @@ function ConnexionForm() {
               </div>
 
               {/* Right side - CTA to Register */}
-              <div className="bg-gradient-to-br from-green-600 to-green-700 p-8 lg:p-12 text-white flex flex-col justify-center">
+              <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-8 lg:p-12 text-white flex flex-col justify-center">
                 <h2 className="text-2xl lg:text-3xl font-bold mb-4">
                   Devenez Membre
                 </h2>
-                <p className="text-green-100 mb-8 text-lg">
+                <p className="text-emerald-100 mb-8 text-lg">
                   Acces illimite aux critiques d&apos;experts, recommandations personnalisees par age et bien plus encore !
                 </p>
 
@@ -308,7 +308,7 @@ function ConnexionForm() {
                       </div>
                       <div>
                         <p className="font-semibold text-lg">Famille Martin</p>
-                        <p className="text-green-200 text-sm">3 enfants - 4, 8 et 12 ans</p>
+                        <p className="text-emerald-200 text-sm">3 enfants - 4, 8 et 12 ans</p>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -329,7 +329,7 @@ function ConnexionForm() {
                 </div>
 
                 <div className="space-y-3 mb-8">
-                  <p className="text-sm text-green-100">
+                  <p className="text-sm text-emerald-100">
                     Nous respectons votre vie privee.
                   </p>
                   <Link href="/confidentialite" className="text-sm text-white underline hover:no-underline">
@@ -340,7 +340,7 @@ function ConnexionForm() {
                 <Link href="/inscription">
                   <Button
                     variant="outline"
-                    className="w-full h-12 text-base border-2 border-white text-white bg-transparent hover:bg-white hover:text-green-700"
+                    className="w-full h-12 text-base border-2 border-white text-white bg-transparent hover:bg-white hover:text-teal-700"
                   >
                     Creer un compte
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -360,7 +360,7 @@ export default function ConnexionPage() {
     <Suspense
       fallback={
         <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
         </div>
       }
     >
