@@ -70,8 +70,12 @@ export async function POST(request: Request) {
       const media = mediaItems[i]
 
       // Delay between items to respect TMDB rate limits (40 req/10s)
+      // Use 500ms base delay + extra pause every 10 items
       if (i > 0) {
-        await new Promise((r) => setTimeout(r, 350))
+        await new Promise((r) => setTimeout(r, 500))
+        if (i % 10 === 0) {
+          await new Promise((r) => setTimeout(r, 2000))
+        }
       }
 
       try {

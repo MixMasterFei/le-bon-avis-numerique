@@ -258,8 +258,8 @@ export default function AdminDashboard() {
     let totalImported = 0
     let totalProcessed = 0
     let hasMore = true
-    const chunkSize = 20
-    let consecutiveEmpty = 0
+    const chunkSize = 10
+    let consecutiveErrors = 0
 
     try {
       while (hasMore) {
@@ -288,16 +288,17 @@ export default function AdminDashboard() {
           hasMore = false
         }
 
-        // If nothing was imported this chunk, track consecutive failures
-        if ((data.stats.imported || 0) === 0) {
-          consecutiveEmpty++
-          // After 3 consecutive empty chunks, API is likely rate-limited — stop
-          if (consecutiveEmpty >= 3) {
-            alert(`Import suspendu: l'API externe semble limiter les requetes.\n\nImportes: ${totalImported}\nRelancez plus tard pour continuer.`)
+        // Detect rate limiting: only count chunks with actual API errors
+        // (skipped items = no images available, not rate limiting)
+        const chunkErrors = data.stats.errors || 0
+        if (chunkErrors > 0 && (data.stats.imported || 0) === 0) {
+          consecutiveErrors++
+          if (consecutiveErrors >= 2) {
+            alert(`Import suspendu: l'API externe semble limiter les requetes.\n\nImportes: ${totalImported}\nErreurs: ${chunkErrors}\nRelancez plus tard pour continuer.`)
             break
           }
         } else {
-          consecutiveEmpty = 0
+          consecutiveErrors = 0
         }
 
         // Update stats and progress after each chunk
@@ -316,13 +317,13 @@ export default function AdminDashboard() {
           }
         }
 
-        // Delay between chunks to avoid rate limiting
+        // Longer delay between chunks to avoid rate limiting
         if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          await new Promise(resolve => setTimeout(resolve, 3000))
         }
       }
 
-      if (consecutiveEmpty < 3) {
+      if (consecutiveErrors < 2) {
         alert(`Import termine!\n\nTotal traite: ${totalProcessed}\nScreenshots importes: ${totalImported}`)
       }
     } catch (err) {
