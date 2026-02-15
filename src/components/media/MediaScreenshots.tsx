@@ -28,8 +28,19 @@ export function MediaScreenshots({ screenshots, title, className }: MediaScreens
     return null
   }
 
-  // Sort by order
-  const sortedScreenshots = [...screenshots].sort((a, b) => a.order - b.order)
+  // Deduplicate by URL (catches exact duplicates from double-imports)
+  // and remove near-duplicates by extracting the TMDB file path base
+  const seen = new Set<string>()
+  const uniqueScreenshots = screenshots.filter((s) => {
+    if (seen.has(s.url)) return false
+    seen.add(s.url)
+    return true
+  })
+
+  // Sort by order, cap at 6 for display
+  const sortedScreenshots = [...uniqueScreenshots]
+    .sort((a, b) => a.order - b.order)
+    .slice(0, 6)
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index)

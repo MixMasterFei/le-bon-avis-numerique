@@ -7,7 +7,8 @@ export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      // Return safe defaults for non-authenticated users (no 500)
+      return NextResponse.json({ settings: { blur18Plus: true } })
     }
 
     let settings = await prisma.familySettings.findUnique({
@@ -27,7 +28,8 @@ export async function GET() {
     return NextResponse.json({ settings })
   } catch (error) {
     console.error("Error fetching settings:", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    // Return safe defaults instead of 500 — settings are non-critical
+    return NextResponse.json({ settings: { blur18Plus: true } })
   }
 }
 

@@ -68,7 +68,7 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
       contentMetrics: true,
       screenshots: {
         orderBy: { order: "asc" as const },
-        take: 6,
+        take: 12, // Fetch extra to account for dedup (language variants)
       },
       reviews: {
         include: {
