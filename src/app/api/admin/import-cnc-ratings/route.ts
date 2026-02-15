@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+export const maxDuration = 300 // 5 minutes (Vercel Pro limit)
+
 // CNC tabular API for official French film visa data (95K+ records)
 const CNC_API_BASE =
   "https://tabular-api.data.gouv.fr/api/resources/1c5075ec-7ce1-49cb-ab89-94f507812daf/data/"
-const PAGE_SIZE = 10000
 
 // Map CNC "Décision" values to our internal rating format
 function mapCNCDecision(decision: string | null): string | null {
@@ -26,21 +27,8 @@ function mapCNCDecision(decision: string | null): string | null {
   return null
 }
 
-// Normalize title for matching: lowercase, remove accents, trim articles, collapse whitespace
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove diacritics
-    .replace(/^(le |la |les |l'|un |une |des |the |a |an )/i, "") // trim articles
-    .replace(/[^\w\s]/g, "") // remove punctuation
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
 interface CNCRecord {
   title: string
-  normalizedTitle: string
   director: string | null
   year: number | null
   decision: string | null
@@ -48,96 +36,88 @@ interface CNCRecord {
   visaNumber: string | null
 }
 
-// Fetch all CNC records from the tabular API
-async function fetchCNCData(): Promise<CNCRecord[]> {
-  const records: CNCRecord[] = []
-  let page = 1
-  let hasMore = true
+// Query CNC API for a specific movie title
+async function searchCNC(title: string): Promise<CNCRecord[]> {
+  const url = `${CNC_API_BASE}?page=1&page_size=20&Titre__exact=${encodeURIComponent(title)}`
+  const res = await fetch(url)
 
-  while (hasMore) {
-    const url = `${CNC_API_BASE}?page=${page}&page_size=${PAGE_SIZE}`
-    const res = await fetch(url)
+  if (!res.ok) {
+    // Try contains if exact fails (handles slight title variations)
+    const fallbackUrl = `${CNC_API_BASE}?page=1&page_size=10&Titre__contains=${encodeURIComponent(title)}`
+    const fallbackRes = await fetch(fallbackUrl)
+    if (!fallbackRes.ok) return []
+    const fallbackJson = await fallbackRes.json()
+    return parseCNCRows(fallbackJson.data || [])
+  }
 
-    if (!res.ok) {
-      throw new Error(`CNC API error: ${res.status} ${res.statusText}`)
+  const json = await res.json()
+  const records = parseCNCRows(json.data || [])
+
+  // If exact match found nothing, try contains
+  if (records.length === 0) {
+    const fallbackUrl = `${CNC_API_BASE}?page=1&page_size=10&Titre__contains=${encodeURIComponent(title)}`
+    const fallbackRes = await fetch(fallbackUrl)
+    if (fallbackRes.ok) {
+      const fallbackJson = await fallbackRes.json()
+      return parseCNCRows(fallbackJson.data || [])
     }
-
-    const json = await res.json()
-    const data = json.data || []
-
-    for (const row of data) {
-      const title = row["Titre"]
-      if (!title) continue
-
-      // Parse year from "Date" field (format varies: "1988", "01/05/2020", etc.)
-      let year: number | null = null
-      const dateStr = row["Date"]
-      if (dateStr) {
-        const yearMatch = dateStr.match(/(\d{4})/)
-        if (yearMatch) year = parseInt(yearMatch[1])
-      }
-
-      records.push({
-        title,
-        normalizedTitle: normalizeTitle(title),
-        director: row["Réalisation"] || null,
-        year,
-        decision: row["Décision"] || null,
-        internalRating: mapCNCDecision(row["Décision"]),
-        visaNumber: row["N° de visa"] || null,
-      })
-    }
-
-    hasMore = data.length === PAGE_SIZE
-    page++
   }
 
   return records
 }
 
-// Build a lookup map from normalized title to CNC records
-function buildTitleIndex(records: CNCRecord[]): Map<string, CNCRecord[]> {
-  const index = new Map<string, CNCRecord[]>()
-
-  for (const record of records) {
-    const existing = index.get(record.normalizedTitle)
-    if (existing) {
-      existing.push(record)
-    } else {
-      index.set(record.normalizedTitle, [record])
+function parseCNCRows(rows: any[]): CNCRecord[] {
+  return rows.map((row: any) => {
+    let year: number | null = null
+    const dateStr = row["Date"]
+    if (dateStr) {
+      const yearMatch = String(dateStr).match(/(\d{4})/)
+      if (yearMatch) year = parseInt(yearMatch[1])
     }
-  }
 
-  return index
+    return {
+      title: row["Titre"] || "",
+      director: row["Réalisation"] || null,
+      year,
+      decision: row["Décision"] || null,
+      internalRating: mapCNCDecision(row["Décision"]),
+      visaNumber: row["N° de visa"] || null,
+    }
+  })
 }
 
-// Find best CNC match for a DB movie
-function findMatch(
-  normalizedTitle: string,
-  year: number | null,
-  index: Map<string, CNCRecord[]>
+// Find best CNC match for a given year
+function findBestMatch(
+  candidates: CNCRecord[],
+  year: number | null
 ): CNCRecord | null {
-  const candidates = index.get(normalizedTitle)
-  if (!candidates || candidates.length === 0) return null
+  if (candidates.length === 0) return null
 
-  // If only one match, use it (regardless of year)
-  if (candidates.length === 1) return candidates[0]
+  // Filter to only those with a rating
+  const withRating = candidates.filter((c) => c.internalRating)
+  if (withRating.length === 0) return candidates[0] // still return for stats
+
+  // If only one match with rating, use it
+  if (withRating.length === 1) return withRating[0]
 
   // Multiple matches — try to narrow by year (±1 year tolerance)
   if (year) {
-    const yearMatch = candidates.find(
+    const yearMatch = withRating.find(
       (c) => c.year && Math.abs(c.year - year) <= 1
     )
     if (yearMatch) return yearMatch
   }
 
-  // Fallback: return the most recent one (likely the right version)
-  const sorted = [...candidates].sort((a, b) => (b.year || 0) - (a.year || 0))
+  // Fallback: return the most recent one
+  const sorted = [...withRating].sort((a, b) => (b.year || 0) - (a.year || 0))
   return sorted[0]
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export async function GET() {
-  // Show current state: how many movies have no official rating
   const noRating = await prisma.mediaItem.count({
     where: { type: "MOVIE", officialRating: null },
   })
@@ -158,18 +138,10 @@ export async function POST(request: Request) {
   try {
     const url = new URL(request.url)
     const dryRun = url.searchParams.get("dry") === "true"
-    const onlyMissing = url.searchParams.get("only_missing") !== "false" // default: only update null ratings
+    const onlyMissing = url.searchParams.get("only_missing") !== "false"
+    const limit = parseInt(url.searchParams.get("limit") || "500")
 
-    // Step 1: Fetch CNC data
-    console.log("[CNC Import] Fetching CNC database...")
-    const cncRecords = await fetchCNCData()
-    console.log(`[CNC Import] Loaded ${cncRecords.length} CNC records`)
-
-    // Step 2: Build title index
-    const titleIndex = buildTitleIndex(cncRecords)
-    console.log(`[CNC Import] Built index with ${titleIndex.size} unique titles`)
-
-    // Step 3: Get DB movies to match
+    // Get DB movies to match
     const whereClause: any = { type: "MOVIE" }
     if (onlyMissing) {
       whereClause.officialRating = null
@@ -180,67 +152,83 @@ export async function POST(request: Request) {
       select: {
         id: true,
         title: true,
+        originalTitle: true,
         releaseDate: true,
         officialRating: true,
       },
+      take: limit,
     })
 
-    console.log(`[CNC Import] Matching against ${movies.length} DB movies...`)
-
-    // Step 4: Match and update
     let matched = 0
     let updated = 0
     let skipped = 0
     let noMatch = 0
+    let errors = 0
     const changes: string[] = []
 
-    for (const movie of movies) {
-      const normalizedMovieTitle = normalizeTitle(movie.title)
+    for (let i = 0; i < movies.length; i++) {
+      const movie = movies[i]
       const movieYear = movie.releaseDate
         ? movie.releaseDate.getFullYear()
         : null
 
-      const cncMatch = findMatch(normalizedMovieTitle, movieYear, titleIndex)
+      try {
+        // Search CNC by title (try original French title first, then international)
+        let candidates = await searchCNC(movie.title)
 
-      if (!cncMatch || !cncMatch.internalRating) {
-        noMatch++
-        continue
+        // If no results with main title and we have an original title, try that
+        if (candidates.length === 0 && movie.originalTitle && movie.originalTitle !== movie.title) {
+          candidates = await searchCNC(movie.originalTitle)
+        }
+
+        const cncMatch = findBestMatch(candidates, movieYear)
+
+        if (!cncMatch || !cncMatch.internalRating) {
+          noMatch++
+          continue
+        }
+
+        matched++
+
+        // Skip if movie already has this exact rating
+        if (movie.officialRating === cncMatch.internalRating) {
+          skipped++
+          continue
+        }
+
+        if (!dryRun) {
+          await prisma.mediaItem.update({
+            where: { id: movie.id },
+            data: { officialRating: cncMatch.internalRating },
+          })
+        }
+
+        updated++
+        const prev = movie.officialRating || "null"
+        changes.push(
+          `${movie.title} (${movieYear || "?"}): ${prev} → ${cncMatch.internalRating} [visa ${cncMatch.visaNumber}]`
+        )
+      } catch (err) {
+        errors++
       }
 
-      matched++
-
-      // Skip if movie already has this exact rating
-      if (movie.officialRating === cncMatch.internalRating) {
-        skipped++
-        continue
+      // Rate limit: ~2 requests per movie (exact + contains), keep it gentle
+      if ((i + 1) % 10 === 0) {
+        await sleep(500)
       }
-
-      if (!dryRun) {
-        await prisma.mediaItem.update({
-          where: { id: movie.id },
-          data: { officialRating: cncMatch.internalRating },
-        })
-      }
-
-      updated++
-      const prev = movie.officialRating || "null"
-      changes.push(
-        `${movie.title} (${movieYear || "?"}): ${prev} → ${cncMatch.internalRating} [CNC visa ${cncMatch.visaNumber}]`
-      )
     }
 
     return NextResponse.json({
       success: true,
       dryRun,
       onlyMissing,
-      cncRecords: cncRecords.length,
-      uniqueTitles: titleIndex.size,
       dbMovies: movies.length,
       matched,
       updated,
       skipped,
       noMatch,
-      changes: changes.slice(0, 200), // limit response size
+      errors,
+      changes: changes.slice(0, 200),
     })
   } catch (error) {
     console.error("[CNC Import] Error:", error)
