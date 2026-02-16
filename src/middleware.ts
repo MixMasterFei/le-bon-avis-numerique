@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+// Security headers applied to all responses
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("X-Frame-Options", "DENY")
+  response.headers.set("X-Content-Type-Options", "nosniff")
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+  response.headers.set("X-XSS-Protection", "1; mode=block")
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  return response
+}
+
 // Routes that require authentication
 const protectedRoutes = ["/profil", "/mes-avis"]
 
@@ -47,7 +57,7 @@ export async function middleware(request: NextRequest) {
     const rateLimitResult = await checkRateLimit(clientIp, limitType)
 
     if (!rateLimitResult.allowed) {
-      return new NextResponse(
+      return applySecurityHeaders(new NextResponse(
         JSON.stringify({
           error: "Trop de requetes. Veuillez reessayer plus tard.",
           retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
@@ -63,7 +73,7 @@ export async function middleware(request: NextRequest) {
             "Retry-After": Math.ceil(rateLimitResult.resetIn / 1000).toString(),
           },
         }
-      )
+      ))
     }
   }
 
@@ -84,13 +94,13 @@ export async function middleware(request: NextRequest) {
       }
 
       if (session.user.role !== "ADMIN") {
-        return new NextResponse(
+        return applySecurityHeaders(new NextResponse(
           JSON.stringify({ error: "Acces non autorise" }),
           {
             status: 403,
             headers: { "Content-Type": "application/json" },
           }
-        )
+        ))
       }
     }
   }
@@ -107,7 +117,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  return applySecurityHeaders(NextResponse.next())
 }
 
 // Get client IP from request headers
