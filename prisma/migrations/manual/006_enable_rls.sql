@@ -9,42 +9,32 @@
 -- roles get ZERO access. Prisma (postgres superuser) bypasses
 -- RLS automatically — no app changes needed.
 --
+-- Skips tables that don't exist yet (safe to re-run).
 -- RUN: Execute in Supabase SQL Editor or via psql
 -- ============================================================
 
--- Auth & identity (CRITICAL)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE verification_tokens ENABLE ROW LEVEL SECURITY;
-
--- Family data (HIGH)
-ALTER TABLE family_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE family_settings ENABLE ROW LEVEL SECURITY;
-
--- User-generated content (MEDIUM)
-ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE review_reports ENABLE ROW LEVEL SECURITY; -- table not yet migrated
-ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
-ALTER TABLE watchlist ENABLE ROW LEVEL SECURITY;
-ALTER TABLE media_reactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE content_requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE media_corrections ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_content_metrics ENABLE ROW LEVEL SECURITY;
-
--- Admin & operational (MEDIUM)
-ALTER TABLE cron_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE admin_activities ENABLE ROW LEVEL SECURITY;
-
--- Media catalog (LOW but lock down anyway)
-ALTER TABLE media_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE content_metrics ENABLE ROW LEVEL SECURITY;
-ALTER TABLE streaming_availability ENABLE ROW LEVEL SECURITY;
-ALTER TABLE media_screenshots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE media_similarities ENABLE ROW LEVEL SECURITY;
-ALTER TABLE media_credits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE persons ENABLE ROW LEVEL SECURITY;
-
--- Taxonomy
-ALTER TABLE genres ENABLE ROW LEVEL SECURITY;
-ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
+DO $$
+DECLARE
+  tbl TEXT;
+BEGIN
+  FOREACH tbl IN ARRAY ARRAY[
+    'users', 'accounts', 'sessions', 'verification_tokens',
+    'family_members', 'family_settings',
+    'reviews', 'review_reports', 'favorites', 'watchlist',
+    'media_reactions', 'content_requests', 'media_corrections',
+    'user_content_metrics',
+    'cron_logs', 'admin_activities',
+    'media_items', 'content_metrics', 'streaming_availability',
+    'media_screenshots', 'media_similarities', 'media_credits',
+    'persons',
+    'genres', 'topics'
+  ]
+  LOOP
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = tbl) THEN
+      EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
+      RAISE NOTICE 'RLS enabled on %', tbl;
+    ELSE
+      RAISE NOTICE 'Skipped % (table does not exist)', tbl;
+    END IF;
+  END LOOP;
+END $$;
