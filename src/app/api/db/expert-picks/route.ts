@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
           type: { in: ["MOVIE", "TV", "GAME"] },
           // Must have a real poster
           posterUrl: { not: null, startsWith: "http" },
-          // Must be expert-reviewed
-          expertAgeRec: { not: null },
+          // Must be expert-reviewed and family-friendly (max 12+)
+          expertAgeRec: { not: null, lte: 12 },
           // Minimum data completeness
           dataQualityScore: { gte: 50 },
           // Exclude horror/thriller/adult genres
