@@ -70,6 +70,8 @@ export default function SeriesPage() {
               reviews: [],
               reviewCount: s.reviewCount || 0,
               reviewAvgRating: s.reviewAvgRating ?? null,
+              tmdbRating: s.tmdbRating ?? null,
+              tmdbVoteCount: s.tmdbVoteCount ?? null,
             }))
 
             if (!cancelled) {
@@ -131,6 +133,8 @@ export default function SeriesPage() {
               reviews: [],
               reviewCount: s.reviewCount || 0,
               reviewAvgRating: s.reviewAvgRating ?? null,
+              tmdbRating: s.tmdbRating ?? null,
+              tmdbVoteCount: s.tmdbVoteCount ?? null,
             }))
             setFeaturedSeries(mapped)
           }

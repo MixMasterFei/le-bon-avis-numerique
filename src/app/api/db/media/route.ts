@@ -103,6 +103,8 @@ export async function GET(request: NextRequest) {
         contentMetrics: item.contentMetrics,
         reviewCount,
         reviewAvgRating,
+        tmdbRating: item.tmdbRating,
+        tmdbVoteCount: item.tmdbVoteCount,
       }
     })
 

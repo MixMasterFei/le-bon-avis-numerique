@@ -98,6 +98,8 @@ export default function AgePage({ params }: AgePageProps) {
               reviews: [],
               reviewCount: item.reviewCount || 0,
               reviewAvgRating: item.reviewAvgRating ?? null,
+              tmdbRating: item.tmdbRating ?? null,
+              tmdbVoteCount: item.tmdbVoteCount ?? null,
             }))
 
             if (!cancelled) {

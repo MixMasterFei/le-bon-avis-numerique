@@ -35,6 +35,9 @@ export interface MockMediaItem {
   // Aggregated review stats (for card display)
   reviewCount?: number
   reviewAvgRating?: number | null
+  // TMDB community rating (0-10 scale, used as fallback when no user reviews)
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
 }
 
 export const mockMediaItems: MockMediaItem[] = [

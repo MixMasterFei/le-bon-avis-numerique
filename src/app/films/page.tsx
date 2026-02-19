@@ -77,6 +77,8 @@ export default function FilmsPage() {
               reviews: [],
               reviewCount: m.reviewCount || 0,
               reviewAvgRating: m.reviewAvgRating ?? null,
+              tmdbRating: m.tmdbRating ?? null,
+              tmdbVoteCount: m.tmdbVoteCount ?? null,
             }))
 
             if (!cancelled) {
@@ -140,6 +142,8 @@ export default function FilmsPage() {
               reviews: [],
               reviewCount: m.reviewCount || 0,
               reviewAvgRating: m.reviewAvgRating ?? null,
+              tmdbRating: m.tmdbRating ?? null,
+              tmdbVoteCount: m.tmdbVoteCount ?? null,
             }))
             setFeaturedMovies(mapped)
           }

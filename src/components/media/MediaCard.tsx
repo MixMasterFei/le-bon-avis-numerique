@@ -262,10 +262,12 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             {/* Family-friendliness gauge */}
             <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
 
-            {/* Community star rating — only when reviews exist */}
-            {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating && (
+            {/* Community score: user reviews preferred, TMDB as fallback */}
+            {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating ? (
               <CommunityRating avgRating={media.reviewAvgRating} count={media.reviewCount} />
-            )}
+            ) : media.tmdbRating && media.tmdbVoteCount ? (
+              <CommunityRating avgRating={Math.round((media.tmdbRating / 2) * 10) / 10} count={media.tmdbVoteCount} />
+            ) : null}
           </div>
 
           {/* Content Tags - More colorful pills */}
@@ -352,9 +354,11 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
                     {mediaTypeLabels[media.type]}
                   </Badge>
                   <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
-                  {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating && (
+                  {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating ? (
                     <CommunityRating avgRating={media.reviewAvgRating} count={media.reviewCount} />
-                  )}
+                  ) : media.tmdbRating && media.tmdbVoteCount ? (
+                    <CommunityRating avgRating={Math.round((media.tmdbRating / 2) * 10) / 10} count={media.tmdbVoteCount} />
+                  ) : null}
                 </div>
               </div>
               <AgeBadge age={media.expertAgeRec} size="sm" />

@@ -144,6 +144,8 @@ function FilmsRechercheContent() {
               reviews: [],
               reviewCount: m.reviewCount || 0,
               reviewAvgRating: m.reviewAvgRating ?? null,
+              tmdbRating: m.tmdbRating ?? null,
+              tmdbVoteCount: m.tmdbVoteCount ?? null,
             }))
 
             if (!cancelled) {
@@ -193,6 +195,8 @@ function FilmsRechercheContent() {
           reviews: [],
           reviewCount: m.reviewCount || 0,
           reviewAvgRating: m.reviewAvgRating ?? null,
+          tmdbRating: m.tmdbRating ?? null,
+          tmdbVoteCount: m.tmdbVoteCount ?? null,
         }))
 
         if (!cancelled) {

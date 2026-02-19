@@ -145,6 +145,8 @@ export async function GET(request: NextRequest) {
         originalLanguage: item.originalLanguage,
         reviewCount,
         reviewAvgRating,
+        tmdbRating: item.tmdbRating,
+        tmdbVoteCount: item.tmdbVoteCount,
       }
     })
 

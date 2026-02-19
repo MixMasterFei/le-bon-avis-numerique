@@ -226,6 +226,8 @@ export async function GET(request: NextRequest) {
         dataQualityScore: movie.dataQualityScore,
         reviewCount,
         reviewAvgRating,
+        tmdbRating: movie.tmdbRating,
+        tmdbVoteCount: movie.tmdbVoteCount,
       }
     })
 

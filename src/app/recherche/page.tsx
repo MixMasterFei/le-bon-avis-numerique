@@ -38,6 +38,8 @@ interface DbMediaItem {
   } | null
   reviewCount?: number
   reviewAvgRating?: number | null
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
 }
 
 function RechercheContent() {
@@ -96,6 +98,8 @@ function RechercheContent() {
             reviews: [],
             reviewCount: item.reviewCount || 0,
             reviewAvgRating: item.reviewAvgRating ?? null,
+            tmdbRating: item.tmdbRating ?? null,
+            tmdbVoteCount: item.tmdbVoteCount ?? null,
           }))
           setResults(mapped)
           setSource("db")

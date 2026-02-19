@@ -38,6 +38,8 @@ interface DbMedia {
   contentMetrics?: any
   reviewCount?: number
   reviewAvgRating?: number | null
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
 }
 
 function mapDbToMockFormat(media: DbMedia): MockMediaItem {
@@ -68,6 +70,8 @@ function mapDbToMockFormat(media: DbMedia): MockMediaItem {
     reviews: [],
     reviewCount: media.reviewCount || 0,
     reviewAvgRating: media.reviewAvgRating ?? null,
+    tmdbRating: media.tmdbRating ?? null,
+    tmdbVoteCount: media.tmdbVoteCount ?? null,
   }
 }
 
