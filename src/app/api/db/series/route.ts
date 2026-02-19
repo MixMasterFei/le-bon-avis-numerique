@@ -108,34 +108,45 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           contentMetrics: true,
+          reviews: { select: { rating: true } },
         },
       }),
       prisma.mediaItem.count({ where }),
     ])
 
     // Transform to API format
-    const transformedSeries = series.map((item) => ({
-      id: item.id,
-      tmdbId: item.tmdbId,
-      title: item.title,
-      originalTitle: item.originalTitle,
-      type: item.type,
-      synopsisFr: item.synopsisFr,
-      posterUrl: item.posterUrl,
-      backdropUrl: item.backdropUrl,
-      releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
-      duration: item.duration,
-      numberOfSeasons: item.numberOfSeasons,
-      director: item.director,
-      genres: item.genres,
-      platforms: item.platforms,
-      officialRating: item.officialRating,
-      expertAgeRec: item.expertAgeRec,
-      communityAgeRec: item.communityAgeRec,
-      contentMetrics: item.contentMetrics,
-      dataQualityScore: item.dataQualityScore,
-      originalLanguage: item.originalLanguage,
-    }))
+    const transformedSeries = series.map((item) => {
+      const ratings = item.reviews.map((r) => r.rating)
+      const reviewCount = ratings.length
+      const reviewAvgRating = reviewCount > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / reviewCount) * 10) / 10
+        : null
+
+      return {
+        id: item.id,
+        tmdbId: item.tmdbId,
+        title: item.title,
+        originalTitle: item.originalTitle,
+        type: item.type,
+        synopsisFr: item.synopsisFr,
+        posterUrl: item.posterUrl,
+        backdropUrl: item.backdropUrl,
+        releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+        duration: item.duration,
+        numberOfSeasons: item.numberOfSeasons,
+        director: item.director,
+        genres: item.genres,
+        platforms: item.platforms,
+        officialRating: item.officialRating,
+        expertAgeRec: item.expertAgeRec,
+        communityAgeRec: item.communityAgeRec,
+        contentMetrics: item.contentMetrics,
+        dataQualityScore: item.dataQualityScore,
+        originalLanguage: item.originalLanguage,
+        reviewCount,
+        reviewAvgRating,
+      }
+    })
 
     return NextResponse.json({
       series: transformedSeries,

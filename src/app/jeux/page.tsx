@@ -76,6 +76,8 @@ export default function JeuxPage() {
                 whatParentsNeedToKnow: [],
               },
               reviews: [],
+              reviewCount: g.reviewCount || 0,
+              reviewAvgRating: g.reviewAvgRating ?? null,
             }))
 
             if (!cancelled) {
@@ -135,6 +137,8 @@ export default function JeuxPage() {
               topics: g.topics || [],
               contentMetrics: g.contentMetrics || null,
               reviews: [],
+              reviewCount: g.reviewCount || 0,
+              reviewAvgRating: g.reviewAvgRating ?? null,
             }))
             setFeaturedGames(mapped)
           }

@@ -68,6 +68,8 @@ export default function SeriesPage() {
               topics: s.topics || [],
               contentMetrics: s.contentMetrics || null,
               reviews: [],
+              reviewCount: s.reviewCount || 0,
+              reviewAvgRating: s.reviewAvgRating ?? null,
             }))
 
             if (!cancelled) {
@@ -127,6 +129,8 @@ export default function SeriesPage() {
               topics: s.topics || [],
               contentMetrics: s.contentMetrics || null,
               reviews: [],
+              reviewCount: s.reviewCount || 0,
+              reviewAvgRating: s.reviewAvgRating ?? null,
             }))
             setFeaturedSeries(mapped)
           }

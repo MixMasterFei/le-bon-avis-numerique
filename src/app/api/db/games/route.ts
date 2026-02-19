@@ -119,30 +119,41 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           contentMetrics: true,
+          reviews: { select: { rating: true } },
         },
       }),
       prisma.mediaItem.count({ where }),
     ])
 
     // Transform to API format
-    const transformedGames = games.map((game) => ({
-      id: game.id,
-      igdbId: game.igdbId,
-      title: game.title,
-      type: game.type,
-      synopsisFr: game.synopsisFr,
-      posterUrl: game.posterUrl,
-      releaseDate: game.releaseDate?.toISOString().split("T")[0] || null,
-      genres: game.genres,
-      platforms: game.platforms,
-      officialRating: game.officialRating,
-      expertAgeRec: game.expertAgeRec,
-      communityAgeRec: game.communityAgeRec,
-      developer: game.director, // We stored developer in director field
-      topics: game.topics,
-      contentMetrics: game.contentMetrics,
-      dataQualityScore: game.dataQualityScore,
-    }))
+    const transformedGames = games.map((game) => {
+      const ratings = game.reviews.map((r) => r.rating)
+      const reviewCount = ratings.length
+      const reviewAvgRating = reviewCount > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / reviewCount) * 10) / 10
+        : null
+
+      return {
+        id: game.id,
+        igdbId: game.igdbId,
+        title: game.title,
+        type: game.type,
+        synopsisFr: game.synopsisFr,
+        posterUrl: game.posterUrl,
+        releaseDate: game.releaseDate?.toISOString().split("T")[0] || null,
+        genres: game.genres,
+        platforms: game.platforms,
+        officialRating: game.officialRating,
+        expertAgeRec: game.expertAgeRec,
+        communityAgeRec: game.communityAgeRec,
+        developer: game.director, // We stored developer in director field
+        topics: game.topics,
+        contentMetrics: game.contentMetrics,
+        dataQualityScore: game.dataQualityScore,
+        reviewCount,
+        reviewAvgRating,
+      }
+    })
 
     return NextResponse.json({
       games: transformedGames,

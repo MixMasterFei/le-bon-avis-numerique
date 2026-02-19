@@ -142,6 +142,8 @@ function FilmsRechercheContent() {
                 whatParentsNeedToKnow: [],
               },
               reviews: [],
+              reviewCount: m.reviewCount || 0,
+              reviewAvgRating: m.reviewAvgRating ?? null,
             }))
 
             if (!cancelled) {
@@ -189,6 +191,8 @@ function FilmsRechercheContent() {
             whatParentsNeedToKnow: [],
           },
           reviews: [],
+          reviewCount: m.reviewCount || 0,
+          reviewAvgRating: m.reviewAvgRating ?? null,
         }))
 
         if (!cancelled) {

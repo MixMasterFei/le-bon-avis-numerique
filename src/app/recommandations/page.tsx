@@ -36,6 +36,8 @@ interface DbMedia {
   platforms?: string[]
   topics?: string[]
   contentMetrics?: any
+  reviewCount?: number
+  reviewAvgRating?: number | null
 }
 
 function mapDbToMockFormat(media: DbMedia): MockMediaItem {
@@ -64,6 +66,8 @@ function mapDbToMockFormat(media: DbMedia): MockMediaItem {
       whatParentsNeedToKnow: [],
     },
     reviews: [],
+    reviewCount: media.reviewCount || 0,
+    reviewAvgRating: media.reviewAvgRating ?? null,
   }
 }
 

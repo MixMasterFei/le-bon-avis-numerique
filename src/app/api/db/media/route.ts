@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         include: {
           contentMetrics: true,
+          reviews: { select: { rating: true } },
         },
       })
     )
@@ -73,27 +74,37 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to API format
-    const transformedItems = items.map((item) => ({
-      id: item.id,
-      tmdbId: item.tmdbId,
-      igdbId: item.igdbId,
-      title: item.title,
-      originalTitle: item.originalTitle,
-      type: item.type,
-      synopsisFr: item.synopsisFr,
-      posterUrl: item.posterUrl,
-      backdropUrl: item.backdropUrl,
-      releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
-      duration: item.duration,
-      director: item.director,
-      genres: item.genres,
-      platforms: item.platforms,
-      topics: item.topics,
-      officialRating: item.officialRating,
-      expertAgeRec: item.expertAgeRec,
-      communityAgeRec: item.communityAgeRec,
-      contentMetrics: item.contentMetrics,
-    }))
+    const transformedItems = items.map((item) => {
+      const ratings = item.reviews.map((r) => r.rating)
+      const reviewCount = ratings.length
+      const reviewAvgRating = reviewCount > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / reviewCount) * 10) / 10
+        : null
+
+      return {
+        id: item.id,
+        tmdbId: item.tmdbId,
+        igdbId: item.igdbId,
+        title: item.title,
+        originalTitle: item.originalTitle,
+        type: item.type,
+        synopsisFr: item.synopsisFr,
+        posterUrl: item.posterUrl,
+        backdropUrl: item.backdropUrl,
+        releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+        duration: item.duration,
+        director: item.director,
+        genres: item.genres,
+        platforms: item.platforms,
+        topics: item.topics,
+        officialRating: item.officialRating,
+        expertAgeRec: item.expertAgeRec,
+        communityAgeRec: item.communityAgeRec,
+        contentMetrics: item.contentMetrics,
+        reviewCount,
+        reviewAvgRating,
+      }
+    })
 
     return NextResponse.json({
       items: transformedItems,

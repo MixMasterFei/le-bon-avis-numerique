@@ -75,6 +75,8 @@ export default function FilmsPage() {
               topics: m.topics || [],
               contentMetrics: m.contentMetrics || null,
               reviews: [],
+              reviewCount: m.reviewCount || 0,
+              reviewAvgRating: m.reviewAvgRating ?? null,
             }))
 
             if (!cancelled) {
@@ -136,6 +138,8 @@ export default function FilmsPage() {
               topics: m.topics || [],
               contentMetrics: m.contentMetrics || null,
               reviews: [],
+              reviewCount: m.reviewCount || 0,
+              reviewAvgRating: m.reviewAvgRating ?? null,
             }))
             setFeaturedMovies(mapped)
           }

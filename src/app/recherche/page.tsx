@@ -36,6 +36,8 @@ interface DbMediaItem {
     roleModels: number
     whatParentsNeedToKnow: string[]
   } | null
+  reviewCount?: number
+  reviewAvgRating?: number | null
 }
 
 function RechercheContent() {
@@ -92,6 +94,8 @@ function RechercheContent() {
               whatParentsNeedToKnow: [],
             },
             reviews: [],
+            reviewCount: item.reviewCount || 0,
+            reviewAvgRating: item.reviewAvgRating ?? null,
           }))
           setResults(mapped)
           setSource("db")

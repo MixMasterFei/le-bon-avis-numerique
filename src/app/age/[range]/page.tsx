@@ -96,6 +96,8 @@ export default function AgePage({ params }: AgePageProps) {
               topics: item.topics || [],
               contentMetrics: item.contentMetrics || null,
               reviews: [],
+              reviewCount: item.reviewCount || 0,
+              reviewAvgRating: item.reviewAvgRating ?? null,
             }))
 
             if (!cancelled) {

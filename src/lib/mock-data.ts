@@ -32,6 +32,9 @@ export interface MockMediaItem {
     ageSuggestion: number
     comment: string
   }[]
+  // Aggregated review stats (for card display)
+  reviewCount?: number
+  reviewAvgRating?: number | null
 }
 
 export const mockMediaItems: MockMediaItem[] = [

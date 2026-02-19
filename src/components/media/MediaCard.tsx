@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, AlertTriangle, Heart, Swords, EyeOff } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, EyeOff } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
@@ -29,29 +29,62 @@ interface MediaCardProps {
   variant?: "default" | "compact"
 }
 
-// Star rating component
-function StarRating({ score, max = 5 }: { score: number; max?: number }) {
-  const stars = []
-  const fullStars = Math.floor(score)
-  const hasHalf = score - fullStars >= 0.5
+// Family-friendliness gauge — compact colored pill (green→red)
+function FamilyGauge({ metrics, ageRec }: { metrics: MockMediaItem["contentMetrics"] | null | undefined; ageRec?: number | null }) {
+  if (!metrics) return null
 
-  for (let i = 0; i < max; i++) {
-    if (i < fullStars) {
-      stars.push(
-        <Star key={i} className="h-3 w-3 fill-amber-400 text-amber-400" />
-      )
-    } else if (i === fullStars && hasHalf) {
-      stars.push(
-        <Star key={i} className="h-3 w-3 fill-amber-400/50 text-amber-400" />
-      )
-    } else {
-      stars.push(
-        <Star key={i} className="h-3 w-3 text-gray-300" />
-      )
-    }
+  // Use MAX of negative metrics to determine safety level
+  const maxNegative = Math.max(
+    metrics.violence,
+    metrics.sexNudity,
+    metrics.language,
+    metrics.substanceUse
+  )
+
+  // Raise minimum based on age recommendation
+  let minScore = 0
+  if (ageRec && ageRec >= 16) minScore = 4
+  else if (ageRec && ageRec >= 13) minScore = 3
+  else if (ageRec && ageRec >= 10) minScore = 2
+
+  const effectiveScore = Math.max(maxNegative, minScore)
+
+  let color: string
+  let label: string
+
+  if (effectiveScore <= 1) {
+    color = "bg-emerald-100 text-emerald-700"
+    label = "Familial"
+  } else if (effectiveScore <= 2) {
+    color = "bg-emerald-50 text-emerald-600"
+    label = "Adapte"
+  } else if (effectiveScore <= 3) {
+    color = "bg-amber-100 text-amber-700"
+    label = "Modere"
+  } else if (effectiveScore <= 4) {
+    color = "bg-orange-100 text-orange-700"
+    label = "Attention"
+  } else {
+    color = "bg-red-100 text-red-700"
+    label = "Mature"
   }
 
-  return <div className="flex items-center gap-0.5">{stars}</div>
+  return (
+    <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", color)}>
+      {label}
+    </span>
+  )
+}
+
+// Community star rating — only shown when users have reviewed
+function CommunityRating({ avgRating, count }: { avgRating: number; count: number }) {
+  return (
+    <div className="flex items-center gap-0.5" title={`${avgRating}/5 (${count} avis)`}>
+      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+      <span className="text-[10px] font-semibold text-gray-600">{avgRating}</span>
+      <span className="text-[10px] text-gray-400">({count})</span>
+    </div>
+  )
 }
 
 // Get content warning tags based on metrics
@@ -84,39 +117,8 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
   return tags.slice(0, 2) // Max 2 tags
 }
 
-// Calculate quality score from content metrics (0-5 stars)
-// This represents "family-friendly quality" - balancing positive values vs concerning content
-function calculateQualityScore(metrics: MockMediaItem["contentMetrics"]): number {
-  if (!metrics) return 0
-
-  // Positive factors (0-5 each, higher is better)
-  const positiveMessages = metrics.positiveMessages || 0
-  const roleModels = metrics.roleModels || 0
-
-  // Negative factors (0-5 each, higher is worse for families)
-  const violence = metrics.violence || 0
-  const sexNudity = metrics.sexNudity || 0
-  const language = metrics.language || 0
-  const substanceUse = metrics.substanceUse || 0
-
-  // Calculate positive score (average of positive factors)
-  const positiveAvg = (positiveMessages + roleModels) / 2
-
-  // Calculate penalty from negative factors (weighted)
-  // Violence and sex/nudity are weighted more heavily
-  const negativePenalty = (violence * 0.3 + sexNudity * 0.3 + language * 0.2 + substanceUse * 0.2) / 5
-
-  // Final score: positive average minus penalty, scaled to 0-5
-  // Only show stars if we have meaningful data (at least some positive metrics)
-  if (positiveMessages === 0 && roleModels === 0) return 0
-
-  const score = Math.max(0, positiveAvg - negativePenalty)
-  return Math.round(score * 10) / 10
-}
-
 export function MediaCard({ media, className, variant = "default" }: MediaCardProps) {
   const Icon = typeIcons[media.type]
-  const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
@@ -237,8 +239,8 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             {media.title}
           </h3>
 
-          {/* Ratings Row: Age + Stars */}
-          <div className="flex items-center justify-between gap-1">
+          {/* Ratings Row: Age + Family Gauge + Community Rating */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             {/* Age Badge - Playful pill design */}
             <div className={cn(
               "inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm",
@@ -257,8 +259,13 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
               {media.expertAgeRec && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : "?"}
             </div>
 
-            {/* Quality Stars */}
-            {qualityScore > 0 && <StarRating score={qualityScore} />}
+            {/* Family-friendliness gauge */}
+            <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
+
+            {/* Community star rating — only when reviews exist */}
+            {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating && (
+              <CommunityRating avgRating={media.reviewAvgRating} count={media.reviewCount} />
+            )}
           </div>
 
           {/* Content Tags - More colorful pills */}
@@ -286,7 +293,6 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
 // Horizontal variant for lists
 export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
-  const qualityScore = calculateQualityScore(media.contentMetrics)
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
@@ -340,12 +346,15 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
                 <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-primary transition-colors">
                   {media.title}
                 </h3>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge variant="secondary" className="text-xs gap-1">
                     <Icon className="h-3 w-3" />
                     {mediaTypeLabels[media.type]}
                   </Badge>
-                  {qualityScore > 0 && <StarRating score={qualityScore} />}
+                  <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
+                  {media.reviewCount && media.reviewCount > 0 && media.reviewAvgRating && (
+                    <CommunityRating avgRating={media.reviewAvgRating} count={media.reviewCount} />
+                  )}
                 </div>
               </div>
               <AgeBadge age={media.expertAgeRec} size="sm" />

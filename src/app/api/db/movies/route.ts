@@ -178,6 +178,7 @@ export async function GET(request: NextRequest) {
         take: fetchLimit,
         include: {
           contentMetrics: true,
+          reviews: { select: { rating: true } },
         },
       })
     )
@@ -196,27 +197,37 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform to API format
-    const transformedMovies = movies.map((movie) => ({
-      id: movie.id,
-      tmdbId: movie.tmdbId,
-      title: movie.title,
-      originalTitle: movie.originalTitle,
-      type: movie.type,
-      synopsisFr: movie.synopsisFr,
-      posterUrl: movie.posterUrl,
-      backdropUrl: movie.backdropUrl,
-      releaseDate: movie.releaseDate?.toISOString().split("T")[0] || null,
-      duration: movie.duration,
-      director: movie.director,
-      genres: movie.genres,
-      platforms: movie.platforms,
-      officialRating: movie.officialRating,
-      expertAgeRec: movie.expertAgeRec,
-      communityAgeRec: movie.communityAgeRec,
-      contentMetrics: movie.contentMetrics,
-      originalLanguage: movie.originalLanguage,
-      dataQualityScore: movie.dataQualityScore,
-    }))
+    const transformedMovies = movies.map((movie) => {
+      const ratings = movie.reviews.map((r) => r.rating)
+      const reviewCount = ratings.length
+      const reviewAvgRating = reviewCount > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / reviewCount) * 10) / 10
+        : null
+
+      return {
+        id: movie.id,
+        tmdbId: movie.tmdbId,
+        title: movie.title,
+        originalTitle: movie.originalTitle,
+        type: movie.type,
+        synopsisFr: movie.synopsisFr,
+        posterUrl: movie.posterUrl,
+        backdropUrl: movie.backdropUrl,
+        releaseDate: movie.releaseDate?.toISOString().split("T")[0] || null,
+        duration: movie.duration,
+        director: movie.director,
+        genres: movie.genres,
+        platforms: movie.platforms,
+        officialRating: movie.officialRating,
+        expertAgeRec: movie.expertAgeRec,
+        communityAgeRec: movie.communityAgeRec,
+        contentMetrics: movie.contentMetrics,
+        originalLanguage: movie.originalLanguage,
+        dataQualityScore: movie.dataQualityScore,
+        reviewCount,
+        reviewAvgRating,
+      }
+    })
 
     return NextResponse.json({
       movies: transformedMovies,
