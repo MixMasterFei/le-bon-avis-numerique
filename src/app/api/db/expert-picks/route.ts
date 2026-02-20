@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "6")
   const seedParam = searchParams.get("seed")
   const seed = seedParam ? parseInt(seedParam) : getWeekSeed()
+  const tenYearsAgo = new Date()
+  tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10)
 
   try {
     // Fetch a large pool of quality media, then shuffle & slice
@@ -35,15 +37,17 @@ export async function GET(request: NextRequest) {
           NOT: {
             genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
           },
-          // Movies/TV need good TMDB ratings; games pass on quality score alone
+          // Movies/TV need solid audience signal; games need stricter curation gates.
           OR: [
             {
               type: { in: ["MOVIE", "TV"] },
-              tmdbRating: { gte: 7.5 },
-              tmdbVoteCount: { gte: 100 },
+              tmdbRating: { gte: 7.0 },
+              tmdbVoteCount: { gte: 50 },
             },
             {
               type: "GAME",
+              dataQualityScore: { gte: 75 },
+              releaseDate: { not: null, gte: tenYearsAgo },
             },
           ],
         },
@@ -68,10 +72,12 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Deterministic shuffle with the provided seed, then pick items
-    const shuffled = seededShuffle(items, seed)
+    // Shuffle only the top-ranked slice to keep quality high while still rotating weekly.
+    const topPoolSize = Math.max(limit * 3, limit)
+    const topPool = items.slice(0, topPoolSize)
+    const shuffled = seededShuffle(topPool, seed)
     const maxPerType = Math.ceil(limit / 2)
-    const requiredTypes = ["MOVIE", "TV", "GAME"]
+    const requiredTypes = ["MOVIE", "TV"]
 
     // Step 1: Guarantee at least 1 of each type
     const picked: typeof items = []
