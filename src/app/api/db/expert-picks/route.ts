@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // Fetch a large pool of quality media, then shuffle & slice
     const poolSize = limit * 8
 
-    const items = await withPrismaRetry(() =>
+    let items = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
           type: { in: ["MOVIE", "TV", "GAME"] },
@@ -72,11 +72,55 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    // Safety net: if strict filters return no MOVIE/TV, fetch a relaxed MOVIE/TV pool
+    // so expert picks cannot degrade into games-only selections.
+    const hasMovieOrTv = items.some((i) => i.type === "MOVIE" || i.type === "TV")
+    if (!hasMovieOrTv) {
+      const relaxedMovieTv = await withPrismaRetry(() =>
+        prisma.mediaItem.findMany({
+          where: {
+            type: { in: ["MOVIE", "TV"] },
+            posterUrl: { not: null, startsWith: "http" },
+            expertAgeRec: { not: null, lte: 12 },
+            dataQualityScore: { gte: 60 },
+            NOT: {
+              genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
+            },
+          },
+          orderBy: [
+            { dataQualityScore: "desc" },
+            { tmdbRating: { sort: "desc", nulls: "last" } },
+          ],
+          take: poolSize,
+          select: {
+            id: true,
+            title: true,
+            originalTitle: true,
+            type: true,
+            posterUrl: true,
+            genres: true,
+            expertAgeRec: true,
+            communityAgeRec: true,
+            tmdbRating: true,
+            dataQualityScore: true,
+            releaseDate: true,
+          },
+        })
+      )
+
+      const existingIds = new Set(items.map((i) => i.id))
+      items = [...items, ...relaxedMovieTv.filter((i) => !existingIds.has(i.id))]
+    }
+
     // Shuffle only the top-ranked slice to keep quality high while still rotating weekly.
     const topPoolSize = Math.max(limit * 3, limit)
     const topPool = items.slice(0, topPoolSize)
     const shuffled = seededShuffle(topPool, seed)
-    const maxPerType = Math.ceil(limit / 2)
+    const maxPerType: Record<string, number> = {
+      MOVIE: Math.max(2, Math.ceil(limit / 2)),
+      TV: Math.max(1, Math.ceil(limit / 3)),
+      GAME: 1,
+    }
     const requiredTypes = ["MOVIE", "TV"]
 
     // Step 1: Guarantee at least 1 of each type
@@ -99,13 +143,23 @@ export async function GET(request: NextRequest) {
       if (picked.length >= limit) break
       if (pickedIds.has(item.id)) continue
       const count = typeCounts[item.type] || 0
-      if (count >= maxPerType) continue
+      const typeCap = maxPerType[item.type] ?? limit
+      if (count >= typeCap) continue
       typeCounts[item.type] = count + 1
       picked.push(item)
       pickedIds.add(item.id)
     }
 
-    // Step 3: If still not full, fill from any remaining
+    // Step 3a: If still not full, prefer MOVIE/TV from remaining pool
+    for (const item of shuffled) {
+      if (picked.length >= limit) break
+      if (pickedIds.has(item.id)) continue
+      if (item.type === "GAME") continue
+      picked.push(item)
+      pickedIds.add(item.id)
+    }
+
+    // Step 3b: If still not full, fill from any remaining (including games)
     for (const item of shuffled) {
       if (picked.length >= limit) break
       if (!pickedIds.has(item.id)) {
