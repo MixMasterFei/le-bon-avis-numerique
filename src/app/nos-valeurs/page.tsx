@@ -158,8 +158,8 @@ export default function NosValeursPage() {
               les informations nécessaires pour faire vos propres choix éclairés.
             </p>
             <p>
-              Nos évaluations sont réalisées par une combinaison d&apos;<strong>analyses expertes</strong> et
-              d&apos;<strong>intelligence artificielle</strong>, puis enrichies par les <strong>avis de la communauté</strong>
+              Nos évaluations sont réalisées par notre <strong>équipe d&apos;experts</strong>,
+              puis enrichies par les <strong>avis de la communauté</strong>
               de membres et de familles.
             </p>
           </div>
@@ -366,10 +366,9 @@ export default function NosValeursPage() {
               Comment sont réalisées vos évaluations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Nos évaluations combinent une analyse initiale par intelligence artificielle
-              (basée sur les synopsis, classifications officielles et métadonnées),
-              puis sont vérifiées et ajustées par notre équipe. Les avis de la communauté
-              viennent enrichir ces évaluations au fil du temps.
+              Nos évaluations sont réalisées par notre équipe d&apos;experts à partir des synopsis,
+              classifications officielles et métadonnées de chaque contenu.
+              Les avis de la communauté viennent enrichir ces évaluations au fil du temps.
             </p>
           </div>
           <div>

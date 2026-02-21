@@ -58,7 +58,7 @@ export default function CollectionsPage() {
           <Sparkles className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Collections</h1>
           <p className="text-gray-500 mb-8">
-            Les collections seront disponibles une fois que les contenus auront été enrichis par l&apos;IA.
+            Les collections seront bientôt disponibles.
           </p>
           <p className="text-sm text-gray-400">
             Revenez bientôt pour découvrir nos sélections thématiques.

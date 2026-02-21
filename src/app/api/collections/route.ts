@@ -277,8 +277,5 @@ function buildWhereClause(query: Collection["query"]) {
     where.genres = { hasSome: query.genres }
   }
 
-  // Only show items that have been enriched (have content metrics)
-  where.contentMetrics = { isNot: null }
-
   return where
 }

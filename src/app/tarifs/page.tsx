@@ -40,7 +40,7 @@ const plans: Plan[] = [
       { text: "Metriques de contenu detaillees", included: true },
       { text: "Acces sur tous vos appareils", included: true },
       { text: "Profils famille multiples", included: false },
-      { text: "Recommandations personnalisees IA", included: false },
+      { text: "Recommandations personnalisees avancees", included: false },
       { text: "Experience sans publicite", included: false },
     ],
     cta: "Creer un compte gratuit",
@@ -56,7 +56,7 @@ const plans: Plan[] = [
     features: [
       { text: "Tout du plan Gratuit", included: true },
       { text: "Profils famille multiples", included: true, highlight: true },
-      { text: "Recommandations personnalisees IA", included: true, highlight: true },
+      { text: "Recommandations personnalisees avancees", included: true, highlight: true },
       { text: "\"Ce soir on regarde\" suggestions", included: true, highlight: true },
       { text: "Listes de lecture synchronisees", included: true, highlight: true },
       { text: "Experience sans publicite", included: true, highlight: true },

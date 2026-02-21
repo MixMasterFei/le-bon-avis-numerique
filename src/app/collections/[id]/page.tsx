@@ -155,7 +155,7 @@ export default function CollectionPage() {
         <div className="text-center py-16 text-gray-500">
           <p className="text-lg">Aucun contenu dans cette collection pour le moment.</p>
           <p className="text-sm mt-2">
-            Les contenus apparaitront apres l&apos;enrichissement IA.
+            Revenez bientôt !
           </p>
         </div>
       )}

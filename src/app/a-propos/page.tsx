@@ -12,7 +12,7 @@ const howItWorks = [
   {
     step: "1",
     title: "Analyse experte",
-    description: "Chaque contenu est analysé selon 7 critères détaillés grâce à une combinaison d'intelligence artificielle et de vérification humaine.",
+    description: "Chaque contenu est analysé selon 7 critères détaillés par notre équipe d'experts et enrichi par les avis de la communauté.",
     icon: Sparkles,
   },
   {
