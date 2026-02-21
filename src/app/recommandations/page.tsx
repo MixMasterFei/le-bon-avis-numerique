@@ -93,12 +93,13 @@ function RecosInner() {
   const [chips, setChips] = useState<Set<ChipKey>>(initialChips)
   const [allMedia, setAllMedia] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [displayCount, setDisplayCount] = useState(24)
 
   // Fetch all media from database
   useEffect(() => {
     async function fetchMedia() {
       try {
-        const res = await fetch("/api/db/media?limit=200")
+        const res = await fetch("/api/db/media?limit=100")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.media)) {
@@ -123,6 +124,7 @@ function RecosInner() {
   }, [age, chips, router, type])
 
   const filtered = useMemo(() => {
+    setDisplayCount(24) // Reset pagination when filters change
     let items = allMedia
 
     if (type !== "all") {
@@ -241,11 +243,24 @@ function RecosInner() {
           </div>
 
           {filtered.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {filtered.map((m) => (
-                <MediaCard key={`${m.type}:${m.id}`} media={m} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {filtered.slice(0, displayCount).map((m) => (
+                  <MediaCard key={`${m.type}:${m.id}`} media={m} />
+                ))}
+              </div>
+              {displayCount < filtered.length && (
+                <div className="flex justify-center mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setDisplayCount((prev) => prev + 24)}
+                    className="rounded-full px-8"
+                  >
+                    Voir plus ({filtered.length - displayCount} restants)
+                  </Button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />

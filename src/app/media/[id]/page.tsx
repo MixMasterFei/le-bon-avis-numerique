@@ -1,5 +1,5 @@
-// Force dynamic rendering to avoid stale cached data
-export const dynamic = 'force-dynamic'
+// Revalidate every hour — balances freshness with performance
+export const revalidate = 3600
 
 import Image from "next/image"
 import Link from "next/link"
@@ -353,14 +353,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
   }
 
   // Fetch watch providers and trailer for movies/TV from TMDB
-  // This works for both database items (with tmdbId) and external API items
+  // Uses a timeout to prevent slow TMDB responses from blocking the page
   const mediaType = media.type
   if (mediaType === "MOVIE" || mediaType === "TV") {
-    // Get the TMDB ID - either from database record or from rawId for external
     let tmdbId: number | null = null
 
     if (source === "database") {
-      // For database items, we need to query for the tmdbId
+      // For DB items, try to get tmdbId from the already-fetched data or query
       const dbItem = await prisma.mediaItem.findUnique({
         where: { id: media.id },
         select: { tmdbId: true }
@@ -371,18 +370,56 @@ export default async function MediaPage({ params }: MediaPageProps) {
     }
 
     if (tmdbId && !isNaN(tmdbId)) {
-      // Fetch providers and videos in parallel
-      const [providersResult, videosResult] = await Promise.all([
-        mediaType === "MOVIE"
-          ? getMovieWatchProviders(tmdbId)
-          : getTVWatchProviders(tmdbId),
-        mediaType === "MOVIE"
-          ? getMovieVideos(tmdbId)
-          : getTVVideos(tmdbId)
-      ])
+      // First try DB-stored streaming data for instant response
+      try {
+        const dbStreaming = await prisma.streamingAvailability.findMany({
+          where: { mediaId: media.id, country: "FR" },
+          orderBy: { type: "asc" },
+        })
 
-      watchProviders = providersResult
-      trailer = getBestTrailer(videosResult)
+        if (dbStreaming.length > 0) {
+          // Convert DB streaming to TMDB provider format for WatchProviders component
+          const flatrate = dbStreaming
+            .filter((s) => s.type === "SUBSCRIPTION")
+            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
+          const free = dbStreaming
+            .filter((s) => s.type === "FREE" || s.type === "ADS")
+            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
+          const rent = dbStreaming
+            .filter((s) => s.type === "RENT")
+            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
+          const buy = dbStreaming
+            .filter((s) => s.type === "BUY")
+            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
+
+          if (flatrate.length > 0 || free.length > 0 || rent.length > 0 || buy.length > 0) {
+            watchProviders = { flatrate, free, rent, buy }
+          }
+        }
+      } catch {
+        // DB streaming lookup failed, will fall back to TMDB
+      }
+
+      // Fetch from TMDB with 5s timeout (for fresh logos + trailer)
+      try {
+        const tmdbPromise = Promise.all([
+          mediaType === "MOVIE"
+            ? getMovieWatchProviders(tmdbId)
+            : getTVWatchProviders(tmdbId),
+          mediaType === "MOVIE"
+            ? getMovieVideos(tmdbId)
+            : getTVVideos(tmdbId)
+        ])
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("TMDB timeout")), 5000)
+        )
+
+        const [providersResult, videosResult] = await Promise.race([tmdbPromise, timeoutPromise])
+        if (providersResult) watchProviders = providersResult
+        trailer = getBestTrailer(videosResult)
+      } catch {
+        // TMDB timed out or failed — DB streaming data (if any) already set above
+      }
     }
   }
 

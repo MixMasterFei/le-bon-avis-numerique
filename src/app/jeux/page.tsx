@@ -46,6 +46,12 @@ export default function JeuxPage() {
         if (filters.searchQuery && filters.searchQuery.trim().length >= 2) {
           dbParams.set("q", filters.searchQuery.trim())
         }
+        if (filters.platforms.length > 0) {
+          dbParams.set("platforms", filters.platforms.join(","))
+        }
+        if (filters.topics.length > 0) {
+          dbParams.set("topics", filters.topics.join(","))
+        }
 
         const dbRes = await fetch(`/api/db/games?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {
@@ -110,7 +116,7 @@ export default function JeuxPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery])
+  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics])
 
   // Fetch featured games (high quality, sorted by quality score)
   useEffect(() => {

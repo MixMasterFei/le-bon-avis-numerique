@@ -116,7 +116,8 @@
 ## Remaining (from original scope)
 
 ### Content Pages
-- [ ] Media listing pages (`/jeux`, `/series`, `/livres`) — FilterSidebar parity with `/films`
+- [x] Media listing pages (`/jeux`, `/series`, `/livres`) — FilterSidebar parity with `/films` (all filter params forwarded to API)
+- [x] Streaming availability: DB-first lookup with TMDB fallback + 5s timeout on detail pages
 - [ ] Media detail page redesign (`/media/[id]`)
 - [ ] Related content for DB items on detail page (currently only works for mock data)
 - [ ] Search & filter experience improvements
@@ -136,8 +137,9 @@
 - [ ] Empty states and illustrations
 
 ### Performance
-- [ ] Media detail page loading optimization (TMDB response caching, Suspense boundaries)
-- [ ] Recommendations: add pagination instead of fetching 200 items at once
+- [x] Media detail page: ISR caching (revalidate=3600) replaces force-dynamic
+- [x] Media detail page: TMDB provider fetch with 5s timeout to prevent slow loads
+- [x] Recommendations: reduced to 100 items + client-side "Voir plus" pagination (24 per page)
 
 ### Future Features
 - [ ] Theater movies section (currently in French cinemas via Pathé + TMDB)

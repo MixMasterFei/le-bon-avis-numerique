@@ -41,12 +41,20 @@ export default function SeriesPage() {
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
           requirePoster: "true",
+          language: "fr,en",
         })
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
-        // Filter to French/English content only (relevant for French audience)
-        dbParams.set("language", "fr,en")
+        if (filters.searchQuery && filters.searchQuery.trim().length >= 2) {
+          dbParams.set("q", filters.searchQuery.trim())
+        }
+        if (filters.platforms.length > 0) {
+          dbParams.set("platforms", filters.platforms.join(","))
+        }
+        if (filters.topics.length > 0) {
+          dbParams.set("topics", filters.topics.join(","))
+        }
 
         const dbRes = await fetch(`/api/db/series?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {
