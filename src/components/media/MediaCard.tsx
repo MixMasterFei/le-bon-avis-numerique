@@ -134,7 +134,7 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   if (variant === "compact") {
     return (
       <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
-        <div className={cn("group overflow-hidden transition-all duration-300 h-full", className)}>
+        <div className={cn("group overflow-hidden transition-all duration-300 h-full flex flex-col", className)}>
           <div className="relative aspect-[2/3] overflow-hidden bg-violet-100 rounded-2xl shadow-md group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
             <SafeImage
               fallbackClassName="absolute inset-0"
@@ -169,7 +169,7 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
               <AgeBadge age={media.expertAgeRec} size="xs" />
             </div>
           </div>
-          <div className="pt-2 px-1">
+          <div className="pt-2 px-1 flex-1">
             <h3 className="font-semibold text-xs text-gray-800 line-clamp-2 group-hover:text-violet-700 transition-colors leading-tight">
               {media.title}
             </h3>
@@ -187,7 +187,7 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
     <Link href={`/media/${toMediaRouteId(media.type, media.id)}`}>
       <div
         className={cn(
-          "group overflow-hidden transition-all duration-300 h-full",
+          "group overflow-hidden transition-all duration-300 h-full flex flex-col",
           className
         )}
       >
@@ -233,7 +233,7 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
         </div>
 
         {/* Info Section Below Image - Cleaner, bolder */}
-        <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 space-y-2 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300">
+        <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 space-y-2 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300 flex-1">
           {/* Title */}
           <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-violet-700 transition-colors leading-tight">
             {media.title}

@@ -17,7 +17,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative text-white overflow-visible">
+      <section className="relative overflow-visible">
         {/* Banner background image */}
         <div className="absolute inset-0">
           <Image
@@ -27,17 +27,17 @@ export default function HomePage() {
             className="object-cover"
             priority
           />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-slate-900/60" />
-          {/* Gradient fade at bottom to blend with wave */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/30" />
+          {/* Bright overlay for a lighter, airy feel */}
+          <div className="absolute inset-0 bg-white/50" />
+          {/* Gradient fade at bottom to blend with page */}
+          <div className="absolute inset-0 bg-gradient-to-t from-white/70 via-transparent to-white/30" />
         </div>
 
         <div className="container mx-auto px-4 py-14 md:py-20 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/15">
-              <Shield className="h-5 w-5 text-emerald-400" />
-              <span className="text-sm font-medium text-white/90">Le guide de référence pour choisir vos médias en famille</span>
+            <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-violet-600/15 backdrop-blur-sm rounded-full border border-violet-300/30">
+              <Shield className="h-5 w-5 text-emerald-600" />
+              <span className="text-sm font-medium text-gray-800">Le guide de référence pour choisir vos médias en famille</span>
             </div>
 
             <div className="max-w-xl mx-auto relative z-40">
