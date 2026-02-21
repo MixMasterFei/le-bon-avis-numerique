@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Plus,
 } from "lucide-react"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -57,6 +58,7 @@ const REACTIONS: {
 
 export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
@@ -153,7 +155,7 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
             Connectez-vous pour enregistrer les réactions de votre famille à ce contenu.
           </p>
           <Button asChild size="sm">
-            <Link href="/connexion">Se connecter</Link>
+            <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>Se connecter</Link>
           </Button>
         </CardContent>
       </Card>

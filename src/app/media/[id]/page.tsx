@@ -18,7 +18,7 @@ import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { MediaActions } from "@/components/media/MediaActions"
+
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
@@ -500,20 +500,29 @@ export default async function MediaPage({ params }: MediaPageProps) {
               {/* Watch Providers & Trailer - Compact */}
               <WatchProviders providers={watchProviders} trailer={trailer} className="mb-4" />
 
-              {/* Favorite & Watchlist Actions */}
-              {dbId && <MediaActions mediaId={dbId} className="mb-6" />}
+              {/* Favorite, Watchlist & Review Actions */}
+              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
 
               {/* Rating Summary */}
-              <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-                <div className="flex items-center gap-2">
-                  <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                  <span className="text-2xl font-bold">{avgRating.toFixed(1)}</span>
-                  <span className="text-gray-400">/ 5</span>
+              {(media.reviews?.length || 0) > 0 ? (
+                <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
+                    <span className="text-2xl font-bold">{avgRating.toFixed(1)}</span>
+                    <span className="text-gray-400">/ 5</span>
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Basé sur {media.reviews.length} avis
+                  </div>
                 </div>
-                <div className="text-sm text-gray-400">
-                  Basé sur {media.reviews?.length || 0} avis
+              ) : (
+                <div className="flex items-center gap-3 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+                  <Star className="h-5 w-5 text-gray-500" />
+                  <span className="text-sm text-gray-400">
+                    Aucun avis pour le moment — soyez le premier à donner votre avis !
+                  </span>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -556,10 +565,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
               <TabsContent value="reviews" className="space-y-4 mt-6">
                 <ReviewsSection reviews={media.reviews} />
-
-                <div className="pt-4">
-                  <MediaPageClient mediaId={media.id} mediaTitle={media.title} />
-                </div>
               </TabsContent>
 
               <TabsContent value="details" className="mt-6">

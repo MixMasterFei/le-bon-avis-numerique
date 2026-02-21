@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils"
 import { ReportModal } from "./ReportModal"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { renderFormattedText } from "@/components/ui/rich-text-editor"
 
 const roleIcons = {
@@ -78,6 +78,7 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
   const Icon = roleIcons[review.role]
   const { data: session } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
   const [reportModalOpen, setReportModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
@@ -91,7 +92,7 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
 
   const handleReportClick = () => {
     if (!session?.user) {
-      router.push("/connexion")
+      router.push(`/connexion?callbackUrl=${encodeURIComponent(pathname)}`)
       return
     }
     setReportModalOpen(true)
@@ -110,7 +111,7 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
 
       if (res.ok) {
         onDeleted?.()
-        window.location.reload()
+        router.refresh()
       } else {
         const data = await res.json()
         alert(data.error || "Erreur lors de la suppression")
@@ -152,7 +153,7 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
       if (res.ok) {
         setIsEditing(false)
         onUpdated?.()
-        window.location.reload()
+        router.refresh()
       } else {
         const data = await res.json()
         alert(data.error || "Erreur lors de la modification")
@@ -228,33 +229,52 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
                 ))}
               </div>
 
-              {/* Actions dropdown - only show if there are actions */}
-              {(canDelete || canEdit || !isOwnReview) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-white">
-                    {canEdit && (
-                      <DropdownMenuItem onClick={handleEditClick}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Modifier
-                      </DropdownMenuItem>
-                    )}
-                    {canDelete && (
-                      <DropdownMenuItem
-                        onClick={handleDeleteClick}
-                        disabled={isDeleting}
-                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {isDeleting ? "Suppression..." : "Supprimer"}
-                      </DropdownMenuItem>
-                    )}
-                    {(canEdit || canDelete) && !isOwnReview && <DropdownMenuSeparator />}
-                    {!isOwnReview && (
+              {/* Actions — inline for own reviews, dropdown for others */}
+              <div className="flex items-center gap-1">
+                {isOwnReview && canEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEditClick}
+                    className="h-8 px-2 text-gray-500 hover:text-blue-600 gap-1"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span className="text-xs">Modifier</span>
+                  </Button>
+                )}
+                {isOwnReview && canDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDeleteClick}
+                    disabled={isDeleting}
+                    className="h-8 px-2 text-gray-500 hover:text-red-600 gap-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="text-xs">{isDeleting ? "..." : "Supprimer"}</span>
+                  </Button>
+                )}
+                {!isOwnReview && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white">
+                      {canDelete && (
+                        <>
+                          <DropdownMenuItem
+                            onClick={handleDeleteClick}
+                            disabled={isDeleting}
+                            className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {isDeleting ? "Suppression..." : "Supprimer"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
                       <DropdownMenuItem
                         onClick={handleReportClick}
                         className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
@@ -262,10 +282,10 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
                         <Flag className="h-4 w-4 mr-2" />
                         Signaler
                       </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
           </div>
 

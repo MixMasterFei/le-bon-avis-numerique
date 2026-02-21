@@ -1,31 +1,33 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ReviewModal } from "./ReviewModal"
-import { UserInteractionBar } from "./UserInteractionBar"
+import { MediaActions } from "./MediaActions"
 
 interface MediaPageClientProps {
   mediaId: string
   mediaTitle: string
+  showActions?: boolean
 }
 
-export function MediaPageClient({ mediaId, mediaTitle }: MediaPageClientProps) {
+export function MediaPageClient({ mediaId, mediaTitle, showActions = false }: MediaPageClientProps) {
   const [reviewModalOpen, setReviewModalOpen] = useState(false)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const router = useRouter()
 
   const handleReviewSuccess = () => {
-    // Trigger a refresh - in a real app you'd refetch reviews
-    setRefreshKey((prev) => prev + 1)
-    // Optionally reload the page to show new review
-    window.location.reload()
+    router.refresh()
   }
 
   return (
     <>
-      <UserInteractionBar
-        mediaId={mediaId}
-        onReviewClick={() => setReviewModalOpen(true)}
-      />
+      {showActions && (
+        <MediaActions
+          mediaId={mediaId}
+          onReviewClick={() => setReviewModalOpen(true)}
+          className="mb-6"
+        />
+      )}
       <ReviewModal
         open={reviewModalOpen}
         onOpenChange={setReviewModalOpen}

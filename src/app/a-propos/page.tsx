@@ -1,6 +1,7 @@
-import { Heart, Users, Sparkles, ArrowRight, Shield, BookOpen, Film } from "lucide-react"
+import { Heart, Users, Sparkles, ArrowRight, Shield, Film } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
+import { auth } from "@/lib/auth"
 
 export const metadata = {
   title: "À propos | Le Bon Avis Numérique",
@@ -34,7 +35,8 @@ const stats = [
   { label: "Types de médias", value: "5" },
 ]
 
-export default function AProposPage() {
+export default async function AProposPage() {
+  const session = await auth()
   return (
     <div className="min-h-screen">
       {/* Hero */}
@@ -107,13 +109,11 @@ export default function AProposPage() {
           <Card className="mb-16">
             <CardContent className="p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Ce que nous couvrons</h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 {[
                   { icon: Film, label: "Films" },
                   { icon: Film, label: "Séries" },
-                  { icon: BookOpen, label: "Livres" },
                   { icon: Shield, label: "Jeux vidéo" },
-                  { icon: Sparkles, label: "Applications" },
                 ].map((item) => (
                   <div key={item.label} className="flex flex-col items-center gap-2 p-4 bg-slate-50 rounded-xl">
                     <item.icon className="h-6 w-6 text-slate-600" />
@@ -126,25 +126,51 @@ export default function AProposPage() {
 
           {/* CTA */}
           <div className="text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Rejoignez la communauté</h2>
-            <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-              Créez un compte gratuit pour sauvegarder vos favoris, partager vos avis et recevoir des recommandations personnalisées.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href="/inscription"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
-              >
-                Créer un compte gratuit
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/nos-valeurs"
-                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
-              >
-                Nos critères d&apos;évaluation
-              </Link>
-            </div>
+            {session ? (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">Explorez nos contenus</h2>
+                <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+                  Découvrez nos collections thématiques, partagez vos avis et trouvez le prochain film ou jeu idéal pour votre famille.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Link
+                    href="/collections"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+                  >
+                    Voir les collections
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/nos-valeurs"
+                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
+                  >
+                    Nos critères d&apos;évaluation
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">Rejoignez la communauté</h2>
+                <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+                  Créez un compte gratuit pour sauvegarder vos favoris, partager vos avis et recevoir des recommandations personnalisées.
+                </p>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Link
+                    href="/inscription"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+                  >
+                    Créer un compte gratuit
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    href="/nos-valeurs"
+                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
+                  >
+                    Nos critères d&apos;évaluation
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>

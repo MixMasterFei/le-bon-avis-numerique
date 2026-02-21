@@ -53,7 +53,7 @@ export default function MaListePage() {
           <div className="p-3 bg-blue-500 rounded-xl text-white">
             <Bookmark className="h-6 w-6" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Ma Liste a Voir</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Ma Liste à Voir</h1>
         </div>
         <p className="text-gray-600">
           Les films, series et jeux que vous souhaitez regarder plus tard.
@@ -73,11 +73,11 @@ export default function MaListePage() {
           <Bookmark className="h-16 w-16 mx-auto mb-4 opacity-30" />
           <p className="text-xl font-medium mb-2">Aucun contenu dans votre liste</p>
           <p className="text-sm">
-            Parcourez le catalogue et cliquez sur le signet pour ajouter des contenus a voir.
+            Parcourez le catalogue et cliquez sur le signet pour ajouter des contenus à voir.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
           {watchlist.map((item) => (
             <MediaCard key={item.id} media={item} />
           ))}

@@ -2,17 +2,20 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
-import { Heart, Bookmark, Loader2 } from "lucide-react"
+import { Heart, Bookmark, Loader2, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 interface MediaActionsProps {
   mediaId: string
   className?: string
+  onReviewClick?: () => void
 }
 
-export function MediaActions({ mediaId, className = "" }: MediaActionsProps) {
+export function MediaActions({ mediaId, className = "", onReviewClick }: MediaActionsProps) {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
   const [isFavorite, setIsFavorite] = useState(false)
   const [inWatchlist, setInWatchlist] = useState(false)
   const [favoriteCount, setFavoriteCount] = useState(0)
@@ -113,6 +116,9 @@ export function MediaActions({ mediaId, className = "" }: MediaActionsProps) {
         <Button variant="outline" size="sm" disabled className="gap-1.5">
           <Loader2 className="h-4 w-4 animate-spin" />
         </Button>
+        <Button variant="outline" size="sm" disabled className="gap-1.5">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </Button>
       </div>
     )
   }
@@ -121,16 +127,22 @@ export function MediaActions({ mediaId, className = "" }: MediaActionsProps) {
   if (status === "unauthenticated") {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Link href="/connexion">
+        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
           <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-red-500">
             <Heart className="h-4 w-4" />
             <span className="text-xs">{favoriteCount}</span>
           </Button>
         </Link>
-        <Link href="/connexion">
+        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
           <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-blue-500">
             <Bookmark className="h-4 w-4" />
             <span className="text-xs">À voir</span>
+          </Button>
+        </Link>
+        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-violet-500">
+            <MessageSquare className="h-4 w-4" />
+            <span className="text-xs">Donner mon avis</span>
           </Button>
         </Link>
       </div>
@@ -176,6 +188,18 @@ export function MediaActions({ mediaId, className = "" }: MediaActionsProps) {
         )}
         <span className="text-xs">{inWatchlist ? "Dans ma liste" : "À voir"}</span>
       </Button>
+
+      {onReviewClick && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onReviewClick}
+          className="gap-1.5 hover:text-violet-500 hover:border-violet-200 transition-colors"
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span className="text-xs">Donner mon avis</span>
+        </Button>
+      )}
     </div>
   )
 }
