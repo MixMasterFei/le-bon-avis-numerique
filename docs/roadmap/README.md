@@ -1,6 +1,6 @@
 # Roadmap - Le Bon Avis Numérique
 
-## Current Phase: Phase 1 - UX/UI Redesign (+ ongoing automation)
+## Current Phase: Deployment — Preparing for full public launch
 
 ---
 
@@ -9,9 +9,13 @@
 | Phase | Name | Status | Description |
 |---|---|---|---|
 | 0 | Foundation & Tech Debt | **Complete** | Fix critical gaps identified in the tech audit |
-| 1 | UX/UI Redesign | **In Progress** | Full user experience and interface overhaul |
-| 2 | Content & Features | Planned | Expand content, recommendations, community features |
-| 3 | Growth & Scale | Planned | Performance, SEO, analytics, marketing pages |
+| 1 | UX/UI Redesign | **Nearly Complete** | Full user experience and interface overhaul |
+| A | Go-Live Blockers | **Next** | Domain, auth, legal, env vars — required before sharing URL |
+| B | SEO & Social Sharing | Planned | JSON-LD, OG metadata, search console — highest ROI code work |
+| C | Analytics & Monitoring | Planned | Plausible, Search Console, uptime monitoring |
+| D | Social & Marketing Launch | Planned | Social accounts, press, community outreach |
+| E | Growth Features | Planned | Newsletter, sharing, onboarding, content |
+| F | Technical Debt | Ongoing | Sentry, Zod, tests, CNC import |
 
 ---
 
@@ -21,11 +25,27 @@
 All P0 and P1 items completed. Remaining P2/P3 items tracked in `docs/tech-audit.md`.
 
 ### [Phase 1 - UX/UI Redesign](phase-1-ux-redesign.md)
-Visual and interaction overhaul in progress. Full UX audit completed Feb 21. Critical fixes prioritized.
+Nearly complete. All critical fixes done. Remaining items: related content, search improvements, onboarding, typography.
+
+### [Deployment Roadmap](deployment-roadmap.md)
+Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized and estimated.
 
 ---
 
 ## Recent Completed Work (Feb 2026)
+
+### Feb 21 (latest) — Media Detail Page UX Overhaul
+- Consolidated duplicate action buttons (favorite/watchlist/review) into single `MediaPageClient`
+- Hidden "0.0/5" empty rating — shows "Aucun avis pour le moment" CTA instead
+- Login redirects now preserve context via `callbackUrl` parameter
+- Replaced `window.location.reload()` with `router.refresh()` (no scroll loss)
+- Made review edit/delete buttons discoverable (inline instead of hidden dropdown)
+- Removed TMDB rating leaks from MediaCard (internal-only data no longer shown to users)
+- Fixed typo "Ma Liste a Voir" → "Ma Liste à Voir"
+- Unified grid layouts for favorites & watchlist pages
+- Auth-aware CTA on à propos page (different messaging for logged-in vs logged-out)
+- Removed non-existent categories (Livres, Applications) from à propos "Ce que nous couvrons"
+- Deleted unused `UserInteractionBar.tsx`
 
 ### Feb 21 — UX Audit & Footer Redesign
 - Full UX audit: 3 research agents analyzed 18 pages, all components, 3 competitor sites
@@ -34,8 +54,8 @@ Visual and interaction overhaul in progress. Full UX audit completed Feb 21. Cri
 - Expert picks scoring: surfaces recognizable family titles (Kung Fu Panda, Wonka, Paddington)
 - Bright hero banner overlay (white transparency)
 - Uniform media card heights
-- TMDB community ratings on media cards
-- See [UX Audit](../ux-audit-feb21.md) and [Competitor Analysis](../competitor-analysis.md)
+- Navigation redesign, collections poster collages, performance optimization
+- SEO files (robots.ts, sitemap.ts), Vercel Analytics integration
 
 ### Feb 15 — Site Audit & Polish Pass
 - Contact form connected to real Resend API (was fake setTimeout)
@@ -63,39 +83,26 @@ Visual and interaction overhaul in progress. Full UX audit completed Feb 21. Cri
 
 ---
 
-## Completed (Feb 21 audit fixes)
+## Deployment Critical Path
 
-### Critical Fixes — ALL DONE
-| # | What | Status |
-|---|------|--------|
-| 1 | Unified branding to "Le Bon Avis Numérique" (BA) everywhere | **Done** |
-| 2 | Fixed `/chez-vous` redirect (was 404) | **Done** |
-| 3 | Fixed dead `/conditions` link → `/mentions-legales` | **Done** |
-| 4 | Removed admin UI from public pages | **Done** |
-| 5 | Fixed series page filter dependencies | **Done** |
+```
+Week 0:  Phase A (go-live blockers)      → Site is live on custom domain
+Week 1:  Phase B (SEO) + C (analytics)   → Google starts indexing
+Week 2:  Phase D (marketing launch)      → First users arrive
+Month 1: Phase E (growth features)       → Retention & sharing loops
+Ongoing: Phase F (tech debt)             → Stability & maintainability
+```
 
-### Quality Pass — ALL DONE
-| # | What | Status |
-|---|------|--------|
-| 6 | Fixed French accents across 20+ files | **Done** |
-| 7 | Removed "Base locale" badges from all pages | **Done** |
-| 8 | Standardized ITEMS_PER_PAGE to 24 everywhere | **Done** |
-| 9 | Post-login redirect to `/chez-vous` | **Done** |
+### Budget at Launch: ~$11/month
+| Item | Cost |
+|------|------|
+| Domain (.com + .fr) | ~20 EUR/year |
+| Plausible analytics | $9/month |
+| Brevo newsletter | Free (300/day) |
+| Vercel hosting | Free tier |
+| Resend email | Free tier (3000/month) |
 
----
-
-## Next Steps (Step 2 — Navigation & UX)
-
-### Navigation redesign (competitor-inspired)
-| # | What | Why |
-|---|------|-----|
-| 1 | Header navigation redesign (add Livres, age browsing, collections) | Key features invisible |
-| 2 | User dropdown with favorites/watchlist shortcuts | 3+ clicks to reach |
-| 3 | Related content for DB items on detail page | Major engagement gap |
-| 4 | Fix HeroSearch popular links (wrong routes) | Broken navigation |
-| 5 | Add auth-required routes to middleware protection | Flash of content on protected pages |
-
-See [phase-1-ux-redesign.md](phase-1-ux-redesign.md) for the full task list.
+See [Deployment Roadmap](deployment-roadmap.md) for the complete plan with every task.
 
 ---
 
@@ -117,8 +124,9 @@ See **[Official Ratings Plan](official-ratings.md)** for full implementation det
 
 ## How to Use This Roadmap
 
-1. Check this README for the current phase and next steps
-2. Open the current phase doc for specific tasks and status
-3. Each task has a checkbox — mark as done when complete
+1. Check this README for the current phase and deployment critical path
+2. Open [deployment-roadmap.md](deployment-roadmap.md) for the full launch plan
+3. Open [phase-1-ux-redesign.md](phase-1-ux-redesign.md) for remaining UX tasks
 4. Reference docs: [UX Audit](../ux-audit-feb21.md), [Competitor Analysis](../competitor-analysis.md), [Tech Audit](../tech-audit.md)
-5. CLAUDE.md references this roadmap — the AI assistant checks it before starting work
+5. Marketing docs: [Marketing Playbook](../marketing/claude_mkt.md), [Launch Checklist](../marketing/launch-checklist.md), [Market Analysis](../marketing/market-analysis.md)
+6. CLAUDE.md references this roadmap — the AI assistant checks it before starting work

@@ -123,10 +123,10 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
-  // Check if content should be blurred (18+ age or extreme violence with blur setting enabled)
+  // Check if content should be blurred (16+ age or high violence with blur setting enabled)
   const shouldBlur = settings.blur18Plus && (
-    (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
-    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
+    (media.expertAgeRec !== null && media.expertAgeRec >= 16) ||
+    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 4)
   )
   const effectiveBlur = shouldBlur && !isBlurRemoved
 
@@ -165,9 +165,11 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             )}
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-violet-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute top-2 left-2">
-              <AgeBadge age={media.expertAgeRec} size="xs" />
-            </div>
+            {media.expertAgeRec && media.expertAgeRec > 0 && (
+              <div className="absolute top-2 left-2">
+                <AgeBadge age={media.expertAgeRec} size="xs" />
+              </div>
+            )}
           </div>
           <div className="pt-2 px-1 flex-1">
             <h3 className="font-semibold text-xs text-gray-800 line-clamp-2 group-hover:text-violet-700 transition-colors leading-tight">
@@ -241,23 +243,23 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
 
           {/* Ratings Row: Age + Family Gauge + Community Rating */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Age Badge - Playful pill design */}
-            <div className={cn(
-              "inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm",
-              media.expertAgeRec === null || media.expertAgeRec === undefined || media.expertAgeRec === 0
-                ? "bg-gray-400"
-                : media.expertAgeRec <= 3
-                ? "bg-gradient-to-r from-emerald-500 to-teal-400"
-                : media.expertAgeRec <= 7
-                ? "bg-gradient-to-r from-emerald-600 to-emerald-500"
-                : media.expertAgeRec <= 10
-                ? "bg-gradient-to-r from-amber-500 to-yellow-400"
-                : media.expertAgeRec <= 13
-                ? "bg-gradient-to-r from-orange-500 to-amber-400"
-                : "bg-gradient-to-r from-rose-500 to-red-400"
-            )}>
-              {media.expertAgeRec && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : "?"}
-            </div>
+            {/* Age Badge - Only show when expert has rated */}
+            {media.expertAgeRec && media.expertAgeRec > 0 && (
+              <div className={cn(
+                "inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm",
+                media.expertAgeRec <= 3
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-400"
+                  : media.expertAgeRec <= 7
+                  ? "bg-gradient-to-r from-emerald-600 to-emerald-500"
+                  : media.expertAgeRec <= 10
+                  ? "bg-gradient-to-r from-amber-500 to-yellow-400"
+                  : media.expertAgeRec <= 13
+                  ? "bg-gradient-to-r from-orange-500 to-amber-400"
+                  : "bg-gradient-to-r from-rose-500 to-red-400"
+              )}>
+                {media.expertAgeRec}+
+              </div>
+            )}
 
             {/* Family-friendliness gauge */}
             <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />

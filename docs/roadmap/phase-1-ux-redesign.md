@@ -1,6 +1,6 @@
 # Phase 1 - UX/UI Redesign
 
-**Status:** In Progress
+**Status:** Nearly Complete
 **Goal:** Complete visual and interaction overhaul of the platform.
 **Audit:** Full UX audit completed Feb 21 — see [ux-audit-feb21.md](../ux-audit-feb21.md) and [competitor-analysis.md](../competitor-analysis.md)
 
@@ -29,6 +29,9 @@
 - [x] French/English language filter on all homepage sections (no more Japanese titles)
 - [x] /nos-valeurs page rewritten for broader family audience
 - [x] TMDB community ratings shown on media cards (fallback when no user reviews)
+- [x] Removed TMDB rating leaks from MediaCard (tmdbRating is internal-only, never shown to users)
+- [x] Removed non-existent categories (Livres, Applications) from à propos "Ce que nous couvrons"
+- [x] Auth-aware CTA on à propos page (logged-in: "Explorez nos contenus", logged-out: "Rejoignez la communauté")
 
 ### Navigation & Layout
 - [x] Remove "Pour votre enfant" from top nav (redundant with Chez Vous)
@@ -118,17 +121,20 @@
 ### Content Pages
 - [x] Media listing pages (`/jeux`, `/series`, `/livres`) — FilterSidebar parity with `/films` (all filter params forwarded to API)
 - [x] Streaming availability: DB-first lookup with TMDB fallback + 5s timeout on detail pages
-- [ ] Media detail page redesign (`/media/[id]`)
+- [x] Media detail page UX overhaul — consolidated actions, hide empty rating, callbackUrl, router.refresh
+- [x] Hide rating section when 0 reviews (shows "Aucun avis pour le moment" CTA instead of 0.0/5)
 - [ ] Related content for DB items on detail page (currently only works for mock data)
 - [ ] Search & filter experience improvements
-- [ ] Hide rating section when 0 reviews (show "Pas encore d'avis" instead of 0.0/5)
 
 ### User Features
+- [x] Favorites & watchlist UX (standardized grid layouts: `grid-cols-2 sm:3 md:4 lg:5 xl:6`)
+- [x] Review experience — consolidated review button in hero, inline edit/delete, router.refresh
+- [x] Login redirects preserve context via `callbackUrl` parameter (MediaActions, FamilyReactions, ReviewCard)
+- [x] Fixed typo "Ma Liste a Voir" → "Ma Liste à Voir"
+- [x] Deleted unused `UserInteractionBar.tsx`
 - [ ] New user onboarding flow (prompt to set up family, select platforms)
 - [ ] Profile page redesign (use `<Image>` instead of raw `<img>`, add link to family settings)
 - [ ] Family management UX
-- [ ] Favorites & watchlist UX (standardize grid layouts between the two)
-- [ ] Review experience
 - [ ] Propagate user image through JWT (emoji avatars don't show in header)
 
 ### Visual Identity

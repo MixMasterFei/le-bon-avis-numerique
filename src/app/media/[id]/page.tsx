@@ -26,6 +26,7 @@ import { GameInfoCard } from "@/components/media/GameInfoCard"
 import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
+import { HeroBackdrop } from "@/components/media/HeroBackdrop"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -434,13 +435,12 @@ export default async function MediaPage({ params }: MediaPageProps) {
     <div className="min-h-screen bg-background">
       {/* Hero Section with Backdrop */}
       <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
-        {/* Backdrop Image */}
+        {/* Backdrop Image — hidden for sensitive content */}
         <div className="absolute inset-0 overflow-hidden">
-          <Image
+          <HeroBackdrop
             src={media.posterUrl}
-            alt=""
-            fill
-            className="object-cover opacity-20 blur-xl scale-110"
+            expertAgeRec={media.expertAgeRec}
+            violenceScore={media.contentMetrics?.violence}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent" />
         </div>
@@ -457,6 +457,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   src={media.posterUrl}
                   alt={media.title}
                   expertAgeRec={media.expertAgeRec}
+                  violenceScore={media.contentMetrics?.violence}
                   priority
                 />
               </div>

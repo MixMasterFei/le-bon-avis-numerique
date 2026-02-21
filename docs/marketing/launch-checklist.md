@@ -1,14 +1,16 @@
-# Launch Checklist — Le Bon Avis Numerique
+# Launch Checklist — Le Bon Avis Numérique
 
-## CRITICAL (Before going live)
+> See also: [Deployment Roadmap](../roadmap/deployment-roadmap.md) for the full phased plan.
+
+## CRITICAL (Before going live) — Phase A
 
 ### 1. Domain & Email
 - [ ] Purchase domain (lebonavisnumerique.com + .fr)
-- [ ] Set up DNS on Vercel
+- [ ] Set up DNS on Vercel (auto-provisions SSL)
 - [ ] Configure custom email domain with Resend (noreply@, contact@)
 - [ ] Create professional inbox (contact@lebonavisnumerique.com) — use Google Workspace or Zoho free
 - [ ] Update FROM_EMAIL env var from `onboarding@resend.dev` to custom domain
-- [ ] Set up email forwarding: presse@, privacy@, dpo@ -> main inbox
+- [ ] Set up email forwarding: presse@, privacy@, dpo@ → main inbox
 
 ### 2. Auth & Environment
 - [ ] Update NEXTAUTH_URL to production domain
@@ -18,57 +20,110 @@
 - [ ] Test email/password signup + verification email flow
 - [ ] Test password reset flow
 - [ ] Verify all env vars are in Vercel project settings (not just .env)
+- [ ] Verify `SITE_URL` + `CRON_SECRET` in GitHub Secrets (needed for cron workflows)
 
 ### 3. Legal
-- [ ] Fill in Mentions Legales: capital social, adresse, RCS, SIRET, nom du directeur
-- [ ] Verify Politique de Confidentialite email addresses match actual domain
-- [ ] Ensure cookie consent banner works (check /cookies page)
+- [ ] Fill in Mentions Légales: capital social, adresse, RCS, SIRET, nom du directeur (currently `[À compléter]`)
+- [ ] Verify Politique de Confidentialité email addresses match actual domain
+- [x] Ensure cookie consent banner works (check /cookies page)
 
 ### 4. SEO (Technical)
-- [ ] Add robots.ts (allow all, block /admin, /api)
-- [ ] Add sitemap.ts (dynamic from DB media items)
+- [x] Add robots.ts (allow all, block /admin, /api) — **Done**
+- [x] Add sitemap.ts (dynamic from DB media items) — **Done**
+- [ ] Add `metadataBase` to layout.tsx for absolute OG URLs
 - [ ] Verify OG metadata on homepage (test with https://cards-dev.twitter.com/validator)
 - [ ] Submit sitemap to Google Search Console
 - [ ] Submit site to Bing Webmaster Tools
 
 ### 5. Analytics
-- [ ] Enable Vercel Web Analytics (dashboard toggle, zero code)
+- [x] Vercel Web Analytics integrated (code in layout.tsx) — **Done**
+- [ ] Verify Vercel Analytics is enabled in dashboard
 - [ ] Set up Google Search Console (verify domain ownership)
-- [ ] Optional: Add Plausible or GA4 for deeper insights
-
-## IMPORTANT (First week)
+- [ ] Set up Plausible ($9/month) — CNIL-exempt, no cookie consent needed in France
 
 ### 6. Content Seeding
 - [ ] Ensure 50+ movies have full content metrics (enriched by AI)
 - [ ] Ensure 20+ series have full content metrics
 - [ ] Ensure 10+ games have full content metrics
-- [ ] Verify collections show poster collages (not empty)
+- [x] Verify collections show poster collages (not empty) — **Done**
 - [ ] Run weekly-import cron manually once to populate latest content
 
-### 7. Social Media Accounts
+---
+
+## SEO & SOCIAL SHARING (First week) — Phase B
+
+### 7. Dynamic Metadata (highest ROI code work)
+- [ ] Add `generateMetadata()` to `/media/[id]/page.tsx` — dynamic OG title, description, image (poster)
+- [ ] Add JSON-LD structured data: Movie/TVSeries/VideoGame + AggregateRating on media pages
+- [ ] Add BreadcrumbList JSON-LD site-wide
+- [ ] Add FAQPage JSON-LD on guide pages
+- [ ] Test OG tags with Twitter Card Validator + Facebook Debugger
+- [ ] SEO title template: "[Titre] — À partir de quel âge ? Avis parents | Le Bon Avis Numérique"
+
+---
+
+## SOCIAL & MARKETING (Weeks 1-2) — Phase D
+
+### 8. Social Media Accounts
 - [ ] Instagram: @lebonavisnumerique
 - [ ] TikTok: @lebonavisnumerique
-- [ ] Facebook: Le Bon Avis Numerique
+- [ ] Facebook: Le Bon Avis Numérique
 - [ ] Twitter/X: @BonAvisNum (or @LeBonAvisNum)
 - [ ] LinkedIn: company page (for press/credibility)
 
-### 8. First Marketing Push
-- [ ] Prepare 5 Instagram carousel posts (new release reviews)
-- [ ] Prepare 3 TikTok "A partir de quel age?" videos
-- [ ] Write 1 blog-style guide (even if blog page is stub, use social)
-- [ ] Draft press release (200 words, for French tech/parenting press)
-- [ ] Identify 10 French parenting influencers to contact
+### 9. First Marketing Push
+- [ ] Prepare 5 Instagram carousel posts (poster + age badge + content breakdown + verdict)
+- [ ] Prepare 3 TikTok "À partir de quel âge ?" 30s videos
+- [ ] Draft press release (200 words) — pitch: "Un Common Sense Media à la française"
+- [ ] Post on r/france, r/ParentingFR, Doctissimo, MagicMaman forums
+- [ ] Contact CLEMI (clemi.fr) — perfect mission alignment, potential .gouv backlink
+- [ ] Email 10 French parenting influencers (Instamamans, Papa Positive)
+- [ ] Submit to BetaList, Product Hunt, IndieHackers, Maddyness "Lancement"
 
-## NICE TO HAVE (First month)
+---
 
-### 9. Performance & Monitoring
+## GROWTH FEATURES (First month) — Phase E
+
+### 10. User Engagement
+- [ ] Newsletter signup with Brevo (French, GDPR-native, great deliverability to Orange/Free/SFR)
+- [ ] "Partager" (share) buttons on media detail pages
+- [ ] New user onboarding (prompt family setup + platform preferences)
+- [ ] Complete 2 remaining guides + FAQ page
+- [ ] OG images per media item (poster + age badge composite)
+
+### 11. Monitoring
+- [ ] Set up UptimeRobot (free tier)
 - [ ] Set up Vercel alerts for build failures
 - [ ] Monitor API response times in Vercel dashboard
-- [ ] Set up uptime monitoring (UptimeRobot free tier)
 - [ ] Review rate limiting thresholds after real traffic data
 
-### 10. Growth
-- [ ] Set up newsletter signup (Resend audience or Buttondown)
-- [ ] Add "Partager" (share) buttons on media detail pages
-- [ ] Add structured data (JSON-LD Review schema) for Google rich results
-- [ ] Create OG images per media item (poster + age badge composite)
+---
+
+## TECHNICAL DEBT (When convenient) — Phase F
+
+- [ ] Add Sentry error tracking
+- [ ] Add Zod validation on API request bodies
+- [ ] Resolve Prisma topics table schema conflict (blocking `prisma db push`)
+- [ ] Clean up `src/lib/mock-data.ts` (still used by some components)
+- [ ] Add E2E tests with Playwright
+- [ ] CNC open data import (95K French film classifications)
+
+---
+
+## Already Complete (infrastructure ready)
+
+| Item | Status |
+|------|--------|
+| Vercel hosting + vercel.json (cron configured) | Done |
+| GitHub Actions CI (lint, typecheck, test, build) | Done |
+| GitHub Actions cron (import, enrich, quality, streaming, similarity) | Done |
+| Authentication (NextAuth + Google OAuth + email/password) | Done |
+| Security (middleware, rate limiting, headers, CRON_SECRET) | Done |
+| Admin dashboard (9 tools: import, enrich, dedupe, quality, tags, corrections, requests, streaming, logs) | Done |
+| Email (Resend: verification, password reset, contact form) | Done |
+| Legal pages (mentions légales, confidentialité, cookies) | Done (templates need business details) |
+| robots.ts + sitemap.ts (dynamic from DB) | Done |
+| Contact form (working with Resend + rate limiting + sanitization) | Done |
+| Guides (3 complete, 2 in progress) | Done |
+| Full UX overhaul (Phase 0 + Phase 1) | Done |
+| Media detail page (consolidated actions, empty rating CTA, callbackUrl, router.refresh) | Done |

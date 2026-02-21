@@ -504,9 +504,9 @@ export default function ProfilPage() {
             <div>
               <p className="font-medium flex items-center gap-2">
                 {settings.blur18Plus ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
-                Flouter les contenus 18+
+                Flouter les contenus sensibles
               </p>
-              <p className="text-sm text-gray-500">Les affiches des contenus 18+ seront floutées</p>
+              <p className="text-sm text-gray-500">Les affiches des contenus violents ou réservés aux 16+ seront floutées</p>
             </div>
             <button
               type="button"

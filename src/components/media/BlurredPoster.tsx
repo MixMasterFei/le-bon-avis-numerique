@@ -9,14 +9,18 @@ interface BlurredPosterProps {
   src: string
   alt: string
   expertAgeRec: number | null
+  violenceScore?: number | null
   className?: string
   sizes?: string
   priority?: boolean
 }
 
-export function BlurredPoster({ src, alt, expertAgeRec, className, sizes, priority }: BlurredPosterProps) {
+export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, className, sizes, priority }: BlurredPosterProps) {
   const { settings } = useSettings()
-  const shouldBlur = settings.blur18Plus && expertAgeRec !== null && expertAgeRec >= 18
+  const shouldBlur = settings.blur18Plus && (
+    (expertAgeRec !== null && expertAgeRec >= 16) ||
+    (violenceScore !== undefined && violenceScore !== null && violenceScore >= 4)
+  )
 
   return (
     <>
@@ -34,7 +38,7 @@ export function BlurredPoster({ src, alt, expertAgeRec, className, sizes, priori
             <EyeOff className="h-8 w-8 text-white" />
           </div>
           <p className="absolute bottom-4 text-white text-sm font-medium bg-black/60 px-3 py-1 rounded-full">
-            Contenu 18+
+            Contenu sensible
           </p>
         </div>
       )}
