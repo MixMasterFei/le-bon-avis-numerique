@@ -134,14 +134,31 @@ export async function GET(request: NextRequest) {
   const collectionId = searchParams.get("id")
   const limit = parseInt(searchParams.get("limit") || "20")
 
-  // If no collection ID, return list of all collections with counts
+  // If no collection ID, return list of all collections with counts + preview posters
   if (!collectionId) {
+    const weekNumber = Math.floor(Date.now() / 604800000)
+
     const collectionsWithCounts = await Promise.all(
       COLLECTIONS.map(async (collection) => {
         const count = await getCollectionCount(collection.query)
+
+        // Fetch a pool of posters for weekly rotation
+        const posterPool = await prisma.mediaItem.findMany({
+          where: { ...buildWhereClause(collection.query), posterUrl: { not: null } },
+          select: { posterUrl: true },
+          take: 20,
+          orderBy: { createdAt: "desc" },
+        })
+
+        // Weekly rotation: offset changes every ~7 days
+        const offset = (weekNumber * 4) % Math.max(posterPool.length, 1)
+        const rotated = [...posterPool.slice(offset), ...posterPool.slice(0, offset)]
+        const previewPosters = rotated.slice(0, 4).map((p) => p.posterUrl)
+
         return {
           ...collection,
           count,
+          previewPosters,
           query: undefined, // Don't expose query details
         }
       })

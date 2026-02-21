@@ -2,72 +2,22 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
-  Star,
-  Gift,
-  Ghost,
-  Sun,
-  Heart,
-  Wand2,
   Sparkles,
   Film,
   Tv,
   Gamepad2,
-  Users,
-  GraduationCap,
+  Gift,
   Loader2,
 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
 
 interface Collection {
   id: string
   title: string
   description: string
   count: number
-}
-
-// Map collection IDs to icons
-const collectionIcons: Record<string, React.ElementType> = {
-  "best-movies-2024": Star,
-  "best-movies-2025": Star,
-  "family-movies": Users,
-  "teen-comedy": Heart,
-  "christmas-movies": Gift,
-  "halloween-movies": Ghost,
-  "summer-movies": Sun,
-  "disney-classics": Wand2,
-  "pixar": Sparkles,
-  "studio-ghibli": Wand2,
-  "superhero": Sparkles,
-  "educational": GraduationCap,
-  "animation-kids": Film,
-  "adventure": Sparkles,
-  "fantasy": Wand2,
-  "family-games": Gamepad2,
-  "teen-games": Gamepad2,
-  "kids-series": Tv,
-}
-
-// Map collection IDs to colors
-const collectionColors: Record<string, string> = {
-  "best-movies-2024": "from-yellow-500 to-orange-500",
-  "best-movies-2025": "from-yellow-500 to-orange-500",
-  "family-movies": "from-blue-500 to-cyan-500",
-  "teen-comedy": "from-pink-500 to-rose-500",
-  "christmas-movies": "from-red-500 to-green-500",
-  "halloween-movies": "from-orange-500 to-purple-500",
-  "summer-movies": "from-yellow-400 to-orange-400",
-  "disney-classics": "from-blue-400 to-purple-500",
-  "pixar": "from-green-400 to-blue-500",
-  "studio-ghibli": "from-green-500 to-teal-500",
-  "superhero": "from-red-500 to-blue-500",
-  "educational": "from-emerald-500 to-teal-500",
-  "animation-kids": "from-purple-400 to-pink-400",
-  "adventure": "from-amber-500 to-orange-500",
-  "fantasy": "from-violet-500 to-purple-500",
-  "family-games": "from-green-500 to-emerald-500",
-  "teen-games": "from-blue-600 to-indigo-600",
-  "kids-series": "from-cyan-500 to-blue-500",
+  previewPosters?: string[]
 }
 
 export default function CollectionsPage() {
@@ -143,31 +93,9 @@ export default function CollectionsPage() {
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {items.map((collection) => {
-            const CollectionIcon = collectionIcons[collection.id] || Sparkles
-            const gradient = collectionColors[collection.id] || "from-gray-500 to-gray-600"
-
-            return (
-              <Link key={collection.id} href={`/collections/${collection.id}`}>
-                <Card className="group hover:shadow-lg transition-all cursor-pointer overflow-hidden">
-                  <div className={`h-24 bg-gradient-to-br ${gradient} flex items-center justify-center`}>
-                    <CollectionIcon className="h-12 w-12 text-white/90 group-hover:scale-110 transition-transform" />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                      {collection.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 mt-1">
-                      {collection.description}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      {collection.count} titre{collection.count > 1 ? "s" : ""}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
+          {items.map((collection) => (
+            <CollectionCard key={collection.id} collection={collection} />
+          ))}
         </div>
       </section>
     )
@@ -187,5 +115,59 @@ export default function CollectionsPage() {
       {renderCollectionGroup("Jeux vidéo", gameCollections, Gamepad2)}
       {renderCollectionGroup("Séries TV", tvCollections, Tv)}
     </div>
+  )
+}
+
+function CollectionCard({ collection }: { collection: Collection }) {
+  const posters = collection.previewPosters || []
+  const hasPosters = posters.length >= 4
+
+  return (
+    <Link href={`/collections/${collection.id}`}>
+      <div className="group rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white">
+        {/* Poster collage or fallback */}
+        <div className="relative aspect-[16/9] overflow-hidden">
+          {hasPosters ? (
+            <div className="grid grid-cols-2 grid-rows-2 h-full w-full">
+              {posters.slice(0, 4).map((url, i) => (
+                <div key={i} className="relative overflow-hidden">
+                  <Image
+                    src={url}
+                    alt=""
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 15vw"
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+              <Sparkles className="h-12 w-12 text-white/80" />
+            </div>
+          )}
+
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+          {/* Title overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <h3 className="font-bold text-white text-sm leading-tight group-hover:text-violet-200 transition-colors">
+              {collection.title}
+            </h3>
+            <p className="text-xs text-white/70 mt-0.5">
+              {collection.count} titre{collection.count > 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="p-3 pt-2">
+          <p className="text-xs text-gray-500 line-clamp-2">
+            {collection.description}
+          </p>
+        </div>
+      </div>
+    </Link>
   )
 }
