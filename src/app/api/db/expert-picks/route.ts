@@ -20,27 +20,24 @@ export async function GET(request: NextRequest) {
   tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10)
 
   try {
-    // Fetch a large pool of quality media, then shuffle & slice
-    const poolSize = limit * 8
+    // Fetch a large pool — most movies share the same DQS so we need
+    // enough candidates for the JS scoring pass to pick from.
+    const poolSize = 300
 
-    let items = await withPrismaRetry(() =>
+    const items = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
-          // Must have a real poster
           posterUrl: { not: null, startsWith: "http" },
-          // Exclude horror/thriller/adult genres
           NOT: {
             genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
           },
           OR: [
             {
-              // Movies/TV: enriched (high DQS) + family-friendly age
               type: { in: ["MOVIE", "TV"] },
               dataQualityScore: { gte: 70 },
               expertAgeRec: { not: null, lte: 12 },
             },
             {
-              // Games: known PEGI age ≤ 12, high quality, recent
               type: "GAME",
               expertAgeRec: { not: null, lte: 12 },
               dataQualityScore: { gte: 75 },
@@ -48,10 +45,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         },
-        orderBy: [
-          { dataQualityScore: "desc" },
-          { tmdbRating: { sort: "desc", nulls: "last" } },
-        ],
+        orderBy: { dataQualityScore: "desc" },
         take: poolSize,
         select: {
           id: true,
@@ -69,48 +63,53 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Safety net: if strict filters return no MOVIE/TV, fetch a relaxed MOVIE/TV pool
-    // so expert picks cannot degrade into games-only selections.
-    const hasMovieOrTv = items.some((i) => i.type === "MOVIE" || i.type === "TV")
-    if (!hasMovieOrTv) {
-      const relaxedMovieTv = await withPrismaRetry(() =>
-        prisma.mediaItem.findMany({
-          where: {
-            type: { in: ["MOVIE", "TV"] },
-            posterUrl: { not: null, startsWith: "http" },
-            dataQualityScore: { gte: 50 },
-            expertAgeRec: { not: null, lte: 12 },
-            NOT: {
-              genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
-            },
-          },
-          orderBy: [
-            { dataQualityScore: "desc" },
-          ],
-          take: poolSize,
-          select: {
-            id: true,
-            title: true,
-            originalTitle: true,
-            type: true,
-            posterUrl: true,
-            genres: true,
-            expertAgeRec: true,
-            communityAgeRec: true,
-            tmdbRating: true,
-            dataQualityScore: true,
-            releaseDate: true,
-          },
-        })
-      )
+    // ── Rank items by "pick-worthiness" ──
+    // Without TMDB popularity data, we use available signals to prefer
+    // recognizable, mainstream, family-friendly content.
+    const familyGenres = new Set([
+      "Animation", "Familial", "Family", "Aventure", "Adventure",
+      "Comédie", "Comedy", "Kids", "Fantastique", "Fantasy",
+    ])
+    const now = new Date()
+    const currentYear = now.getFullYear()
 
-      const existingIds = new Set(items.map((i) => i.id))
-      items = [...items, ...relaxedMovieTv.filter((i) => !existingIds.has(i.id))]
+    function pickScore(item: (typeof items)[0]): number {
+      let score = 0
+
+      // Recent releases are more recognizable (max +5)
+      if (item.releaseDate) {
+        const year = item.releaseDate.getFullYear()
+        if (year >= currentYear - 5) score += 5
+        else if (year >= currentYear - 15) score += 4
+        else if (year >= currentYear - 25) score += 3
+        else if (year >= currentYear - 40) score += 1
+        // Very old (pre-1986) = 0
+      }
+
+      // Family-friendly genres boost (max +4)
+      const genreHits = item.genres.filter((g) => familyGenres.has(g)).length
+      score += Math.min(genreHits, 4)
+
+      // Universally accessible age = better for "expert pick" showcase
+      if (item.expertAgeRec !== null) {
+        if (item.expertAgeRec <= 6) score += 2
+        else if (item.expertAgeRec <= 10) score += 1
+      }
+
+      // TMDB rating if available (rare but valuable)
+      if (item.tmdbRating && item.tmdbRating >= 7) score += 3
+
+      return score
     }
 
-    // Shuffle only the top-ranked slice to keep quality high while still rotating weekly.
-    const topPoolSize = Math.max(limit * 3, limit)
-    const topPool = items.slice(0, topPoolSize)
+    // Score and sort — highest-scoring items first
+    const scored = items
+      .map((item) => ({ item, score: pickScore(item) }))
+      .sort((a, b) => b.score - a.score)
+
+    // Take the top-scoring slice, then shuffle for weekly variety
+    const topPoolSize = Math.min(limit * 5, scored.length)
+    const topPool = scored.slice(0, topPoolSize).map((s) => s.item)
     const shuffled = seededShuffle(topPool, seed)
     const maxPerType: Record<string, number> = {
       MOVIE: Math.max(2, Math.ceil(limit / 2)),
