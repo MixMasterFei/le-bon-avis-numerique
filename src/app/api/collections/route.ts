@@ -122,6 +122,18 @@ const COLLECTIONS: Collection[] = [
     query: { type: "GAME", maxAge: 16 },
   },
   {
+    id: "adventure-games",
+    title: "Belles aventures",
+    description: "RPG, action-aventure et mondes a explorer",
+    query: { type: "GAME", topics: ["RPG", "Aventure", "Action"] },
+  },
+  {
+    id: "coop-games",
+    title: "Jouons ensemble",
+    description: "Jeux cooperatifs et multijoueurs pour partager le fun",
+    query: { type: "GAME", topics: ["Coopératif", "Multijoueur"] },
+  },
+  {
     id: "kids-series",
     title: "Series pour enfants",
     description: "Les meilleures series TV pour les petits",
