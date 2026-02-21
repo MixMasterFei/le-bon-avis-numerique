@@ -97,19 +97,19 @@
 - [x] Standardize ITEMS_PER_PAGE across listing pages (24 everywhere: was 12 for series/jeux, 20 for age, 35 for films/recherche)
 - [x] Post-login redirect to `/chez-vous` instead of homepage (connexion, inscription, NextAuth callback)
 
-### P2 — Navigation redesign (Step 2 — planned)
-- [ ] Add Livres to header primary nav
-- [ ] Move BD from primary nav to "Plus" dropdown (coming soon)
-- [ ] Add age-based browsing to header (key differentiator — CSM puts it front and center)
-- [ ] Add Collections to header navigation
-- [ ] Remove "coming soon" label from Guides (3 of 5 guides are live)
-- [ ] Add favorites/watchlist/family settings to logged-in user dropdown
-- [ ] Mobile navigation improvements (animation, collapsible search, aria labels)
+### P2 — Navigation redesign (ALL COMPLETED Feb 21)
+- [x] Add Livres to header primary nav
+- [x] Move BD from primary nav to "Plus" dropdown (coming soon)
+- [x] Add age-based browsing to header ("Par âge" dropdown with 6 age ranges)
+- [x] Add Collections to header navigation (moved to "Plus" menu)
+- [x] Remove "coming soon" label from Guides (now active link)
+- [x] Add favorites/watchlist/family settings to logged-in user dropdown (Mes favoris, Ma liste, Ma famille)
+- [x] Mobile navigation improvements (age grid, user links in mobile menu)
 
-### P3 — Remaining cleanup
-- [ ] Fix HeroSearch popular links (point to wrong routes)
-- [ ] Add all auth-required routes to middleware protection (`/ma-liste`, `/mes-favoris`, `/chez-vous`)
-- [ ] Standardize grid columns across listing pages
+### P3 — Remaining cleanup (ALL COMPLETED Feb 21)
+- [x] Fix HeroSearch popular links (now route to /age/5-7 and /recherche?q=...)
+- [x] Add all auth-required routes to middleware protection (`/ma-liste`, `/mes-favoris`, `/chez-vous`)
+- [x] Standardize grid columns across listing pages (already consistent by card variant)
 
 ---
 

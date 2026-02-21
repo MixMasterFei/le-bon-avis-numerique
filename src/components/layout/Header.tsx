@@ -4,22 +4,33 @@ import Link from "next/link"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home } from "lucide-react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home, Book, Baby, Star, Bookmark, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const navigation = [
   { name: "Films", href: "/films", icon: Film },
-  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
   { name: "Séries TV", href: "/series", icon: Tv },
-  { name: "BD", href: "/bd", icon: BookOpen, comingSoon: true },
+  { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
+  { name: "Livres", href: "/livres", icon: Book },
+]
+
+const ageRanges = [
+  { name: "2-4 ans", href: "/age/2-4", description: "Tout-petits" },
+  { name: "5-7 ans", href: "/age/5-7", description: "Maternelle / CP" },
+  { name: "8-10 ans", href: "/age/8-10", description: "Primaire" },
+  { name: "11-12 ans", href: "/age/11-12", description: "Collège" },
+  { name: "13-15 ans", href: "/age/13-15", description: "Adolescents" },
+  { name: "16+ ans", href: "/age/16-plus", description: "Grands ados" },
 ]
 
 const moreNavigation = [
+  { name: "Collections", href: "/collections", icon: Bookmark },
   { name: "Notre histoire", href: "/a-propos", icon: Info },
   { name: "Notre objectif", href: "/objectif", icon: Target },
   { name: "Nos valeurs & notations", href: "/nos-valeurs", icon: Heart },
-  { name: "Nos guides", href: "/guides", icon: BookText, comingSoon: true },
+  { name: "Nos guides", href: "/guides", icon: BookText },
+  { name: "BD", href: "/bd", icon: BookOpen, comingSoon: true },
   { name: "Notre blog", href: "/blog", icon: Newspaper, comingSoon: true },
 ]
 
@@ -29,14 +40,19 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
+  const [isAgeMenuOpen, setIsAgeMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const moreMenuRef = useRef<HTMLDivElement>(null)
+  const ageMenuRef = useRef<HTMLDivElement>(null)
 
-  // Close more menu when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setIsMoreMenuOpen(false)
+      }
+      if (ageMenuRef.current && !ageMenuRef.current.contains(event.target as Node)) {
+        setIsAgeMenuOpen(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -76,31 +92,44 @@ export function Header() {
 
           {/* Desktop Navigation - Playful pill design */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {navigation.map((item) =>
-              item.comingSoon ? (
-                <div
-                  key={item.name}
-                  className="relative group"
-                >
-                  <span className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-400 cursor-not-allowed">
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </span>
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg">
-                    Bientôt disponible
-                  </div>
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200 hover:shadow-sm"
+              >
+                <item.icon className="h-4 w-4" />
+                {item.name}
+              </Link>
+            ))}
+
+            {/* Par âge Dropdown */}
+            <div ref={ageMenuRef} className="relative">
+              <button
+                onClick={() => setIsAgeMenuOpen(!isAgeMenuOpen)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200"
+              >
+                <Baby className="h-4 w-4" />
+                Par âge
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isAgeMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isAgeMenuOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
+                  {ageRanges.map((range) => (
+                    <Link
+                      key={range.href}
+                      href={range.href}
+                      className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-violet-700 transition-colors"
+                      onClick={() => setIsAgeMenuOpen(false)}
+                    >
+                      <span className="font-medium">{range.name}</span>
+                      <span className="text-xs text-gray-400">{range.description}</span>
+                    </Link>
+                  ))}
                 </div>
-              ) : (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200 hover:shadow-sm"
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              )
-            )}
+              )}
+            </div>
 
             {/* More Dropdown */}
             <div ref={moreMenuRef} className="relative">
@@ -211,6 +240,30 @@ export function Header() {
                         <User className="h-4 w-4" />
                         Mon profil
                       </Link>
+                      <Link
+                        href="/mes-favoris"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-violet-700 transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Star className="h-4 w-4" />
+                        Mes favoris
+                      </Link>
+                      <Link
+                        href="/ma-liste"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-violet-700 transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Bookmark className="h-4 w-4" />
+                        Ma liste
+                      </Link>
+                      <Link
+                        href="/chez-vous#famille"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-violet-700 transition-colors"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Users className="h-4 w-4" />
+                        Ma famille
+                      </Link>
                       {isAdmin && (
                         <Link
                           href="/admin/import"
@@ -276,32 +329,35 @@ export function Header() {
       {isMenuOpen && (
         <div className="lg:hidden border-t bg-white">
           <nav className="container mx-auto px-4 py-4 space-y-1">
-            {navigation.map((item) =>
-              item.comingSoon ? (
-                <div
-                  key={item.name}
-                  className="flex items-center justify-between px-4 py-3 text-gray-400 cursor-not-allowed"
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </div>
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">
-                    Bientôt
-                  </span>
-                </div>
-              ) : (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
-                </Link>
-              )
-            )}
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <item.icon className="h-5 w-5" />
+                {item.name}
+              </Link>
+            ))}
+
+            {/* Par âge section in mobile */}
+            <div className="pt-2 mt-2 border-t">
+              <p className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Par âge</p>
+              <div className="grid grid-cols-2 gap-1 px-2">
+                {ageRanges.map((range) => (
+                  <Link
+                    key={range.href}
+                    href={range.href}
+                    className="flex flex-col px-3 py-2.5 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <span className="text-sm font-medium">{range.name}</span>
+                    <span className="text-xs text-gray-400">{range.description}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
 
             {/* More section in mobile */}
             <div className="pt-2 mt-2 border-t">
@@ -352,6 +408,30 @@ export function Header() {
                 >
                   <User className="h-5 w-5" />
                   Mon profil
+                </Link>
+                <Link
+                  href="/mes-favoris"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Star className="h-5 w-5" />
+                  Mes favoris
+                </Link>
+                <Link
+                  href="/ma-liste"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Bookmark className="h-5 w-5" />
+                  Ma liste
+                </Link>
+                <Link
+                  href="/chez-vous#famille"
+                  className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-primary/5 hover:text-primary rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Users className="h-5 w-5" />
+                  Ma famille
                 </Link>
                 {isAdmin && (
                   <Link

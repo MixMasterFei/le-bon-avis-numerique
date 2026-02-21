@@ -9,10 +9,10 @@ import { Button } from "@/components/ui/button"
 
 // Popular search suggestions shown below the search bar
 const popularSearches = [
-  { label: "Films pour enfants", href: "/films/recherche?maxAge=7" },
-  { label: "Animation", href: "/films/recherche?genres=Animation" },
-  { label: "Aventure", href: "/films/recherche?genres=Aventure" },
-  { label: "Comedie", href: "/films/recherche?genres=Comedie" },
+  { label: "Films pour enfants", href: "/age/5-7" },
+  { label: "Animation", href: "/recherche?q=animation" },
+  { label: "Aventure", href: "/recherche?q=aventure" },
+  { label: "Comédie", href: "/recherche?q=comédie" },
 ]
 
 interface Suggestion {

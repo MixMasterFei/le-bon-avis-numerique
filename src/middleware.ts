@@ -12,7 +12,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 // Routes that require authentication
-const protectedRoutes = ["/profil", "/mes-avis"]
+const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris", "/chez-vous"]
 
 // Routes that require admin role
 const adminRoutes = ["/admin"]
@@ -213,5 +213,8 @@ export const config = {
     // Match protected routes
     "/profil/:path*",
     "/mes-avis/:path*",
+    "/ma-liste/:path*",
+    "/mes-favoris/:path*",
+    "/chez-vous/:path*",
   ],
 }
