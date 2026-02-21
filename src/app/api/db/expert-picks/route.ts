@@ -26,18 +26,17 @@ export async function GET(request: NextRequest) {
     let items = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
-          type: { in: ["MOVIE", "TV", "GAME"] },
           // Must have a real poster
           posterUrl: { not: null, startsWith: "http" },
-          // Must be expert-reviewed and family-friendly (max 12+)
-          expertAgeRec: { not: null, lte: 12 },
           // Minimum data completeness
           dataQualityScore: { gte: 50 },
-          // Exclude horror/thriller/adult genres
-          NOT: {
-            genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
-          },
-          // Movies/TV need solid audience signal; games need stricter curation gates.
+          // Exclude horror/thriller/adult genres AND known 13+/16+/18+ content
+          NOT: [
+            { genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] } },
+            { expertAgeRec: { gt: 12 } },
+          ],
+          // Movies/TV: good TMDB signal (age often unknown — genre filter catches worst cases)
+          // Games: must have known PEGI age ≤ 12
           OR: [
             {
               type: { in: ["MOVIE", "TV"] },
@@ -46,6 +45,7 @@ export async function GET(request: NextRequest) {
             },
             {
               type: "GAME",
+              expertAgeRec: { not: null, lte: 12 },
               dataQualityScore: { gte: 75 },
               releaseDate: { not: null, gte: tenYearsAgo },
             },
@@ -81,11 +81,11 @@ export async function GET(request: NextRequest) {
           where: {
             type: { in: ["MOVIE", "TV"] },
             posterUrl: { not: null, startsWith: "http" },
-            expertAgeRec: { not: null, lte: 12 },
-            dataQualityScore: { gte: 60 },
-            NOT: {
-              genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
-            },
+            dataQualityScore: { gte: 40 },
+            NOT: [
+              { genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] } },
+              { expertAgeRec: { gt: 12 } },
+            ],
           },
           orderBy: [
             { dataQualityScore: "desc" },
