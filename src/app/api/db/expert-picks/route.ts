@@ -28,22 +28,19 @@ export async function GET(request: NextRequest) {
         where: {
           // Must have a real poster
           posterUrl: { not: null, startsWith: "http" },
-          // Minimum data completeness
-          dataQualityScore: { gte: 50 },
-          // Exclude horror/thriller/adult genres AND known 13+/16+/18+ content
-          NOT: [
-            { genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] } },
-            { expertAgeRec: { gt: 12 } },
-          ],
-          // Movies/TV: good TMDB signal (age often unknown — genre filter catches worst cases)
-          // Games: must have known PEGI age ≤ 12
+          // Exclude horror/thriller/adult genres
+          NOT: {
+            genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
+          },
           OR: [
             {
+              // Movies/TV: enriched (high DQS) + family-friendly age
               type: { in: ["MOVIE", "TV"] },
-              tmdbRating: { gte: 7.0 },
-              tmdbVoteCount: { gte: 50 },
+              dataQualityScore: { gte: 70 },
+              expertAgeRec: { not: null, lte: 12 },
             },
             {
+              // Games: known PEGI age ≤ 12, high quality, recent
               type: "GAME",
               expertAgeRec: { not: null, lte: 12 },
               dataQualityScore: { gte: 75 },
@@ -52,8 +49,8 @@ export async function GET(request: NextRequest) {
           ],
         },
         orderBy: [
-          { tmdbRating: { sort: "desc", nulls: "last" } },
           { dataQualityScore: "desc" },
+          { tmdbRating: { sort: "desc", nulls: "last" } },
         ],
         take: poolSize,
         select: {
@@ -81,15 +78,14 @@ export async function GET(request: NextRequest) {
           where: {
             type: { in: ["MOVIE", "TV"] },
             posterUrl: { not: null, startsWith: "http" },
-            dataQualityScore: { gte: 40 },
-            NOT: [
-              { genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] } },
-              { expertAgeRec: { gt: 12 } },
-            ],
+            dataQualityScore: { gte: 50 },
+            expertAgeRec: { not: null, lte: 12 },
+            NOT: {
+              genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
+            },
           },
           orderBy: [
             { dataQualityScore: "desc" },
-            { tmdbRating: { sort: "desc", nulls: "last" } },
           ],
           take: poolSize,
           select: {
