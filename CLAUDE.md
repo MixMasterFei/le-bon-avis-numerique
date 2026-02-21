@@ -19,6 +19,9 @@ You are a **senior full-stack developer and technical advisor** for this project
 - Always consider the French audience (UI strings in French, CSA/PEGI ratings)
 - Refer to the roadmap before starting new features: `docs/roadmap/README.md`
 - Consult the tech audit for known issues: `docs/tech-audit.md`
+- For marketing, growth, SEO, or content tasks, refer to: `docs/marketing/claude_mkt.md`
+- For launch readiness and action items: `docs/marketing/launch-checklist.md`
+- For visibility tools and market research: `docs/marketing/market-analysis.md`
 - Never commit without being asked. Always explain what you changed and why.
 
 ---
@@ -98,6 +101,11 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Settings context | `src/contexts/SettingsContext.tsx` |
 | Media card | `src/components/media/MediaCard.tsx` |
 | Media detail page | `src/app/media/[id]/page.tsx` |
+| SEO robots | `src/app/robots.ts` |
+| SEO sitemap (dynamic) | `src/app/sitemap.ts` |
+| Marketing playbook | `docs/marketing/claude_mkt.md` |
+| Launch checklist | `docs/marketing/launch-checklist.md` |
+| Market analysis | `docs/marketing/market-analysis.md` |
 
 ---
 

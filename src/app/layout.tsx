@@ -7,6 +7,7 @@ import { CookieConsent } from "@/components/CookieConsent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
+import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default function RootLayout({
             <CookieConsent />
           </SettingsProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   )
