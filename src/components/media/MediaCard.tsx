@@ -57,10 +57,10 @@ function FamilyGauge({ metrics, ageRec }: { metrics: MockMediaItem["contentMetri
     label = "Familial"
   } else if (effectiveScore <= 2) {
     color = "bg-emerald-50 text-emerald-600"
-    label = "Adapte"
+    label = "Adapté"
   } else if (effectiveScore <= 3) {
     color = "bg-amber-100 text-amber-700"
-    label = "Modere"
+    label = "Modéré"
   } else if (effectiveScore <= 4) {
     color = "bg-orange-100 text-orange-700"
     label = "Attention"
@@ -99,11 +99,11 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
   }
   // Truly educational content (5 = central theme, not just "has some positive messages")
   if (metrics.positiveMessages >= 5) {
-    tags.push({ label: "Educatif", color: "bg-emerald-100 text-emerald-700" })
+    tags.push({ label: "Éducatif", color: "bg-emerald-100 text-emerald-700" })
   }
   // Exceptional role models
   if (metrics.roleModels >= 5) {
-    tags.push({ label: "Modeles+", color: "bg-blue-100 text-blue-700" })
+    tags.push({ label: "Modèles+", color: "bg-blue-100 text-blue-700" })
   }
   // Language issues
   if (metrics.language >= 4) {
@@ -111,7 +111,7 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
   }
   // Sex/Nudity
   if (metrics.sexNudity >= 3) {
-    tags.push({ label: "Scenes intimes", color: "bg-pink-100 text-pink-700" })
+    tags.push({ label: "Scènes intimes", color: "bg-pink-100 text-pink-700" })
   }
 
   return tags.slice(0, 2) // Max 2 tags

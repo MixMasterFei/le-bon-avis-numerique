@@ -413,13 +413,13 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                   onCheckedChange={(checked) => toggleFamilyFilter(Boolean(checked))}
                 />
                 <span className="text-sm">
-                  Adapter aux preferences de la famille
+                  Adapter aux préférences de la famille
                 </span>
               </label>
 
               {useFamilyFilter && (
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-500">Selectionner les membres :</p>
+                  <p className="text-xs text-gray-500">Sélectionner les membres :</p>
                   <div className="flex flex-wrap gap-2">
                     {familyMembers.map((member) => {
                       const isSelected = selectedFamilyMembers.includes(member.id)

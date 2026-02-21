@@ -63,7 +63,7 @@ const METRICS: MetricConfig[] = [
   },
   {
     key: "roleModels",
-    label: "Modeles positifs",
+    label: "Modèles positifs",
     description: "Bons exemples de comportement (0 = aucun, 5 = excellent)",
     isPositive: true,
   },

@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Gamepad2, Database, Star, Clock } from "lucide-react"
+import { Gamepad2, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 24
 const FEATURED_COUNT = 7
 
 export default function JeuxPage() {
@@ -281,11 +281,6 @@ export default function JeuxPage() {
               <h2 className="text-lg font-bold text-gray-900">
                 {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : "Tous les jeux"}
               </h2>
-              {source === "db" && (
-                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  <Database className="h-3 w-3" /> Base locale
-                </span>
-              )}
             </div>
             <p className="text-sm text-gray-500">
               {(source === "db" ? dbTotalResults ?? filteredGames.length : filteredGames.length)} jeu{(source === "db" ? dbTotalResults ?? filteredGames.length : filteredGames.length) !== 1 ? "x" : ""}

@@ -4,7 +4,7 @@ import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Loader2, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, Heart, Star, Users, AlertCircle } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight, Heart, Star, Users, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
@@ -12,13 +12,12 @@ import { Card } from "@/components/ui/card"
 function ConnexionForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/"
+  const callbackUrl = searchParams.get("callbackUrl") || "/chez-vous"
   const error = searchParams.get("error")
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [isAdminLogin, setIsAdminLogin] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [resendingVerification, setResendingVerification] = useState(false)
@@ -51,8 +50,7 @@ function ConnexionForm() {
           setErrorMessage("Email ou mot de passe incorrect")
         }
       } else {
-        const redirectUrl = isAdminLogin ? "/admin" : callbackUrl
-        router.push(redirectUrl)
+        router.push(callbackUrl)
         router.refresh()
       }
     } catch {
@@ -105,16 +103,16 @@ function ConnexionForm() {
               <div className="p-8 lg:p-12">
                 <div className="mb-8">
                   <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-bold text-lg">
-                      BS
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 text-white font-bold text-lg">
+                      BA
                     </div>
-                    <span className="font-semibold text-gray-900">Le Bon Sens</span>
+                    <span className="font-semibold text-gray-900">Le Bon Avis</span>
                   </Link>
                   <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
                     Connexion
                   </h1>
                   <p className="text-gray-600">
-                    Connectez-vous pour acceder a vos favoris et recommandations
+                    Connectez-vous pour accéder à vos favoris et recommandations
                   </p>
                 </div>
 
@@ -249,23 +247,8 @@ function ConnexionForm() {
                       </button>
                     </div>
                     <Link href="/mot-de-passe-oublie" className="text-sm text-emerald-600 hover:underline">
-                      Mot de passe oublie ?
+                      Mot de passe oublié ?
                     </Link>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="adminLogin"
-                      checked={isAdminLogin}
-                      onChange={(e) => setIsAdminLogin(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                      disabled={isLoading || googleLoading}
-                    />
-                    <label htmlFor="adminLogin" className="flex items-center text-sm text-gray-600 cursor-pointer">
-                      <Shield className="h-4 w-4 mr-1 text-amber-600" />
-                      Connexion administrateur
-                    </label>
                   </div>
 
                   <Button
@@ -277,11 +260,6 @@ function ConnexionForm() {
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                         Connexion...
-                      </>
-                    ) : isAdminLogin ? (
-                      <>
-                        <Shield className="mr-2 h-5 w-5" />
-                        Connexion Admin
                       </>
                     ) : (
                       "Se connecter"
@@ -296,7 +274,7 @@ function ConnexionForm() {
                   Devenez Membre
                 </h2>
                 <p className="text-emerald-100 mb-8 text-lg">
-                  Acces illimite aux critiques d&apos;experts, recommandations personnalisees par age et bien plus encore !
+                  Accès illimité aux critiques d&apos;experts, recommandations personnalisées par âge et bien plus encore !
                 </p>
 
                 {/* Feature illustration */}
@@ -314,15 +292,15 @@ function ConnexionForm() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Heart className="h-4 w-4 text-red-300" />
-                        <span>42 favoris sauvegardes</span>
+                        <span>42 favoris sauvegardés</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Star className="h-4 w-4 text-yellow-300" />
-                        <span>12 avis partages</span>
+                        <span>12 avis partagés</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Users className="h-4 w-4 text-blue-300" />
-                        <span>Reactions des enfants suivies</span>
+                        <span>Réactions des enfants suivies</span>
                       </div>
                     </div>
                   </div>
@@ -330,10 +308,10 @@ function ConnexionForm() {
 
                 <div className="space-y-3 mb-8">
                   <p className="text-sm text-emerald-100">
-                    Nous respectons votre vie privee.
+                    Nous respectons votre vie privée.
                   </p>
                   <Link href="/confidentialite" className="text-sm text-white underline hover:no-underline">
-                    Voir notre politique de confidentialite
+                    Voir notre politique de confidentialité
                   </Link>
                 </div>
 
@@ -342,7 +320,7 @@ function ConnexionForm() {
                     variant="outline"
                     className="w-full h-12 text-base border-2 border-white text-white bg-transparent hover:bg-white hover:text-teal-700"
                   >
-                    Creer un compte
+                    Créer un compte
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>

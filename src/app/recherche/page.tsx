@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Search, Loader2, Film, Tv, Gamepad2, BookOpen, Database } from "lucide-react"
+import { Search, Loader2, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -237,11 +237,6 @@ function RechercheContent() {
                     <p className="text-gray-600">
                       {filteredResults.length} résultat{filteredResults.length !== 1 ? "s" : ""} pour &ldquo;{initialQuery}&rdquo;
                     </p>
-                    {source === "db" && (
-                      <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                        <Database className="h-3 w-3" /> Base locale
-                      </span>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">

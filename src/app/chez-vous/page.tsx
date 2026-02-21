@@ -25,7 +25,7 @@ export default function ChezVousPage() {
   }
 
   if (status === "unauthenticated") {
-    redirect("/auth/signin?callbackUrl=/chez-vous")
+    redirect("/connexion?callbackUrl=/chez-vous")
   }
 
   return (

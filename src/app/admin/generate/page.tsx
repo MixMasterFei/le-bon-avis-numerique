@@ -118,7 +118,7 @@ export default function GenerateReviewPage() {
     consumerism: "Consumerisme",
     substanceUse: "Drogues/Alcool",
     positiveMessages: "Messages positifs",
-    roleModels: "Modeles positifs",
+    roleModels: "Modèles positifs",
   }
 
   return (

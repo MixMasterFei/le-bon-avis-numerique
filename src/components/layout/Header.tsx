@@ -371,7 +371,7 @@ export function Header() {
                   className="flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
                 >
                   <LogOut className="h-5 w-5" />
-                  Deconnexion
+                  Déconnexion
                 </button>
               </>
             ) : (

@@ -58,19 +58,19 @@ export default function InscriptionPage() {
 
     // Validate all required fields
     if (!firstName.trim() || !lastName.trim()) {
-      setErrorMessage("Le prenom et le nom sont requis")
+      setErrorMessage("Le prénom et le nom sont requis")
       setIsLoading(false)
       return
     }
 
     if (!passwordValid) {
-      setErrorMessage("Le mot de passe ne respecte pas les criteres requis")
+      setErrorMessage("Le mot de passe ne respecte pas les critères requis")
       setIsLoading(false)
       return
     }
 
     if (newsletterWeekly === null || newsletterMission === null || newsletterUpdates === null) {
-      setErrorMessage("Veuillez repondre a toutes les questions sur les emails")
+      setErrorMessage("Veuillez répondre à toutes les questions sur les emails")
       setIsLoading(false)
       return
     }
@@ -116,7 +116,7 @@ export default function InscriptionPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
-    await signIn("google", { callbackUrl: "/" })
+    await signIn("google", { callbackUrl: "/chez-vous" })
   }
 
   // Show success screen after registration
@@ -187,8 +187,8 @@ export default function InscriptionPage() {
                       <Film className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Films & Series</p>
-                      <p className="text-sm text-emerald-200">Critiques detaillees par age</p>
+                      <p className="font-medium">Films & Séries</p>
+                      <p className="text-sm text-emerald-200">Critiques détaillées par âge</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
@@ -196,7 +196,7 @@ export default function InscriptionPage() {
                       <Gamepad2 className="h-6 w-6" />
                     </div>
                     <div>
-                      <p className="font-medium">Jeux Video</p>
+                      <p className="font-medium">Jeux Vidéo</p>
                       <p className="text-sm text-emerald-200">Analyses des contenus sensibles</p>
                     </div>
                   </div>
@@ -206,13 +206,13 @@ export default function InscriptionPage() {
                     </div>
                     <div>
                       <p className="font-medium">Livres</p>
-                      <p className="text-sm text-emerald-200">Recommandations personnalisees</p>
+                      <p className="text-sm text-emerald-200">Recommandations personnalisées</p>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-sm text-emerald-200 text-center lg:text-left">
-                  Deja un compte ?{" "}
+                  Déjà un compte ?{" "}
                   <Link href="/connexion" className="text-white underline hover:no-underline font-medium">
                     Se connecter
                   </Link>
@@ -223,18 +223,18 @@ export default function InscriptionPage() {
               <div className="p-8 lg:p-12 order-1 lg:order-2">
                 <div className="mb-6">
                   <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white font-bold text-lg">
-                      BS
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 text-white font-bold text-lg">
+                      BA
                     </div>
-                    <span className="font-semibold text-gray-900">Le Bon Sens</span>
+                    <span className="font-semibold text-gray-900">Le Bon Avis</span>
                   </Link>
                 </div>
 
                 <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                  Creer votre compte gratuit
+                  Créer votre compte gratuit
                 </h1>
                 <p className="text-gray-600 mb-6">
-                  Deja un compte ?{" "}
+                  Déjà un compte ?{" "}
                   <Link href="/connexion" className="text-emerald-600 hover:underline font-medium">
                     Se connecter
                   </Link>
@@ -281,7 +281,7 @@ export default function InscriptionPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-gray-700">
-                        Prenom <span className="text-red-500">*</span>
+                        Prénom <span className="text-red-500">*</span>
                       </label>
                       <Input
                         value={firstName}
@@ -347,7 +347,7 @@ export default function InscriptionPage() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Au moins 8 caracteres avec une majuscule, une minuscule et un chiffre
+                      Au moins 8 caractères avec une majuscule, une minuscule et un chiffre
                     </p>
                   </div>
 
@@ -355,7 +355,7 @@ export default function InscriptionPage() {
                   {password.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div className={`flex items-center gap-1 ${passwordChecks.length ? "text-emerald-600" : "text-gray-400"}`}>
-                        <Check className="h-3 w-3" /> 8 caracteres min.
+                        <Check className="h-3 w-3" /> 8 caractères min.
                       </div>
                       <div className={`flex items-center gap-1 ${passwordChecks.hasUppercase ? "text-emerald-600" : "text-gray-400"}`}>
                         <Check className="h-3 w-3" /> Une majuscule
@@ -401,7 +401,7 @@ export default function InscriptionPage() {
 
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-700">
-                        Recevoir des emails sur notre mission pour un numerique plus sur pour les enfants. <span className="text-red-500">*</span>
+                        Recevoir des emails sur notre mission pour un numérique plus sûr pour les enfants. <span className="text-red-500">*</span>
                       </p>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -429,7 +429,7 @@ export default function InscriptionPage() {
 
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-700">
-                        Recevoir des actualites et mises a jour periodiques. <span className="text-red-500">*</span>
+                        Recevoir des actualités et mises à jour périodiques. <span className="text-red-500">*</span>
                       </p>
                       <div className="flex gap-4">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -467,12 +467,12 @@ export default function InscriptionPage() {
                       />
                       <span className="text-sm text-gray-600">
                         J&apos;accepte les{" "}
-                        <Link href="/conditions" className="text-emerald-600 hover:underline">
+                        <Link href="/mentions-legales" className="text-emerald-600 hover:underline">
                           conditions d&apos;utilisation
                         </Link>{" "}
                         et la{" "}
                         <Link href="/confidentialite" className="text-emerald-600 hover:underline">
-                          politique de confidentialite
+                          politique de confidentialité
                         </Link>
                         . <span className="text-red-500">*</span>
                       </span>
@@ -488,7 +488,7 @@ export default function InscriptionPage() {
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Creation en cours...
+                        Création en cours...
                       </>
                     ) : (
                       "Rejoindre"
@@ -497,10 +497,10 @@ export default function InscriptionPage() {
 
                   {/* Privacy note */}
                   <p className="text-xs text-gray-500 text-center">
-                    Nous respectons votre vie privee. A l&apos;exception de votre pseudo public,
+                    Nous respectons votre vie privée. À l&apos;exception de votre pseudo public,
                     nous ne partagerons jamais vos informations sans votre autorisation.{" "}
                     <Link href="/confidentialite" className="text-emerald-600 hover:underline">
-                      Voir notre politique de confidentialite
+                      En savoir plus sur notre politique de confidentialité
                     </Link>
                   </p>
                 </form>

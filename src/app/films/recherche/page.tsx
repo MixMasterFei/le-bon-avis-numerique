@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Film, Database, ArrowLeft, X } from "lucide-react"
+import { Film, ArrowLeft, X } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
@@ -10,7 +10,7 @@ import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/m
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
-const ITEMS_PER_PAGE = 35 // 7 columns x 5 rows
+const ITEMS_PER_PAGE = 24
 
 function FilmsRechercheContent() {
   const searchParams = useSearchParams()
@@ -392,11 +392,6 @@ function FilmsRechercheContent() {
         <div className="flex-1">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              {source === "db" && (
-                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  <Database className="h-3 w-3" /> Base locale
-                </span>
-              )}
               <p className="text-gray-600">
                 {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
                 {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}

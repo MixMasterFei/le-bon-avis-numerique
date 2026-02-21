@@ -15,7 +15,7 @@ function getResend(): Resend {
 }
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@lebonsens.fr"
-const APP_NAME = "Le Bon Sens Numérique"
+const APP_NAME = "Le Bon Avis Numérique"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
 export async function sendVerificationEmail(

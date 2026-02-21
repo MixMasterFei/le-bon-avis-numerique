@@ -216,7 +216,7 @@ export function FamilyMovieNightSection() {
 
         {selectedMembers.length === 1 && (
           <p className="text-sm text-amber-600 text-center">
-            Selectionnez au moins 2 personnes pour les recommandations familiales
+            Sélectionnez au moins 2 personnes pour les recommandations familiales
           </p>
         )}
 

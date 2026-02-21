@@ -30,7 +30,7 @@ export default function ConfidentialitePage() {
           </CardHeader>
           <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le Bon Sens Numerique (ci-apres &quot;nous&quot;, &quot;notre&quot; ou &quot;le Site&quot;) s&apos;engage
+              Le Bon Avis Numérique (ci-après &quot;nous&quot;, &quot;notre&quot; ou &quot;le Site&quot;) s&apos;engage
               a proteger la vie privee des utilisateurs de son site internet. Cette politique
               de confidentialite explique comment nous collectons, utilisons, stockons et
               protegeons vos donnees personnelles conformement au Reglement General sur la
@@ -53,7 +53,7 @@ export default function ConfidentialitePage() {
           <CardContent className="prose prose-gray max-w-none">
             <p>Le responsable du traitement des donnees personnelles est :</p>
             <div className="bg-gray-50 p-4 rounded-lg not-prose">
-              <p className="font-semibold">Le Bon Sens Numerique</p>
+              <p className="font-semibold">Le Bon Avis Numérique</p>
               <p className="text-sm text-gray-600">Association loi 1901</p>
               <p className="text-sm text-gray-600">Siege social : Paris, France</p>
               <p className="text-sm text-gray-600 mt-2">

@@ -53,7 +53,7 @@ function generateDiscussionPoints(
   if (metrics?.roleModels && metrics.roleModels >= 3) {
     points.push({
       icon: Users,
-      category: "Modeles",
+      category: "Modèles",
       question: "Quel personnage aimerais-tu ressembler ? Pourquoi ?"
     })
   }

@@ -83,7 +83,7 @@ export function CookieConsent() {
                 Vous pouvez accepter tous les cookies, les refuser ou personnaliser vos
                 choix. Pour en savoir plus, consultez notre{" "}
                 <Link href="/confidentialite" className="text-primary hover:underline">
-                  Politique de confidentialite
+                  Politique de confidentialité
                 </Link>{" "}
                 et notre page{" "}
                 <Link href="/cookies" className="text-primary hover:underline">

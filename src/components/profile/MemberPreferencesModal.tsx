@@ -324,7 +324,7 @@ export function MemberPreferencesModal({
                   <h3 className="font-medium text-sm text-gray-700 mb-3">
                     Genres preferes
                     <span className="text-xs text-gray-400 ml-2">
-                      ({preferences.favoriteGenres.length} selectionne{preferences.favoriteGenres.length > 1 ? "s" : ""})
+                      ({preferences.favoriteGenres.length} sélectionné{preferences.favoriteGenres.length > 1 ? "s" : ""})
                     </span>
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -349,7 +349,7 @@ export function MemberPreferencesModal({
                   <h3 className="font-medium text-sm text-gray-700 mb-3">
                     Genres a eviter
                     <span className="text-xs text-gray-400 ml-2">
-                      ({preferences.dislikedGenres.length} selectionne{preferences.dislikedGenres.length > 1 ? "s" : ""})
+                      ({preferences.dislikedGenres.length} sélectionné{preferences.dislikedGenres.length > 1 ? "s" : ""})
                     </span>
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -401,7 +401,7 @@ export function MemberPreferencesModal({
             ) : saved ? (
               <Check className="h-4 w-4 mr-2" />
             ) : null}
-            {saved ? "Enregistre!" : "Enregistrer"}
+            {saved ? "Enregistré !" : "Enregistrer"}
           </Button>
         </DialogFooter>
       </DialogContent>

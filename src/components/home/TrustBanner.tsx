@@ -7,22 +7,22 @@ import { Button } from "@/components/ui/button"
 const trustPoints = [
   {
     icon: Shield,
-    title: "Independant",
-    description: "Evaluations objectives sans influence commerciale",
+    title: "Indépendant",
+    description: "Évaluations objectives sans influence commerciale",
   },
   {
     icon: Heart,
     title: "Pour les familles",
-    description: "Cree par des parents, pour des parents",
+    description: "Créé par des parents, pour des parents",
   },
   {
     icon: Users,
     title: "Communautaire",
-    description: "Avis verifies de milliers de familles",
+    description: "Avis vérifiés de milliers de familles",
   },
   {
     icon: BookOpen,
-    title: "Educatif",
+    title: "Éducatif",
     description: "Ressources pour une consommation responsable",
   },
 ]
@@ -34,15 +34,15 @@ export function TrustBanner() {
         <div className="max-w-4xl mx-auto text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full mb-4">
             <CheckCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">Le Bon Sens Numerique</span>
+            <span className="text-sm font-medium">Le Bon Avis Numérique</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Votre guide de confiance pour les medias en famille
+            Votre guide de confiance pour les médias en famille
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Nous aidons les familles francaises a faire des choix eclaires sur les films,
-            series, jeux et livres pour leurs enfants. Notre mission : des medias adaptes
-            a chaque age, evalues par des experts.
+            Nous aidons les familles françaises à faire des choix éclairés sur les films,
+            séries, jeux et livres pour leurs enfants. Notre mission : des médias adaptés
+            à chaque âge, évalués par des experts.
           </p>
         </div>
 
@@ -69,7 +69,7 @@ export function TrustBanner() {
           </Link>
           <Link href="/inscription">
             <Button size="lg" className="bg-primary hover:bg-primary/90">
-              Rejoindre la communaute
+              Rejoindre la communauté
             </Button>
           </Link>
         </div>

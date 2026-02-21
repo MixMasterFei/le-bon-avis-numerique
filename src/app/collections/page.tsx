@@ -108,15 +108,11 @@ export default function CollectionsPage() {
           <Sparkles className="h-16 w-16 mx-auto text-gray-300 mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Collections</h1>
           <p className="text-gray-500 mb-8">
-            Les collections seront disponibles une fois que les contenus auront ete enrichis par l&apos;IA.
+            Les collections seront disponibles une fois que les contenus auront été enrichis par l&apos;IA.
           </p>
-          <Link
-            href="/admin/enrich"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            <Sparkles className="h-5 w-5" />
-            Lancer l&apos;enrichissement
-          </Link>
+          <p className="text-sm text-gray-400">
+            Revenez bientôt pour découvrir nos sélections thématiques.
+          </p>
         </div>
       </div>
     )
@@ -182,14 +178,14 @@ export default function CollectionsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Collections</h1>
         <p className="text-gray-600">
-          Decouvrez nos selections thematiques pour trouver le contenu parfait pour chaque occasion.
+          Découvrez nos sélections thématiques pour trouver le contenu parfait pour chaque occasion.
         </p>
       </div>
 
       {renderCollectionGroup("Films", movieCollections, Film)}
-      {renderCollectionGroup("Saisons & Fetes", seasonalCollections, Gift)}
-      {renderCollectionGroup("Jeux video", gameCollections, Gamepad2)}
-      {renderCollectionGroup("Series TV", tvCollections, Tv)}
+      {renderCollectionGroup("Saisons & Fêtes", seasonalCollections, Gift)}
+      {renderCollectionGroup("Jeux vidéo", gameCollections, Gamepad2)}
+      {renderCollectionGroup("Séries TV", tvCollections, Tv)}
     </div>
   )
 }

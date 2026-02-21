@@ -20,13 +20,13 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "Le Bon Avis Numerique - Avis et recommandations medias pour les familles",
-  description: "Trouvez les meilleurs films, series, jeux et livres pour vos enfants grace a nos critiques independantes et recommandations par age. Le guide media de confiance pour les familles francaises.",
-  keywords: ["avis films enfants", "recommandations series", "jeux video famille", "livres jeunesse", "CSA", "PEGI", "controle parental"],
-  authors: [{ name: "Le Bon Avis Numerique" }],
+  title: "Le Bon Avis Numérique - Avis et recommandations médias pour les familles",
+  description: "Trouvez les meilleurs films, séries, jeux et livres pour vos enfants grâce à nos critiques indépendantes et recommandations par âge. Le guide média de confiance pour les familles françaises.",
+  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "livres jeunesse", "CSA", "PEGI", "contrôle parental"],
+  authors: [{ name: "Le Bon Avis Numérique" }],
   openGraph: {
-    title: "Le Bon Avis Numerique",
-    description: "Le guide media de confiance pour les familles francaises",
+    title: "Le Bon Avis Numérique",
+    description: "Le guide média de confiance pour les familles françaises",
     locale: "fr_FR",
     type: "website",
   },

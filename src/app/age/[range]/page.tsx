@@ -3,44 +3,44 @@
 import { useEffect, useState, use } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Users, Database, Loader2 } from "lucide-react"
+import { ArrowLeft, Users, Loader2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
-const ITEMS_PER_PAGE = 20
+const ITEMS_PER_PAGE = 24
 
 const ageRanges: Record<string, { min: number; max: number; label: string; description: string }> = {
   "2-4": {
     min: 2,
     max: 4,
     label: "2-4 ans",
-    description: "Contenu adapte aux tout-petits avec des histoires simples et colorees.",
+    description: "Contenu adapté aux tout-petits avec des histoires simples et colorées.",
   },
   "5-7": {
     min: 5,
     max: 7,
     label: "5-7 ans",
-    description: "Aventures pour les jeunes enfants avec des themes d'amitie et de decouverte.",
+    description: "Aventures pour les jeunes enfants avec des thèmes d'amitié et de découverte.",
   },
   "8-9": {
     min: 8,
     max: 9,
     label: "8-9 ans",
-    description: "Histoires plus complexes avec des heros attachants et des defis a surmonter.",
+    description: "Histoires plus complexes avec des héros attachants et des défis à surmonter.",
   },
   "10-12": {
     min: 10,
     max: 12,
     label: "10-12 ans",
-    description: "Contenu pour les pre-adolescents avec des themes plus matures et nuances.",
+    description: "Contenu pour les pré-adolescents avec des thèmes plus matures et nuancés.",
   },
   "13-plus": {
     min: 13,
     max: 18,
     label: "13+ ans",
-    description: "Contenu pour adolescents abordant des sujets complexes adaptes a leur age.",
+    description: "Contenu pour adolescents abordant des sujets complexes adaptés à leur âge.",
   },
 }
 
@@ -156,7 +156,7 @@ export default function AgePage({ params }: AgePageProps) {
           className="inline-flex items-center gap-2 text-gray-600 hover:text-primary mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour a l&apos;accueil
+          Retour à l&apos;accueil
         </Link>
 
         <div className="flex items-center gap-4 mb-4">
@@ -189,13 +189,8 @@ export default function AgePage({ params }: AgePageProps) {
       {/* Results Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          {source === "db" && (
-            <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-              <Database className="h-3 w-3" /> Base locale
-            </span>
-          )}
           <p className="text-gray-600">
-            {totalCount} resultat{totalCount !== 1 ? "s" : ""} pour cette tranche d&apos;age
+            {totalCount} résultat{totalCount !== 1 ? "s" : ""} pour cette tranche d&apos;âge
           </p>
         </div>
         {totalPages > 1 && (
@@ -210,7 +205,7 @@ export default function AgePage({ params }: AgePageProps) {
         <div className="text-center py-16 text-gray-500">
           <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
           <p className="text-lg font-medium">Chargement...</p>
-          <p className="text-sm">Recuperation du catalogue</p>
+          <p className="text-sm">Récupération du catalogue</p>
         </div>
       ) : displayItems.length > 0 ? (
         <>
@@ -236,7 +231,7 @@ export default function AgePage({ params }: AgePageProps) {
             Aucun contenu disponible
           </h2>
           <p className="text-gray-500">
-            Nous n&apos;avons pas encore de contenu pour cette tranche d&apos;age.
+            Nous n&apos;avons pas encore de contenu pour cette tranche d&apos;âge.
           </p>
         </div>
       )}

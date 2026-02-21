@@ -27,12 +27,12 @@ export default function MentionsLegalesPage() {
           </CardHeader>
           <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le site <strong>Le Bon Sens Numérique</strong> accessible à l&apos;adresse
+              Le site <strong>Le Bon Avis Numérique</strong> accessible à l&apos;adresse
               www.lebonsens-numerique.fr est édité par :
             </p>
             <div className="bg-gray-50 p-4 rounded-lg mt-4">
               <p className="mb-2">
-                <strong>Raison sociale :</strong> Le Bon Sens Numérique SAS
+                <strong>Raison sociale :</strong> Le Bon Avis Numérique SAS
               </p>
               <p className="mb-2">
                 <strong>Forme juridique :</strong> Société par Actions Simplifiée (SAS)
@@ -123,12 +123,12 @@ export default function MentionsLegalesPage() {
               Toute reproduction, représentation, modification, publication, adaptation
               de tout ou partie des éléments du site, quel que soit le moyen ou le
               procédé utilisé, est interdite sans autorisation écrite préalable de
-              Le Bon Sens Numérique.
+              Le Bon Avis Numérique.
             </p>
             <h4 className="font-semibold mt-4 mb-2">Marques et logos</h4>
             <p>
               Les marques, logos et signes distinctifs présents sur le site sont
-              la propriété de Le Bon Sens Numérique ou font l&apos;objet d&apos;une
+              la propriété de Le Bon Avis Numérique ou font l&apos;objet d&apos;une
               autorisation d&apos;utilisation. Toute utilisation non autorisée constitue
               une contrefaçon sanctionnée par les articles L.335-2 et suivants du
               Code de la Propriété Intellectuelle.
@@ -156,7 +156,7 @@ export default function MentionsLegalesPage() {
             <h4 className="font-semibold mb-2">Informations et recommandations</h4>
             <p>
               Les informations, recommandations d&apos;âge et avis présents sur ce site
-              sont fournis à titre indicatif et informatif. Le Bon Sens Numérique
+              sont fournis à titre indicatif et informatif. Le Bon Avis Numérique
               s&apos;efforce de fournir des informations exactes et à jour, mais ne peut
               garantir l&apos;exactitude, la complétude ou l&apos;actualité des informations
               diffusées.
@@ -169,7 +169,7 @@ export default function MentionsLegalesPage() {
 
             <h4 className="font-semibold mt-4 mb-2">Disponibilité du site</h4>
             <p>
-              Le Bon Sens Numérique ne peut garantir que le site sera disponible de
+              Le Bon Avis Numérique ne peut garantir que le site sera disponible de
               manière ininterrompue et sans erreur. L&apos;éditeur se réserve le droit
               de suspendre, modifier ou interrompre l&apos;accès au site à tout moment,
               notamment pour des raisons de maintenance.
@@ -177,7 +177,7 @@ export default function MentionsLegalesPage() {
 
             <h4 className="font-semibold mt-4 mb-2">Liens hypertextes</h4>
             <p>
-              Le site peut contenir des liens vers d&apos;autres sites web. Le Bon Sens
+              Le site peut contenir des liens vers d&apos;autres sites web. Le Bon Avis
               Numérique n&apos;exerce aucun contrôle sur ces sites et décline toute
               responsabilité quant à leur contenu.
             </p>
@@ -185,7 +185,7 @@ export default function MentionsLegalesPage() {
             <h4 className="font-semibold mt-4 mb-2">Contributions des utilisateurs</h4>
             <p>
               Les avis et commentaires publiés par les utilisateurs n&apos;engagent que
-              leurs auteurs. Le Bon Sens Numérique se réserve le droit de modérer
+              leurs auteurs. Le Bon Avis Numérique se réserve le droit de modérer
               ou supprimer tout contenu contraire aux bonnes mœurs, à la loi ou
               aux conditions d&apos;utilisation du site.
             </p>
@@ -202,7 +202,7 @@ export default function MentionsLegalesPage() {
           </CardHeader>
           <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le Bon Sens Numérique s&apos;engage à protéger la vie privée des
+              Le Bon Avis Numérique s&apos;engage à protéger la vie privée des
               utilisateurs de son site, conformément au Règlement Général sur la
               Protection des Données (RGPD) et à la loi Informatique et Libertés.
             </p>
@@ -294,7 +294,7 @@ export default function MentionsLegalesPage() {
               </p>
               <p className="mb-2">
                 <strong>Par courrier :</strong><br />
-                Le Bon Sens Numérique<br />
+                Le Bon Avis Numérique<br />
                 [Adresse à compléter]<br />
                 France
               </p>

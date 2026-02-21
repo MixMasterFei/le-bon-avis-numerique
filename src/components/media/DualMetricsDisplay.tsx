@@ -214,7 +214,7 @@ export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualM
         <div className="flex gap-4">
           {/* Expert metrics */}
           <MetricsColumn
-            title="Le Bon Sens"
+            title="Le Bon Avis"
             icon={Award}
             metrics={expertMetrics || null}
           />

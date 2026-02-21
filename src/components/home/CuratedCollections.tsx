@@ -19,7 +19,7 @@ const collections: Collection[] = [
   {
     id: "adventure",
     title: "Aventure & Exploration",
-    description: "Voyages, decouvertes et expeditions",
+    description: "Voyages, découvertes et expéditions",
     icon: Plane,
     color: "text-sky-600",
     bgGradient: "from-sky-100 to-blue-100",

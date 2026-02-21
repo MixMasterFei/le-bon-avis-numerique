@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Tv, Database, Star, Clock } from "lucide-react"
+import { Tv, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
-const ITEMS_PER_PAGE = 12
+const ITEMS_PER_PAGE = 24
 const FEATURED_COUNT = 7
 
 export default function SeriesPage() {
@@ -104,7 +104,7 @@ export default function SeriesPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge])
+  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics])
 
   // Fetch featured series (high quality, sorted by quality score)
   useEffect(() => {
@@ -220,10 +220,10 @@ export default function SeriesPage() {
           <div className="p-3 bg-blue-500 rounded-xl text-white">
             <Tv className="h-6 w-6" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Series TV</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Séries TV</h1>
         </div>
         <p className="text-gray-600">
-          Trouvez les meilleures series adaptees a l&apos;age de vos enfants.
+          Trouvez les meilleures séries adaptées à l&apos;âge de vos enfants.
         </p>
       </div>
 
@@ -242,8 +242,8 @@ export default function SeriesPage() {
                 <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
                   <Star className="h-4 w-4" />
                 </div>
-                <h2 className="text-lg font-bold text-gray-900">Selection qualite</h2>
-                <span className="text-xs text-gray-500">Series bien notees et adaptees aux familles</span>
+                <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
+                <span className="text-xs text-gray-500">Séries bien notées et adaptées aux familles</span>
               </div>
               {featuredLoading ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
@@ -267,15 +267,10 @@ export default function SeriesPage() {
               <div className="p-1.5 bg-gray-200 rounded-lg text-gray-600">
                 <Clock className="h-4 w-4" />
               </div>
-              <h2 className="text-lg font-bold text-gray-900">Toutes les series</h2>
-              {source === "db" && (
-                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  <Database className="h-3 w-3" /> Base locale
-                </span>
-              )}
+              <h2 className="text-lg font-bold text-gray-900">Toutes les séries</h2>
             </div>
             <p className="text-sm text-gray-500">
-              {totalCount} serie{totalCount !== 1 ? "s" : ""}
+              {totalCount} série{totalCount !== 1 ? "s" : ""}
               {totalPages > 1 && ` • Page ${currentPage}/${totalPages}`}
             </p>
           </div>
@@ -284,7 +279,7 @@ export default function SeriesPage() {
             <div className="text-center py-16 text-gray-500">
               <Tv className="h-12 w-12 mx-auto mb-4 opacity-50 animate-pulse" />
               <p className="text-lg font-medium">Chargement...</p>
-              <p className="text-sm">Recuperation du catalogue</p>
+              <p className="text-sm">Récupération du catalogue</p>
             </div>
           ) : paginatedSeries.length > 0 ? (
             <>
@@ -304,7 +299,7 @@ export default function SeriesPage() {
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Tv className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucune serie trouvee</p>
+              <p className="text-lg font-medium">Aucune série trouvée</p>
               <p className="text-sm">Essayez de modifier vos filtres</p>
             </div>
           )}

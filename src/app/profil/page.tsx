@@ -315,7 +315,7 @@ export default function ProfilPage() {
                     ) : profileSaved ? (
                       <Check className="h-4 w-4 mr-2" />
                     ) : null}
-                    {profileSaved ? "Enregistre!" : "Enregistrer"}
+                    {profileSaved ? "Enregistré !" : "Enregistrer"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -358,7 +358,7 @@ export default function ProfilPage() {
             <p className="text-2xl font-bold text-gray-900">
               {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.watchlist || 0}
             </p>
-            <p className="text-sm text-gray-600">A voir</p>
+            <p className="text-sm text-gray-600">À voir</p>
           </CardContent>
         </Card>
 
@@ -370,7 +370,7 @@ export default function ProfilPage() {
             <p className="text-2xl font-bold text-gray-900">
               {loadingStats ? <Loader2 className="h-6 w-6 animate-spin mx-auto" /> : stats?.reactions || 0}
             </p>
-            <p className="text-sm text-gray-600">Reactions</p>
+            <p className="text-sm text-gray-600">Réactions</p>
           </CardContent>
         </Card>
       </div>
@@ -382,7 +382,7 @@ export default function ProfilPage() {
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>Mes listes</CardTitle>
-          <CardDescription>Accedez a vos contenus sauvegardes</CardDescription>
+          <CardDescription>Accédez à vos contenus sauvegardés</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid sm:grid-cols-2 gap-4">
@@ -403,7 +403,7 @@ export default function ProfilPage() {
                   <Bookmark className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-medium">Ma liste a voir</p>
+                  <p className="font-medium">Ma liste à voir</p>
                   <p className="text-sm text-gray-500">{stats?.watchlist || 0} contenus</p>
                 </div>
               </div>
@@ -415,13 +415,13 @@ export default function ProfilPage() {
       {/* Settings */}
       <Card className="mt-8">
         <CardHeader>
-          <CardTitle>Parametres du compte</CardTitle>
+          <CardTitle>Paramètres du compte</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b">
             <div>
               <p className="font-medium">Notifications par email</p>
-              <p className="text-sm text-gray-500">Recevoir les nouveautes et recommandations</p>
+              <p className="text-sm text-gray-500">Recevoir les nouveautés et recommandations</p>
             </div>
             <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <DialogTrigger asChild>
@@ -440,7 +440,7 @@ export default function ProfilPage() {
                       <Bell className="h-5 w-5 text-gray-500" />
                       <div>
                         <p className="font-medium">Newsletter</p>
-                        <p className="text-sm text-gray-500">Actualites et nouveautes du site</p>
+                        <p className="text-sm text-gray-500">Actualités et nouveautés du site</p>
                       </div>
                     </div>
                     <input
@@ -456,7 +456,7 @@ export default function ProfilPage() {
                       <Heart className="h-5 w-5 text-gray-500" />
                       <div>
                         <p className="font-medium">Recommandations</p>
-                        <p className="text-sm text-gray-500">Suggestions basees sur vos gouts</p>
+                        <p className="text-sm text-gray-500">Suggestions basées sur vos goûts</p>
                       </div>
                     </div>
                     <input
@@ -472,7 +472,7 @@ export default function ProfilPage() {
                       <Users className="h-5 w-5 text-gray-500" />
                       <div>
                         <p className="font-medium">Commentaires</p>
-                        <p className="text-sm text-gray-500">Reponses a vos avis</p>
+                        <p className="text-sm text-gray-500">Réponses à vos avis</p>
                       </div>
                     </div>
                     <input
@@ -493,7 +493,7 @@ export default function ProfilPage() {
                     ) : notificationsSaved ? (
                       <Check className="h-4 w-4 mr-2" />
                     ) : null}
-                    {notificationsSaved ? "Enregistre!" : "Enregistrer"}
+                    {notificationsSaved ? "Enregistré !" : "Enregistrer"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -506,7 +506,7 @@ export default function ProfilPage() {
                 {settings.blur18Plus ? <EyeOff className="h-4 w-4 text-gray-500" /> : <Eye className="h-4 w-4 text-gray-500" />}
                 Flouter les contenus 18+
               </p>
-              <p className="text-sm text-gray-500">Les affiches des contenus 18+ seront floutes</p>
+              <p className="text-sm text-gray-500">Les affiches des contenus 18+ seront floutées</p>
             </div>
             <button
               type="button"
@@ -528,17 +528,17 @@ export default function ProfilPage() {
           <div className="flex items-center justify-between py-3 border-b">
             <div>
               <p className="font-medium">Gestion des cookies</p>
-              <p className="text-sm text-gray-500">Modifier vos preferences de cookies</p>
+              <p className="text-sm text-gray-500">Modifier vos préférences de cookies</p>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/cookies">Gerer</Link>
+              <Link href="/cookies">Gérer</Link>
             </Button>
           </div>
 
           <div className="flex items-center justify-between py-3">
             <div>
               <p className="font-medium text-red-600">Supprimer mon compte</p>
-              <p className="text-sm text-gray-500">Cette action est irreversible</p>
+              <p className="text-sm text-gray-500">Cette action est irréversible</p>
             </div>
             <Dialog open={deleteDialogOpen} onOpenChange={(open) => {
               setDeleteDialogOpen(open)
@@ -559,14 +559,14 @@ export default function ProfilPage() {
                     Supprimer votre compte
                   </DialogTitle>
                   <DialogDescription>
-                    Cette action est <strong>definitive et irreversible</strong>. Toutes vos donnees seront supprimees :
+                    Cette action est <strong>définitive et irréversible</strong>. Toutes vos données seront supprimées :
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
                     <li>Votre profil et informations personnelles</li>
-                    <li>Vos membres de famille et leurs reactions</li>
-                    <li>Vos favoris et liste a voir</li>
+                    <li>Vos membres de famille et leurs réactions</li>
+                    <li>Vos favoris et liste à voir</li>
                     <li>Tous vos avis et commentaires</li>
                   </ul>
 
@@ -625,7 +625,7 @@ export default function ProfilPage() {
                         Suppression...
                       </>
                     ) : (
-                      "Supprimer definitivement"
+                      "Supprimer définitivement"
                     )}
                   </Button>
                 </DialogFooter>
