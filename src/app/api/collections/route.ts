@@ -138,17 +138,21 @@ export async function GET(request: NextRequest) {
   if (!collectionId) {
     const weekNumber = Math.floor(Date.now() / 604800000)
 
-    const collectionsWithCounts = await Promise.all(
+    // Run all queries in parallel — one findMany per collection (gets posters + count)
+    const collectionsData = await Promise.all(
       COLLECTIONS.map(async (collection) => {
-        const count = await getCollectionCount(collection.query)
-
-        // Fetch a pool of posters for weekly rotation
-        const posterPool = await prisma.mediaItem.findMany({
-          where: { ...buildWhereClause(collection.query), posterUrl: { not: null } },
-          select: { posterUrl: true },
-          take: 20,
-          orderBy: { createdAt: "desc" },
-        })
+        const where = buildWhereClause(collection.query)
+        // Single query: fetch 12 items with posters (enough for rotation)
+        // Plus a count query — both run in parallel per collection
+        const [posterPool, count] = await Promise.all([
+          prisma.mediaItem.findMany({
+            where: { ...where, posterUrl: { not: null } },
+            select: { posterUrl: true },
+            take: 12,
+            orderBy: { createdAt: "desc" },
+          }),
+          prisma.mediaItem.count({ where }),
+        ])
 
         // Weekly rotation: offset changes every ~7 days
         const offset = (weekNumber * 4) % Math.max(posterPool.length, 1)
@@ -156,17 +160,23 @@ export async function GET(request: NextRequest) {
         const previewPosters = rotated.slice(0, 4).map((p) => p.posterUrl)
 
         return {
-          ...collection,
+          id: collection.id,
+          title: collection.title,
+          description: collection.description,
           count,
           previewPosters,
-          query: undefined, // Don't expose query details
         }
       })
     )
 
-    return NextResponse.json({
+    const collectionsWithCounts = collectionsData
+
+    const response = NextResponse.json({
       collections: collectionsWithCounts.filter((c) => c.count > 0),
     })
+    // Cache for 1 hour — collections rarely change
+    response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200")
+    return response
   }
 
   // Find the collection
