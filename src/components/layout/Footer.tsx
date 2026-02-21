@@ -1,28 +1,26 @@
 import Link from "next/link"
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, BookText } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen } from "lucide-react"
 
 const browse = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
   { name: "Livres", href: "/livres", icon: BookOpen },
-  { name: "BD & Mangas", href: "/bd", icon: BookText },
-  { name: "Applications", href: "/apps", icon: Smartphone },
 ]
 
 const byAge = [
   { name: "2-4 ans", href: "/age/2-4" },
   { name: "5-7 ans", href: "/age/5-7" },
-  { name: "8-9 ans", href: "/age/8-9" },
-  { name: "10-12 ans", href: "/age/10-12" },
-  { name: "13+ ans", href: "/age/13-plus" },
+  { name: "8-10 ans", href: "/age/8-10" },
+  { name: "11-12 ans", href: "/age/11-12" },
+  { name: "13-15 ans", href: "/age/13-15" },
+  { name: "16+ ans", href: "/age/16-plus" },
 ]
 
 const discover = [
   { name: "Collections thématiques", href: "/collections" },
   { name: "Recommandations", href: "/recommandations" },
   { name: "Guides parents", href: "/guides" },
-  { name: "Blog", href: "/blog" },
   { name: "En ce moment chez vous", href: "/chez-vous" },
 ]
 
