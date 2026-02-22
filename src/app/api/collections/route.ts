@@ -131,6 +131,7 @@ const COLLECTIONS: Collection[] = [
 ]
 
 export async function GET(request: NextRequest) {
+  try {
   const searchParams = request.nextUrl.searchParams
   const collectionId = searchParams.get("id")
   const limit = parseInt(searchParams.get("limit") || "20")
@@ -201,6 +202,13 @@ export async function GET(request: NextRequest) {
     items,
     total: await getCollectionCount(collection.query),
   })
+  } catch (error) {
+    console.error("Collections API error:", error)
+    return NextResponse.json(
+      { error: "Failed to fetch collections", details: String(error) },
+      { status: 500 }
+    )
+  }
 }
 
 async function getCollectionCount(query: Collection["query"]): Promise<number> {
