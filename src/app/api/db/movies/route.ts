@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const language = searchParams.get("language") // Filter by original language
   const frenchOnly = searchParams.get("frenchOnly") === "true"
   const shuffle = searchParams.get("shuffle") // "weekly" for week-seeded rotation
+  const nowPlaying = searchParams.get("nowPlaying") === "true" // Currently in theaters (~8 weeks)
 
   const skip = (page - 1) * limit
   const useWeeklyShuffle = shuffle === "weekly" && page === 1
@@ -28,6 +29,13 @@ export async function GET(request: NextRequest) {
   try {
     const where: Prisma.MediaItemWhereInput = {
       type: "MOVIE",
+    }
+
+    // Now playing: movies released in the last ~8 weeks (typical French theatrical window)
+    if (nowPlaying) {
+      const eightWeeksAgo = new Date()
+      eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
+      where.releaseDate = { gte: eightWeeksAgo, lte: new Date() }
     }
 
     // Require poster for homepage/featured sections

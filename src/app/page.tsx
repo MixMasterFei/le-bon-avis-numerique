@@ -12,6 +12,7 @@ import { ExpertPicks } from "@/components/home/ExpertPicks"
 import { CuratedCollections } from "@/components/home/CuratedCollections"
 import { TrustBanner } from "@/components/home/TrustBanner"
 import { StreamingSection } from "@/components/home/StreamingSection"
+import { NowInCinema } from "@/components/home/NowInCinema"
 
 export default function HomePage() {
   return (
@@ -60,8 +61,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Movies */}
+      {/* Now in Cinema */}
       <section className="py-12 bg-background">
+        <div className="container mx-auto px-4">
+          <NowInCinema />
+        </div>
+      </section>
+
+      {/* Featured Movies */}
+      <section className="py-12 bg-white">
         <div className="container mx-auto px-4">
           <FeaturedMovies />
         </div>

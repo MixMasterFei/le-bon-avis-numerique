@@ -13,8 +13,9 @@ const FEATURED_COUNT = 7
 
 export default function FilmsPage() {
   const searchParams = useSearchParams()
-  const sortParam = searchParams.get("sort") // "newest" from NewArrivals link
-  const sortBy = sortParam === "newest" ? "createdAt" : undefined
+  const sortParam = searchParams.get("sort") // "newest" or "cinema"
+  const sortBy = sortParam === "newest" ? "createdAt" : sortParam === "cinema" ? "releaseDate" : undefined
+  const isNowPlaying = sortParam === "cinema"
 
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
@@ -61,6 +62,9 @@ export default function FilmsPage() {
         }
         if (sortBy) {
           dbParams.set("sortBy", sortBy)
+        }
+        if (isNowPlaying) {
+          dbParams.set("nowPlaying", "true")
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
@@ -284,7 +288,7 @@ export default function FilmsPage() {
                 <Clock className="h-4 w-4" />
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : sortBy ? "Derniers ajouts" : "Tous les films"}
+                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : sortBy ? "Derniers ajouts" : "Tous les films"}
               </h2>
             </div>
             <p className="text-sm text-gray-500">
