@@ -140,41 +140,37 @@ export async function GET(request: NextRequest) {
   if (!collectionId) {
     const weekNumber = Math.floor(Date.now() / 604800000)
 
-    // Run all queries in parallel — one findMany per collection (gets posters + count)
-    const collectionsData = await Promise.all(
-      COLLECTIONS.map(async (collection) => {
-        const where = buildWhereClause(collection.query)
-        // Single query: fetch 12 items with posters (enough for rotation)
-        // Plus a count query — both run in parallel per collection
-        const [posterPool, count] = await Promise.all([
-          prisma.mediaItem.findMany({
-            where: { ...where, posterUrl: { not: null } },
-            select: { posterUrl: true },
-            take: 12,
-            orderBy: { createdAt: "desc" },
-          }),
-          prisma.mediaItem.count({ where }),
-        ])
+    // Process collections sequentially to avoid exhausting the DB connection pool
+    // (Vercel serverless has connection_limit=1)
+    const collectionsWithCounts = []
+    for (const collection of COLLECTIONS) {
+      const where = buildWhereClause(collection.query)
+      const count = await prisma.mediaItem.count({ where })
+      if (count === 0) continue
 
-        // Weekly rotation: offset changes every ~7 days
-        const offset = (weekNumber * 4) % Math.max(posterPool.length, 1)
-        const rotated = [...posterPool.slice(offset), ...posterPool.slice(0, offset)]
-        const previewPosters = rotated.slice(0, 4).map((p) => p.posterUrl)
-
-        return {
-          id: collection.id,
-          title: collection.title,
-          description: collection.description,
-          count,
-          previewPosters,
-        }
+      const posterPool = await prisma.mediaItem.findMany({
+        where: { ...where, posterUrl: { not: null } },
+        select: { posterUrl: true },
+        take: 12,
+        orderBy: { createdAt: "desc" },
       })
-    )
 
-    const collectionsWithCounts = collectionsData
+      // Weekly rotation: offset changes every ~7 days
+      const offset = (weekNumber * 4) % Math.max(posterPool.length, 1)
+      const rotated = [...posterPool.slice(offset), ...posterPool.slice(0, offset)]
+      const previewPosters = rotated.slice(0, 4).map((p) => p.posterUrl)
+
+      collectionsWithCounts.push({
+        id: collection.id,
+        title: collection.title,
+        description: collection.description,
+        count,
+        previewPosters,
+      })
+    }
 
     const response = NextResponse.json({
-      collections: collectionsWithCounts.filter((c) => c.count > 0),
+      collections: collectionsWithCounts,
     })
     // Cache for 1 hour — collections rarely change
     response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200")
