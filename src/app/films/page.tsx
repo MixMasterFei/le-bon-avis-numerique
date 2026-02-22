@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
 import { Film, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
@@ -11,6 +12,10 @@ const ITEMS_PER_PAGE = 24
 const FEATURED_COUNT = 7
 
 export default function FilmsPage() {
+  const searchParams = useSearchParams()
+  const sortParam = searchParams.get("sort") // "newest" from NewArrivals link
+  const sortBy = sortParam === "newest" ? "createdAt" : undefined
+
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
     maxAge: DEFAULT_MAX_AGE,
@@ -53,6 +58,9 @@ export default function FilmsPage() {
         }
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
+        }
+        if (sortBy) {
+          dbParams.set("sortBy", sortBy)
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
@@ -111,7 +119,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics])
+  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, sortBy])
 
   // Fetch featured movies (high quality, sorted by quality score)
   useEffect(() => {
@@ -243,8 +251,8 @@ export default function FilmsPage() {
         </div>
 
         <div className="flex-1">
-          {/* Featured Section - Top quality movies */}
-          {currentPage === 1 && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
+          {/* Featured Section - Top quality movies (hidden when sorting by newest) */}
+          {currentPage === 1 && !sortBy && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
             <div className="mb-10">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
@@ -276,7 +284,7 @@ export default function FilmsPage() {
                 <Clock className="h-4 w-4" />
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : "Tous les films"}
+                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : sortBy ? "Derniers ajouts" : "Tous les films"}
               </h2>
             </div>
             <p className="text-sm text-gray-500">

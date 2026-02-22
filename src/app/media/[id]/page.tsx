@@ -13,7 +13,6 @@ import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
-import { ReviewSummary } from "@/components/media/ReviewCard"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
@@ -487,6 +486,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 duration={media.duration || null}
                 releaseDate={media.releaseDate}
                 originalTitle={media.originalTitle || null}
+                reviews={media.reviews}
               />
 
               {/* Platforms for games */}
@@ -495,8 +495,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   <PlatformIcons platforms={media.platforms} variant="hero" />
                 </div>
               )}
-
-              <ReviewSummary reviews={media.reviews} />
 
               {/* Watch Providers & Trailer - Compact */}
               <WatchProviders providers={watchProviders} trailer={trailer} className="mb-4" />
