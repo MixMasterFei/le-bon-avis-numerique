@@ -140,34 +140,39 @@ export async function GET(request: NextRequest) {
   if (!collectionId) {
     const weekNumber = Math.floor(Date.now() / 604800000)
 
-    // Process collections sequentially to avoid exhausting the DB connection pool
-    // (Vercel serverless has connection_limit=1)
-    const collectionsWithCounts = []
-    for (const collection of COLLECTIONS) {
-      const where = buildWhereClause(collection.query)
-      const count = await prisma.mediaItem.count({ where })
-      if (count === 0) continue
+    // Single DB query — fetch minimal fields for all items, then filter in JS.
+    // This avoids 34+ separate queries that exhaust the connection pool (limit=1).
+    const allItems = await prisma.mediaItem.findMany({
+      select: {
+        type: true,
+        genres: true,
+        topics: true,
+        expertAgeRec: true,
+        releaseDate: true,
+        posterUrl: true,
+      },
+      orderBy: { createdAt: "desc" },
+    })
 
-      const posterPool = await prisma.mediaItem.findMany({
-        where: { ...where, posterUrl: { not: null } },
-        select: { posterUrl: true },
-        take: 12,
-        orderBy: { createdAt: "desc" },
-      })
+    const collectionsWithCounts = COLLECTIONS.map((collection) => {
+      const matching = allItems.filter((item) => matchesQuery(item, collection.query))
+      const posters = matching
+        .filter((item) => item.posterUrl)
+        .slice(0, 12)
+        .map((item) => item.posterUrl)
 
-      // Weekly rotation: offset changes every ~7 days
-      const offset = (weekNumber * 4) % Math.max(posterPool.length, 1)
-      const rotated = [...posterPool.slice(offset), ...posterPool.slice(0, offset)]
-      const previewPosters = rotated.slice(0, 4).map((p) => p.posterUrl)
+      // Weekly rotation
+      const offset = (weekNumber * 4) % Math.max(posters.length, 1)
+      const rotated = [...posters.slice(offset), ...posters.slice(0, offset)]
 
-      collectionsWithCounts.push({
+      return {
         id: collection.id,
         title: collection.title,
         description: collection.description,
-        count,
-        previewPosters,
-      })
-    }
+        count: matching.length,
+        previewPosters: rotated.slice(0, 4),
+      }
+    }).filter((c) => c.count > 0)
 
     const response = NextResponse.json({
       collections: collectionsWithCounts,
@@ -271,4 +276,32 @@ function buildWhereClause(query: Collection["query"]) {
   }
 
   return where
+}
+
+// JS-side filter matching the same logic as buildWhereClause (used for single-query approach)
+function matchesQuery(
+  item: { type: string; genres: string[]; topics: string[]; expertAgeRec: number | null; releaseDate: Date | null },
+  query: Collection["query"]
+): boolean {
+  if (query.type && item.type !== query.type) return false
+
+  if (query.maxAge != null) {
+    if (item.expertAgeRec !== null && item.expertAgeRec > query.maxAge) return false
+  }
+
+  if (query.year) {
+    if (!item.releaseDate) return false
+    const year = item.releaseDate.getFullYear()
+    if (year !== query.year) return false
+  }
+
+  if (query.topics && query.topics.length > 0) {
+    if (!query.topics.some((t) => item.topics.includes(t))) return false
+  }
+
+  if (query.genres && query.genres.length > 0) {
+    if (!query.genres.some((g) => item.genres.includes(g))) return false
+  }
+
+  return true
 }

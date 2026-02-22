@@ -18,6 +18,9 @@ function getRuntimeDatabaseUrl() {
     if (!parsed.searchParams.has("connection_limit")) {
       parsed.searchParams.set("connection_limit", "1")
     }
+    if (!parsed.searchParams.has("pool_timeout")) {
+      parsed.searchParams.set("pool_timeout", "30")
+    }
     if (!parsed.searchParams.has("statement_cache_size")) {
       parsed.searchParams.set("statement_cache_size", "0")
     }
