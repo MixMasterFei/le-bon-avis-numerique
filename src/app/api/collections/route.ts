@@ -19,6 +19,7 @@ interface Collection {
 }
 
 const COLLECTIONS: Collection[] = [
+  // Year-based (reliable — all movies have release dates)
   {
     id: "best-movies-2024",
     title: "Meilleurs films 2024",
@@ -31,65 +32,18 @@ const COLLECTIONS: Collection[] = [
     description: "Les films les mieux notes sortis en 2025",
     query: { type: "MOVIE", year: 2025 },
   },
+  // Genre-based (reliable — all movies have genres from TMDB fr-FR)
   {
     id: "family-movies",
     title: "Films en famille",
     description: "Les meilleurs films a voir en famille, pour tous les ages",
-    query: { type: "MOVIE", maxAge: 10, topics: ["famille"] },
+    query: { type: "MOVIE", maxAge: 10, genres: ["Familial"] },
   },
   {
     id: "teen-comedy",
     title: "Comedies pour ados",
     description: "Les meilleures comedies pour les adolescents",
-    query: { type: "MOVIE", maxAge: 16, genres: ["Comedie"], topics: ["comedie-ado"] },
-  },
-  {
-    id: "christmas-movies",
-    title: "Films de Noel",
-    description: "Les classiques et nouveautes pour les fetes",
-    query: { type: "MOVIE", topics: ["noel"] },
-  },
-  {
-    id: "halloween-movies",
-    title: "Films d'Halloween",
-    description: "Frissons et citrouilles pour toute la famille",
-    query: { type: "MOVIE", topics: ["halloween"] },
-  },
-  {
-    id: "summer-movies",
-    title: "Films d'ete",
-    description: "Les blockbusters et films de vacances",
-    query: { type: "MOVIE", topics: ["ete"] },
-  },
-  {
-    id: "disney-classics",
-    title: "Classiques Disney",
-    description: "Les grands classiques Disney pour petits et grands",
-    query: { type: "MOVIE", topics: ["disney", "classique"] },
-  },
-  {
-    id: "pixar",
-    title: "Films Pixar",
-    description: "Tous les chefs-d'oeuvre du studio Pixar",
-    query: { type: "MOVIE", topics: ["pixar"] },
-  },
-  {
-    id: "studio-ghibli",
-    title: "Studio Ghibli",
-    description: "L'univers poetique du studio japonais",
-    query: { type: "MOVIE", topics: ["studio-ghibli"] },
-  },
-  {
-    id: "superhero",
-    title: "Super-heros",
-    description: "Marvel, DC et autres aventures heroiques",
-    query: { type: "MOVIE", topics: ["super-heros"] },
-  },
-  {
-    id: "educational",
-    title: "Films educatifs",
-    description: "Apprendre en s'amusant",
-    query: { type: "MOVIE", topics: ["educatif"] },
+    query: { type: "MOVIE", maxAge: 16, genres: ["Comédie"] },
   },
   {
     id: "animation-kids",
@@ -101,14 +55,60 @@ const COLLECTIONS: Collection[] = [
     id: "adventure",
     title: "Films d'aventure",
     description: "Action et exploration pour toute la famille",
-    query: { type: "MOVIE", topics: ["aventure"], genres: ["Aventure"] },
+    query: { type: "MOVIE", genres: ["Aventure"] },
   },
   {
     id: "fantasy",
     title: "Films fantastiques",
     description: "Magie et mondes imaginaires",
-    query: { type: "MOVIE", topics: ["fantastique"], genres: ["Fantastique", "Fantasy"] },
+    query: { type: "MOVIE", genres: ["Fantastique"] },
   },
+  // Studio-based (topics from AI enrichment — exact casing matters)
+  {
+    id: "disney-classics",
+    title: "Classiques Disney",
+    description: "Les grands classiques Disney pour petits et grands",
+    query: { type: "MOVIE", topics: ["Disney"] },
+  },
+  {
+    id: "pixar",
+    title: "Films Pixar",
+    description: "Tous les chefs-d'oeuvre du studio Pixar",
+    query: { type: "MOVIE", topics: ["Pixar"] },
+  },
+  {
+    id: "studio-ghibli",
+    title: "Studio Ghibli",
+    description: "L'univers poetique du studio japonais",
+    query: { type: "MOVIE", topics: ["Studio Ghibli"] },
+  },
+  // Theme-based (topics from enrichment)
+  {
+    id: "superhero",
+    title: "Super-heros",
+    description: "Marvel, DC et autres aventures heroiques",
+    query: { type: "MOVIE", topics: ["Super-héros"] },
+  },
+  {
+    id: "educational",
+    title: "Films educatifs",
+    description: "Apprendre en s'amusant",
+    query: { type: "MOVIE", topics: ["Éducatif"] },
+  },
+  // Seasonal (topics from enrichment)
+  {
+    id: "christmas-movies",
+    title: "Films de Noel",
+    description: "Les classiques et nouveautes pour les fetes",
+    query: { type: "MOVIE", topics: ["Noël"] },
+  },
+  {
+    id: "halloween-movies",
+    title: "Films d'Halloween",
+    description: "Frissons et citrouilles pour toute la famille",
+    query: { type: "MOVIE", topics: ["Halloween"] },
+  },
+  // Games (maxAge-based — reliable)
   {
     id: "family-games",
     title: "Jeux en famille",
@@ -121,18 +121,7 @@ const COLLECTIONS: Collection[] = [
     description: "Selection de jeux adaptes aux adolescents",
     query: { type: "GAME", maxAge: 16 },
   },
-  {
-    id: "adventure-games",
-    title: "Belles aventures",
-    description: "RPG, action-aventure et mondes a explorer",
-    query: { type: "GAME", topics: ["RPG", "Aventure", "Action"] },
-  },
-  {
-    id: "coop-games",
-    title: "Jouons ensemble",
-    description: "Jeux cooperatifs et multijoueurs pour partager le fun",
-    query: { type: "GAME", topics: ["Coopératif", "Multijoueur"] },
-  },
+  // TV (maxAge-based — reliable)
   {
     id: "kids-series",
     title: "Series pour enfants",

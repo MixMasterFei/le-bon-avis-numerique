@@ -73,7 +73,7 @@ export default function CollectionsPage() {
     ["best-movies-2024", "best-movies-2025", "family-movies", "teen-comedy", "animation-kids", "disney-classics", "pixar", "studio-ghibli", "superhero", "adventure", "fantasy", "educational"].includes(c.id)
   )
   const seasonalCollections = collections.filter((c) =>
-    ["christmas-movies", "halloween-movies", "summer-movies"].includes(c.id)
+    ["christmas-movies", "halloween-movies"].includes(c.id)
   )
   const gameCollections = collections.filter((c) =>
     c.id.includes("game")
