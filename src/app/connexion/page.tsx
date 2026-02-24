@@ -24,8 +24,15 @@ function ConnexionForm() {
   const [resendingVerification, setResendingVerification] = useState(false)
   const [verificationSent, setVerificationSent] = useState(false)
   const [emailNotVerified, setEmailNotVerified] = useState(false)
+  const oauthErrors: Record<string, string> = {
+    CredentialsSignin: "Email ou mot de passe incorrect",
+    OAuthAccountNotLinked: "Ce compte est déjà associé à une autre méthode de connexion",
+    OAuthCallbackError: "Erreur lors de la connexion avec Google. Veuillez réessayer.",
+    OAuthSignin: "Erreur lors de l'initialisation de la connexion Google",
+    Default: "Une erreur est survenue lors de la connexion",
+  }
   const [errorMessage, setErrorMessage] = useState<string | null>(
-    error === "CredentialsSignin" ? "Email ou mot de passe incorrect" : null
+    error ? (oauthErrors[error] || oauthErrors.Default) : null
   )
 
   const handleSubmit = async (e: React.FormEvent) => {

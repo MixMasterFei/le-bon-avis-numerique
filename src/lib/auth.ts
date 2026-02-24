@@ -80,6 +80,45 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // Auto-link Google OAuth to existing accounts (Google verifies emails)
+      if (account?.provider === "google" && user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          include: { accounts: true },
+        })
+        if (existingUser) {
+          // Check if this Google account is already linked
+          const alreadyLinked = existingUser.accounts.some(
+            (a) => a.provider === "google"
+          )
+          if (!alreadyLinked) {
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                refresh_token: account.refresh_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              },
+            })
+            // Update user profile with Google data if missing
+            if (!existingUser.image && user.image) {
+              await prisma.user.update({
+                where: { id: existingUser.id },
+                data: { image: user.image, emailVerified: new Date() },
+              })
+            }
+          }
+        }
+      }
+      return true
+    },
     async redirect({ url, baseUrl }) {
       // If the url is relative, prefix it with baseUrl
       if (url.startsWith("/")) return `${baseUrl}${url}`
