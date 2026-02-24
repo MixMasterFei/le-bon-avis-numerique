@@ -56,6 +56,7 @@ export default function EnrichPage() {
   const [autoMode, setAutoMode] = useState(false)
   const [autoProgress, setAutoProgress] = useState({ total: 0, done: 0, errors: 0 })
   const stopRequestedRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const fetchStats = async () => {
     try {
@@ -74,28 +75,25 @@ export default function EnrichPage() {
     fetchStats()
   }, [])
 
-  const runSingleBatch = async (): Promise<EnrichmentResult | null> => {
-    try {
-      const res = await fetch("/api/admin/enrich", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: selectedType,
-          limit: batchSize,
-          onlyMissing: !forceReenrich,
-        }),
-      })
+  const runSingleBatch = async (signal?: AbortSignal): Promise<EnrichmentResult | null> => {
+    const res = await fetch("/api/admin/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: selectedType,
+        limit: batchSize,
+        onlyMissing: !forceReenrich,
+      }),
+      signal,
+    })
 
-      const data = await res.json()
+    const data = await res.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || "Enrichment failed")
-      }
-
-      return data.result
-    } catch (err) {
-      throw err
+    if (!res.ok) {
+      throw new Error(data.error || "Enrichment failed")
     }
+
+    return data.result
   }
 
   const handleEnrich = async () => {
@@ -116,6 +114,8 @@ export default function EnrichPage() {
 
   // Auto-enrich: runs batches continuously until done or stopped
   const handleAutoEnrich = async () => {
+    const controller = new AbortController()
+    abortControllerRef.current = controller
     setAutoMode(true)
     stopRequestedRef.current = false
     setError(null)
@@ -127,12 +127,11 @@ export default function EnrichPage() {
     let totalDone = 0
     let totalErrors = 0
 
-    while (!stopRequestedRef.current) {
+    while (!stopRequestedRef.current && !controller.signal.aborted) {
       try {
-        const batchResult = await runSingleBatch()
+        const batchResult = await runSingleBatch(controller.signal)
 
         if (!batchResult || batchResult.processed === 0) {
-          // No more items to process
           break
         }
 
@@ -141,29 +140,28 @@ export default function EnrichPage() {
         setAutoProgress({ total: totalToEnrich, done: totalDone, errors: totalErrors })
         setResult(batchResult)
 
-        // If nothing was enriched, we're done
         if (batchResult.enriched === 0 && batchResult.skipped === 0) {
           break
         }
 
-        // Check if stop was requested
         if (stopRequestedRef.current) break
 
-        // Small delay between batches to avoid overwhelming the API
         await new Promise(resolve => setTimeout(resolve, 1000))
-
-        // Refresh stats to get updated count
         await fetchStats()
 
       } catch (err) {
+        // AbortError means user clicked stop — exit cleanly
+        if (err instanceof DOMException && err.name === "AbortError") {
+          break
+        }
         totalErrors++
         setAutoProgress(prev => ({ ...prev, errors: totalErrors }))
         setError(err instanceof Error ? err.message : "Erreur")
-        // Continue despite errors
         await new Promise(resolve => setTimeout(resolve, 2000))
       }
     }
 
+    abortControllerRef.current = null
     setEnriching(false)
     setAutoMode(false)
     fetchStats()
@@ -171,6 +169,7 @@ export default function EnrichPage() {
 
   const handleStopAuto = () => {
     stopRequestedRef.current = true
+    abortControllerRef.current?.abort()
   }
 
   const typeIcons = {
