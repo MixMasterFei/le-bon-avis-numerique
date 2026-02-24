@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home, Book, Baby, Star, Bookmark, Users } from "lucide-react"
+import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Home, Baby, Star, Bookmark, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -13,7 +13,6 @@ const navigation = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
-  { name: "Livres", href: "/livres", icon: Book },
 ]
 
 const ageRanges = [
@@ -79,9 +78,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
       <div className="container mx-auto px-4">
-        <div className="flex h-18 items-center justify-between">
+        <div className="flex h-18 items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <Image
               src="/logo-icon.png"
               alt="Totem Avisé"
@@ -96,8 +95,9 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation - Playful pill design */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          {/* Center: Nav + Search */}
+          <div className="hidden lg:flex flex-1 items-center justify-center">
+          <nav className="flex items-center space-x-1">
             {navigation.map((item) => (
               <Link
                 key={item.name}
@@ -180,8 +180,8 @@ export function Header() {
             </div>
           </nav>
 
-          {/* Search Bar - Distinctive rounded design */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center flex-1 max-w-md mx-6">
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="hidden md:flex items-center max-w-sm ml-4">
             <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -194,9 +194,10 @@ export function Header() {
               />
             </div>
           </form>
+          </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 shrink-0">
             {status === "loading" ? (
               <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-full" />
             ) : session?.user ? (
