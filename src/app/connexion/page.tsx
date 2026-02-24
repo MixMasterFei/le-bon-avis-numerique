@@ -107,7 +107,7 @@ function ConnexionForm() {
                     <Image src="/logo-icon.png" alt="Totem Avisé" width={36} height={36} />
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
-                      <span className="text-lg uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
+                      <span className="text-xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
                     </div>
                   </Link>
                   <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">

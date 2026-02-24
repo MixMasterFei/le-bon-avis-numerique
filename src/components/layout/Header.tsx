@@ -92,7 +92,7 @@ export function Header() {
             />
             <div className="hidden sm:flex items-baseline gap-1">
               <span className="text-xl uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
-              <span className="text-xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
+              <span className="text-2xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
             </div>
           </Link>
 

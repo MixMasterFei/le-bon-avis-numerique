@@ -54,7 +54,7 @@ export function Footer() {
               />
               <div className="flex items-baseline gap-1">
                 <span className="text-lg uppercase tracking-tight text-white" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
-                <span className="text-lg uppercase text-violet-300" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
+                <span className="text-xl uppercase text-violet-300" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
               </div>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
