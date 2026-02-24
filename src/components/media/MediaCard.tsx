@@ -123,10 +123,10 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
-  // Check if content should be blurred (16+ age or high violence with blur setting enabled)
+  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies
   const shouldBlur = settings.blur18Plus && (
-    (media.expertAgeRec !== null && media.expertAgeRec >= 16) ||
-    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 4)
+    media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
+    media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
   )
   const effectiveBlur = shouldBlur && !isBlurRemoved
 
@@ -298,9 +298,10 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const contentTags = getContentTags(media.contentMetrics)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
+  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies
   const shouldBlur = settings.blur18Plus && (
-    (media.expertAgeRec !== null && media.expertAgeRec >= 18) ||
-    (media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5)
+    media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
+    media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
   )
   const effectiveBlur = shouldBlur && !isBlurRemoved
 
