@@ -14,12 +14,16 @@ const FEATURED_COUNT = 7
 export default function FilmsPage() {
   const searchParams = useSearchParams()
   const sortParam = searchParams.get("sort") // "newest" or "cinema"
+  const maxAgeParam = searchParams.get("maxAge")
   const sortBy = sortParam === "newest" ? "createdAt" : sortParam === "cinema" ? "releaseDate" : undefined
   const isNowPlaying = sortParam === "cinema"
 
+  // Initialize maxAge from URL param if present, otherwise use default
+  const initialMaxAge = maxAgeParam ? Math.min(Math.max(parseInt(maxAgeParam) || DEFAULT_MAX_AGE, 0), 18) : DEFAULT_MAX_AGE
+
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
-    maxAge: DEFAULT_MAX_AGE,
+    maxAge: initialMaxAge,
     platforms: [],
     topics: [],
     searchQuery: "",
@@ -283,7 +287,7 @@ export default function FilmsPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} initialFilters={{ maxAge: initialMaxAge, platforms: [], topics: [], searchQuery: "" }} />
           </div>
         </div>
 
@@ -321,7 +325,7 @@ export default function FilmsPage() {
                 <Clock className="h-4 w-4" />
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : sortBy ? "Derniers ajouts" : "Tous les films"}
+                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : sortBy ? "Derniers ajouts" : maxAgeParam ? `Films pour les ${parseInt(maxAgeParam) <= 7 ? "enfants" : `${maxAgeParam} ans et moins`}` : "Tous les films"}
               </h2>
             </div>
             <p className="text-sm text-gray-500">

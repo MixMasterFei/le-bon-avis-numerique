@@ -129,9 +129,11 @@ Automated maintenance across 3 days/week. All jobs use `CRON_SECRET` Bearer auth
 
 **Activity monitoring:** All cron runs are logged to the `cron_logs` table and visible in the admin dashboard under "Jobs automatiques".
 
-### Required GitHub Secrets
+### Required GitHub Secrets (environment: Production)
 - `SITE_URL` — Vercel production URL (e.g. `https://your-app.vercel.app`)
 - `CRON_SECRET` — Same value as Vercel env var
+
+**Important:** Secrets are scoped to the `Production` environment. Each job in `cron.yml` must declare `environment: Production` to access them. All `curl` commands use `-L` flag to follow Vercel HTTP→HTTPS redirects.
 
 ---
 
@@ -142,6 +144,33 @@ Homepage sections (ExpertPicks, FeaturedMovies, StreamingSection) use **week-see
 - `src/lib/seeded-shuffle.ts` — Mulberry32 PRNG + Fisher-Yates + ISO week seed
 - `shuffle=weekly` query param on `/api/db/movies` and `/api/db/streaming`
 - **NewArrivals** stays recency-sorted (no shuffle)
+
+---
+
+## "En ce moment au cinéma" (Now Playing)
+
+The homepage cinema section and `/films?sort=cinema` use the **TMDB `now_playing` API** (`region=FR`) as the source of truth for French theater listings.
+
+- **API route:** `/api/cinema` — Calls TMDB live (1-hour cache), cross-references with DB for age recommendations
+- **Component:** `src/components/home/NowInCinema.tsx` — Shows 7 items (1 row)
+- **Important:** Do NOT use `releaseDate` filtering as a proxy for "now playing". TMDB's `now_playing` endpoint with `region=FR` is the only accurate source.
+- Movies in TMDB now_playing but not yet in the DB still show (with TMDB poster) — they just lack age recommendations until the next cron import.
+
+---
+
+## "Voir tout" Link Pattern
+
+All homepage "Voir tout" links must pass the relevant filters to the target page so the user sees consistent content. Pattern:
+
+| Section | Target | Key Params |
+|---|---|---|
+| Derniers Ajouts | `/films?sort=newest` | `sort` read by films page |
+| En ce moment au cinéma | `/films?sort=cinema` | Uses `/api/cinema` (TMDB now_playing) |
+| Films pour les enfants | `/films?maxAge=7` | `maxAge` read by films page, passed to FilterSidebar |
+| Streaming section | `/films/recherche?platforms=...&maxAge=10` | Params read by recherche page |
+| Expert Picks | `/recherche` | General browse (no specific filter) |
+
+When creating new homepage sections with "Voir tout", always ensure the target page reads and applies the URL params.
 
 ---
 

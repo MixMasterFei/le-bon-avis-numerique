@@ -117,7 +117,7 @@ export function FeaturedMovies() {
           </p>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">
-          <Link href="/films">
+          <Link href="/films?maxAge=7">
             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -131,7 +131,7 @@ export function FeaturedMovies() {
 
       <div className="mt-8 text-center sm:hidden">
         <Button variant="outline" asChild>
-          <Link href="/films">
+          <Link href="/films?maxAge=7">
             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
