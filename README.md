@@ -1,4 +1,4 @@
-# Le Bon Avis Numérique 🇫🇷
+# Totem Avisé 🇫🇷
 
 > Le guide média de confiance pour les familles françaises
 
@@ -31,7 +31,7 @@ Une plateforme web inspirée de Common Sense Media, adaptée au marché francoph
 
 ```bash
 # Cloner le projet
-cd le-bon-avis-numerique
+cd totem-avise
 
 # Installer les dépendances
 npm install
@@ -49,7 +49,7 @@ Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
 cp .env.example .env
 
 # Éditer .env avec votre URL PostgreSQL
-# DATABASE_URL="postgresql://user:password@localhost:5432/lebonsens"
+# DATABASE_URL="postgresql://user:password@localhost:5432/totemavise"
 
 # Générer le client Prisma
 npx prisma generate
@@ -127,7 +127,7 @@ npm run lint     # Vérification ESLint
 
 ### Déploiement en un clic
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/le-bon-avis-numerique)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/totem-avise)
 
 ### Déploiement manuel
 

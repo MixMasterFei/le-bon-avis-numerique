@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { toMediaRouteId } from "@/lib/media-route"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://lebonavisnumerique.com"
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

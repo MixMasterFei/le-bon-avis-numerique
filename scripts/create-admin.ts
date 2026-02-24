@@ -33,7 +33,7 @@ async function prompt(question: string, hidden = false): Promise<string> {
 }
 
 async function main() {
-  console.log("\n🔐 Le Bon Sens Numérique - Admin Creation\n")
+  console.log("\n🔐 Totem Avisé - Admin Creation\n")
 
   // Check for existing admins
   const existingAdmins = await prisma.user.findMany({

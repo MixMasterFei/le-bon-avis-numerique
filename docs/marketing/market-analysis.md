@@ -108,7 +108,7 @@ Priority order:
 
 For every major film/show/game, create a page:
 - URL: `/media/[titre]`
-- Title: "[Titre] — A partir de quel age? Avis parents | Le Bon Avis Numerique"
+- Title: "[Titre] — A partir de quel age? Avis parents | Totem Avisé"
 - Target keyword: "[titre] a partir de quel age"
 
 This captures the highest-intent French parent searches.

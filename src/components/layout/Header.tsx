@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
@@ -79,14 +80,19 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
       <div className="container mx-auto px-4">
         <div className="flex h-18 items-center justify-between">
-          {/* Logo - Bold asymmetric design */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl rounded-br-sm bg-primary text-white font-black text-lg shadow-md group-hover:scale-105 transition-all duration-300">
-              BA
-            </div>
-            <div className="hidden sm:block">
-              <span className="text-xl font-black text-gray-900">Le Bon Avis</span>
-              <span className="text-xl font-light text-gray-400"> Numérique</span>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/logo-icon.png"
+              alt="Totem Avisé"
+              width={40}
+              height={40}
+              className="group-hover:scale-105 transition-transform duration-300"
+              priority
+            />
+            <div className="hidden sm:flex items-baseline gap-1">
+              <span className="text-xl uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
+              <span className="text-xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
             </div>
           </Link>
 

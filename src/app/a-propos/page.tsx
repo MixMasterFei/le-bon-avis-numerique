@@ -4,8 +4,8 @@ import Link from "next/link"
 import { auth } from "@/lib/auth"
 
 export const metadata = {
-  title: "À propos | Le Bon Avis Numérique",
-  description: "Découvrez l'histoire, la mission et l'équipe derrière Le Bon Avis Numérique — le guide parental des médias numériques.",
+  title: "À propos | Totem Avisé",
+  description: "Découvrez l'histoire, la mission et l'équipe derrière Totem Avisé — le guide parental des médias numériques.",
 }
 
 const howItWorks = [
@@ -49,7 +49,7 @@ export default async function AProposPage() {
             À propos
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Le Bon Avis Numérique est né d&apos;un constat simple : les parents méritent des informations claires et détaillées pour guider les choix médiatiques de leur famille.
+            Totem Avisé est né d&apos;un constat simple : les parents méritent des informations claires et détaillées pour guider les choix médiatiques de leur famille.
           </p>
         </div>
       </section>
@@ -69,7 +69,7 @@ export default async function AProposPage() {
                     Les classifications officielles — PEGI pour les jeux, CSA pour les films — donnent un âge recommandé, mais rarement le <strong>détail du pourquoi</strong>. Est-ce à cause de la violence ? Du langage ? De thèmes complexes ? La réponse change tout pour un parent qui cherche à faire un choix éclairé.
                   </p>
                   <p>
-                    <strong>Le Bon Avis Numérique</strong> a été créé pour combler ce manque. Notre mission : fournir à chaque famille francophone les informations détaillées dont elle a besoin, gratuitement, pour naviguer dans l&apos;univers des médias numériques en toute confiance.
+                    <strong>Totem Avisé</strong> a été créé pour combler ce manque. Notre mission : fournir à chaque famille francophone les informations détaillées dont elle a besoin, gratuitement, pour naviguer dans l&apos;univers des médias numériques en toute confiance.
                   </p>
                 </div>
               </CardContent>

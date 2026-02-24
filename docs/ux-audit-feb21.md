@@ -1,4 +1,4 @@
-# UX & Visual Audit — Le Bon Avis Numérique
+# UX & Visual Audit — Totem Avisé
 
 **Date:** February 21, 2026
 **Scope:** Full site review — 18 pages, all components, navigation, auth flow, competitor comparison
@@ -7,20 +7,9 @@
 
 ## CRITICAL — Must fix
 
-### 1. Brand identity split: "Le Bon Avis" vs "Le Bon Sens"
+### 1. ~~Brand identity split~~ — RESOLVED
 
-The site uses two different names across pages:
-
-| Location | Monogram | Name |
-|----------|----------|------|
-| Header, Footer, metadata, layout.tsx | **BA** | Le Bon Avis Numérique |
-| Login page (`connexion/page.tsx`) | **BS** | Le Bon Sens |
-| Signup page (`inscription/page.tsx`) | **BS** | Le Bon Sens |
-| TrustBanner (`TrustBanner.tsx`) | — | Le Bon Sens Numérique |
-| GitHub repo | — | le-bon-avis-numerique |
-| Project folder | — | le-bon-sens-numerique |
-
-**Action:** Pick one name and update all occurrences across the codebase.
+Brand unified to **Totem Avisé** (TA) across all pages. Domain: totemavise.com.
 
 ### 2. Broken redirect on `/chez-vous`
 

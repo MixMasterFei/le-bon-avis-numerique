@@ -1,4 +1,4 @@
-# Technical Audit - Le Bon Sens Numerique
+# Technical Audit - Totem Avisé
 
 **Date:** 2026-02-15 (updated)
 **Original audit:** 2026-02-14

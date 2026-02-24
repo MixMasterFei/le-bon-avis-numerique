@@ -2,7 +2,7 @@ import { BookOpen, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Bandes Dessinées | Le Bon Avis Numérique",
+  title: "Bandes Dessinées | Totem Avisé",
   description: "Évaluations de bandes dessinées et comics pour enfants et adolescents",
 }
 

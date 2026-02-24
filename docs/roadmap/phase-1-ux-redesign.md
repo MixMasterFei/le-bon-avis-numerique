@@ -69,7 +69,7 @@
 ## Next: Critical Fixes (from Feb 21 audit)
 
 ### P0 — Bugs & broken things (ALL COMPLETED Feb 21)
-- [x] Fix brand identity split: unified to "Le Bon Avis Numérique" (BA) across all pages
+- [x] Fix brand identity split: unified to "Totem Avisé" (TA) across all pages
 - [x] Fix broken `/chez-vous` redirect (`/auth/signin` → `/connexion`)
 - [x] Fix dead link to `/conditions` on signup page (now links to `/mentions-legales`)
 - [x] Remove admin checkbox from public login page

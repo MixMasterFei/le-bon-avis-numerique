@@ -14,8 +14,8 @@ function getResend(): Resend {
   return resend
 }
 
-const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@lebonsens.fr"
-const APP_NAME = "Le Bon Avis Numérique"
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@totemavise.com"
+const APP_NAME = "Totem Avisé"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
 export async function sendVerificationEmail(
@@ -182,7 +182,7 @@ export async function sendContactEmail(
   subject: string,
   message: string
 ) {
-  const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "contact@lebonavis-numerique.fr"
+  const CONTACT_EMAIL = process.env.CONTACT_EMAIL || "contact@totemavise.com"
 
   const subjectLabels: Record<string, string> = {
     question: "Question générale",

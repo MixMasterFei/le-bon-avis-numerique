@@ -30,7 +30,7 @@ export default function ConfidentialitePage() {
           </CardHeader>
           <CardContent className="prose prose-gray max-w-none">
             <p>
-              Le Bon Avis Numérique (ci-après &quot;nous&quot;, &quot;notre&quot; ou &quot;le Site&quot;) s&apos;engage
+              Totem Avisé (ci-après &quot;nous&quot;, &quot;notre&quot; ou &quot;le Site&quot;) s&apos;engage
               a proteger la vie privee des utilisateurs de son site internet. Cette politique
               de confidentialite explique comment nous collectons, utilisons, stockons et
               protegeons vos donnees personnelles conformement au Reglement General sur la
@@ -53,14 +53,14 @@ export default function ConfidentialitePage() {
           <CardContent className="prose prose-gray max-w-none">
             <p>Le responsable du traitement des donnees personnelles est :</p>
             <div className="bg-gray-50 p-4 rounded-lg not-prose">
-              <p className="font-semibold">Le Bon Avis Numérique</p>
+              <p className="font-semibold">Totem Avisé</p>
               <p className="text-sm text-gray-600">Association loi 1901</p>
               <p className="text-sm text-gray-600">Siege social : Paris, France</p>
               <p className="text-sm text-gray-600 mt-2">
-                <strong>Email :</strong> contact@lebonsens-numerique.fr
+                <strong>Email :</strong> contact@totemavise.com
               </p>
               <p className="text-sm text-gray-600">
-                <strong>DPO :</strong> dpo@lebonsens-numerique.fr
+                <strong>DPO :</strong> dpo@totemavise.com
               </p>
             </div>
           </CardContent>
@@ -390,7 +390,7 @@ export default function ConfidentialitePage() {
                 ou supprimer vos donnees
               </li>
               <li>
-                <strong>Par email :</strong> privacy@lebonsens-numerique.fr
+                <strong>Par email :</strong> privacy@totemavise.com
               </li>
             </ul>
             <p>
@@ -484,18 +484,18 @@ export default function ConfidentialitePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 not-prose mt-4">
               <a
-                href="mailto:privacy@lebonsens-numerique.fr"
+                href="mailto:privacy@totemavise.com"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
               >
                 <Mail className="h-4 w-4" />
-                privacy@lebonsens-numerique.fr
+                privacy@totemavise.com
               </a>
               <a
-                href="mailto:dpo@lebonsens-numerique.fr"
+                href="mailto:dpo@totemavise.com"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <Shield className="h-4 w-4" />
-                DPO : dpo@lebonsens-numerique.fr
+                DPO : dpo@totemavise.com
               </a>
             </div>
           </CardContent>

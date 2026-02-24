@@ -2,7 +2,7 @@ import { Newspaper, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Notre blog | Le Bon Avis Numérique",
+  title: "Notre blog | Totem Avisé",
   description: "Articles et actualités sur l'éducation aux médias et la parentalité numérique",
 }
 

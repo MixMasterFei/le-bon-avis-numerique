@@ -34,7 +34,7 @@ export function TrustBanner() {
         <div className="max-w-4xl mx-auto text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full mb-4">
             <CheckCircle className="h-4 w-4" />
-            <span className="text-sm font-medium">Le Bon Avis Numérique</span>
+            <span className="text-sm font-medium">Totem Avisé</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
             Votre guide de confiance pour les médias en famille

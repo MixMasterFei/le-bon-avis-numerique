@@ -1,11 +1,11 @@
-# CLAUDE.md - Le Bon Sens Numerique
+# CLAUDE.md - Totem Avisé
 
 ## Project Identity
 
-**Le Bon Sens Numerique** is a French-language family media guide platform, similar to Common Sense Media. It helps French families choose age-appropriate movies, TV shows, games, books, and apps through independent reviews, expert age ratings, and community feedback.
+**Totem Avisé** (totemavise.com) is a French-language family media guide platform, similar to Common Sense Media. It helps French families choose age-appropriate movies, TV shows, games, books, and apps through independent reviews, expert age ratings, and community feedback.
 
 **Owner:** Xavier (MixMasterFei on GitHub)
-**URL:** Deployed on Vercel
+**URL:** https://totemavise.com (Deployed on Vercel)
 **Repository:** https://github.com/MixMasterFei/le-bon-avis-numerique
 
 ---

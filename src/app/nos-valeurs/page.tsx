@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Nos valeurs & notations | Le Bon Avis Numérique",
+  title: "Nos valeurs & notations | Totem Avisé",
   description: "Comprendre notre système d'évaluation et nos critères pour vous aider à choisir des contenus adaptés pour votre famille",
 }
 
@@ -148,7 +148,7 @@ export default function NosValeursPage() {
           </h2>
           <div className="space-y-4 text-gray-600">
             <p>
-              <strong>Le Bon Avis Numérique</strong> a été créé avec une conviction simple : chaque famille mérite
+              <strong>Totem Avisé</strong> a été créé avec une conviction simple : chaque famille mérite
               des informations claires et détaillées pour faire des choix médiatiques éclairés.
             </p>
             <p>

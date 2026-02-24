@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Notre objectif | Le Bon Avis Numérique",
+  title: "Notre objectif | Totem Avisé",
   description: "Aider les familles à faire des choix éclairés pour les contenus médiatiques de leurs enfants grâce à des analyses détaillées et indépendantes.",
 }
 
@@ -80,7 +80,7 @@ export default function ObjectifPage() {
               <CardContent className="p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Notre réponse</h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Le Bon Avis Numérique analyse chaque contenu selon 7 dimensions distinctes. Violence, langage, consommérisme, mais aussi messages positifs et modèles. Pour que chaque famille puisse décider en connaissance de cause.
+                  Totem Avisé analyse chaque contenu selon 7 dimensions distinctes. Violence, langage, consommérisme, mais aussi messages positifs et modèles. Pour que chaque famille puisse décider en connaissance de cause.
                 </p>
               </CardContent>
             </Card>

@@ -1,14 +1,14 @@
-# Launch Checklist — Le Bon Avis Numérique
+# Launch Checklist — Totem Avisé
 
 > See also: [Deployment Roadmap](../roadmap/deployment-roadmap.md) for the full phased plan.
 
 ## CRITICAL (Before going live) — Phase A
 
 ### 1. Domain & Email
-- [ ] Purchase domain (lebonavisnumerique.com + .fr)
-- [ ] Set up DNS on Vercel (auto-provisions SSL)
+- [x] Purchase domain (totemavise.com) ✅
+- [x] Set up DNS on Vercel (auto-provisions SSL) ✅
 - [ ] Configure custom email domain with Resend (noreply@, contact@)
-- [ ] Create professional inbox (contact@lebonavisnumerique.com) — use Google Workspace or Zoho free
+- [ ] Create professional inbox (contact@totemavise.com) — use Google Workspace or Zoho free
 - [ ] Update FROM_EMAIL env var from `onboarding@resend.dev` to custom domain
 - [ ] Set up email forwarding: presse@, privacy@, dpo@ → main inbox
 
@@ -58,17 +58,17 @@
 - [ ] Add BreadcrumbList JSON-LD site-wide
 - [ ] Add FAQPage JSON-LD on guide pages
 - [ ] Test OG tags with Twitter Card Validator + Facebook Debugger
-- [ ] SEO title template: "[Titre] — À partir de quel âge ? Avis parents | Le Bon Avis Numérique"
+- [ ] SEO title template: "[Titre] — À partir de quel âge ? Avis parents | Totem Avisé"
 
 ---
 
 ## SOCIAL & MARKETING (Weeks 1-2) — Phase D
 
 ### 8. Social Media Accounts
-- [ ] Instagram: @lebonavisnumerique
-- [ ] TikTok: @lebonavisnumerique
-- [ ] Facebook: Le Bon Avis Numérique
-- [ ] Twitter/X: @BonAvisNum (or @LeBonAvisNum)
+- [ ] Instagram: @totemavise
+- [ ] TikTok: @totemavise
+- [ ] Facebook: Totem Avisé
+- [ ] Twitter/X: @TotemAvise (or @LeBonAvisNum)
 - [ ] LinkedIn: company page (for press/credibility)
 
 ### 9. First Marketing Push

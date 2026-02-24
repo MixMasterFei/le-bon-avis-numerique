@@ -1,4 +1,4 @@
-# Roadmap - Le Bon Avis Numérique
+# Roadmap - Totem Avisé
 
 ## Current Phase: Deployment — Preparing for full public launch
 

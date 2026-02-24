@@ -97,7 +97,7 @@ Swiss French cantonal cinema commission — governmental, institutional.
 
 ---
 
-## Key Takeaways for Le Bon Avis Numérique
+## Key Takeaways for Totem Avisé
 
 ### Already strong (keep doing)
 

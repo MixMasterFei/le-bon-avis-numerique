@@ -1,10 +1,10 @@
-# Le Bon Avis Numerique — Marketing & Growth Playbook
+# Totem Avisé — Marketing & Growth Playbook
 
 ## Identity
 
-**Brand name:** Le Bon Avis Numerique
+**Brand name:** Totem Avisé
 **Tagline:** Le guide independant des familles pour des choix medias eclaires
-**Domain:** lebonsens-numerique.fr (to be confirmed)
+**Domain:** totemavise.com
 **Tone:** Expert but warm. Trustworthy parent speaking to other parents — never preachy, never corporate.
 
 ## Target Audience
@@ -68,7 +68,7 @@
 "Top 5 des jeux cooperatifs pour jouer en famille ce week-end"
 
 **Email:**
-"Cette semaine sur Le Bon Avis : 12 nouveaux films analyses, notre selection vacances, et le guide 'Premiers jeux video'"
+"Cette semaine sur Totem Avisé : 12 nouveaux films analyses, notre selection vacances, et le guide 'Premiers jeux video'"
 
 ## SEO Strategy
 
@@ -96,25 +96,25 @@
 
 ## Social Media Strategy
 
-### Instagram (@lebonavisnumerique)
+### Instagram (@totemavise)
 - **Content mix:** 40% new release reviews, 30% thematic lists, 20% parenting tips, 10% behind-the-scenes
 - **Format:** Carousel posts (slide 1: poster + age badge, slide 2-4: content breakdown, slide 5: verdict)
 - **Stories:** "Cette semaine au cinema" weekly feature, polls ("A quel age avez-vous montre Star Wars?")
 - **Reels:** 15-30s "En 30 secondes" quick review format
 - **Frequency:** 3-4 posts/week, daily stories
 
-### TikTok (@lebonavisnumerique)
+### TikTok (@totemavise)
 - **Content:** "A partir de quel age?" format — show poster, reveal age + why
 - **Trends:** React to new releases, "Unpopular opinions" on kids media
 - **Frequency:** 2-3 videos/week
 
-### Facebook (Le Bon Avis Numerique)
+### Facebook (Totem Avisé)
 - **Audience:** The actual decision-making parents (35-50)
 - **Content:** Full reviews shared from site, "Ce week-end on regarde..." recommendations
 - **Groups:** Join/create French parenting groups, be helpful not spammy
 - **Frequency:** 3-4 posts/week
 
-### Twitter/X (@BonAvisNum)
+### Twitter/X (@TotemAvise)
 - **Content:** Quick takes on new releases, respond to trending entertainment discussions
 - **Frequency:** Daily
 

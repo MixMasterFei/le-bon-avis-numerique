@@ -88,7 +88,7 @@ export default function ContactPage() {
                 <h3 className="font-semibold">Email</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                contact@lebonavis-numerique.fr
+                contact@totemavise.com
               </p>
             </CardContent>
           </Card>

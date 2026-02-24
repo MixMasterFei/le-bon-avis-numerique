@@ -1,4 +1,5 @@
 import Link from "next/link"
+import Image from "next/image"
 import { Film, Tv, Gamepad2, BookOpen } from "lucide-react"
 
 const browse = [
@@ -43,13 +44,17 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-3 lg:col-span-1 mb-4 lg:mb-0">
-            <Link href="/" className="flex items-center space-x-3 mb-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl rounded-br-sm bg-gradient-to-br from-violet-500 via-pink-500 to-orange-400 text-white font-black text-base shadow-lg shadow-violet-500/30">
-                BA
-              </div>
-              <div>
-                <span className="text-lg font-black text-white">Le Bon Avis</span>
-                <span className="text-lg font-light text-violet-300"> Numérique</span>
+            <Link href="/" className="flex items-center gap-2 mb-5">
+              <Image
+                src="/logo-icon.png"
+                alt="Totem Avisé"
+                width={36}
+                height={36}
+                className="brightness-0 invert"
+              />
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg uppercase tracking-tight text-white" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
+                <span className="text-lg uppercase text-violet-300" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
               </div>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
@@ -134,7 +139,7 @@ export function Footer() {
         <div className="container mx-auto px-4 py-5">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-xs text-gray-500">
-              © {new Date().getFullYear()} Le Bon Avis Numérique
+              © {new Date().getFullYear()} Totem Avisé
             </p>
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <Link href="/mentions-legales" className="hover:text-gray-300 transition-colors">

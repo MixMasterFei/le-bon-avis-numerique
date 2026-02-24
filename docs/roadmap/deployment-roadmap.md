@@ -1,4 +1,4 @@
-# Deployment Roadmap — Le Bon Avis Numérique
+# Deployment Roadmap — Totem Avisé
 
 **Created:** Feb 21, 2026
 **Goal:** Take the site from development to full public launch.
@@ -24,7 +24,7 @@ Ongoing: Phase F (tech debt)             → Stability & maintainability
 
 | # | Task | Effort | Where |
 |---|------|--------|-------|
-| A1 | Buy domain (lebonavisnumerique.com + .fr) | 15 min | Registrar (OVH, Gandi, etc.) |
+| A1 | ~~Buy domain~~ — totemavise.com purchased ✅ | Done | Vercel |
 | A2 | Set DNS on Vercel + HTTPS auto-provisioned | 10 min | Vercel dashboard |
 | A3 | Update `NEXTAUTH_URL` + `NEXT_PUBLIC_APP_URL` to production domain | 5 min | Vercel env vars |
 | A4 | Add Google OAuth callback for production domain | 10 min | Google Cloud Console |
@@ -60,7 +60,7 @@ Ongoing: Phase F (tech debt)             → Stability & maintainability
 
 ### SEO Title Template (for every media page):
 ```
-[Titre] — À partir de quel âge ? Avis parents | Le Bon Avis Numérique
+[Titre] — À partir de quel âge ? Avis parents | Totem Avisé
 ```
 This targets the highest-intent French parent search: "[film name] à partir de quel âge"
 
@@ -91,8 +91,8 @@ This targets the highest-intent French parent search: "[film name] à partir de 
 ### Social Accounts
 | # | Task | Effort |
 |---|------|--------|
-| D1 | Reserve @lebonavisnumerique on Instagram, TikTok, Facebook, LinkedIn | 30 min |
-| D2 | Reserve @BonAvisNum or @LeBonAvisNum on X | 5 min |
+| D1 | Reserve @totemavise on Instagram, TikTok, Facebook, LinkedIn | 30 min |
+| D2 | Reserve @TotemAvise or @LeBonAvisNum on X | 5 min |
 
 ### Content Creation
 | # | Task | Effort |

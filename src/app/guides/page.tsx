@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Nos guides | Le Bon Avis Numérique",
+  title: "Nos guides | Totem Avisé",
   description: "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
 }
 

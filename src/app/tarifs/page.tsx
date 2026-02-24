@@ -263,7 +263,7 @@ export default function TarifsPage() {
             Pret a faire les bons choix pour votre famille ?
           </h2>
           <p className="text-emerald-100 mb-6 max-w-xl mx-auto">
-            Rejoignez des milliers de parents qui utilisent Le Bon Avis Numérique.
+            Rejoignez des milliers de parents qui utilisent Totem Avisé.
           </p>
           <Link href="/inscription">
             <Button size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50">

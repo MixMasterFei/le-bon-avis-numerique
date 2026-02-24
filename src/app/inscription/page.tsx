@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Loader2,
   Mail,
@@ -223,10 +224,11 @@ export default function InscriptionPage() {
               <div className="p-8 lg:p-12 order-1 lg:order-2">
                 <div className="mb-6">
                   <Link href="/" className="inline-flex items-center gap-2 mb-6">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 text-white font-bold text-lg">
-                      BA
+                    <Image src="/logo-icon.png" alt="Totem Avisé" width={36} height={36} />
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
+                      <span className="text-lg uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
                     </div>
-                    <span className="font-semibold text-gray-900">Le Bon Avis</span>
                   </Link>
                 </div>
 
