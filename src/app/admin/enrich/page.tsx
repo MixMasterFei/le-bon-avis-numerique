@@ -75,13 +75,13 @@ export default function EnrichPage() {
     fetchStats()
   }, [])
 
-  const runSingleBatch = async (signal?: AbortSignal): Promise<EnrichmentResult | null> => {
+  const runSingleBatch = async (signal?: AbortSignal, limitOverride?: number): Promise<EnrichmentResult | null> => {
     const res = await fetch("/api/admin/enrich", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: selectedType,
-        limit: batchSize,
+        limit: limitOverride ?? batchSize,
         onlyMissing: !forceReenrich,
       }),
       signal,
@@ -127,9 +127,13 @@ export default function EnrichPage() {
     let totalDone = 0
     let totalErrors = 0
 
+    // Use small batches (5 items) in auto mode to stay within Vercel's 60s function timeout
+    // Each item takes ~7-8s for OpenAI analysis, so 5 items ≈ 40s
+    const autoBatchSize = 5
+
     while (!stopRequestedRef.current && !controller.signal.aborted) {
       try {
-        const batchResult = await runSingleBatch(controller.signal)
+        const batchResult = await runSingleBatch(controller.signal, autoBatchSize)
 
         if (!batchResult || batchResult.processed === 0) {
           break
@@ -298,10 +302,10 @@ export default function EnrichPage() {
                 className="w-full p-2 border rounded-lg"
                 disabled={enriching}
               >
-                <option value={5}>5 contenus</option>
-                <option value={10}>10 contenus</option>
-                <option value={25}>25 contenus</option>
-                <option value={50}>50 contenus (max)</option>
+                <option value={3}>3 contenus (~25s)</option>
+                <option value={5}>5 contenus (~40s)</option>
+                <option value={10}>10 contenus (~80s, peut timeout)</option>
+                <option value={25}>25 contenus (~3min, risque de timeout)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Cout estime: ~{(batchSize * 0.002).toFixed(3)}$ (gpt-4o-mini)

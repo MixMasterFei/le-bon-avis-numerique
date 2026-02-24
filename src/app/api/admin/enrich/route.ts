@@ -5,6 +5,8 @@ import { getGameDetails, getIGDBImageUrl, getPegiRating } from "@/lib/igdb"
 import { logCronRun } from "@/lib/cron-log"
 import OpenAI from "openai"
 
+export const maxDuration = 60 // Allow up to 60s for OpenAI batch processing
+
 // Batch enrichment API - Enrich items that don't have content metrics
 // Uses OpenAI to generate age ratings and content analysis
 
