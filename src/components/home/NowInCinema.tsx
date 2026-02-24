@@ -7,22 +7,21 @@ import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
 import { type MockMediaItem } from "@/lib/mock-data"
 
-interface DbMovie {
+interface CinemaMovie {
   id: string
+  tmdbId: number
   title: string
   originalTitle?: string
-  synopsisFr?: string
   posterUrl: string
   releaseDate?: string
   expertAgeRec?: number | null
   communityAgeRec?: number | null
   genres?: string[]
-  platforms?: string[]
   topics?: string[]
-  contentMetrics?: any
+  inDatabase: boolean
 }
 
-function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
+function mapToMediaItem(movie: CinemaMovie): MockMediaItem {
   return {
     id: movie.id,
     title: movie.title,
@@ -30,14 +29,14 @@ function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
     type: "MOVIE",
     releaseDate: movie.releaseDate ?? null,
     posterUrl: movie.posterUrl || "/placeholder-poster.jpg",
-    synopsisFr: movie.synopsisFr ?? null,
+    synopsisFr: null,
     officialRating: null,
     expertAgeRec: movie.expertAgeRec ?? null,
     communityAgeRec: movie.communityAgeRec ?? null,
     genres: movie.genres || [],
-    platforms: movie.platforms || [],
+    platforms: [],
     topics: movie.topics || [],
-    contentMetrics: movie.contentMetrics || {
+    contentMetrics: {
       violence: 0,
       sexNudity: 0,
       language: 0,
@@ -58,16 +57,15 @@ export function NowInCinema() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        const res = await fetch(
-          "/api/db/movies?limit=14&nowPlaying=true&requirePoster=true&sortBy=releaseDate"
-        )
-        if (!res.ok) throw new Error("DB error")
+        const res = await fetch("/api/cinema")
+        if (!res.ok) throw new Error("Cinema API error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
-          setMovies(data.movies.map(mapDbToMockFormat))
+          // Take only 7 for a single row on desktop
+          setMovies(data.movies.slice(0, 7).map(mapToMediaItem))
         }
       } catch (error) {
-        console.error("Failed to fetch now playing movies:", error)
+        console.error("Failed to fetch cinema movies:", error)
       } finally {
         setLoading(false)
       }
@@ -98,10 +96,10 @@ export function NowInCinema() {
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-              En ce moment au cinema
+              En ce moment au cinéma
             </h2>
             <p className="text-gray-600 text-sm">
-              Les films actuellement en salle, avec nos recommandations par age
+              Les films actuellement en salle, avec nos recommandations par âge
             </p>
           </div>
         </div>
