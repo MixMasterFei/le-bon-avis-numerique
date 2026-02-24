@@ -34,7 +34,7 @@ export default function FilmsPage() {
   const [featuredMovies, setFeaturedMovies] = useState<MockMediaItem[]>([])
   const [featuredLoading, setFeaturedLoading] = useState(true)
 
-  // Fetch movies from database
+  // Fetch movies from database (or TMDB cinema API for now playing)
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
@@ -42,6 +42,42 @@ export default function FilmsPage() {
     async function load() {
       setLoading(true)
       try {
+        // For cinema mode, use the TMDB-based cinema API (accurate French theater listings)
+        if (isNowPlaying) {
+          const cinemaRes = await fetch("/api/cinema", { signal: controller.signal })
+          if (cinemaRes.ok) {
+            const cinemaData = await cinemaRes.json()
+            if (cinemaData.movies && cinemaData.movies.length > 0) {
+              const mapped: MockMediaItem[] = cinemaData.movies.map((m: any) => ({
+                id: String(m.id),
+                title: String(m.title || ""),
+                originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
+                type: "MOVIE" as const,
+                releaseDate: m.releaseDate ?? null,
+                posterUrl: String(m.posterUrl || ""),
+                synopsisFr: null,
+                officialRating: null,
+                expertAgeRec: m.expertAgeRec ?? null,
+                communityAgeRec: m.communityAgeRec ?? null,
+                genres: m.genres || [],
+                platforms: [],
+                topics: m.topics || [],
+                contentMetrics: null,
+                reviews: [],
+              }))
+
+              if (!cancelled) {
+                setSource("db")
+                setDbMovies(mapped)
+                setDbTotalPages(1)
+                setDbTotalResults(mapped.length)
+                setLoading(false)
+              }
+              return
+            }
+          }
+        }
+
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
@@ -62,9 +98,6 @@ export default function FilmsPage() {
         }
         if (sortBy) {
           dbParams.set("sortBy", sortBy)
-        }
-        if (isNowPlaying) {
-          dbParams.set("nowPlaying", "true")
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
@@ -123,7 +156,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, sortBy])
+  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, sortBy, isNowPlaying])
 
   // Fetch featured movies (high quality, sorted by quality score)
   useEffect(() => {
