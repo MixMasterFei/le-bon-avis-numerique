@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 
 // Vercel serverless function config - max duration for hobby is 10s, pro is 60s
@@ -15,6 +16,7 @@ import {
   MovieGenres,
   mapCertificationToInternal,
 } from "@/lib/tmdb"
+import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 
 // Map French CSA certification to recommended age
 function certificationToAge(cert: string | null): number | null {
@@ -195,18 +197,24 @@ export async function POST(request: Request) {
         const certification = getFrenchCertification(details.release_dates)
         const director = getDirector(details.credits)
 
+        // Pre-generate ID for deterministic storage paths
+        const id = randomUUID()
+        const [posterUrl, backdropUrl] = await Promise.all([
+          uploadTMDBPoster(id, details.poster_path),
+          uploadTMDBBackdrop(id, details.backdrop_path),
+        ])
+
         // Create the movie (we already filtered out existing ones)
         await prisma.mediaItem.create({
           data: {
+            id,
             tmdbId: movie.id,
             title: details.title,
             originalTitle: details.original_title,
             type: "MOVIE",
             synopsisFr: details.overview || null,
-            posterUrl: getImageUrl(details.poster_path, "w500"),
-            backdropUrl: details.backdrop_path
-              ? getImageUrl(details.backdrop_path, "w1280")
-              : null,
+            posterUrl,
+            backdropUrl,
             releaseDate: details.release_date
               ? new Date(details.release_date)
               : null,
@@ -220,6 +228,7 @@ export async function POST(request: Request) {
             tmdbVoteCount: details.vote_count || null,
             platforms: [],
             topics: [],
+            lastVerifiedAt: new Date(),
           },
         })
 

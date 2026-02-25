@@ -22,6 +22,8 @@ const optionalVars = [
   "FROM_EMAIL",
   "TMDB_API_KEY",
   "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
 ] as const
 
 export function validateEnv() {

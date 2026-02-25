@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { getMovieImages, getTVImages, getBackdropUrl, TMDBImage } from "@/lib/tmdb"
 import { getGameScreenshots, getIGDBScreenshotUrl, IGDBScreenshot } from "@/lib/igdb"
+import { uploadScreenshot, isStorageEnabled } from "@/lib/supabase-storage"
 
 export const maxDuration = 60
 
@@ -157,17 +159,31 @@ export async function POST(request: Request) {
           })
         }
 
-        // Create screenshot records
+        // Upload to Supabase Storage if enabled, then create records
+        const storageEnabled = isStorageEnabled()
+        const screenshotRecords = await Promise.all(
+          screenshots.map(async (s, index) => {
+            const id = randomUUID()
+            let url = s.url
+            if (storageEnabled && s.url) {
+              const stored = await uploadScreenshot(id, s.url)
+              if (stored) url = stored
+            }
+            return {
+              id,
+              mediaId: media.id,
+              url,
+              width: s.width || null,
+              height: s.height || null,
+              externalId: s.externalId || null,
+              order: index,
+              source: (media.type === "GAME" ? "IGDB" : "TMDB") as "IGDB" | "TMDB",
+            }
+          })
+        )
+
         await prisma.mediaScreenshot.createMany({
-          data: screenshots.map((s, index) => ({
-            mediaId: media.id,
-            url: s.url,
-            width: s.width || null,
-            height: s.height || null,
-            externalId: s.externalId || null,
-            order: index,
-            source: media.type === "GAME" ? "IGDB" : "TMDB",
-          })),
+          data: screenshotRecords,
         })
 
         stats.imported++
@@ -281,17 +297,31 @@ export async function PUT(request: Request) {
       where: { mediaId: media.id },
     })
 
-    // Create screenshot records
+    // Upload to Supabase Storage if enabled, then create records
+    const storageEnabled = isStorageEnabled()
+    const screenshotRecords = await Promise.all(
+      screenshots.map(async (s, index) => {
+        const id = randomUUID()
+        let url = s.url
+        if (storageEnabled && s.url) {
+          const stored = await uploadScreenshot(id, s.url)
+          if (stored) url = stored
+        }
+        return {
+          id,
+          mediaId: media.id,
+          url,
+          width: s.width || null,
+          height: s.height || null,
+          externalId: s.externalId || null,
+          order: index,
+          source: (media.type === "GAME" ? "IGDB" : "TMDB") as "IGDB" | "TMDB",
+        }
+      })
+    )
+
     await prisma.mediaScreenshot.createMany({
-      data: screenshots.map((s, index) => ({
-        mediaId: media.id,
-        url: s.url,
-        width: s.width || null,
-        height: s.height || null,
-        externalId: s.externalId || null,
-        order: index,
-        source: media.type === "GAME" ? "IGDB" : "TMDB",
-      })),
+      data: screenshotRecords,
     })
 
     return NextResponse.json({

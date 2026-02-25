@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import {
@@ -15,6 +16,14 @@ import {
   getTVDetails,
   getTVFrenchRating,
 } from "@/lib/tmdb"
+import {
+  uploadTMDBPoster,
+  uploadTMDBBackdrop,
+  isImageUrlValid,
+  uploadPoster,
+  isStorageEnabled,
+  isSupabaseUrl,
+} from "@/lib/supabase-storage"
 
 export const maxDuration = 60
 
@@ -104,15 +113,23 @@ async function importMoviesFromSource(
       const genres = details.genres?.map((g: any) => g.name) || []
       const releaseDate = details.release_date ? new Date(details.release_date) : null
 
+      // Pre-generate ID so we can upload images with deterministic paths
+      const id = randomUUID()
+      const [posterUrl, backdropUrl] = await Promise.all([
+        uploadTMDBPoster(id, details.poster_path),
+        uploadTMDBBackdrop(id, details.backdrop_path),
+      ])
+
       await prisma.mediaItem.create({
         data: {
+          id,
           tmdbId: details.id,
           title: details.title,
           originalTitle: details.original_title !== details.title ? details.original_title : null,
           type: "MOVIE",
           releaseDate,
-          posterUrl: details.poster_path ? getImageUrl(details.poster_path, "w500") : null,
-          backdropUrl: details.backdrop_path ? getImageUrl(details.backdrop_path, "w1280") : null,
+          posterUrl,
+          backdropUrl,
           synopsisFr: details.overview || null,
           officialRating: internalRating,
           expertAgeRec: ageRec,
@@ -127,6 +144,7 @@ async function importMoviesFromSource(
           dataSource: "TMDB",
           dataQualityScore: ageRec ? 30 : 10,
           isEnriched: false,
+          lastVerifiedAt: new Date(),
         },
       })
       stats.imported++
@@ -174,15 +192,22 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
       const genres = details.genres?.map((g: any) => g.name) || []
       const releaseDate = details.first_air_date ? new Date(details.first_air_date) : null
 
+      const id = randomUUID()
+      const [posterUrl, backdropUrl] = await Promise.all([
+        uploadTMDBPoster(id, details.poster_path),
+        uploadTMDBBackdrop(id, details.backdrop_path),
+      ])
+
       await prisma.mediaItem.create({
         data: {
+          id,
           tmdbId: details.id,
           title: details.name,
           originalTitle: details.original_name !== details.name ? details.original_name : null,
           type: "TV",
           releaseDate,
-          posterUrl: details.poster_path ? getImageUrl(details.poster_path, "w500") : null,
-          backdropUrl: details.backdrop_path ? getImageUrl(details.backdrop_path, "w1280") : null,
+          posterUrl,
+          backdropUrl,
           synopsisFr: details.overview || null,
           officialRating: internalRating,
           expertAgeRec: ageRec,
@@ -196,10 +221,87 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
           dataSource: "TMDB",
           dataQualityScore: ageRec ? 30 : 10,
           isEnriched: false,
+          lastVerifiedAt: new Date(),
         },
       })
       stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
+    } catch {
+      stats.errors++
+    }
+  }
+
+  return stats
+}
+
+// ── Poster validation & refresh ─────────────────────────────
+// Checks oldest-verified posters, re-uploads broken ones from TMDB
+async function validateAndRefreshPosters(limit: number = 30): Promise<{
+  checked: number
+  refreshed: number
+  broken: number
+  errors: number
+}> {
+  const stats = { checked: 0, refreshed: 0, broken: 0, errors: 0 }
+
+  if (!isStorageEnabled()) return stats
+
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const items = await prisma.mediaItem.findMany({
+    where: {
+      posterUrl: { not: null },
+      tmdbId: { not: null },
+      type: { in: ["MOVIE", "TV"] },
+      OR: [
+        { lastVerifiedAt: null },
+        { lastVerifiedAt: { lt: thirtyDaysAgo } },
+      ],
+    },
+    take: limit,
+    orderBy: { lastVerifiedAt: { sort: "asc", nulls: "first" } },
+    select: { id: true, title: true, posterUrl: true, tmdbId: true, type: true },
+  })
+
+  for (const item of items) {
+    stats.checked++
+    try {
+      const isValid = await isImageUrlValid(item.posterUrl!)
+
+      if (!isValid && item.tmdbId) {
+        // Re-fetch poster from TMDB and upload to Supabase
+        try {
+          const details = item.type === "MOVIE"
+            ? await getMovieDetails(item.tmdbId)
+            : await getTVDetails(item.tmdbId)
+
+          const posterPath = details.poster_path
+          if (posterPath) {
+            const tmdbUrl = `https://image.tmdb.org/t/p/w500${posterPath}`
+            const newUrl = await uploadPoster(item.id, tmdbUrl)
+            if (newUrl) {
+              await prisma.mediaItem.update({
+                where: { id: item.id },
+                data: { posterUrl: newUrl, lastVerifiedAt: new Date() },
+              })
+              stats.refreshed++
+              continue
+            }
+          }
+          stats.broken++
+        } catch {
+          stats.broken++
+        }
+      }
+
+      // Mark as verified (even if URL was already valid)
+      await prisma.mediaItem.update({
+        where: { id: item.id },
+        data: { lastVerifiedAt: new Date() },
+      })
+
+      await new Promise((r) => setTimeout(r, 300))
     } catch {
       stats.errors++
     }
@@ -230,6 +332,9 @@ export async function GET(req: NextRequest) {
     // Import popular TV shows (2 pages)
     results.tvShows = await importTVFromSource(2)
 
+    // Validate and refresh broken poster URLs
+    const posterRefresh = await validateAndRefreshPosters(30)
+
     const totalImported = Object.values(results).reduce((sum, s) => sum + s.imported, 0)
     const duration = Math.round((Date.now() - startTime) / 1000)
 
@@ -248,6 +353,7 @@ export async function GET(req: NextRequest) {
       duration: `${duration}s`,
       totalImported,
       results,
+      posterRefresh,
     })
   } catch (error) {
     console.error("[cron] Weekly import failed:", error)

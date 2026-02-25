@@ -10,6 +10,8 @@ import {
   Camera,
   Shield,
   FileDown,
+  HardDrive,
+  BadgeCheck,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -319,6 +321,40 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "backfillCertifications",
+      endpoint: "/api/admin/backfill-certifications",
+      method: "POST",
+      body: { limit: 20, mediaType: "ALL" },
+      chunked: true,
+      delayMs: 1500,
+      accumKeys: ["processed", "updated", "skipped", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
+        updated: data.updated || 0,
+        skipped: data.skipped || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      detectRateLimit: (_data, consecutiveEmpty) => consecutiveEmpty >= 3,
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} classifies, ${stats.skipped || 0} sans classif. TMDB${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Backfill classif.",
+    description: "Remplir les classif. manquantes via TMDB",
+    icon: BadgeCheck,
+    color: "amber",
+    statLabels: { updated: "classifies", skipped: "sans donnees" },
+  },
+  {
+    config: {
       key: "importCNC",
       endpoint: "/api/admin/import-cnc-ratings",
       method: "POST",
@@ -348,6 +384,43 @@ const OPERATIONS: Array<{
     icon: FileDown,
     color: "emerald",
     statLabels: { matched: "trouves", updated: "mis a jour" },
+  },
+  {
+    config: {
+      key: "migrateStorage",
+      endpoint: "/api/admin/storage/migrate",
+      method: "POST",
+      body: {
+        target: "all",
+        limit: 10,
+      },
+      chunked: true,
+      delayMs: 2000,
+      accumKeys: ["processed", "updated", "skipped", "errors"],
+      extractProgress: (data) => ({
+        processed: data.stats?.total || 0,
+        total: data.remaining ? (data.stats?.total || 0) + data.remaining : null,
+        updated: data.stats?.imported || 0,
+        skipped: data.stats?.skipped || 0,
+        errors: data.stats?.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      detectRateLimit: (_data, consecutiveEmpty) => consecutiveEmpty >= 3,
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} images migrees, ${stats.skipped || 0} ignorees${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Migration images",
+    description: "Copier les images vers Supabase Storage",
+    icon: HardDrive,
+    color: "purple",
+    statLabels: { updated: "migrees", skipped: "ignorees" },
   },
 ]
 

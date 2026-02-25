@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import {
   getMovieDetails,
@@ -16,6 +17,7 @@ import {
   normalizePlatforms,
 } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
+import { uploadTMDBPoster, uploadTMDBBackdrop, uploadPoster, isStorageEnabled } from "@/lib/supabase-storage"
 
 // Map certification to recommended age
 function certificationToAge(cert: string | null): number | null {
@@ -79,17 +81,22 @@ export async function POST(request: NextRequest) {
       const certification = getFrenchCertification(details.release_dates)
       const director = getDirector(details.credits)
 
+      const id = randomUUID()
+      const [posterUrl, backdropUrl] = await Promise.all([
+        uploadTMDBPoster(id, details.poster_path),
+        uploadTMDBBackdrop(id, details.backdrop_path),
+      ])
+
       newItem = await prisma.mediaItem.create({
         data: {
+          id,
           tmdbId: numericId,
           title: details.title,
           originalTitle: details.original_title,
           type: "MOVIE",
           synopsisFr: details.overview || null,
-          posterUrl: getImageUrl(details.poster_path, "w500"),
-          backdropUrl: details.backdrop_path
-            ? getImageUrl(details.backdrop_path, "w1280")
-            : null,
+          posterUrl,
+          backdropUrl,
           releaseDate: details.release_date
             ? new Date(details.release_date)
             : null,
@@ -101,23 +108,29 @@ export async function POST(request: NextRequest) {
           originalLanguage: details.original_language || null,
           platforms: [],
           topics: [],
+          lastVerifiedAt: new Date(),
         },
       })
     } else if (type === "TV") {
       const details = await getTVDetails(numericId)
       const rating = getTVFrenchRating(details.content_ratings)
 
+      const id = randomUUID()
+      const [posterUrl, backdropUrl] = await Promise.all([
+        uploadTMDBPoster(id, details.poster_path),
+        uploadTMDBBackdrop(id, details.backdrop_path),
+      ])
+
       newItem = await prisma.mediaItem.create({
         data: {
+          id,
           tmdbId: numericId,
           title: details.name,
           originalTitle: details.original_name,
           type: "TV",
           synopsisFr: details.overview || null,
-          posterUrl: getImageUrl(details.poster_path, "w500"),
-          backdropUrl: details.backdrop_path
-            ? getImageUrl(details.backdrop_path, "w1280")
-            : null,
+          posterUrl,
+          backdropUrl,
           releaseDate: details.first_air_date
             ? new Date(details.first_air_date)
             : null,
@@ -128,6 +141,7 @@ export async function POST(request: NextRequest) {
           originalLanguage: details.original_language || null,
           platforms: details.networks?.map((n) => n.name) || [],
           topics: [],
+          lastVerifiedAt: new Date(),
         },
       })
     } else if (type === "GAME") {
@@ -142,13 +156,23 @@ export async function POST(request: NextRequest) {
       const pegi = getPegiRating(game.age_ratings)
       const developer = game.involved_companies?.find((c) => c.developer)
 
+      const id = randomUUID()
+      const igdbCoverUrl = getIGDBImageUrl(game.cover?.image_id, "medium")
+      // Upload IGDB cover to Supabase if storage is enabled
+      let posterUrl = igdbCoverUrl
+      if (isStorageEnabled() && igdbCoverUrl) {
+        const stored = await uploadPoster(id, igdbCoverUrl)
+        if (stored) posterUrl = stored
+      }
+
       newItem = await prisma.mediaItem.create({
         data: {
+          id,
           igdbId: game.id,
           title: game.name,
           type: "GAME",
           synopsisFr: game.summary || game.storyline || null,
-          posterUrl: getIGDBImageUrl(game.cover?.image_id, "medium"),
+          posterUrl,
           releaseDate: game.first_release_date
             ? new Date(game.first_release_date * 1000)
             : null,
@@ -158,6 +182,7 @@ export async function POST(request: NextRequest) {
           expertAgeRec: pegi?.age || null,
           director: developer?.company.name || null,
           topics: game.themes?.map((t) => t.name) || [],
+          lastVerifiedAt: new Date(),
         },
       })
     } else if (type === "BOOK") {

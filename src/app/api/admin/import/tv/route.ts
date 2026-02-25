@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import {
   getPopularTVShows,
@@ -9,6 +10,7 @@ import {
   TVGenres,
   mapCertificationToInternal,
 } from "@/lib/tmdb"
+import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 
 // Vercel serverless function config
 export const maxDuration = 60
@@ -196,17 +198,22 @@ export async function POST(request: Request) {
         const rating = getTVFrenchRating(details.content_ratings)
         const creator = details.created_by?.[0]?.name || null
 
+        const id = randomUUID()
+        const [posterUrl, backdropUrl] = await Promise.all([
+          uploadTMDBPoster(id, details.poster_path),
+          uploadTMDBBackdrop(id, details.backdrop_path),
+        ])
+
         await prisma.mediaItem.create({
           data: {
+            id,
             tmdbId: show.id,
             title: details.name,
             originalTitle: details.original_name,
             type: "TV",
             synopsisFr: details.overview || null,
-            posterUrl: getImageUrl(details.poster_path, "w500"),
-            backdropUrl: details.backdrop_path
-              ? getImageUrl(details.backdrop_path, "w1280")
-              : null,
+            posterUrl,
+            backdropUrl,
             releaseDate: details.first_air_date
               ? new Date(details.first_air_date)
               : null,
@@ -221,6 +228,7 @@ export async function POST(request: Request) {
             tmdbVoteCount: details.vote_count || null,
             platforms: [],
             topics: [],
+            lastVerifiedAt: new Date(),
           },
         })
 
