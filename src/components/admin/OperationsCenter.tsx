@@ -12,6 +12,7 @@ import {
   FileDown,
   HardDrive,
   BadgeCheck,
+  Gamepad2,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -352,6 +353,26 @@ const OPERATIONS: Array<{
     icon: BadgeCheck,
     color: "amber",
     statLabels: { updated: "classifies", skipped: "sans donnees" },
+  },
+  {
+    config: {
+      key: "fixGameCovers",
+      endpoint: "/api/admin/fix-game-covers",
+      method: "POST",
+      chunked: false,
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.processed || 0,
+        updated: data.updated || 0,
+      }),
+      buildSummary: (stats) =>
+        `${stats.updated || 0} covers mises a jour en 720p`,
+    },
+    label: "Fix covers jeux",
+    description: "Upgrader les covers IGDB en haute resolution (720p)",
+    icon: Gamepad2,
+    color: "indigo",
+    statLabels: { updated: "upgradees" },
   },
   {
     config: {

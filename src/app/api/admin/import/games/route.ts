@@ -38,7 +38,7 @@ function transformGameToMediaItem(game: IGDBGame) {
     title: game.name,
     type: "GAME" as const,
     synopsisFr: game.summary || game.storyline || null,
-    posterUrl: getIGDBImageUrl(game.cover?.image_id, "medium"),
+    posterUrl: getIGDBImageUrl(game.cover?.image_id, "large"),
     releaseDate: game.first_release_date
       ? new Date(game.first_release_date * 1000)
       : null,

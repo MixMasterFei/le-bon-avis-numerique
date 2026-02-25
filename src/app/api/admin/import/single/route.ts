@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       const developer = game.involved_companies?.find((c) => c.developer)
 
       const id = randomUUID()
-      const igdbCoverUrl = getIGDBImageUrl(game.cover?.image_id, "medium")
+      const igdbCoverUrl = getIGDBImageUrl(game.cover?.image_id, "large")
       // Upload IGDB cover to Supabase if storage is enabled
       let posterUrl = igdbCoverUrl
       if (isStorageEnabled() && igdbCoverUrl) {
