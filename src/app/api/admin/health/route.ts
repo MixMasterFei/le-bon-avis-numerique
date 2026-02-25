@@ -15,7 +15,7 @@ export async function GET() {
 
     const [
       total,
-      withRating,
+      withAgeRec,
       withScreenshots,
       withMetrics,
       withStreaming,
@@ -23,7 +23,7 @@ export async function GET() {
     ] = await Promise.all([
       prisma.mediaItem.count({ where: movieTvFilter }),
       prisma.mediaItem.count({
-        where: { ...movieTvFilter, officialRating: { in: validRatings } },
+        where: { ...movieTvFilter, expertAgeRec: { not: null } },
       }),
       prisma.mediaItem.count({
         where: { ...movieTvFilter, screenshots: { some: {} } },
@@ -45,7 +45,7 @@ export async function GET() {
 
     return NextResponse.json({
       total,
-      ratings: { count: withRating, pct: pct(withRating) },
+      ratings: { count: withAgeRec, pct: pct(withAgeRec) },
       screenshots: { count: withScreenshots, pct: pct(withScreenshots) },
       enriched: { count: withMetrics, pct: pct(withMetrics) },
       streaming: { count: withStreaming, pct: pct(withStreaming) },

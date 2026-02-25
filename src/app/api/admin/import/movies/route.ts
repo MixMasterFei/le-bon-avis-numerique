@@ -15,6 +15,7 @@ import {
   getImageUrl,
   MovieGenres,
   mapCertificationToInternal,
+  getMovieWatchProviders,
 } from "@/lib/tmdb"
 import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 
@@ -32,10 +33,14 @@ function certificationToAge(cert: string | null): number | null {
   return map[cert] ?? null
 }
 
+// Sources that are inherently French-relevant (skip FR check)
+const FR_SAFE_SOURCES = ["french", "kids", "now_playing"]
+
 interface ImportStats {
   total: number
   imported: number
   skipped: number
+  skippedNoFR: number
   errors: number
   details: string[]
 }
@@ -56,6 +61,7 @@ export async function POST(request: Request) {
       total: 0,
       imported: 0,
       skipped: 0,
+      skippedNoFR: 0,
       errors: 0,
       details: [],
     }
@@ -195,6 +201,21 @@ export async function POST(request: Request) {
         // Get full movie details
         const details = await getMovieDetails(movie.id)
         const certification = getFrenchCertification(details.release_dates)
+
+        // Skip movies with no French relevance (unless source is inherently FR)
+        if (!FR_SAFE_SOURCES.includes(source)) {
+          const isFR = details.original_language === "fr"
+            || !!certification
+            || details.release_dates?.results?.some((r: any) => r.iso_3166_1 === "FR")
+          if (!isFR) {
+            const frProviders = await getMovieWatchProviders(movie.id)
+            if (!frProviders) {
+              stats.skippedNoFR++
+              continue
+            }
+          }
+        }
+
         const director = getDirector(details.credits)
 
         // Pre-generate ID for deterministic storage paths
@@ -245,7 +266,7 @@ export async function POST(request: Request) {
     }
 
     stats.details.push(
-      `Import complete: ${stats.imported} imported, ${stats.skipped} skipped, ${stats.errors} errors`
+      `Import complete: ${stats.imported} imported, ${stats.skipped} skipped, ${stats.skippedNoFR} filtres (non-FR), ${stats.errors} errors`
     )
 
     return NextResponse.json({

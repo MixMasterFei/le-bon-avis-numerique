@@ -13,6 +13,7 @@ import {
   HardDrive,
   BadgeCheck,
   Gamepad2,
+  Trash2,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -111,6 +112,11 @@ const COLORS: Record<string, OperationColors> = {
     iconBg: "bg-emerald-100 text-emerald-700",
     border: "border-emerald-300 hover:bg-emerald-50",
     progress: "bg-emerald-500",
+  },
+  red: {
+    iconBg: "bg-red-100 text-red-700",
+    border: "border-red-300 hover:bg-red-50",
+    progress: "bg-red-500",
   },
 }
 
@@ -442,6 +448,42 @@ const OPERATIONS: Array<{
     icon: HardDrive,
     color: "purple",
     statLabels: { updated: "migrees", skipped: "ignorees" },
+  },
+  {
+    config: {
+      key: "cleanupNonFrench",
+      endpoint: "/api/admin/cleanup-non-french",
+      method: "POST",
+      body: { limit: 30 },
+      chunked: true,
+      delayMs: 2000,
+      accumKeys: ["processed", "deleted", "kept", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
+        deleted: data.deleted || 0,
+        kept: data.kept || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      buildSummary: (stats) => {
+        const parts: string[] = []
+        if (stats.deleted) parts.push(`${stats.deleted} supprimes`)
+        if (stats.kept) parts.push(`${stats.kept} conserves`)
+        if (stats.errors) parts.push(`${stats.errors} erreurs`)
+        return parts.join(", ") || `${stats.processed || 0} traites`
+      },
+    },
+    label: "Nettoyage catalogue",
+    description: "Supprimer les contenus non disponibles en France",
+    icon: Trash2,
+    color: "red",
+    statLabels: { deleted: "supprimes", kept: "conserves" },
   },
 ]
 

@@ -15,6 +15,8 @@ import {
   getPopularTVShows,
   getTVDetails,
   getTVFrenchRating,
+  getMovieWatchProviders,
+  getTVWatchProviders,
 } from "@/lib/tmdb"
 import {
   uploadTMDBPoster,
@@ -47,14 +49,40 @@ interface ImportStats {
   total: number
   imported: number
   skipped: number
+  skippedNoFR: number
   errors: number
+}
+
+// Check if a movie has French relevance (FR release, FR streaming, or French language)
+function hasMovieFrenchRelevance(
+  details: any,
+  frCert: string | null
+): boolean {
+  // 1. French language original
+  if (details.original_language === "fr") return true
+  // 2. Has French certification (means it was released in France)
+  if (frCert) return true
+  // 3. Has FR release date entry (even without certification)
+  if (details.release_dates?.results?.some((r: any) => r.iso_3166_1 === "FR")) return true
+  return false
+}
+
+// Check if a TV show has French relevance
+function hasTVFrenchRelevance(
+  details: any,
+  frRating: string | null
+): boolean {
+  if (details.original_language === "fr") return true
+  if (frRating) return true
+  if (details.content_ratings?.results?.some((r: any) => r.iso_3166_1 === "FR")) return true
+  return false
 }
 
 async function importMoviesFromSource(
   source: "popular" | "now_playing" | "family" | "animation",
   pages: number
 ): Promise<ImportStats> {
-  const stats: ImportStats = { total: 0, imported: 0, skipped: 0, errors: 0 }
+  const stats: ImportStats = { total: 0, imported: 0, skipped: 0, skippedNoFR: 0, errors: 0 }
 
   // Fetch movie IDs from TMDB
   const allMovies: Array<{ id: number; title: string }> = []
@@ -106,6 +134,19 @@ async function importMoviesFromSource(
     try {
       const details = await getMovieDetails(movie.id)
       const frCert = getFrenchCertification(details.release_dates)
+
+      // Skip movies with no French relevance
+      let isFR = hasMovieFrenchRelevance(details, frCert)
+      if (!isFR) {
+        // Last resort: check if available on French streaming platforms
+        const frProviders = await getMovieWatchProviders(movie.id)
+        isFR = frProviders !== null
+      }
+      if (!isFR) {
+        stats.skippedNoFR++
+        continue
+      }
+
       const director = getDirector(details.credits)
       const internalRating = mapCertificationToInternal(frCert)
       const ageRec = certificationToAge(frCert)
@@ -158,7 +199,7 @@ async function importMoviesFromSource(
 }
 
 async function importTVFromSource(pages: number): Promise<ImportStats> {
-  const stats: ImportStats = { total: 0, imported: 0, skipped: 0, errors: 0 }
+  const stats: ImportStats = { total: 0, imported: 0, skipped: 0, skippedNoFR: 0, errors: 0 }
 
   const allShows: Array<{ id: number; name: string }> = []
   for (let page = 1; page <= pages; page++) {
@@ -186,6 +227,18 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
     try {
       const details = await getTVDetails(show.id)
       const frRating = getTVFrenchRating(details.content_ratings)
+
+      // Skip TV shows with no French relevance
+      let isFR = hasTVFrenchRelevance(details, frRating)
+      if (!isFR) {
+        const frProviders = await getTVWatchProviders(show.id)
+        isFR = frProviders !== null
+      }
+      if (!isFR) {
+        stats.skippedNoFR++
+        continue
+      }
+
       const internalRating = mapCertificationToInternal(frRating)
       const ageRec = certificationToAge(frRating)
 

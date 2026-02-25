@@ -9,6 +9,7 @@ import {
   discoverMovies,
   TVGenres,
   mapCertificationToInternal,
+  getTVWatchProviders,
 } from "@/lib/tmdb"
 import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 
@@ -28,10 +29,13 @@ function certificationToAge(cert: string | null): number | null {
   return map[cert] ?? null
 }
 
+const FR_SAFE_SOURCES = ["french", "kids"]
+
 interface ImportStats {
   total: number
   imported: number
   skipped: number
+  skippedNoFR: number
   errors: number
   details: string[]
 }
@@ -90,6 +94,7 @@ export async function POST(request: Request) {
       total: 0,
       imported: 0,
       skipped: 0,
+      skippedNoFR: 0,
       errors: 0,
       details: [],
     }
@@ -196,6 +201,21 @@ export async function POST(request: Request) {
       try {
         const details = await getTVDetails(show.id)
         const rating = getTVFrenchRating(details.content_ratings)
+
+        // Skip TV shows with no French relevance (unless source is inherently FR)
+        if (!FR_SAFE_SOURCES.includes(source)) {
+          const isFR = details.original_language === "fr"
+            || !!rating
+            || details.content_ratings?.results?.some((r: any) => r.iso_3166_1 === "FR")
+          if (!isFR) {
+            const frProviders = await getTVWatchProviders(show.id)
+            if (!frProviders) {
+              stats.skippedNoFR++
+              continue
+            }
+          }
+        }
+
         const creator = details.created_by?.[0]?.name || null
 
         const id = randomUUID()

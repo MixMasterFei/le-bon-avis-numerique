@@ -87,9 +87,12 @@ export default function ContactPage() {
                 </div>
                 <h3 className="font-semibold">Email</h3>
               </div>
-              <p className="text-gray-600 text-sm">
+              <a
+                href="mailto:contact@totemavise.com"
+                className="text-primary hover:underline text-sm"
+              >
                 contact@totemavise.com
-              </p>
+              </a>
             </CardContent>
           </Card>
 

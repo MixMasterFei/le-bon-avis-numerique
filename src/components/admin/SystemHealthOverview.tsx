@@ -28,7 +28,7 @@ function progressColor(pct: number): string {
 const METRICS = [
   {
     key: "ratings" as const,
-    label: "Classif. officielle",
+    label: "Reco. age",
     icon: Shield,
     bg: "bg-amber-50",
     iconColor: "text-amber-600",

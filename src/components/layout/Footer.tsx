@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Mail } from "lucide-react"
 
 const browse = [
   { name: "Films", href: "/films", icon: Film },
@@ -60,6 +60,13 @@ export function Footer() {
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
               Le guide indépendant pour aider les familles françaises à choisir les meilleurs médias pour leurs enfants.
             </p>
+            <a
+              href="mailto:contact@totemavise.com"
+              className="inline-flex items-center gap-2 mt-4 text-sm text-gray-400 hover:text-violet-300 transition-colors"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              contact@totemavise.com
+            </a>
           </div>
 
           {/* Browse */}

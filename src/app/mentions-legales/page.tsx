@@ -225,7 +225,7 @@ export default function MentionsLegalesPage() {
             <div className="bg-blue-50 p-4 rounded-lg mt-4">
               <p className="text-sm">
                 <strong>Délégué à la Protection des Données (DPO) :</strong><br />
-                Email : dpo@totemavise.com
+                Email : contact@totemavise.com
               </p>
             </div>
           </CardContent>

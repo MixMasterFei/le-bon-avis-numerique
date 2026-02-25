@@ -59,9 +59,6 @@ export default function ConfidentialitePage() {
               <p className="text-sm text-gray-600 mt-2">
                 <strong>Email :</strong> contact@totemavise.com
               </p>
-              <p className="text-sm text-gray-600">
-                <strong>DPO :</strong> dpo@totemavise.com
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -390,7 +387,7 @@ export default function ConfidentialitePage() {
                 ou supprimer vos donnees
               </li>
               <li>
-                <strong>Par email :</strong> privacy@totemavise.com
+                <strong>Par email :</strong> contact@totemavise.com
               </li>
             </ul>
             <p>
@@ -482,20 +479,13 @@ export default function ConfidentialitePage() {
               Pour toute question concernant cette politique de confidentialite ou
               vos donnees personnelles, contactez-nous :
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 not-prose mt-4">
+            <div className="not-prose mt-4">
               <a
-                href="mailto:privacy@totemavise.com"
+                href="mailto:contact@totemavise.com"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
               >
                 <Mail className="h-4 w-4" />
-                privacy@totemavise.com
-              </a>
-              <a
-                href="mailto:dpo@totemavise.com"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <Shield className="h-4 w-4" />
-                DPO : dpo@totemavise.com
+                contact@totemavise.com
               </a>
             </div>
           </CardContent>
