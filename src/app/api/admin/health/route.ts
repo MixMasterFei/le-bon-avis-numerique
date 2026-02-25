@@ -7,6 +7,12 @@ export async function GET() {
   try {
     const movieTvFilter = { type: { in: ["MOVIE", "TV"] as ("MOVIE" | "TV")[] } }
 
+    // Valid internal certification values (French CSA + PEGI for games)
+    const validRatings = [
+      "TOUS_PUBLICS", "CSA_10", "CSA_12", "CSA_16", "CSA_18",
+      "PEGI_3", "PEGI_7", "PEGI_12", "PEGI_16", "PEGI_18",
+    ]
+
     const [
       total,
       withRating,
@@ -17,16 +23,16 @@ export async function GET() {
     ] = await Promise.all([
       prisma.mediaItem.count({ where: movieTvFilter }),
       prisma.mediaItem.count({
-        where: { ...movieTvFilter, officialRating: { not: null } },
+        where: { ...movieTvFilter, officialRating: { in: validRatings } },
       }),
       prisma.mediaItem.count({
-        where: { screenshots: { some: {} } },
+        where: { ...movieTvFilter, screenshots: { some: {} } },
       }),
       prisma.mediaItem.count({
-        where: { contentMetrics: { isNot: null } },
+        where: { ...movieTvFilter, contentMetrics: { isNot: null } },
       }),
       prisma.mediaItem.count({
-        where: { streamingAvailability: { some: {} } },
+        where: { ...movieTvFilter, streamingAvailability: { some: {} } },
       }),
       prisma.mediaItem.aggregate({
         _avg: { dataQualityScore: true },

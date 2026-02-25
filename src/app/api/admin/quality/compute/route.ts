@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     // Get total count first
     const totalCount = await prisma.mediaItem.count()
 
-    // Get batch of items - only select what we need
+    // Get batch of items - select all fields needed for scoring
     const mediaItems = await prisma.mediaItem.findMany({
       skip: offset,
       take: limit,
@@ -30,11 +30,17 @@ export async function POST(request: NextRequest) {
         id: true,
         title: true,
         posterUrl: true,
+        backdropUrl: true,
         synopsisFr: true,
         releaseDate: true,
         genres: true,
+        officialRating: true,
         expertAgeRec: true,
+        director: true,
+        originalLanguage: true,
         contentMetrics: { select: { id: true } },
+        screenshots: { select: { id: true }, take: 1 },
+        streamingAvailability: { select: { id: true }, take: 1 },
       },
     })
 
@@ -50,17 +56,32 @@ export async function POST(request: NextRequest) {
     const scoreDistribution: Record<number, number> = {}
     const now = new Date()
 
-    // Build all updates first, then execute in transaction
+    // Quality score formula — max 100 points
+    // Essential fields (60 pts): title, poster, synopsis, rating, age rec, genres
+    // Enrichment fields (25 pts): content metrics, screenshots, streaming
+    // Bonus fields (15 pts): backdrop, director, language, release date
     const updates = mediaItems.map((item) => {
       let score = 0
-      if (item.title && item.title.trim()) score += 10
+
+      // Essential (60 pts)
+      if (item.title && item.title.trim()) score += 5
       if (item.posterUrl) score += 10
       if (item.synopsisFr && item.synopsisFr.length > 50) score += 15
       else if (item.synopsisFr && item.synopsisFr.length > 0) score += 7
-      if (item.releaseDate) score += 5
+      if (item.officialRating) score += 10
+      if (item.expertAgeRec !== null) score += 10
       if (item.genres && item.genres.length > 0) score += 10
-      if (item.expertAgeRec !== null) score += 15
-      if (item.contentMetrics) score += 15
+
+      // Enrichment (25 pts)
+      if (item.contentMetrics) score += 10
+      if (item.screenshots.length > 0) score += 10
+      if (item.streamingAvailability.length > 0) score += 5
+
+      // Bonus (15 pts)
+      if (item.backdropUrl) score += 5
+      if (item.director) score += 3
+      if (item.originalLanguage) score += 3
+      if (item.releaseDate) score += 4
 
       scoreDistribution[score] = (scoreDistribution[score] || 0) + 1
       const isEnriched = item.expertAgeRec !== null && item.contentMetrics !== null
