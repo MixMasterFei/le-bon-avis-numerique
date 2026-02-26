@@ -89,9 +89,9 @@ export function Header() {
               className="group-hover:scale-105 transition-transform duration-300"
               priority
             />
-            <div className="hidden sm:flex items-baseline gap-1">
-              <span className="text-2xl uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
-              <span className="text-3xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl sm:text-2xl uppercase tracking-tight text-gray-900" style={{ fontFamily: "var(--font-anton)" }}>Totem</span>
+              <span className="text-2xl sm:text-3xl uppercase text-gray-900" style={{ fontFamily: "var(--font-edunline)" }}>Avisé</span>
             </div>
           </Link>
 

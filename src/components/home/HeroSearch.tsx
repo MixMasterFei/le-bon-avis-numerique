@@ -227,9 +227,9 @@ export function HeroSearch() {
         </div>
       )}
 
-      {/* Popular searches - Playful pills */}
-      <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
-        <span className="text-gray-600 text-sm flex items-center gap-1.5 font-medium">
+      {/* Popular searches - Single line pills */}
+      <div className="mt-5 flex items-center justify-center gap-3">
+        <span className="text-gray-600 text-sm flex items-center gap-1.5 font-medium shrink-0">
           <TrendingUp className="h-4 w-4" />
           Populaire:
         </span>
@@ -237,7 +237,7 @@ export function HeroSearch() {
           <Link
             key={item.href}
             href={item.href}
-            className="text-sm bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm"
+            className="text-sm bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm whitespace-nowrap"
           >
             {item.label}
           </Link>
