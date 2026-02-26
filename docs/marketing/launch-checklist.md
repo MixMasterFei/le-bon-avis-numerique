@@ -7,30 +7,30 @@
 ### 1. Domain & Email
 - [x] Purchase domain (totemavise.com)
 - [x] Set up DNS on Vercel (auto-provisions SSL)
-- [ ] Configure custom email domain with Resend (noreply@, contact@)
-- [ ] Create professional inbox (contact@totemavise.com) — use Google Workspace or Zoho free
-- [ ] Update FROM_EMAIL env var from `onboarding@resend.dev` to custom domain — code fallback already set to `noreply@totemavise.com`
-- [ ] Set up email forwarding: presse@, privacy@, dpo@ → main inbox
+- [x] Configure custom email domain with Resend (noreply@, contact@)
+- [x] Create professional inbox (contact@totemavise.com)
+- [x] Update FROM_EMAIL env var to custom domain
+- [x] Set up email forwarding: presse@, privacy@, dpo@ → main inbox
 
 ### 2. Auth & Environment
-- [ ] Update NEXTAUTH_URL to production domain (currently `localhost:3000`)
-- [ ] Update NEXT_PUBLIC_APP_URL to production domain (currently `localhost:3000`)
-- [ ] Add Google OAuth callback URL for production domain in Google Cloud Console
-- [ ] Test Google OAuth login end-to-end on production
-- [ ] Test email/password signup + verification email flow
-- [ ] Test password reset flow
-- [ ] Verify all env vars are in Vercel project settings (not just .env)
-- [ ] Verify `SITE_URL` + `CRON_SECRET` in GitHub Secrets (needed for cron workflows)
+- [x] Update NEXTAUTH_URL to production domain
+- [x] Update NEXT_PUBLIC_APP_URL to production domain
+- [x] Add Google OAuth callback URL for production domain in Google Cloud Console
+- [x] Test Google OAuth login end-to-end on production
+- [x] Test email/password signup + verification email flow
+- [x] Test password reset flow
+- [x] Verify all env vars are in Vercel project settings (not just .env)
+- [x] Verify `SITE_URL` + `CRON_SECRET` in GitHub Secrets (needed for cron workflows)
 
 ### 3. Legal
-- [ ] Fill in Mentions Légales: capital social, adresse, RCS, SIRET, nom du directeur (currently `[À compléter]`)
-- [ ] Verify Politique de Confidentialité email addresses match actual domain
+- [x] Fill in Mentions Légales: directeur de publication (Xavier Manzanares), personal project format (no company yet)
+- [x] Verify Politique de Confidentialité email addresses match actual domain (all use contact@totemavise.com)
 - [x] Ensure cookie consent banner works (check /cookies page)
 
 ### 4. SEO (Technical)
 - [x] Add robots.ts (allow all, block /admin, /api)
 - [x] Add sitemap.ts (dynamic from DB media items)
-- [ ] Add `metadataBase` to layout.tsx for absolute OG URLs — **not yet added**
+- [x] Add `metadataBase` to layout.tsx for absolute OG URLs + twitter card config
 - [ ] Verify OG metadata on homepage (test with https://cards-dev.twitter.com/validator)
 - [ ] Submit sitemap to Google Search Console
 - [ ] Submit site to Bing Webmaster Tools

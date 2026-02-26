@@ -17,14 +17,9 @@ export async function isCronOrAdminAuthorized(req: NextRequest): Promise<boolean
     return true
   }
 
-  // Fall back to session auth
+  // Fall back to session auth — require ADMIN role
   const session = await auth()
-  if (session?.user?.id) {
-    return true
-  }
-
-  // Allow in development
-  if (process.env.NODE_ENV === "development") {
+  if (session?.user?.role === "ADMIN") {
     return true
   }
 

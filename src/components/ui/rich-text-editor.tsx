@@ -191,12 +191,25 @@ export function RichTextEditor({
   )
 }
 
+// Escape HTML entities to prevent XSS
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
 // Helper to render formatted text (for display)
 export function renderFormattedText(text: string): string {
   if (!text) return ""
 
+  // Escape HTML first to prevent XSS
+  let formatted = escapeHtml(text)
+
   // Convert **text** to <strong>text</strong>
-  let formatted = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 
   // Convert *text* to <em>text</em> (but not inside **)
   formatted = formatted.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')

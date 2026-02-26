@@ -32,33 +32,21 @@ export default function MentionsLegalesPage() {
             </p>
             <div className="bg-gray-50 p-4 rounded-lg mt-4">
               <p className="mb-2">
-                <strong>Raison sociale :</strong> Totem Avisé SAS
+                <strong>Éditeur :</strong> Xavier Manzanares (personne physique)
               </p>
               <p className="mb-2">
-                <strong>Forme juridique :</strong> Société par Actions Simplifiée (SAS)
-              </p>
-              <p className="mb-2">
-                <strong>Capital social :</strong> [À compléter] euros
-              </p>
-              <p className="mb-2">
-                <strong>Siège social :</strong> [Adresse à compléter], France
-              </p>
-              <p className="mb-2">
-                <strong>RCS :</strong> [Ville] [Numéro à compléter]
-              </p>
-              <p className="mb-2">
-                <strong>SIRET :</strong> [Numéro à compléter]
-              </p>
-              <p className="mb-2">
-                <strong>Numéro de TVA intracommunautaire :</strong> FR [Numéro à compléter]
+                <strong>Email :</strong>{" "}
+                <a
+                  href="mailto:contact@totemavise.com"
+                  className="text-primary hover:underline"
+                >
+                  contact@totemavise.com
+                </a>
               </p>
             </div>
             <div className="mt-4">
               <p className="mb-2">
-                <strong>Directeur de la publication :</strong> [Nom et prénom du responsable]
-              </p>
-              <p className="text-sm text-gray-500">
-                En sa qualité de représentant légal de la société.
+                <strong>Directeur de la publication :</strong> Xavier Manzanares
               </p>
             </div>
           </CardContent>
@@ -294,8 +282,7 @@ export default function MentionsLegalesPage() {
               </p>
               <p className="mb-2">
                 <strong>Par courrier :</strong><br />
-                Totem Avisé<br />
-                [Adresse à compléter]<br />
+                Totem Avisé — Xavier Manzanares<br />
                 France
               </p>
             </div>

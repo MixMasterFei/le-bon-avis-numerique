@@ -8,14 +8,15 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set("X-XSS-Protection", "1; mode=block")
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
   return response
 }
 
 // Routes that require authentication
 const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris", "/chez-vous"]
 
-// Routes that require admin role
-const adminRoutes = ["/admin"]
+// Routes that require admin role (both UI and API)
+const adminRoutes = ["/admin", "/api/admin"]
 
 // API routes with their rate limit types
 const rateLimitedRoutes: Record<string, string> = {
@@ -79,15 +80,26 @@ export async function middleware(request: NextRequest) {
 
   // Check admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
+    // Allow cron/automation requests with valid CRON_SECRET
+    const authHeader = request.headers.get("authorization")
+    const isCronAuth = process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`
+
     // Development-only bypass - NEVER works in production
     const isDev = process.env.NODE_ENV === "development"
     const bypassAuth = isDev && process.env.ADMIN_BYPASS_AUTH === "true"
 
-    if (!bypassAuth) {
+    if (!isCronAuth && !bypassAuth) {
       const { auth } = await import("@/lib/auth")
       const session = await auth()
 
       if (!session?.user) {
+        // API routes get JSON response, UI routes get redirected
+        if (pathname.startsWith("/api/")) {
+          return applySecurityHeaders(new NextResponse(
+            JSON.stringify({ error: "Authentification requise" }),
+            { status: 401, headers: { "Content-Type": "application/json" } }
+          ))
+        }
         const url = new URL("/connexion", request.url)
         url.searchParams.set("callbackUrl", pathname)
         return NextResponse.redirect(url)

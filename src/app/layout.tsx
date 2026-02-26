@@ -34,15 +34,20 @@ const edunline = localFont({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://totemavise.com"),
   title: "Totem Avisé - Avis et recommandations médias pour les familles",
-  description: "Trouvez les meilleurs films, séries, jeux et livres pour vos enfants grâce à nos critiques indépendantes et recommandations par âge. Le guide média de confiance pour les familles françaises.",
-  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "livres jeunesse", "CSA", "PEGI", "contrôle parental"],
+  description: "Trouvez les meilleurs films, séries et jeux pour vos enfants grâce à nos critiques indépendantes et recommandations par âge. Le guide média de confiance pour les familles françaises.",
+  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "CSA", "PEGI", "contrôle parental"],
   authors: [{ name: "Totem Avisé" }],
   openGraph: {
     title: "Totem Avisé",
     description: "Le guide média de confiance pour les familles françaises",
     locale: "fr_FR",
     type: "website",
+    siteName: "Totem Avisé",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 }
 
