@@ -125,7 +125,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // If the url is on the same origin, allow it
       if (new URL(url).origin === baseUrl) return url
       // Default post-login destination
-      return `${baseUrl}/chez-vous`
+      return `${baseUrl}/profil`
     },
     async jwt({ token, user, trigger }) {
       if (user) {

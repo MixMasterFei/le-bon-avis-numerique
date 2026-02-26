@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card"
 function ConnexionForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/chez-vous"
+  const callbackUrl = searchParams.get("callbackUrl") || "/profil"
   const error = searchParams.get("error")
 
   const [email, setEmail] = useState("")

@@ -117,7 +117,7 @@ export default function InscriptionPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
-    await signIn("google", { callbackUrl: "/chez-vous" })
+    await signIn("google", { callbackUrl: "/profil" })
   }
 
   // Show success screen after registration

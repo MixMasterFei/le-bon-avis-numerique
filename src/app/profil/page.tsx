@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react"
 import { redirect, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, AlertTriangle, Camera, Eye, EyeOff } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { FamilyMembers } from "@/components/profile/FamilyMembers"
+import { FamilyRecommendationsSection } from "@/components/chez-vous/FamilyRecommendationsSection"
+import { FamilyMovieNightSection } from "@/components/chez-vous/FamilyMovieNightSection"
+import { UserListsPreview } from "@/components/chez-vous/UserListsPreview"
 import { useSettings } from "@/contexts/SettingsContext"
 import Link from "next/link"
 
@@ -340,42 +343,21 @@ export default function ProfilPage() {
         </Card>
       </div>
 
+      {/* Family Recommendations */}
+      <FamilyRecommendationsSection />
+
       {/* Family Members */}
       <FamilyMembers />
 
-      {/* Quick Links */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Mes listes</CardTitle>
-          <CardDescription>Accédez à vos contenus sauvegardés</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link href="/mes-favoris">
-              <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-                <div className="p-3 bg-red-100 rounded-full">
-                  <Heart className="h-6 w-6 text-red-600" />
-                </div>
-                <div>
-                  <p className="font-medium">Mes favoris</p>
-                  <p className="text-sm text-gray-500">{stats?.favorites || 0} contenus</p>
-                </div>
-              </div>
-            </Link>
-            <Link href="/ma-liste">
-              <div className="flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 transition-colors">
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Bookmark className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium">Ma liste à voir</p>
-                  <p className="text-sm text-gray-500">{stats?.watchlist || 0} contenus</p>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Family Movie Night */}
+      <div className="mt-8">
+        <FamilyMovieNightSection />
+      </div>
+
+      {/* Lists Preview */}
+      <div className="mt-8">
+        <UserListsPreview />
+      </div>
 
       {/* Settings */}
       <Card className="mt-8">

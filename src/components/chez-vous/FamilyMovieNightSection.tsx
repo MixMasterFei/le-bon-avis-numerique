@@ -145,7 +145,7 @@ export function FamilyMovieNightSection() {
             Ajoutez au moins 2 membres à votre famille pour utiliser cette fonctionnalité.
           </p>
           <Button asChild variant="outline" className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50">
-            <Link href="/profil/famille">
+            <Link href="/profil">
               Gérer ma famille
             </Link>
           </Button>

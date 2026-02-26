@@ -22,7 +22,7 @@ const discover = [
   { name: "Collections thématiques", href: "/collections" },
   { name: "Recommandations", href: "/recommandations" },
   { name: "Guides parents", href: "/guides" },
-  { name: "En ce moment chez vous", href: "/chez-vous" },
+  { name: "Mon espace", href: "/profil" },
 ]
 
 const about = [

@@ -119,7 +119,7 @@ export function FamilyRecommendationsSection() {
             Ajoutez les membres de votre famille pour obtenir des recommandations personnalisées.
           </p>
           <Button asChild className="rounded-full">
-            <Link href="/profil/famille">
+            <Link href="/profil">
               <Plus className="h-4 w-4 mr-2" />
               Ajouter ma famille
             </Link>
