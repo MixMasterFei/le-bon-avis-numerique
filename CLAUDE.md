@@ -101,6 +101,20 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Settings context | `src/contexts/SettingsContext.tsx` |
 | Media card | `src/components/media/MediaCard.tsx` |
 | Media detail page | `src/app/media/[id]/page.tsx` |
+| Family fit API (scoring) | `src/app/api/media/[id]/family-fit/route.ts` |
+| Family fit card (UI) | `src/components/media/FamilyFitCard.tsx` |
+| Member corner page | `src/app/profil/membres/[memberId]/page.tsx` |
+| Member corner component | `src/components/profile/MemberCorner.tsx` |
+| Preference quiz page | `src/app/profil/quiz/[memberId]/page.tsx` |
+| Preference quiz component | `src/components/profile/PreferenceQuiz.tsx` |
+| Completion meter | `src/components/profile/CompletionMeter.tsx` |
+| Media search add | `src/components/profile/MediaSearchAdd.tsx` |
+| Interests editor | `src/components/profile/InterestsEditor.tsx` |
+| Family member API | `src/app/api/user/family/[id]/route.ts` |
+| Member preferences API | `src/app/api/user/family/[id]/preferences/route.ts` |
+| Reaction API | `src/app/api/user/reaction/route.ts` |
+| Media route helper | `src/lib/media-route.ts` |
+| SQL migrations | `sql/*.sql` |
 | SEO robots | `src/app/robots.ts` |
 | SEO sitemap (dynamic) | `src/app/sitemap.ts` |
 | Marketing playbook | `docs/marketing/claude_mkt.md` |
@@ -180,6 +194,46 @@ When creating new homepage sections with "Voir tout", always ensure the target p
 - **`tmdbRating` / `tmdbVoteCount`** — TMDB audience ratings stored internally. Used for quality sorting and featured selection. Never displayed to users (not the site's purpose).
 - **Featured criteria:** `tmdbRating >= 6.5`, `tmdbVoteCount >= 200`, has poster, has age rating, French/English language, `dataQualityScore >= 50`
 - **Tag thresholds:** Educatif requires `positiveMessages >= 5`, Modeles+ requires `roleModels >= 5` (raised from 4 to avoid false positives)
+
+---
+
+## Family Profiles & Personalization System
+
+Each user can have up to 10 **FamilyMember** profiles. Members accumulate data through multiple channels that feed into the recommendation engine.
+
+### Data Model (`FamilyMember`)
+- **Identity:** name, birthYear, avatarEmoji, interests[]
+- **Genre prefs:** favoriteGenres[], dislikedGenres[]
+- **Sensitivity (0-3):** violence, scary, sexual, language, substances
+- **Positive content prefs (0-3):** positiveMessages, roleModels, educational
+- **Avoid:** avoidTopics[]
+- **Flag:** useCustomSettings (true = member-specific, false = inherit family defaults)
+
+### Data Entry Points
+1. **Preference Quiz** (`/profil/quiz/[memberId]`) — 7-step interactive wizard covering genres, sensitivity, positive content, and topics to avoid. Saves via `PUT /api/user/family/[id]/preferences`.
+2. **Member Corner** (`/profil/membres/[memberId]`) — Tabbed page (Overview / Favorites / Preferences) where parents can edit identity, add interests, search & add media as LOVED reactions, and view reaction history.
+3. **Preferences Modal** — Quick access from profile page (3-tab modal: Sensitivity, Genres, Topics).
+4. **Reactions** — On every media detail page, parents record per-member reactions (LOVED, LIKED, OK, SCARED, BORED, TOO_YOUNG, TOO_OLD) via `FamilyReactions` component.
+
+### Family Fit Scoring (`/api/media/[id]/family-fit`)
+Computes a 0-100 fit score per family member for any media item:
+```
+finalScore = (ageScore × 0.40) + (sensitivityScore × 0.35) + (genreScore × 0.10) + (avoidScore × 0.05) + (affinityScore × 0.10)
+```
+- **Age:** compares expertAgeRec vs member's age
+- **Sensitivity:** compares media content metrics vs member tolerance
+- **Genre:** overlap between media genres and member favorites
+- **Avoid:** checks media topics against avoidTopics
+- **Affinity:** uses `MediaReaction` + `MediaSimilarity` table to find personal connections (e.g., "loved Paw Patrol TV → will love the movie")
+
+### Profile Completion Meter
+Displayed on the Member Corner overview tab. Tracks 8 criteria totaling 100%: birth year (10%), custom avatar (5%), quiz completed (25%), sensitivity customized (15%), avoid topics (5%), 3+ reactions (15%), 5+ reactions (10%), interests (15%).
+
+### Key Patterns
+- Adding a media favorite = creating a LOVED reaction (reuses existing `POST /api/user/reaction`)
+- Removing a favorite = deleting the reaction (`DELETE /api/user/reaction`)
+- Interests are stored as `String[]` on FamilyMember (max 20, saved via `PATCH /api/user/family/[id]`)
+- Quiz completion is detected by `useCustomSettings === true && favoriteGenres.length > 0`
 
 ---
 

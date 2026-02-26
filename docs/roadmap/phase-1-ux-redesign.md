@@ -132,9 +132,11 @@
 - [x] Login redirects preserve context via `callbackUrl` parameter (MediaActions, FamilyReactions, ReviewCard)
 - [x] Fixed typo "Ma Liste a Voir" → "Ma Liste à Voir"
 - [x] Deleted unused `UserInteractionBar.tsx`
+- [x] **Family personalization system** — Member Corner (`/profil/membres/[id]`), Preference Quiz (`/profil/quiz/[id]`), watch history affinity scoring, profile completion meter, interests editor, media search favorites
+- [x] **Family fit scoring** — Weighted formula (age 40%, sensitivity 35%, genre 10%, avoid 5%, affinity 10%) with personal connection insights from MediaSimilarity
+- [x] **Sort & filter fixes** — Simplified sort (release date default), excluded future-dated media from all APIs
 - [ ] New user onboarding flow (prompt to set up family, select platforms)
 - [ ] Profile page redesign (use `<Image>` instead of raw `<img>`, add link to family settings)
-- [ ] Family management UX
 - [ ] Propagate user image through JWT (emoji avatars don't show in header)
 
 ### Visual Identity

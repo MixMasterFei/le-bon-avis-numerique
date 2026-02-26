@@ -34,7 +34,16 @@ Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized
 
 ## Recent Completed Work (Feb 2026)
 
-### Feb 21 (latest) — Media Detail Page UX Overhaul
+### Feb 26 (latest) — Family Personalization & Smart Recommendations
+- **Member Corner** (`/profil/membres/[memberId]`): Dedicated per-member page with tabbed layout (Overview / Favorites / Preferences), profile completion meter, interests editor, media search to add favorites
+- **Preference Quiz** (`/profil/quiz/[memberId]`): 7-step interactive wizard for genres, sensitivity, positive content, topics to avoid
+- **Watch History Affinity**: Family-fit API uses MediaReaction + MediaSimilarity for personalized connection insights
+- **FamilyFitCard**: Shows affinity insights + quiz prompts for members without preferences
+- **Schema**: Added `interests String[]` to FamilyMember (SQL migration: `sql/add_interests_column.sql`)
+- **Sort fix**: Removed confusing "Récents" sort, default to release date, exclude future-dated media from all APIs
+- **Profile Completion Meter**: 8 criteria totaling 100% — encourages richer member profiles
+
+### Feb 21 — Media Detail Page UX Overhaul
 - Consolidated duplicate action buttons (favorite/watchlist/review) into single `MediaPageClient`
 - Hidden "0.0/5" empty rating — shows "Aucun avis pour le moment" CTA instead
 - Login redirects now preserve context via `callbackUrl` parameter
