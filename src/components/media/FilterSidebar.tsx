@@ -109,7 +109,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
   const topics = mediaType === "GAME" ? gameTopics : movieTopics
   const [minAge, setMinAge] = useState(initialFilters?.minAge ?? DEFAULT_MIN_AGE)
   const [maxAge, setMaxAge] = useState(initialFilters?.maxAge ?? DEFAULT_MAX_AGE)
-  const [sortBy, setSortBy] = useState(initialFilters?.sortBy ?? "createdAt")
+  const [sortBy, setSortBy] = useState(initialFilters?.sortBy ?? "releaseDate")
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(initialFilters?.platforms ?? [])
   const [selectedTopics, setSelectedTopics] = useState<string[]>(initialFilters?.topics ?? [])
   const [searchQuery, setSearchQuery] = useState(initialFilters?.searchQuery ?? "")
@@ -320,7 +320,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
   const clearFilters = () => {
     setMinAge(DEFAULT_MIN_AGE)
     setMaxAge(DEFAULT_MAX_AGE)
-    setSortBy("createdAt")
+    setSortBy("releaseDate")
     setSelectedPlatforms([])
     setSelectedTopics([])
     setSearchQuery("")
@@ -329,7 +329,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     onFiltersChange?.({
       minAge: DEFAULT_MIN_AGE,
       maxAge: DEFAULT_MAX_AGE,
-      sortBy: "createdAt",
+      sortBy: "releaseDate",
       platforms: [],
       topics: [],
       searchQuery: "",
@@ -338,7 +338,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     })
   }
 
-  const hasFilters = minAge !== DEFAULT_MIN_AGE || maxAge !== DEFAULT_MAX_AGE || sortBy !== "createdAt" || selectedPlatforms.length > 0 || selectedTopics.length > 0 || searchQuery.length > 0 || useFamilyFilter
+  const hasFilters = minAge !== DEFAULT_MIN_AGE || maxAge !== DEFAULT_MAX_AGE || sortBy !== "releaseDate" || selectedPlatforms.length > 0 || selectedTopics.length > 0 || searchQuery.length > 0 || useFamilyFilter
 
   return (
     <aside className={cn("space-y-6", className)}>
@@ -426,8 +426,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
         </h3>
         <div className="flex flex-wrap gap-1.5">
           {[
-            { value: "createdAt", label: "Récents" },
-            { value: "releaseDate", label: "Date de sortie" },
+            { value: "releaseDate", label: "Récents" },
             { value: "title", label: "Titre A-Z" },
           ].map((option) => (
             <button

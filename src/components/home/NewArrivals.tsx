@@ -59,9 +59,8 @@ export function NewArrivals() {
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch the most recently added movies to the database
-        // These are the newest additions, sorted by createdAt
-        const res = await fetch("/api/db/movies?limit=7&requirePoster=true&minQuality=50&sortBy=createdAt&language=fr,en")
+        // Fetch the most recently released movies
+        const res = await fetch("/api/db/movies?limit=7&requirePoster=true&minQuality=50&language=fr,en")
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
@@ -109,7 +108,7 @@ export function NewArrivals() {
           </div>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">
-          <Link href="/films?sort=newest">
+          <Link href="/films">
             Voir tout <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

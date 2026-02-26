@@ -317,6 +317,9 @@ model FamilyMember {
   // Topics/themes to avoid (explicit list)
   avoidTopics String[] @default([]) @map("avoid_topics")
 
+  // Personal interests (dinosaurs, space, princesses, etc.)
+  interests String[] @default([]) @map("interests")
+
   // Use custom settings or inherit from account defaults
   useCustomSettings Boolean @default(false) @map("use_custom_settings")
 

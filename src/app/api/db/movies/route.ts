@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("q")
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
-  const sortBy = searchParams.get("sortBy") || "createdAt" // createdAt, releaseDate, title
+  const sortBy = searchParams.get("sortBy") || "releaseDate" // releaseDate, title, quality
   const featured = searchParams.get("featured") === "true" // Featured/popular movies
   const language = searchParams.get("language") // Filter by original language
   const frenchOnly = searchParams.get("frenchOnly") === "true"
@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
       const eightWeeksAgo = new Date()
       eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56)
       where.releaseDate = { gte: eightWeeksAgo, lte: new Date() }
+    } else {
+      // Exclude future movies (not yet released)
+      where.releaseDate = { lte: new Date() }
     }
 
     // Require poster for homepage/featured sections
@@ -166,10 +169,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine sort order
-    let orderBy: any = { createdAt: "desc" }
-    if (sortBy === "releaseDate") {
-      orderBy = { releaseDate: "desc" }
-    } else if (sortBy === "title") {
+    let orderBy: any = { releaseDate: "desc" }
+    if (sortBy === "title") {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {
       // Sort by TMDB audience rating (actual movie quality), then data completeness as tiebreaker
@@ -258,6 +259,7 @@ export async function GET(request: NextRequest) {
         prisma.mediaItem.findMany({
           where: {
             type: "MOVIE",
+            releaseDate: { lte: new Date() },
             ...(requirePoster
               ? {
                   posterUrl: {
@@ -267,7 +269,7 @@ export async function GET(request: NextRequest) {
                 }
               : {}),
           },
-          orderBy: { createdAt: "desc" },
+          orderBy: { releaseDate: "desc" },
           skip,
           take: limit,
         })

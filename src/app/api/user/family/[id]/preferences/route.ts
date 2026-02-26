@@ -36,6 +36,7 @@ export async function GET(
         preferRoleModels: true,
         preferEducational: true,
         avoidTopics: true,
+        interests: true,
         useCustomSettings: true,
       },
     })

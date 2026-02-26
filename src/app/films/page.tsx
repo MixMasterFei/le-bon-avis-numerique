@@ -13,9 +13,8 @@ const FEATURED_COUNT = 7
 
 export default function FilmsPage() {
   const searchParams = useSearchParams()
-  const sortParam = searchParams.get("sort") // "newest" or "cinema"
+  const sortParam = searchParams.get("sort") // "cinema"
   const maxAgeParam = searchParams.get("maxAge")
-  const sortBy = sortParam === "newest" ? "createdAt" : sortParam === "cinema" ? "releaseDate" : undefined
   const isNowPlaying = sortParam === "cinema"
 
   // Initialize maxAge from URL param if present, otherwise use default
@@ -104,10 +103,9 @@ export default function FilmsPage() {
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
         }
-        // Filter sortBy takes priority over URL param sortBy
-        const effectiveSortBy = filters.sortBy && filters.sortBy !== "createdAt" ? filters.sortBy : sortBy
-        if (effectiveSortBy) {
-          dbParams.set("sortBy", effectiveSortBy)
+        // Pass sortBy if user selected a non-default sort
+        if (filters.sortBy && filters.sortBy !== "releaseDate") {
+          dbParams.set("sortBy", filters.sortBy)
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
@@ -166,7 +164,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, sortBy, isNowPlaying])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, isNowPlaying])
 
   // Fetch featured movies (high quality, sorted by quality score)
   useEffect(() => {
@@ -310,7 +308,7 @@ export default function FilmsPage() {
 
         <div className="flex-1">
           {/* Featured Section - Top quality movies (hidden when sorting, filtering, or fewer than 3 results) */}
-          {currentPage === 1 && !sortBy && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && !featuredLoading && featuredMovies.length >= 3 && (
+          {currentPage === 1 && !isNowPlaying && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && !featuredLoading && featuredMovies.length >= 3 && (
             <div className="mb-10">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
@@ -334,7 +332,7 @@ export default function FilmsPage() {
                 <Clock className="h-4 w-4" />
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : sortBy ? "Derniers ajouts" : maxAgeParam ? `Films pour les ${parseInt(maxAgeParam) <= 7 ? "enfants" : `${maxAgeParam} ans et moins`}` : "Tous les films"}
+                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : maxAgeParam ? `Films pour les ${parseInt(maxAgeParam) <= 7 ? "enfants" : `${maxAgeParam} ans et moins`}` : "Tous les films"}
               </h2>
             </div>
             <p className="text-sm text-gray-500">

@@ -21,6 +21,8 @@ import {
   Film,
   Settings,
   Sliders,
+  Sparkles,
+  User,
 } from "lucide-react"
 import { MemberPreferencesModal } from "./MemberPreferencesModal"
 import { Button } from "@/components/ui/button"
@@ -312,7 +314,7 @@ export function FamilyMembers() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">{member.name}</h4>
+                      <Link href={`/profil/membres/${member.id}`} className="font-medium text-gray-900 hover:text-violet-700 transition-colors">{member.name}</Link>
                       {member.birthYear && (
                         <Badge variant="outline" className="text-xs">
                           {currentYear - member.birthYear} ans
@@ -365,6 +367,28 @@ export function FamilyMembers() {
 
                   {/* Actions */}
                   <div className="flex gap-1">
+                    <Link href={`/profil/membres/${member.id}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                        title={`Coin de ${member.name}`}
+                      >
+                        <User className="h-4 w-4" />
+                        <span className="text-xs hidden sm:inline">Coin</span>
+                      </Button>
+                    </Link>
+                    <Link href={`/profil/quiz/${member.id}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                        title="Quiz de préférences"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-xs hidden sm:inline">Quiz</span>
+                      </Button>
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"

@@ -2,13 +2,20 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon } from "lucide-react"
+import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+interface AffinityInfo {
+  hasConnection: boolean
+  connectedMedia?: { title: string; reaction: string }
+  affinityReason?: string
+  genreAffinityScore?: number
+}
 
 interface FamilyFitMember {
   id: string
@@ -18,6 +25,8 @@ interface FamilyFitMember {
   score: number
   level: "excellent" | "good" | "moderate" | "poor"
   reason: string
+  hasPreferences?: boolean
+  affinity?: AffinityInfo
 }
 
 type FamilyFitResponse =
@@ -227,6 +236,25 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
 
               {/* Reason */}
               <p className="text-xs text-gray-500 pl-8">{member.reason}</p>
+
+              {/* Affinity insight */}
+              {member.affinity?.affinityReason && (
+                <p className="text-xs text-indigo-600 pl-8 flex items-center gap-1">
+                  <Lightbulb className="h-3 w-3 flex-shrink-0" />
+                  {member.affinity.affinityReason}
+                </p>
+              )}
+
+              {/* Quiz prompt for members without preferences */}
+              {member.hasPreferences === false && (
+                <Link
+                  href={`/profil/quiz/${member.id}`}
+                  className="text-xs text-indigo-500 pl-8 flex items-center gap-1 hover:text-indigo-700 transition-colors"
+                >
+                  <Sparkles className="h-3 w-3 flex-shrink-0" />
+                  Faire le quiz pour des recommandations personnalisées
+                </Link>
+              )}
             </div>
           )
         })}

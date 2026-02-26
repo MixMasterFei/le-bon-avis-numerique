@@ -104,7 +104,7 @@ function FilmsRechercheContent() {
         if (initialMinQuality) {
           dbParams.set("minQuality", initialMinQuality.toString())
         }
-        if (filters.sortBy && filters.sortBy !== "createdAt") {
+        if (filters.sortBy && filters.sortBy !== "releaseDate") {
           dbParams.set("sortBy", filters.sortBy)
         } else if (initialSortBy) {
           dbParams.set("sortBy", initialSortBy)

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const genre = searchParams.get("genre")
   const search = searchParams.get("q")
-  const sortBy = searchParams.get("sortBy") || "createdAt" // createdAt, releaseDate, quality, title
+  const sortBy = searchParams.get("sortBy") || "releaseDate" // releaseDate, quality, title
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
   const featured = searchParams.get("featured") === "true" // Get featured/popular series
@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
   try {
     const where: Prisma.MediaItemWhereInput = {
       type: "TV",
+      // Exclude future content (not yet released)
+      releaseDate: { lte: new Date() },
     }
 
     // Require poster for featured sections
@@ -94,10 +96,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine sort order
-    let orderBy: any = { createdAt: "desc" }
-    if (sortBy === "releaseDate") {
-      orderBy = { releaseDate: "desc" }
-    } else if (sortBy === "title") {
+    let orderBy: any = { releaseDate: "desc" }
+    if (sortBy === "title") {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {
       orderBy = { dataQualityScore: "desc" }

@@ -56,7 +56,7 @@ export default function JeuxPage() {
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
         }
-        if (filters.sortBy && filters.sortBy !== "createdAt") {
+        if (filters.sortBy && filters.sortBy !== "releaseDate") {
           dbParams.set("sortBy", filters.sortBy)
         }
 
