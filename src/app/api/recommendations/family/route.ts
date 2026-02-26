@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Au moins 2 membres requis pour les recommandations familiales" }, { status: 400 })
     }
 
-    // Fetch all selected family members with their reactions
+    // Fetch all selected family members with their reactions and preferences
     const familyMembers = await prisma.familyMember.findMany({
       where: {
         id: { in: memberIds },
@@ -69,11 +69,27 @@ export async function GET(request: NextRequest) {
     }
 
     // Collect genre preferences per member (from reactions AND explicit preferences)
+    // Use only top 5 genres per member to avoid dilution
     const memberPreferences: Record<string, {
-      genres: Record<string, number>
+      topGenres: string[]  // Top 5 weighted genres only
+      allGenres: Record<string, number>
       dislikedGenres: string[]
+      avoidTopics: string[]
       mediaIds: Set<string>
       hasPreferences: boolean
+      age: number | null
+      sensitivity: {
+        violence: number
+        scary: number
+        sexual: number
+        language: number
+        substances: number
+      }
+      positivePrefs: {
+        positiveMessages: number
+        roleModels: number
+        educational: number
+      }
     }> = {}
 
     for (const member of familyMembers) {
@@ -81,67 +97,80 @@ export async function GET(request: NextRequest) {
       const mediaIds = new Set<string>()
 
       // Add explicit favorite genres with high weight
-      const favoriteGenres = (member as any).favoriteGenres || []
+      const favoriteGenres = member.favoriteGenres || []
       for (const genre of favoriteGenres) {
-        genres[genre] = (genres[genre] || 0) + 3 // High weight for explicit preferences
+        genres[genre] = (genres[genre] || 0) + 3
       }
 
       // Add genres from reactions
       for (const reaction of member.reactions) {
         mediaIds.add(reaction.media.id)
         const weight = reaction.reaction === "LOVED" ? 2 : 1
-
         for (const genre of reaction.media.genres) {
           genres[genre] = (genres[genre] || 0) + weight
         }
-        // Also consider topics
         for (const topic of reaction.media.topics) {
           genres[topic] = (genres[topic] || 0) + weight
         }
       }
 
-      const dislikedGenres = (member as any).dislikedGenres || []
+      // Extract top 5 genres by weight
+      const topGenres = Object.entries(genres)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([genre]) => genre)
+
+      const memberAge = member.birthYear ? currentYear - member.birthYear : null
 
       memberPreferences[member.id] = {
-        genres,
-        dislikedGenres,
+        topGenres,
+        allGenres: genres,
+        dislikedGenres: member.dislikedGenres || [],
+        avoidTopics: member.avoidTopics || [],
         mediaIds,
         hasPreferences: member.reactions.length > 0 || favoriteGenres.length > 0,
+        age: memberAge,
+        sensitivity: {
+          violence: member.sensitivityViolence,
+          scary: member.sensitivityScary,
+          sexual: member.sensitivitySexual,
+          language: member.sensitivityLanguage,
+          substances: member.sensitivitySubstances,
+        },
+        positivePrefs: {
+          positiveMessages: member.preferPositiveMessages,
+          roleModels: member.preferRoleModels,
+          educational: member.preferEducational,
+        },
       }
     }
 
-    // Find common genres (intersection weighted by how many members like them)
+    // Find common genres across members, weighted by how many members share them
     const combinedGenres: Record<string, { score: number; memberCount: number }> = {}
 
-    for (const [memberId, prefs] of Object.entries(memberPreferences)) {
-      for (const [genre, score] of Object.entries(prefs.genres)) {
+    for (const prefs of Object.values(memberPreferences)) {
+      for (const genre of prefs.topGenres) {
         if (!combinedGenres[genre]) {
           combinedGenres[genre] = { score: 0, memberCount: 0 }
         }
-        combinedGenres[genre].score += score
+        combinedGenres[genre].score += prefs.allGenres[genre] || 1
         combinedGenres[genre].memberCount += 1
       }
     }
 
-    // Prioritize genres that multiple members enjoy
+    // Prioritize genres shared by most members, then by score
     const sortedGenres = Object.entries(combinedGenres)
       .sort((a, b) => {
-        // First by member count (more members = better)
-        if (b[1].memberCount !== a[1].memberCount) {
-          return b[1].memberCount - a[1].memberCount
-        }
-        // Then by total score
+        if (b[1].memberCount !== a[1].memberCount) return b[1].memberCount - a[1].memberCount
         return b[1].score - a[1].score
       })
       .slice(0, 6)
       .map(([genre]) => genre)
 
-    // Collect all media IDs that any member has already seen
+    // Collect all media IDs already seen
     const allSeenMediaIds = new Set<string>()
     for (const prefs of Object.values(memberPreferences)) {
-      for (const id of prefs.mediaIds) {
-        allSeenMediaIds.add(id)
-      }
+      for (const id of prefs.mediaIds) allSeenMediaIds.add(id)
     }
 
     // Build age filter
@@ -155,54 +184,52 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Find recommendations
+    // Build query — if no shared genres, fall back to age-appropriate well-rated media
+    const hasGenres = sortedGenres.length > 0
     const recommendations = await prisma.mediaItem.findMany({
       where: {
         id: { notIn: Array.from(allSeenMediaIds) },
-        type: { in: ["MOVIE", "TV"] }, // Focus on movies/TV for family movie night
-        OR: [
-          { genres: { hasSome: sortedGenres } },
-          { topics: { hasSome: sortedGenres } },
-        ],
+        type: { in: ["MOVIE", "TV"] },
+        ...(hasGenres ? {
+          OR: [
+            { genres: { hasSome: sortedGenres } },
+            { topics: { hasSome: sortedGenres } },
+          ],
+        } : {}),
+        // Require poster for display
+        posterUrl: { not: null, startsWith: "http" },
         ...ageFilter,
       },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        posterUrl: true,
-        genres: true,
-        topics: true,
-        expertAgeRec: true,
-        releaseDate: true,
-        synopsisFr: true,
+      include: {
+        contentMetrics: true,
       },
-      orderBy: [
-        { expertAgeRec: "asc" },
-        { releaseDate: "desc" },
-      ],
-      take: 20,
+      orderBy: hasGenres
+        ? [{ tmdbRating: { sort: "desc", nulls: "last" } }, { releaseDate: "desc" }]
+        : [{ tmdbRating: { sort: "desc", nulls: "last" } }],
+      take: 40, // Fetch more to allow scoring & filtering
     })
 
-    // Collect all disliked genres to filter out
+    // Collect all disliked genres and avoided topics
     const allDislikedGenres = new Set<string>()
+    const allAvoidTopics = new Set<string>()
     for (const prefs of Object.values(memberPreferences)) {
-      for (const genre of prefs.dislikedGenres) {
-        allDislikedGenres.add(genre)
-      }
+      for (const genre of prefs.dislikedGenres) allDislikedGenres.add(genre)
+      for (const topic of prefs.avoidTopics) allAvoidTopics.add(topic)
     }
 
-    // Score each recommendation and calculate match percentage per member
+    // Score each recommendation with a multi-factor approach:
+    // - 50% genre match (top genres only, not all)
+    // - 30% content sensitivity compatibility
+    // - 20% age appropriateness bonus
     const scoredRecommendations = recommendations
       .filter((media) => {
-        // Exclude media with disliked genres
         const allGenresAndTopics = [...media.genres, ...media.topics]
-        return !allGenresAndTopics.some(g => allDislikedGenres.has(g))
+        return !allGenresAndTopics.some(g => allDislikedGenres.has(g) || allAvoidTopics.has(g))
       })
       .map((media) => {
         const allGenresAndTopics = [...media.genres, ...media.topics]
+        const metrics = media.contentMetrics
 
-        // Calculate per-member match
         const memberMatches: Record<string, {
           name: string
           avatarEmoji: string
@@ -217,55 +244,99 @@ export async function GET(request: NextRequest) {
           const prefs = memberPreferences[member.id]
 
           if (!prefs.hasPreferences) {
-            // Member has no preferences, neutral match
             memberMatches[member.id] = {
               name: member.name,
               avatarEmoji: member.avatarEmoji,
               matchScore: 0,
-              matchPercentage: 50, // Neutral
+              matchPercentage: 50,
             }
             continue
           }
 
           membersWithPreferences++
-          let memberScore = 0
-          let maxPossibleScore = 0
 
-          for (const [genre, weight] of Object.entries(prefs.genres)) {
-            maxPossibleScore += weight
-            if (allGenresAndTopics.includes(genre)) {
-              memberScore += weight
+          // --- Genre match (50% of score) ---
+          const topGenreCount = Math.min(3, prefs.topGenres.length) || 1
+          const matchingGenres = prefs.topGenres.filter(g => allGenresAndTopics.includes(g)).length
+          const genreScore = Math.min(1, matchingGenres / topGenreCount) // 0-1
+
+          // --- Content sensitivity compatibility (30% of score) ---
+          let sensitivityScore = 1.0 // Start at perfect, deduct for issues
+          if (metrics) {
+            const checks = [
+              { level: metrics.violence, tolerance: prefs.sensitivity.violence },
+              { level: metrics.sexNudity, tolerance: prefs.sensitivity.sexual },
+              { level: metrics.language, tolerance: prefs.sensitivity.language },
+              { level: metrics.substanceUse, tolerance: prefs.sensitivity.substances },
+            ]
+            for (const check of checks) {
+              if (check.tolerance === 0) continue // Don't care
+              // Content level exceeds tolerance threshold: penalize proportionally
+              const threshold = check.tolerance === 3 ? 1 : check.tolerance === 2 ? 2 : 3
+              if (check.level > threshold) {
+                sensitivityScore -= 0.25 * (check.level - threshold)
+              }
             }
+            // Bonus for positive content matching preferences
+            if (prefs.positivePrefs.positiveMessages >= 2 && metrics.positiveMessages >= 4) {
+              sensitivityScore += 0.1
+            }
+            if (prefs.positivePrefs.roleModels >= 2 && metrics.roleModels >= 4) {
+              sensitivityScore += 0.1
+            }
+            sensitivityScore = Math.max(0, Math.min(1, sensitivityScore))
           }
 
-          // Penalty for disliked genres (per member)
+          // --- Age appropriateness (20% of score) ---
+          let ageScore = 0.5 // Neutral if we don't know
+          if (prefs.age !== null && media.expertAgeRec !== null) {
+            if (media.expertAgeRec <= prefs.age) {
+              ageScore = 1.0 // Perfect: content is for their age or younger
+            } else if (media.expertAgeRec <= prefs.age + 1) {
+              ageScore = 0.7 // Close enough (1 year over)
+            } else {
+              ageScore = 0.2 // Too old for them
+            }
+          } else if (media.expertAgeRec !== null && media.expertAgeRec <= 7) {
+            ageScore = 0.8 // Young-audience content, generally safe
+          }
+
+          // Weighted combination
+          const rawScore = (genreScore * 0.50) + (sensitivityScore * 0.30) + (ageScore * 0.20)
+          const matchPercentage = Math.min(100, Math.max(0, Math.round(rawScore * 100)))
+
+          // Penalty for disliked genres
+          let penalty = 0
           for (const disliked of prefs.dislikedGenres) {
-            if (allGenresAndTopics.includes(disliked)) {
-              memberScore -= 2 // Penalty
-            }
+            if (allGenresAndTopics.includes(disliked)) penalty += 15
           }
 
-          const matchPercentage = maxPossibleScore > 0
-            ? Math.min(100, Math.max(0, Math.round((memberScore / maxPossibleScore) * 100)))
-            : 50
+          const finalPercentage = Math.max(0, matchPercentage - penalty)
 
           memberMatches[member.id] = {
             name: member.name,
             avatarEmoji: member.avatarEmoji,
-            matchScore: memberScore,
-            matchPercentage,
+            matchScore: finalPercentage,
+            matchPercentage: finalPercentage,
           }
 
-          totalMatchScore += matchPercentage
+          totalMatchScore += finalPercentage
         }
 
-        // Overall family match (average of all members with preferences)
         const familyMatchPercentage = membersWithPreferences > 0
           ? Math.round(totalMatchScore / membersWithPreferences)
           : 50
 
         return {
-          ...media,
+          id: media.id,
+          title: media.title,
+          type: media.type,
+          posterUrl: media.posterUrl,
+          genres: media.genres,
+          topics: media.topics,
+          expertAgeRec: media.expertAgeRec,
+          releaseDate: media.releaseDate,
+          synopsisFr: media.synopsisFr,
           memberMatches,
           familyMatchPercentage,
         }

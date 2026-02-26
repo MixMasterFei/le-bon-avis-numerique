@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { Film, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
@@ -23,6 +23,7 @@ export default function FilmsPage() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: initialMaxAge,
     platforms: [],
     topics: [],
@@ -88,6 +89,9 @@ export default function FilmsPage() {
           requirePoster: "true",
           language: "fr,en",
         })
+        if (filters.minAge > 2) {
+          dbParams.set("minAge", filters.minAge.toString())
+        }
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
@@ -100,8 +104,10 @@ export default function FilmsPage() {
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
         }
-        if (sortBy) {
-          dbParams.set("sortBy", sortBy)
+        // Filter sortBy takes priority over URL param sortBy
+        const effectiveSortBy = filters.sortBy && filters.sortBy !== "createdAt" ? filters.sortBy : sortBy
+        if (effectiveSortBy) {
+          dbParams.set("sortBy", effectiveSortBy)
         }
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
@@ -160,7 +166,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, sortBy, isNowPlaying])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, sortBy, isNowPlaying])
 
   // Fetch featured movies (high quality, sorted by quality score)
   useEffect(() => {
@@ -287,7 +293,7 @@ export default function FilmsPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} initialFilters={{ maxAge: initialMaxAge, platforms: [], topics: [], searchQuery: "" }} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="MOVIE" availableTitles={availableTitles} initialFilters={{ minAge: DEFAULT_MIN_AGE, maxAge: initialMaxAge, platforms: [], topics: [], searchQuery: "" }} />
           </div>
         </div>
 
@@ -303,13 +309,13 @@ export default function FilmsPage() {
                 <span className="text-xs text-gray-500">Films bien notés et adaptés aux familles</span>
               </div>
               {featuredLoading ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {[...Array(FEATURED_COUNT)].map((_, i) => (
                     <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : featuredMovies.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {featuredMovies.map((movie) => (
                     <MediaCard key={`featured-${movie.id}`} media={movie} />
                   ))}
@@ -342,7 +348,7 @@ export default function FilmsPage() {
             </div>
           ) : paginatedMovies.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                 {paginatedMovies.map((item) => (
                   <MediaCard key={item.id} media={item} />
                 ))}

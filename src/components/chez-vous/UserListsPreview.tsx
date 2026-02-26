@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, Bookmark, ArrowRight } from "lucide-react"
+import { Heart, Bookmark, ArrowRight, Film } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface ListItem {
   id: string
@@ -16,6 +15,98 @@ interface ListItem {
     posterUrl: string | null
     type: string
   }
+}
+
+function ListCard({
+  title,
+  icon: Icon,
+  iconColor,
+  href,
+  items,
+  emptyMessage,
+  loading,
+}: {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  iconColor: string
+  href: string
+  items: ListItem[]
+  emptyMessage: string
+  loading: boolean
+}) {
+  if (loading) {
+    return (
+      <div className="rounded-2xl bg-white border border-gray-100 overflow-hidden animate-pulse">
+        <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+          <div className="h-6 w-28 bg-gray-100 rounded" />
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-6 gap-2">
+            {[1, 2, 3, 4, 5, 6].map((j) => (
+              <div key={j} className="aspect-[2/3] bg-gray-100 rounded-lg" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-gray-100 overflow-hidden">
+      <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+          <Icon className={`h-5 w-5 ${iconColor}`} />
+          {title}
+        </h2>
+        {items.length > 0 && (
+          <Link
+            href={href}
+            className="text-sm font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1 transition-colors"
+          >
+            Voir tout <ArrowRight className="h-4 w-4" />
+          </Link>
+        )}
+      </div>
+
+      <div className="p-6">
+        {items.length === 0 ? (
+          <div className="text-center py-8">
+            <Film className="h-8 w-8 mx-auto mb-3 text-gray-200" />
+            <p className="text-sm text-gray-400">{emptyMessage}</p>
+            <Button variant="link" size="sm" asChild className="mt-2 text-violet-600">
+              <Link href="/films">Explorer les films</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-6 gap-2">
+            {items.map((item) => (
+              <Link
+                key={item.id}
+                href={`/media/${item.media.id}`}
+                className="group"
+              >
+                <div className="aspect-[2/3] rounded-lg overflow-hidden bg-gray-100 relative hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+                  {item.media.posterUrl ? (
+                    <Image
+                      src={item.media.posterUrl}
+                      alt={item.media.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="80px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Film className="h-4 w-4 text-gray-300" />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export function UserListsPreview() {
@@ -50,136 +141,26 @@ export function UserListsPreview() {
     fetchLists()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="grid md:grid-cols-2 gap-6">
-        {[1, 2].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardHeader>
-              <div className="h-6 w-32 bg-gray-200 rounded"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-6 gap-2">
-                {[1, 2, 3, 4, 5, 6].map((j) => (
-                  <div key={j} className="aspect-[2/3] bg-gray-200 rounded"></div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )
-  }
-
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      {/* Favorites */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Heart className="h-5 w-5 text-pink-500" />
-            Mes favoris
-          </CardTitle>
-          {favorites.length > 0 && (
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/mes-favoris">
-                Voir tout <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {favorites.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Heart className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Pas encore de favoris</p>
-              <Button variant="link" size="sm" asChild className="mt-2">
-                <Link href="/films">Explorer les films</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-6 gap-2">
-              {favorites.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/media/${item.media.id}`}
-                  className="group"
-                >
-                  <div className="aspect-[2/3] rounded overflow-hidden bg-gray-100 relative">
-                    {item.media.posterUrl ? (
-                      <Image
-                        src={item.media.posterUrl}
-                        alt={item.media.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform"
-                        sizes="80px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                        ?
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Watchlist */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Bookmark className="h-5 w-5 text-amber-500" />
-            Ma liste à voir
-          </CardTitle>
-          {watchlist.length > 0 && (
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/ma-liste">
-                Voir tout <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {watchlist.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Bookmark className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">Pas encore de films à voir</p>
-              <Button variant="link" size="sm" asChild className="mt-2">
-                <Link href="/films">Explorer les films</Link>
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-6 gap-2">
-              {watchlist.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/media/${item.media.id}`}
-                  className="group"
-                >
-                  <div className="aspect-[2/3] rounded overflow-hidden bg-gray-100 relative">
-                    {item.media.posterUrl ? (
-                      <Image
-                        src={item.media.posterUrl}
-                        alt={item.media.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform"
-                        sizes="80px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                        ?
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+    <div className="grid md:grid-cols-2 gap-4">
+      <ListCard
+        title="Mes favoris"
+        icon={Heart}
+        iconColor="text-rose-500"
+        href="/mes-favoris"
+        items={favorites}
+        emptyMessage="Pas encore de favoris"
+        loading={loading}
+      />
+      <ListCard
+        title="Ma liste à voir"
+        icon={Bookmark}
+        iconColor="text-amber-500"
+        href="/ma-liste"
+        items={watchlist}
+        emptyMessage="Pas encore de films à voir"
+        loading={loading}
+      />
     </div>
   )
 }

@@ -7,10 +7,10 @@ export function FamilyImageSection() {
   return (
     <section className="py-16 bg-white overflow-hidden">
       <div className="container mx-auto px-4">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-12 items-center">
           {/* Text Content */}
           <div>
-            <h2 className="text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-gray-900 mb-6 whitespace-nowrap">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
               Guider les familles dans leurs choix médias
             </h2>
             <p className="text-lg text-gray-600 mb-6">

@@ -85,7 +85,7 @@
 ## GROWTH FEATURES (First month) — Phase E
 
 ### 10. User Engagement
-- [ ] Newsletter signup with Brevo (French, GDPR-native, great deliverability to Orange/Free/SFR)
+- [ ] Newsletter signup with Brevo (French, GDPR-native, great deliverability to Orange/Free/SFR) — note: placeholder notification settings removed from profile page, needs full implementation with DB model + email sending
 - [ ] "Partager" (share) buttons on media detail pages
 - [ ] New user onboarding (prompt family setup + platform preferences)
 - [ ] Complete 2 remaining guides + FAQ page
@@ -125,5 +125,14 @@
 | robots.ts + sitemap.ts (dynamic from DB) | Done |
 | Contact form (working with Resend + rate limiting + sanitization) | Done |
 | Guides (3 complete, 2 in progress) | Done |
-| Full UX overhaul (Phase 0 + Phase 1) | Done |
+| Full UX overhaul (Phase 0 + Phase 1 + Phase 2) | Done |
 | Media detail page (consolidated actions, empty rating CTA, callbackUrl, router.refresh) | Done |
+| Age filter with min+max range slider on all listing pages | Done |
+| Release date display on media cards + sort-by filter (date, title) | Done |
+| Homepage FamilyImageSection text overlap fix | Done |
+| Family Fit assessment card on media detail pages (per-member scoring) | Done |
+| Similar Media section on detail pages (pre-computed + genre fallback) | Done |
+| Family movie night recommendation algorithm fix (multi-factor scoring) | Done |
+| Mobile responsive audit (grid cols, gaps, hero spacing) | Done |
+| "Chez Vous" dashboard redesign (modern, warm aesthetic matching homepage) | Done |
+| Removed non-functional notification settings from profile page | Done |

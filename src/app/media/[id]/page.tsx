@@ -17,6 +17,8 @@ import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
+import { FamilyFitCard } from "@/components/media/FamilyFitCard"
+import { SimilarMedia } from "@/components/media/SimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
@@ -448,7 +450,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           {/* Back Button */}
           <BackButton className="mb-8" />
 
-          <div className="flex flex-col lg:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Poster */}
             <div className="lg:w-1/3 xl:w-1/4 shrink-0">
               <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl">
@@ -529,7 +531,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
       {/* Content Section */}
       <div className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
@@ -617,10 +619,23 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 </Card>
               </TabsContent>
             </Tabs>
+
+            {/* Similar Media */}
+            {dbId && (
+              <SimilarMedia
+                mediaId={dbId}
+                mediaType={media.type}
+                genres={media.genres}
+                topics={media.topics}
+              />
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Family Fit Assessment */}
+            {dbId && <FamilyFitCard mediaId={dbId} />}
+
             {/* Game Info Card - for games only */}
             {media.type === "GAME" && (
               <GameInfoCard

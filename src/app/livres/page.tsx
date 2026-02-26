@@ -3,11 +3,12 @@
 import { useState, useMemo } from "react"
 import { BookOpen } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { mockMediaItems } from "@/lib/mock-data"
 
 export default function LivresPage() {
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
@@ -63,7 +64,7 @@ export default function LivresPage() {
           </div>
 
           {books.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
               {books.map((book) => (
                 <MediaCard key={book.id} media={book} />
               ))}

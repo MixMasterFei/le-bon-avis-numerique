@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react"
 import { redirect, useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, Bell, AlertTriangle, Camera, Eye, EyeOff } from "lucide-react"
+import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, AlertTriangle, Camera, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -50,14 +50,6 @@ export default function ProfilPage() {
     "🦸", "🦹", "🧙", "🧝", "🧚",
     "🐻", "🦊", "🐱", "🐶", "🦁",
   ]
-
-  // Email notifications state
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [emailNewsletter, setEmailNewsletter] = useState(true)
-  const [emailRecommendations, setEmailRecommendations] = useState(true)
-  const [emailComments, setEmailComments] = useState(false)
-  const [savingNotifications, setSavingNotifications] = useState(false)
-  const [notificationsSaved, setNotificationsSaved] = useState(false)
 
   // Settings context
   const { settings, updateSettings } = useSettings()
@@ -142,33 +134,6 @@ export default function ProfilPage() {
       console.error("Failed to save profile:", err)
     } finally {
       setSavingProfile(false)
-    }
-  }
-
-  const handleSaveNotifications = async () => {
-    setSavingNotifications(true)
-    setNotificationsSaved(false)
-    try {
-      const res = await fetch("/api/user/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          newsletter: emailNewsletter,
-          recommendations: emailRecommendations,
-          comments: emailComments,
-        }),
-      })
-      if (res.ok) {
-        setNotificationsSaved(true)
-        setTimeout(() => {
-          setNotificationsOpen(false)
-          setNotificationsSaved(false)
-        }, 1500)
-      }
-    } catch (err) {
-      console.error("Failed to save notifications:", err)
-    } finally {
-      setSavingNotifications(false)
     }
   }
 
@@ -418,88 +383,6 @@ export default function ProfilPage() {
           <CardTitle>Paramètres du compte</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b">
-            <div>
-              <p className="font-medium">Notifications par email</p>
-              <p className="text-sm text-gray-500">Recevoir les nouveautés et recommandations</p>
-            </div>
-            <Dialog open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">Configurer</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Notifications par email</DialogTitle>
-                  <DialogDescription>
-                    Choisissez les emails que vous souhaitez recevoir
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <Bell className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium">Newsletter</p>
-                        <p className="text-sm text-gray-500">Actualités et nouveautés du site</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={emailNewsletter}
-                      onChange={(e) => setEmailNewsletter(e.target.checked)}
-                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <Heart className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium">Recommandations</p>
-                        <p className="text-sm text-gray-500">Suggestions basées sur vos goûts</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={emailRecommendations}
-                      onChange={(e) => setEmailRecommendations(e.target.checked)}
-                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                  </label>
-
-                  <label className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <p className="font-medium">Commentaires</p>
-                        <p className="text-sm text-gray-500">Réponses à vos avis</p>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={emailComments}
-                      onChange={(e) => setEmailComments(e.target.checked)}
-                      className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                  </label>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={handleSaveNotifications}
-                    disabled={savingNotifications || notificationsSaved}
-                  >
-                    {savingNotifications ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : notificationsSaved ? (
-                      <Check className="h-4 w-4 mr-2" />
-                    ) : null}
-                    {notificationsSaved ? "Enregistré !" : "Enregistrer"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
           <div className="flex items-center justify-between py-3 border-b">
             <div>
               <p className="font-medium flex items-center gap-2">

@@ -236,10 +236,15 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
 
         {/* Info Section Below Image - Cleaner, bolder */}
         <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 space-y-2 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300 flex-1">
-          {/* Title */}
-          <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-violet-700 transition-colors leading-tight">
-            {media.title}
-          </h3>
+          {/* Title + Year */}
+          <div className="flex items-baseline gap-1.5">
+            <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-violet-700 transition-colors leading-tight flex-1 min-w-0">
+              {media.title}
+            </h3>
+            {media.releaseDate && (
+              <span className="text-[10px] text-gray-400 shrink-0">{new Date(media.releaseDate).getFullYear()}</span>
+            )}
+          </div>
 
           {/* Ratings Row: Age + Family Gauge + Community Rating */}
           <div className="flex items-center gap-1.5 flex-wrap">

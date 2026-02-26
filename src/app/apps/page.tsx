@@ -3,11 +3,12 @@
 import { useState, useMemo } from "react"
 import { Smartphone } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { mockMediaItems } from "@/lib/mock-data"
 
 export default function AppsPage() {
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],

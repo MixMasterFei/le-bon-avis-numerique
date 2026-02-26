@@ -6,7 +6,7 @@ import { Film, ArrowLeft, X } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
@@ -31,6 +31,7 @@ function FilmsRechercheContent() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: initialMaxAge,
     platforms: initialPlatforms,
     topics: mergedTopics,
@@ -99,11 +100,13 @@ function FilmsRechercheContent() {
         if (filters.searchQuery) {
           dbParams.set("q", filters.searchQuery)
         }
-        // Pass quality and sort filters from URL params
+        // Pass quality and sort filters from URL params (filter sortBy takes priority)
         if (initialMinQuality) {
           dbParams.set("minQuality", initialMinQuality.toString())
         }
-        if (initialSortBy) {
+        if (filters.sortBy && filters.sortBy !== "createdAt") {
+          dbParams.set("sortBy", filters.sortBy)
+        } else if (initialSortBy) {
           dbParams.set("sortBy", initialSortBy)
         }
         if (initialExcludeGenres.length > 0) {
@@ -220,7 +223,7 @@ function FilmsRechercheContent() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery])
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy])
 
   const filteredMovies = useMemo(() => {
     // Start with appropriate source
@@ -278,6 +281,7 @@ function FilmsRechercheContent() {
   // Clear all filters
   const clearFilters = () => {
     const cleared: FilterState = {
+      minAge: DEFAULT_MIN_AGE,
       maxAge: DEFAULT_MAX_AGE,
       platforms: [],
       topics: [],
@@ -413,7 +417,7 @@ function FilmsRechercheContent() {
             </div>
           ) : paginatedMovies.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                 {paginatedMovies.map((movie) => (
                   <MediaCard key={movie.id} media={movie} />
                 ))}
@@ -472,7 +476,7 @@ function FilmsRechercheLoading() {
           </div>
         </div>
         <div className="flex-1">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
             {[...Array(21)].map((_, i) => (
               <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
             ))}

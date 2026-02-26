@@ -6,7 +6,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { Users, Popcorn, ChevronDown, ChevronUp, Check, Sparkles, Film, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -107,70 +106,74 @@ export function FamilyMovieNightSection() {
   // Loading state
   if (loadingFamily) {
     return (
-      <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-900">
-            <Popcorn className="h-5 w-5" />
-            Soiree Cine en Famille
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50/50 to-white border border-orange-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-orange-100/50">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+            <div className="p-1.5 bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg text-white">
+              <Popcorn className="h-4 w-4" />
+            </div>
+            Soirée Ciné en Famille
+          </h2>
+        </div>
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-orange-500"></div>
+        </div>
+      </section>
     )
   }
 
   // Don't render if user has no family members or only 1
   if (familyMembers.length < 2) {
     return (
-      <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-purple-900">
-            <Popcorn className="h-5 w-5" />
-            Soiree Cine en Famille
-          </CardTitle>
-          <p className="text-sm text-purple-700">
-            Trouvez le film parfait qui plaira a toute la famille
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="inline-flex p-3 bg-purple-100 rounded-full mb-4">
-              <Users className="h-6 w-6 text-purple-600" />
+      <section className="rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50/50 to-white border border-orange-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-orange-100/50">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+            <div className="p-1.5 bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg text-white">
+              <Popcorn className="h-4 w-4" />
             </div>
-            <p className="text-gray-600 mb-4">
-              Ajoutez au moins 2 membres a votre famille pour utiliser cette fonctionnalite.
-            </p>
-            <Button asChild variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
-              <Link href="/profil/famille">
-                Gerer ma famille
-              </Link>
-            </Button>
+            Soirée Ciné en Famille
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Trouvez le film parfait qui plaira à toute la famille
+          </p>
+        </div>
+        <div className="text-center py-10 px-6">
+          <div className="inline-flex p-3 bg-orange-50 rounded-2xl mb-4">
+            <Users className="h-6 w-6 text-orange-500" />
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-gray-500 mb-5 max-w-sm mx-auto">
+            Ajoutez au moins 2 membres à votre famille pour utiliser cette fonctionnalité.
+          </p>
+          <Button asChild variant="outline" className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50">
+            <Link href="/profil/famille">
+              Gérer ma famille
+            </Link>
+          </Button>
+        </div>
+      </section>
     )
   }
 
   return (
-    <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-purple-900">
-          <Popcorn className="h-5 w-5" />
-          Soiree Cine en Famille
-        </CardTitle>
-        <p className="text-sm text-purple-700">
-          Trouvez le film parfait qui plaira a toute la famille
+    <section className="rounded-2xl bg-gradient-to-br from-orange-50 via-amber-50/50 to-white border border-orange-100 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-orange-100/50">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+          <div className="p-1.5 bg-gradient-to-br from-orange-400 to-amber-500 rounded-lg text-white">
+            <Popcorn className="h-4 w-4" />
+          </div>
+          Soirée Ciné en Famille
+        </h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Trouvez le film parfait qui plaira à toute la famille
         </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      </div>
+
+      <div className="p-6 space-y-6">
         {/* Member Selection */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 text-orange-500" />
             Qui regarde ce soir ?
           </p>
           <div className="flex flex-wrap gap-2">
@@ -181,15 +184,15 @@ export function FamilyMovieNightSection() {
                   key={member.id}
                   onClick={() => toggleMember(member.id)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-full border-2 transition-all",
+                    "flex items-center gap-2 px-3 py-2 rounded-full border-2 transition-all text-sm font-medium",
                     isSelected
-                      ? "border-purple-500 bg-purple-100 text-purple-900"
-                      : "border-gray-200 bg-white hover:border-purple-300"
+                      ? "border-orange-400 bg-orange-100 text-orange-900"
+                      : "border-gray-200 bg-white hover:border-orange-300"
                   )}
                 >
                   <span className="text-xl">{member.avatarEmoji}</span>
-                  <span className="font-medium">{member.name}</span>
-                  {isSelected && <Check className="h-4 w-4 text-purple-600" />}
+                  <span>{member.name}</span>
+                  {isSelected && <Check className="h-4 w-4 text-orange-600" />}
                 </button>
               )
             })}
@@ -201,7 +204,7 @@ export function FamilyMovieNightSection() {
           <Button
             onClick={fetchRecommendations}
             disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700"
+            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-full shadow-md shadow-orange-200"
           >
             {loading ? (
               "Recherche des films parfaits..."
@@ -229,10 +232,10 @@ export function FamilyMovieNightSection() {
           <div className="space-y-4">
             {/* Shared Genres */}
             {sharedGenres.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <span className="text-sm text-gray-600">Gouts communs:</span>
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-sm text-gray-500">Goûts communs :</span>
                 {sharedGenres.slice(0, 4).map((genre) => (
-                  <Badge key={genre} variant="secondary" className="bg-purple-100 text-purple-800">
+                  <Badge key={genre} variant="secondary" className="bg-orange-100 text-orange-800 border-0">
                     {genre}
                   </Badge>
                 ))}
@@ -240,16 +243,16 @@ export function FamilyMovieNightSection() {
             )}
 
             {/* Recommendation Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {recommendations.slice(0, showAllResults ? 12 : 4).map((media) => (
                 <Link
                   key={media.id}
                   href={`/media/${toMediaRouteId(media.type, media.id)}`}
                   className="group"
                 >
-                  <div className="flex gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all">
+                  <div className="flex gap-3 p-3 bg-white rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                     {/* Poster */}
-                    <div className="relative w-16 h-24 rounded overflow-hidden shrink-0">
+                    <div className="relative w-16 h-24 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                       {media.posterUrl ? (
                         <Image
                           src={media.posterUrl}
@@ -258,28 +261,28 @@ export function FamilyMovieNightSection() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <Film className="h-6 w-6 text-gray-400" />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Film className="h-6 w-6 text-gray-300" />
                         </div>
                       )}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm line-clamp-2 group-hover:text-purple-700">
+                      <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-orange-700 transition-colors">
                         {media.title}
                       </h4>
 
                       {/* Family Match */}
-                      <div className="mt-1 flex items-center gap-1">
+                      <div className="mt-1.5 flex items-center gap-1">
                         <div
                           className={cn(
                             "text-xs font-bold px-2 py-0.5 rounded-full",
                             media.familyMatchPercentage >= 70
-                              ? "bg-green-100 text-green-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : media.familyMatchPercentage >= 50
                               ? "bg-amber-100 text-amber-700"
-                              : "bg-gray-100 text-gray-600"
+                              : "bg-gray-100 text-gray-500"
                           )}
                         >
                           {media.familyMatchPercentage}% match
@@ -287,7 +290,7 @@ export function FamilyMovieNightSection() {
                       </div>
 
                       {/* Per-member matches */}
-                      <div className="mt-2 flex flex-wrap gap-1">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         {Object.values(media.memberMatches).map((match) => (
                           <div
                             key={match.name}
@@ -297,12 +300,12 @@ export function FamilyMovieNightSection() {
                             <span>{match.avatarEmoji}</span>
                             <span
                               className={cn(
-                                "font-medium",
+                                "font-semibold",
                                 match.matchPercentage >= 70
-                                  ? "text-green-600"
+                                  ? "text-emerald-600"
                                   : match.matchPercentage >= 50
                                   ? "text-amber-600"
-                                  : "text-gray-500"
+                                  : "text-gray-400"
                               )}
                             >
                               {match.matchPercentage}%
@@ -320,7 +323,7 @@ export function FamilyMovieNightSection() {
             {recommendations.length > 4 && (
               <Button
                 variant="ghost"
-                className="w-full text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-full"
                 onClick={() => setShowAllResults(!showAllResults)}
               >
                 {showAllResults ? (
@@ -341,7 +344,7 @@ export function FamilyMovieNightSection() {
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-gray-600"
+              className="w-full text-gray-500 rounded-full"
               onClick={() => {
                 setShowResults(false)
                 setShowAllResults(false)
@@ -354,13 +357,13 @@ export function FamilyMovieNightSection() {
         )}
 
         {showResults && recommendations.length === 0 && (
-          <div className="text-center py-6 text-gray-500">
-            <Popcorn className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>Pas assez de donnees pour faire des recommandations.</p>
-            <p className="text-sm">Ajoutez plus de reactions aux films !</p>
+          <div className="text-center py-8 text-gray-500">
+            <Popcorn className="h-8 w-8 mx-auto mb-3 opacity-30" />
+            <p className="font-medium">Pas assez de données pour faire des recommandations.</p>
+            <p className="text-sm mt-1">Ajoutez plus de réactions aux films !</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   )
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { Gamepad2, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
@@ -13,6 +13,7 @@ const FEATURED_COUNT = 7
 export default function JeuxPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
@@ -43,6 +44,9 @@ export default function JeuxPage() {
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
+        if (filters.minAge > 2) {
+          dbParams.set("minAge", filters.minAge.toString())
+        }
         if (filters.searchQuery && filters.searchQuery.trim().length >= 2) {
           dbParams.set("q", filters.searchQuery.trim())
         }
@@ -51,6 +55,9 @@ export default function JeuxPage() {
         }
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
+        }
+        if (filters.sortBy && filters.sortBy !== "createdAt") {
+          dbParams.set("sortBy", filters.sortBy)
         }
 
         const dbRes = await fetch(`/api/db/games?${dbParams}`, { signal: controller.signal })
@@ -116,7 +123,7 @@ export default function JeuxPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy])
 
   // Fetch featured games (high quality, sorted by quality score)
   useEffect(() => {
@@ -247,7 +254,7 @@ export default function JeuxPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="GAME" availableTitles={availableTitles} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="GAME" availableTitles={availableTitles} initialFilters={{ minAge: DEFAULT_MIN_AGE, maxAge: DEFAULT_MAX_AGE }} />
           </div>
         </div>
 
@@ -263,13 +270,13 @@ export default function JeuxPage() {
                 <span className="text-xs text-gray-500">Jeux bien notés et adaptés aux familles</span>
               </div>
               {featuredLoading ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {[...Array(FEATURED_COUNT)].map((_, i) => (
                     <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : featuredGames.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {featuredGames.map((game) => (
                     <MediaCard key={`featured-${game.id}`} media={game} />
                   ))}
@@ -302,7 +309,7 @@ export default function JeuxPage() {
             </div>
           ) : paginatedGames.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                 {paginatedGames.map((game) => (
                   <MediaCard key={game.id} media={game} />
                 ))}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { Tv, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { FilterSidebar, type FilterState, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
+import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
 
@@ -13,6 +13,7 @@ const FEATURED_COUNT = 7
 export default function SeriesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [filters, setFilters] = useState<FilterState>({
+    minAge: DEFAULT_MIN_AGE,
     maxAge: DEFAULT_MAX_AGE,
     platforms: [],
     topics: [],
@@ -46,6 +47,9 @@ export default function SeriesPage() {
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
         }
+        if (filters.minAge > 2) {
+          dbParams.set("minAge", filters.minAge.toString())
+        }
         if (filters.searchQuery && filters.searchQuery.trim().length >= 2) {
           dbParams.set("q", filters.searchQuery.trim())
         }
@@ -54,6 +58,9 @@ export default function SeriesPage() {
         }
         if (filters.topics.length > 0) {
           dbParams.set("topics", filters.topics.join(","))
+        }
+        if (filters.sortBy && filters.sortBy !== "createdAt") {
+          dbParams.set("sortBy", filters.sortBy)
         }
 
         const dbRes = await fetch(`/api/db/series?${dbParams}`, { signal: controller.signal })
@@ -112,7 +119,7 @@ export default function SeriesPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy])
 
   // Fetch featured series (high quality, sorted by quality score)
   useEffect(() => {
@@ -238,7 +245,7 @@ export default function SeriesPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
-            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="TV" availableTitles={availableTitles} />
+            <FilterSidebar onFiltersChange={handleFiltersChange} mediaType="TV" availableTitles={availableTitles} initialFilters={{ minAge: DEFAULT_MIN_AGE, maxAge: DEFAULT_MAX_AGE }} />
           </div>
         </div>
 
@@ -254,13 +261,13 @@ export default function SeriesPage() {
                 <span className="text-xs text-gray-500">Séries bien notées et adaptées aux familles</span>
               </div>
               {featuredLoading ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {[...Array(FEATURED_COUNT)].map((_, i) => (
                     <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : featuredSeries.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                   {featuredSeries.map((series) => (
                     <MediaCard key={`featured-${series.id}`} media={series} />
                   ))}
@@ -291,7 +298,7 @@ export default function SeriesPage() {
             </div>
           ) : paginatedSeries.length > 0 ? (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
                 {paginatedSeries.map((item) => (
                   <MediaCard key={item.id} media={item} />
                 ))}

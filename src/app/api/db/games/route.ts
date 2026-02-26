@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const page = parseInt(searchParams.get("page") || "1")
   const limit = parseInt(searchParams.get("limit") || "20")
+  const minAge = searchParams.get("minAge")
   const maxAge = searchParams.get("maxAge")
   const platform = searchParams.get("platform")
   const search = searchParams.get("q")
@@ -78,10 +79,12 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Filter by age recommendation
-    if (maxAge) {
-      const age = parseInt(maxAge)
-      where.expertAgeRec = { lte: age, not: null }
+    // Filter by age recommendation (min and/or max)
+    if (minAge || maxAge) {
+      const ageFilter: Record<string, unknown> = { not: null }
+      if (minAge) ageFilter.gte = parseInt(minAge)
+      if (maxAge) ageFilter.lte = parseInt(maxAge)
+      where.expertAgeRec = ageFilter
     }
 
     // Filter by platform
