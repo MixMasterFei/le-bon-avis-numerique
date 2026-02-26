@@ -173,9 +173,20 @@ export default function FilmsPage() {
     async function loadFeatured() {
       setFeaturedLoading(true)
       try {
-        const res = await fetch(
-          `/api/db/movies?limit=${FEATURED_COUNT}&featured=true&sortBy=quality&maxAge=${filters.maxAge}&language=fr,en&requirePoster=true`
-        )
+        // Featured section = family-friendly picks, cap at 13 max
+        const featuredMaxAge = Math.min(filters.maxAge, 13)
+        const featuredParams = new URLSearchParams({
+          limit: FEATURED_COUNT.toString(),
+          featured: "true",
+          sortBy: "quality",
+          maxAge: featuredMaxAge.toString(),
+          language: "fr,en",
+          requirePoster: "true",
+        })
+        if (filters.minAge > DEFAULT_MIN_AGE) {
+          featuredParams.set("minAge", filters.minAge.toString())
+        }
+        const res = await fetch(`/api/db/movies?${featuredParams}`)
         if (res.ok) {
           const data = await res.json()
           if (data.movies && data.movies.length > 0) {
@@ -210,7 +221,7 @@ export default function FilmsPage() {
       }
     }
     loadFeatured()
-  }, [filters.maxAge])
+  }, [filters.minAge, filters.maxAge])
 
   const filteredMovies = useMemo(() => {
     let items = source === "db"
@@ -298,8 +309,8 @@ export default function FilmsPage() {
         </div>
 
         <div className="flex-1">
-          {/* Featured Section - Top quality movies (hidden when sorting by newest) */}
-          {currentPage === 1 && !sortBy && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
+          {/* Featured Section - Top quality movies (hidden when sorting, filtering, or fewer than 3 results) */}
+          {currentPage === 1 && !sortBy && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && !featuredLoading && featuredMovies.length >= 3 && (
             <div className="mb-10">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
@@ -308,19 +319,11 @@ export default function FilmsPage() {
                 <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
                 <span className="text-xs text-gray-500">Films bien notés et adaptés aux familles</span>
               </div>
-              {featuredLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {[...Array(FEATURED_COUNT)].map((_, i) => (
-                    <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : featuredMovies.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {featuredMovies.map((movie) => (
-                    <MediaCard key={`featured-${movie.id}`} media={movie} />
-                  ))}
-                </div>
-              ) : null}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+                {featuredMovies.map((movie) => (
+                  <MediaCard key={`featured-${movie.id}`} media={movie} />
+                ))}
+              </div>
             </div>
           )}
 
