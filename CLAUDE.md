@@ -103,6 +103,10 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Media detail page | `src/app/media/[id]/page.tsx` |
 | Family fit API (scoring) | `src/app/api/media/[id]/family-fit/route.ts` |
 | Family fit card (UI) | `src/components/media/FamilyFitCard.tsx` |
+| Profile page | `src/app/profil/page.tsx` |
+| Family recommendations | `src/components/chez-vous/FamilyRecommendationsSection.tsx` |
+| Family movie night | `src/components/chez-vous/FamilyMovieNightSection.tsx` |
+| User lists preview | `src/components/chez-vous/UserListsPreview.tsx` |
 | Member corner page | `src/app/profil/membres/[memberId]/page.tsx` |
 | Member corner component | `src/components/profile/MemberCorner.tsx` |
 | Preference quiz page | `src/app/profil/quiz/[memberId]/page.tsx` |
@@ -113,6 +117,8 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Family member API | `src/app/api/user/family/[id]/route.ts` |
 | Member preferences API | `src/app/api/user/family/[id]/preferences/route.ts` |
 | Reaction API | `src/app/api/user/reaction/route.ts` |
+| Recommendations API | `src/app/api/recommendations/route.ts` |
+| Family recommendations API | `src/app/api/recommendations/family/route.ts` |
 | Media route helper | `src/lib/media-route.ts` |
 | SQL migrations | `sql/*.sql` |
 | SEO robots | `src/app/robots.ts` |
@@ -234,6 +240,23 @@ Displayed on the Member Corner overview tab. Tracks 8 criteria totaling 100%: bi
 - Removing a favorite = deleting the reaction (`DELETE /api/user/reaction`)
 - Interests are stored as `String[]` on FamilyMember (max 20, saved via `PATCH /api/user/family/[id]`)
 - Quiz completion is detected by `useCustomSettings === true && favoriteGenres.length > 0`
+
+---
+
+## Profile Page (`/profil`)
+
+The unified authenticated user hub. `/chez-vous` redirects here (kept for bookmarks). All auth callbacks and nav links point to `/profil`.
+
+**Page sections (in order):**
+1. Profile header — avatar, name, email, "Modifier le profil" dialog
+2. Stats grid — reviews, favorites, watchlist, reactions
+3. `FamilyRecommendationsSection` — per-member personalized recommendations (tabbed)
+4. `FamilyMembers` — family member CRUD, links to member corners and quiz
+5. `FamilyMovieNightSection` — multi-member movie night finder with match %
+6. `UserListsPreview` — poster grid previews of favorites + watchlist (6 each)
+7. Account settings — blur 18+ toggle, cookie prefs, delete account
+
+**Note:** Recommendation components live in `src/components/chez-vous/` (historical, imported from Profile page).
 
 ---
 

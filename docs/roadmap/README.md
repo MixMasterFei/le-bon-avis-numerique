@@ -34,7 +34,17 @@ Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized
 
 ## Recent Completed Work (Feb 2026)
 
-### Feb 26 (latest) — Family Personalization & Smart Recommendations
+### Feb 27 (latest) — Chez Vous → Profile Merge
+- **Unified Profile page**: Merged `/chez-vous` dashboard into `/profil` — one page for everything
+- **Ported sections**: FamilyRecommendationsSection, FamilyMovieNightSection, UserListsPreview now render on Profile page
+- **Redirect**: `/chez-vous` now redirects to `/profil` (bookmarks preserved)
+- **Auth redirects**: Login, signup, Google OAuth all redirect to `/profil`
+- **Nav cleanup**: Removed duplicate "Chez vous" entry from header/footer, unified to "Mon profil"
+- **Deleted**: WelcomeHeader component (redundant with Profile stats grid)
+- **Fixed**: Broken `/profil/famille` links in recommendation components
+- **French accents**: Fixed 30+ missing accents in MemberCorner, CompletionMeter, InterestsEditor, MediaSearchAdd
+
+### Feb 26 — Family Personalization & Smart Recommendations
 - **Member Corner** (`/profil/membres/[memberId]`): Dedicated per-member page with tabbed layout (Overview / Favorites / Preferences), profile completion meter, interests editor, media search to add favorites
 - **Preference Quiz** (`/profil/quiz/[memberId]`): 7-step interactive wizard for genres, sensitivity, positive content, topics to avoid
 - **Watch History Affinity**: Family-fit API uses MediaReaction + MediaSimilarity for personalized connection insights

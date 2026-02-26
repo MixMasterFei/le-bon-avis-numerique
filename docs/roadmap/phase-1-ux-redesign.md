@@ -135,8 +135,8 @@
 - [x] **Family personalization system** — Member Corner (`/profil/membres/[id]`), Preference Quiz (`/profil/quiz/[id]`), watch history affinity scoring, profile completion meter, interests editor, media search favorites
 - [x] **Family fit scoring** — Weighted formula (age 40%, sensitivity 35%, genre 10%, avoid 5%, affinity 10%) with personal connection insights from MediaSimilarity
 - [x] **Sort & filter fixes** — Simplified sort (release date default), excluded future-dated media from all APIs
+- [x] **Chez Vous → Profile merge** — Unified `/chez-vous` and `/profil` into single page with recommendations, family members, movie night, lists preview, and account settings
 - [ ] New user onboarding flow (prompt to set up family, select platforms)
-- [ ] Profile page redesign (use `<Image>` instead of raw `<img>`, add link to family settings)
 - [ ] Propagate user image through JWT (emoji avatars don't show in header)
 
 ### Visual Identity
