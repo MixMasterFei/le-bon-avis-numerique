@@ -14,8 +14,8 @@ interface InterestsEditorProps {
 const SUGGESTED_INTERESTS = [
   "Dinosaures", "Espace", "Princesses", "Pirates", "Animaux",
   "Voitures", "Football", "Danse", "Musique", "Dessin",
-  "Super-heros", "Robots", "Nature", "Cuisine", "Magie",
-  "Chevaux", "Trains", "Ocean", "Construction", "Lecture",
+  "Super-héros", "Robots", "Nature", "Cuisine", "Magie",
+  "Chevaux", "Trains", "Océan", "Construction", "Lecture",
 ]
 
 export function InterestsEditor({ interests, onChange, memberName, className }: InterestsEditorProps) {
@@ -129,7 +129,7 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
       )}
 
       {interests.length >= 20 && (
-        <p className="text-xs text-gray-400">Maximum de 20 centres d'interet atteint.</p>
+        <p className="text-xs text-gray-400">Maximum de 20 centres d'intérêt atteint.</p>
       )}
     </div>
   )

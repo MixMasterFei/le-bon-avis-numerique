@@ -43,14 +43,14 @@ function getCompletionItems(
   const sensitivityCustomized = current.some((v, i) => v !== defaults[i])
 
   return [
-    { label: "Ajouter l'annee de naissance", done: member.birthYear !== null, weight: 10 },
-    { label: "Choisir un avatar personnalise", done: member.avatarEmoji !== "👧", weight: 5 },
-    { label: "Completer le quiz de preferences", done: member.useCustomSettings && member.favoriteGenres.length > 0, weight: 25 },
-    { label: "Personnaliser les niveaux de sensibilite", done: sensitivityCustomized, weight: 15 },
-    { label: "Ajouter des themes a eviter", done: member.avoidTopics.length > 0, weight: 5 },
-    { label: "Ajouter au moins 3 reactions", done: reactionCount >= 3, weight: 15 },
-    { label: "Ajouter au moins 5 reactions", done: reactionCount >= 5, weight: 10 },
-    { label: "Ajouter des centres d'interet", done: member.interests.length > 0, weight: 15 },
+    { label: "Ajouter l'année de naissance", done: member.birthYear !== null, weight: 10 },
+    { label: "Choisir un avatar personnalisé", done: member.avatarEmoji !== "👧", weight: 5 },
+    { label: "Compléter le quiz de préférences", done: member.useCustomSettings && member.favoriteGenres.length > 0, weight: 25 },
+    { label: "Personnaliser les niveaux de sensibilité", done: sensitivityCustomized, weight: 15 },
+    { label: "Ajouter des thèmes à éviter", done: member.avoidTopics.length > 0, weight: 5 },
+    { label: "Ajouter au moins 3 réactions", done: reactionCount >= 3, weight: 15 },
+    { label: "Ajouter au moins 5 réactions", done: reactionCount >= 5, weight: 10 },
+    { label: "Ajouter des centres d'intérêt", done: member.interests.length > 0, weight: 15 },
   ]
 }
 
@@ -65,7 +65,7 @@ export function CompletionMeter({ member, reactionCount, className }: Completion
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">Profil complete</span>
+        <span className="text-sm font-medium text-gray-700">Profil complété</span>
         <span
           className={cn(
             "text-sm font-bold",
@@ -80,7 +80,7 @@ export function CompletionMeter({ member, reactionCount, className }: Completion
 
       {missing.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          <p className="text-xs font-medium text-gray-500">Prochaines etapes :</p>
+          <p className="text-xs font-medium text-gray-500">Prochaines étapes :</p>
           <ul className="space-y-1">
             {missing.slice(0, 3).map((item) => (
               <li key={item.label} className="flex items-center gap-2 text-xs text-gray-500">

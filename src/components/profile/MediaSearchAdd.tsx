@@ -30,7 +30,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 
 const typeLabels: Record<string, string> = {
   MOVIE: "Film",
-  TV: "Serie",
+  TV: "Série",
   GAME: "Jeu",
   BOOK: "Livre",
   APP: "App",
@@ -158,7 +158,7 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
         <input
           ref={inputRef}
           type="text"
-          placeholder={`Ajouter un film, une serie, un jeu pour ${memberName}...`}
+          placeholder={`Ajouter un film, une série, un jeu pour ${memberName}...`}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}

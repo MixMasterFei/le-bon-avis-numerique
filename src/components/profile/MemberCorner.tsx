@@ -93,13 +93,13 @@ const EMOJI_OPTIONS = [
 ]
 
 const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  LOVED: { label: "Adore", icon: Heart, color: "text-red-500" },
-  LIKED: { label: "Bien aime", icon: ThumbsUp, color: "text-green-500" },
+  LOVED: { label: "Adoré", icon: Heart, color: "text-red-500" },
+  LIKED: { label: "Bien aimé", icon: ThumbsUp, color: "text-green-500" },
   OK: { label: "Bof", icon: Meh, color: "text-yellow-500" },
   SCARED: { label: "A eu peur", icon: Ghost, color: "text-purple-500" },
-  BORED: { label: "S'est ennuye", icon: Frown, color: "text-gray-500" },
+  BORED: { label: "S'est ennuyé", icon: Frown, color: "text-gray-500" },
   TOO_YOUNG: { label: "Trop jeune", icon: Baby, color: "text-blue-500" },
-  TOO_OLD: { label: "Pas interesse", icon: UserX, color: "text-orange-500" },
+  TOO_OLD: { label: "Pas intéressé", icon: UserX, color: "text-orange-500" },
 }
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -112,22 +112,22 @@ const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
 
 const TYPE_LABELS: Record<string, string> = {
   MOVIE: "Film",
-  TV: "Serie",
+  TV: "Série",
   GAME: "Jeu",
   BOOK: "Livre",
   APP: "App",
 }
 
 const SENSITIVITY_LABELS: Record<number, string> = {
-  0: "Pas gene(e)",
+  0: "Pas gêné(e)",
   1: "Un peu sensible",
   2: "Assez sensible",
-  3: "Tres sensible",
+  3: "Très sensible",
 }
 
 const PREFERENCE_LABELS: Record<number, string> = {
-  0: "Indifferent",
-  1: "Apprecie",
+  0: "Indifférent",
+  1: "Apprécié",
   2: "Important",
   3: "Essentiel",
 }
@@ -168,7 +168,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
         ])
 
         if (!memberRes.ok) {
-          setError("Membre non trouve")
+          setError("Membre non trouvé")
           return
         }
 
@@ -358,9 +358,9 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList className="w-full grid grid-cols-3">
-          <TabsTrigger value="overview">Apercu</TabsTrigger>
+          <TabsTrigger value="overview">Aperçu</TabsTrigger>
           <TabsTrigger value="favorites">Favoris</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="preferences">Préférences</TabsTrigger>
         </TabsList>
 
         {/* ================================================================ */}
@@ -377,8 +377,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     <div>
                       <h3 className="font-semibold text-gray-900">{member.name}</h3>
                       <p className="text-sm text-gray-500">
-                        {memberAge != null ? `${memberAge} ans` : "Age non renseigne"}
-                        {member.birthYear != null && ` (ne en ${member.birthYear})`}
+                        {memberAge != null ? `${memberAge} ans` : "Âge non renseigné"}
+                        {member.birthYear != null && ` (né en ${member.birthYear})`}
                       </p>
                     </div>
                   </div>
@@ -391,7 +391,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Prenom</label>
+                      <label className="text-sm font-medium text-gray-700">Prénom</label>
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -399,7 +399,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Annee de naissance</label>
+                      <label className="text-sm font-medium text-gray-700">Année de naissance</label>
                       <Input
                         type="number"
                         value={editBirthYear}
@@ -459,14 +459,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               <CardContent className="p-4 text-center">
                 <BarChart3 className="h-5 w-5 mx-auto text-gray-400 mb-1" />
                 <p className="text-2xl font-bold text-gray-900">{member.reactions.length}</p>
-                <p className="text-xs text-gray-500">Reactions</p>
+                <p className="text-xs text-gray-500">Réactions</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <Heart className="h-5 w-5 mx-auto text-red-400 mb-1" />
                 <p className="text-2xl font-bold text-gray-900">{lovedCount}</p>
-                <p className="text-xs text-gray-500">Adores</p>
+                <p className="text-xs text-gray-500">Adorés</p>
               </CardContent>
             </Card>
             <Card>
@@ -481,12 +481,12 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 <Sparkles className="h-5 w-5 mx-auto text-amber-400 mb-1" />
                 {member.useCustomSettings && member.favoriteGenres.length > 0 ? (
                   <>
-                    <p className="text-sm font-bold text-emerald-600">Complete</p>
+                    <p className="text-sm font-bold text-emerald-600">Complété</p>
                     <p className="text-xs text-gray-500">Quiz</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm font-bold text-amber-600">A faire</p>
+                    <p className="text-sm font-bold text-amber-600">À faire</p>
                     <p className="text-xs text-gray-500">Quiz</p>
                   </>
                 )}
@@ -498,9 +498,9 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Centres d'interet</CardTitle>
+                <CardTitle className="text-base">Centres d&apos;intérêt</CardTitle>
                 {savingInterests && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
-                {interestsSaved && <span className="text-xs text-emerald-600 flex items-center gap-1"><Check className="h-3 w-3" /> Enregistre</span>}
+                {interestsSaved && <span className="text-xs text-emerald-600 flex items-center gap-1"><Check className="h-3 w-3" /> Enregistré</span>}
               </div>
             </CardHeader>
             <CardContent>
@@ -516,7 +516,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           {member.reactions.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Activite recente</CardTitle>
+                <CardTitle className="text-base">Activité récente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {member.reactions.slice(0, 5).map((reaction) => {
@@ -666,7 +666,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 Aucun favori pour le moment.
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Utilisez la barre de recherche ci-dessus pour ajouter les films et series que {member.name} a adores !
+                Utilisez la barre de recherche ci-dessus pour ajouter les films et séries que {member.name} a adorés !
               </p>
             </div>
           )}
@@ -688,14 +688,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                   <div>
                     <p className="font-medium text-gray-900">
                       {member.useCustomSettings && member.favoriteGenres.length > 0
-                        ? "Quiz de preferences complete"
-                        : "Quiz de preferences non complete"
+                        ? "Quiz de préférences complété"
+                        : "Quiz de préférences non complété"
                       }
                     </p>
                     <p className="text-xs text-gray-500">
                       {member.useCustomSettings && member.favoriteGenres.length > 0
-                        ? "Les recommandations sont personnalisees"
-                        : "Completez le quiz pour de meilleures recommandations"
+                        ? "Les recommandations sont personnalisées"
+                        : "Complétez le quiz pour de meilleures recommandations"
                       }
                     </p>
                   </div>
@@ -714,12 +714,12 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Shield className="h-4 w-4 text-gray-400" />
-                Sensibilite
+                Sensibilité
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <SensitivityRow label="Violence" value={member.sensitivityViolence} />
-              <SensitivityRow label="Scenes effrayantes" value={member.sensitivityScary} />
+              <SensitivityRow label="Scènes effrayantes" value={member.sensitivityScary} />
               <SensitivityRow label="Contenu sexuel" value={member.sensitivitySexual} />
               <SensitivityRow label="Langage" value={member.sensitivityLanguage} />
               <SensitivityRow label="Substances" value={member.sensitivitySubstances} />
@@ -736,8 +736,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             </CardHeader>
             <CardContent className="space-y-3">
               <PreferenceRow label="Messages positifs" value={member.preferPositiveMessages} />
-              <PreferenceRow label="Bons modeles" value={member.preferRoleModels} />
-              <PreferenceRow label="Educatif" value={member.preferEducational} />
+              <PreferenceRow label="Bons modèles" value={member.preferRoleModels} />
+              <PreferenceRow label="Éducatif" value={member.preferEducational} />
             </CardContent>
           </Card>
 
@@ -752,7 +752,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <CardContent className="space-y-3">
               {member.favoriteGenres.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">Preferes</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">Préférés</p>
                   <div className="flex flex-wrap gap-1.5">
                     {member.favoriteGenres.map((g) => (
                       <Badge key={g} className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{g}</Badge>
@@ -762,7 +762,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               )}
               {member.dislikedGenres.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">A eviter</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">À éviter</p>
                   <div className="flex flex-wrap gap-1.5">
                     {member.dislikedGenres.map((g) => (
                       <Badge key={g} className="bg-red-100 text-red-700 hover:bg-red-100">{g}</Badge>
@@ -771,7 +771,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 </div>
               )}
               {member.favoriteGenres.length === 0 && member.dislikedGenres.length === 0 && (
-                <p className="text-sm text-gray-400">Aucun genre defini. Completez le quiz pour personnaliser.</p>
+                <p className="text-sm text-gray-400">Aucun genre défini. Complétez le quiz pour personnaliser.</p>
               )}
             </CardContent>
           </Card>
@@ -781,7 +781,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-gray-400" />
-                Sujets a eviter
+                Sujets à éviter
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -792,7 +792,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">Aucun sujet a eviter defini.</p>
+                <p className="text-sm text-gray-400">Aucun sujet à éviter défini.</p>
               )}
             </CardContent>
           </Card>
