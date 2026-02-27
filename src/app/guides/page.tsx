@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Nos guides | Totem Avisé",
+  title: "Nos guides — Accompagner vos enfants face aux écrans",
   description: "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
 }
 
@@ -75,9 +75,38 @@ const guides = [
   },
 ]
 
+// Build FAQPage JSON-LD from guide content
+function buildFaqJsonLd() {
+  const questions = guides
+    .filter((g) => g.available && g.content.length > 0)
+    .flatMap((guide) =>
+      guide.content.map((item) => ({
+        "@type": "Question" as const,
+        name: `${item.age} : ${item.rec}`,
+        acceptedAnswer: {
+          "@type": "Answer" as const,
+          text: item.detail,
+        },
+      }))
+    )
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: questions,
+  }
+}
+
 export default function GuidesPage() {
+  const faqJsonLd = buildFaqJsonLd()
+
   return (
     <div className="min-h-screen">
+      {/* FAQ Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* Hero */}
       <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white py-20">
         <div className="container mx-auto px-4 max-w-4xl text-center">

@@ -32,19 +32,19 @@
 - [x] Add sitemap.ts (dynamic from DB media items)
 - [x] Add `metadataBase` to layout.tsx for absolute OG URLs + twitter card config
 - [ ] Verify OG metadata on homepage (test with https://cards-dev.twitter.com/validator)
-- [ ] Submit sitemap to Google Search Console
-- [ ] Submit site to Bing Webmaster Tools
+- [x] Submit sitemap to Google Search Console
+- [x] Submit site to Bing Webmaster Tools
 
 ### 5. Analytics
 - [x] Vercel Web Analytics integrated (`@vercel/analytics` in layout.tsx)
-- [ ] Verify Vercel Analytics is enabled in dashboard
-- [ ] Set up Google Search Console (verify domain ownership)
+- [x] Verify Vercel Analytics is enabled in dashboard
+- [x] Set up Google Search Console (verify domain ownership)
 - [ ] Set up Plausible ($9/month) — CNIL-exempt, no cookie consent needed in France
 
 ### 6. Content Seeding
-- [ ] Ensure 50+ movies have full content metrics (enriched by AI) — check via `/api/admin/health`
-- [ ] Ensure 20+ series have full content metrics
-- [ ] Ensure 10+ games have full content metrics
+- [x] Ensure 50+ movies have full content metrics (enriched by AI) — check via `/api/admin/health`
+- [x] Ensure 20+ series have full content metrics
+- [x] Ensure 10+ games have full content metrics
 - [x] Verify collections show poster collages (not empty)
 - [ ] Run weekly-import cron manually once to populate latest content
 
@@ -53,14 +53,12 @@
 ## SEO & SOCIAL SHARING (First week) — Phase B
 
 ### 7. Dynamic Metadata (highest ROI code work)
-- [ ] Add `generateMetadata()` to `/media/[id]/page.tsx` — dynamic OG title, description, image (poster)
-- [ ] Add JSON-LD structured data: Movie/TVSeries/VideoGame + AggregateRating on media pages
-- [ ] Add BreadcrumbList JSON-LD site-wide
-- [ ] Add FAQPage JSON-LD on guide pages
+- [x] Add `generateMetadata()` to `/media/[id]/page.tsx` — dynamic OG title, description, image (poster)
+- [x] Add JSON-LD structured data: Movie/TVSeries/VideoGame + AggregateRating on media pages
+- [x] Add BreadcrumbList JSON-LD on media pages
+- [x] Add FAQPage JSON-LD on guide pages
 - [ ] Test OG tags with Twitter Card Validator + Facebook Debugger
-- [ ] SEO title template: "[Titre] — À partir de quel âge ? Avis parents | Totem Avisé"
-
-> **Note:** No `generateMetadata`, `metadataBase`, or JSON-LD structured data exists yet. This is the highest-impact SEO work remaining.
+- [x] SEO title template: "[Titre] — À partir de quel âge ? Avis parents | Totem Avisé"
 
 ---
 

@@ -1,6 +1,8 @@
 // Revalidate every hour — balances freshness with performance
 export const revalidate = 3600
 
+import { cache } from "react"
+import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
@@ -64,8 +66,8 @@ interface DatabaseMediaItem extends MockMediaItem {
   screenshots?: { id: string; url: string; width: number | null; height: number | null; order: number }[]
 }
 
-// Helper to fetch from database directly
-async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> {
+// Helper to fetch from database directly (cached to avoid duplicate queries in generateMetadata + page)
+const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> {
   try {
     // Common include configuration - simplified to avoid potential schema mismatches
     const includeConfig = {
@@ -126,6 +128,8 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
       officialRating: dbMedia.officialRating,
       expertAgeRec: dbMedia.expertAgeRec,
       communityAgeRec: dbMedia.communityAgeRec,
+      tmdbRating: dbMedia.tmdbRating,
+      tmdbVoteCount: dbMedia.tmdbVoteCount,
       duration: dbMedia.duration || undefined,
       director: dbMedia.director || undefined,
       genres: dbMedia.genres || [],
@@ -179,6 +183,183 @@ async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> 
     }
     return null
   }
+})
+
+// Type label mapping for SEO
+const typeLabels: Record<string, string> = {
+  MOVIE: "Film",
+  TV: "Série",
+  GAME: "Jeu vidéo",
+  BOOK: "Livre",
+  APP: "Application",
+}
+
+const typeCategoryPaths: Record<string, { path: string; label: string }> = {
+  MOVIE: { path: "/films", label: "Films" },
+  TV: { path: "/series", label: "Séries" },
+  GAME: { path: "/jeux", label: "Jeux vidéo" },
+  BOOK: { path: "/livres", label: "Livres" },
+  APP: { path: "/apps", label: "Applications" },
+}
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({ params }: MediaPageProps): Promise<Metadata> {
+  const { id } = await params
+  const { type, id: rawId } = parseMediaRouteId(id)
+
+  const media = await fetchFromDatabase(rawId)
+  if (!media) return {}
+
+  const ageStr = media.expertAgeRec && media.expertAgeRec > 0
+    ? ` — À partir de ${media.expertAgeRec}+ ans ? Avis parents`
+    : " — Avis parents"
+
+  const title = `${media.title}${ageStr}`
+
+  const typeLabel = typeLabels[media.type] || "Média"
+  let description = media.synopsisFr
+    ? media.synopsisFr.slice(0, 155) + (media.synopsisFr.length > 155 ? "…" : "")
+    : `${typeLabel} analysé par Totem Avisé. Découvrez notre avis détaillé et recommandation d'âge pour les familles.`
+
+  const ogType = media.type === "MOVIE" ? "video.movie"
+    : media.type === "TV" ? "video.tv_show"
+    : "website"
+
+  return {
+    title,
+    description,
+    keywords: [
+      ...media.genres.slice(0, 5),
+      typeLabel,
+      "avis parents",
+      "à partir de quel âge",
+      media.title,
+    ],
+    openGraph: {
+      title: `${media.title}${ageStr} | Totem Avisé`,
+      description,
+      type: ogType as "video.movie" | "video.tv_show" | "website",
+      ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
+        images: [{ url: media.posterUrl, width: 500, height: 750, alt: media.title }],
+      }),
+      locale: "fr_FR",
+      siteName: "Totem Avisé",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${media.title}${ageStr}`,
+      description,
+      ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
+        images: [media.posterUrl],
+      }),
+    },
+  }
+}
+
+// Build JSON-LD structured data for a media item
+function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
+  const baseUrl = "https://totemavise.com"
+  const pageUrl = `${baseUrl}/media/${routeId}`
+  const category = typeCategoryPaths[media.type]
+
+  // Breadcrumb
+  const breadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      ...(category ? [{ "@type": "ListItem", position: 2, name: category.label, item: `${baseUrl}${category.path}` }] : []),
+      { "@type": "ListItem", position: category ? 3 : 2, name: media.title },
+    ],
+  }
+
+  // AggregateRating from TMDB (if available)
+  const aggregateRating = media.tmdbRating && media.tmdbVoteCount && media.tmdbVoteCount > 0
+    ? {
+        "@type": "AggregateRating",
+        ratingValue: media.tmdbRating,
+        bestRating: 10,
+        ratingCount: media.tmdbVoteCount,
+      }
+    : undefined
+
+  // Main entity based on type
+  let mainEntity: Record<string, unknown>
+
+  switch (media.type) {
+    case "MOVIE":
+      mainEntity = {
+        "@context": "https://schema.org",
+        "@type": "Movie",
+        name: media.title,
+        ...(media.originalTitle && { alternateName: media.originalTitle }),
+        description: media.synopsisFr || undefined,
+        ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
+        url: pageUrl,
+        ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.director && { director: { "@type": "Person", name: media.director } }),
+        ...(media.genres.length > 0 && { genre: media.genres }),
+        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(media.duration && { duration: `PT${media.duration}M` }),
+        ...(aggregateRating && { aggregateRating }),
+      }
+      break
+    case "TV":
+      mainEntity = {
+        "@context": "https://schema.org",
+        "@type": "TVSeries",
+        name: media.title,
+        ...(media.originalTitle && { alternateName: media.originalTitle }),
+        description: media.synopsisFr || undefined,
+        ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
+        url: pageUrl,
+        ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.genres.length > 0 && { genre: media.genres }),
+        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(aggregateRating && { aggregateRating }),
+      }
+      break
+    case "GAME":
+      mainEntity = {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        name: media.title,
+        ...(media.originalTitle && { alternateName: media.originalTitle }),
+        description: media.synopsisFr || undefined,
+        ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
+        url: pageUrl,
+        ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.genres.length > 0 && { genre: media.genres }),
+        ...(media.platforms.length > 0 && { gamePlatform: media.platforms }),
+        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(aggregateRating && { aggregateRating }),
+      }
+      break
+    case "BOOK":
+      mainEntity = {
+        "@context": "https://schema.org",
+        "@type": "Book",
+        name: media.title,
+        ...(media.originalTitle && { alternateName: media.originalTitle }),
+        description: media.synopsisFr || undefined,
+        ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
+        url: pageUrl,
+        ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.genres.length > 0 && { genre: media.genres }),
+        ...(aggregateRating && { aggregateRating }),
+      }
+      break
+    default:
+      mainEntity = {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        name: media.title,
+        description: media.synopsisFr || undefined,
+        url: pageUrl,
+      }
+  }
+
+  return { breadcrumb, mainEntity }
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
@@ -432,8 +613,21 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
   const adminUser = await checkIsAdmin()
 
+  // JSON-LD structured data
+  const jsonLd = buildJsonLd(media, id)
+
   return (
     <div className="min-h-screen bg-background">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.breadcrumb) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.mainEntity) }}
+      />
+
       {/* Hero Section with Backdrop */}
       <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
         {/* Backdrop Image — hidden for sensitive content */}
