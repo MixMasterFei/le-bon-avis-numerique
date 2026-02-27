@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
               type: { in: ["MOVIE", "TV"] },
               dataQualityScore: { gte: 70 },
               expertAgeRec: { not: null, lte: 12 },
+              originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] },
             },
             {
               type: "GAME",

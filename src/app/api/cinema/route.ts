@@ -17,12 +17,16 @@ export async function GET() {
     const tmdbResult = await getNowPlayingMovies(1)
     const tmdbMovies = tmdbResult.results || []
 
-    if (tmdbMovies.length === 0) {
+    // Filter to European languages only (exclude Japanese anime, Korean, Chinese, etc.)
+    const europeanLanguages = new Set(["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"])
+    const filteredMovies = tmdbMovies.filter((m) => europeanLanguages.has(m.original_language))
+
+    if (filteredMovies.length === 0) {
       return NextResponse.json({ movies: [] })
     }
 
     // Extract TMDB IDs to look up in our database
-    const tmdbIds = tmdbMovies.map((m) => m.id)
+    const tmdbIds = filteredMovies.map((m) => m.id)
 
     // Find matching movies in our DB (for age recommendations, enrichment, etc.)
     let dbMovies: Array<{
@@ -64,7 +68,7 @@ export async function GET() {
     )
 
     // Merge TMDB order (popularity) with our DB enrichment
-    const movies = tmdbMovies.map((tmdb) => {
+    const movies = filteredMovies.map((tmdb) => {
       const db = dbByTmdbId.get(tmdb.id)
       return {
         id: db?.id ?? `tmdb-${tmdb.id}`,

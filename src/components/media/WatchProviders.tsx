@@ -66,13 +66,19 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
                   className="w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm ring-2 ring-gray-800"
                   title={provider.provider_name}
                 >
-                  <Image
-                    src={getProviderLogoUrl(provider.logo_path, "w92")}
-                    alt={provider.provider_name}
-                    width={32}
-                    height={32}
-                    className="object-cover"
-                  />
+                  {provider.logo_path ? (
+                    <Image
+                      src={getProviderLogoUrl(provider.logo_path, "w92")}
+                      alt={provider.provider_name}
+                      width={32}
+                      height={32}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-500 to-indigo-600 text-white text-xs font-bold">
+                      {provider.provider_name.charAt(0)}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -155,13 +161,19 @@ function ProviderRow({ title, icon, providers, color }: ProviderRowProps) {
             className="group relative"
           >
             <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shadow-sm ring-1 ring-white/20 transition-transform group-hover:scale-110">
-              <Image
-                src={getProviderLogoUrl(provider.logo_path, "w92")}
-                alt={provider.provider_name}
-                width={40}
-                height={40}
-                className="object-cover"
-              />
+              {provider.logo_path ? (
+                <Image
+                  src={getProviderLogoUrl(provider.logo_path, "w92")}
+                  alt={provider.provider_name}
+                  width={40}
+                  height={40}
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-500 to-indigo-600 text-white text-sm font-bold">
+                  {provider.provider_name.charAt(0)}
+                </div>
+              )}
             </div>
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
