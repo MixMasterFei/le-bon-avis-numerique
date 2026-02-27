@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const genre = searchParams.get("genre")
   const search = searchParams.get("q")
+  const sort = searchParams.get("sort") // "popularity" | "rating" | "newest" | default (age+date)
+  const minVotes = searchParams.get("minVotes") // minimum tmdbVoteCount
 
   const skip = (page - 1) * limit
 
@@ -49,14 +51,35 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // Filter by minimum vote count (surfaces well-known titles)
+    if (minVotes) {
+      const votes = parseInt(minVotes)
+      if (votes > 0) {
+        where.tmdbVoteCount = { gte: votes }
+      }
+    }
+
+    // Determine sort order
+    let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
+    switch (sort) {
+      case "popularity":
+        orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }, { tmdbRating: { sort: "desc", nulls: "last" } }]
+        break
+      case "rating":
+        orderBy = [{ tmdbRating: { sort: "desc", nulls: "last" } }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+        break
+      case "newest":
+        orderBy = [{ releaseDate: { sort: "desc", nulls: "last" } }]
+        break
+      default:
+        orderBy = [{ expertAgeRec: "asc" }, { createdAt: "desc" }]
+    }
+
     // Run sequentially for compatibility with pooled Postgres backends.
     const items = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
-        orderBy: [
-          { expertAgeRec: "asc" }, // Sort by age first
-          { createdAt: "desc" },
-        ],
+        orderBy,
         skip,
         take: limit,
         include: {

@@ -80,6 +80,8 @@ export default function AgePage({ params }: AgePageProps) {
           limit: ITEMS_PER_PAGE.toString(),
           minAge: ageRange.min.toString(),
           maxAge: ageRange.max.toString(),
+          sort: "popularity",
+          minVotes: "50",
         })
 
         const dbRes = await fetch(`/api/db/media?${dbParams}`, { signal: controller.signal })
