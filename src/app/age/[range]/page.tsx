@@ -24,23 +24,29 @@ const ageRanges: Record<string, { min: number; max: number; label: string; descr
     label: "5-7 ans",
     description: "Aventures pour les jeunes enfants avec des thèmes d'amitié et de découverte.",
   },
-  "8-9": {
+  "8-10": {
     min: 8,
-    max: 9,
-    label: "8-9 ans",
+    max: 10,
+    label: "8-10 ans",
     description: "Histoires plus complexes avec des héros attachants et des défis à surmonter.",
   },
-  "10-12": {
-    min: 10,
+  "11-12": {
+    min: 11,
     max: 12,
-    label: "10-12 ans",
+    label: "11-12 ans",
     description: "Contenu pour les pré-adolescents avec des thèmes plus matures et nuancés.",
   },
-  "13-plus": {
+  "13-15": {
     min: 13,
-    max: 18,
-    label: "13+ ans",
+    max: 15,
+    label: "13-15 ans",
     description: "Contenu pour adolescents abordant des sujets complexes adaptés à leur âge.",
+  },
+  "16-plus": {
+    min: 16,
+    max: 18,
+    label: "16+ ans",
+    description: "Contenu pour grands adolescents et jeunes adultes.",
   },
 }
 

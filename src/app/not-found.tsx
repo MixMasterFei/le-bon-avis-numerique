@@ -21,15 +21,15 @@ export default function NotFound() {
       </h2>
 
       <p className="text-muted-foreground text-lg mb-8 max-w-md">
-        Cette page n&apos;existe pas ou a ete deplacee.
-        Essayez de chercher ce que vous voulez ou retournez a l&apos;accueil.
+        Cette page n&apos;existe pas ou a été déplacée.
+        Essayez de chercher ce que vous voulez ou retournez à l&apos;accueil.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <Button size="lg" asChild className="gap-2">
           <Link href="/">
             <Home className="h-4 w-4" />
-            Retour a l&apos;accueil
+            Retour à l&apos;accueil
           </Link>
         </Button>
         <Button variant="outline" size="lg" asChild className="gap-2">
