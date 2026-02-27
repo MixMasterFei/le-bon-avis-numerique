@@ -80,7 +80,7 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-18 items-center">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
+          <Link href="/" className="flex items-center gap-2 group shrink-0" onClick={() => window.scrollTo({ top: 0 })}>
             <Image
               src="/logo-icon.png"
               alt="Totem Avisé"

@@ -1,65 +1,52 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 
-// Store scroll positions for each path
-const scrollPositions: Record<string, number> = {}
-
+/**
+ * Handles scroll restoration for Next.js App Router:
+ * - Forward navigation (link clicks): scrolls to top (Next.js default)
+ * - Back/forward navigation: restores previous scroll position
+ */
 export function ScrollRestoration() {
   const pathname = usePathname()
+  const prevPathname = useRef(pathname)
+  const scrollMap = useRef<Map<string, number>>(new Map())
+  const isPopState = useRef(false)
 
+  // Track back/forward navigation via popstate
   useEffect(() => {
-    // Restore scroll position when navigating back
-    if (typeof window !== "undefined") {
-      // Set browser to manual scroll restoration
-      if ("scrollRestoration" in window.history) {
-        window.history.scrollRestoration = "manual"
-      }
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual"
+    }
 
-      // Save scroll position before navigating away
-      const handleBeforeUnload = () => {
-        scrollPositions[pathname] = window.scrollY
-      }
+    const handlePopState = () => {
+      isPopState.current = true
+    }
+    window.addEventListener("popstate", handlePopState)
+    return () => window.removeEventListener("popstate", handlePopState)
+  }, [])
 
-      // Save on scroll (debounced)
-      let scrollTimeout: NodeJS.Timeout
-      const handleScroll = () => {
-        clearTimeout(scrollTimeout)
-        scrollTimeout = setTimeout(() => {
-          scrollPositions[pathname] = window.scrollY
-        }, 100)
-      }
+  // Save/restore scroll on pathname change
+  useEffect(() => {
+    if (prevPathname.current !== pathname) {
+      // Save scroll position for the page we're leaving
+      scrollMap.current.set(prevPathname.current, window.scrollY)
 
-      // Restore position on popstate (back/forward navigation)
-      const handlePopState = () => {
-        const savedPosition = scrollPositions[pathname]
-        if (savedPosition !== undefined) {
-          // Use requestAnimationFrame to ensure DOM is ready
+      if (isPopState.current) {
+        // Back/forward: restore saved position
+        const saved = scrollMap.current.get(pathname)
+        if (saved !== undefined) {
+          // Wait for DOM to render, then restore
           requestAnimationFrame(() => {
-            window.scrollTo(0, savedPosition)
+            setTimeout(() => window.scrollTo(0, saved), 0)
           })
         }
+        isPopState.current = false
       }
+      // Forward navigation: Next.js <Link> already scrolls to top
 
-      window.addEventListener("beforeunload", handleBeforeUnload)
-      window.addEventListener("scroll", handleScroll, { passive: true })
-      window.addEventListener("popstate", handlePopState)
-
-      // Restore scroll position if we have one saved for this path
-      const savedPosition = scrollPositions[pathname]
-      if (savedPosition !== undefined) {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, savedPosition)
-        })
-      }
-
-      return () => {
-        clearTimeout(scrollTimeout)
-        window.removeEventListener("beforeunload", handleBeforeUnload)
-        window.removeEventListener("scroll", handleScroll)
-        window.removeEventListener("popstate", handlePopState)
-      }
+      prevPathname.current = pathname
     }
   }, [pathname])
 

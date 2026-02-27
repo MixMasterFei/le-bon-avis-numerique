@@ -138,7 +138,7 @@ export function ExpertPicks() {
           <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white shadow-lg">
             <Award className="h-5 w-5" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Sélection Expert</h2>
+          <h2 className="text-xl font-bold text-gray-900">Sélection Totem</h2>
         </div>
         <p className="text-gray-600 text-sm">
           Nos sélections sont en cours de préparation. Revenez bientôt !
@@ -157,7 +157,7 @@ export function ExpertPicks() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                Sélection Expert
+                Sélection Totem
               </h2>
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                 <Star className="h-3 w-3 mr-1 fill-emerald-500" />
