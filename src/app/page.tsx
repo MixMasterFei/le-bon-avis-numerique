@@ -13,8 +13,10 @@ import { CuratedCollections } from "@/components/home/CuratedCollections"
 import { TrustBanner } from "@/components/home/TrustBanner"
 import { StreamingSection } from "@/components/home/StreamingSection"
 import { NowInCinema } from "@/components/home/NowInCinema"
+import { auth } from "@/lib/auth"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth()
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -119,28 +121,53 @@ export default function HomePage() {
       <TrustBanner />
 
       {/* CTA Section */}
-      <section className="py-16 bg-slate-900 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-black mb-4">
-            Rejoignez notre communauté de parents
-          </h2>
-          <p className="text-white/70 mb-10 max-w-2xl mx-auto text-lg">
-            Partagez vos avis, recevez des recommandations personnalisées et aidez d&apos;autres familles à faire les bons choix.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/inscription">
-              <Button size="lg" className="bg-white text-slate-900 hover:bg-gray-100 rounded-full px-8 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold">
-                Créer un compte gratuit
-              </Button>
-            </Link>
-            <Link href="/contact">
-              <Button size="lg" variant="outline" className="border-2 border-white/30 text-white hover:bg-white/10 rounded-full px-8 font-semibold">
-                En savoir plus
-              </Button>
-            </Link>
+      {session?.user ? (
+        <section className="py-16 bg-slate-900 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">
+              Explorez vos recommandations
+            </h2>
+            <p className="text-white/70 mb-10 max-w-2xl mx-auto text-lg">
+              Découvrez des contenus adaptés à votre famille, partagez vos avis et créez vos listes personnalisées.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/profil">
+                <Button size="lg" className="bg-white text-slate-900 hover:bg-gray-100 rounded-full px-8 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold">
+                  Mon profil
+                </Button>
+              </Link>
+              <Link href="/films">
+                <Button size="lg" variant="outline" className="border-2 border-white/30 text-white hover:bg-white/10 rounded-full px-8 font-semibold">
+                  Parcourir les films
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="py-16 bg-slate-900 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl md:text-4xl font-black mb-4">
+              Rejoignez notre communauté de parents
+            </h2>
+            <p className="text-white/70 mb-10 max-w-2xl mx-auto text-lg">
+              Partagez vos avis, recevez des recommandations personnalisées et aidez d&apos;autres familles à faire les bons choix.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/inscription">
+                <Button size="lg" className="bg-white text-slate-900 hover:bg-gray-100 rounded-full px-8 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 font-semibold">
+                  Créer un compte gratuit
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button size="lg" variant="outline" className="border-2 border-white/30 text-white hover:bg-white/10 rounded-full px-8 font-semibold">
+                  En savoir plus
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
