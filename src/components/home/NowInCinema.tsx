@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Clapperboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
-import { type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface CinemaMovie {
   id: string

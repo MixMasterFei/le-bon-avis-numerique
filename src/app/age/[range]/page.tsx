@@ -7,7 +7,7 @@ import { ArrowLeft, Users, Loader2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
 
@@ -59,7 +59,6 @@ export default function AgePage({ params }: AgePageProps) {
   const ageRange = ageRanges[range]
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [source, setSource] = useState<"db" | "mock">("mock")
   const [dbItems, setDbItems] = useState<MockMediaItem[]>([])
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
@@ -111,7 +110,6 @@ export default function AgePage({ params }: AgePageProps) {
             }))
 
             if (!cancelled) {
-              setSource("db")
               setDbItems(mapped)
               setDbTotalPages(dbData.pagination?.totalPages || 1)
               setDbTotalResults(dbData.pagination?.total || mapped.length)
@@ -120,13 +118,17 @@ export default function AgePage({ params }: AgePageProps) {
           }
         }
 
-        // Fallback to mock data
+        // No results from DB
         if (!cancelled) {
-          setSource("mock")
+          setDbItems([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } catch {
         if (!cancelled) {
-          setSource("mock")
+          setDbItems([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -145,15 +147,9 @@ export default function AgePage({ params }: AgePageProps) {
     notFound()
   }
 
-  // Mock data fallback
-  const mockItems = mockMediaItems.filter(
-    (item) =>
-      item.expertAgeRec !== null && item.expertAgeRec >= ageRange.min && item.expertAgeRec <= ageRange.max
-  )
-
-  const displayItems = source === "db" ? dbItems : mockItems.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-  const totalPages = source === "db" ? dbTotalPages : Math.ceil(mockItems.length / ITEMS_PER_PAGE)
-  const totalCount = source === "db" ? (dbTotalResults ?? dbItems.length) : mockItems.length
+  const displayItems = dbItems
+  const totalPages = dbTotalPages
+  const totalCount = dbTotalResults ?? dbItems.length
 
   return (
     <div className="container mx-auto px-4 py-8">

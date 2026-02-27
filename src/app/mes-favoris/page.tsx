@@ -6,7 +6,7 @@ import { redirect } from "next/navigation"
 import { Heart, Loader2, Trash2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { Button } from "@/components/ui/button"
-import type { MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 export default function MesFavorisPage() {
   const { data: session, status } = useSession()

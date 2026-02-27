@@ -11,7 +11,7 @@ import { AgeBadge } from "./AgeBadge"
 import { SafetyBar } from "./ContentGrid"
 import { PlatformIcons } from "./PlatformIcons"
 import { cn, mediaTypeLabels } from "@/lib/utils"
-import type { MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 import { toMediaRouteId } from "@/lib/media-route"
 import { useSettings } from "@/contexts/SettingsContext"
 

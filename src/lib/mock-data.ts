@@ -1,44 +1,8 @@
 // Mock data for development without database
-export interface MockMediaItem {
-  id: string
-  title: string
-  originalTitle?: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
-  releaseDate: string | null
-  posterUrl: string
-  synopsisFr: string | null
-  officialRating: string | null
-  expertAgeRec: number | null
-  communityAgeRec: number | null
-  duration?: number
-  director?: string
-  genres: string[]
-  platforms: string[]
-  topics: string[]
-  contentMetrics: {
-    violence: number
-    sexNudity: number
-    language: number
-    consumerism: number
-    substanceUse: number
-    positiveMessages: number
-    roleModels: number
-    whatParentsNeedToKnow: string[]
-  }
-  reviews: {
-    id: string
-    role: "PARENT" | "KID" | "EDUCATOR"
-    rating: number
-    ageSuggestion: number
-    comment: string
-  }[]
-  // Aggregated review stats (for card display)
-  reviewCount?: number
-  reviewAvgRating?: number | null
-  // TMDB community rating (0-10 scale, used as fallback when no user reviews)
-  tmdbRating?: number | null
-  tmdbVoteCount?: number | null
-}
+import type { MediaItem } from "./types"
+
+/** @deprecated Use MediaItem from @/lib/types instead */
+export type MockMediaItem = MediaItem
 
 export const mockMediaItems: MockMediaItem[] = [
   {

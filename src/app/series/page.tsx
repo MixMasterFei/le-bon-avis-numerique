@@ -5,7 +5,7 @@ import { Tv, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
 const FEATURED_COUNT = 7
@@ -100,13 +100,19 @@ export default function SeriesPage() {
           }
         }
 
-        // Fallback to mock data
+        // No results from DB
         if (!cancelled) {
-          setSource("mock")
+          setSource("db")
+          setDbSeries([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } catch {
         if (!cancelled) {
-          setSource("mock")
+          setSource("db")
+          setDbSeries([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -164,47 +170,8 @@ export default function SeriesPage() {
   }, [filters.maxAge])
 
   const filteredSeries = useMemo(() => {
-    // Start with appropriate source
-    let items = source === "db"
-      ? dbSeries
-      : mockMediaItems.filter((m) => m.type === "TV")
-
-    // Apply search filter (client-side for all sources)
-    if (filters.searchQuery && filters.searchQuery.trim()) {
-      const query = filters.searchQuery.toLowerCase().trim()
-      items = items.filter((m) =>
-        m.title.toLowerCase().includes(query)
-      )
-    }
-
-    // For mock data, apply additional filters
-    if (source === "mock") {
-      if (filters.maxAge < 18) {
-        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-      }
-
-      if (filters.platforms.length > 0) {
-        items = items.filter((m) =>
-          m.platforms.some((p) =>
-            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-          )
-        )
-      }
-
-      if (filters.topics.length > 0) {
-        items = items.filter((m) =>
-          m.topics.some((t) =>
-            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-          ) ||
-          m.genres.some((g) =>
-            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
-          )
-        )
-      }
-    }
-
-    return items
-  }, [dbSeries, filters, source])
+    return dbSeries
+  }, [dbSeries])
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters)
@@ -213,20 +180,12 @@ export default function SeriesPage() {
 
   // Get all available titles for autocomplete
   const availableTitles = useMemo(() => {
-    const titles = source === "db"
-      ? dbSeries.map(s => s.title)
-      : mockMediaItems.filter(m => m.type === "TV").map(s => s.title)
-    return [...new Set(titles)] // Remove duplicates
-  }, [dbSeries, source])
+    return [...new Set(dbSeries.map(s => s.title))]
+  }, [dbSeries])
 
-  const totalPages = source === "db" ? dbTotalPages : Math.ceil(filteredSeries.length / ITEMS_PER_PAGE)
-  const paginatedSeries = useMemo(() => {
-    if (source === "db") return filteredSeries
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filteredSeries.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredSeries, currentPage, source])
-
-  const totalCount = source === "db" ? (dbTotalResults ?? filteredSeries.length) : filteredSeries.length
+  const totalPages = dbTotalPages
+  const paginatedSeries = filteredSeries
+  const totalCount = dbTotalResults ?? filteredSeries.length
 
   return (
     <div className="container mx-auto px-4 py-8">

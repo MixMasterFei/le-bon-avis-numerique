@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 type MediaType = "all" | "movie" | "tv" | "game" | "book"
 
@@ -107,25 +107,12 @@ function RechercheContent() {
         }
       }
 
-      // Fallback: search in mock data if database is empty
-      const q = searchQuery.toLowerCase()
-      const mockResults = mockMediaItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
-      )
-      setResults(mockResults)
-      setSource("mock")
+      // No results from DB
+      setResults([])
+      setSource("db")
     } catch {
-      // Last resort: search mock data on error
-      const q = searchQuery.toLowerCase()
-      const mockResults = mockMediaItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          (item.originalTitle ? item.originalTitle.toLowerCase().includes(q) : false)
-      )
-      setResults(mockResults)
-      setSource("mock")
+      setResults([])
+      setSource("db")
     } finally {
       setIsLoading(false)
     }

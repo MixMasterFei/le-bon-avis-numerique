@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
 
@@ -166,7 +166,10 @@ function FilmsRechercheContent() {
         const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
         const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
         if (!res.ok) {
-          setSource("mock")
+          setSource("db")
+          setApiMovies([])
+          setApiTotalPages(1)
+          setApiTotalResults(0)
           return
         }
         const data = await res.json()
@@ -210,7 +213,10 @@ function FilmsRechercheContent() {
         }
       } catch {
         if (!cancelled) {
-          setSource("mock")
+          setSource("db")
+          setApiMovies([])
+          setApiTotalPages(1)
+          setApiTotalResults(0)
         }
       } finally {
         if (!cancelled) setApiLoading(false)
@@ -226,50 +232,8 @@ function FilmsRechercheContent() {
   }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy])
 
   const filteredMovies = useMemo(() => {
-    // Start with appropriate source
-    let items = (source === "db" || source === "api")
-      ? apiMovies
-      : mockMediaItems.filter((m) => m.type === "MOVIE")
-
-    // Apply search filter (client-side for all sources)
-    if (filters.searchQuery && filters.searchQuery.trim()) {
-      const query = filters.searchQuery.toLowerCase().trim()
-      items = items.filter((m) =>
-        m.title.toLowerCase().includes(query)
-      )
-    }
-
-    // For mock data, apply additional filters
-    if (source === "mock") {
-      // Filter by age
-      if (filters.maxAge < 18) {
-        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-      }
-
-      // Filter by platform
-      if (filters.platforms.length > 0) {
-        items = items.filter((m) =>
-          m.platforms.some((p) =>
-            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-          )
-        )
-      }
-
-      // Filter by topics
-      if (filters.topics.length > 0) {
-        items = items.filter((m) =>
-          m.topics.some((t) =>
-            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-          ) ||
-          m.genres.some((g) =>
-            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
-          )
-        )
-      }
-    }
-
-    return items
-  }, [apiMovies, filters, source])
+    return apiMovies
+  }, [apiMovies])
 
   // Reset to page 1 when filters change
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -294,19 +258,12 @@ function FilmsRechercheContent() {
 
   // Get all available titles for autocomplete
   const availableTitles = useMemo(() => {
-    const titles = (source === "db" || source === "api")
-      ? apiMovies.map(m => m.title)
-      : mockMediaItems.filter(m => m.type === "MOVIE").map(m => m.title)
-    return [...new Set(titles)] // Remove duplicates
-  }, [apiMovies, source])
+    return [...new Set(apiMovies.map(m => m.title))]
+  }, [apiMovies])
 
   // Pagination
-  const totalPages = (source === "db" || source === "api") ? apiTotalPages : Math.ceil(filteredMovies.length / ITEMS_PER_PAGE)
-  const paginatedMovies = useMemo(() => {
-    if (source === "db" || source === "api") return filteredMovies
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filteredMovies.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredMovies, currentPage, source])
+  const totalPages = apiTotalPages
+  const paginatedMovies = filteredMovies
 
   // Check if any filters are active
   const hasActiveFilters = filters.maxAge < 18 || filters.platforms.length > 0 || filters.topics.length > 0 || filters.searchQuery !== ""

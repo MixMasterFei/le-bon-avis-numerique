@@ -148,11 +148,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { name: true, role: true },
+          select: { name: true, role: true, image: true },
         })
         if (dbUser) {
           token.name = dbUser.name
           token.role = dbUser.role
+          token.picture = dbUser.image
         }
       }
       return token
@@ -161,9 +162,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = (token.id || token.sub) as string
         session.user.role = token.role as string
-        // Keep name in sync with token
+        // Keep name and image in sync with token
         if (token.name) {
           session.user.name = token.name as string
+        }
+        if (token.picture !== undefined) {
+          session.user.image = token.picture as string | null
         }
       }
       return session

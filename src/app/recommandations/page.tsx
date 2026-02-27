@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
-import { type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 type WizardType = "all" | "movie" | "tv" | "game" | "book" | "app"
 

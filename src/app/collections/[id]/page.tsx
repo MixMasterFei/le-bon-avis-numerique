@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import type { MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface CollectionData {
   collection: {

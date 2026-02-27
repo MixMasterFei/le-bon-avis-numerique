@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { redirect, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { User, Mail, Calendar, Shield, Star, Heart, Bookmark, Users, Loader2, Check, AlertTriangle, Camera, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -96,7 +96,15 @@ export default function ProfilPage() {
   }
 
   if (!session?.user) {
-    redirect("/connexion")
+    router.replace("/connexion")
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <div className="animate-pulse space-y-6">
+          <div className="h-32 bg-gray-200 rounded-xl" />
+          <div className="h-64 bg-gray-200 rounded-xl" />
+        </div>
+      </div>
+    )
   }
 
   const isAdmin = session.user.role === "ADMIN"

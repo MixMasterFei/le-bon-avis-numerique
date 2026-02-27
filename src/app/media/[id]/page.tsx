@@ -55,7 +55,7 @@ import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
 import { isAdmin as checkIsAdmin } from "@/lib/auth"
-import type { MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface MediaPageProps {
   params: Promise<{ id: string }>

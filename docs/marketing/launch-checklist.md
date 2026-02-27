@@ -103,10 +103,9 @@
 
 - [ ] Add Sentry error tracking — **not installed**
 - [x] Add Zod validation on API request bodies — partial (3 routes: content-metrics, content-requests, admin/content-requests)
-- [ ] Resolve Prisma topics table schema conflict (blocking `prisma db push`)
-- [ ] Clean up `src/lib/mock-data.ts` — still imported in 13 pages (films, series, jeux, livres, apps, media/[id], age/[range], etc.)
-- [ ] Add E2E tests with Playwright — **not installed**
-- [ ] CNC open data import (95K French film classifications)
+- [x] Resolve Prisma topics table schema conflict (removed orphaned Topic model + TopicCategory enum)
+- [x] Clean up `src/lib/mock-data.ts` — reduced from 19 importers to 3 (apps, livres, media/[id] fallback). Type extracted to `src/lib/types.ts`.
+- [x] Add E2E tests with Playwright — 8 test files, ~46 smoke tests (homepage, nav, listings, detail, search, auth guards, static pages, responsive)
 
 ---
 
@@ -137,3 +136,8 @@
 | "Chez Vous" dashboard redesign (modern, warm aesthetic matching homepage) | Done |
 | Removed non-functional notification settings from profile page | Done |
 | Zod validation on select API routes (content-metrics, content-requests) | Done (partial) |
+| Dynamic SEO metadata (generateMetadata, JSON-LD, title template) | Done |
+| Share button on media detail pages (Web Share API + clipboard fallback) | Done |
+| Prisma topics schema conflict resolved (removed orphaned Topic model) | Done |
+| Mock-data cleanup (19 → 3 importers, type extracted to `src/lib/types.ts`) | Done |
+| Playwright E2E tests (8 files, ~46 smoke tests covering key flows) | Done |

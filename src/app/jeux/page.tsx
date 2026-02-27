@@ -5,7 +5,7 @@ import { Gamepad2, Star, Clock } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
-import { mockMediaItems, type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
 const FEATURED_COUNT = 7
@@ -104,13 +104,19 @@ export default function JeuxPage() {
           }
         }
 
-        // Fallback to mock data if database is empty
+        // No results from DB
         if (!cancelled) {
-          setSource("mock")
+          setSource("db")
+          setDbGames([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } catch {
         if (!cancelled) {
-          setSource("mock")
+          setSource("db")
+          setDbGames([])
+          setDbTotalPages(1)
+          setDbTotalResults(0)
         }
       } finally {
         if (!cancelled) setDbLoading(false)
@@ -166,47 +172,10 @@ export default function JeuxPage() {
   }, [filters.maxAge])
 
   const filteredGames = useMemo(() => {
-    // Use database games if available
-    let items = source === "db"
-      ? dbGames
-      : mockMediaItems.filter((m) => m.type === "GAME")
+    let items = dbGames
 
-    // For mock data, apply client-side filters
-    if (source === "mock") {
-      // Apply search filter
-      if (filters.searchQuery && filters.searchQuery.trim()) {
-        const query = filters.searchQuery.toLowerCase().trim()
-        items = items.filter((m) =>
-          m.title.toLowerCase().includes(query)
-        )
-      }
-
-      if (filters.maxAge < 18) {
-        items = items.filter((m) => (m.expertAgeRec ?? 99) <= filters.maxAge)
-      }
-
-      if (filters.platforms.length > 0) {
-        items = items.filter((m) =>
-          m.platforms.some((p) =>
-            filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
-          )
-        )
-      }
-
-      if (filters.topics.length > 0) {
-        items = items.filter((m) =>
-          m.topics.some((t) =>
-            filters.topics.some((ft) => t.toLowerCase().includes(ft.toLowerCase()))
-          ) ||
-          m.genres.some((g) =>
-            filters.topics.some((ft) => g.toLowerCase().includes(ft.toLowerCase()))
-          )
-        )
-      }
-    }
-
-    // For DB data, also apply platform filter client-side
-    if (source === "db" && filters.platforms.length > 0) {
+    // Apply platform filter client-side
+    if (filters.platforms.length > 0) {
       items = items.filter((m) =>
         m.platforms.some((p) =>
           filters.platforms.some((fp) => p.toLowerCase().includes(fp.toLowerCase()))
@@ -215,7 +184,7 @@ export default function JeuxPage() {
     }
 
     return items
-  }, [dbGames, filters, source])
+  }, [dbGames, filters.platforms])
 
   const handleFiltersChange = (newFilters: FilterState) => {
     setFilters(newFilters)
@@ -224,18 +193,11 @@ export default function JeuxPage() {
 
   // Get all available titles for autocomplete
   const availableTitles = useMemo(() => {
-    const titles = source === "db"
-      ? dbGames.map(g => g.title)
-      : mockMediaItems.filter(m => m.type === "GAME").map(g => g.title)
-    return [...new Set(titles)] // Remove duplicates
-  }, [dbGames, source])
+    return [...new Set(dbGames.map(g => g.title))]
+  }, [dbGames])
 
-  const totalPages = source === "db" ? dbTotalPages : Math.ceil(filteredGames.length / ITEMS_PER_PAGE)
-  const paginatedGames = useMemo(() => {
-    if (source === "db") return filteredGames
-    const start = (currentPage - 1) * ITEMS_PER_PAGE
-    return filteredGames.slice(start, start + ITEMS_PER_PAGE)
-  }, [filteredGames, currentPage, source])
+  const totalPages = dbTotalPages
+  const paginatedGames = filteredGames
 
   return (
     <div className="container mx-auto px-4 py-8">

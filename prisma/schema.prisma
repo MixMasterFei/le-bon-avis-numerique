@@ -380,27 +380,6 @@ model Genre {
   @@map("genres")
 }
 
-model Topic {
-  id        String      @id @default(uuid())
-  slug      String      @unique // "aviation", "friendship"
-  name      String      // "Aviation"
-  nameFr    String      @map("name_fr") // "Aviation"
-  category  TopicCategory // theme, emotion, setting, activity
-  synonyms  String[]    // ["avion", "pilote", "vol"]
-  icon      String?     // Emoji or icon name
-
-  @@index([category])
-  @@map("topics")
-}
-
-enum TopicCategory {
-  THEME       // Aviation, Space, Magic
-  EMOTION     // Friendship, Love, Fear
-  SETTING     // City, Nature, Fantasy World
-  ACTIVITY    // Sport, Music, Cooking
-  CHARACTER   // Princesses, Dinosaurs, Robots
-}
-
 // ============================================
 // CAST & CREW
 // ============================================

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "./MediaCard"
-import { type MockMediaItem } from "@/lib/mock-data"
+import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface DbMovie {
   id: string

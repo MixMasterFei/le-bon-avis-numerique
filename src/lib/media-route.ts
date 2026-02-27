@@ -1,6 +1,6 @@
-import type { MockMediaItem } from "@/lib/mock-data"
+import type { MediaType } from "@/lib/types"
 
-export type MediaType = MockMediaItem["type"]
+export type { MediaType }
 
 /**
  * Route id format: `<type>:<encodedId>`
