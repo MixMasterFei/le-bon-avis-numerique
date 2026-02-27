@@ -24,6 +24,7 @@ export function MediaPageClient({ mediaId, mediaTitle, showActions = false }: Me
       {showActions && (
         <MediaActions
           mediaId={mediaId}
+          mediaTitle={mediaTitle}
           onReviewClick={() => setReviewModalOpen(true)}
           className="mb-6"
         />

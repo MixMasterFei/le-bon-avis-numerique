@@ -1,19 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { Heart, Bookmark, Loader2, MessageSquare } from "lucide-react"
+import { Heart, Bookmark, Loader2, MessageSquare, Share2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 interface MediaActionsProps {
   mediaId: string
+  mediaTitle?: string
   className?: string
   onReviewClick?: () => void
 }
 
-export function MediaActions({ mediaId, className = "", onReviewClick }: MediaActionsProps) {
+export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClick }: MediaActionsProps) {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [isFavorite, setIsFavorite] = useState(false)
@@ -22,6 +23,25 @@ export function MediaActions({ mediaId, className = "", onReviewClick }: MediaAc
   const [loadingFavorite, setLoadingFavorite] = useState(false)
   const [loadingWatchlist, setLoadingWatchlist] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
+  const [shared, setShared] = useState(false)
+
+  const handleShare = useCallback(async () => {
+    const url = window.location.href
+    const title = mediaTitle || document.title
+    const text = `${title} — Avis et recommandation d'âge sur Totem Avisé`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url })
+      } catch {
+        // User cancelled or share failed — ignore
+      }
+    } else {
+      await navigator.clipboard.writeText(url)
+      setShared(true)
+      setTimeout(() => setShared(false), 2000)
+    }
+  }, [mediaTitle])
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -107,6 +127,19 @@ export function MediaActions({ mediaId, className = "", onReviewClick }: MediaAc
     }
   }
 
+  // Share button — always visible regardless of auth state
+  const shareButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleShare}
+      className="gap-1.5 hover:text-emerald-500 hover:border-emerald-200 transition-colors"
+    >
+      {shared ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4" />}
+      <span className="text-xs">{shared ? "Copié !" : "Partager"}</span>
+    </Button>
+  )
+
   if (status === "loading" || initialLoading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
@@ -119,6 +152,7 @@ export function MediaActions({ mediaId, className = "", onReviewClick }: MediaAc
         <Button variant="outline" size="sm" disabled className="gap-1.5">
           <Loader2 className="h-4 w-4 animate-spin" />
         </Button>
+        {shareButton}
       </div>
     )
   }
@@ -145,6 +179,7 @@ export function MediaActions({ mediaId, className = "", onReviewClick }: MediaAc
             <span className="text-xs">Donner mon avis</span>
           </Button>
         </Link>
+        {shareButton}
       </div>
     )
   }
@@ -200,6 +235,8 @@ export function MediaActions({ mediaId, className = "", onReviewClick }: MediaAc
           <span className="text-xs">Donner mon avis</span>
         </Button>
       )}
+
+      {shareButton}
     </div>
   )
 }
