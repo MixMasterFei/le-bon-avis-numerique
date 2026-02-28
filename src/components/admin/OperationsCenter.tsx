@@ -231,7 +231,7 @@ const OPERATIONS: Array<{
       key: "computeSimilarity",
       endpoint: "/api/admin/similarity/compute",
       method: "POST",
-      body: { limit: 20 },
+      body: { limit: 20, mode: "full" },
       chunked: true,
       delayMs: 500,
       accumKeys: ["processed", "updated"],
