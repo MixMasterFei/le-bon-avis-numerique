@@ -19,9 +19,7 @@ export async function GET() {
     // Run queries that should always work
     const [
       mediaStats,
-      pendingCorrections,
       lowQualityCount,
-      pendingReports,
       topContributors,
       recentReviews,
       languageStats,
@@ -32,22 +30,12 @@ export async function GET() {
         _count: true,
       }),
 
-      // Pending corrections count
-      prisma.mediaCorrection.count({
-        where: { status: "PENDING" },
-      }),
-
       // Low quality items (score < 50)
       prisma.mediaItem.count({
         where: {
           dataQualityScore: { lt: 50 },
           tmdbId: { not: null },
         },
-      }),
-
-      // Pending review reports
-      prisma.reviewReport.count({
-        where: { status: "PENDING" },
       }),
 
       // Top contributors (users with most reviews)
@@ -81,6 +69,18 @@ export async function GET() {
         take: 10,
         where: { originalLanguage: { not: null } },
       }),
+    ])
+
+    // Tables that may not exist yet — query with fallbacks
+    const [pendingCorrections, pendingReports] = await Promise.all([
+      safeQuery(
+        prisma.mediaCorrection.count({ where: { status: "PENDING" } }),
+        0
+      ),
+      safeQuery(
+        prisma.reviewReport.count({ where: { status: "PENDING" } }),
+        0
+      ),
     ])
 
     // Run queries for new tables with fallbacks (they might not exist yet)
