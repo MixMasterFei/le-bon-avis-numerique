@@ -51,8 +51,16 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Filter by specific language (supports comma-separated for multiple languages)
-    if (language) {
+    // Language filtering:
+    // - language=all → no filter (admin use)
+    // - language=fr,en → only those languages
+    // - frenchOnly=true → only French
+    // - (default) → European languages only
+    if (frenchOnly) {
+      where.originalLanguage = "fr"
+    } else if (language === "all") {
+      // No language filter
+    } else if (language) {
       const languages = language.split(",").map(l => l.trim())
       if (languages.length === 1) {
         where.originalLanguage = languages[0]
@@ -62,11 +70,12 @@ export async function GET(request: NextRequest) {
           { originalLanguage: { in: languages } },
         ]
       }
-    }
-
-    // Only French content
-    if (frenchOnly) {
-      where.originalLanguage = "fr"
+    } else {
+      // Default: only European-language content for French audience
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] } },
+      ]
     }
 
     // Filter by age recommendation (min and/or max)

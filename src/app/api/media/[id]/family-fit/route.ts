@@ -284,6 +284,31 @@ export async function GET(
 
       // --- Weighted score components ---
       const ageScore = computeAgeScore(media.expertAgeRec, memberAge)
+
+      // When quiz is NOT done, only use age score — don't inflate with defaults
+      if (!hasPreferences) {
+        const ageOnlyScore = Math.round(Math.max(0, Math.min(100, ageScore * 100)))
+        // Cap at "good" — never show "Excellent" without real preferences
+        const level = ageOnlyScore >= 55 ? "good" as const : levelFromScore(ageOnlyScore)
+        const reason = ageScore >= 0.9
+          ? "Adapté à son âge"
+          : ageScore <= 0.3 && memberAge != null && media.expertAgeRec != null
+            ? `Recommandé à partir de ${media.expertAgeRec} ans`
+            : "Basé uniquement sur l'âge"
+
+        return {
+          id: member.id,
+          name: member.name,
+          avatarEmoji: member.avatarEmoji,
+          age: memberAge,
+          score: ageOnlyScore,
+          level,
+          reason,
+          hasPreferences,
+          affinity,
+        }
+      }
+
       const sensitivityScore = computeSensitivityScore(
         {
           violence: metrics.violence,

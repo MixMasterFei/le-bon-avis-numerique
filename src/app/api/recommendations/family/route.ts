@@ -198,6 +198,8 @@ export async function GET(request: NextRequest) {
         } : {}),
         // Require poster for display
         posterUrl: { not: null, startsWith: "http" },
+        // Only European-language content
+        originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] },
         ...ageFilter,
       },
       include: {

@@ -59,6 +59,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Default: only show European-language content for movies/TV
+    // Games and books don't have originalLanguage from TMDB
+    if (!type || type === "MOVIE" || type === "TV") {
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        {
+          OR: [
+            { originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] } },
+            { type: { in: ["GAME", "BOOK", "APP"] } },
+          ],
+        },
+      ]
+    }
+
     // Determine sort order
     let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
     switch (sort) {
