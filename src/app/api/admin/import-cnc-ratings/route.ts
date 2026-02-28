@@ -172,7 +172,19 @@ export async function POST(request: Request) {
     const offset = parseInt(url.searchParams.get("offset") || "0")
 
     // Get DB movies to match
-    const whereClause: any = { type: "MOVIE" }
+    // CNC only has films with French visa classification — skip very recent films
+    // and prioritize French/European content that's most likely to have a CNC entry
+    const cutoffDate = new Date()
+    cutoffDate.setMonth(cutoffDate.getMonth() - 6) // Only films released 6+ months ago
+
+    const whereClause: any = {
+      type: "MOVIE",
+      // Skip films without a release date or released very recently (CNC lag)
+      releaseDate: { lt: cutoffDate },
+      // Skip non-latin script titles (Chinese, Japanese, Korean, Arabic, etc.)
+      // These are almost never in the CNC database
+      originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] },
+    }
     if (onlyMissing) {
       whereClause.officialRating = null
     }
@@ -187,10 +199,15 @@ export async function POST(request: Request) {
         originalTitle: true,
         releaseDate: true,
         officialRating: true,
+        originalLanguage: true,
       },
       skip: offset,
       take: limit,
-      orderBy: { createdAt: "asc" },
+      // Process French films first (most likely to match), then by quality score
+      orderBy: [
+        { dataQualityScore: "desc" },
+        { releaseDate: "asc" },
+      ],
     })
 
     let matched = 0
