@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Valid reaction types
-    const validReactions = ["LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD"]
+    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD"]
     if (!validReactions.includes(reaction)) {
       return NextResponse.json({ error: "Réaction invalide" }, { status: 400 })
     }

@@ -87,15 +87,49 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
   "tags": ["<tag1>", "<tag2>"]
 }
 
-Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse):
-- Themes: "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Aviation", "Espace", "Magie", "Sport", "Musique", "Histoire", "Amitié"
-- "Animaux" (SEULEMENT si les animaux sont les personnages principaux, ex: Le Roi Lion, Babe)
-- "Nature" (SEULEMENT pour documentaires nature ou films sur l'environnement)
-- Studios: "Disney", "Pixar", "DreamWorks", "Studio Ghibli"
-- Saisonnier: "Noël", "Halloween"
-- Jeux: "Nintendo", "PlayStation", "Xbox", "PC"${releaseYear && releaseYear >= currentYear - 1 ? `\n- "Meilleur ${releaseYear}"` : ""}
+Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse — 3 a 8 tags par contenu):
 
-ATTENTION: Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
+GENRES/THEMES GENERAUX:
+"Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique", "Histoire", "Amitié"
+
+THEMES EMOTIONNELS ET SOCIAUX:
+"Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce", "Harcèlement", "Premiers amours"
+
+TRANCHES DE VIE:
+"École", "Adolescence"
+
+UNIVERS ET IMAGINAIRE:
+"Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers", "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage"
+
+NATURE ET ENVIRONNEMENT:
+"Animaux" (SEULEMENT si les animaux sont les personnages principaux, ex: Le Roi Lion, Babe)
+"Nature" (SEULEMENT pour documentaires nature ou films sur l'environnement)
+"Écologie", "Mer/Océan", "Montagne", "Voyage"
+
+ARTS ET CULTURE:
+"Cuisine", "Art", "Danse", "Théâtre"
+
+HISTOIRE ET SOCIETE:
+"Guerre", "Résistance", "Seconde Guerre mondiale"
+
+AMBIANCE (choisis 1 max):
+"Doux et rassurant" (contenu tres doux pour les tout-petits)
+"Action intense" (pour enfants plus ages qui aiment l'action)
+"Fait réfléchir" (themes matures traites avec sensibilite)
+
+STUDIOS:
+"Disney", "Pixar", "DreamWorks", "Studio Ghibli"
+
+SAISONNIER:
+"Noël", "Halloween"
+
+JEUX:
+"Nintendo", "PlayStation", "Xbox", "PC"${releaseYear && releaseYear >= currentYear - 1 ? `\n"Meilleur ${releaseYear}"` : ""}
+
+ATTENTION:
+- Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
+- Choisis 1 tag "Ambiance" maximum par contenu
+- Privilegies les tags specifiques aux tags generiques (ex: "Dinosaures" plutot que "Aventure" seul)
 
 Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 

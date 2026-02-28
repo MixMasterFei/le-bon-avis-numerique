@@ -25,9 +25,6 @@ export async function GET(request: NextRequest) {
       },
       include: {
         reactions: {
-          where: {
-            reaction: { in: ["LOVED", "LIKED"] }, // Only positive reactions
-          },
           include: {
             media: {
               select: {
@@ -47,8 +44,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Membre non trouvé" }, { status: 404 })
     }
 
+    // Separate positive reactions (for building recommendations) from all reactions (for exclusion)
+    const positiveReactions = familyMember.reactions.filter(r => r.reaction === "LOVED" || r.reaction === "LIKED")
+    // Exclude any media the member has already reacted to (watched, loved, liked, etc.)
+    const allReactedMediaIds = new Set(familyMember.reactions.map(r => r.mediaId))
+
     // If no positive reactions, return empty recommendations
-    if (familyMember.reactions.length === 0) {
+    if (positiveReactions.length === 0) {
       return NextResponse.json({
         familyMember: {
           id: familyMember.id,
@@ -69,11 +71,8 @@ export async function GET(request: NextRequest) {
 
     // Collect data from loved/liked media
     const lovedGenres: Record<string, number> = {}
-    const lovedMediaIds = new Set<string>()
 
-    for (const reaction of familyMember.reactions) {
-      lovedMediaIds.add(reaction.media.id)
-
+    for (const reaction of positiveReactions) {
       const weight = reaction.reaction === "LOVED" ? 2 : 1
       for (const genre of reaction.media.genres) {
         lovedGenres[genre] = (lovedGenres[genre] || 0) + weight
@@ -97,6 +96,7 @@ export async function GET(request: NextRequest) {
     } : {}
 
     // Step 1: Try to find similar media from MediaSimilarity table
+    const lovedMediaIds = new Set(positiveReactions.map(r => r.mediaId))
     const lovedMediaIdsArray = Array.from(lovedMediaIds)
     const similarMedia = await prisma.mediaSimilarity.findMany({
       where: {
@@ -135,11 +135,11 @@ export async function GET(request: NextRequest) {
       take: 20,
     })
 
-    // Extract unique similar items (not already in loved list)
+    // Extract unique similar items (not already reacted to)
     const similarItems = new Map<string, typeof similarMedia[0]["mediaA"] & { similarityScore: number }>()
     for (const sim of similarMedia) {
       const item = lovedMediaIds.has(sim.mediaIdA) ? sim.mediaB : sim.mediaA
-      if (!lovedMediaIds.has(item.id) && !similarItems.has(item.id)) {
+      if (!allReactedMediaIds.has(item.id) && !similarItems.has(item.id)) {
         // Check age appropriateness and quality - very strict filtering
         // Must have an age rating AND be appropriate for child's age
         const hasAgeRating = item.expertAgeRec !== null
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
 
     // If we need more recommendations, do genre-based search
     if (recommendations.length < 12) {
-      const excludeIds = [...lovedMediaIdsArray, ...recommendations.map(r => r.id)]
+      const excludeIds = [...Array.from(allReactedMediaIds), ...recommendations.map(r => r.id)]
 
       const genreBasedMedia = await prisma.mediaItem.findMany({
         where: {

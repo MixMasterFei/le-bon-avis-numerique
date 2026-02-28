@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import {
   Users,
+  Eye,
   Heart,
   ThumbsUp,
   Meh,
@@ -47,6 +48,7 @@ const REACTIONS: {
   selectedBg: string
   ringColor: string
 }[] = [
+  { value: "WATCHED", label: "Déjà vu", icon: Eye, color: "text-indigo-500", bgColor: "bg-indigo-50 hover:bg-indigo-100", selectedBg: "bg-indigo-100", ringColor: "ring-indigo-400" },
   { value: "LOVED", label: "Adoré", icon: Heart, color: "text-red-500", bgColor: "bg-red-50 hover:bg-red-100", selectedBg: "bg-red-100", ringColor: "ring-red-400" },
   { value: "LIKED", label: "Bien aimé", icon: ThumbsUp, color: "text-green-500", bgColor: "bg-green-50 hover:bg-green-100", selectedBg: "bg-green-100", ringColor: "ring-green-400" },
   { value: "OK", label: "Bof", icon: Meh, color: "text-yellow-500", bgColor: "bg-yellow-50 hover:bg-yellow-100", selectedBg: "bg-yellow-100", ringColor: "ring-yellow-400" },

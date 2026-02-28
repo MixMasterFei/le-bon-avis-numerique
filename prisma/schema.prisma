@@ -38,6 +38,7 @@ model User {
   contentRequests    ContentRequest[]
   userContentMetrics UserContentMetrics[]
   adminActivities    AdminActivity[]
+  ageVotes           AgeVote[]
 
   @@map("users")
 }
@@ -159,6 +160,8 @@ model MediaItem {
   userContentMetrics    UserContentMetrics[]
   contentRequests       ContentRequest[]
   screenshots           MediaScreenshot[]
+  ageVotes              AgeVote[]
+  recoClicks            RecoClick[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -335,6 +338,7 @@ model FamilyMember {
 }
 
 enum ReactionType {
+  WATCHED    // Déjà vu
   LOVED      // Adoré
   LIKED      // Bien aimé
   OK         // Bof
@@ -688,4 +692,43 @@ model CronLog {
   @@index([createdAt])
   @@index([task])
   @@map("cron_logs")
+}
+
+// ============================================
+// AGE VOTE (Community validation of AI age recs)
+// ============================================
+
+model AgeVote {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  mediaId      String   @map("media_id")
+  agree        Boolean
+  suggestedAge Int?     @map("suggested_age")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("age_votes")
+}
+
+// ============================================
+// RECOMMENDATION CLICK TRACKING
+// ============================================
+
+model RecoClick {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  mediaId   String   @map("media_id")
+  source    String   // homepage_expert_picks, detail_similar, profile_reco, etc.
+  createdAt DateTime @default(now()) @map("created_at")
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@index([source])
+  @@index([createdAt])
+  @@map("reco_clicks")
 }

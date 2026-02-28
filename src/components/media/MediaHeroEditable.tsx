@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
 import { AgeBadge } from "./AgeBadge"
+import { AgeVoteButton } from "./AgeVoteButton"
 
 interface Review {
   role: string
@@ -245,7 +246,7 @@ export function MediaHeroEditable({
           />
         </div>
       ) : (
-        <AgeRecommendationsRow expertAge={initialAge} reviews={reviews} />
+        <AgeRecommendationsRow expertAge={initialAge} reviews={reviews} mediaId={mediaId} />
       )}
 
       {/* Floating Admin Bar */}
@@ -293,7 +294,7 @@ export function MediaHeroEditable({
 }
 
 // Unified expert + community age recommendations row
-function AgeRecommendationsRow({ expertAge, reviews }: { expertAge: number | null; reviews: Review[] }) {
+function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: number | null; reviews: Review[]; mediaId: string }) {
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
@@ -325,9 +326,10 @@ function AgeRecommendationsRow({ expertAge, reviews }: { expertAge: number | nul
             {expertAge}+
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Nos experts</p>
+            <p className="text-sm font-semibold text-white">Recommandation</p>
             <p className="text-xs text-white/60">dès {expertAge} ans</p>
           </div>
+          <AgeVoteButton mediaId={mediaId} className="ml-auto" />
         </div>
       )}
 
