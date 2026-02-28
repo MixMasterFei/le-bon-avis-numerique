@@ -36,31 +36,60 @@ interface CNCRecord {
   visaNumber: string | null
 }
 
-// Query CNC API for a specific movie title
-async function searchCNC(title: string): Promise<CNCRecord[]> {
-  const url = `${CNC_API_BASE}?page=1&page_size=20&Titre__exact=${encodeURIComponent(title)}`
-  const res = await fetch(url)
+// Convert to CNC-style sentence case: "Les Cousins" → "Les cousins"
+// CNC stores titles with only first letter capitalized (French convention)
+function toSentenceCase(title: string): string {
+  if (!title || title.length < 2) return title
+  // Lowercase everything after the first character, preserving first char
+  return title.charAt(0) + title.slice(1).replace(/\b[A-ZÀ-Ü]/g, (match, offset) => {
+    // Keep first word uppercase, lowercase the rest
+    // But keep acronyms and roman numerals (II, III, IV, etc.)
+    if (offset === 0) return match // First char already handled
+    return match.toLowerCase()
+  })
+}
 
-  if (!res.ok) {
-    // Try contains if exact fails (handles slight title variations)
-    const fallbackUrl = `${CNC_API_BASE}?page=1&page_size=10&Titre__contains=${encodeURIComponent(title)}`
-    const fallbackRes = await fetch(fallbackUrl)
-    if (!fallbackRes.ok) return []
-    const fallbackJson = await fallbackRes.json()
-    return parseCNCRows(fallbackJson.data || [])
+// Try fetching from CNC API with a specific query
+async function fetchCNC(param: string, value: string, pageSize = 10): Promise<CNCRecord[]> {
+  const url = `${CNC_API_BASE}?page=1&page_size=${pageSize}&${param}=${encodeURIComponent(value)}`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return []
+    const json = await res.json()
+    return parseCNCRows(json.data || [])
+  } catch {
+    return []
+  }
+}
+
+// Query CNC API for a specific movie title — tries multiple case variants
+// since CNC uses sentence case ("Les cousins") while TMDB uses title case ("Les Cousins")
+async function searchCNC(title: string): Promise<CNCRecord[]> {
+  // 1. Try exact match as-is (works for titles that already match CNC casing)
+  let records = await fetchCNC("Titre__exact", title, 20)
+  if (records.length > 0) return records
+
+  // 2. Try sentence case version (most common CNC format)
+  const sentenceCase = toSentenceCase(title)
+  if (sentenceCase !== title) {
+    records = await fetchCNC("Titre__exact", sentenceCase, 20)
+    if (records.length > 0) return records
   }
 
-  const json = await res.json()
-  const records = parseCNCRows(json.data || [])
+  // 3. Try all lowercase (some CNC entries are lowercase)
+  const lowerCase = title.toLowerCase()
+  if (lowerCase !== title && lowerCase !== sentenceCase) {
+    records = await fetchCNC("Titre__exact", lowerCase, 20)
+    if (records.length > 0) return records
+  }
 
-  // If exact match found nothing, try contains
-  if (records.length === 0) {
-    const fallbackUrl = `${CNC_API_BASE}?page=1&page_size=10&Titre__contains=${encodeURIComponent(title)}`
-    const fallbackRes = await fetch(fallbackUrl)
-    if (fallbackRes.ok) {
-      const fallbackJson = await fallbackRes.json()
-      return parseCNCRows(fallbackJson.data || [])
-    }
+  // 4. Fallback: contains search with original title (handles partial matches)
+  records = await fetchCNC("Titre__contains", title, 10)
+  if (records.length > 0) return records
+
+  // 5. Last resort: contains with sentence case
+  if (sentenceCase !== title) {
+    records = await fetchCNC("Titre__contains", sentenceCase, 10)
   }
 
   return records
