@@ -21,19 +21,22 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}))
     // Read offset from URL params (set by getNextParams in hook) or body
     const url = new URL(request.url)
-    const limit = Math.min(body.limit || 20, 50)
+    const mode = url.searchParams.get("mode") || body.mode || "full"
+    // Full mode needs smaller batches (each item compared against many candidates)
+    const defaultLimit = mode === "full" ? 5 : 20
+    const limit = Math.min(body.limit || defaultLimit, mode === "full" ? 10 : 50)
     const offset = parseInt(url.searchParams.get("offset") || "0") || body.offset || 0
     const minScore = body.minScore || 0.2
-    const mode = url.searchParams.get("mode") || body.mode || "batch" // "batch" (default) or "full"
 
-    // Count total items for progress
+    // Count total enriched items for progress
     const totalItems = await prisma.mediaItem.count({
-      where: { type: { in: ["MOVIE", "TV"] } },
+      where: { type: { in: ["MOVIE", "TV"] }, isEnriched: true },
     })
 
     const mediaItems = await prisma.mediaItem.findMany({
       where: {
         type: { in: ["MOVIE", "TV"] },
+        isEnriched: true,
       },
       select: {
         id: true,
@@ -53,16 +56,44 @@ export async function POST(request: Request) {
     let created = 0
     let updated = 0
 
+    // Helper: save a similarity pair using upsert (avoids separate findFirst + create/update)
+    async function savePair(idA: string, idB: string, score: number, reasons: string[]) {
+      // Ensure consistent ordering (smaller ID first) to avoid duplicate pairs
+      const [first, second] = idA < idB ? [idA, idB] : [idB, idA]
+      try {
+        await prisma.mediaSimilarity.upsert({
+          where: { mediaIdA_mediaIdB: { mediaIdA: first, mediaIdB: second } },
+          create: {
+            mediaIdA: first,
+            mediaIdB: second,
+            similarityScore: score,
+            reasons,
+            source: "ALGORITHM" as SimilaritySource,
+          },
+          update: {
+            similarityScore: score,
+            reasons,
+            source: "ALGORITHM" as SimilaritySource,
+          },
+        })
+        created++
+      } catch {
+        // Ignore duplicates from race conditions
+      }
+    }
+
     if (mode === "full") {
-      // Full mode: compare each item in batch against ALL enriched items of same type
+      // Full mode: compare each item against top candidates of same type
       for (const itemA of mediaItems) {
-        // Fetch candidates of same type (enriched, with poster)
+        // Fetch candidates with at least some shared genres
         const candidates = await prisma.mediaItem.findMany({
           where: {
             id: { not: itemA.id },
             type: itemA.type as any,
             isEnriched: true,
             posterUrl: { not: null },
+            // Only fetch items that share at least one genre (drastically reduces candidates)
+            genres: { hasSome: itemA.genres },
           },
           select: {
             id: true,
@@ -73,85 +104,35 @@ export async function POST(request: Request) {
             director: true,
             expertAgeRec: true,
           },
-          take: 500, // Cap to avoid memory issues
+          take: 200,
         })
 
+        // Compute all scores in memory, then save only the best matches
+        const matches: Array<{ item: typeof candidates[0]; score: number; reasons: string[] }> = []
         for (const itemB of candidates) {
           processed++
           const { score, reasons } = computeSimilarity(itemA, itemB)
-          if (score < minScore) continue
-
-          const existing = await prisma.mediaSimilarity.findFirst({
-            where: {
-              OR: [
-                { mediaIdA: itemA.id, mediaIdB: itemB.id },
-                { mediaIdA: itemB.id, mediaIdB: itemA.id },
-              ],
-            },
-          })
-
-          if (existing) {
-            if (Math.abs(existing.similarityScore - score) > 0.05) {
-              await prisma.mediaSimilarity.update({
-                where: { id: existing.id },
-                data: { similarityScore: score, reasons, source: "ALGORITHM" as SimilaritySource },
-              })
-              updated++
-            }
-          } else {
-            await prisma.mediaSimilarity.create({
-              data: {
-                mediaIdA: itemA.id,
-                mediaIdB: itemB.id,
-                similarityScore: score,
-                reasons,
-                source: "ALGORITHM" as SimilaritySource,
-              },
-            })
-            created++
+          if (score >= minScore) {
+            matches.push({ item: itemB, score, reasons })
           }
+        }
+
+        // Keep top 10 matches per item to avoid DB bloat
+        matches.sort((a, b) => b.score - a.score)
+        for (const match of matches.slice(0, 10)) {
+          await savePair(itemA.id, match.item.id, match.score, match.reasons)
         }
       }
     } else {
-      // Batch mode (original): compare pairs within the batch only
+      // Batch mode: compare pairs within the batch only
       for (let i = 0; i < mediaItems.length; i++) {
         const itemA = mediaItems[i]
-
         for (let j = i + 1; j < mediaItems.length; j++) {
           const itemB = mediaItems[j]
           processed++
-
           const { score, reasons } = computeSimilarity(itemA, itemB)
-          if (score < minScore) continue
-
-          const existing = await prisma.mediaSimilarity.findFirst({
-            where: {
-              OR: [
-                { mediaIdA: itemA.id, mediaIdB: itemB.id },
-                { mediaIdA: itemB.id, mediaIdB: itemA.id },
-              ],
-            },
-          })
-
-          if (existing) {
-            if (Math.abs(existing.similarityScore - score) > 0.05) {
-              await prisma.mediaSimilarity.update({
-                where: { id: existing.id },
-                data: { similarityScore: score, reasons, source: "ALGORITHM" as SimilaritySource },
-              })
-              updated++
-            }
-          } else {
-            await prisma.mediaSimilarity.create({
-              data: {
-                mediaIdA: itemA.id,
-                mediaIdB: itemB.id,
-                similarityScore: score,
-                reasons,
-                source: "ALGORITHM" as SimilaritySource,
-              },
-            })
-            created++
+          if (score >= minScore) {
+            await savePair(itemA.id, itemB.id, score, reasons)
           }
         }
       }
