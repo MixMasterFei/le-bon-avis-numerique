@@ -200,6 +200,8 @@ export async function POST(request: Request) {
     let errors = 0
     const changes: string[] = []
 
+    const debugSamples: string[] = [] // First 10 search attempts for debugging
+
     for (let i = 0; i < movies.length; i++) {
       const movie = movies[i]
       const movieYear = movie.releaseDate
@@ -213,6 +215,14 @@ export async function POST(request: Request) {
         // If no results with main title and we have an original title, try that
         if (candidates.length === 0 && movie.originalTitle && movie.originalTitle !== movie.title) {
           candidates = await searchCNC(movie.originalTitle)
+        }
+
+        // Debug: log first 10 search attempts
+        if (debugSamples.length < 10) {
+          debugSamples.push(
+            `"${movie.title}" (${movieYear}) → ${candidates.length} CNC results` +
+            (candidates.length > 0 ? ` [first: "${candidates[0].title}" ${candidates[0].decision}]` : "")
+          )
         }
 
         const cncMatch = findBestMatch(candidates, movieYear)
@@ -269,6 +279,7 @@ export async function POST(request: Request) {
       done,
       nextOffset,
       changes: changes.slice(0, 50),
+      debugSamples,
     })
   } catch (error) {
     console.error("[CNC Import] Error:", error)
