@@ -257,6 +257,31 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "deepEnrich",
+      endpoint: "/api/admin/enrich-deep",
+      method: "POST",
+      body: { limit: 5 },
+      chunked: true,
+      delayMs: 3000,
+      accumKeys: ["processed", "errors"],
+      extractProgress: (data) => ({
+        processed: data.result?.enriched || 0,
+        total: data.remaining ? (data.result?.enriched || 0) + data.remaining : null,
+        errors: data.result?.errors || 0,
+      }),
+      isDone: (data) => (data.remaining || 0) === 0,
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.processed || 0} enrichis en profondeur${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Enrichissement profond",
+    description: "Pass 2: GPT-5 + recherche web pour contenus faible confiance",
+    icon: Sparkles,
+    color: "indigo",
+  },
+  {
+    config: {
       key: "importScreenshots",
       endpoint: "/api/admin/screenshots/import",
       method: "POST",

@@ -13,10 +13,21 @@ import { CuratedCollections } from "@/components/home/CuratedCollections"
 import { TrustBanner } from "@/components/home/TrustBanner"
 import { StreamingSection } from "@/components/home/StreamingSection"
 import { NowInCinema } from "@/components/home/NowInCinema"
+import { HomepageV2 } from "@/components/home/HomepageV2"
 import { auth } from "@/lib/auth"
 
-export default async function HomePage() {
+export default async function HomePage(props: { searchParams?: Promise<{ design?: string }> }) {
   const session = await auth()
+
+  // Admin-only V2 preview: ?design=v2
+  const searchParams = await props.searchParams
+  const isAdmin = (session?.user as any)?.role === "ADMIN"
+  const useV2 = isAdmin && searchParams?.design === "v2"
+
+  if (useV2) {
+    return <HomepageV2 session={session} />
+  }
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}

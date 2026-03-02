@@ -33,6 +33,12 @@ export async function GET(request: NextRequest) {
                 type: true,
                 genres: true,
                 expertAgeRec: true,
+                contentMetrics: {
+                  select: {
+                    toneTags: true,
+                    emotionalThemes: true,
+                  },
+                },
               },
             },
           },
@@ -71,13 +77,25 @@ export async function GET(request: NextRequest) {
 
     // Collect data from loved/liked media
     const lovedGenres: Record<string, number> = {}
+    const lovedTones: Record<string, number> = {}
 
     for (const reaction of positiveReactions) {
       const weight = reaction.reaction === "LOVED" ? 2 : 1
       for (const genre of reaction.media.genres) {
         lovedGenres[genre] = (lovedGenres[genre] || 0) + weight
       }
+      // Build tone profile from enrichment v2 data
+      const tones = reaction.media.contentMetrics?.toneTags ?? []
+      for (const tone of tones) {
+        lovedTones[tone] = (lovedTones[tone] || 0) + weight
+      }
     }
+
+    // Top tone preferences (for scoring candidates)
+    const topTones = Object.entries(lovedTones)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tone]) => tone)
 
     // Always recommend across all main media types for diversity
     // (not just the types the user already reacted to)
@@ -163,7 +181,7 @@ export async function GET(request: NextRequest) {
       score: number
     }> = []
 
-    // Add similar items first (they're the best matches)
+    // Add similar items first (they're the best matches) with tone affinity bonus
     for (const [, item] of similarItems) {
       recommendations.push({
         id: item.id,
@@ -172,7 +190,7 @@ export async function GET(request: NextRequest) {
         posterUrl: item.posterUrl,
         genres: item.genres,
         expertAgeRec: item.expertAgeRec,
-        score: 100 + (item.similarityScore * 50) + (item.dataQualityScore / 10), // High base score for similar items
+        score: 100 + (item.similarityScore * 50) + (item.dataQualityScore / 10),
       })
     }
 
@@ -201,6 +219,11 @@ export async function GET(request: NextRequest) {
           expertAgeRec: true,
           dataQualityScore: true,
           releaseDate: true,
+          contentMetrics: {
+            select: {
+              toneTags: true,
+            },
+          },
         },
         orderBy: [
           { dataQualityScore: "desc" }, // Prioritize mainstream/quality content
@@ -209,7 +232,7 @@ export async function GET(request: NextRequest) {
         take: 20,
       })
 
-      // Score by genre match + quality
+      // Score by genre match + quality + tone affinity
       for (const media of genreBasedMedia) {
         let genreScore = 0
         for (const genre of media.genres) {
@@ -218,8 +241,16 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // Combine genre match score with quality score
-        const totalScore = genreScore * 10 + (media.dataQualityScore / 2)
+        // Tone affinity bonus: items matching the member's preferred tones get a boost
+        let toneBonus = 0
+        if (topTones.length > 0) {
+          const mediaTones = media.contentMetrics?.toneTags ?? []
+          const matchingTones = mediaTones.filter((t: string) => topTones.includes(t))
+          toneBonus = matchingTones.length * 8 // Up to 24 points for 3 matches
+        }
+
+        // Combine genre match score with quality score + tone bonus
+        const totalScore = genreScore * 10 + (media.dataQualityScore / 2) + toneBonus
 
         recommendations.push({
           id: media.id,

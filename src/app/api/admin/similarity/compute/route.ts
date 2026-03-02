@@ -46,6 +46,12 @@ export async function POST(request: Request) {
         topics: true,
         director: true,
         expertAgeRec: true,
+        contentMetrics: {
+          select: {
+            toneTags: true,
+            emotionalThemes: true,
+          },
+        },
       },
       skip: offset,
       take: limit,
@@ -103,6 +109,12 @@ export async function POST(request: Request) {
             topics: true,
             director: true,
             expertAgeRec: true,
+            contentMetrics: {
+              select: {
+                toneTags: true,
+                emotionalThemes: true,
+              },
+            },
           },
           take: 200,
         })
@@ -185,6 +197,10 @@ interface MediaForComparison {
   topics: string[]
   director: string | null
   expertAgeRec: number | null
+  contentMetrics?: {
+    toneTags: string[]
+    emotionalThemes: string[]
+  } | null
 }
 
 function computeSimilarity(
@@ -227,6 +243,30 @@ function computeSimilarity(
     weightedScore += topicOverlap * 3
     totalWeight += 3
     reasons.push("similar_topics")
+  }
+
+  // Tone similarity (weight: 2) — from enrichment v2
+  const toneA = itemA.contentMetrics?.toneTags ?? []
+  const toneB = itemB.contentMetrics?.toneTags ?? []
+  if (toneA.length > 0 && toneB.length > 0) {
+    const toneOverlap = computeArrayOverlap(toneA, toneB)
+    if (toneOverlap > 0) {
+      weightedScore += toneOverlap * 2
+      totalWeight += 2
+      reasons.push("similar_tone")
+    }
+  }
+
+  // Emotional theme similarity (weight: 2) — from enrichment v2
+  const emotionA = itemA.contentMetrics?.emotionalThemes ?? []
+  const emotionB = itemB.contentMetrics?.emotionalThemes ?? []
+  if (emotionA.length > 0 && emotionB.length > 0) {
+    const emotionOverlap = computeArrayOverlap(emotionA, emotionB)
+    if (emotionOverlap > 0) {
+      weightedScore += emotionOverlap * 2
+      totalWeight += 2
+      reasons.push("similar_emotions")
+    }
   }
 
   // Age recommendation similarity (weight: 2)

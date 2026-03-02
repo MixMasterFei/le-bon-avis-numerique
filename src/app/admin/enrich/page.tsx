@@ -12,6 +12,8 @@ import {
   Loader2,
   Brain,
   BarChart3,
+  Search,
+  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,6 +26,15 @@ interface EnrichmentStats {
     withoutMetrics: number
     withoutAgeRec: number
     percentComplete: number
+  }
+  confidence?: {
+    high: number
+    medium: number
+    low: number
+    unscored: number
+    needsDeepEnrich: number
+    deepEnriched: number
+    hasV2Fields: number
   }
   recentlyEnriched: Array<{
     title: string
@@ -52,6 +63,9 @@ export default function EnrichPage() {
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Deep enrichment
+  const [deepEnriching, setDeepEnriching] = useState(false)
+  const [deepResult, setDeepResult] = useState<{ enriched: number; remaining: number } | null>(null)
   // Auto-enrich mode
   const [autoMode, setAutoMode] = useState(false)
   const [autoProgress, setAutoProgress] = useState({ total: 0, done: 0, errors: 0 })
@@ -176,6 +190,29 @@ export default function EnrichPage() {
     abortControllerRef.current?.abort()
   }
 
+  const handleDeepEnrich = async () => {
+    setDeepEnriching(true)
+    setDeepResult(null)
+    try {
+      const res = await fetch("/api/admin/enrich-deep", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 5 }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setDeepResult({ enriched: data.result?.enriched || 0, remaining: data.remaining || 0 })
+        fetchStats()
+      } else {
+        setError(data.error || "Deep enrichment failed")
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur")
+    } finally {
+      setDeepEnriching(false)
+    }
+  }
+
   const typeIcons = {
     MOVIE: Film,
     TV: Tv,
@@ -259,6 +296,132 @@ export default function EnrichPage() {
         </Card>
       </div>
 
+      {/* Confidence Distribution + Deep Enrichment */}
+      {stats?.confidence && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Confidence Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                Distribution de confiance
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Haute (&ge; 0.7)</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-green-500 rounded-full"
+                        style={{
+                          width: `${stats.enrichment.withMetrics > 0
+                            ? (stats.confidence.high / stats.enrichment.withMetrics) * 100
+                            : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-12 text-right">{stats.confidence.high}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Moyenne (0.4-0.7)</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-yellow-500 rounded-full"
+                        style={{
+                          width: `${stats.enrichment.withMetrics > 0
+                            ? (stats.confidence.medium / stats.enrichment.withMetrics) * 100
+                            : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-12 text-right">{stats.confidence.medium}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Basse (&lt; 0.4)</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-red-500 rounded-full"
+                        style={{
+                          width: `${stats.enrichment.withMetrics > 0
+                            ? (stats.confidence.low / stats.enrichment.withMetrics) * 100
+                            : 0}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-12 text-right">{stats.confidence.low}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Non evalue</span>
+                  <span className="text-sm font-medium text-gray-400">{stats.confidence.unscored}</span>
+                </div>
+                <div className="pt-2 border-t text-xs text-gray-500">
+                  {stats.confidence.hasV2Fields} contenus avec tags v2 (tonalite, rythme, emotions)
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Deep Enrichment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-indigo-600" />
+                Enrichissement approfondi (Pass 2)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-orange-50 rounded-lg">
+                  <p className="text-2xl font-bold text-orange-700">{stats.confidence.needsDeepEnrich}</p>
+                  <p className="text-xs text-orange-600">En attente</p>
+                </div>
+                <div className="text-center p-3 bg-indigo-50 rounded-lg">
+                  <p className="text-2xl font-bold text-indigo-700">{stats.confidence.deepEnriched}</p>
+                  <p className="text-xs text-indigo-600">Deja enrichis</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                GPT-5 avec recherche web. Verifie et corrige les metriques Pass 1.
+                Cout: ~0.02€/contenu.
+              </p>
+
+              <Button
+                onClick={handleDeepEnrich}
+                disabled={deepEnriching || stats.confidence.needsDeepEnrich === 0}
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
+              >
+                {deepEnriching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Enrichissement profond...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Lancer un lot de 5
+                  </>
+                )}
+              </Button>
+
+              {deepResult && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                  <CheckCircle className="h-4 w-4 inline mr-2" />
+                  {deepResult.enriched} enrichis en profondeur. {deepResult.remaining} restants.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Enrichment Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <Card>
@@ -308,7 +471,7 @@ export default function EnrichPage() {
                 <option value={25}>25 contenus (~3min, risque de timeout)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Cout estime: ~{(batchSize * 0.002).toFixed(3)}$ (gpt-4o-mini)
+                Cout estime: ~{(batchSize * 0.0013).toFixed(3)}$ (gpt-5-mini)
               </p>
             </div>
 
@@ -523,19 +686,20 @@ export default function EnrichPage() {
         <CardContent>
           <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
             <li>
-              L&apos;IA analyse le titre, le synopsis et les genres pour determiner l&apos;age recommande.
+              <strong>Pass 1 (GPT-5 Mini):</strong> Analyse le titre, synopsis et genres. Produit age recommande,
+              metriques de contenu, tonalite, rythme, style visuel et themes emotionnels. ~0.0013$/contenu.
             </li>
             <li>
-              Les metriques de contenu (violence, langage, etc.) sont evaluees sur une echelle de 0 a 5.
+              <strong>Pass 2 (GPT-5 + recherche web):</strong> Verifie et corrige les resultats Pass 1 pour
+              les contenus a faible confiance. Enrichit le synopsis et les conseils parents. ~0.02$/contenu.
             </li>
             <li>
-              Des tags thematiques sont attribues pour les collections (Noel, Halloween, etc.).
+              Un score de confiance (0-1) est calcule pour chaque contenu. Les contenus sous 0.6 sont
+              automatiquement marques pour l&apos;enrichissement approfondi.
             </li>
             <li>
-              Seuls les contenus sans evaluation sont traites (pas de doublons).
-            </li>
-            <li>
-              Le cout OpenAI est d&apos;environ 0.002$ par contenu avec gpt-4o-mini.
+              Les tags de tonalite et themes emotionnels alimentent le systeme de personnalisation
+              (Family Fit, similarites, recommandations).
             </li>
           </ul>
         </CardContent>

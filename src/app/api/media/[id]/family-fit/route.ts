@@ -96,6 +96,62 @@ function computeAvoidScore(mediaTopics: string[], avoidTopics: string[]): number
   return hasMatch ? 0 : 1.0
 }
 
+// Tone tags that feel gentle/safe for young children
+const GENTLE_TONES = new Set([
+  "Doux et chaleureux",
+  "Doux et rassurant",
+  "Joyeux et coloré",
+  "Drôle et léger",
+  "Inspiré et motivant",
+])
+
+// Tone tags that are dark/scary — penalised for young or sensitive children
+const DARK_TONES = new Set([
+  "Sombre et tendu",
+  "Effrayant et angoissant",
+  "Action intense",
+])
+
+function computeToneScore(
+  toneTags: string[],
+  pacing: string | null,
+  memberAge: number | null,
+  sensitivityScary: number
+): number {
+  // No tone data → neutral (no impact)
+  if (toneTags.length === 0 && !pacing) return 0.5
+
+  let score = 0.5 // start neutral
+
+  // --- Tone tag scoring ---
+  const hasGentle = toneTags.some((t) => GENTLE_TONES.has(t))
+  const hasDark = toneTags.some((t) => DARK_TONES.has(t))
+
+  if (memberAge !== null && memberAge < 7) {
+    // Young children: strong bonus for gentle, strong penalty for dark
+    if (hasGentle) score += 0.3
+    if (hasDark) score -= 0.4
+  } else if (memberAge !== null && memberAge < 13) {
+    // Children 7-12: mild bonus for gentle, penalty for scary only if high sensitivity
+    if (hasGentle) score += 0.15
+    if (hasDark && sensitivityScary >= 2) score -= 0.3
+    else if (hasDark) score -= 0.1
+  } else {
+    // Teens/adults: minimal adjustment
+    if (hasGentle) score += 0.05
+    if (hasDark && sensitivityScary >= 3) score -= 0.15
+  }
+
+  // --- Pacing scoring (affects very young children) ---
+  if (pacing && memberAge !== null && memberAge < 5) {
+    if (pacing === "Rapide et frénétique") score -= 0.2
+    else if (pacing === "Dynamique") score -= 0.05
+    else if (pacing === "Très calme" || pacing === "Lent et contemplatif") score += 0.1
+  }
+
+  return Math.max(0, Math.min(1, score))
+}
+
 function levelFromScore(score: number): "excellent" | "good" | "moderate" | "poor" {
   if (score >= 75) return "excellent"
   if (score >= 55) return "good"
@@ -108,8 +164,10 @@ function buildReason(
   sensitivityScore: number,
   genreScore: number,
   avoidScore: number,
+  toneScore: number,
   memberAge: number | null,
-  expertAgeRec: number | null
+  expertAgeRec: number | null,
+  toneTags: string[]
 ): string {
   const parts: string[] = []
 
@@ -128,6 +186,19 @@ function buildReason(
   // Sensitivity
   if (sensitivityScore < 0.5) {
     parts.push("contenu sensible pour son profil")
+  }
+
+  // Tone-based reasons
+  if (toneScore >= 0.8 && toneTags.length > 0) {
+    const hasGentle = toneTags.some((t) => GENTLE_TONES.has(t))
+    if (hasGentle) {
+      parts.push("ambiance douce adaptée à son âge")
+    }
+  } else if (toneScore < 0.3 && toneTags.length > 0) {
+    const hasDark = toneTags.some((t) => DARK_TONES.has(t))
+    if (hasDark) {
+      parts.push("ambiance sombre ou intense")
+    }
   }
 
   // Genre match
@@ -194,6 +265,8 @@ export async function GET(
       sexNudity: 0,
       language: 0,
       substanceUse: 0,
+      toneTags: [] as string[],
+      pacing: null as string | null,
     }
 
     // Fetch positive reactions for all family members (for affinity scoring)
@@ -325,14 +398,21 @@ export async function GET(
       )
       const genreScore = computeGenreScore(media.genres, member.favoriteGenres)
       const avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
+      const toneScore = computeToneScore(
+        (metrics.toneTags ?? []) as string[],
+        (metrics.pacing ?? null) as string | null,
+        memberAge,
+        member.sensitivityScary
+      )
 
-      // Weighted total with affinity (40/35/10/5/10)
+      // Weighted total with tone (35/30/10/5/10/10)
       const rawScore =
-        ageScore * 0.40 +
-        sensitivityScore * 0.35 +
+        ageScore * 0.35 +
+        sensitivityScore * 0.30 +
         genreScore * 0.10 +
         avoidScore * 0.05 +
-        affinityScore * 0.10
+        affinityScore * 0.10 +
+        toneScore * 0.10
 
       const score = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
       const level = levelFromScore(score)
@@ -341,8 +421,10 @@ export async function GET(
         sensitivityScore,
         genreScore,
         avoidScore,
+        toneScore,
         memberAge,
-        media.expertAgeRec
+        media.expertAgeRec,
+        (metrics.toneTags ?? []) as string[]
       )
 
       return {

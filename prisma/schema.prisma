@@ -195,6 +195,17 @@ model ContentMetrics {
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
+  // Enrichment v2 fields
+  enrichmentConfidence Float?    @map("enrichment_confidence")
+  enrichmentSource     String    @default("METADATA_ONLY") @map("enrichment_source")
+  needsDeepEnrich      Boolean   @default(false) @map("needs_deep_enrich")
+  toneTags             String[]  @default([]) @map("tone_tags")
+  pacing               String?   @map("pacing")
+  visualStyle          String?   @map("visual_style")
+  emotionalThemes      String[]  @default([]) @map("emotional_themes")
+  pass1At              DateTime? @map("pass1_at")
+  pass2At              DateTime? @map("pass2_at")
+
   media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
   @@map("content_metrics")

@@ -8,7 +8,7 @@ import OpenAI from "openai"
 export const maxDuration = 60 // Allow up to 60s for OpenAI batch processing
 
 // Batch enrichment API - Enrich items that don't have content metrics
-// Uses OpenAI to generate age ratings and content analysis
+// Uses OpenAI GPT-5 Mini to generate age ratings, content analysis, and v2 metadata
 
 interface EnrichmentResult {
   processed: number
@@ -31,7 +31,61 @@ interface ContentAnalysis {
   }
   whatParentsNeedToKnow: string[]
   synopsis: string
-  tags: string[] // For thematic collections
+  tags: string[]
+  // V2 enrichment fields
+  confidence: number
+  confidenceReasons: string[]
+  toneTags: string[]
+  pacing: string
+  visualStyle: string
+  emotionalThemes: string[]
+}
+
+// Valid closed lists for v2 fields
+const VALID_TONE_TAGS = [
+  "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
+  "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose",
+  "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique",
+  "Action intense", "Effrayant et angoissant", "Romantique et tendre",
+  "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant",
+]
+
+const VALID_PACING = [
+  "Très calme", "Lent et contemplatif", "Rythme modéré", "Dynamique", "Rapide et frénétique",
+]
+
+const VALID_VISUAL_STYLES = [
+  "Animation 2D classique", "Animation 3D/CGI", "Stop motion", "Anime japonais",
+  "Prise de vue réelle", "Mix animation/réel", "Pixelisé/rétro", "Style aquarelle/artistique",
+]
+
+const VALID_EMOTIONAL_THEMES = [
+  "Dépassement de soi", "Acceptation de la différence", "Force de l'amitié",
+  "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place",
+  "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs",
+  "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation",
+  "Confiance en soi", "Solidarité et entraide",
+]
+
+function computeFinalConfidence(
+  aiConfidence: number,
+  item: { synopsis: string | null; genres: string[]; officialRating: string | null; tmdbVoteCount: number | null }
+): { score: number; needsDeepEnrich: boolean } {
+  let score = Math.min(1.0, Math.max(0.0, aiConfidence))
+
+  // Heuristic adjustments based on input data quality
+  if (!item.synopsis || item.synopsis.length < 50) score *= 0.7
+  if (item.genres.length === 0) score *= 0.8
+  if (!item.officialRating) score *= 0.9
+  if (item.tmdbVoteCount && item.tmdbVoteCount > 1000) score = Math.min(1.0, score * 1.1)
+
+  score = Math.round(score * 100) / 100
+
+  return { score, needsDeepEnrich: score < 0.6 }
+}
+
+function filterToValidList(values: string[], validList: string[]): string[] {
+  return values.filter((v) => validList.includes(v))
 }
 
 async function analyzeWithOpenAI(
@@ -44,6 +98,7 @@ async function analyzeWithOpenAI(
     genres: string[]
     releaseDate?: Date | null
     officialRating?: string | null
+    tmdbVoteCount?: number | null
   },
   retryCount = 0
 ): Promise<ContentAnalysis> {
@@ -65,27 +120,6 @@ ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : 
 IMPORTANT:
 - Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
 - Base ton analyse sur ta connaissance de ce ${item.type === "GAME" ? "jeu" : item.type === "TV" ? "cette serie" : "ce film"} si tu le connais
-
-Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
-{
-  "expertAgeRec": <nombre entre 3 et 18>,
-  "contentMetrics": {
-    "violence": <0-5>,
-    "sexNudity": <0-5>,
-    "language": <0-5>,
-    "consumerism": <0-5>,
-    "substanceUse": <0-5>,
-    "positiveMessages": <0-5>,
-    "roleModels": <0-5>
-  },
-  "whatParentsNeedToKnow": [
-    "<conseil 1 en francais>",
-    "<conseil 2 en francais>",
-    "<conseil 3 en francais>"
-  ],
-  "synopsis": "<resume EN FRANCAIS de 2-3 phrases, traduit si necessaire>",
-  "tags": ["<tag1>", "<tag2>"]
-}
 
 Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse — 3 a 8 tags par contenu):
 
@@ -112,11 +146,6 @@ ARTS ET CULTURE:
 HISTOIRE ET SOCIETE:
 "Guerre", "Résistance", "Seconde Guerre mondiale"
 
-AMBIANCE (choisis 1 max):
-"Doux et rassurant" (contenu tres doux pour les tout-petits)
-"Action intense" (pour enfants plus ages qui aiment l'action)
-"Fait réfléchir" (themes matures traites avec sensibilite)
-
 STUDIOS:
 "Disney", "Pixar", "DreamWorks", "Studio Ghibli"
 
@@ -128,19 +157,60 @@ JEUX:
 
 ATTENTION:
 - Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
-- Choisis 1 tag "Ambiance" maximum par contenu
 - Privilegies les tags specifiques aux tags generiques (ex: "Dinosaures" plutot que "Aventure" seul)
+
+TON ET AMBIANCE (choisis 1 a 3 tags parmi cette liste):
+"Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré", "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose", "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique", "Action intense", "Effrayant et angoissant", "Romantique et tendre", "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant"
+
+RYTHME (choisis exactement 1):
+"Très calme", "Lent et contemplatif", "Rythme modéré", "Dynamique", "Rapide et frénétique"
+
+STYLE VISUEL (choisis exactement 1):
+"Animation 2D classique", "Animation 3D/CGI", "Stop motion", "Anime japonais", "Prise de vue réelle", "Mix animation/réel", "Pixelisé/rétro", "Style aquarelle/artistique"
+
+THEMES EMOTIONNELS (choisis 1 a 4 — ce que le spectateur RESSENT):
+"Dépassement de soi", "Acceptation de la différence", "Force de l'amitié", "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place", "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs", "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation", "Confiance en soi", "Solidarité et entraide"
+
+CONFIANCE dans ton analyse (0.0 a 1.0):
+- 0.9-1.0: Tu connais tres bien ce contenu et es certain de tes evaluations
+- 0.7-0.8: Tu connais le contenu ou as assez d'informations pour une evaluation fiable
+- 0.5-0.6: Tu as des informations limitees, certaines evaluations sont estimees
+- 0.3-0.4: Tu ne connais pas ce contenu, tes evaluations sont basees uniquement sur le synopsis/genre
+- 0.1-0.2: Information insuffisante, evaluation tres incertaine
 
 Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 
-Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.`
+Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.
+
+Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
+{
+  "expertAgeRec": <nombre entre 3 et 18>,
+  "contentMetrics": {
+    "violence": <0-5>,
+    "sexNudity": <0-5>,
+    "language": <0-5>,
+    "consumerism": <0-5>,
+    "substanceUse": <0-5>,
+    "positiveMessages": <0-5>,
+    "roleModels": <0-5>
+  },
+  "whatParentsNeedToKnow": ["<conseil 1 en francais>", "<conseil 2 en francais>", "<conseil 3 en francais>"],
+  "synopsis": "<resume EN FRANCAIS de 2-3 phrases, traduit si necessaire>",
+  "tags": ["<tag1>", "<tag2>"],
+  "confidence": <0.0-1.0>,
+  "confidenceReasons": ["<raison si confidence < 0.7, sinon tableau vide>"],
+  "toneTags": ["<ton1>", "<ton2>"],
+  "pacing": "<rythme>",
+  "visualStyle": "<style>",
+  "emotionalThemes": ["<theme1>", "<theme2>"]
+}`
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.3,
-      max_tokens: 1000,
+      max_tokens: 1200,
     })
 
     const content = response.choices[0]?.message?.content
@@ -185,6 +255,19 @@ Sois precis et base ton analyse sur les informations fournies ET ta connaissance
         : [],
       synopsis: parsed.synopsis || item.synopsis || "",
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+      // V2 fields with validation
+      confidence: typeof parsed.confidence === "number" ? Math.min(1.0, Math.max(0.0, parsed.confidence)) : 0.5,
+      confidenceReasons: Array.isArray(parsed.confidenceReasons) ? parsed.confidenceReasons.slice(0, 3) : [],
+      toneTags: filterToValidList(
+        Array.isArray(parsed.toneTags) ? parsed.toneTags.slice(0, 3) : [],
+        VALID_TONE_TAGS
+      ),
+      pacing: VALID_PACING.includes(parsed.pacing) ? parsed.pacing : "Rythme modéré",
+      visualStyle: VALID_VISUAL_STYLES.includes(parsed.visualStyle) ? parsed.visualStyle : "",
+      emotionalThemes: filterToValidList(
+        Array.isArray(parsed.emotionalThemes) ? parsed.emotionalThemes.slice(0, 4) : [],
+        VALID_EMOTIONAL_THEMES
+      ),
     }
   } catch (error) {
     // Retry on rate limit or temporary errors (max 2 retries)
@@ -210,6 +293,7 @@ export async function POST(request: NextRequest) {
       type = "all", // "movie", "tv", "game", or "all"
       limit = 10, // How many to process at once
       onlyMissing = true, // Only enrich items without contentMetrics
+      onlyLegacy = false, // Only re-enrich items missing v2 fields (toneTags empty)
     } = body
 
     if (!process.env.OPENAI_API_KEY) {
@@ -236,14 +320,34 @@ export async function POST(request: NextRequest) {
       ? {}
       : { type: type.toUpperCase() as "MOVIE" | "TV" | "GAME" }
 
+    // Build where clause based on mode
+    let whereClause
+    if (onlyLegacy) {
+      // Re-enrich items that have metrics but missing v2 fields
+      whereClause = {
+        ...typeFilter,
+        contentMetrics: { isNot: null },
+        OR: [
+          { contentMetrics: { toneTags: { isEmpty: true } } },
+          { contentMetrics: { enrichmentConfidence: null } },
+        ],
+      }
+    } else if (onlyMissing) {
+      whereClause = {
+        ...typeFilter,
+        contentMetrics: null,
+      }
+    } else {
+      whereClause = typeFilter
+    }
+
     // Find items to enrich
     const items = await prisma.mediaItem.findMany({
-      where: {
-        ...typeFilter,
-        ...(onlyMissing ? { contentMetrics: null } : {}),
-      },
+      where: whereClause,
       include: { contentMetrics: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: onlyLegacy
+        ? { tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }
+        : { createdAt: "desc" },
       take: Math.min(limit, 50), // Max 50 at a time
     })
 
@@ -253,7 +357,7 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       try {
         // Skip if already has metrics and onlyMissing is true
-        if (onlyMissing && item.contentMetrics) {
+        if (onlyMissing && !onlyLegacy && item.contentMetrics) {
           result.skipped++
           continue
         }
@@ -267,7 +371,19 @@ export async function POST(request: NextRequest) {
           genres: item.genres,
           releaseDate: item.releaseDate,
           officialRating: item.officialRating,
+          tmdbVoteCount: item.tmdbVoteCount,
         })
+
+        // Compute final confidence with heuristic adjustments
+        const { score: finalConfidence, needsDeepEnrich } = computeFinalConfidence(
+          analysis.confidence,
+          {
+            synopsis: item.synopsisFr,
+            genres: item.genres,
+            officialRating: item.officialRating,
+            tmdbVoteCount: item.tmdbVoteCount,
+          }
+        )
 
         // Update the item
         await prisma.mediaItem.update({
@@ -279,7 +395,7 @@ export async function POST(request: NextRequest) {
           },
         })
 
-        // Create or update content metrics
+        // Create or update content metrics with v2 fields
         await prisma.contentMetrics.upsert({
           where: { mediaId: item.id },
           update: {
@@ -291,6 +407,15 @@ export async function POST(request: NextRequest) {
             positiveMessages: analysis.contentMetrics.positiveMessages,
             roleModels: analysis.contentMetrics.roleModels,
             whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
+            // V2 fields
+            enrichmentConfidence: finalConfidence,
+            enrichmentSource: "AI_BASIC",
+            needsDeepEnrich,
+            toneTags: analysis.toneTags,
+            pacing: analysis.pacing || null,
+            visualStyle: analysis.visualStyle || null,
+            emotionalThemes: analysis.emotionalThemes,
+            pass1At: new Date(),
           },
           create: {
             mediaId: item.id,
@@ -302,11 +427,20 @@ export async function POST(request: NextRequest) {
             positiveMessages: analysis.contentMetrics.positiveMessages,
             roleModels: analysis.contentMetrics.roleModels,
             whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
+            // V2 fields
+            enrichmentConfidence: finalConfidence,
+            enrichmentSource: "AI_BASIC",
+            needsDeepEnrich,
+            toneTags: analysis.toneTags,
+            pacing: analysis.pacing || null,
+            visualStyle: analysis.visualStyle || null,
+            emotionalThemes: analysis.emotionalThemes,
+            pass1At: new Date(),
           },
         })
 
         result.enriched++
-        result.details.push(`✓ Enriched: ${item.title} (age ${analysis.expertAgeRec}+)`)
+        result.details.push(`✓ Enriched: ${item.title} (age ${analysis.expertAgeRec}+, confidence ${finalConfidence}${needsDeepEnrich ? " → needs deep" : ""})`)
 
         // Delay to avoid rate limiting - longer for larger batches
         const delay = items.length > 20 ? 1000 : 500
@@ -348,7 +482,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET to check enrichment status
+// GET to check enrichment status including v2 confidence distribution
 export async function GET() {
   const stats = await prisma.mediaItem.groupBy({
     by: ["type"],
@@ -373,6 +507,29 @@ export async function GET() {
     },
   })
 
+  // V2: Confidence distribution
+  const confidenceHigh = await prisma.contentMetrics.count({
+    where: { enrichmentConfidence: { gte: 0.7 } },
+  })
+  const confidenceMedium = await prisma.contentMetrics.count({
+    where: { enrichmentConfidence: { gte: 0.4, lt: 0.7 } },
+  })
+  const confidenceLow = await prisma.contentMetrics.count({
+    where: { enrichmentConfidence: { lt: 0.4, not: null } },
+  })
+  const confidenceUnscored = await prisma.contentMetrics.count({
+    where: { enrichmentConfidence: null },
+  })
+  const needsDeepEnrich = await prisma.contentMetrics.count({
+    where: { needsDeepEnrich: true },
+  })
+  const deepEnriched = await prisma.contentMetrics.count({
+    where: { enrichmentSource: "AI_DEEP" },
+  })
+  const hasV2Fields = await prisma.contentMetrics.count({
+    where: { NOT: { toneTags: { isEmpty: true } } },
+  })
+
   const recentlyEnriched = await prisma.mediaItem.findMany({
     where: { contentMetrics: { isNot: null } },
     orderBy: { updatedAt: "desc" },
@@ -394,6 +551,16 @@ export async function GET() {
       percentComplete: withMetrics + withoutMetrics > 0
         ? Math.round((withMetrics / (withMetrics + withoutMetrics)) * 100)
         : 0,
+      // V2 stats
+      confidenceDistribution: {
+        high: confidenceHigh,
+        medium: confidenceMedium,
+        low: confidenceLow,
+        unscored: confidenceUnscored,
+      },
+      needsDeepEnrich,
+      deepEnriched,
+      hasV2Fields,
     },
     recentlyEnriched,
   })

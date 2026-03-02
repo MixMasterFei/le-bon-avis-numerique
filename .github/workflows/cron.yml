@@ -19,6 +19,7 @@ on:
           - import
           - backfill-ratings
           - enrich
+          - enrich-deep
           - quality
           - streaming
           - similarity
@@ -100,6 +101,7 @@ jobs:
     if: >-
       github.event.schedule == '0 4 * * 4' ||
       github.event.inputs.task == 'enrich' ||
+      github.event.inputs.task == 'enrich-deep' ||
       github.event.inputs.task == 'quality' ||
       github.event.inputs.task == 'all'
     steps:
@@ -137,6 +139,26 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"type":"game","limit":10}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
+      - name: Deep enrichment (Pass 2 - GPT-5 + web search)
+        if: >-
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'enrich'
+        run: |
+          echo "::group::Deep enrich"
+          for i in 1 2; do
+            response=$(curl -sSfL -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"limit":5}' \
+              "$SITE_URL/api/admin/enrich-deep" 2>/dev/null)
+            remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null)
+            enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null)
+            echo "Batch $i: $enriched deep-enriched, $remaining remaining"
+            if [ "$remaining" = "0" ]; then break; fi
+            sleep 3
+          done
           echo "::endgroup::"
 
       - name: Recompute quality scores (all items)
