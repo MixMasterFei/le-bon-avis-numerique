@@ -113,7 +113,7 @@ export function FeaturedMovies() {
             Films pour les enfants
           </h2>
           <p className="text-gray-600 mt-1">
-            Des films adaptés aux plus jeunes, évalués par nos experts
+            Des films adaptés aux plus jeunes, analysés pour chaque âge
           </p>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">

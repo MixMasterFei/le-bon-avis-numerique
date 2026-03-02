@@ -158,7 +158,7 @@ export default function NosValeursPage() {
               les informations nécessaires pour faire vos propres choix éclairés.
             </p>
             <p>
-              Nos évaluations sont réalisées par notre <strong>équipe d&apos;experts</strong>,
+              Nos évaluations sont réalisées à l&apos;aide d&apos;<strong>outils d&apos;analyse de contenu</strong>,
               puis enrichies par les <strong>avis de la communauté</strong>
               de membres et de familles.
             </p>
@@ -182,7 +182,7 @@ export default function NosValeursPage() {
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <Award className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900">Âge recommandé (Expert)</h3>
+                <h3 className="font-semibold text-blue-900">Âge recommandé (Totem)</h3>
               </div>
               <p className="text-sm text-blue-800">
                 Basé sur notre analyse du contenu selon les critères ci-dessous.
@@ -331,7 +331,7 @@ export default function NosValeursPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            En plus de nos évaluations expertes, nous affichons les <strong>moyennes de la communauté</strong> :
+            En plus de nos analyses de contenu, nous affichons les <strong>moyennes de la communauté</strong> :
             les notes données par les membres de notre communauté qui connaissent ces contenus.
           </p>
           <p className="text-gray-600">
@@ -366,7 +366,7 @@ export default function NosValeursPage() {
               Comment sont réalisées vos évaluations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Nos évaluations sont réalisées par notre équipe d&apos;experts à partir des synopsis,
+              Nos évaluations sont réalisées à l&apos;aide d&apos;outils d&apos;analyse à partir des synopsis,
               classifications officielles et métadonnées de chaque contenu.
               Les avis de la communauté viennent enrichir ces évaluations au fil du temps.
             </p>

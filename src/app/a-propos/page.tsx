@@ -11,8 +11,8 @@ export const metadata = {
 const howItWorks = [
   {
     step: "1",
-    title: "Analyse experte",
-    description: "Chaque contenu est analysé selon 7 critères détaillés par notre équipe d'experts et enrichi par les avis de la communauté.",
+    title: "Analyse détaillée",
+    description: "Chaque contenu est analysé selon 7 critères détaillés et enrichi par les avis de la communauté de parents.",
     icon: Sparkles,
   },
   {

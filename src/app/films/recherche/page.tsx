@@ -294,7 +294,7 @@ function FilmsRechercheContent() {
       return "Films correspondant à vos critères"
     }
     if (filters.maxAge <= 7) {
-      return "Adaptés aux plus jeunes, évalués par nos experts"
+      return "Adaptés aux plus jeunes, analysés pour chaque âge"
     }
     if (filters.maxAge < 12) {
       return `Films adaptés aux enfants de ${filters.maxAge} ans et moins`

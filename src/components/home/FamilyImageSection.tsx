@@ -23,7 +23,7 @@ export function FamilyImageSection() {
                 <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <span className="text-emerald-600 text-sm font-bold">✓</span>
                 </div>
-                <span className="text-gray-700">Évaluations détaillées par des experts et des parents</span>
+                <span className="text-gray-700">Évaluations détaillées par la communauté de parents</span>
               </li>
               <li className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">

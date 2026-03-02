@@ -46,12 +46,12 @@ function ExpertPickCard({ item }: { item: ExpertPickItem }) {
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
           />
 
-          {/* Expert badge */}
+          {/* Top pick badge */}
           <div className="absolute -top-1 -right-1">
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-2 py-1 rounded-bl-lg rounded-tr-lg shadow-lg">
               <div className="flex items-center gap-1">
-                <Award className="h-3 w-3" />
-                <span className="text-[10px] font-bold">EXPERT</span>
+                <Star className="h-3 w-3" />
+                <span className="text-[10px] font-bold">TOP</span>
               </div>
             </div>
           </div>
@@ -138,10 +138,10 @@ export function ExpertPicks() {
           <div className="p-2 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl text-white shadow-lg">
             <Award className="h-5 w-5" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Sélection Totem</h2>
+          <h2 className="text-xl font-bold text-gray-900">Populaires en famille</h2>
         </div>
         <p className="text-gray-600 text-sm">
-          Nos sélections sont en cours de préparation. Revenez bientôt !
+          Les contenus populaires sont en cours de chargement. Revenez bientôt !
         </p>
       </div>
     )
@@ -157,7 +157,7 @@ export function ExpertPicks() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-                Sélection Totem
+                Populaires en famille
               </h2>
               <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                 <Star className="h-3 w-3 mr-1 fill-emerald-500" />
@@ -199,7 +199,7 @@ export function ExpertPicks() {
       <div className="mt-6 text-center sm:hidden">
         <Button variant="outline" asChild className="border-emerald-200 hover:bg-emerald-50">
           <Link href="/recherche">
-            Voir toutes les sélections <ArrowRight className="ml-2 h-4 w-4" />
+            Voir tout <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
       </div>

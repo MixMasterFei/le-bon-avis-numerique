@@ -35,7 +35,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
           sizeClasses[size],
           getBgColor(age)
         )}
-        title={label || "Âge recommandé par nos experts"}
+        title={label || "Âge recommandé"}
       >
         {isRated ? `${age}+` : "?"}
       </div>

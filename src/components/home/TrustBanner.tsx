@@ -42,7 +42,7 @@ export function TrustBanner() {
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Nous aidons les familles françaises à faire des choix éclairés sur les films,
             séries, jeux et livres pour leurs enfants. Notre mission : des médias adaptés
-            à chaque âge, évalués par des experts.
+            à chaque âge, analysés pour votre famille.
           </p>
         </div>
 

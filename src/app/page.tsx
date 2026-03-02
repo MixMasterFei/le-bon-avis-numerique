@@ -51,7 +51,7 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-violet-600/15 backdrop-blur-sm rounded-full border border-violet-300/30">
               <Shield className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-medium text-gray-800">Le guide de référence pour choisir vos médias en famille</span>
+              <span className="text-sm font-medium text-gray-800">Trouvez les meilleurs contenus pour votre famille</span>
             </div>
 
             <div className="max-w-xl mx-auto relative z-40">
