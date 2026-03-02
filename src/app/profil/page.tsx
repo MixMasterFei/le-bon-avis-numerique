@@ -64,6 +64,7 @@ export default function ProfilPage() {
   const [deleteError, setDeleteError] = useState("")
   const router = useRouter()
 
+  // ALL hooks must be called before any conditional returns (React rules of hooks)
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -81,6 +82,17 @@ export default function ProfilPage() {
 
     if (session?.user) {
       fetchStats()
+    }
+  }, [session])
+
+  // Initialize profile data when session loads
+  useEffect(() => {
+    if (session?.user?.name) {
+      setProfileName(session.user.name)
+    }
+    // Check if image is an emoji (avatar)
+    if (session?.user?.image && !session.user.image.startsWith("http")) {
+      setSelectedAvatar(session.user.image)
     }
   }, [session])
 
@@ -108,17 +120,6 @@ export default function ProfilPage() {
   }
 
   const isAdmin = session.user.role === "ADMIN"
-
-  // Initialize profile data when session loads
-  useEffect(() => {
-    if (session?.user?.name) {
-      setProfileName(session.user.name)
-    }
-    // Check if image is an emoji (avatar)
-    if (session?.user?.image && !session.user.image.startsWith("http")) {
-      setSelectedAvatar(session.user.image)
-    }
-  }, [session])
 
   const handleSaveProfile = async () => {
     setSavingProfile(true)
