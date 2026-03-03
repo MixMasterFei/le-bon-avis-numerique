@@ -8,6 +8,7 @@ interface CompletionMeterProps {
   member: {
     birthYear: number | null
     avatarEmoji: string
+    avatarStyle?: string | null
     useCustomSettings: boolean
     favoriteGenres: string[]
     sensitivityViolence: number
@@ -19,6 +20,7 @@ interface CompletionMeterProps {
     interests: string[]
   }
   reactionCount: number
+  compact?: boolean
   className?: string
 }
 
@@ -44,7 +46,7 @@ function getCompletionItems(
 
   return [
     { label: "Ajouter l'année de naissance", done: member.birthYear !== null, weight: 10 },
-    { label: "Choisir un avatar personnalisé", done: member.avatarEmoji !== "👧", weight: 5 },
+    { label: "Choisir un avatar personnalisé", done: member.avatarStyle != null || member.avatarEmoji !== "👧", weight: 5 },
     { label: "Compléter le quiz de préférences", done: member.useCustomSettings && member.favoriteGenres.length > 0, weight: 25 },
     { label: "Personnaliser les niveaux de sensibilité", done: sensitivityCustomized, weight: 15 },
     { label: "Ajouter des thèmes à éviter", done: member.avoidTopics.length > 0, weight: 5 },
@@ -54,13 +56,32 @@ function getCompletionItems(
   ]
 }
 
-export function CompletionMeter({ member, reactionCount, className }: CompletionMeterProps) {
+export function CompletionMeter({ member, reactionCount, compact, className }: CompletionMeterProps) {
   const items = getCompletionItems(member, reactionCount)
   const percentage = items.reduce((sum, item) => sum + (item.done ? item.weight : 0), 0)
   const missing = items.filter((item) => !item.done)
 
   const indicatorColor =
     percentage >= 80 ? "bg-emerald-500" : percentage >= 50 ? "bg-amber-500" : "bg-red-400"
+
+  if (compact) {
+    return (
+      <div className={cn("space-y-1.5", className)}>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500">Profil</span>
+          <span
+            className={cn(
+              "text-xs font-bold",
+              percentage >= 80 ? "text-emerald-600" : percentage >= 50 ? "text-amber-600" : "text-red-500"
+            )}
+          >
+            {percentage}%
+          </span>
+        </div>
+        <Progress value={percentage} indicatorClassName={indicatorColor} className="h-1.5" />
+      </div>
+    )
+  }
 
   return (
     <div className={cn("space-y-3", className)}>

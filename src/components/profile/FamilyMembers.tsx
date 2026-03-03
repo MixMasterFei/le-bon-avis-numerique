@@ -25,6 +25,8 @@ import {
   User,
 } from "lucide-react"
 import { MemberPreferencesModal } from "./MemberPreferencesModal"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -48,26 +50,22 @@ interface FamilyMember {
   name: string
   birthYear: number | null
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
+  favoriteGenres?: string[]
+  sensitivityViolence?: number
+  sensitivityScary?: number
+  sensitivitySexual?: number
+  sensitivityLanguage?: number
+  sensitivitySubstances?: number
+  useCustomSettings?: boolean
+  interests?: string[]
   reactions: MediaReaction[]
   _count: {
     reactions: number
   }
 }
-
-const EMOJI_OPTIONS = [
-  // Children
-  "👧", "👦", "👶", "🧒",
-  // Adults
-  "👩", "👨", "🧑", "👴", "👵",
-  // Diverse skin tones
-  "👧🏻", "👦🏻", "👧🏽", "👦🏽", "👧🏿", "👦🏿",
-  "👩🏻", "👨🏻", "👩🏽", "👨🏽", "👩🏿", "👨🏿",
-  // Fun alternatives
-  "🧒🏻", "🧒🏽", "🧒🏿",
-  "🧑🏻", "🧑🏽", "🧑🏿",
-  // Animals (for fun kid profiles)
-  "🐱", "🐶", "🐰", "🦊", "🐻", "🐼", "🦁", "🐸", "🦄", "🐲",
-]
 
 const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
   LOVED: { label: "Adoré", icon: Heart, color: "text-red-500" },
@@ -90,6 +88,7 @@ export function FamilyMembers() {
     birthYear: "",
     avatarEmoji: "👧",
   })
+  const [avatarValue, setAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [saving, setSaving] = useState(false)
   const [preferencesModalOpen, setPreferencesModalOpen] = useState(false)
   const [selectedMemberForPrefs, setSelectedMemberForPrefs] = useState<FamilyMember | null>(null)
@@ -124,7 +123,12 @@ export function FamilyMembers() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          avatarStyle: avatarValue.style,
+          avatarSeed: avatarValue.seed,
+          avatarOptions: avatarValue.options ?? null,
+        }),
       })
 
       if (!res.ok) {
@@ -136,6 +140,7 @@ export function FamilyMembers() {
       setShowAddForm(false)
       setEditingId(null)
       setFormData({ name: "", birthYear: "", avatarEmoji: "👧" })
+      setAvatarValue(defaultAvatarValue())
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur")
     } finally {
@@ -149,6 +154,15 @@ export function FamilyMembers() {
       birthYear: member.birthYear?.toString() || "",
       avatarEmoji: member.avatarEmoji,
     })
+    if (member.avatarStyle && member.avatarSeed) {
+      setAvatarValue({
+        style: member.avatarStyle,
+        seed: member.avatarSeed,
+        options: member.avatarOptions ?? undefined,
+      })
+    } else {
+      setAvatarValue(defaultAvatarValue())
+    }
     setEditingId(member.id)
     setShowAddForm(true)
   }
@@ -254,21 +268,8 @@ export function FamilyMembers() {
 
             <div className="mt-4">
               <Label>Avatar</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, avatarEmoji: emoji })}
-                    className={`w-10 h-10 text-xl rounded-lg border-2 transition-all ${
-                      formData.avatarEmoji === emoji
-                        ? "border-primary bg-primary/10"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="mt-2">
+                <AvatarPicker value={avatarValue} onChange={setAvatarValue} />
               </div>
             </div>
 
@@ -307,9 +308,14 @@ export function FamilyMembers() {
               >
                 <div className="flex items-start gap-4">
                   {/* Avatar */}
-                  <div className="text-3xl w-12 h-12 flex items-center justify-center bg-gray-100 rounded-full">
-                    {member.avatarEmoji}
-                  </div>
+                  <MemberAvatar
+                    avatarStyle={member.avatarStyle}
+                    avatarSeed={member.avatarSeed}
+                    avatarOptions={member.avatarOptions}
+                    avatarEmoji={member.avatarEmoji}
+                    name={member.name}
+                    size={48}
+                  />
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">

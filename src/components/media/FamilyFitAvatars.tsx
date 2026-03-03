@@ -1,11 +1,15 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 interface MemberFit {
   id: string
   name: string
-  emoji: string
+  emoji: string // kept for backward compat
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   score: number
 }
 
@@ -24,10 +28,10 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
     <div className={cn("flex items-center gap-0.5", className)}>
       <div className={cn("flex items-center", isOverlapping ? "-space-x-1.5" : "gap-1.5")}>
         {members.map((member, i) => {
-          const ringColor =
+          const ringColor: "green" | "amber" =
             member.score >= 70
-              ? "ring-emerald-400"
-              : "ring-amber-400"
+              ? "green"
+              : "amber"
 
           return (
             <div
@@ -38,15 +42,16 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
               )}
               title={`${member.name} — ${member.score}% compatible`}
             >
-              <div
-                className={cn(
-                  "flex items-center justify-center rounded-full bg-white ring-2 shadow-sm",
-                  ringColor,
-                  compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-xs"
-                )}
-              >
-                {member.emoji}
-              </div>
+              <MemberAvatar
+                avatarStyle={member.avatarStyle ?? null}
+                avatarSeed={member.avatarSeed ?? null}
+                avatarOptions={member.avatarOptions ?? null}
+                avatarEmoji={member.emoji ?? null}
+                name={member.name}
+                size={compact ? 20 : 24}
+                ring={ringColor}
+                className="shadow-sm"
+              />
               {!isOverlapping && !compact && (
                 <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">
                   {member.name}

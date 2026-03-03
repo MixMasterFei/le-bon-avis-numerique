@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sanitizeAvatarInput } from "@/lib/avatar"
 
 // GET /api/user/family - Get all family members for the current user
 export async function GET() {
@@ -19,6 +20,22 @@ export async function GET() {
         name: true,
         birthYear: true,
         avatarEmoji: true,
+        avatarStyle: true,
+        avatarSeed: true,
+        avatarOptions: true,
+        favoriteGenres: true,
+        dislikedGenres: true,
+        sensitivityViolence: true,
+        sensitivityScary: true,
+        sensitivitySexual: true,
+        sensitivityLanguage: true,
+        sensitivitySubstances: true,
+        preferPositiveMessages: true,
+        preferRoleModels: true,
+        preferEducational: true,
+        interests: true,
+        avoidTopics: true,
+        useCustomSettings: true,
         createdAt: true,
         updatedAt: true,
         reactions: {
@@ -64,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, birthYear, avatarEmoji, favoriteGenres, dislikedGenres } = body
+    const { name, birthYear, avatarEmoji, avatarStyle, avatarSeed, avatarOptions, favoriteGenres, dislikedGenres } = body
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Nom requis" }, { status: 400 })
@@ -82,12 +99,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Sanitize DiceBear avatar inputs
+    const sanitizedAvatar = sanitizeAvatarInput({ avatarStyle, avatarSeed, avatarOptions })
+
     const familyMember = await prisma.familyMember.create({
       data: {
         userId: session.user.id,
         name: name.trim(),
         birthYear: birthYear ? parseInt(birthYear) : null,
         avatarEmoji: avatarEmoji || "👧",
+        ...(sanitizedAvatar.avatarStyle && { avatarStyle: sanitizedAvatar.avatarStyle }),
+        ...(sanitizedAvatar.avatarSeed && { avatarSeed: sanitizedAvatar.avatarSeed }),
+        ...(sanitizedAvatar.avatarOptions && { avatarOptions: sanitizedAvatar.avatarOptions as object }),
         favoriteGenres: Array.isArray(favoriteGenres) ? favoriteGenres : [],
         dislikedGenres: Array.isArray(dislikedGenres) ? dislikedGenres : [],
       },

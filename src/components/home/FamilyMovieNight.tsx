@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId } from "@/lib/media-route"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 interface FamilyMember {
   id: string
@@ -135,7 +136,14 @@ export function FamilyMovieNight() {
                       : "border-gray-200 bg-white hover:border-purple-300"
                   )}
                 >
-                  <span className="text-xl">{member.avatarEmoji}</span>
+                  <MemberAvatar
+                    avatarStyle={(member as any).avatarStyle ?? null}
+                    avatarSeed={(member as any).avatarSeed ?? null}
+                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarEmoji={member.avatarEmoji ?? null}
+                    name={member.name}
+                    size={24}
+                  />
                   <span className="font-medium">{member.name}</span>
                   {isSelected && <Check className="h-4 w-4 text-purple-600" />}
                 </button>
@@ -242,7 +250,14 @@ export function FamilyMovieNight() {
                             className="flex items-center gap-1 text-xs"
                             title={`${match.name}: ${match.matchPercentage}%`}
                           >
-                            <span>{match.avatarEmoji}</span>
+                            <MemberAvatar
+                              avatarStyle={(match as any).avatarStyle ?? null}
+                              avatarSeed={(match as any).avatarSeed ?? null}
+                              avatarOptions={((match as any).avatarOptions as Record<string, unknown>) ?? null}
+                              avatarEmoji={match.avatarEmoji ?? null}
+                              name={match.name}
+                              size={16}
+                            />
                             <span
                               className={cn(
                                 "font-medium",

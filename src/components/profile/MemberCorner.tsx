@@ -35,6 +35,8 @@ import { Input } from "@/components/ui/input"
 import { CompletionMeter } from "./CompletionMeter"
 import { InterestsEditor } from "./InterestsEditor"
 import { MediaSearchAdd } from "./MediaSearchAdd"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
 import { cn } from "@/lib/utils"
 
@@ -62,6 +64,9 @@ interface MemberData {
   name: string
   birthYear: number | null
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   favoriteGenres: string[]
   dislikedGenres: string[]
   interests: string[]
@@ -81,16 +86,6 @@ interface MemberData {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const EMOJI_OPTIONS = [
-  "👧", "👦", "👶", "🧒",
-  "👩", "👨", "🧑", "👴", "👵",
-  "👧🏻", "👦🏻", "👧🏽", "👦🏽", "👧🏿", "👦🏿",
-  "👩🏻", "👨🏻", "👩🏽", "👨🏽", "👩🏿", "👨🏿",
-  "🧒🏻", "🧒🏽", "🧒🏿",
-  "🧑🏻", "🧑🏽", "🧑🏿",
-  "🐱", "🐶", "🐰", "🦊", "🐻", "🐼", "🦁", "🐸", "🦄", "🐲",
-]
 
 const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
   LOVED: { label: "Adoré", icon: Heart, color: "text-red-500" },
@@ -150,6 +145,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
   const [editName, setEditName] = useState("")
   const [editBirthYear, setEditBirthYear] = useState("")
   const [editAvatar, setEditAvatar] = useState("")
+  const [editAvatarValue, setEditAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [savingProfile, setSavingProfile] = useState(false)
 
   // Interests save state
@@ -183,6 +179,9 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           name: fm.name,
           birthYear: fm.birthYear,
           avatarEmoji: fm.avatarEmoji,
+          avatarStyle: fm.avatarStyle ?? null,
+          avatarSeed: fm.avatarSeed ?? null,
+          avatarOptions: fm.avatarOptions ?? null,
           favoriteGenres: prefs?.favoriteGenres ?? fm.favoriteGenres ?? [],
           dislikedGenres: prefs?.dislikedGenres ?? fm.dislikedGenres ?? [],
           interests: prefs?.interests ?? fm.interests ?? [],
@@ -236,6 +235,11 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
     setEditName(member.name)
     setEditBirthYear(member.birthYear?.toString() ?? "")
     setEditAvatar(member.avatarEmoji)
+    if (member.avatarStyle && member.avatarSeed) {
+      setEditAvatarValue({ style: member.avatarStyle, seed: member.avatarSeed, options: member.avatarOptions ?? undefined })
+    } else {
+      setEditAvatarValue(defaultAvatarValue())
+    }
     setEditing(true)
   }
 
@@ -249,6 +253,9 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           name: editName.trim() || member.name,
           birthYear: editBirthYear ? parseInt(editBirthYear) : null,
           avatarEmoji: editAvatar,
+          avatarStyle: editAvatarValue.style,
+          avatarSeed: editAvatarValue.seed,
+          avatarOptions: editAvatarValue.options ?? null,
         }),
       })
       if (res.ok) {
@@ -258,6 +265,9 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           name: data.familyMember.name,
           birthYear: data.familyMember.birthYear,
           avatarEmoji: data.familyMember.avatarEmoji,
+          avatarStyle: data.familyMember.avatarStyle ?? null,
+          avatarSeed: data.familyMember.avatarSeed ?? null,
+          avatarOptions: data.familyMember.avatarOptions ?? null,
         } : prev)
         setEditing(false)
       }
@@ -344,7 +354,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <span className="text-5xl">{member.avatarEmoji}</span>
+        <MemberAvatar
+          avatarStyle={member.avatarStyle}
+          avatarSeed={member.avatarSeed}
+          avatarOptions={member.avatarOptions}
+          avatarEmoji={member.avatarEmoji}
+          name={member.name}
+          size={56}
+        />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Le coin de {member.name}
@@ -373,7 +390,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               {!editing ? (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{member.avatarEmoji}</span>
+                    <MemberAvatar
+                      avatarStyle={member.avatarStyle}
+                      avatarSeed={member.avatarSeed}
+                      avatarOptions={member.avatarOptions}
+                      avatarEmoji={member.avatarEmoji}
+                      name={member.name}
+                      size={40}
+                    />
                     <div>
                       <h3 className="font-semibold text-gray-900">{member.name}</h3>
                       <p className="text-sm text-gray-500">
@@ -414,21 +438,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
 
                   <div>
                     <label className="text-sm font-medium text-gray-700">Avatar</label>
-                    <div className="flex flex-wrap gap-1.5 mt-1 p-3 bg-gray-50 rounded-lg">
-                      {EMOJI_OPTIONS.map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={() => setEditAvatar(emoji)}
-                          className={cn(
-                            "w-9 h-9 rounded-full flex items-center justify-center text-lg transition-all",
-                            editAvatar === emoji
-                              ? "bg-violet-100 ring-2 ring-violet-500"
-                              : "bg-white hover:bg-gray-100"
-                          )}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
+                    <div className="mt-2">
+                      <AvatarPicker value={editAvatarValue} onChange={setEditAvatarValue} />
                     </div>
                   </div>
 

@@ -22,10 +22,17 @@ interface MemberPreferences {
 interface CompatibilityResult {
   mediaId: string
   title: string
+  originalTitle: string | null
+  type: string
   posterUrl: string | null
+  releaseDate: Date | null
+  synopsisFr: string | null
+  officialRating: string | null
   expertAgeRec: number | null
   genres: string[]
   topics: string[]
+  platforms: string[]
+  contentMetrics: Record<string, unknown> | null
   familyScore: number // 0-100 overall family compatibility
   memberScores: {
     memberId: string
@@ -187,6 +194,12 @@ export async function POST(request: NextRequest) {
       minScore = 60, // Minimum family score to include
       genres = [], // Optional genre filter
       platforms = [], // Optional platform filter
+      topics = [], // Optional topic filter
+      search = "", // Optional text search on title
+      requirePoster = false,
+      language = "", // e.g. "fr,en"
+      minAge, // Optional age range override
+      maxAge, // Optional age range override
     } = body
 
     if (!Array.isArray(familyMemberIds) || familyMemberIds.length === 0) {
@@ -258,13 +271,19 @@ export async function POST(request: NextRequest) {
     const youngestAge = ages.length > 0 ? Math.min(...ages) : null
 
     // Build initial query
-    const whereClause: Record<string, unknown> = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whereClause: Record<string, any> = {
       type: mediaType,
     }
 
-    // Pre-filter by age if we have a youngest member
-    if (youngestAge !== null) {
-      whereClause.expertAgeRec = { lte: youngestAge + 3 } // Allow up to 3 years buffer
+    // Pre-filter by age: use explicit maxAge if provided, else youngest member's age + 3
+    if (typeof maxAge === "number") {
+      whereClause.expertAgeRec = { ...(whereClause.expertAgeRec || {}), lte: maxAge }
+    } else if (youngestAge !== null) {
+      whereClause.expertAgeRec = { lte: youngestAge + 3 }
+    }
+    if (typeof minAge === "number" && minAge > 0) {
+      whereClause.expertAgeRec = { ...(whereClause.expertAgeRec || {}), gte: minAge }
     }
 
     if (genres.length > 0) {
@@ -275,13 +294,41 @@ export async function POST(request: NextRequest) {
       whereClause.platforms = { hasSome: platforms }
     }
 
-    // Get media items with content metrics
+    if (topics.length > 0) {
+      whereClause.AND = [
+        ...(whereClause.AND || []),
+        {
+          OR: [
+            { topics: { hasSome: topics } },
+            { genres: { hasSome: topics } },
+          ]
+        }
+      ]
+    }
+
+    if (search && typeof search === "string" && search.trim().length >= 2) {
+      whereClause.title = { contains: search.trim(), mode: "insensitive" }
+    }
+
+    if (requirePoster) {
+      whereClause.posterUrl = { not: null }
+    }
+
+    if (language) {
+      const langs = language.split(",").map((l: string) => l.trim()).filter(Boolean)
+      if (langs.length > 0) {
+        whereClause.originalLanguage = { in: langs }
+      }
+    }
+
+    // Fetch up to 500 items for accurate scoring and pagination
+    // Scoring is in-memory arithmetic, so this is fast
     const mediaItems = await prisma.mediaItem.findMany({
       where: whereClause,
       include: {
         contentMetrics: true,
       },
-      take: limit * 3, // Fetch more since we'll filter by score
+      take: 500,
       orderBy: [
         { dataQualityScore: "desc" },
         { isEnriched: "desc" },
@@ -339,10 +386,17 @@ export async function POST(request: NextRequest) {
       results.push({
         mediaId: media.id,
         title: media.title,
+        originalTitle: media.originalTitle,
+        type: media.type,
         posterUrl: media.posterUrl,
+        releaseDate: media.releaseDate,
+        synopsisFr: media.synopsisFr,
+        officialRating: media.officialRating,
         expertAgeRec: media.expertAgeRec,
         genres: media.genres,
         topics: media.topics,
+        platforms: media.platforms,
+        contentMetrics: media.contentMetrics as Record<string, unknown> | null,
         familyScore: Math.round(familyScore),
         memberScores: memberResults,
         hasAnyConcerns: memberResults.some(r => r.concerns.length > 0),

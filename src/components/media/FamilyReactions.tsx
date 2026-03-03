@@ -21,6 +21,7 @@ import {
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 interface FamilyMemberWithReaction {
   id: string
@@ -250,7 +251,14 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
                   key={member.id}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg ${reactionInfo?.bgColor || "bg-gray-50"}`}
                 >
-                  <span className="text-lg">{member.avatarEmoji}</span>
+                  <MemberAvatar
+                    avatarStyle={(member as any).avatarStyle ?? null}
+                    avatarSeed={(member as any).avatarSeed ?? null}
+                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarEmoji={member.avatarEmoji ?? null}
+                    name={member.name}
+                    size={20}
+                  />
                   <span className="text-sm font-medium">{member.name}</span>
                   <Icon className={`h-4 w-4 ${reactionInfo?.color || "text-gray-400"}`} />
                   <span className="text-xs text-gray-500">{reactionInfo?.label}</span>
@@ -266,7 +274,14 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
             {members.map((member) => (
               <div key={member.id} className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{member.avatarEmoji}</span>
+                  <MemberAvatar
+                    avatarStyle={(member as any).avatarStyle ?? null}
+                    avatarSeed={(member as any).avatarSeed ?? null}
+                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarEmoji={member.avatarEmoji ?? null}
+                    name={member.name}
+                    size={20}
+                  />
                   <span className="font-medium text-sm">{member.name}</span>
                   {member.birthYear && (
                     <span className="text-xs text-gray-400">

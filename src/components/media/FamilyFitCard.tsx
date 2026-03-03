@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
@@ -231,9 +232,14 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
               {/* Top row: avatar + name + age  |  score pill */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xl flex-shrink-0" role="img" aria-label={member.name}>
-                    {member.avatarEmoji}
-                  </span>
+                  <MemberAvatar
+                    avatarStyle={(member as any).avatarStyle ?? null}
+                    avatarSeed={(member as any).avatarSeed ?? null}
+                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarEmoji={member.avatarEmoji ?? null}
+                    name={member.name}
+                    size={24}
+                  />
                   <span className="font-semibold text-sm truncate">{member.name}</span>
                   {member.age != null && (
                     <span className="text-xs text-gray-400 flex-shrink-0">

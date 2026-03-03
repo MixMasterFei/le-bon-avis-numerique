@@ -7,6 +7,7 @@ import Link from "next/link"
 import { Users, Sparkles, ChevronRight, Loader2, Film, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 interface FamilyMember {
   id: string
@@ -163,7 +164,14 @@ export function FamilyRecommendationsSection() {
                     : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
                 }`}
               >
-                <span className="text-lg">{member.avatarEmoji}</span>
+                <MemberAvatar
+                  avatarStyle={(member as any).avatarStyle ?? null}
+                  avatarSeed={(member as any).avatarSeed ?? null}
+                  avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                  avatarEmoji={member.avatarEmoji ?? null}
+                  name={member.name}
+                  size={20}
+                />
                 <span>{member.name}</span>
                 {reactionCount > 0 && (
                   <span className={`text-xs ${isSelected ? "text-violet-200" : "text-gray-400"}`}>

@@ -99,6 +99,9 @@ interface MemberFit {
   id: string
   name: string
   emoji: string
+  avatarStyle: string | null
+  avatarSeed: string | null
+  avatarOptions: Record<string, unknown> | null
   score: number
   level: "excellent" | "good" | "moderate" | "poor"
 }
@@ -186,6 +189,9 @@ export async function POST(request: NextRequest) {
             id: member.id,
             name: member.name,
             emoji: member.avatarEmoji,
+            avatarStyle: member.avatarStyle,
+            avatarSeed: member.avatarSeed,
+            avatarOptions: member.avatarOptions as Record<string, unknown> | null,
             score,
             level: score >= 75 ? "excellent" : score >= 55 ? "good" : score >= 35 ? "moderate" : "poor",
           })

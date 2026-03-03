@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ReportModal } from "./ReportModal"
 import { useSession } from "next-auth/react"
 import { useRouter, usePathname } from "next/navigation"
@@ -168,7 +169,6 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
 
   // Get display name
   const displayName = review.familyMember?.name || review.user?.name || "Anonyme"
-  const avatarEmoji = review.familyMember?.avatarEmoji
   const userImage = review.user?.image
 
   return (
@@ -180,8 +180,15 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
             <div className="flex items-center gap-2">
               {/* Avatar */}
               <div className="flex items-center gap-1.5">
-                {avatarEmoji ? (
-                  <span className="text-lg" title={displayName}>{avatarEmoji}</span>
+                {review.familyMember ? (
+                  <MemberAvatar
+                    avatarStyle={(review.familyMember as any).avatarStyle ?? null}
+                    avatarSeed={(review.familyMember as any).avatarSeed ?? null}
+                    avatarOptions={((review.familyMember as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarEmoji={review.familyMember.avatarEmoji ?? null}
+                    name={review.familyMember.name}
+                    size={20}
+                  />
                 ) : userImage ? (
                   <div className="relative w-6 h-6 rounded-full overflow-hidden">
                     <Image src={userImage} alt={displayName} fill className="object-cover" />

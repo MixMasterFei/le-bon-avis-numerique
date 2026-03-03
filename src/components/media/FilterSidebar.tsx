@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 interface FamilyMember {
   id: string
@@ -500,7 +501,14 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                               : "bg-white border border-gray-200 hover:border-primary"
                           )}
                         >
-                          <span>{member.avatarEmoji}</span>
+                          <MemberAvatar
+                            avatarStyle={(member as any).avatarStyle ?? null}
+                            avatarSeed={(member as any).avatarSeed ?? null}
+                            avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                            avatarEmoji={member.avatarEmoji ?? null}
+                            name={member.name}
+                            size={20}
+                          />
                           <span>{member.name}</span>
                           {age && (
                             <span className={cn(

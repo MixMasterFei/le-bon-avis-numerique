@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Target, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { useSession } from "next-auth/react"
 
 interface FamilyMember {
@@ -61,7 +62,14 @@ export function ProfileNudge() {
             Complétez le profil de votre foyer
           </h3>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xl">{firstIncomplete.avatarEmoji}</span>
+            <MemberAvatar
+              avatarStyle={(firstIncomplete as any).avatarStyle ?? null}
+              avatarSeed={(firstIncomplete as any).avatarSeed ?? null}
+              avatarOptions={((firstIncomplete as any).avatarOptions as Record<string, unknown>) ?? null}
+              avatarEmoji={firstIncomplete.avatarEmoji ?? null}
+              name={firstIncomplete.name}
+              size={24}
+            />
             <span className="text-sm text-gray-700">
               {firstIncomplete.name} n&apos;a pas encore de préférences renseignées
             </span>

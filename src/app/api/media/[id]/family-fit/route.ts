@@ -18,6 +18,9 @@ interface FamilyFitMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle: string | null
+  avatarSeed: string | null
+  avatarOptions: Record<string, unknown> | null
   age: number | null
   score: number
   level: "excellent" | "good" | "moderate" | "poor"
@@ -373,6 +376,9 @@ export async function GET(
           id: member.id,
           name: member.name,
           avatarEmoji: member.avatarEmoji,
+          avatarStyle: member.avatarStyle,
+          avatarSeed: member.avatarSeed,
+          avatarOptions: member.avatarOptions as Record<string, unknown> | null,
           age: memberAge,
           score: ageOnlyScore,
           level,
@@ -431,6 +437,9 @@ export async function GET(
         id: member.id,
         name: member.name,
         avatarEmoji: member.avatarEmoji,
+        avatarStyle: member.avatarStyle,
+        avatarSeed: member.avatarSeed,
+        avatarOptions: member.avatarOptions as Record<string, unknown> | null,
         age: memberAge,
         score,
         level,

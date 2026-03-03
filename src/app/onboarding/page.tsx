@@ -6,13 +6,17 @@ import { useSession } from "next-auth/react"
 import { ArrowRight, ArrowLeft, Check, Plus, Sparkles, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { IconPicker } from "@/components/ui/IconPicker"
+import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { PreferenceQuiz } from "@/components/profile/PreferenceQuiz"
 
 interface CreatedMember {
   id: string
   name: string
   emoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
   quizCompleted: boolean
 }
@@ -61,6 +65,7 @@ function CreateMemberStep({
 }) {
   const [name, setName] = useState("")
   const [emoji, setEmoji] = useState("👧")
+  const [avatarValue, setAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [birthYear, setBirthYear] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -86,6 +91,9 @@ function CreateMemberStep({
         body: JSON.stringify({
           name: name.trim(),
           avatarEmoji: emoji,
+          avatarStyle: avatarValue.style,
+          avatarSeed: avatarValue.seed,
+          avatarOptions: avatarValue.options ?? null,
           birthYear: birthYear ? parseInt(birthYear) : null,
         }),
       })
@@ -98,9 +106,12 @@ function CreateMemberStep({
 
       const data = await res.json()
       onMemberCreated({
-        id: data.member?.id || data.id,
+        id: data.member?.id || data.id || data.familyMember?.id,
         name: name.trim(),
         emoji,
+        avatarStyle: avatarValue.style,
+        avatarSeed: avatarValue.seed,
+        avatarOptions: avatarValue.options,
         birthYear: birthYear ? parseInt(birthYear) : null,
         quizCompleted: false,
       })
@@ -129,7 +140,14 @@ function CreateMemberStep({
         <div className="flex justify-center gap-3 py-2">
           {existingMembers.map((m) => (
             <div key={m.id} className="flex flex-col items-center gap-1">
-              <span className="text-2xl">{m.emoji}</span>
+              <MemberAvatar
+                avatarStyle={m.avatarStyle}
+                avatarSeed={m.avatarSeed}
+                avatarOptions={m.avatarOptions}
+                avatarEmoji={m.emoji}
+                name={m.name}
+                size={32}
+              />
               <span className="text-xs text-gray-500">{m.name}</span>
             </div>
           ))}
@@ -140,8 +158,8 @@ function CreateMemberStep({
         </div>
       )}
 
-      {/* Icon picker */}
-      <IconPicker value={emoji} onChange={setEmoji} />
+      {/* Avatar picker */}
+      <AvatarPicker value={avatarValue} onChange={setAvatarValue} />
 
       {/* Name */}
       <div>
@@ -270,7 +288,14 @@ function DoneStep({
       <div className="flex justify-center gap-4 py-4">
         {members.map((m) => (
           <div key={m.id} className="flex flex-col items-center gap-2 p-3 bg-gray-50 rounded-xl">
-            <span className="text-3xl">{m.emoji}</span>
+            <MemberAvatar
+              avatarStyle={m.avatarStyle}
+              avatarSeed={m.avatarSeed}
+              avatarOptions={m.avatarOptions}
+              avatarEmoji={m.emoji}
+              name={m.name}
+              size={40}
+            />
             <span className="text-sm font-medium text-gray-700">{m.name}</span>
             {m.quizCompleted && (
               <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">

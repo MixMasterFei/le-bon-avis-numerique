@@ -174,13 +174,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Build age filter
+    // When all members are adults (16+), set a floor to avoid toddler/young-child content
+    const allAdults = youngestAge !== null && youngestAge >= 16
     let ageFilter = {}
     if (youngestAge !== null) {
-      ageFilter = {
-        OR: [
-          { expertAgeRec: null },
-          { expertAgeRec: { lte: youngestAge + 1 } },
-        ],
+      if (allAdults) {
+        // Adults: skip very young content, include unrated + teen/adult content
+        ageFilter = {
+          OR: [
+            { expertAgeRec: null },
+            { expertAgeRec: { gte: 8 } },
+          ],
+        }
+      } else {
+        ageFilter = {
+          OR: [
+            { expertAgeRec: null },
+            { expertAgeRec: { lte: youngestAge + 1 } },
+          ],
+        }
       }
     }
 
@@ -235,6 +247,9 @@ export async function GET(request: NextRequest) {
         const memberMatches: Record<string, {
           name: string
           avatarEmoji: string
+          avatarStyle: string | null
+          avatarSeed: string | null
+          avatarOptions: unknown
           matchScore: number
           matchPercentage: number
         }> = {}
@@ -249,6 +264,9 @@ export async function GET(request: NextRequest) {
             memberMatches[member.id] = {
               name: member.name,
               avatarEmoji: member.avatarEmoji,
+              avatarStyle: member.avatarStyle,
+              avatarSeed: member.avatarSeed,
+              avatarOptions: member.avatarOptions,
               matchScore: 0,
               matchPercentage: 50,
             }
@@ -292,15 +310,20 @@ export async function GET(request: NextRequest) {
           // --- Age appropriateness (20% of score) ---
           let ageScore = 0.5 // Neutral if we don't know
           if (prefs.age !== null && media.expertAgeRec !== null) {
-            if (media.expertAgeRec <= prefs.age) {
-              ageScore = 1.0 // Perfect: content is for their age or younger
+            if (prefs.age >= 16 && media.expertAgeRec < 10) {
+              // Adult watching young-child content: penalize proportionally
+              // expertAgeRec 3 → 0.2, expertAgeRec 7 → 0.4, expertAgeRec 9 → 0.5
+              ageScore = 0.1 + (media.expertAgeRec / 10) * 0.4
+            } else if (media.expertAgeRec <= prefs.age) {
+              ageScore = 1.0 // Content is for their age or younger
             } else if (media.expertAgeRec <= prefs.age + 1) {
               ageScore = 0.7 // Close enough (1 year over)
             } else {
               ageScore = 0.2 // Too old for them
             }
           } else if (media.expertAgeRec !== null && media.expertAgeRec <= 7) {
-            ageScore = 0.8 // Young-audience content, generally safe
+            // Unknown member age + young content: neutral (don't boost)
+            ageScore = 0.5
           }
 
           // Weighted combination
@@ -318,6 +341,9 @@ export async function GET(request: NextRequest) {
           memberMatches[member.id] = {
             name: member.name,
             avatarEmoji: member.avatarEmoji,
+            avatarStyle: member.avatarStyle,
+            avatarSeed: member.avatarSeed,
+            avatarOptions: member.avatarOptions,
             matchScore: finalPercentage,
             matchPercentage: finalPercentage,
           }
@@ -352,6 +378,9 @@ export async function GET(request: NextRequest) {
         id: m.id,
         name: m.name,
         avatarEmoji: m.avatarEmoji,
+        avatarStyle: m.avatarStyle,
+        avatarSeed: m.avatarSeed,
+        avatarOptions: m.avatarOptions,
         birthYear: m.birthYear,
         hasReactions: memberPreferences[m.id].hasPreferences,
       })),

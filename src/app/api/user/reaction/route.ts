@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
       name: member.name,
       birthYear: member.birthYear,
       avatarEmoji: member.avatarEmoji,
+      avatarStyle: member.avatarStyle,
+      avatarSeed: member.avatarSeed,
+      avatarOptions: member.avatarOptions,
       reaction: member.reactions[0] || null,
     }))
 

@@ -22,6 +22,9 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
   password      String?   // For credentials auth
+  avatarStyle   String?   @map("avatar_style")
+  avatarSeed    String?   @map("avatar_seed")
+  avatarOptions Json?     @map("avatar_options")
   role                UserRole  @default(USER)
   onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
   createdAt           DateTime  @default(now()) @map("created_at")
@@ -314,6 +317,9 @@ model FamilyMember {
   name            String
   birthYear       Int?     @map("birth_year")
   avatarEmoji     String   @default("👧") @map("avatar_emoji")
+  avatarStyle     String?  @map("avatar_style")
+  avatarSeed      String?  @map("avatar_seed")
+  avatarOptions   Json?    @map("avatar_options")
   favoriteGenres  String[] @default([]) @map("favorite_genres")  // Genres préférés
   dislikedGenres  String[] @default([]) @map("disliked_genres")  // Genres à éviter
 

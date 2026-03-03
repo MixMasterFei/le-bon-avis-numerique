@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Search, Users, SlidersHorizontal, Tv, ArrowRight, Sparkles, Film } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { HeroSearch } from "./HeroSearch"
 import { NowInCinema } from "./NowInCinema"
 import { CuratedCollections } from "./CuratedCollections"
@@ -93,7 +94,14 @@ function HeroV2({ session, familyMembers }: { session: HomepageV2Props["session"
                       href={`/profil/membres/${member.id}`}
                       className="group flex items-center gap-2 px-4 py-2.5 bg-white rounded-full border-2 border-violet-100 hover:border-violet-400 hover:shadow-md transition-all duration-200"
                     >
-                      <span className="text-xl">{member.avatarEmoji}</span>
+                      <MemberAvatar
+                        avatarStyle={(member as any).avatarStyle ?? null}
+                        avatarSeed={(member as any).avatarSeed ?? null}
+                        avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                        avatarEmoji={member.avatarEmoji ?? null}
+                        name={member.name}
+                        size={24}
+                      />
                       <span className="font-medium text-gray-800 group-hover:text-violet-700 text-sm">
                         {member.name}
                         {age && <span className="text-gray-400 ml-1">{age} ans</span>}
@@ -199,7 +207,14 @@ function ForYourFamily({ familyMembers }: { familyMembers: FamilyMember[] }) {
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
-              <span>{member.avatarEmoji}</span>
+              <MemberAvatar
+                avatarStyle={(member as any).avatarStyle ?? null}
+                avatarSeed={(member as any).avatarSeed ?? null}
+                avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                avatarEmoji={member.avatarEmoji ?? null}
+                name={member.name}
+                size={20}
+              />
               {member.name}
             </button>
           ))}

@@ -12,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { cn } from "@/lib/utils"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { useSession } from "next-auth/react"
 
 interface ReviewModalProps {
@@ -140,10 +141,10 @@ export function ReviewModal({
     if (selectedFamilyMember) {
       const member = familyMembers.find(m => m.id === selectedFamilyMember)
       if (member) {
-        return { name: member.name, avatar: member.avatarEmoji }
+        return { name: member.name, member }
       }
     }
-    return { name: session?.user?.name || "Vous", avatar: null }
+    return { name: session?.user?.name || "Vous", member: null }
   }
 
   const reviewerDisplay = getReviewerDisplay()
@@ -193,7 +194,14 @@ export function ReviewModal({
                         : "bg-background hover:bg-muted border-input"
                     )}
                   >
-                    <span className="text-lg">{member.avatarEmoji}</span>
+                    <MemberAvatar
+                      avatarStyle={(member as any).avatarStyle ?? null}
+                      avatarSeed={(member as any).avatarSeed ?? null}
+                      avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                      avatarEmoji={member.avatarEmoji ?? null}
+                      name={member.name}
+                      size={20}
+                    />
                     <span>{member.name}</span>
                     {member.birthYear && (
                       <span className="text-xs opacity-70">
@@ -204,7 +212,15 @@ export function ReviewModal({
                 ))}
               </div>
               <p className="text-xs text-gray-500">
-                L&apos;avis sera publié au nom de : <strong>{reviewerDisplay.avatar} {reviewerDisplay.name}</strong>
+                L&apos;avis sera publié au nom de : {reviewerDisplay.member && <MemberAvatar
+                  avatarStyle={(reviewerDisplay.member as any).avatarStyle ?? null}
+                  avatarSeed={(reviewerDisplay.member as any).avatarSeed ?? null}
+                  avatarOptions={((reviewerDisplay.member as any).avatarOptions as Record<string, unknown>) ?? null}
+                  avatarEmoji={reviewerDisplay.member.avatarEmoji ?? null}
+                  name={reviewerDisplay.member.name}
+                  size={16}
+                  className="inline-block align-middle"
+                />} <strong>{reviewerDisplay.name}</strong>
               </p>
             </div>
           )}

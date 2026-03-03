@@ -2,14 +2,13 @@
 
 import { useEffect, useState, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
-import { Film, Star, Clock } from "lucide-react"
+import { Film, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
-const FEATURED_COUNT = 7
 
 export default function FilmsPage() {
   const searchParams = useSearchParams()
@@ -34,11 +33,7 @@ export default function FilmsPage() {
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Featured movies (high quality, separate fetch)
-  const [featuredMovies, setFeaturedMovies] = useState<MockMediaItem[]>([])
-  const [featuredLoading, setFeaturedLoading] = useState(true)
-
-  // Fetch movies from database (or TMDB cinema API for now playing)
+  // Fetch movies from database, smart filter API, or TMDB cinema API
   useEffect(() => {
     let cancelled = false
     const controller = new AbortController()
@@ -80,6 +75,66 @@ export default function FilmsPage() {
               return
             }
           }
+        }
+
+        // Family filter mode: use smart filter API
+        if (filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0) {
+          const offset = (currentPage - 1) * ITEMS_PER_PAGE
+          const smartRes = await fetch("/api/filter/smart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              familyMemberIds: filters.familyMemberIds,
+              mediaType: "MOVIE",
+              limit: ITEMS_PER_PAGE,
+              offset,
+              strictMode: true,
+              minScore: 50,
+              topics: filters.topics,
+              platforms: filters.platforms,
+              search: filters.searchQuery || "",
+              requirePoster: true,
+              language: "fr,en",
+              ...(filters.minAge > DEFAULT_MIN_AGE ? { minAge: filters.minAge } : {}),
+              ...(filters.maxAge < DEFAULT_MAX_AGE ? { maxAge: filters.maxAge } : {}),
+            }),
+            signal: controller.signal,
+          })
+
+          if (smartRes.ok) {
+            const smartData = await smartRes.json()
+            if (smartData.success && smartData.results) {
+              const mapped: MockMediaItem[] = smartData.results.map((r: any) => ({
+                id: String(r.mediaId),
+                title: String(r.title || ""),
+                originalTitle: r.originalTitle ? String(r.originalTitle) : undefined,
+                type: (r.type || "MOVIE") as "MOVIE",
+                releaseDate: r.releaseDate ?? null,
+                posterUrl: String(r.posterUrl || ""),
+                synopsisFr: r.synopsisFr ?? null,
+                officialRating: r.officialRating ?? null,
+                expertAgeRec: r.expertAgeRec ?? null,
+                communityAgeRec: null,
+                genres: r.genres || [],
+                platforms: r.platforms || [],
+                topics: r.topics || [],
+                contentMetrics: r.contentMetrics || null,
+                reviews: [],
+              }))
+
+              if (!cancelled) {
+                setSource("db")
+                setDbMovies(mapped)
+                const total = smartData.total || 0
+                setDbTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
+                setDbTotalResults(total)
+                setLoading(false)
+              }
+              return
+            }
+          }
+
+          // Smart filter failed (e.g. not logged in) — fall through to normal API
         }
 
         const dbParams = new URLSearchParams({
@@ -170,62 +225,7 @@ export default function FilmsPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, isNowPlaying])
-
-  // Fetch featured movies (high quality, sorted by quality score)
-  useEffect(() => {
-    async function loadFeatured() {
-      setFeaturedLoading(true)
-      try {
-        // Featured section = family-friendly picks, cap at 13 max
-        const featuredMaxAge = Math.min(filters.maxAge, 13)
-        const featuredParams = new URLSearchParams({
-          limit: FEATURED_COUNT.toString(),
-          featured: "true",
-          sortBy: "quality",
-          maxAge: featuredMaxAge.toString(),
-          language: "fr,en",
-          requirePoster: "true",
-        })
-        if (filters.minAge > DEFAULT_MIN_AGE) {
-          featuredParams.set("minAge", filters.minAge.toString())
-        }
-        const res = await fetch(`/api/db/movies?${featuredParams}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.movies && data.movies.length > 0) {
-            const mapped: MockMediaItem[] = data.movies.map((m: any) => ({
-              id: String(m.id),
-              title: String(m.title || ""),
-              originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
-              type: "MOVIE" as const,
-              releaseDate: m.releaseDate ?? null,
-              posterUrl: String(m.posterUrl || ""),
-              synopsisFr: m.synopsisFr ?? null,
-              officialRating: m.officialRating ?? null,
-              expertAgeRec: m.expertAgeRec ?? null,
-              communityAgeRec: m.communityAgeRec ?? null,
-              genres: m.genres || [],
-              platforms: m.platforms || [],
-              topics: m.topics || [],
-              contentMetrics: m.contentMetrics || null,
-              reviews: [],
-              reviewCount: m.reviewCount || 0,
-              reviewAvgRating: m.reviewAvgRating ?? null,
-              tmdbRating: m.tmdbRating ?? null,
-              tmdbVoteCount: m.tmdbVoteCount ?? null,
-            }))
-            setFeaturedMovies(mapped)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch featured movies:", error)
-      } finally {
-        setFeaturedLoading(false)
-      }
-    }
-    loadFeatured()
-  }, [filters.minAge, filters.maxAge])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, filters.useFamilyFilter, filters.familyMemberIds, isNowPlaying])
 
   const filteredMovies = useMemo(() => {
     return dbMovies
@@ -244,6 +244,21 @@ export default function FilmsPage() {
   const totalPages = dbTotalPages
   const paginatedMovies = filteredMovies
   const totalCount = dbTotalResults ?? filteredMovies.length
+
+  // Section title
+  const sectionTitle = filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0
+    ? "Films adaptés à votre famille"
+    : filters.searchQuery
+      ? `Résultats pour "${filters.searchQuery}"`
+      : isNowPlaying
+        ? "En ce moment au cinéma"
+        : maxAgeParam
+          ? `Films pour les ${parseInt(maxAgeParam) <= 7 ? "enfants" : `${maxAgeParam} ans et moins`}`
+          : "Tous les films"
+
+  const SectionIcon = filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0
+    ? Users
+    : Clock
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -268,32 +283,14 @@ export default function FilmsPage() {
         </div>
 
         <div className="flex-1">
-          {/* Featured Section - Top quality movies (hidden when sorting, filtering, or fewer than 3 results) */}
-          {currentPage === 1 && !isNowPlaying && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && !featuredLoading && featuredMovies.length >= 3 && (
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
-                  <Star className="h-4 w-4" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
-                <span className="text-xs text-gray-500">Films bien notés et adaptés aux familles</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                {featuredMovies.map((movie) => (
-                  <MediaCard key={`featured-${movie.id}`} media={movie} />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* All Movies Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gray-200 rounded-lg text-gray-600">
-                <Clock className="h-4 w-4" />
+              <div className={`p-1.5 rounded-lg ${filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0 ? "bg-primary/10 text-primary" : "bg-gray-200 text-gray-600"}`}>
+                <SectionIcon className="h-4 w-4" />
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : isNowPlaying ? "En ce moment au cinéma" : maxAgeParam ? `Films pour les ${parseInt(maxAgeParam) <= 7 ? "enfants" : `${maxAgeParam} ans et moins`}` : "Tous les films"}
+                {sectionTitle}
               </h2>
             </div>
             <p className="text-sm text-gray-500">
