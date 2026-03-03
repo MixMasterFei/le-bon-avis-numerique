@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
+import { cn, formatAgeFromBirthYear } from "@/lib/utils"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import type { MediaType } from "@/lib/types"
@@ -79,8 +79,6 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [topRec, setTopRec] = useState<TopRec | null>(null)
 
-  const currentYear = new Date().getFullYear()
-  const age = member.birthYear ? currentYear - member.birthYear : null
   const lovedCount = member.reactions.filter((r) => r.reaction === "LOVED").length
 
   // Aggregate sensitivity (average of 5 values)
@@ -171,8 +169,8 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
               ring={ringColor as "green" | "amber" | "red"}
             />
             <h3 className="font-bold text-gray-900 mt-2">{member.name}</h3>
-            {age && (
-              <span className="text-xs text-gray-500">{age} ans</span>
+            {member.birthYear && (
+              <span className="text-xs text-gray-500">{formatAgeFromBirthYear(member.birthYear)}</span>
             )}
           </div>
 

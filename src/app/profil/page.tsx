@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { formatAgeFromBirthYear } from "@/lib/utils"
 import { FamilyHero } from "@/components/profile/FamilyHero"
 import { FamilyMemberCard } from "@/components/profile/FamilyMemberCard"
 import { AccountSettings } from "@/components/profile/AccountSettings"
@@ -458,6 +459,11 @@ export default function ProfilPage() {
                   onChange={(e) => setMemberBirthYear(e.target.value)}
                   placeholder="Ex: 2015"
                 />
+                {memberBirthYear && Number(memberBirthYear) >= 1920 && Number(memberBirthYear) <= currentYear && (
+                  <p className="text-xs text-gray-400">
+                    {formatAgeFromBirthYear(Number(memberBirthYear))}
+                  </p>
+                )}
               </div>
             </div>
 

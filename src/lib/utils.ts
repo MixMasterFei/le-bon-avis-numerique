@@ -75,6 +75,19 @@ export const mediaTypeLabels: Record<string, string> = {
   APP: "Application",
 }
 
+/**
+ * Format approximate age from birth year.
+ * Since we only store the year (not month/day), the person could be
+ * either (currentYear - birthYear - 1) or (currentYear - birthYear).
+ * Returns a range like "9–10 ans" to always be accurate.
+ */
+export function formatAgeFromBirthYear(birthYear: number): string {
+  const currentYear = new Date().getFullYear()
+  const ageMax = currentYear - birthYear
+  const ageMin = ageMax - 1
+  return `${ageMin}–${ageMax} ans`
+}
+
 
 
 

@@ -38,7 +38,7 @@ import { MediaSearchAdd } from "./MediaSearchAdd"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
-import { cn } from "@/lib/utils"
+import { cn, formatAgeFromBirthYear } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -226,8 +226,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
     )
   }
 
-  const currentYear = new Date().getFullYear()
-  const memberAge = member.birthYear != null ? currentYear - member.birthYear : null
+  const memberAge = member.birthYear != null ? formatAgeFromBirthYear(member.birthYear) : null
 
   // ---------- Handlers ----------
 
@@ -367,7 +366,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             Le coin de {member.name}
           </h1>
           {memberAge != null && (
-            <p className="text-sm text-gray-500">{memberAge} ans</p>
+            <p className="text-sm text-gray-500">{memberAge}</p>
           )}
         </div>
       </div>
@@ -401,7 +400,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     <div>
                       <h3 className="font-semibold text-gray-900">{member.name}</h3>
                       <p className="text-sm text-gray-500">
-                        {memberAge != null ? `${memberAge} ans` : "Âge non renseigné"}
+                        {memberAge != null ? memberAge : "Âge non renseigné"}
                         {member.birthYear != null && ` (né en ${member.birthYear})`}
                       </p>
                     </div>
@@ -430,7 +429,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                         onChange={(e) => setEditBirthYear(e.target.value)}
                         placeholder="ex: 2015"
                         min={1920}
-                        max={currentYear}
+                        max={new Date().getFullYear()}
                         className="mt-1"
                       />
                     </div>

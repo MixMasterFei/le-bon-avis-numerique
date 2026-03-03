@@ -25,6 +25,7 @@ import {
   User,
 } from "lucide-react"
 import { MemberPreferencesModal } from "./MemberPreferencesModal"
+import { formatAgeFromBirthYear } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { Button } from "@/components/ui/button"
@@ -323,7 +324,7 @@ export function FamilyMembers() {
                       <Link href={`/profil/membres/${member.id}`} className="font-medium text-gray-900 hover:text-violet-700 transition-colors">{member.name}</Link>
                       {member.birthYear && (
                         <Badge variant="outline" className="text-xs">
-                          {currentYear - member.birthYear} ans
+                          {formatAgeFromBirthYear(member.birthYear)}
                         </Badge>
                       )}
                     </div>
