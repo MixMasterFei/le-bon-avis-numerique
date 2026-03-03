@@ -18,10 +18,30 @@ interface AvatarPickerProps {
   className?: string
 }
 
+const FACES_PER_PAGE = 12
+
+/** Generate a batch of deterministic seeds */
+function generateSeedBatch(batchId: number): string[] {
+  const seeds: string[] = []
+  for (let i = 0; i < FACES_PER_PAGE; i++) {
+    // Use a deterministic-ish seed so the batch stays stable during renders
+    seeds.push(`pick-${batchId}-${i}-${Math.random().toString(36).slice(2, 8)}`)
+  }
+  return seeds
+}
+
 export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) {
   const [selectedBg, setSelectedBg] = useState<string | null>(
     (value.options?.backgroundColor as string) ?? null
   )
+  const [seedBatch, setSeedBatch] = useState<string[]>(() => {
+    // Initial batch: include current seed + random ones
+    const batch: string[] = [value.seed]
+    for (let i = 1; i < FACES_PER_PAGE; i++) {
+      batch.push(randomSeed())
+    }
+    return batch
+  })
 
   const handleStyleChange = useCallback(
     (styleId: string) => {
@@ -33,12 +53,24 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
     [value, onChange]
   )
 
-  const handleShuffle = useCallback(() => {
-    onChange({
-      ...value,
-      seed: randomSeed(),
-    })
-  }, [value, onChange])
+  const handlePickFace = useCallback(
+    (seed: string) => {
+      onChange({
+        ...value,
+        seed,
+      })
+    },
+    [value, onChange]
+  )
+
+  const handleShowMore = useCallback(() => {
+    // Generate a new batch, keeping the current selection in slot 0
+    const batch: string[] = [value.seed]
+    for (let i = 1; i < FACES_PER_PAGE; i++) {
+      batch.push(randomSeed())
+    }
+    setSeedBatch(batch)
+  }, [value.seed])
 
   const handleBgChange = useCallback(
     (color: string) => {
@@ -58,13 +90,7 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
     [value, onChange, selectedBg]
   )
 
-  // Live preview (large)
-  const previewUri = useMemo(
-    () => getAvatarDataUri(value.style, value.seed, value.options, 192),
-    [value.style, value.seed, value.options]
-  )
-
-  // Style previews (smaller, for the grid)
+  // Style selector previews (one per style)
   const stylePreviews = useMemo(
     () =>
       AVATAR_STYLES.map((s) => ({
@@ -74,43 +100,29 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
     [value.seed]
   )
 
+  // Face grid: all seeds rendered in the current style with current bg
+  const faceOptions = useMemo(
+    () =>
+      seedBatch.map((seed) => ({
+        seed,
+        uri: getAvatarDataUri(value.style, seed, value.options, 96),
+      })),
+    [seedBatch, value.style, value.options]
+  )
+
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Live preview */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="relative">
-          <img
-            src={previewUri}
-            alt="Aperçu de l'avatar"
-            width={96}
-            height={96}
-            className="rounded-full bg-gray-50 ring-4 ring-violet-100 transition-all duration-300"
-            draggable={false}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={handleShuffle}
-          className="gap-2"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          Nouveau visage
-        </Button>
-      </div>
-
-      {/* Style grid */}
+      {/* Style selector (horizontal scroll on mobile) */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Style</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
           {stylePreviews.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => handleStyleChange(s.id)}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all duration-200",
+                "flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all duration-200 flex-shrink-0",
                 "hover:border-violet-300 hover:bg-violet-50/50",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
                 value.style === s.id
@@ -123,14 +135,57 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
               <img
                 src={s.preview}
                 alt={s.label}
-                width={40}
-                height={40}
+                width={36}
+                height={36}
                 className="rounded-full"
                 draggable={false}
               />
-              <span className="text-[10px] font-medium text-gray-600 leading-tight text-center">
+              <span className="text-[10px] font-medium text-gray-600 leading-tight text-center whitespace-nowrap">
                 {s.label}
               </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Face grid — pick your favorite */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-gray-700">Choisissez un visage</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleShowMore}
+            className="gap-1.5 text-xs text-violet-600 hover:text-violet-700 h-7"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Autres visages
+          </Button>
+        </div>
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {faceOptions.map(({ seed, uri }) => (
+            <button
+              key={seed}
+              type="button"
+              onClick={() => handlePickFace(seed)}
+              className={cn(
+                "aspect-square rounded-xl border-2 p-1 transition-all duration-200",
+                "hover:border-violet-300 hover:scale-105",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
+                value.seed === seed
+                  ? "border-violet-500 bg-violet-50 ring-2 ring-violet-200 scale-105"
+                  : "border-gray-200 bg-white"
+              )}
+              aria-label="Choisir ce visage"
+              aria-pressed={value.seed === seed}
+            >
+              <img
+                src={uri}
+                alt=""
+                className="w-full h-full rounded-lg"
+                draggable={false}
+              />
             </button>
           ))}
         </div>
@@ -163,7 +218,7 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
             type="button"
             onClick={() => handleBgChange("")}
             className={cn(
-              "w-8 h-8 rounded-full border-2 transition-all duration-200",
+              "w-8 h-8 rounded-full border-2 transition-all duration-200 flex items-center justify-center",
               "hover:scale-110 bg-white",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
               !selectedBg

@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/dialog"
 import { FamilyHero } from "@/components/profile/FamilyHero"
 import { FamilyMemberCard } from "@/components/profile/FamilyMemberCard"
-import { FamilyMembers } from "@/components/profile/FamilyMembers"
 import { AccountSettings } from "@/components/profile/AccountSettings"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { FamilyRecommendationsSection } from "@/components/chez-vous/FamilyRecommendationsSection"
@@ -86,6 +85,14 @@ export default function ProfilPage() {
   const [profileAvatarValue, setProfileAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+
+  // Member edit/add state
+  const [memberDialogOpen, setMemberDialogOpen] = useState(false)
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [memberName, setMemberName] = useState("")
+  const [memberBirthYear, setMemberBirthYear] = useState("")
+  const [memberAvatarValue, setMemberAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
+  const [savingMember, setSavingMember] = useState(false)
 
   const router = useRouter()
   const memberRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -213,6 +220,64 @@ export default function ProfilPage() {
     }
   }
 
+  const openAddMemberDialog = () => {
+    setEditingMemberId(null)
+    setMemberName("")
+    setMemberBirthYear("")
+    setMemberAvatarValue(defaultAvatarValue())
+    setMemberDialogOpen(true)
+  }
+
+  const openEditMemberDialog = (member: FamilyMemberData) => {
+    setEditingMemberId(member.id)
+    setMemberName(member.name)
+    setMemberBirthYear(member.birthYear?.toString() || "")
+    if (member.avatarStyle && member.avatarSeed) {
+      setMemberAvatarValue({
+        style: member.avatarStyle,
+        seed: member.avatarSeed,
+        options: member.avatarOptions ?? undefined,
+      })
+    } else {
+      setMemberAvatarValue(defaultAvatarValue())
+    }
+    setMemberDialogOpen(true)
+  }
+
+  const handleSaveMember = async () => {
+    if (!memberName.trim()) return
+    setSavingMember(true)
+    try {
+      const url = editingMemberId
+        ? `/api/user/family/${editingMemberId}`
+        : "/api/user/family"
+      const method = editingMemberId ? "PATCH" : "POST"
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: memberName.trim(),
+          birthYear: memberBirthYear || undefined,
+          avatarStyle: memberAvatarValue.style,
+          avatarSeed: memberAvatarValue.seed,
+          avatarOptions: memberAvatarValue.options ?? null,
+        }),
+      })
+
+      if (res.ok) {
+        await fetchMembers()
+        setMemberDialogOpen(false)
+      }
+    } catch (err) {
+      console.error("Error saving member:", err)
+    } finally {
+      setSavingMember(false)
+    }
+  }
+
+  const currentYear = new Date().getFullYear()
+
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 max-w-6xl space-y-8">
       {/* ================================================================ */}
@@ -303,6 +368,10 @@ export default function ProfilPage() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">Mon foyer</h2>
+          <Button onClick={openAddMemberDialog} size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Ajouter
+          </Button>
         </div>
 
         {loadingMembers ? (
@@ -320,9 +389,7 @@ export default function ProfilPage() {
               >
                 <FamilyMemberCard
                   member={member}
-                  onEdit={() => {
-                    router.push(`/profil/membres/${member.id}`)
-                  }}
+                  onEdit={() => openEditMemberDialog(member)}
                   onDelete={() => handleDeleteMember(member.id)}
                 />
               </div>
@@ -330,11 +397,7 @@ export default function ProfilPage() {
 
             {/* Add member card */}
             <button
-              onClick={() => {
-                // Scroll to the FamilyMembers add form at the bottom
-                const el = document.getElementById("family-members-crud")
-                if (el) el.scrollIntoView({ behavior: "smooth" })
-              }}
+              onClick={openAddMemberDialog}
               className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/30 transition-all min-h-[200px] group"
             >
               <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-violet-100 flex items-center justify-center transition-colors">
@@ -346,20 +409,85 @@ export default function ProfilPage() {
             </button>
           </div>
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+          <button
+            onClick={openAddMemberDialog}
+            className="w-full text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50/30 transition-all"
+          >
             <Plus className="h-10 w-10 mx-auto text-gray-300 mb-3" />
             <p className="text-gray-500 font-medium">Ajoutez les membres de votre foyer</p>
             <p className="text-gray-400 text-sm mt-1">
               Pour recevoir des recommandations personnalisées
             </p>
-          </div>
+          </button>
         )}
-
-        {/* Hidden CRUD form for add/edit - used by the "Add member" card */}
-        <div id="family-members-crud" className="mt-6">
-          <FamilyMembers />
-        </div>
       </section>
+
+      {/* Member Add/Edit Dialog */}
+      <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingMemberId ? "Modifier le membre" : "Nouveau membre"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingMemberId
+                ? "Modifiez le nom, l\u2019avatar ou l\u2019ann\u00e9e de naissance"
+                : "Ajoutez un membre de votre foyer pour des recommandations personnalis\u00e9es"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 py-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="memberName">Pr\u00e9nom</Label>
+                <Input
+                  id="memberName"
+                  value={memberName}
+                  onChange={(e) => setMemberName(e.target.value)}
+                  placeholder="Ex: Emma"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="memberBirthYear">Ann\u00e9e de naissance</Label>
+                <Input
+                  id="memberBirthYear"
+                  type="number"
+                  min="1920"
+                  max={currentYear}
+                  value={memberBirthYear}
+                  onChange={(e) => setMemberBirthYear(e.target.value)}
+                  placeholder="Ex: 2015"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Avatar</Label>
+              <AvatarPicker value={memberAvatarValue} onChange={setMemberAvatarValue} />
+            </div>
+
+            <p className="text-xs text-gray-400 text-center">
+              Vous pourrez modifier cela \u00e0 tout moment
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMemberDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSaveMember}
+              disabled={savingMember || !memberName.trim()}
+            >
+              {savingMember ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ================================================================ */}
       {/* ZONE C: Discovery Tabs                                            */}

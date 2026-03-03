@@ -140,7 +140,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 p-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -243,8 +243,8 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
             </span>
           </div>
 
-          {/* Top recommendation */}
-          {topRec && (
+          {/* Top recommendation (only show if score > 0) */}
+          {topRec && topRec.matchScore > 0 && (
             <Link
               href={`/media/${toMediaRouteId(topRec.type as MediaType, topRec.id)}`}
               className="mt-3 flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
