@@ -8,6 +8,7 @@ import { useSession, signOut } from "next-auth/react"
 import { Search, Menu, X, Film, Tv, Gamepad2, BookOpen, User, LogOut, Settings, ChevronDown, Info, Target, Heart, BookText, Newspaper, Baby, Star, Bookmark, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
 
 const navigation = [
   { name: "Films", href: "/films", icon: Film },
@@ -42,8 +43,26 @@ export function Header() {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
   const [isAgeMenuOpen, setIsAgeMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [userAvatar, setUserAvatar] = useState<{ style?: string | null; seed?: string | null; options?: Record<string, unknown> | null }>({})
   const moreMenuRef = useRef<HTMLDivElement>(null)
   const ageMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fetch user avatar from DB
+  useEffect(() => {
+    if (!session?.user?.id) return
+    fetch("/api/user/profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.user) {
+          setUserAvatar({
+            style: data.user.avatarStyle,
+            seed: data.user.avatarSeed,
+            options: data.user.avatarOptions,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [session?.user?.id])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -206,17 +225,15 @@ export function Header() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200"
                 >
-                  {session.user.image ? (
-                    <img
-                      src={session.user.image}
-                      alt={session.user.name || "User"}
-                      className="h-8 w-8 rounded-full ring-2 ring-gray-200"
-                    />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center shadow-md">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
-                  )}
+                  <MemberAvatar
+                    avatarStyle={userAvatar.style}
+                    avatarSeed={userAvatar.seed}
+                    avatarOptions={userAvatar.options}
+                    avatarEmoji={session.user.image}
+                    name={session.user.name}
+                    size={32}
+                    className="ring-2 ring-gray-200"
+                  />
                   <span className="hidden sm:inline">
                     {session.user.name || session.user.email?.split("@")[0]}
                   </span>
