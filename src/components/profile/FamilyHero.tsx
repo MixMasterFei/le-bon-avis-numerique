@@ -33,10 +33,10 @@ interface FamilyHeroProps {
 }
 
 const STAT_ITEMS = [
-  { key: "reviews" as const, label: "Avis", icon: Star, color: "text-amber-500" },
-  { key: "favorites" as const, label: "Favoris", icon: Heart, color: "text-rose-500" },
-  { key: "watchlist" as const, label: "À voir", icon: Bookmark, color: "text-blue-500" },
-  { key: "reactions" as const, label: "Réactions", icon: MessageCircle, color: "text-emerald-500" },
+  { key: "reviews" as const, label: "Avis", icon: Star, iconColor: "text-amber-500", iconBg: "bg-amber-100" },
+  { key: "favorites" as const, label: "Favoris", icon: Heart, iconColor: "text-rose-500", iconBg: "bg-rose-100" },
+  { key: "watchlist" as const, label: "À voir", icon: Bookmark, iconColor: "text-blue-500", iconBg: "bg-blue-100" },
+  { key: "reactions" as const, label: "Réactions", icon: MessageCircle, iconColor: "text-emerald-500", iconBg: "bg-emerald-100" },
 ]
 
 export function FamilyHero({ user, stats, members, onEditProfile, onMemberClick }: FamilyHeroProps) {
@@ -78,16 +78,18 @@ export function FamilyHero({ user, stats, members, onEditProfile, onMemberClick 
 
         {/* Stats ribbon */}
         {stats && (
-          <div className="grid grid-cols-4 gap-3 mt-6">
-            {STAT_ITEMS.map(({ key, label, icon: Icon, color }) => (
-              <div key={key} className="text-center">
-                <div className="flex items-center justify-center gap-1.5">
-                  <Icon className={cn("h-4 w-4", color)} />
-                  <span className="text-lg sm:text-xl font-bold text-gray-900">
-                    {stats[key]}
-                  </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+            {STAT_ITEMS.map(({ key, label, icon: Icon, iconColor, iconBg }) => (
+              <div key={key} className="flex items-center gap-3 bg-white/70 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/50 shadow-sm">
+                <div className={cn("flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center", iconBg)}>
+                  <Icon className={cn("h-5 w-5", iconColor)} />
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 leading-none">
+                    {stats[key]}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                </div>
               </div>
             ))}
           </div>
