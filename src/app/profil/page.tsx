@@ -424,21 +424,21 @@ export default function ProfilPage() {
 
       {/* Member Add/Edit Dialog */}
       <Dialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>
               {editingMemberId ? "Modifier le membre" : "Nouveau membre"}
             </DialogTitle>
             <DialogDescription>
               {editingMemberId
-                ? "Modifiez le nom, l\u2019avatar ou l\u2019ann\u00e9e de naissance"
-                : "Ajoutez un membre de votre foyer pour des recommandations personnalis\u00e9es"}
+                ? "Modifiez le nom, l\u2019avatar ou l\u2019année de naissance"
+                : "Ajoutez un membre de votre foyer pour des recommandations personnalisées"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 py-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="memberName">Pr\u00e9nom</Label>
+                <Label htmlFor="memberName">Prénom</Label>
                 <Input
                   id="memberName"
                   value={memberName}
@@ -448,7 +448,7 @@ export default function ProfilPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="memberBirthYear">Ann\u00e9e de naissance</Label>
+                <Label htmlFor="memberBirthYear">Année de naissance</Label>
                 <Input
                   id="memberBirthYear"
                   type="number"
@@ -467,7 +467,7 @@ export default function ProfilPage() {
             </div>
 
             <p className="text-xs text-gray-400 text-center">
-              Vous pourrez modifier cela \u00e0 tout moment
+              Vous pourrez modifier cela à tout moment
             </p>
           </div>
           <DialogFooter>

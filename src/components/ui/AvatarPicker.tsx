@@ -18,7 +18,7 @@ interface AvatarPickerProps {
   className?: string
 }
 
-const FACES_PER_PAGE = 12
+const FACES_PER_PAGE = 8
 
 /** Generate a batch of deterministic seeds */
 function generateSeedBatch(batchId: number): string[] {
@@ -112,17 +112,17 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Style selector (horizontal scroll on mobile) */}
+      {/* Style selector (wrapping grid) */}
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Style</p>
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+        <div className="grid grid-cols-4 gap-1.5">
           {stylePreviews.map((s) => (
             <button
               key={s.id}
               type="button"
               onClick={() => handleStyleChange(s.id)}
               className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-xl border-2 transition-all duration-200 flex-shrink-0",
+                "flex flex-col items-center gap-0.5 p-1.5 rounded-lg border-2 transition-all duration-200",
                 "hover:border-violet-300 hover:bg-violet-50/50",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
                 value.style === s.id
@@ -135,12 +135,12 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
               <img
                 src={s.preview}
                 alt={s.label}
-                width={36}
-                height={36}
+                width={32}
+                height={32}
                 className="rounded-full"
                 draggable={false}
               />
-              <span className="text-[10px] font-medium text-gray-600 leading-tight text-center whitespace-nowrap">
+              <span className="text-[9px] font-medium text-gray-600 leading-tight text-center truncate w-full">
                 {s.label}
               </span>
             </button>
@@ -163,7 +163,7 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
             Autres visages
           </Button>
         </div>
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {faceOptions.map(({ seed, uri }) => (
             <button
               key={seed}
