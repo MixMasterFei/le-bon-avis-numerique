@@ -77,6 +77,11 @@ export function NowInCinema({ showLoginHint = false }: { showLoginHint?: boolean
     fetchMovies()
   }, [])
 
+  // Register media IDs for family fit scoring
+  useEffect(() => {
+    movies.forEach((m) => registerMediaId(m.id))
+  }, [movies, registerMediaId])
+
   if (loading) {
     return (
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
@@ -86,11 +91,6 @@ export function NowInCinema({ showLoginHint = false }: { showLoginHint?: boolean
       </div>
     )
   }
-
-  // Register media IDs for family fit scoring
-  useEffect(() => {
-    movies.forEach((m) => registerMediaId(m.id))
-  }, [movies, registerMediaId])
 
   if (movies.length === 0) {
     return null
