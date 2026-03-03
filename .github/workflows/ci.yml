@@ -35,5 +35,5 @@ jobs:
         run: npm run build
         env:
           DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
-          NEXTAUTH_SECRET: "ci-secret-placeholder"
+          AUTH_SECRET: "ci-secret-placeholder"
           TMDB_API_KEY: "ci-placeholder"

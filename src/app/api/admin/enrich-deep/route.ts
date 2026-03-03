@@ -9,6 +9,23 @@ export const maxDuration = 60
 // Pass 2: Deep enrichment using GPT-5 with web search
 // Targets low-confidence items flagged by Pass 1, verifies and corrects metrics
 
+const VALID_TOPICS = [
+  "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
+  "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique",
+  "Histoire", "Amitié",
+  "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce",
+  "Harcèlement", "Premiers amours",
+  "École", "Adolescence",
+  "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers",
+  "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage",
+  "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage",
+  "Cuisine", "Art", "Danse", "Théâtre",
+  "Guerre", "Résistance", "Seconde Guerre mondiale",
+  "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
+  "Noël", "Halloween",
+  "Nintendo", "PlayStation", "Xbox", "PC",
+]
+
 const VALID_TONE_TAGS = [
   "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
   "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose",
@@ -288,7 +305,7 @@ export async function POST(request: NextRequest) {
           data: {
             expertAgeRec: analysis.expertAgeRec,
             synopsisFr: analysis.synopsis || item.synopsisFr,
-            topics: [...new Set([...item.topics, ...analysis.tags])],
+            topics: [...new Set([...item.topics, ...filterToValidList(analysis.tags, VALID_TOPICS)])],
           },
         })
 

@@ -41,7 +41,34 @@ interface ContentAnalysis {
   emotionalThemes: string[]
 }
 
-// Valid closed lists for v2 fields
+// Valid closed lists for enrichment fields
+const VALID_TOPICS = [
+  // Genres/themes
+  "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
+  "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique",
+  "Histoire", "Amitié",
+  // Emotional/social
+  "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce",
+  "Harcèlement", "Premiers amours",
+  // Life stages
+  "École", "Adolescence",
+  // Worlds/imagination
+  "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers",
+  "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage",
+  // Nature/environment
+  "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage",
+  // Arts/culture
+  "Cuisine", "Art", "Danse", "Théâtre",
+  // History/society
+  "Guerre", "Résistance", "Seconde Guerre mondiale",
+  // Studios
+  "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
+  // Seasonal
+  "Noël", "Halloween",
+  // Games
+  "Nintendo", "PlayStation", "Xbox", "PC",
+]
+
 const VALID_TONE_TAGS = [
   "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
   "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose",
@@ -102,9 +129,6 @@ async function analyzeWithOpenAI(
   },
   retryCount = 0
 ): Promise<ContentAnalysis> {
-  const currentYear = new Date().getFullYear()
-  const releaseYear = item.releaseDate?.getFullYear()
-
   const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
 Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
 
@@ -154,7 +178,7 @@ SAISONNIER:
 "Noël", "Halloween"
 
 JEUX:
-"Nintendo", "PlayStation", "Xbox", "PC"${releaseYear && releaseYear >= currentYear - 1 ? `\n"Meilleur ${releaseYear}"` : ""}
+"Nintendo", "PlayStation", "Xbox", "PC"
 
 ATTENTION:
 - Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
@@ -413,7 +437,8 @@ export async function POST(request: NextRequest) {
           data: {
             expertAgeRec: analysis.expertAgeRec,
             synopsisFr: analysis.synopsis || item.synopsisFr,
-            topics: [...new Set([...item.topics, ...analysis.tags])],
+            topics: [...new Set([...item.topics, ...filterToValidList(analysis.tags, VALID_TOPICS)])],
+            isEnriched: true,
           },
         })
 

@@ -43,7 +43,24 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
   throw new Error("withRetry: unreachable")
 }
 
-// ── Closed lists for v2 fields ──────────────────────────────────────────────
+// ── Closed lists for enrichment fields ──────────────────────────────────────
+
+const VALID_TOPICS = [
+  "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
+  "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique",
+  "Histoire", "Amitié",
+  "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce",
+  "Harcèlement", "Premiers amours",
+  "École", "Adolescence",
+  "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers",
+  "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage",
+  "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage",
+  "Cuisine", "Art", "Danse", "Théâtre",
+  "Guerre", "Résistance", "Seconde Guerre mondiale",
+  "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
+  "Noël", "Halloween",
+  "Nintendo", "PlayStation", "Xbox", "PC",
+]
 
 const VALID_TONE_TAGS = [
   "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
@@ -232,10 +249,7 @@ async function fullReenrich() {
 
     for (const item of items) {
       try {
-        const currentYear = new Date().getFullYear()
-        const releaseYear = item.releaseDate?.getFullYear()
-
-        const prompt = buildPass1Prompt(item, currentYear, releaseYear)
+        const prompt = buildPass1Prompt(item)
 
         // Retry on rate limit (429) errors
         let response
@@ -302,7 +316,8 @@ async function fullReenrich() {
           data: {
             expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
             synopsisFr: parsed.synopsis || item.synopsisFr,
-            topics: [...new Set([...item.topics, ...(Array.isArray(parsed.tags) ? parsed.tags : [])])],
+            topics: [...new Set([...item.topics, ...filterToValidList(Array.isArray(parsed.tags) ? parsed.tags : [], VALID_TOPICS)])],
+            isEnriched: true,
           },
         }))
 
@@ -437,7 +452,7 @@ async function deepEnrich() {
         data: {
           expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
           synopsisFr: parsed.synopsis || item.synopsisFr,
-          topics: [...new Set([...item.topics, ...(Array.isArray(parsed.tags) ? parsed.tags : [])])],
+          topics: [...new Set([...item.topics, ...filterToValidList(Array.isArray(parsed.tags) ? parsed.tags : [], VALID_TOPICS)])],
         },
       }))
 
@@ -481,7 +496,7 @@ async function deepEnrich() {
 
 // ── Prompt builders ─────────────────────────────────────────────────────────
 
-function buildPass1Prompt(item: { title: string; originalTitle: string | null; type: string; synopsisFr: string | null; genres: string[]; releaseDate: Date | null; officialRating: string | null }, currentYear: number, releaseYear: number | undefined): string {
+function buildPass1Prompt(item: { title: string; originalTitle: string | null; type: string; synopsisFr: string | null; genres: string[]; releaseDate: Date | null; officialRating: string | null }): string {
   return `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
 Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
 
@@ -500,7 +515,7 @@ IMPORTANT:
 - Base ton analyse sur ta connaissance de ce contenu si tu le connais
 
 Tags possibles (choisis UNIQUEMENT parmi cette liste — 3 a 8 tags):
-"Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique", "Histoire", "Amitié", "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce", "Harcèlement", "Premiers amours", "École", "Adolescence", "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers", "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage", "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage", "Cuisine", "Art", "Danse", "Théâtre", "Guerre", "Résistance", "Seconde Guerre mondiale", "Disney", "Pixar", "DreamWorks", "Studio Ghibli", "Noël", "Halloween", "Nintendo", "PlayStation", "Xbox", "PC"${releaseYear && releaseYear >= currentYear - 1 ? `, "Meilleur ${releaseYear}"` : ""}
+"Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique", "Histoire", "Amitié", "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce", "Harcèlement", "Premiers amours", "École", "Adolescence", "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers", "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage", "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage", "Cuisine", "Art", "Danse", "Théâtre", "Guerre", "Résistance", "Seconde Guerre mondiale", "Disney", "Pixar", "DreamWorks", "Studio Ghibli", "Noël", "Halloween", "Nintendo", "PlayStation", "Xbox", "PC"
 
 TON ET AMBIANCE (1 a 3): "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré", "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose", "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique", "Action intense", "Effrayant et angoissant", "Romantique et tendre", "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant"
 RYTHME (1): "Très calme", "Lent et contemplatif", "Rythme modéré", "Dynamique", "Rapide et frénétique"

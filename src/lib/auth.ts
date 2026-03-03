@@ -134,38 +134,53 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       // Fetch user data if we have sub (from OAuth) but not id
       if (!token.id && token.sub) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { id: true, role: true, name: true, onboardingCompleted: true },
-        })
-        if (dbUser) {
-          token.id = dbUser.id
-          token.role = dbUser.role
-          token.name = dbUser.name
-          token.onboardingCompleted = dbUser.onboardingCompleted
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { id: true, role: true, name: true, onboardingCompleted: true },
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.role = dbUser.role
+            token.name = dbUser.name
+            token.onboardingCompleted = dbUser.onboardingCompleted
+          }
+        } catch (error) {
+          console.error("[auth] JWT: failed to fetch user by sub:", error)
+          // Safe default — don't block login
+          token.onboardingCompleted = token.onboardingCompleted ?? true
         }
       }
       // Fetch onboardingCompleted on first sign-in if not yet set
       if (token.id && token.onboardingCompleted === undefined) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { onboardingCompleted: true },
-        })
-        if (dbUser) {
-          token.onboardingCompleted = dbUser.onboardingCompleted
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { onboardingCompleted: true },
+          })
+          if (dbUser) {
+            token.onboardingCompleted = dbUser.onboardingCompleted
+          }
+        } catch (error) {
+          console.error("[auth] JWT: failed to fetch onboardingCompleted:", error)
+          token.onboardingCompleted = true
         }
       }
       // Refresh user data on update trigger
       if (trigger === "update" && token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { name: true, role: true, image: true, onboardingCompleted: true },
-        })
-        if (dbUser) {
-          token.name = dbUser.name
-          token.role = dbUser.role
-          token.picture = dbUser.image
-          token.onboardingCompleted = dbUser.onboardingCompleted
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { name: true, role: true, image: true, onboardingCompleted: true },
+          })
+          if (dbUser) {
+            token.name = dbUser.name
+            token.role = dbUser.role
+            token.picture = dbUser.image
+            token.onboardingCompleted = dbUser.onboardingCompleted
+          }
+        } catch (error) {
+          console.error("[auth] JWT: failed to refresh user data:", error)
         }
       }
       return token

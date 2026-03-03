@@ -20,6 +20,7 @@ import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { FamilyFitCard } from "@/components/media/FamilyFitCard"
+import { FamilyFitHero } from "@/components/media/FamilyFitHero"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
@@ -646,7 +647,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Poster */}
-            <div className="lg:w-1/3 xl:w-1/4 shrink-0">
+            <div className="lg:w-1/4 shrink-0">
               <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl">
                 <BlurredPoster
                   src={media.posterUrl}
@@ -659,7 +660,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
 
             {/* Info */}
-            <div className="flex-1 text-white">
+            <div className="flex-1 text-white min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <Badge variant="secondary" className="bg-white/20 text-white border-0">
                   {mediaTypeLabels[media.type]}
@@ -719,6 +720,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 </div>
               )}
             </div>
+
+            {/* Family Fit — hero column (desktop: third column, mobile: stacked below) */}
+            {dbId && (
+              <div className="lg:w-72 xl:w-80 shrink-0">
+                <FamilyFitHero mediaId={dbId} />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -827,9 +835,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Family Fit Assessment */}
-            {dbId && <FamilyFitCard mediaId={dbId} />}
-
             {/* Game Info Card - for games only */}
             {media.type === "GAME" && (
               <GameInfoCard

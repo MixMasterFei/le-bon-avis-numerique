@@ -158,6 +158,16 @@ export async function GET(request: NextRequest) {
       ]
     }
 
+    // Filter by tone tags (ambiance browsing)
+    const tones = searchParams.get("tones")
+    if (tones) {
+      const toneList = tones.split(",").map(t => t.trim())
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { contentMetrics: { toneTags: { hasSome: toneList } } }
+      ]
+    }
+
     // Filter by platforms (any match)
     if (platforms) {
       const platformList = platforms.split(",").map(p => p.trim())

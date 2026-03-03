@@ -52,8 +52,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }))
-  } catch {
-    // DB unavailable at build time — return static pages only
+  } catch (error) {
+    console.error("[sitemap] DB query failed:", error instanceof Error ? error.message : error)
   }
 
   return [...staticPages, ...mediaPages]
