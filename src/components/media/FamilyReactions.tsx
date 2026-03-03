@@ -87,7 +87,7 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
     } else {
       setLoading(false)
     }
-  }, [session, mediaId])
+  }, [session?.user?.id, mediaId])
 
   const handleReaction = async (memberId: string, reactionValue: string) => {
     const member = members.find((m) => m.id === memberId)

@@ -59,7 +59,7 @@ export function FamilyRecommendationsSection() {
     } else {
       setLoading(false)
     }
-  }, [session])
+  }, [session?.user?.id])
 
   // Fetch recommendations when member is selected
   useEffect(() => {

@@ -141,7 +141,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
       }
     }
     fetchFamilyMembers()
-  }, [session])
+  }, [session?.user?.id])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)

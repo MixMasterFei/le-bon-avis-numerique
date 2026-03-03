@@ -10,10 +10,10 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { name, image } = body
+    const { name, image, avatarStyle, avatarSeed, avatarOptions } = body
 
     // Build update data
-    const updateData: { name?: string; image?: string | null } = {}
+    const updateData: Record<string, unknown> = {}
 
     if (name !== undefined) {
       if (typeof name !== "string" || name.trim().length === 0) {
@@ -23,8 +23,18 @@ export async function PATCH(request: Request) {
     }
 
     if (image !== undefined) {
-      // Allow null to clear the image, or a string (emoji or URL)
       updateData.image = image
+    }
+
+    // DiceBear avatar fields
+    if (avatarStyle !== undefined) {
+      updateData.avatarStyle = typeof avatarStyle === "string" ? avatarStyle.slice(0, 50) : null
+    }
+    if (avatarSeed !== undefined) {
+      updateData.avatarSeed = typeof avatarSeed === "string" ? avatarSeed.slice(0, 50) : null
+    }
+    if (avatarOptions !== undefined) {
+      updateData.avatarOptions = avatarOptions ?? null
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -34,7 +44,7 @@ export async function PATCH(request: Request) {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { id: true, name: true, email: true, image: true },
+      select: { id: true, name: true, email: true, image: true, avatarStyle: true, avatarSeed: true, avatarOptions: true },
     })
 
     return NextResponse.json({
@@ -66,6 +76,9 @@ export async function GET() {
         image: true,
         role: true,
         createdAt: true,
+        avatarStyle: true,
+        avatarSeed: true,
+        avatarOptions: true,
       },
     })
 

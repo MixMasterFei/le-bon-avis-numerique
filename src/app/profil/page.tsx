@@ -80,6 +80,9 @@ export default function ProfilPage() {
   const [members, setMembers] = useState<FamilyMemberData[]>([])
   const [loadingMembers, setLoadingMembers] = useState(true)
 
+  // User avatar state (fetched from DB, not session)
+  const [userAvatar, setUserAvatar] = useState<{ style?: string | null; seed?: string | null; options?: Record<string, unknown> | null }>({})
+
   // Profile edit state
   const [editProfileOpen, setEditProfileOpen] = useState(false)
   const [profileName, setProfileName] = useState("")
@@ -98,26 +101,17 @@ export default function ProfilPage() {
   const router = useRouter()
   const memberRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  // Fetch stats
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch("/api/user/stats")
-        if (res.ok) {
-          const data = await res.json()
-          setStats(data)
-        }
-      } catch (err) {
-        console.error("Failed to fetch stats:", err)
-      } finally {
-        setLoadingStats(false)
-      }
-    }
+  const userId = session?.user?.id
 
-    if (session?.user) {
-      fetchStats()
-    }
-  }, [session])
+  // Fetch stats (once on mount)
+  useEffect(() => {
+    if (!userId) return
+    fetch("/api/user/stats")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setStats(data) })
+      .catch(() => {})
+      .finally(() => setLoadingStats(false))
+  }, [userId])
 
   // Fetch family members
   const fetchMembers = async () => {
@@ -135,17 +129,33 @@ export default function ProfilPage() {
   }
 
   useEffect(() => {
-    if (session?.user) {
-      fetchMembers()
-    }
-  }, [session])
+    if (userId) fetchMembers()
+  }, [userId])
 
-  // Initialize profile data
+  // Fetch user profile (avatar + name) from DB
   useEffect(() => {
-    if (session?.user?.name) {
-      setProfileName(session.user.name)
-    }
-  }, [session])
+    if (!userId) return
+    if (session?.user?.name) setProfileName(session.user.name)
+    fetch("/api/user/profile")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.user) {
+          setUserAvatar({
+            style: data.user.avatarStyle,
+            seed: data.user.avatarSeed,
+            options: data.user.avatarOptions,
+          })
+          if (data.user.avatarStyle && data.user.avatarSeed) {
+            setProfileAvatarValue({
+              style: data.user.avatarStyle,
+              seed: data.user.avatarSeed,
+              options: data.user.avatarOptions ?? undefined,
+            })
+          }
+        }
+      })
+      .catch(() => {})
+  }, [userId])
 
   if (status === "loading") {
     return (
@@ -189,11 +199,19 @@ export default function ProfilPage() {
       })
       if (res.ok) {
         setProfileSaved(true)
-        await update()
+        setUserAvatar({
+          style: profileAvatarValue.style,
+          seed: profileAvatarValue.seed,
+          options: profileAvatarValue.options ?? null,
+        })
+        // Update session name without full page reload
+        if (profileName !== session.user.name) {
+          update()
+        }
         setTimeout(() => {
           setEditProfileOpen(false)
           setProfileSaved(false)
-        }, 1500)
+        }, 1000)
       }
     } catch (err) {
       console.error("Failed to save profile:", err)
@@ -288,9 +306,9 @@ export default function ProfilPage() {
         user={{
           name: session.user.name,
           image: session.user.image,
-          avatarStyle: ((session.user as unknown as Record<string, unknown>).avatarStyle as string | null) ?? null,
-          avatarSeed: ((session.user as unknown as Record<string, unknown>).avatarSeed as string | null) ?? null,
-          avatarOptions: ((session.user as unknown as Record<string, unknown>).avatarOptions as Record<string, unknown> | null) ?? null,
+          avatarStyle: userAvatar.style ?? null,
+          avatarSeed: userAvatar.seed ?? null,
+          avatarOptions: userAvatar.options ?? null,
         }}
         stats={stats}
         members={members.map((m) => ({

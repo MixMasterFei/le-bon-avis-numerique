@@ -63,7 +63,7 @@ export function FamilyMovieNight() {
       }
     }
     loadFamily()
-  }, [session])
+  }, [session?.user?.id])
 
   const toggleMember = (memberId: string) => {
     setSelectedMembers(prev =>
