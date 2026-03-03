@@ -193,13 +193,13 @@ export function StreamingSection({ showLoginHint = false }: { showLoginHint?: bo
       </div>
 
       {/* Streaming service tabs */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
         {streamingServices.map((service) => (
           <button
             key={service.id}
             onClick={() => setSelectedService(service)}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap
+              flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full font-medium text-sm whitespace-nowrap
               transition-all duration-200
               ${
                 selectedService.id === service.id

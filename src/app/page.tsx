@@ -35,7 +35,7 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
 
   return (
     <FamilyFitProvider>
-      <div className="flex flex-col">
+      <div className="flex flex-col overflow-x-hidden">
         {/* Hero Section */}
         <section className="relative overflow-visible">
           {/* Banner background image */}
