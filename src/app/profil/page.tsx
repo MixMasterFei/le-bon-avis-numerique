@@ -307,44 +307,45 @@ export default function ProfilPage() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={editProfileOpen} onOpenChange={setEditProfileOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>Modifier le profil</DialogTitle>
             <DialogDescription>
               Personnalisez votre profil familial
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+          <div className="space-y-5 py-2">
+            {/* Name + Email first (always visible) */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="profileName">Nom d&apos;affichage</Label>
+                <Input
+                  id="profileName"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  placeholder="Votre nom ou pseudo"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-400">
+                  Affiché sur vos avis et commentaires
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="profileEmail">Email</Label>
+                <Input
+                  id="profileEmail"
+                  type="email"
+                  value={session.user.email || ""}
+                  disabled
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+
             {/* Avatar */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Avatar</Label>
               <AvatarPicker value={profileAvatarValue} onChange={setProfileAvatarValue} />
-            </div>
-
-            {/* Name */}
-            <div className="space-y-2">
-              <Label htmlFor="profileName">Nom d&apos;affichage</Label>
-              <Input
-                id="profileName"
-                value={profileName}
-                onChange={(e) => setProfileName(e.target.value)}
-                placeholder="Votre nom ou pseudo"
-              />
-              <p className="text-xs text-gray-500">
-                Ce nom sera affiché sur vos avis et commentaires
-              </p>
-            </div>
-
-            {/* Email (read-only) */}
-            <div className="space-y-2">
-              <Label htmlFor="profileEmail">Email</Label>
-              <Input
-                id="profileEmail"
-                type="email"
-                value={session.user.email || ""}
-                disabled
-                className="bg-gray-50"
-              />
             </div>
           </div>
           <DialogFooter>
@@ -432,7 +433,7 @@ export default function ProfilPage() {
             </DialogTitle>
             <DialogDescription>
               {editingMemberId
-                ? "Modifiez le nom, l\u2019avatar ou l\u2019année de naissance"
+                ? "Modifiez le nom, l'avatar ou l'année de naissance"
                 : "Ajoutez un membre de votre foyer pour des recommandations personnalisées"}
             </DialogDescription>
           </DialogHeader>
