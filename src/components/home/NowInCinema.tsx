@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Clapperboard } from "lucide-react"
+import { ArrowRight, Clapperboard, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
+import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface CinemaMovie {
@@ -18,6 +19,7 @@ interface CinemaMovie {
   communityAgeRec?: number | null
   genres?: string[]
   topics?: string[]
+  toneTags?: string[]
   inDatabase: boolean
 }
 
@@ -47,12 +49,14 @@ function mapToMediaItem(movie: CinemaMovie): MockMediaItem {
       whatParentsNeedToKnow: [],
     },
     reviews: [],
+    toneTags: movie.toneTags || [],
   }
 }
 
-export function NowInCinema() {
+export function NowInCinema({ showLoginHint = false }: { showLoginHint?: boolean }) {
   const [movies, setMovies] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
+  const { getFamilyFit, registerMediaId } = useFamilyFit()
 
   useEffect(() => {
     async function fetchMovies() {
@@ -83,6 +87,11 @@ export function NowInCinema() {
     )
   }
 
+  // Register media IDs for family fit scoring
+  useEffect(() => {
+    movies.forEach((m) => registerMediaId(m.id))
+  }, [movies, registerMediaId])
+
   if (movies.length === 0) {
     return null
   }
@@ -101,6 +110,12 @@ export function NowInCinema() {
             <p className="text-gray-600 text-sm">
               Les films actuellement en salle, avec nos recommandations par âge
             </p>
+            {showLoginHint && (
+              <Link href="/connexion" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-0.5">
+                <Lock className="h-3 w-3" />
+                Connectez-vous pour des recommandations personnalisées
+              </Link>
+            )}
           </div>
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">
@@ -112,7 +127,7 @@ export function NowInCinema() {
 
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
         {movies.map((item) => (
-          <MediaCard key={item.id} media={item} />
+          <MediaCard key={item.id} media={item} familyFit={getFamilyFit(item.id)} />
         ))}
       </div>
     </>

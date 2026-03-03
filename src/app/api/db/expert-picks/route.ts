@@ -60,6 +60,9 @@ export async function GET(request: NextRequest) {
           tmdbRating: true,
           dataQualityScore: true,
           releaseDate: true,
+          contentMetrics: {
+            select: { toneTags: true, pacing: true, enrichmentSource: true },
+          },
         },
       })
     )
@@ -176,6 +179,8 @@ export async function GET(request: NextRequest) {
       tmdbRating: item.tmdbRating,
       dataQualityScore: item.dataQualityScore,
       releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+      toneTags: item.contentMetrics?.toneTags || [],
+      pacing: item.contentMetrics?.pacing || null,
     }))
 
     return NextResponse.json({ items: transformed, seed })

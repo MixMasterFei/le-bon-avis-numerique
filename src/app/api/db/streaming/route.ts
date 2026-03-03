@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
         communityAgeRec: entry.media.communityAgeRec,
         genres: entry.media.genres,
         contentMetrics: entry.media.contentMetrics,
+        toneTags: entry.media.contentMetrics?.toneTags || [],
         streaming: {
           provider: entry.provider,
           type: entry.type,

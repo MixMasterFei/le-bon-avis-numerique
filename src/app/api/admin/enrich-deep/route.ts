@@ -111,10 +111,10 @@ ANALYSE PRECEDENTE A VERIFIER:
 
 INSTRUCTIONS:
 1. Si tu connais ce contenu, corrige TOUTES les metriques incorrectes
-2. Fournis un synopsis DETAILLE en francais (4-5 phrases, pas un resume generique)
-3. Ajoute des conseils parents SPECIFIQUES (pas generiques — mentionne des scenes ou moments precis si possible)
+2. Fournis un synopsis DETAILLE en francais (4-5 phrases, max 600 caracteres, pas un resume generique). JAMAIS de spoilers, retournements ou fin — uniquement la premisse.
+3. Ajoute des conseils parents SPECIFIQUES (4-6 points, max 150 car chacun — mentionne des scenes ou moments precis si possible)
 4. Re-evalue la confiance avec ta connaissance directe
-5. Liste les corrections apportees par rapport a l'analyse precedente
+5. Liste les corrections apportees (max 3, courtes)
 
 TON ET AMBIANCE (choisis 1 a 3):
 "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré", "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose", "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique", "Action intense", "Effrayant et angoissant", "Romantique et tendre", "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant"
@@ -131,8 +131,8 @@ Reponds UNIQUEMENT avec un JSON valide:
 {
   "expertAgeRec": <3-18>,
   "contentMetrics": { "violence": <0-5>, "sexNudity": <0-5>, "language": <0-5>, "consumerism": <0-5>, "substanceUse": <0-5>, "positiveMessages": <0-5>, "roleModels": <0-5> },
-  "whatParentsNeedToKnow": ["<conseil specifique 1>", "<conseil specifique 2>", "<conseil specifique 3>", "<conseil specifique 4>"],
-  "synopsis": "<synopsis detaille en francais, 4-5 phrases>",
+  "whatParentsNeedToKnow": ["<conseil specifique, max 150 car>", "<idem>", "<idem>", "<idem>"],
+  "synopsis": "<synopsis detaille en francais, 4-5 phrases, max 600 car>",
   "tags": ["<tag1>", "<tag2>"],
   "confidence": <0.0-1.0>,
   "toneTags": ["<ton1>", "<ton2>"],
@@ -148,7 +148,6 @@ Reponds UNIQUEMENT avec un JSON valide:
       model: "gpt-5",
       tools: [{ type: "web_search_preview" as const }],
       input: prompt,
-      temperature: 0.2,
       max_output_tokens: 1500,
     })
 

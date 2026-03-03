@@ -137,24 +137,41 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
   // ---------- Not logged in ----------
   if (data?.status === "not_logged_in") {
     return (
-      <Card>
-        <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-xl">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-600" />
-            Adapté à ma famille ?
-          </CardTitle>
+      <Card className="border-indigo-200 overflow-hidden">
+        <CardHeader className="pb-2 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white shadow-md">
+              <Users className="h-5 w-5" />
+            </div>
+            <CardTitle className="text-lg">
+              Ce contenu convient-il à votre foyer ?
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-sm text-gray-500 mb-3">
-            Connectez-vous pour une évaluation personnalisée
+        <CardContent className="pt-4 space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Créez un profil famille pour découvrir si ce contenu est adapté à
+            chaque membre de votre foyer. C&apos;est gratuit et prend 2 minutes.
           </p>
-          <Link
-            href="/connexion"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
-          >
-            <LogIn className="h-4 w-4" />
-            Se connecter
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/inscription"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg transition-all shadow-sm"
+            >
+              <UserPlus className="h-4 w-4" />
+              Créer mon profil
+            </Link>
+            <Link
+              href="/connexion"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-indigo-600 bg-white border border-indigo-200 hover:bg-indigo-50 rounded-lg transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              Se connecter
+            </Link>
+          </div>
+          <p className="text-xs text-gray-400">
+            Vous pourrez modifier vos préférences à tout moment.
+          </p>
         </CardContent>
       </Card>
     )
@@ -163,23 +180,27 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
   // ---------- No family members ----------
   if (data?.status === "no_family") {
     return (
-      <Card>
-        <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-xl">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-600" />
-            Adapté à ma famille ?
-          </CardTitle>
+      <Card className="border-indigo-200 overflow-hidden">
+        <CardHeader className="pb-2 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white shadow-md">
+              <Users className="h-5 w-5" />
+            </div>
+            <CardTitle className="text-lg">
+              Adapté à votre foyer ?
+            </CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="pt-4">
-          <p className="text-sm text-gray-500 mb-3">
-            Créez votre profil famille pour voir si ce contenu convient à vos enfants
+        <CardContent className="pt-4 space-y-4">
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Ajoutez les membres de votre foyer pour voir si ce contenu leur convient.
           </p>
           <Link
-            href="/profil/parametres-famille"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+            href="/profil"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg transition-all shadow-sm"
           >
             <UserPlus className="h-4 w-4" />
-            Créer mon profil famille
+            Ajouter un membre
           </Link>
         </CardContent>
       </Card>

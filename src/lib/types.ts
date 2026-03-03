@@ -36,6 +36,9 @@ export interface MediaItem {
   reviewAvgRating?: number | null
   tmdbRating?: number | null
   tmdbVoteCount?: number | null
+  toneTags?: string[]
+  pacing?: string
+  enrichmentSource?: string
 }
 
 export type MediaType = MediaItem["type"]

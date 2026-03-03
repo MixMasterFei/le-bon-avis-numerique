@@ -38,6 +38,7 @@ export async function GET() {
       communityAgeRec: number | null
       genres: string[]
       topics: string[]
+      contentMetrics: { toneTags: string[]; pacing: string | null } | null
     }> = []
 
     try {
@@ -56,6 +57,9 @@ export async function GET() {
             communityAgeRec: true,
             genres: true,
             topics: true,
+            contentMetrics: {
+              select: { toneTags: true, pacing: true },
+            },
           },
         })
       )
@@ -83,6 +87,7 @@ export async function GET() {
         communityAgeRec: db?.communityAgeRec ?? null,
         genres: db?.genres ?? [],
         topics: db?.topics ?? [],
+        toneTags: db?.contentMetrics?.toneTags ?? [],
         inDatabase: !!db,
       }
     })

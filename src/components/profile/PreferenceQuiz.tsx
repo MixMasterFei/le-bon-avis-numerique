@@ -113,9 +113,10 @@ interface PreferenceQuizProps {
   memberId: string
   memberName: string
   memberEmoji: string
+  onComplete?: () => void
 }
 
-export function PreferenceQuiz({ memberId, memberName, memberEmoji }: PreferenceQuizProps) {
+export function PreferenceQuiz({ memberId, memberName, memberEmoji, onComplete }: PreferenceQuizProps) {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -212,6 +213,10 @@ export function PreferenceQuiz({ memberId, memberName, memberEmoji }: Preference
       })
 
       if (res.ok) {
+        if (onComplete) {
+          onComplete()
+          return
+        }
         setCompleted(true)
       } else {
         const data = await res.json()

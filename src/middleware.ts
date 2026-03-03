@@ -129,6 +129,32 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Onboarding redirect — force new users to complete onboarding
+  // Skip for: API routes, auth routes, onboarding page itself, static files
+  const skipOnboarding =
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/onboarding") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/connexion") ||
+    pathname.startsWith("/inscription") ||
+    pathname.startsWith("/mot-de-passe-oublie") ||
+    pathname.startsWith("/reinitialiser-mot-de-passe") ||
+    pathname.startsWith("/verifier-email") ||
+    pathname.includes(".")
+
+  if (!skipOnboarding) {
+    try {
+      const { getToken } = await import("next-auth/jwt")
+      const token = await getToken({ req: request })
+      if (token && token.onboardingCompleted === false) {
+        return NextResponse.redirect(new URL("/onboarding", request.url))
+      }
+    } catch {
+      // Token parsing failed — don't block the request
+    }
+  }
+
   return applySecurityHeaders(NextResponse.next())
 }
 
@@ -218,14 +244,7 @@ function checkInMemoryRateLimit(
 
 export const config = {
   matcher: [
-    // Match all API routes
-    "/api/:path*",
-    // Match admin routes
-    "/admin/:path*",
-    // Match protected routes
-    "/profil/:path*",
-    "/mes-avis/:path*",
-    "/ma-liste/:path*",
-    "/mes-favoris/:path*",
+    // Match all routes except static files and Next.js internals
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)",
   ],
 }

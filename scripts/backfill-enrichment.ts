@@ -17,7 +17,31 @@ config()
 import { PrismaClient } from "@prisma/client"
 import OpenAI from "openai"
 
-const prisma = new PrismaClient()
+let prisma = new PrismaClient()
+
+// Reconnect on connection drop (Supabase PgBouncer closes idle connections)
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn()
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error)
+      const isConnectionError = msg.includes("closed the connection") ||
+        msg.includes("Connection refused") ||
+        msg.includes("Can't reach database") ||
+        msg.includes("ECONNRESET")
+      if (isConnectionError && attempt < retries) {
+        console.log(`  ⚡ DB connection lost, reconnecting (attempt ${attempt + 1})...`)
+        await prisma.$disconnect()
+        prisma = new PrismaClient()
+        await new Promise((r) => setTimeout(r, 2000))
+        continue
+      }
+      throw error
+    }
+  }
+  throw new Error("withRetry: unreachable")
+}
 
 // ── Closed lists for v2 fields ──────────────────────────────────────────────
 
@@ -107,31 +131,39 @@ async function backfillConfidence() {
     for (const item of items) {
       if (!item.contentMetrics) continue
 
-      let confidence = 0.65 // Default for existing enrichments
+      let confidence = 0.40 // Low base: existing GPT-4o-mini enrichments are generic
 
-      // Adjust based on data quality signals
+      // Positive signals (data quality)
       if (item.synopsisFr && item.synopsisFr.length > 200) confidence += 0.05
+      if (item.synopsisFr && item.synopsisFr.length > 400) confidence += 0.05
       if (item.genres.length >= 2) confidence += 0.05
+      if (item.genres.length >= 4) confidence += 0.03
       if (item.officialRating) confidence += 0.05
-      if (item.tmdbVoteCount && item.tmdbVoteCount > 1000) confidence += 0.05
+      if (item.tmdbVoteCount && item.tmdbVoteCount > 500) confidence += 0.05
+      if (item.tmdbVoteCount && item.tmdbVoteCount > 5000) confidence += 0.05
+
+      // Negative signals (low quality)
       if (!item.synopsisFr || item.synopsisFr.length < 50) confidence -= 0.15
+      if (item.synopsisFr && item.synopsisFr.length < 150) confidence -= 0.05
       if (item.genres.length === 0) confidence -= 0.10
+      const wpntk = item.contentMetrics.whatParentsNeedToKnow
+      if (!wpntk || wpntk.length < 3) confidence -= 0.10
 
       confidence = Math.round(Math.min(1.0, Math.max(0.1, confidence)) * 100) / 100
-      const needsDeepEnrich = confidence < 0.5
+      const needsDeepEnrich = confidence < 0.6
 
       if (needsDeepEnrich) totalFlagged++
 
       if (!dryRun) {
-        await prisma.contentMetrics.update({
+        await withRetry(() => prisma.contentMetrics.update({
           where: { mediaId: item.id },
           data: {
             enrichmentConfidence: confidence,
             enrichmentSource: "AI_BASIC",
             needsDeepEnrich,
-            pass1At: item.contentMetrics.updatedAt,
+            pass1At: item.contentMetrics?.updatedAt ?? new Date(),
           },
-        })
+        }))
       }
 
       totalProcessed++
@@ -205,21 +237,57 @@ async function fullReenrich() {
 
         const prompt = buildPass1Prompt(item, currentYear, releaseYear)
 
-        const response = await openai.chat.completions.create({
-          model: "gpt-5-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-          max_tokens: 1200,
-        })
+        // Retry on rate limit (429) errors
+        let response
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            response = await openai.chat.completions.create({
+              model: "gpt-5-mini",
+              messages: [
+                { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
+                { role: "user", content: prompt },
+              ],
+              max_completion_tokens: 2000,
+            })
+            break // success
+          } catch (apiError: unknown) {
+            const msg = apiError instanceof Error ? apiError.message : String(apiError)
+            if ((msg.includes("429") || msg.includes("rate") || msg.includes("quota")) && attempt < 2) {
+              const waitSec = (attempt + 1) * 30
+              console.log(`  ⏳ Rate limited, waiting ${waitSec}s before retry (attempt ${attempt + 1}/3)...`)
+              await new Promise((r) => setTimeout(r, waitSec * 1000))
+              continue
+            }
+            throw apiError
+          }
+        }
 
-        const content = response.choices[0]?.message?.content
-        if (!content) throw new Error("No response")
+        const choice = response!.choices[0]
+        const content = choice?.message?.content
+        if (!content) {
+          const refusal = (choice?.message as any)?.refusal
+          const finishReason = choice?.finish_reason
+          throw new Error(`No response (finish_reason: ${finishReason}, refusal: ${refusal || "none"})`)
+        }
 
         let cleanedContent = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim()
         const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/)
         if (jsonMatch) cleanedContent = jsonMatch[0]
 
         const parsed = JSON.parse(cleanedContent)
+
+        // Post-processing: enforce length limits as safety net
+        if (parsed.synopsis && parsed.synopsis.length > 500) {
+          parsed.synopsis = parsed.synopsis.slice(0, 497) + "..."
+        }
+        if (Array.isArray(parsed.whatParentsNeedToKnow)) {
+          parsed.whatParentsNeedToKnow = parsed.whatParentsNeedToKnow
+            .slice(0, 5)
+            .map((tip: string) => (tip.length > 150 ? tip.slice(0, 147) + "..." : tip))
+        }
+        if (Array.isArray(parsed.confidenceReasons)) {
+          parsed.confidenceReasons = parsed.confidenceReasons.slice(0, 2)
+        }
 
         // Compute confidence
         let aiConfidence = typeof parsed.confidence === "number" ? Math.min(1.0, Math.max(0.0, parsed.confidence)) : 0.5
@@ -229,16 +297,16 @@ async function fullReenrich() {
         if (item.tmdbVoteCount && item.tmdbVoteCount > 1000) aiConfidence = Math.min(1.0, aiConfidence * 1.1)
         const finalConfidence = Math.round(aiConfidence * 100) / 100
 
-        await prisma.mediaItem.update({
+        await withRetry(() => prisma.mediaItem.update({
           where: { id: item.id },
           data: {
             expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
             synopsisFr: parsed.synopsis || item.synopsisFr,
             topics: [...new Set([...item.topics, ...(Array.isArray(parsed.tags) ? parsed.tags : [])])],
           },
-        })
+        }))
 
-        await prisma.contentMetrics.upsert({
+        await withRetry(() => prisma.contentMetrics.upsert({
           where: { mediaId: item.id },
           update: {
             violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
@@ -251,7 +319,7 @@ async function fullReenrich() {
             whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow) ? parsed.whatParentsNeedToKnow.slice(0, 5) : [],
             enrichmentConfidence: finalConfidence,
             enrichmentSource: "AI_BASIC",
-            needsDeepEnrich: finalConfidence < 0.6,
+            needsDeepEnrich: finalConfidence < 0.60,
             toneTags: filterToValidList(Array.isArray(parsed.toneTags) ? parsed.toneTags.slice(0, 3) : [], VALID_TONE_TAGS),
             pacing: VALID_PACING.includes(parsed.pacing) ? parsed.pacing : null,
             visualStyle: VALID_VISUAL_STYLES.includes(parsed.visualStyle) ? parsed.visualStyle : null,
@@ -270,32 +338,33 @@ async function fullReenrich() {
             whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow) ? parsed.whatParentsNeedToKnow.slice(0, 5) : [],
             enrichmentConfidence: finalConfidence,
             enrichmentSource: "AI_BASIC",
-            needsDeepEnrich: finalConfidence < 0.6,
+            needsDeepEnrich: finalConfidence < 0.60,
             toneTags: filterToValidList(Array.isArray(parsed.toneTags) ? parsed.toneTags.slice(0, 3) : [], VALID_TONE_TAGS),
             pacing: VALID_PACING.includes(parsed.pacing) ? parsed.pacing : null,
             visualStyle: VALID_VISUAL_STYLES.includes(parsed.visualStyle) ? parsed.visualStyle : null,
             emotionalThemes: filterToValidList(Array.isArray(parsed.emotionalThemes) ? parsed.emotionalThemes.slice(0, 4) : [], VALID_EMOTIONAL_THEMES),
             pass1At: new Date(),
           },
-        })
+        }))
 
         enriched++
+        console.log(`  ✓ [${processed + 1}/${toProcess}] ${item.title} (conf: ${finalConfidence}${finalConfidence < 0.6 ? " → deep" : ""})`)
 
-        // Rate limit
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        // Rate limit — 300ms (~72% of 500K TPM limit, retry handles any 429s)
+        await new Promise((resolve) => setTimeout(resolve, 300))
       } catch (error) {
         errors++
-        console.error(`  ✗ ${item.title}: ${error instanceof Error ? error.message : "Unknown"}`)
+        console.error(`  ✗ [${processed + 1}/${toProcess}] ${item.title}: ${error instanceof Error ? error.message : "Unknown"}`)
       }
 
       processed++
 
-      // Progress every 50 items
+      // Summary every 50 items
       if (processed % 50 === 0) {
         const elapsed = (Date.now() - startTime) / 1000
         const rate = processed / elapsed
         const remaining = (toProcess - processed) / rate
-        console.log(`  [${processed}/${toProcess}] ${enriched} enriched, ${errors} errors | ${rate.toFixed(1)} items/s | ~${Math.ceil(remaining / 60)} min remaining`)
+        console.log(`  ── [${processed}/${toProcess}] ${enriched} ok, ${errors} err | ${rate.toFixed(1)}/s | ~${Math.ceil(remaining / 60)} min left ──`)
       }
     }
   }
@@ -351,7 +420,6 @@ async function deepEnrich() {
         model: "gpt-5",
         tools: [{ type: "web_search_preview" as const }],
         input: prompt,
-        temperature: 0.2,
         max_output_tokens: 1500,
       })
 
@@ -364,16 +432,16 @@ async function deepEnrich() {
 
       const parsed = JSON.parse(cleanedContent)
 
-      await prisma.mediaItem.update({
+      await withRetry(() => prisma.mediaItem.update({
         where: { id: item.id },
         data: {
           expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
           synopsisFr: parsed.synopsis || item.synopsisFr,
           topics: [...new Set([...item.topics, ...(Array.isArray(parsed.tags) ? parsed.tags : [])])],
         },
-      })
+      }))
 
-      await prisma.contentMetrics.update({
+      await withRetry(() => prisma.contentMetrics.update({
         where: { mediaId: item.id },
         data: {
           violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
@@ -393,7 +461,7 @@ async function deepEnrich() {
           emotionalThemes: filterToValidList(Array.isArray(parsed.emotionalThemes) ? parsed.emotionalThemes.slice(0, 4) : [], VALID_EMOTIONAL_THEMES),
           pass2At: new Date(),
         },
-      })
+      }))
 
       enriched++
       const corrections = Array.isArray(parsed.corrections) ? parsed.corrections : []
@@ -428,6 +496,7 @@ ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : 
 
 IMPORTANT:
 - Le synopsis que tu fournis DOIT etre en FRANCAIS
+- Le synopsis ne doit JAMAIS reveler de spoilers, retournements ou fin de l'histoire. Decris uniquement la premisse et le contexte initial.
 - Base ton analyse sur ta connaissance de ce contenu si tu le connais
 
 Tags possibles (choisis UNIQUEMENT parmi cette liste — 3 a 8 tags):
@@ -441,8 +510,14 @@ CONFIANCE (0.0-1.0): 0.9+=certain, 0.7-0.8=fiable, 0.5-0.6=estime, 0.3-0.4=synop
 
 Echelle metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 
+REGLES DE LONGUEUR (OBLIGATOIRE):
+- synopsis: 2-3 phrases, MAXIMUM 400 caracteres. Pas de resume exhaustif de l'intrigue.
+- whatParentsNeedToKnow: exactement 3 a 5 points, chaque point = 1 phrase courte (max 120 caracteres)
+- confidenceReasons: max 2 raisons courtes (10 mots max chacune), tableau vide si confidence >= 0.7
+- tags: 3-8 tags de la liste ci-dessus, pas de texte libre
+
 Reponds UNIQUEMENT avec un JSON valide:
-{"expertAgeRec":<3-18>,"contentMetrics":{"violence":<0-5>,"sexNudity":<0-5>,"language":<0-5>,"consumerism":<0-5>,"substanceUse":<0-5>,"positiveMessages":<0-5>,"roleModels":<0-5>},"whatParentsNeedToKnow":["<1>","<2>","<3>"],"synopsis":"<FR>","tags":["<t1>"],"confidence":<0-1>,"confidenceReasons":[],"toneTags":["<>"],"pacing":"<>","visualStyle":"<>","emotionalThemes":["<>"]}`
+{"expertAgeRec":<3-18>,"contentMetrics":{"violence":<0-5>,"sexNudity":<0-5>,"language":<0-5>,"consumerism":<0-5>,"substanceUse":<0-5>,"positiveMessages":<0-5>,"roleModels":<0-5>},"whatParentsNeedToKnow":["<1 phrase, max 120 car>","<idem>","<idem>"],"synopsis":"<FR, 2-3 phrases, max 400 car>","tags":["<t1>"],"confidence":<0-1>,"confidenceReasons":["<10 mots max>"],"toneTags":["<>"],"pacing":"<>","visualStyle":"<>","emotionalThemes":["<>"]}`
 }
 
 function buildDeepPrompt(item: { title: string; originalTitle: string | null; type: string; synopsisFr: string | null; genres: string[]; releaseDate: Date | null; officialRating: string | null }, metrics: { violence: number; sexNudity: number; language: number; consumerism: number; substanceUse: number; positiveMessages: number; roleModels: number; toneTags: string[]; pacing: string | null; emotionalThemes: string[]; enrichmentConfidence: number | null }): string {
@@ -471,7 +546,7 @@ STYLE (1): "Animation 2D classique", "Animation 3D/CGI", "Stop motion", "Anime j
 EMOTIONS (1-4): "Dépassement de soi", "Acceptation de la différence", "Force de l'amitié", "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place", "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs", "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation", "Confiance en soi", "Solidarité et entraide"
 
 JSON uniquement:
-{"expertAgeRec":<3-18>,"contentMetrics":{"violence":<0-5>,"sexNudity":<0-5>,"language":<0-5>,"consumerism":<0-5>,"substanceUse":<0-5>,"positiveMessages":<0-5>,"roleModels":<0-5>},"whatParentsNeedToKnow":["<specifique 1>","<2>","<3>","<4>"],"synopsis":"<FR detaille 4-5 phrases>","tags":["<>"],"confidence":<0-1>,"toneTags":["<>"],"pacing":"<>","visualStyle":"<>","emotionalThemes":["<>"],"corrections":["<ce qui a change>"]}`
+{"expertAgeRec":<3-18>,"contentMetrics":{"violence":<0-5>,"sexNudity":<0-5>,"language":<0-5>,"consumerism":<0-5>,"substanceUse":<0-5>,"positiveMessages":<0-5>,"roleModels":<0-5>},"whatParentsNeedToKnow":["<specifique, max 150 car>","<idem>","<idem>","<idem>"],"synopsis":"<FR detaille, 4-5 phrases, max 600 car>","tags":["<>"],"confidence":<0-1>,"toneTags":["<>"],"pacing":"<>","visualStyle":"<>","emotionalThemes":["<>"],"corrections":["<court, max 3>"]}`
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────

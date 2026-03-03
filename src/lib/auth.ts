@@ -136,24 +136,36 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (!token.id && token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { id: true, role: true, name: true },
+          select: { id: true, role: true, name: true, onboardingCompleted: true },
         })
         if (dbUser) {
           token.id = dbUser.id
           token.role = dbUser.role
           token.name = dbUser.name
+          token.onboardingCompleted = dbUser.onboardingCompleted
+        }
+      }
+      // Fetch onboardingCompleted on first sign-in if not yet set
+      if (token.id && token.onboardingCompleted === undefined) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardingCompleted: true },
+        })
+        if (dbUser) {
+          token.onboardingCompleted = dbUser.onboardingCompleted
         }
       }
       // Refresh user data on update trigger
       if (trigger === "update" && token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { name: true, role: true, image: true },
+          select: { name: true, role: true, image: true, onboardingCompleted: true },
         })
         if (dbUser) {
           token.name = dbUser.name
           token.role = dbUser.role
           token.picture = dbUser.image
+          token.onboardingCompleted = dbUser.onboardingCompleted
         }
       }
       return token
@@ -162,6 +174,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = (token.id || token.sub) as string
         session.user.role = token.role as string
+        session.user.onboardingCompleted = token.onboardingCompleted as boolean ?? true
         // Keep name and image in sync with token
         if (token.name) {
           session.user.name = token.name as string

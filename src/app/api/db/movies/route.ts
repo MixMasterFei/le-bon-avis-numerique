@@ -248,6 +248,9 @@ export async function GET(request: NextRequest) {
         reviewAvgRating,
         tmdbRating: movie.tmdbRating,
         tmdbVoteCount: movie.tmdbVoteCount,
+        toneTags: movie.contentMetrics?.toneTags || [],
+        pacing: movie.contentMetrics?.pacing || null,
+        enrichmentSource: movie.contentMetrics?.enrichmentSource || null,
       }
     })
 

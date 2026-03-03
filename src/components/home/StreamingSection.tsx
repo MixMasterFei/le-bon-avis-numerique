@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Play, RefreshCw, Clock } from "lucide-react"
+import { ArrowRight, Play, RefreshCw, Clock, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
+import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface StreamingMovie {
@@ -19,6 +20,7 @@ interface StreamingMovie {
   communityAgeRec?: number | null
   genres?: string[]
   contentMetrics?: any
+  toneTags?: string[]
   streaming?: {
     provider: string
     type: string
@@ -53,6 +55,7 @@ function mapToMockFormat(movie: StreamingMovie): MockMediaItem {
       whatParentsNeedToKnow: [],
     },
     reviews: [],
+    toneTags: movie.toneTags || [],
   }
 }
 
@@ -97,12 +100,13 @@ const streamingServices = [
   },
 ]
 
-export function StreamingSection() {
+export function StreamingSection({ showLoginHint = false }: { showLoginHint?: boolean }) {
   const [selectedService, setSelectedService] = useState(streamingServices[0])
   const [movies, setMovies] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [totalAvailable, setTotalAvailable] = useState(0)
+  const { getFamilyFit, registerMediaId } = useFamilyFit()
 
   useEffect(() => {
     async function fetchMovies() {
@@ -137,6 +141,11 @@ export function StreamingSection() {
     fetchMovies()
   }, [selectedService])
 
+  // Register media IDs for family fit scoring
+  useEffect(() => {
+    movies.forEach((m) => registerMediaId(m.id))
+  }, [movies, registerMediaId])
+
   // Format last updated date
   const formatLastUpdated = (date: Date) => {
     const now = new Date()
@@ -167,6 +176,12 @@ export function StreamingSection() {
             <p className="text-gray-600 text-sm">
               Films et séries pour toute la famille sur vos plateformes
             </p>
+            {showLoginHint && (
+              <Link href="/connexion" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-0.5">
+                <Lock className="h-3 w-3" />
+                Connectez-vous pour des recommandations personnalisées
+              </Link>
+            )}
           </div>
         </div>
         {lastUpdated && (
@@ -209,7 +224,7 @@ export function StreamingSection() {
         <>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             {movies.map((item) => (
-              <MediaCard key={item.id} media={item} variant="compact" />
+              <MediaCard key={item.id} media={item} variant="compact" familyFit={getFamilyFit(item.id)} />
             ))}
           </div>
           <div className="mt-4 flex items-center justify-between">

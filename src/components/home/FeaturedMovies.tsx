@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
+import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface DbMovie {
@@ -20,6 +21,8 @@ interface DbMovie {
   platforms?: string[]
   topics?: string[]
   contentMetrics?: any
+  toneTags?: string[]
+  pacing?: string
 }
 
 function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
@@ -48,22 +51,19 @@ function mapDbToMockFormat(movie: DbMovie): MockMediaItem {
       whatParentsNeedToKnow: [],
     },
     reviews: [],
+    toneTags: movie.toneTags || [],
+    pacing: movie.pacing || undefined,
   }
 }
 
-export function FeaturedMovies() {
+export function FeaturedMovies({ showLoginHint = false }: { showLoginHint?: boolean }) {
   const [movies, setMovies] = useState<MockMediaItem[]>([])
   const [loading, setLoading] = useState(true)
+  const { getFamilyFit, registerMediaId } = useFamilyFit()
 
   useEffect(() => {
     async function fetchMovies() {
       try {
-        // Fetch truly family-friendly movies for homepage:
-        // - Age <= 7 for young children (excludes 8+ films)
-        // - Filter by family-friendly genres (Animation, Famille)
-        // - Exclude Romance/Drame
-        // - Require poster image (no broken images on homepage)
-        // - Minimum quality score of 70
         const familyGenres = encodeURIComponent("Animation,Famille")
         const excludeGenres = encodeURIComponent("Romance,Drame,Horreur,Thriller,Crime,Guerre")
         const res = await fetch(`/api/db/movies?limit=14&maxAge=7&genres=${familyGenres}&excludeGenres=${excludeGenres}&requirePoster=true&minQuality=70&shuffle=weekly&language=fr,en`)
@@ -73,7 +73,6 @@ export function FeaturedMovies() {
         if (Array.isArray(data?.movies) && data.movies.length > 0) {
           setMovies(data.movies.map(mapDbToMockFormat))
         } else {
-          // Fallback: try with just age filter if no genre matches
           const fallbackRes = await fetch("/api/db/movies?limit=14&maxAge=10&language=fr,en")
           if (fallbackRes.ok) {
             const fallbackData = await fallbackRes.json()
@@ -91,6 +90,11 @@ export function FeaturedMovies() {
     fetchMovies()
   }, [])
 
+  // Register media IDs for family fit scoring
+  useEffect(() => {
+    movies.forEach((m) => registerMediaId(m.id))
+  }, [movies, registerMediaId])
+
   if (loading) {
     return (
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
@@ -102,7 +106,7 @@ export function FeaturedMovies() {
   }
 
   if (movies.length === 0 && !loading) {
-    return null // Don't show section if no movies
+    return null
   }
 
   return (
@@ -115,6 +119,12 @@ export function FeaturedMovies() {
           <p className="text-gray-600 mt-1">
             Des films adaptés aux plus jeunes, analysés pour chaque âge
           </p>
+          {showLoginHint && (
+            <Link href="/connexion" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-0.5">
+              <Lock className="h-3 w-3" />
+              Connectez-vous pour des recommandations personnalisées
+            </Link>
+          )}
         </div>
         <Button variant="outline" asChild className="hidden sm:inline-flex">
           <Link href="/films?maxAge=7">
@@ -125,7 +135,7 @@ export function FeaturedMovies() {
 
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
         {movies.map((item) => (
-          <MediaCard key={item.id} media={item} />
+          <MediaCard key={item.id} media={item} familyFit={getFamilyFit(item.id)} />
         ))}
       </div>
 

@@ -119,6 +119,7 @@ ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : 
 
 IMPORTANT:
 - Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
+- Le synopsis ne doit JAMAIS reveler de spoilers, retournements ou fin de l'histoire. Decris uniquement la premisse et le contexte initial.
 - Base ton analyse sur ta connaissance de ce ${item.type === "GAME" ? "jeu" : item.type === "TV" ? "cette serie" : "ce film"} si tu le connais
 
 Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse — 3 a 8 tags par contenu):
@@ -182,6 +183,12 @@ Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Int
 
 Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.
 
+REGLES DE LONGUEUR (OBLIGATOIRE):
+- synopsis: 2-3 phrases, MAXIMUM 400 caracteres. Pas de resume exhaustif de l'intrigue.
+- whatParentsNeedToKnow: exactement 3 a 5 points, chaque point = 1 phrase courte (max 120 caracteres)
+- confidenceReasons: max 2 raisons courtes (10 mots max chacune), tableau vide si confidence >= 0.7
+- tags: 3-8 tags de la liste ci-dessus, pas de texte libre
+
 Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
 {
   "expertAgeRec": <nombre entre 3 et 18>,
@@ -194,11 +201,11 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     "positiveMessages": <0-5>,
     "roleModels": <0-5>
   },
-  "whatParentsNeedToKnow": ["<conseil 1 en francais>", "<conseil 2 en francais>", "<conseil 3 en francais>"],
-  "synopsis": "<resume EN FRANCAIS de 2-3 phrases, traduit si necessaire>",
+  "whatParentsNeedToKnow": ["<1 phrase, max 120 car>", "<idem>", "<idem>"],
+  "synopsis": "<EN FRANCAIS, 2-3 phrases, max 400 car>",
   "tags": ["<tag1>", "<tag2>"],
   "confidence": <0.0-1.0>,
-  "confidenceReasons": ["<raison si confidence < 0.7, sinon tableau vide>"],
+  "confidenceReasons": ["<10 mots max>"],
   "toneTags": ["<ton1>", "<ton2>"],
   "pacing": "<rythme>",
   "visualStyle": "<style>",
@@ -208,9 +215,11 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-      max_tokens: 1200,
+      messages: [
+        { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
+        { role: "user", content: prompt },
+      ],
+      max_completion_tokens: 2000,
     })
 
     const content = response.choices[0]?.message?.content
@@ -237,6 +246,19 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
       // If JSON parsing fails, log the content for debugging
       console.error(`JSON parse error for "${item.title}":`, cleanedContent.substring(0, 200))
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
+    }
+
+    // Post-processing: enforce length limits as safety net
+    if (parsed.synopsis && parsed.synopsis.length > 500) {
+      parsed.synopsis = parsed.synopsis.slice(0, 497) + "..."
+    }
+    if (Array.isArray(parsed.whatParentsNeedToKnow)) {
+      parsed.whatParentsNeedToKnow = parsed.whatParentsNeedToKnow
+        .slice(0, 5)
+        .map((tip: string) => (tip.length > 150 ? tip.slice(0, 147) + "..." : tip))
+    }
+    if (Array.isArray(parsed.confidenceReasons)) {
+      parsed.confidenceReasons = parsed.confidenceReasons.slice(0, 2)
     }
 
     return {

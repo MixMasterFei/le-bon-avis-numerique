@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "./AgeBadge"
+import { FamilyFitAvatars } from "./FamilyFitAvatars"
 import { SafetyBar } from "./ContentGrid"
 import { PlatformIcons } from "./PlatformIcons"
 import { cn, mediaTypeLabels } from "@/lib/utils"
@@ -23,10 +24,18 @@ const typeIcons = {
   APP: Smartphone,
 }
 
+interface FamilyFitMember {
+  id: string
+  name: string
+  emoji: string
+  score: number
+}
+
 interface MediaCardProps {
   media: MockMediaItem
   className?: string
   variant?: "default" | "compact"
+  familyFit?: { members: FamilyFitMember[] } | null
 }
 
 // Family-friendliness gauge — compact colored pill (green→red)
@@ -87,8 +96,36 @@ function CommunityRating({ avgRating, count }: { avgRating: number; count: numbe
   )
 }
 
-// Get content warning tags based on metrics
-function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: string; color: string }[] {
+// Tone tag color mapping
+const TONE_COLORS: Record<string, string> = {
+  "Doux et chaleureux": "bg-amber-50 text-amber-700",
+  "Doux et rassurant": "bg-amber-50 text-amber-700",
+  "Joyeux et coloré": "bg-yellow-100 text-yellow-700",
+  "Drôle et léger": "bg-yellow-100 text-yellow-700",
+  "Aventureux et exaltant": "bg-sky-100 text-sky-700",
+  "Épique et grandiose": "bg-indigo-100 text-indigo-700",
+  "Mystérieux et intrigant": "bg-purple-100 text-purple-700",
+  "Sombre et tendu": "bg-gray-200 text-gray-700",
+  "Nostalgique et poétique": "bg-rose-50 text-rose-600",
+  "Action intense": "bg-red-100 text-red-700",
+  "Effrayant et angoissant": "bg-red-100 text-red-700",
+  "Romantique et tendre": "bg-pink-100 text-pink-700",
+  "Fait réfléchir": "bg-teal-100 text-teal-700",
+  "Inspiré et motivant": "bg-emerald-100 text-emerald-700",
+  "Mélancolique et touchant": "bg-violet-100 text-violet-700",
+}
+
+// Get content tags — prefer tone tags from enrichment v2 when available
+function getContentTags(metrics: MockMediaItem["contentMetrics"], toneTags?: string[]): { label: string; color: string }[] {
+  // If we have tone data from enrichment v2, use it
+  if (toneTags && toneTags.length > 0) {
+    return toneTags.slice(0, 2).map((tag) => ({
+      label: tag,
+      color: TONE_COLORS[tag] || "bg-violet-100 text-violet-700",
+    }))
+  }
+
+  // Fallback: content metric-based tags
   if (!metrics) return []
 
   const tags: { label: string; color: string }[] = []
@@ -117,9 +154,9 @@ function getContentTags(metrics: MockMediaItem["contentMetrics"]): { label: stri
   return tags.slice(0, 2) // Max 2 tags
 }
 
-export function MediaCard({ media, className, variant = "default" }: MediaCardProps) {
+export function MediaCard({ media, className, variant = "default", familyFit }: MediaCardProps) {
   const Icon = typeIcons[media.type]
-  const contentTags = getContentTags(media.contentMetrics)
+  const contentTags = getContentTags(media.contentMetrics, media.toneTags)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
@@ -178,6 +215,10 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
             {/* Platform icons for games */}
             {media.type === "GAME" && media.platforms.length > 0 && (
               <PlatformIcons platforms={media.platforms} variant="compact" maxDisplay={3} className="mt-1" />
+            )}
+            {/* Family fit avatars */}
+            {familyFit && familyFit.members.length > 0 && (
+              <FamilyFitAvatars members={familyFit.members} compact className="mt-1" />
             )}
           </div>
         </div>
@@ -291,6 +332,11 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
               ))}
             </div>
           )}
+
+          {/* Family fit avatars */}
+          {familyFit && familyFit.members.length > 0 && (
+            <FamilyFitAvatars members={familyFit.members} className="mt-1" />
+          )}
         </div>
       </div>
     </Link>
@@ -300,7 +346,7 @@ export function MediaCard({ media, className, variant = "default" }: MediaCardPr
 // Horizontal variant for lists
 export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const Icon = typeIcons[media.type]
-  const contentTags = getContentTags(media.contentMetrics)
+  const contentTags = getContentTags(media.contentMetrics, media.toneTags)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
   // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies

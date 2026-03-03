@@ -22,9 +22,10 @@ model User {
   emailVerified DateTime? @map("email_verified")
   image         String?
   password      String?   // For credentials auth
-  role          UserRole  @default(USER)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  role                UserRole  @default(USER)
+  onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
 
   accounts           Account[]
   sessions           Session[]

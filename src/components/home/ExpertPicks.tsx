@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Award, Film, Gamepad2, RefreshCw, Star, Tv } from "lucide-react"
+import { ArrowRight, Award, Film, Gamepad2, Lock, RefreshCw, Star, Tv } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "@/components/media/AgeBadge"
+import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
+import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { toMediaRouteId } from "@/lib/media-route"
 
 interface ExpertPickItem {
@@ -32,6 +34,13 @@ const typeLabels: Record<string, { label: string; icon: typeof Film }> = {
 function ExpertPickCard({ item }: { item: ExpertPickItem }) {
   const typeInfo = typeLabels[item.type] || typeLabels.MOVIE
   const TypeIcon = typeInfo.icon
+  const { getFamilyFit, registerMediaId } = useFamilyFit()
+
+  useEffect(() => {
+    registerMediaId(item.id)
+  }, [item.id, registerMediaId])
+
+  const familyFit = getFamilyFit(item.id)
 
   return (
     <Link href={`/media/${toMediaRouteId(item.type, item.id)}`}>
@@ -82,12 +91,19 @@ function ExpertPickCard({ item }: { item: ExpertPickItem }) {
             </div>
           </div>
         </div>
+
+        {/* Family fit avatars below card */}
+        {familyFit && familyFit.members.length > 0 && (
+          <div className="mt-1.5">
+            <FamilyFitAvatars members={familyFit.members} compact />
+          </div>
+        )}
       </div>
     </Link>
   )
 }
 
-export function ExpertPicks() {
+export function ExpertPicks({ showLoginHint = false }: { showLoginHint?: boolean }) {
   const [items, setItems] = useState<ExpertPickItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -167,6 +183,12 @@ export function ExpertPicks() {
             <p className="text-gray-600 text-sm">
               Films, séries et jeux recommandés pour toute la famille
             </p>
+            {showLoginHint && (
+              <Link href="/connexion" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-0.5">
+                <Lock className="h-3 w-3" />
+                Connectez-vous pour des recommandations personnalisées
+              </Link>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
