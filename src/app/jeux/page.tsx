@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Gamepad2, Star, Clock } from "lucide-react"
+import { Gamepad2, Star, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
@@ -37,6 +37,63 @@ export default function JeuxPage() {
     async function load() {
       setDbLoading(true)
       try {
+        // Family filter mode: use smart filter API
+        if (filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0) {
+          const offset = (currentPage - 1) * ITEMS_PER_PAGE
+          const smartRes = await fetch("/api/filter/smart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              familyMemberIds: filters.familyMemberIds,
+              mediaType: "GAME",
+              limit: ITEMS_PER_PAGE,
+              offset,
+              strictMode: true,
+              minScore: 50,
+              topics: filters.topics,
+              platforms: filters.platforms,
+              search: filters.searchQuery || "",
+              ...(filters.minAge > DEFAULT_MIN_AGE ? { minAge: filters.minAge } : {}),
+              ...(filters.maxAge < DEFAULT_MAX_AGE ? { maxAge: filters.maxAge } : {}),
+            }),
+            signal: controller.signal,
+          })
+
+          if (smartRes.ok) {
+            const smartData = await smartRes.json()
+            if (smartData.success && smartData.results) {
+              const mapped: MockMediaItem[] = smartData.results.map((r: any) => ({
+                id: String(r.mediaId),
+                title: String(r.title || ""),
+                originalTitle: undefined,
+                type: "GAME" as const,
+                releaseDate: r.releaseDate ?? null,
+                posterUrl: String(r.posterUrl || ""),
+                synopsisFr: r.synopsisFr ?? null,
+                officialRating: r.officialRating ?? null,
+                expertAgeRec: r.expertAgeRec ?? null,
+                communityAgeRec: null,
+                genres: r.genres || [],
+                platforms: r.platforms || [],
+                topics: r.topics || [],
+                contentMetrics: r.contentMetrics || null,
+                reviews: [],
+              }))
+
+              if (!cancelled) {
+                setSource("db")
+                setDbGames(mapped)
+                const total = smartData.total || 0
+                setDbTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
+                setDbTotalResults(total)
+                setDbLoading(false)
+              }
+              return
+            }
+          }
+          // Smart filter failed — fall through to normal API
+        }
+
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
@@ -129,7 +186,7 @@ export default function JeuxPage() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy])
+  }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, filters.useFamilyFilter, filters.familyMemberIds])
 
   // Fetch featured games (high quality, sorted by quality score)
   useEffect(() => {
@@ -250,11 +307,15 @@ export default function JeuxPage() {
           {/* All Games Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-gray-200 text-gray-600">
-                <Clock className="h-4 w-4" />
+              <div className={`p-1.5 rounded-lg ${filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0 ? "bg-primary/10 text-primary" : "bg-gray-200 text-gray-600"}`}>
+                {filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0 ? <Users className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
               </div>
               <h2 className="text-lg font-bold text-gray-900">
-                {filters.searchQuery ? `Résultats pour "${filters.searchQuery}"` : "Tous les jeux"}
+                {filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0
+                  ? "Jeux adaptés à votre famille"
+                  : filters.searchQuery
+                    ? `Résultats pour "${filters.searchQuery}"`
+                    : "Tous les jeux"}
               </h2>
             </div>
             <p className="text-sm text-gray-500">
