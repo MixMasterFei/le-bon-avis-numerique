@@ -1,6 +1,6 @@
 # Roadmap - Totem Avisé
 
-## Current Phase: Deployment — Preparing for full public launch
+## Current Phase: Marketing & Growth — Site live, repositioning for visibility
 
 ---
 
@@ -13,7 +13,7 @@
 | A | Go-Live Blockers | **Next** | Domain, auth, legal, env vars — required before sharing URL |
 | B | SEO & Social Sharing | Planned | JSON-LD, OG metadata, search console — highest ROI code work |
 | C | Analytics & Monitoring | Planned | Plausible, Search Console, uptime monitoring |
-| D | Social & Marketing Launch | Planned | Social accounts, press, community outreach |
+| D | Social & Marketing Launch | **In Progress** | Repositioning, social accounts, press, community outreach |
 | E | Growth Features | Planned | Newsletter, sharing, onboarding, content |
 | F | Technical Debt | Ongoing | Sentry, Zod, tests, CNC import |
 
@@ -32,7 +32,18 @@ Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized
 
 ---
 
-## Recent Completed Work (Feb 2026)
+## Recent Completed Work (March 2026)
+
+### Mar 4 — Marketing Repositioning & Copy Rewrite
+- **Full repositioning**: "review/analysis site" → "personalized family media recommendation engine"
+- **Pages rewritten**: `/a-propos`, `/nos-valeurs`, `/objectif` — all copy shifted from evaluation to discovery language
+- **Homepage**: TrustBanner copy + CTAs updated to recommendation-first messaging
+- **Footer**: Added Instagram, TikTok, Facebook social icons; updated tagline and nav links
+- **SEO**: Layout metadata (title, description, keywords, OG) updated; Organization JSON-LD added
+- **Structured data**: Organization schema with social links and contact info
+- See [Marketing Repositioning (March 2026)](marketing-reposition-march2026.md) for full details
+
+## Earlier Completed Work (Feb 2026)
 
 ### Feb 27 (latest) — Chez Vous → Profile Merge
 - **Unified Profile page**: Merged `/chez-vous` dashboard into `/profil` — one page for everything
@@ -148,4 +159,5 @@ See **[Official Ratings Plan](official-ratings.md)** for full implementation det
 3. Open [phase-1-ux-redesign.md](phase-1-ux-redesign.md) for remaining UX tasks
 4. Reference docs: [UX Audit](../ux-audit-feb21.md), [Competitor Analysis](../competitor-analysis.md), [Tech Audit](../tech-audit.md)
 5. Marketing docs: [Marketing Playbook](../marketing/claude_mkt.md), [Launch Checklist](../marketing/launch-checklist.md), [Market Analysis](../marketing/market-analysis.md)
+6. Repositioning: [Marketing Repositioning (March 2026)](marketing-reposition-march2026.md)
 6. CLAUDE.md references this roadmap — the AI assistant checks it before starting work

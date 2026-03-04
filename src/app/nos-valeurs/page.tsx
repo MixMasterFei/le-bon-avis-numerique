@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Nos valeurs & notations | Totem Avisé",
-  description: "Comprendre notre système d'évaluation et nos critères pour vous aider à choisir des contenus adaptés pour votre famille",
+  title: "Comment ça marche | Totem Avisé",
+  description: "Découvrez comment Totem Avisé analyse chaque contenu sur 7 dimensions pour vous recommander les films, séries et jeux parfaits pour votre famille.",
 }
 
 const contentMetrics = [
@@ -133,9 +133,9 @@ export default function NosValeursPage() {
         <div className="inline-flex p-4 bg-primary/10 rounded-full mb-6">
           <Heart className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Nos valeurs & notations</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Comment ça marche</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Comprendre notre système d&apos;évaluation pour vous aider à choisir des contenus adaptés à votre famille.
+          Découvrez comment nous analysons chaque contenu pour vous recommander ceux qui correspondent le mieux à votre famille.
         </p>
       </div>
 
@@ -144,23 +144,22 @@ export default function NosValeursPage() {
         <CardContent className="p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Info className="h-5 w-5 text-primary" />
-            Notre philosophie
+            Notre approche
           </h2>
           <div className="space-y-4 text-gray-600">
             <p>
-              <strong>Totem Avisé</strong> a été créé avec une conviction simple : chaque famille mérite
-              des informations claires et détaillées pour faire des choix médiatiques éclairés.
+              <strong>Totem Avisé</strong> est un moteur de recommandation conçu pour les familles.
+              Chaque contenu est analysé sur 7 dimensions pour que nos recommandations correspondent
+              vraiment à ce que vous cherchez — pas juste un âge, mais une compréhension complète.
             </p>
             <p>
-              Contrairement aux classifications d&apos;âge officielles (PEGI, CSA) qui donnent une indication générale,
-              nous fournissons une <strong>analyse détaillée du contenu</strong> selon plusieurs critères.
-              Chaque famille a ses propres valeurs et sensibilités - notre rôle est de vous donner
-              les informations nécessaires pour faire vos propres choix éclairés.
+              Quand vous créez votre profil famille, notre moteur croise ces données avec l&apos;âge,
+              les sensibilités et les goûts de chaque membre de votre foyer.
+              Le résultat : des <strong>recommandations personnalisées</strong> qui s&apos;adaptent à votre famille.
             </p>
             <p>
-              Nos évaluations sont réalisées à l&apos;aide d&apos;<strong>outils d&apos;analyse de contenu</strong>,
-              puis enrichies par les <strong>avis de la communauté</strong>
-              de membres et de familles.
+              Les retours de la <strong>communauté de familles</strong> enrichissent en continu
+              nos recommandations — chaque réaction partagée améliore les suggestions pour tout le monde.
             </p>
           </div>
         </CardContent>
@@ -331,25 +330,26 @@ export default function NosValeursPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            En plus de nos analyses de contenu, nous affichons les <strong>moyennes de la communauté</strong> :
-            les notes données par les membres de notre communauté qui connaissent ces contenus.
+            Plus les familles partagent leurs retours, plus nos recommandations deviennent pertinentes.
+            Les réactions de la communauté (mon enfant a adoré, c&apos;était trop effrayant, parfait pour cet âge...)
+            enrichissent directement le moteur de recommandation.
           </p>
           <p className="text-gray-600">
-            Vous pouvez <strong>contribuer</strong> en évaluant vous-même les contenus que vous connaissez.
-            Chaque avis aide d&apos;autres personnes et familles à faire de meilleurs choix.
+            <strong>Participez</strong> en partageant les réactions de votre famille sur les contenus que vous connaissez.
+            Chaque retour améliore les recommandations pour toutes les familles.
           </p>
           <div className="flex gap-4 pt-4">
             <Link
               href="/inscription"
               className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Rejoindre la communauté
+              Créer mon profil famille
             </Link>
             <Link
               href="/films"
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Explorer les contenus
+              Découvrir les films
             </Link>
           </div>
         </CardContent>
@@ -363,12 +363,13 @@ export default function NosValeursPage() {
         <CardContent className="space-y-6">
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">
-              Comment sont réalisées vos évaluations ?
+              Comment fonctionnent vos recommandations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Nos évaluations sont réalisées à l&apos;aide d&apos;outils d&apos;analyse à partir des synopsis,
-              classifications officielles et métadonnées de chaque contenu.
-              Les avis de la communauté viennent enrichir ces évaluations au fil du temps.
+              Chaque contenu est analysé sur 7 dimensions (violence, langage, messages positifs, etc.)
+              à partir de multiples sources. Ces données sont ensuite croisées avec le profil
+              de votre famille — âge, sensibilités, goûts — pour générer des recommandations personnalisées.
+              Les retours de la communauté affinent ces recommandations en continu.
             </p>
           </div>
           <div>
@@ -387,10 +388,10 @@ export default function NosValeursPage() {
               Quelle est la différence avec PEGI ou les classifications CSA ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Les classifications officielles donnent un âge minimum recommandé.
-              Nous fournissons une analyse plus détaillée : vous pouvez voir exactement
-              pourquoi un contenu est recommandé à un certain âge, et décider si cela
-              correspond aux valeurs de votre famille.
+              Les classifications officielles donnent un âge minimum, point final.
+              Totem Avisé va plus loin : nous vous montrons exactement <em>pourquoi</em> un contenu
+              convient (ou pas) à un âge donné, et nos recommandations s&apos;adaptent aux sensibilités
+              propres à chaque membre de votre famille.
             </p>
           </div>
         </CardContent>

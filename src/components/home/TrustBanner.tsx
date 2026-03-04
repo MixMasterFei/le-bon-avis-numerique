@@ -8,22 +8,22 @@ const trustPoints = [
   {
     icon: Shield,
     title: "Indépendant",
-    description: "Évaluations objectives sans influence commerciale",
+    description: "Recommandations libres de toute influence commerciale",
   },
   {
     icon: Heart,
-    title: "Pour les familles",
-    description: "Créé par des parents, pour des parents",
+    title: "Personnalisé",
+    description: "Des suggestions adaptées à chaque membre de votre foyer",
   },
   {
     icon: Users,
     title: "Communautaire",
-    description: "Avis vérifiés de milliers de familles",
+    description: "Enrichi par les retours de milliers de familles",
   },
   {
     icon: BookOpen,
-    title: "Éducatif",
-    description: "Ressources pour une consommation responsable",
+    title: "Complet",
+    description: "Films, séries, jeux et livres — tout au même endroit",
   },
 ]
 
@@ -37,12 +37,12 @@ export function TrustBanner() {
             <span className="text-sm font-medium">Totem Avisé</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Votre guide de confiance pour les médias en famille
+            Trouvez le contenu parfait pour chaque membre de votre foyer
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Nous aidons les familles françaises à faire des choix éclairés sur les films,
-            séries, jeux et livres pour leurs enfants. Notre mission : des médias adaptés
-            à chaque âge, analysés pour votre famille.
+            Totem Avisé vous recommande les films, séries et jeux qui correspondent
+            vraiment à votre famille — en tenant compte de l&apos;âge, des goûts et
+            des sensibilités de chacun.
           </p>
         </div>
 
@@ -64,12 +64,12 @@ export function TrustBanner() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="/a-propos">
             <Button variant="outline" size="lg">
-              En savoir plus sur notre mission
+              Comment ça marche
             </Button>
           </Link>
           <Link href="/inscription">
             <Button size="lg" className="bg-primary hover:bg-primary/90">
-              Rejoindre la communauté
+              Créer mon profil famille
             </Button>
           </Link>
         </div>

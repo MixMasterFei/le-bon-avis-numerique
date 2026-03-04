@@ -23,6 +23,8 @@ You are a **senior full-stack developer and technical advisor** for this project
 - For launch readiness and action items: `docs/marketing/launch-checklist.md`
 - For visibility tools and market research: `docs/marketing/market-analysis.md`
 - Never commit without being asked. Always explain what you changed and why.
+- **No Co-Authored-By in commits.** Do not add `Co-Authored-By: Claude` or any AI attribution to commit messages.
+- **No tool/service leaks in source.** Never expose third-party service names (TMDB, IGDB, OpenAI, Claude, Anthropic) in user-facing HTML, meta tags, or rendered text. These are internal implementation details. Backend code comments and variable names are fine.
 
 ---
 

@@ -36,11 +36,11 @@ const edunline = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://totemavise.com"),
   title: {
-    default: "Totem Avisé - Avis et recommandations médias pour les familles",
+    default: "Totem Avisé - Trouvez les films, séries et jeux parfaits pour votre famille",
     template: "%s | Totem Avisé",
   },
-  description: "Trouvez les meilleurs films, séries et jeux pour vos enfants grâce à nos critiques indépendantes et recommandations par âge. Le guide média de confiance pour les familles françaises.",
-  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "CSA", "PEGI", "contrôle parental", "Totem Avisé", "totemavise"],
+  description: "Trouvez les films, séries et jeux parfaits pour chaque membre de votre famille. Recommandations personnalisées par âge, goûts et sensibilités. Gratuit et indépendant.",
+  keywords: ["recommandation film famille", "film pour enfant", "série netflix enfant", "jeux vidéo famille", "quoi regarder en famille", "recommandation par âge", "Totem Avisé", "totemavise"],
   authors: [{ name: "Totem Avisé" }],
   icons: {
     icon: [
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Totem Avisé",
-    description: "Le guide média de confiance pour les familles françaises",
+    description: "Trouvez les films, séries et jeux parfaits pour votre famille",
     locale: "fr_FR",
     type: "website",
     siteName: "Totem Avisé",
@@ -75,6 +75,30 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable}`}>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Totem Avisé",
+              url: "https://totemavise.com",
+              logo: "https://totemavise.com/icon.png",
+              description: "Moteur de recommandation de films, séries et jeux pour les familles françaises. Recommandations personnalisées par âge, goûts et sensibilités.",
+              sameAs: [
+                "https://www.instagram.com/totemavise",
+                "https://www.tiktok.com/@totemavise",
+                "https://www.facebook.com/totemavise",
+              ],
+              contactPoint: {
+                "@type": "ContactPoint",
+                email: "contact@totemavise.com",
+                contactType: "customer service",
+                availableLanguage: "French",
+              },
+            }),
+          }}
+        />
         <script async src="https://plausible.io/js/pa-MN5ajAMFjoUl7-CmL25FQ.js" />
         <script
           dangerouslySetInnerHTML={{

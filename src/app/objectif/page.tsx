@@ -1,49 +1,49 @@
-import { Target, Shield, Users, Eye, Lightbulb, ArrowRight, CheckCircle } from "lucide-react"
+import { Target, Sparkles, Users, Heart, Lightbulb, ArrowRight, CheckCircle, Shield } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Notre objectif | Totem Avisé",
-  description: "Aider les familles à faire des choix éclairés pour les contenus médiatiques de leurs enfants grâce à des analyses détaillées et indépendantes.",
+  title: "Notre mission | Totem Avisé",
+  description: "Aider chaque famille à découvrir les films, séries et jeux parfaits pour chaque membre du foyer grâce à des recommandations personnalisées.",
 }
 
 const pillars = [
   {
+    icon: Sparkles,
+    title: "Recommandations personnalisées",
+    description: "Chaque membre de votre famille a son profil. Nos suggestions s'adaptent à l'âge, aux goûts et aux sensibilités de chacun.",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+  },
+  {
     icon: Shield,
-    title: "Indépendance",
-    description: "Nos évaluations ne sont influencées par aucun studio, éditeur ou plateforme. Nous travaillons uniquement dans l'intérêt des familles.",
+    title: "Indépendance totale",
+    description: "Aucun studio, éditeur ou plateforme n'influence nos recommandations. Nous travaillons uniquement pour les familles.",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
   {
-    icon: Eye,
-    title: "Analyse détaillée",
-    description: "Au-delà d'un simple âge recommandé, nous détaillons chaque dimension du contenu : violence, langage, valeurs positives, modèles...",
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-  },
-  {
     icon: Users,
-    title: "Communauté",
-    description: "Les avis des familles enrichissent nos analyses. Chaque parent peut partager son expérience pour aider les autres.",
+    title: "Enrichi par la communauté",
+    description: "Les retours des familles améliorent nos recommandations en continu. Chaque réaction partagée bénéficie à tous.",
     color: "text-blue-600",
     bg: "bg-blue-50",
   },
   {
     icon: Lightbulb,
-    title: "Guidance pratique",
-    description: "Des recommandations concrètes, des guides thématiques et des collections pour chaque tranche d'âge.",
+    title: "Découverte facilitée",
+    description: "Par âge, par humeur, par thème ou par plateforme — trouvez le contenu idéal en quelques clics.",
     color: "text-amber-600",
     bg: "bg-amber-50",
   },
 ]
 
 const differences = [
-  "7 critères d'évaluation détaillés au lieu d'un simple âge",
-  "Prise en compte des messages positifs et modèles",
-  "Avis croisés d'experts et de la communauté de parents",
-  "Couverture films, séries, jeux vidéo, livres et applications",
-  "Recommandations personnalisées selon l'âge de vos enfants",
+  "Recommandations personnalisées pour chaque membre de votre foyer",
+  "7 dimensions analysées : au-delà d'un simple âge recommandé",
+  "Prise en compte des messages positifs et des modèles inspirants",
+  "Filtrage par sensibilité : violence, langage, peur... selon vos limites",
+  "Films, séries, jeux vidéo, livres — tout au même endroit",
 ]
 
 export default function ObjectifPage() {
@@ -56,31 +56,37 @@ export default function ObjectifPage() {
             <Target className="h-8 w-8 text-emerald-400" />
           </div>
           <h1 className="text-4xl lg:text-5xl font-bold mb-6">
-            Notre objectif
+            Notre mission
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Les classifications officielles (PEGI, CSA) donnent un âge minimum — mais elles ne disent pas <em>pourquoi</em>. Nous croyons que les familles méritent mieux.
+            Aider chaque famille à trouver le contenu parfait — celui qui plaît aux enfants, rassure les parents, et crée des moments partagés.
           </p>
         </div>
       </section>
 
-      {/* Problem / Solution */}
+      {/* Vision / How */}
       <section className="py-16">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <Card className="border-red-100">
+            <Card className="border-violet-100">
               <CardContent className="p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Le constat</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-violet-500" />
+                  Ce que nous croyons
+                </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Un film classé &quot;Tous publics&quot; par le CSA peut contenir des scènes qui inquiètent un enfant de 5 ans. Un jeu PEGI 7 peut avoir des mécaniques addictives conçues pour pousser à l&apos;achat. Les parents naviguent souvent à l&apos;aveugle.
+                  Chaque famille est unique. Un film parfait pour un enfant de 7 ans ne l&apos;est pas forcément pour un autre du même âge. Les goûts, les sensibilités et les valeurs de chaque foyer comptent — et les recommandations devraient en tenir compte.
                 </p>
               </CardContent>
             </Card>
             <Card className="border-emerald-100">
               <CardContent className="p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Notre réponse</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-emerald-500" />
+                  Ce que nous proposons
+                </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Totem Avisé analyse chaque contenu selon 7 dimensions distinctes. Violence, langage, consommérisme, mais aussi messages positifs et modèles. Pour que chaque famille puisse décider en connaissance de cause.
+                  Un moteur de recommandation qui connaît votre famille. Créez un profil pour chaque membre de votre foyer, et Totem Avisé vous suggère les films, séries et jeux qui correspondent vraiment — par âge, par goûts, et par moment.
                 </p>
               </CardContent>
             </Card>
@@ -88,7 +94,7 @@ export default function ObjectifPage() {
 
           {/* What makes us different */}
           <div className="mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Ce qui nous différencie</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Ce qui fait la différence</h2>
             <div className="space-y-3 max-w-xl mx-auto">
               {differences.map((item) => (
                 <div key={item} className="flex items-start gap-3">
@@ -117,23 +123,23 @@ export default function ObjectifPage() {
 
           {/* CTA */}
           <div className="text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Prêt à explorer ?</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Trouvez votre prochaine soirée en famille</h2>
             <p className="text-gray-600 mb-6">
-              Découvrez nos analyses détaillées et trouvez le contenu idéal pour votre famille.
+              Explorez des milliers de films, séries et jeux, filtrés pour votre famille.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link
                 href="/films"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
               >
-                Explorer les films
+                Découvrir les films
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/inscription"
                 className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
               >
-                Créer un compte gratuit
+                Créer mon profil famille
               </Link>
             </div>
           </div>
