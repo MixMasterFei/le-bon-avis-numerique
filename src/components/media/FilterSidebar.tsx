@@ -321,7 +321,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
         .filter((a): a is number => a !== null)
       if (selectedAges.length > 0) {
         const youngest = Math.min(...selectedAges)
-        const autoMax = Math.min(youngest + 2, DEFAULT_MAX_AGE)
+        const autoMax = Math.min(youngest, DEFAULT_MAX_AGE)
         setMaxAge(autoMax)
         setMinAge(DEFAULT_MIN_AGE)
         setAgeAutoAdjusted(true)
@@ -374,7 +374,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
         .filter((a): a is number => a !== null)
       if (ages.length > 0) {
         const youngest = Math.min(...ages)
-        const autoMax = Math.min(youngest + 2, DEFAULT_MAX_AGE)
+        const autoMax = Math.min(youngest, DEFAULT_MAX_AGE)
         setMaxAge(autoMax)
         setMinAge(DEFAULT_MIN_AGE)
         setAgeAutoAdjusted(true)
@@ -535,20 +535,17 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
             onClick={() => setShowFamilySection(!showFamilySection)}
             className="flex items-center justify-between w-full px-3 py-2.5"
           >
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm text-gray-700">Filtrer pour ma famille</span>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Users className="h-4 w-4 text-primary flex-shrink-0" />
+              <span className="font-medium text-sm text-gray-700 truncate">Ma famille</span>
               {useFamilyFilter && (
-                <span className="flex items-center gap-1 text-xs font-medium text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-full">
-                  <Sparkles className="h-3 w-3" />
-                  Actif
-                </span>
+                <Sparkles className="h-3.5 w-3.5 text-violet-500 flex-shrink-0" />
               )}
             </div>
             {showFamilySection ? (
-              <ChevronUp className="h-4 w-4 text-gray-400" />
+              <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
             )}
           </button>
 
@@ -559,9 +556,9 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
               <button
                 onClick={toggleAllFamily}
                 className={cn(
-                  "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg border transition-all text-left",
+                  "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border transition-all text-left",
                   selectedFamilyMembers.length === familyMembers.length
-                    ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                    ? "bg-primary/10 border-primary/30"
                     : "bg-white/60 border-gray-200/80 hover:border-primary/30 hover:bg-white"
                 )}
               >
@@ -569,9 +566,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                   checked={selectedFamilyMembers.length === familyMembers.length}
                   className="pointer-events-none"
                 />
-                <Users className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="text-sm font-medium text-gray-700">Toute la famille</span>
-                <span className="text-xs text-gray-400 ml-auto">{familyMembers.length} membres</span>
+                <span className="text-xs font-medium text-gray-700">Tous ({familyMembers.length})</span>
               </button>
 
               {/* Individual members */}
@@ -579,6 +574,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                 const isSelected = selectedFamilyMembers.includes(member.id)
                 const age = getMemberAge(member.birthYear)
                 const category = age !== null ? getAgeCategory(age) : null
+                const isChild = age !== null && age < 18
                 const completeness = getQuickCompleteness(member)
 
                 return (
@@ -586,9 +582,9 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                     key={member.id}
                     onClick={() => toggleFamilyMember(member.id)}
                     className={cn(
-                      "flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg border transition-all text-left",
+                      "flex items-center gap-2 w-full px-2 py-1.5 rounded-lg border transition-all text-left",
                       isSelected
-                        ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                        ? "bg-primary/10 border-primary/30"
                         : "bg-white/60 border-gray-200/80 hover:border-primary/30 hover:bg-white"
                     )}
                   >
@@ -602,34 +598,38 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
                       avatarOptions={member.avatarOptions ?? null}
                       avatarEmoji={member.avatarEmoji ?? null}
                       name={member.name}
-                      size={28}
+                      size={24}
                       className="flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium text-gray-800 truncate">{member.name}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-medium text-gray-800 truncate">{member.name}</span>
                         {age !== null && (
-                          <span className="text-xs text-gray-400 flex-shrink-0">{age}a</span>
+                          <span className="text-[10px] text-gray-400 flex-shrink-0">
+                            {isChild ? `${age}a` : "Adulte"}
+                          </span>
                         )}
-                        {category && (
+                        {isChild && category && (
                           <span className={cn(
-                            "text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0",
+                            "text-[10px] font-medium px-1 rounded-full flex-shrink-0 leading-tight",
                             category.bgColor, category.color
                           )}>
                             {category.label}
                           </span>
                         )}
                       </div>
-                      {/* Mini completion bar */}
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden max-w-[80px]">
-                          <div
-                            className={cn("h-full rounded-full transition-all", completeness.color)}
-                            style={{ width: `${completeness.percent}%` }}
-                          />
+                      {/* Mini completion bar — only for children */}
+                      {isChild && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden max-w-[60px]">
+                            <div
+                              className={cn("h-full rounded-full transition-all", completeness.color)}
+                              style={{ width: `${completeness.percent}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-gray-400">{completeness.percent}%</span>
                         </div>
-                        <span className="text-[10px] text-gray-400">{completeness.percent}%</span>
-                      </div>
+                      )}
                     </div>
                   </button>
                 )

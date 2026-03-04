@@ -89,7 +89,7 @@ export default function FilmsPage() {
               limit: ITEMS_PER_PAGE,
               offset,
               strictMode: true,
-              minScore: 50,
+              minScore: 65,
               topics: filters.topics,
               platforms: filters.platforms,
               search: filters.searchQuery || "",
