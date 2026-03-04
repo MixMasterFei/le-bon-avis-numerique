@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const mediaItems = await prisma.mediaItem.findMany({
       where: {
         posterUrl: { not: null },
-        contentMetrics: { isNot: null },
+        dataQualityScore: { gte: 30 },
       },
       select: {
         id: true,

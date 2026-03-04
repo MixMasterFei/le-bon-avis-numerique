@@ -40,8 +40,15 @@ export const metadata: Metadata = {
     template: "%s | Totem Avisé",
   },
   description: "Trouvez les meilleurs films, séries et jeux pour vos enfants grâce à nos critiques indépendantes et recommandations par âge. Le guide média de confiance pour les familles françaises.",
-  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "CSA", "PEGI", "contrôle parental"],
+  keywords: ["avis films enfants", "recommandations séries", "jeux vidéo famille", "CSA", "PEGI", "contrôle parental", "Totem Avisé", "totemavise"],
   authors: [{ name: "Totem Avisé" }],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32" },
+      { url: "/icon.png", sizes: "620x606", type: "image/png" },
+    ],
+    apple: { url: "/icon.png", sizes: "620x606", type: "image/png" },
+  },
   openGraph: {
     title: "Totem Avisé",
     description: "Le guide média de confiance pour les familles françaises",
