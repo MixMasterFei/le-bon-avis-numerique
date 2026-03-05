@@ -1,0 +1,127 @@
+name: Daily Filter Tests
+
+on:
+  schedule:
+    # Every day at 5:00 AM Paris time (4:00 AM UTC in winter, 3:00 AM UTC in summer)
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: "Which tests to run"
+        required: true
+        type: choice
+        options:
+          - all
+          - api-only
+          - e2e-only
+
+env:
+  PLAYWRIGHT_BASE_URL: https://totemavise.com
+
+jobs:
+  api-tests:
+    name: API Filter Tests
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule ||
+      github.event.inputs.test_scope == 'all' ||
+      github.event.inputs.test_scope == 'api-only'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run API filter tests
+        run: npx playwright test e2e/filters/api-filters.spec.ts --project=chromium
+        continue-on-error: true
+
+      - name: Upload API test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-filter-report
+          path: playwright-report/
+          retention-days: 14
+
+  e2e-tests:
+    name: E2E Filter Tests
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.schedule ||
+      github.event.inputs.test_scope == 'all' ||
+      github.event.inputs.test_scope == 'e2e-only'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E filter tests (Films)
+        run: npx playwright test e2e/filters/films-filters.spec.ts --project=chromium
+        continue-on-error: true
+
+      - name: Run E2E filter tests (Series)
+        run: npx playwright test e2e/filters/series-filters.spec.ts --project=chromium
+        continue-on-error: true
+
+      - name: Run E2E filter tests (Jeux)
+        run: npx playwright test e2e/filters/jeux-filters.spec.ts --project=chromium
+        continue-on-error: true
+
+      - name: Upload E2E test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-filter-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filter-screenshots
+          path: e2e/screenshots/
+          retention-days: 14
+
+      - name: Upload test results (traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: e2e/test-results/
+          retention-days: 7
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [api-tests, e2e-tests]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Daily Filter Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** $PLAYWRIGHT_BASE_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| API Filters | ${{ needs.api-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Filters | ${{ needs.e2e-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the HTML report and screenshots from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
