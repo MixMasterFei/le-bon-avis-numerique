@@ -285,6 +285,12 @@ export async function GET(
 
     const currentYear = new Date().getFullYear()
 
+    // Detect if household has any minor (under 18)
+    const hasMinor = familyMembers.some((m) => {
+      if (m.birthYear == null) return false
+      return currentYear - m.birthYear < 18
+    })
+
     const metrics = media.contentMetrics ?? {
       violence: 0,
       sexNudity: 0,
@@ -292,6 +298,21 @@ export async function GET(
       substanceUse: 0,
       toneTags: [] as string[],
       pacing: null as string | null,
+    }
+
+    // Family warning for 15+ content that's genuinely concerning
+    const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
+    const CONCERNING_TONES = new Set(["Effrayant et angoissant", "Sombre et tendu", "Action intense"])
+    let isFamilyWarning = false
+
+    if (hasMinor && media.expertAgeRec != null && media.expertAgeRec >= 15) {
+      const hasConcerningGenre = media.genres.some((g) => CONCERNING_GENRES.has(g.toLowerCase()))
+      const hasHighViolence = metrics.violence >= 4 || metrics.sexNudity >= 4
+      const hasConcerningTone = ((metrics.toneTags ?? []) as string[]).some((t) => CONCERNING_TONES.has(t))
+
+      if (hasConcerningGenre || hasHighViolence || hasConcerningTone) {
+        isFamilyWarning = true
+      }
     }
 
     // Fetch positive reactions for all family members (for affinity scoring)
@@ -473,7 +494,10 @@ export async function GET(
       }
     })
 
-    return NextResponse.json({ status: "ok", members })
+    return NextResponse.json({
+      status: isFamilyWarning ? "family_warning" : "ok",
+      members,
+    })
   } catch (error) {
     console.error("Family fit error:", error)
     return NextResponse.json(

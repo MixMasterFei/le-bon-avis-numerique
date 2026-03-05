@@ -35,7 +35,7 @@ interface MediaCardProps {
   media: MockMediaItem
   className?: string
   variant?: "default" | "compact"
-  familyFit?: { members: FamilyFitMember[]; familyWarning?: boolean } | null
+  familyFit?: { members: FamilyFitMember[]; familyWarning?: boolean; communityFlagged?: boolean } | null
 }
 
 // Family-friendliness gauge — compact colored pill (green→red)
@@ -218,9 +218,12 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             )}
             {/* Family fit avatars or warning */}
             {familyFit?.familyWarning ? (
-              <div className="flex items-center gap-1 text-[9px] text-orange-600 mt-1">
+              <div
+                className="flex items-center gap-1 text-[9px] text-orange-600 mt-1"
+                title={familyFit.communityFlagged ? "Signalé par les parents" : undefined}
+              >
                 <ShieldAlert className="h-3 w-3 shrink-0" />
-                <span className="font-medium">Attention</span>
+                <span className="font-medium">Attention{familyFit.communityFlagged ? "*" : ""}</span>
               </div>
             ) : familyFit && familyFit.members.length > 0 ? (
               <FamilyFitAvatars members={familyFit.members} compact className="mt-1" />
@@ -339,9 +342,12 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           {/* Family fit avatars or warning — pinned to bottom */}
           <div className="mt-auto pt-1 min-h-[1.5rem]">
             {familyFit?.familyWarning ? (
-              <div className="flex items-center gap-1 text-[10px] text-orange-600">
+              <div
+                className="flex items-center gap-1 text-[10px] text-orange-600"
+                title={familyFit.communityFlagged ? "Signalé par les parents" : undefined}
+              >
                 <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
-                <span className="font-medium">Attention famille</span>
+                <span className="font-medium">Attention famille{familyFit.communityFlagged ? "*" : ""}</span>
               </div>
             ) : familyFit && familyFit.members.length > 0 ? (
               <FamilyFitAvatars members={familyFit.members} />

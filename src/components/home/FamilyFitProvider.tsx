@@ -14,6 +14,7 @@ interface MemberFit {
 interface FamilyFitResult {
   members: MemberFit[]
   familyWarning?: boolean
+  communityFlagged?: boolean
 }
 
 interface FamilyFitContextType {

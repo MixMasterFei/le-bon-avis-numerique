@@ -27,6 +27,7 @@ const discover = [
 
 const about = [
   { name: "Notre mission", href: "/objectif" },
+  { name: "Notre méthode", href: "/notre-methode" },
   { name: "Comment ça marche", href: "/nos-valeurs" },
   { name: "À propos", href: "/a-propos" },
   { name: "Contact", href: "/contact" },

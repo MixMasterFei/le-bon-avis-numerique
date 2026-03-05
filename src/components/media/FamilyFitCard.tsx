@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb } from "lucide-react"
+import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
@@ -34,6 +34,7 @@ type FamilyFitResponse =
   | { status: "not_logged_in" }
   | { status: "no_family" }
   | { status: "ok"; members: FamilyFitMember[] }
+  | { status: "family_warning"; members: FamilyFitMember[] }
 
 interface FamilyFitCardProps {
   mediaId: string
@@ -209,18 +210,38 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
   }
 
   // ---------- No data (fetch error) ----------
-  if (!data || data.status !== "ok") return null
+  if (!data || (data.status !== "ok" && data.status !== "family_warning")) return null
 
-  // ---------- OK: show members ----------
+  // ---------- OK or Family Warning: show members ----------
   const { members } = data
+  const isFamilyWarning = data.status === "family_warning"
 
   return (
     <Card>
-      <CardHeader className="pb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-xl">
+      <CardHeader className={cn(
+        "pb-3 rounded-t-xl",
+        isFamilyWarning
+          ? "bg-gradient-to-r from-orange-50 to-red-50"
+          : "bg-gradient-to-r from-indigo-50 to-purple-50"
+      )}>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="h-5 w-5 text-indigo-600" />
-          Adapté à ma famille ?
+          {isFamilyWarning ? (
+            <>
+              <ShieldAlert className="h-5 w-5 text-orange-600" />
+              <span className="text-orange-800">Attention famille</span>
+            </>
+          ) : (
+            <>
+              <Users className="h-5 w-5 text-indigo-600" />
+              Adapté à ma famille ?
+            </>
+          )}
         </CardTitle>
+        {isFamilyWarning && (
+          <p className="text-sm text-orange-700 mt-1">
+            Ce contenu contient des éléments sensibles pour les familles avec enfants.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {members.map((member) => {

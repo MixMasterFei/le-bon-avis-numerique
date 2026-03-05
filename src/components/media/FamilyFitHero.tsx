@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb } from "lucide-react"
+import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
+import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
 
@@ -33,6 +34,7 @@ type FamilyFitResponse =
   | { status: "not_logged_in" }
   | { status: "no_family" }
   | { status: "ok"; members: FamilyFitMember[] }
+  | { status: "family_warning"; members: FamilyFitMember[] }
 
 interface FamilyFitHeroProps {
   mediaId: string
@@ -196,17 +198,37 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   }
 
   // ---------- No data (fetch error) ----------
-  if (!data || data.status !== "ok") return null
+  if (!data || (data.status !== "ok" && data.status !== "family_warning")) return null
 
-  // ---------- OK: show members ----------
+  // ---------- OK or Family Warning: show members ----------
   const { members } = data
+  const isFamilyWarning = data.status === "family_warning"
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
-      <h3 className="text-base font-semibold text-white flex items-center gap-2 mb-4">
-        <Users className="h-5 w-5 text-indigo-300" />
-        Adapté à ma famille ?
+      <h3 className="text-base font-semibold text-white flex items-center gap-2 mb-2">
+        {isFamilyWarning ? (
+          <>
+            <ShieldAlert className="h-5 w-5 text-orange-400" />
+            <span className="text-orange-300">Attention famille</span>
+          </>
+        ) : (
+          <>
+            <Users className="h-5 w-5 text-indigo-300" />
+            Adapté à ma famille ?
+          </>
+        )}
       </h3>
+      {isFamilyWarning && (
+        <p className="text-sm text-orange-300/80 mb-3">
+          Ce contenu contient des éléments sensibles pour les familles avec enfants.
+        </p>
+      )}
+
+      {/* Community warning vote button */}
+      <div className="mb-4">
+        <FamilyWarningVoteButton mediaId={mediaId} />
+      </div>
       <div className="space-y-3">
         {members.map((member) => {
           const config = LEVEL_CONFIG[member.level]

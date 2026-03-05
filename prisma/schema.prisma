@@ -43,6 +43,7 @@ model User {
   userContentMetrics UserContentMetrics[]
   adminActivities    AdminActivity[]
   ageVotes           AgeVote[]
+  familyWarningVotes FamilyWarningVote[]
 
   @@map("users")
 }
@@ -165,6 +166,7 @@ model MediaItem {
   contentRequests       ContentRequest[]
   screenshots           MediaScreenshot[]
   ageVotes              AgeVote[]
+  familyWarningVotes    FamilyWarningVote[]
   recoClicks            RecoClick[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
@@ -730,6 +732,24 @@ model AgeVote {
   @@unique([userId, mediaId])
   @@index([mediaId])
   @@map("age_votes")
+}
+
+// ============================================
+// FAMILY WARNING VOTE (Community-driven family warnings)
+// ============================================
+
+model FamilyWarningVote {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  mediaId   String   @map("media_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("family_warning_votes")
 }
 
 // ============================================

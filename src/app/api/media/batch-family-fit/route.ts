@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { COMMUNITY_WARNING_THRESHOLD } from "@/lib/family-warning"
 
 // ---------------------------------------------------------------------------
 // Batch Family Fit API
@@ -162,8 +163,18 @@ export async function POST(request: NextRequest) {
       return currentYear - m.birthYear < 18
     })
 
-    // Build result: { [mediaId]: { members: MemberFit[], familyWarning?: boolean } }
-    const result: Record<string, { members: MemberFit[]; familyWarning?: boolean }> = {}
+    // Batch-fetch community warning vote counts
+    const warningCounts = await prisma.familyWarningVote.groupBy({
+      by: ["mediaId"],
+      where: { mediaId: { in: mediaIds } },
+      _count: { id: true },
+    })
+    const warningCountMap = new Map(
+      warningCounts.map((w) => [w.mediaId, w._count.id])
+    )
+
+    // Build result: { [mediaId]: { members: MemberFit[], familyWarning?: boolean, communityFlagged?: boolean } }
+    const result: Record<string, { members: MemberFit[]; familyWarning?: boolean; communityFlagged?: boolean }> = {}
 
     // Genres/topics that signal concerning content for families
     const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
@@ -175,7 +186,14 @@ export async function POST(request: NextRequest) {
         toneTags: [] as string[], pacing: null as string | null,
       }
 
-      // Family warning for 15+ content that's genuinely concerning (horror, crime, high violence)
+      // Community-driven warning: enough parent flags to trigger warning
+      const communityFlagCount = warningCountMap.get(media.id) || 0
+      if (communityFlagCount >= COMMUNITY_WARNING_THRESHOLD) {
+        result[media.id] = { members: [], familyWarning: true, communityFlagged: true }
+        continue
+      }
+
+      // Algorithmic family warning for 15+ content that's genuinely concerning
       if (hasMinor && media.expertAgeRec != null && media.expertAgeRec >= 15) {
         const hasConcerningGenre = media.genres.some((g) => CONCERNING_GENRES.has(g.toLowerCase()))
         const hasHighViolence = metrics.violence >= 4 || metrics.sexNudity >= 4
