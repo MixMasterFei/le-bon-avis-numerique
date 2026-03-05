@@ -15,7 +15,7 @@ import {
   Mail
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -110,6 +110,7 @@ export default function AdminCorrectionsPage() {
 
   useEffect(() => {
     fetchCorrections()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, filterStatus])
 
   const updateStatus = async (id: string, status: string) => {
@@ -138,7 +139,7 @@ export default function AdminCorrectionsPage() {
     }
   }
 
-  const totalPending = stats.PENDING || 0
+  void (stats.PENDING || 0) // totalPending — reserved for future header badge
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -150,7 +151,7 @@ export default function AdminCorrectionsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Corrections signalées</h1>
         </div>
         <p className="text-gray-600">
-          Gérez les signalements d'erreurs envoyés par les utilisateurs
+          Gérez les signalements d&apos;erreurs envoyés par les utilisateurs
         </p>
       </div>
 
@@ -235,7 +236,7 @@ export default function AdminCorrectionsPage() {
                   </div>
                   <div className="min-w-0">
                     <Link
-                      href={`/media/${toMediaRouteId(correction.media.type as any, correction.media.id)}`}
+                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP", correction.media.id)}`}
                       className="font-medium text-sm hover:text-primary line-clamp-2"
                     >
                       {correction.media.title}
@@ -244,7 +245,7 @@ export default function AdminCorrectionsPage() {
                       {correction.media.type}
                     </p>
                     <Link
-                      href={`/media/${toMediaRouteId(correction.media.type as any, correction.media.id)}`}
+                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP", correction.media.id)}`}
                       target="_blank"
                       className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
                     >

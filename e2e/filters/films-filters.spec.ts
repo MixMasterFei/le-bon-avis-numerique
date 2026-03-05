@@ -7,7 +7,6 @@ import {
   setAgeSliderMax,
   setAgeSliderMin,
   selectTopic,
-  selectPlatform,
   searchFilter,
   selectSort,
   isEmptyState,
@@ -175,7 +174,7 @@ test.describe("Films — Filter tests", () => {
   test("Animation + Aventure: subset of either alone", async ({ page }) => {
     await selectTopic(page, "Animation")
     await waitForResults(page)
-    const animCount = await getTotalCount(page)
+    await getTotalCount(page)
 
     await selectTopic(page, "Aventure")
     await waitForResults(page)

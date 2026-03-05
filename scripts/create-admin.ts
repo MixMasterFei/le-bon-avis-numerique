@@ -18,7 +18,7 @@ import * as readline from "readline"
 
 const prisma = new PrismaClient()
 
-async function prompt(question: string, hidden = false): Promise<string> {
+async function prompt(question: string, _hidden = false): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

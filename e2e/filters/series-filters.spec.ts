@@ -7,7 +7,6 @@ import {
   setAgeSliderMax,
   setAgeSliderMin,
   selectTopic,
-  searchFilter,
   selectSort,
   isEmptyState,
   screenshotWithLabel,

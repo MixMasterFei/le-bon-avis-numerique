@@ -166,7 +166,7 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold mb-1">Administration</h1>
           <p className="text-gray-600">
-            Gerez le contenu et suivez l'activite de la plateforme.
+            Gerez le contenu et suivez l&apos;activite de la plateforme.
           </p>
         </div>
         <Button onClick={handleRefresh} variant="outline" size="sm">
