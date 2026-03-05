@@ -13,6 +13,7 @@ interface MemberFit {
 
 interface FamilyFitResult {
   members: MemberFit[]
+  familyWarning?: boolean
 }
 
 interface FamilyFitContextType {

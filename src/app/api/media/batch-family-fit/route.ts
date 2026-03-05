@@ -156,13 +156,35 @@ export async function POST(request: NextRequest) {
 
     const currentYear = new Date().getFullYear()
 
-    // Build result: { [mediaId]: { members: MemberFit[] } }
-    const result: Record<string, { members: MemberFit[] }> = {}
+    // Detect if household has any minor (under 18)
+    const hasMinor = familyMembers.some((m) => {
+      if (m.birthYear == null) return false
+      return currentYear - m.birthYear < 18
+    })
+
+    // Build result: { [mediaId]: { members: MemberFit[], familyWarning?: boolean } }
+    const result: Record<string, { members: MemberFit[]; familyWarning?: boolean }> = {}
+
+    // Genres/topics that signal concerning content for families
+    const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
+    const CONCERNING_TONES = new Set(["Effrayant et angoissant", "Sombre et tendu", "Action intense"])
 
     for (const media of mediaItems) {
       const metrics = media.contentMetrics ?? {
         violence: 0, sexNudity: 0, language: 0, substanceUse: 0,
         toneTags: [] as string[], pacing: null as string | null,
+      }
+
+      // Family warning for 15+ content that's genuinely concerning (horror, crime, high violence)
+      if (hasMinor && media.expertAgeRec != null && media.expertAgeRec >= 15) {
+        const hasConcerningGenre = media.genres.some((g) => CONCERNING_GENRES.has(g.toLowerCase()))
+        const hasHighViolence = metrics.violence >= 4 || metrics.sexNudity >= 4
+        const hasConcerningTone = ((metrics.toneTags ?? []) as string[]).some((t) => CONCERNING_TONES.has(t))
+
+        if (hasConcerningGenre || hasHighViolence || hasConcerningTone) {
+          result[media.id] = { members: [], familyWarning: true }
+          continue
+        }
       }
 
       const fittingMembers: MemberFit[] = []

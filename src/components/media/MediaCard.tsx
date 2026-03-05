@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, EyeOff } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, EyeOff, ShieldAlert } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
@@ -35,7 +35,7 @@ interface MediaCardProps {
   media: MockMediaItem
   className?: string
   variant?: "default" | "compact"
-  familyFit?: { members: FamilyFitMember[] } | null
+  familyFit?: { members: FamilyFitMember[]; familyWarning?: boolean } | null
 }
 
 // Family-friendliness gauge — compact colored pill (green→red)
@@ -216,10 +216,15 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             {media.type === "GAME" && media.platforms.length > 0 && (
               <PlatformIcons platforms={media.platforms} variant="compact" maxDisplay={3} className="mt-1" />
             )}
-            {/* Family fit avatars */}
-            {familyFit && familyFit.members.length > 0 && (
+            {/* Family fit avatars or warning */}
+            {familyFit?.familyWarning ? (
+              <div className="flex items-center gap-1 text-[9px] text-orange-600 mt-1">
+                <ShieldAlert className="h-3 w-3 shrink-0" />
+                <span className="font-medium">Attention</span>
+              </div>
+            ) : familyFit && familyFit.members.length > 0 ? (
               <FamilyFitAvatars members={familyFit.members} compact className="mt-1" />
-            )}
+            ) : null}
           </div>
         </div>
       </Link>
@@ -331,11 +336,16 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             ))}
           </div>
 
-          {/* Family fit avatars — pinned to bottom */}
+          {/* Family fit avatars or warning — pinned to bottom */}
           <div className="mt-auto pt-1 min-h-[1.5rem]">
-            {familyFit && familyFit.members.length > 0 && (
+            {familyFit?.familyWarning ? (
+              <div className="flex items-center gap-1 text-[10px] text-orange-600">
+                <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
+                <span className="font-medium">Attention famille</span>
+              </div>
+            ) : familyFit && familyFit.members.length > 0 ? (
               <FamilyFitAvatars members={familyFit.members} />
-            )}
+            ) : null}
           </div>
         </div>
       </div>
