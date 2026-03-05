@@ -7,6 +7,30 @@ import { Button } from "@/components/ui/button"
 import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
 import { getProviderLogoUrl } from "@/lib/tmdb"
 
+// Deduplicate providers that are variants of the same service (e.g. Netflix, Netflix basic with Ads)
+function deduplicateProviders(
+  providers: { logo_path: string; provider_name: string; provider_id: number; display_priority: number }[]
+) {
+  const MULTI_WORD_PREFIXES = ["apple tv", "amazon prime", "amazon video", "google play", "canal+", "france tv"]
+
+  function getProviderKey(name: string): string {
+    const lower = name.toLowerCase().trim()
+    for (const prefix of MULTI_WORD_PREFIXES) {
+      if (lower.startsWith(prefix)) return prefix
+    }
+    return lower.split(/[\s]/)[0]
+  }
+
+  const seen = new Map<string, typeof providers[number]>()
+  for (const p of providers) {
+    const key = getProviderKey(p.provider_name)
+    if (!seen.has(key)) {
+      seen.set(key, p)
+    }
+  }
+  return Array.from(seen.values())
+}
+
 interface WatchProvidersProps {
   providers: TMDBWatchProviderResult | null
   trailer: TMDBVideo | null
@@ -16,10 +40,10 @@ interface WatchProvidersProps {
 export function WatchProviders({ providers, trailer, className = "" }: WatchProvidersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Collect streaming providers for preview
-  const streamingProviders = providers?.flatrate || []
-  const freeProviders = providers?.free || []
-  const previewProviders = [...streamingProviders, ...freeProviders].slice(0, 3)
+  // Collect and deduplicate streaming providers
+  const streamingProviders = deduplicateProviders(providers?.flatrate || [])
+  const freeProviders = deduplicateProviders(providers?.free || [])
+  const previewProviders = deduplicateProviders([...streamingProviders, ...freeProviders]).slice(0, 3)
 
   const hasProviders = streamingProviders.length > 0 ||
     freeProviders.length > 0 ||
@@ -119,7 +143,7 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
             <ProviderRow
               title="Location"
               icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={providers.rent}
+              providers={deduplicateProviders(providers.rent)}
               color="text-amber-400"
             />
           )}
@@ -129,7 +153,7 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
             <ProviderRow
               title="Achat"
               icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={providers.buy}
+              providers={deduplicateProviders(providers.buy)}
               color="text-purple-400"
             />
           )}

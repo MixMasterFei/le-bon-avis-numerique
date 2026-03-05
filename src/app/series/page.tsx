@@ -1,14 +1,13 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Tv, Star, Clock, Users } from "lucide-react"
+import { Tv, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
-const FEATURED_COUNT = 7
 
 export default function SeriesPage() {
   const [currentPage, setCurrentPage] = useState(1)
@@ -24,10 +23,6 @@ export default function SeriesPage() {
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-
-  // Featured series (high quality, separate fetch)
-  const [featuredSeries, setFeaturedSeries] = useState<MockMediaItem[]>([])
-  const [featuredLoading, setFeaturedLoading] = useState(true)
 
   // Priority: 1. Database, 2. Mock data
   useEffect(() => {
@@ -186,48 +181,6 @@ export default function SeriesPage() {
     }
   }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, filters.useFamilyFilter, filters.familyMemberIds])
 
-  // Fetch featured series (high quality, sorted by quality score)
-  useEffect(() => {
-    async function loadFeatured() {
-      setFeaturedLoading(true)
-      try {
-        const res = await fetch(`/api/db/series?limit=${FEATURED_COUNT}&featured=true&sortBy=quality&maxAge=${filters.maxAge}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.series && data.series.length > 0) {
-            const mapped: MockMediaItem[] = data.series.map((s: any) => ({
-              id: String(s.id),
-              title: String(s.title || ""),
-              originalTitle: s.originalTitle ? String(s.originalTitle) : undefined,
-              type: "TV" as const,
-              releaseDate: s.releaseDate ?? null,
-              posterUrl: String(s.posterUrl || ""),
-              synopsisFr: s.synopsisFr ?? null,
-              officialRating: s.officialRating ?? null,
-              expertAgeRec: s.expertAgeRec ?? null,
-              communityAgeRec: s.communityAgeRec ?? null,
-              genres: s.genres || [],
-              platforms: s.platforms || [],
-              topics: s.topics || [],
-              contentMetrics: s.contentMetrics || null,
-              reviews: [],
-              reviewCount: s.reviewCount || 0,
-              reviewAvgRating: s.reviewAvgRating ?? null,
-              tmdbRating: s.tmdbRating ?? null,
-              tmdbVoteCount: s.tmdbVoteCount ?? null,
-            }))
-            setFeaturedSeries(mapped)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch featured series:", error)
-      } finally {
-        setFeaturedLoading(false)
-      }
-    }
-    loadFeatured()
-  }, [filters.maxAge])
-
   const filteredSeries = useMemo(() => {
     return dbSeries
   }, [dbSeries])
@@ -268,32 +221,6 @@ export default function SeriesPage() {
         </div>
 
         <div className="flex-1">
-          {/* Featured Section - Top quality series */}
-          {currentPage === 1 && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
-                  <Star className="h-4 w-4" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
-                <span className="text-xs text-gray-500">Séries bien notées et adaptées aux familles</span>
-              </div>
-              {featuredLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {[...Array(FEATURED_COUNT)].map((_, i) => (
-                    <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : featuredSeries.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {featuredSeries.map((series) => (
-                    <MediaCard key={`featured-${series.id}`} media={series} />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          )}
-
           {/* All Series Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

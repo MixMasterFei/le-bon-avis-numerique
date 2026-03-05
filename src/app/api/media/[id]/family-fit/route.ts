@@ -36,9 +36,18 @@ interface FamilyFitMember {
 function computeAgeScore(expertAgeRec: number | null, memberAge: number | null): number {
   if (expertAgeRec == null || memberAge == null) return 0.5
 
-  if (expertAgeRec <= memberAge) return 1.0
-  if (expertAgeRec === memberAge + 1) return 0.7
-  return 0.2
+  // Too young for this content
+  if (expertAgeRec > memberAge) {
+    if (expertAgeRec === memberAge + 1) return 0.7
+    return 0.2
+  }
+
+  // Age appropriate — decay when much older than target audience
+  const overshoot = memberAge - expertAgeRec
+  if (overshoot <= 2) return 1.0
+  if (overshoot <= 5) return 0.85
+  if (overshoot <= 10) return 0.7
+  return 0.5
 }
 
 function computeSensitivityScore(
@@ -184,6 +193,8 @@ function buildReason(
     parts.push("adapté à son âge")
   } else if (ageScore <= 0.3 && memberAge != null && expertAgeRec != null) {
     parts.push(`recommandé à partir de ${expertAgeRec} ans`)
+  } else if (ageScore <= 0.7 && memberAge != null && expertAgeRec != null && memberAge > expertAgeRec) {
+    parts.push("adapté à son âge")
   }
 
   // Sensitivity

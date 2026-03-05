@@ -1,14 +1,13 @@
 "use client"
 
 import { useEffect, useState, useMemo } from "react"
-import { Gamepad2, Star, Clock, Users } from "lucide-react"
+import { Gamepad2, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 const ITEMS_PER_PAGE = 24
-const FEATURED_COUNT = 7
 
 export default function JeuxPage() {
   const [currentPage, setCurrentPage] = useState(1)
@@ -24,10 +23,6 @@ export default function JeuxPage() {
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
   const [dbLoading, setDbLoading] = useState(false)
-
-  // Featured games (high quality, separate fetch)
-  const [featuredGames, setFeaturedGames] = useState<MockMediaItem[]>([])
-  const [featuredLoading, setFeaturedLoading] = useState(true)
 
   // Fetch games from local database only
   useEffect(() => {
@@ -188,46 +183,6 @@ export default function JeuxPage() {
     }
   }, [currentPage, filters.minAge, filters.maxAge, filters.searchQuery, filters.platforms, filters.topics, filters.sortBy, filters.useFamilyFilter, filters.familyMemberIds])
 
-  // Fetch featured games (high quality, sorted by quality score)
-  useEffect(() => {
-    async function loadFeatured() {
-      setFeaturedLoading(true)
-      try {
-        const res = await fetch(`/api/db/games?limit=${FEATURED_COUNT}&featured=true&sortBy=quality&maxAge=${filters.maxAge}`)
-        if (res.ok) {
-          const data = await res.json()
-          if (data.games && data.games.length > 0) {
-            const mapped: MockMediaItem[] = data.games.map((g: any) => ({
-              id: String(g.id),
-              title: String(g.title || ""),
-              originalTitle: undefined,
-              type: "GAME" as const,
-              releaseDate: g.releaseDate ?? null,
-              posterUrl: String(g.posterUrl || ""),
-              synopsisFr: g.synopsisFr ?? null,
-              officialRating: g.officialRating ?? null,
-              expertAgeRec: g.expertAgeRec ?? null,
-              communityAgeRec: g.communityAgeRec ?? null,
-              genres: g.genres || [],
-              platforms: g.platforms || [],
-              topics: g.topics || [],
-              contentMetrics: g.contentMetrics || null,
-              reviews: [],
-              reviewCount: g.reviewCount || 0,
-              reviewAvgRating: g.reviewAvgRating ?? null,
-            }))
-            setFeaturedGames(mapped)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch featured games:", error)
-      } finally {
-        setFeaturedLoading(false)
-      }
-    }
-    loadFeatured()
-  }, [filters.maxAge])
-
   const filteredGames = useMemo(() => {
     let items = dbGames
 
@@ -278,32 +233,6 @@ export default function JeuxPage() {
         </div>
 
         <div className="flex-1">
-          {/* Featured Section - Top quality games */}
-          {currentPage === 1 && !filters.searchQuery && filters.platforms.length === 0 && filters.topics.length === 0 && (
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg text-white">
-                  <Star className="h-4 w-4" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900">Sélection qualité</h2>
-                <span className="text-xs text-gray-500">Jeux bien notés et adaptés aux familles</span>
-              </div>
-              {featuredLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {[...Array(FEATURED_COUNT)].map((_, i) => (
-                    <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
-                  ))}
-                </div>
-              ) : featuredGames.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
-                  {featuredGames.map((game) => (
-                    <MediaCard key={`featured-${game.id}`} media={game} />
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          )}
-
           {/* All Games Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
