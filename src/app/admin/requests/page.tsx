@@ -12,11 +12,10 @@ import {
   Check,
   X,
   Clock,
-  Search,
   ExternalLink,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -108,6 +107,7 @@ export default function ContentRequestsPage() {
 
   useEffect(() => {
     fetchRequests()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   const handleStatusChange = async (requestId: string, newStatus: string) => {

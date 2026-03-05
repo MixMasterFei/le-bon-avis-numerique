@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
@@ -12,7 +13,6 @@ import {
   getMovieDetails,
   getFrenchCertification,
   getDirector,
-  getImageUrl,
   MovieGenres,
   mapCertificationToInternal,
   getMovieWatchProviders,

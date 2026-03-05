@@ -252,6 +252,7 @@ export default function GenerateReviewPage() {
               {/* Left Column */}
               <div>
                 {result.posterUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={result.posterUrl}
                     alt={result.title}
