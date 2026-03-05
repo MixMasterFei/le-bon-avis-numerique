@@ -42,8 +42,13 @@ function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, 
 
   // Content is at or below viewer's age — penalise large gaps
   // (a 14-year-old watching a 3+ show should score lower than a 10+ show)
+  // BUT adults watching mature content (10+) is perfectly normal
   const gap = memberAge - expertAgeRec
   if (gap <= 3) return 1.0
+
+  // Adults (16+) watching content rated 10+ → no penalty
+  // The gap penalty only applies to truly young content for the viewer
+  if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
 
   // Gradual penalty: each year beyond 3 costs 0.10, floor 0.30
   const rawPenalty = (gap - 3) * 0.10

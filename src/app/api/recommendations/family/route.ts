@@ -328,6 +328,8 @@ export async function GET(request: NextRequest) {
               const gap = prefs.age - media.expertAgeRec
               if (gap <= 3) {
                 ageScore = 1.0 // Within range, no penalty
+              } else if (prefs.age >= 16 && media.expertAgeRec >= 10) {
+                ageScore = 1.0 // Adults watching mature content — no penalty
               } else {
                 // Gradual penalty: each year beyond 3 costs 0.10
                 const rawPenalty = (gap - 3) * 0.10
