@@ -180,7 +180,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
               fill
               className={cn(
                 "object-cover group-hover:scale-110 transition-transform duration-500",
-                effectiveBlur && "blur-xl scale-110"
+                effectiveBlur && "blur-sm brightness-90"
               )}
               sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
             />
@@ -251,7 +251,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             fill
             className={cn(
               "object-cover group-hover:scale-110 transition-transform duration-500",
-              effectiveBlur && "blur-xl scale-110"
+              effectiveBlur && "blur-sm brightness-90"
             )}
             sizes="(max-width: 640px) 33vw, (max-width: 1024px) 20vw, 14vw"
           />
@@ -387,7 +387,7 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
             src={media.posterUrl}
             alt={media.title}
             fill
-            className={cn("object-cover", effectiveBlur && "blur-xl scale-110")}
+            className={cn("object-cover", effectiveBlur && "blur-sm brightness-90")}
             sizes="128px"
           />
           {effectiveBlur && (

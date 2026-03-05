@@ -30,7 +30,9 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
       const isConnectionError = msg.includes("closed the connection") ||
         msg.includes("Connection refused") ||
         msg.includes("Can't reach database") ||
-        msg.includes("ECONNRESET")
+        msg.includes("ECONNRESET") ||
+        msg.includes("prepared statement") ||
+        msg.includes("does not exist")
       if (isConnectionError && attempt < retries) {
         console.log(`  ⚡ DB connection lost, reconnecting (attempt ${attempt + 1})...`)
         await prisma.$disconnect()

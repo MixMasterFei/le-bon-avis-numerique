@@ -1,7 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
-import { EyeOff } from "lucide-react"
+import { EyeOff, Eye } from "lucide-react"
 import { useSettings } from "@/contexts/SettingsContext"
 import { cn } from "@/lib/utils"
 
@@ -17,7 +18,8 @@ interface BlurredPosterProps {
 
 export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, className, sizes, priority }: BlurredPosterProps) {
   const { settings } = useSettings()
-  const shouldBlur = settings.blur18Plus && (
+  const [revealed, setRevealed] = useState(false)
+  const shouldBlur = !revealed && settings.blur18Plus && (
     (expertAgeRec !== null && expertAgeRec >= 16) ||
     (violenceScore !== undefined && violenceScore !== null && violenceScore >= 4)
   )
@@ -28,19 +30,33 @@ export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, className
         src={src}
         alt={alt}
         fill
-        className={cn("object-cover", shouldBlur && "blur-xl scale-110", className)}
+        className={cn("object-cover transition-all duration-300", shouldBlur && "blur-sm brightness-90", className)}
         sizes={sizes}
         priority={priority}
       />
       {shouldBlur && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
-          <div className="bg-black/60 rounded-full p-3">
-            <EyeOff className="h-8 w-8 text-white" />
+        <button
+          type="button"
+          onClick={() => setRevealed(true)}
+          className="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer"
+        >
+          <div className="bg-black/50 rounded-full p-2.5">
+            <EyeOff className="h-6 w-6 text-white" />
           </div>
-          <p className="absolute bottom-4 text-white text-sm font-medium bg-black/60 px-3 py-1 rounded-full">
-            Contenu sensible
+          <p className="mt-2 text-white text-xs font-medium bg-black/50 px-3 py-1 rounded-full">
+            Cliquer pour afficher
           </p>
-        </div>
+        </button>
+      )}
+      {revealed && settings.blur18Plus && (
+        <button
+          type="button"
+          onClick={() => setRevealed(false)}
+          className="absolute top-2 right-2 z-10 bg-black/50 rounded-full p-1.5 cursor-pointer hover:bg-black/70 transition-colors"
+          title="Masquer"
+        >
+          <Eye className="h-4 w-4 text-white" />
+        </button>
       )}
     </>
   )
