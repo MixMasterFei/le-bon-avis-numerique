@@ -28,11 +28,6 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
     <div className={cn("flex items-center gap-0.5", className)}>
       <div className={cn("flex items-center", isOverlapping ? "-space-x-1.5" : "gap-1.5")}>
         {members.map((member, i) => {
-          const ringColor: "green" | "amber" =
-            member.score >= 70
-              ? "green"
-              : "amber"
-
           return (
             <div
               key={member.id}
@@ -49,8 +44,8 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
                 avatarEmoji={member.emoji ?? null}
                 name={member.name}
                 size={compact ? 20 : 24}
-                ring={ringColor}
-                className="shadow-sm"
+                ring={null}
+                className="shadow-sm ring-1 ring-gray-200"
               />
               {!isOverlapping && !compact && (
                 <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">

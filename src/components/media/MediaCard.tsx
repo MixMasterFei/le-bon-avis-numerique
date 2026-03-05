@@ -275,8 +275,8 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           </div>
         </div>
 
-        {/* Info Section Below Image - Cleaner, bolder */}
-        <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 space-y-2 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300 flex-1">
+        {/* Info Section Below Image - Fixed height for grid alignment */}
+        <div className="bg-white rounded-2xl rounded-tr-sm border border-violet-100 -mt-3 relative z-10 p-3 shadow-sm group-hover:shadow-md group-hover:border-violet-200 transition-all duration-300 flex-1 flex flex-col min-h-[7.5rem]">
           {/* Title + Year */}
           <div className="flex items-baseline gap-1.5">
             <h3 className="font-bold text-sm text-gray-800 line-clamp-1 group-hover:text-violet-700 transition-colors leading-tight flex-1 min-w-0">
@@ -288,7 +288,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           </div>
 
           {/* Ratings Row: Age + Family Gauge + Community Rating */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap mt-2">
             {/* Age Badge - Only show when expert has rated */}
             {media.expertAgeRec && media.expertAgeRec > 0 && (
               <div className={cn(
@@ -317,26 +317,26 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           </div>
 
           {/* Content Tags - More colorful pills */}
-          {contentTags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {contentTags.map((tag, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    "text-[10px] px-2 py-0.5 rounded-full font-semibold",
-                    tag.color
-                  )}
-                >
-                  {tag.label}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1 mt-2 min-h-[1.25rem]">
+            {contentTags.map((tag, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "text-[10px] px-2 py-0.5 rounded-full font-semibold",
+                  tag.color
+                )}
+              >
+                {tag.label}
+              </span>
+            ))}
+          </div>
 
-          {/* Family fit avatars */}
-          {familyFit && familyFit.members.length > 0 && (
-            <FamilyFitAvatars members={familyFit.members} className="mt-1" />
-          )}
+          {/* Family fit avatars — pinned to bottom */}
+          <div className="mt-auto pt-1 min-h-[1.5rem]">
+            {familyFit && familyFit.members.length > 0 && (
+              <FamilyFitAvatars members={familyFit.members} />
+            )}
+          </div>
         </div>
       </div>
     </Link>

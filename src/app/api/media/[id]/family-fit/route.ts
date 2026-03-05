@@ -33,21 +33,30 @@ interface FamilyFitMember {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function computeAgeScore(expertAgeRec: number | null, memberAge: number | null): number {
+function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, tmdbRating?: number | null): number {
   if (expertAgeRec == null || memberAge == null) return 0.5
 
   // Too young for this content
-  if (expertAgeRec > memberAge) {
-    if (expertAgeRec === memberAge + 1) return 0.7
-    return 0.2
+  if (expertAgeRec > memberAge + 1) return 0.2
+  if (expertAgeRec > memberAge) return 0.7
+
+  // Content is at or below viewer's age — penalise large gaps
+  // (a 14-year-old watching a 3+ show should score lower than a 10+ show)
+  const gap = memberAge - expertAgeRec
+  if (gap <= 3) return 1.0
+
+  // Gradual penalty: each year beyond 3 costs 0.10, floor 0.30
+  const rawPenalty = (gap - 3) * 0.10
+  let score = Math.max(0.30, 1.0 - rawPenalty)
+
+  // Universal-appeal boost for highly-rated content (e.g. Pixar, Ghibli)
+  const rating = tmdbRating ?? 0
+  if (rating >= 7.5) {
+    const boost = Math.min(0.25, (rating - 7.5) * 0.15)
+    score = Math.min(1.0, score + boost)
   }
 
-  // Age appropriate — decay when much older than target audience
-  const overshoot = memberAge - expertAgeRec
-  if (overshoot <= 2) return 1.0
-  if (overshoot <= 5) return 0.85
-  if (overshoot <= 10) return 0.7
-  return 0.5
+  return score
 }
 
 function computeSensitivityScore(
@@ -70,14 +79,14 @@ function computeSensitivityScore(
   let count = 0
 
   for (const [metricValue, tolerance] of pairs) {
-    // 0 = don't care -> skip
-    if (tolerance === 0) continue
+    // tolerance=0 means "not configured" — use moderate default (2) instead of skipping
+    const effectiveTolerance = tolerance === 0 ? 2 : tolerance
 
     // Map tolerance to threshold:
     // 3 (strict) -> threshold 1
     // 2 (moderate) -> threshold 2
     // 1 (low tolerance) -> threshold 3
-    const threshold = 4 - tolerance
+    const threshold = 4 - effectiveTolerance
     const over = Math.max(0, metricValue - threshold)
     const deduction = over * 0.25
     total += Math.max(0, 1 - deduction)
@@ -191,8 +200,10 @@ function buildReason(
   // Age appropriateness
   if (ageScore >= 0.9) {
     parts.push("adapté à son âge")
-  } else if (ageScore <= 0.3 && memberAge != null && expertAgeRec != null) {
+  } else if (ageScore <= 0.3 && memberAge != null && expertAgeRec != null && expertAgeRec > memberAge) {
     parts.push(`recommandé à partir de ${expertAgeRec} ans`)
+  } else if (ageScore <= 0.5 && memberAge != null && expertAgeRec != null && memberAge > expertAgeRec) {
+    parts.push("peut sembler un peu jeune pour son âge")
   } else if (ageScore <= 0.7 && memberAge != null && expertAgeRec != null && memberAge > expertAgeRec) {
     parts.push("adapté à son âge")
   }
@@ -370,7 +381,7 @@ export async function GET(
       const affinityScore = affinity.hasConnection ? 1.0 : (affinity.genreAffinityScore ? affinity.genreAffinityScore / 100 * 0.5 : 0)
 
       // --- Weighted score components ---
-      const ageScore = computeAgeScore(media.expertAgeRec, memberAge)
+      const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating)
 
       // When quiz is NOT done, only use age score — don't inflate with defaults
       if (!hasPreferences) {
@@ -379,9 +390,11 @@ export async function GET(
         const level = ageOnlyScore >= 55 ? "good" as const : levelFromScore(ageOnlyScore)
         const reason = ageScore >= 0.9
           ? "Adapté à son âge"
-          : ageScore <= 0.3 && memberAge != null && media.expertAgeRec != null
+          : ageScore <= 0.3 && memberAge != null && media.expertAgeRec != null && media.expertAgeRec > memberAge
             ? `Recommandé à partir de ${media.expertAgeRec} ans`
-            : "Basé uniquement sur l'âge"
+            : ageScore <= 0.5 && memberAge != null && media.expertAgeRec != null && memberAge > media.expertAgeRec
+              ? "Peut sembler un peu jeune pour son âge"
+              : "Basé uniquement sur l'âge"
 
         return {
           id: member.id,

@@ -19,11 +19,29 @@ const DARK_TONES = new Set([
   "Sombre et tendu", "Effrayant et angoissant", "Action intense",
 ])
 
-function computeAgeScore(expertAgeRec: number | null, memberAge: number | null): number {
+function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, tmdbRating?: number | null): number {
   if (expertAgeRec == null || memberAge == null) return 0.5
-  if (expertAgeRec <= memberAge) return 1.0
-  if (expertAgeRec === memberAge + 1) return 0.7
-  return 0.2
+
+  // Too young for this content
+  if (expertAgeRec > memberAge + 1) return 0.2
+  if (expertAgeRec > memberAge) return 0.7
+
+  // Content is at or below viewer's age — penalise large gaps
+  const gap = memberAge - expertAgeRec
+  if (gap <= 3) return 1.0
+
+  // Gradual penalty: each year beyond 3 costs 0.10, floor 0.30
+  const rawPenalty = (gap - 3) * 0.10
+  let score = Math.max(0.30, 1.0 - rawPenalty)
+
+  // Universal-appeal boost for highly-rated content
+  const rating = tmdbRating ?? 0
+  if (rating >= 7.5) {
+    const boost = Math.min(0.25, (rating - 7.5) * 0.15)
+    score = Math.min(1.0, score + boost)
+  }
+
+  return score
 }
 
 function computeSensitivityScore(
@@ -39,8 +57,9 @@ function computeSensitivityScore(
   let total = 0
   let count = 0
   for (const [metricValue, tolerance] of pairs) {
-    if (tolerance === 0) continue
-    const threshold = 4 - tolerance
+    // tolerance=0 means "not configured" — use moderate default (2) instead of skipping
+    const effectiveTolerance = tolerance === 0 ? 2 : tolerance
+    const threshold = 4 - effectiveTolerance
     const over = Math.max(0, metricValue - threshold)
     total += Math.max(0, 1 - over * 0.25)
     count++
@@ -152,7 +171,7 @@ export async function POST(request: NextRequest) {
         const memberAge = member.birthYear != null ? currentYear - member.birthYear : null
         const hasPreferences = member.useCustomSettings && member.favoriteGenres.length > 0
 
-        const ageScore = computeAgeScore(media.expertAgeRec, memberAge)
+        const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating)
 
         let score: number
 
@@ -183,8 +202,13 @@ export async function POST(request: NextRequest) {
           score = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
         }
 
-        // Only include members with decent fit (>= 55)
-        if (score >= 55) {
+        // Hard age gate: never show a child on content rated 3+ years above their age
+        if (media.expertAgeRec != null && memberAge != null && media.expertAgeRec > memberAge + 2) {
+          continue
+        }
+
+        // Only include members with decent fit (>= 60)
+        if (score >= 60) {
           fittingMembers.push({
             id: member.id,
             name: member.name,
