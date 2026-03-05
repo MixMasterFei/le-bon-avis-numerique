@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const genre = searchParams.get("genre")
   const search = searchParams.get("q")
-  const sort = searchParams.get("sort") // "popularity" | "rating" | "newest" | default (age+date)
+  const sort = searchParams.get("sort") // "popularity" | "rating" | "newest" | "age" | default (age+date)
   const minVotes = searchParams.get("minVotes") // minimum tmdbVoteCount
 
   const skip = (page - 1) * limit
@@ -84,6 +84,10 @@ export async function GET(request: NextRequest) {
         break
       case "newest":
         orderBy = [{ releaseDate: { sort: "desc", nulls: "last" } }]
+        break
+      case "age":
+        // Age-first sort: youngest recommendations first, then most popular within each age
+        orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
         break
       default:
         orderBy = [{ expertAgeRec: "asc" }, { createdAt: "desc" }]

@@ -80,7 +80,7 @@ export default function AgePage({ params }: AgePageProps) {
           limit: ITEMS_PER_PAGE.toString(),
           minAge: ageRange.min.toString(),
           maxAge: ageRange.max.toString(),
-          sort: "popularity",
+          sort: "age",
           minVotes: "50",
         })
 
