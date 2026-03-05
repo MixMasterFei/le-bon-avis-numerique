@@ -119,8 +119,14 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Family member API | `src/app/api/user/family/[id]/route.ts` |
 | Member preferences API | `src/app/api/user/family/[id]/preferences/route.ts` |
 | Reaction API | `src/app/api/user/reaction/route.ts` |
+| Age vote API | `src/app/api/media/[id]/age-vote/route.ts` |
+| Click tracking API | `src/app/api/track/click/route.ts` |
 | Recommendations API | `src/app/api/recommendations/route.ts` |
 | Family recommendations API | `src/app/api/recommendations/family/route.ts` |
+| Similarity compute | `src/app/api/admin/similarity/compute/route.ts` |
+| CNC ratings import | `src/app/api/admin/import-cnc-ratings/route.ts` |
+| AI enrichment | `src/app/api/admin/enrich/route.ts` |
+| Age vote button | `src/components/media/AgeVoteButton.tsx` |
 | Media route helper | `src/lib/media-route.ts` |
 | SQL migrations | `sql/*.sql` |
 | SEO robots | `src/app/robots.ts` |
@@ -221,7 +227,8 @@ Each user can have up to 10 **FamilyMember** profiles. Members accumulate data t
 1. **Preference Quiz** (`/profil/quiz/[memberId]`) — 7-step interactive wizard covering genres, sensitivity, positive content, and topics to avoid. Saves via `PUT /api/user/family/[id]/preferences`.
 2. **Member Corner** (`/profil/membres/[memberId]`) — Tabbed page (Overview / Favorites / Preferences) where parents can edit identity, add interests, search & add media as LOVED reactions, and view reaction history.
 3. **Preferences Modal** — Quick access from profile page (3-tab modal: Sensitivity, Genres, Topics).
-4. **Reactions** — On every media detail page, parents record per-member reactions (LOVED, LIKED, OK, SCARED, BORED, TOO_YOUNG, TOO_OLD) via `FamilyReactions` component.
+4. **Reactions** — On every media detail page, parents record per-member reactions (WATCHED, LOVED, LIKED, OK, SCARED, BORED, TOO_YOUNG, TOO_OLD) via `FamilyReactions` component. WATCHED items are excluded from recommendations.
+5. **Age Votes** — Thumbs up/down on expert age recommendations via `AgeVoteButton`. Shows community consensus badge at >5 votes and >70% agreement.
 
 ### Family Fit Scoring (`/api/media/[id]/family-fit`)
 Computes a 0-100 fit score per family member for any media item:
@@ -272,6 +279,20 @@ Located at `/admin`. Key sections:
 - **Activity feed** — Recent admin actions
 - **User analytics** — Top contributors, recent reviews
 - **Advanced actions** — DB sync, backfill, quality recompute, streaming, similarity, screenshots
+
+### Admin Operations (Operations Center)
+| Operation | Endpoint | Notes |
+|---|---|---|
+| CNC Ratings Import | `POST /api/admin/import-cnc-ratings` | Case-sensitive API, filters European-lang films 6+ months old |
+| AI Enrichment | `POST /api/admin/enrich` | GPT-4o-mini, ~60 topic tags, `force=true` to re-enrich |
+| Similarity Compute | `POST /api/admin/similarity/compute` | `mode=full` recommended, batch=5 for 60s limit |
+| Quality Recompute | `POST /api/admin/quality/recompute` | Recalculates dataQualityScore |
+| Fix faux TP | `POST /api/admin/fix-default-tp` | Cleans false "Tous Publics" ratings |
+
+### Known Gotchas
+- **SimilaritySource enum**: Must be PascalCase `"SimilaritySource"` in PostgreSQL (Prisma expects this). Fix: `sql/fix_similarity_source_type.sql`
+- **Similarity timeout**: Full mode limited to batch=5 items to stay under Vercel 60s serverless limit
+- **Dashboard safeQuery**: `MediaCorrection`, `ReviewReport`, `ContentRequest`, `AdminActivity` tables may not exist — all wrapped in `safeQuery` fallbacks
 
 ---
 

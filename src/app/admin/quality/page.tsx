@@ -95,6 +95,7 @@ export default function QualityManagementPage() {
 
   useEffect(() => {
     fetchItems()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, typeFilter, maxScore])
 
   const toggleSelect = (id: string) => {

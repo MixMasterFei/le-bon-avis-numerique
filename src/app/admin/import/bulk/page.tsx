@@ -256,7 +256,7 @@ export default function BulkImportPage() {
               break
             }
           }
-        } catch (err) {
+        } catch {
           totalErrors++
         }
 
@@ -336,7 +336,7 @@ export default function BulkImportPage() {
               break
             }
           }
-        } catch (err) {
+        } catch {
           totalErrors++
         }
 
@@ -406,7 +406,7 @@ export default function BulkImportPage() {
             totalErrors,
           } : null)
         }
-      } catch (err) {
+      } catch {
         totalErrors++
       }
 

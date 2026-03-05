@@ -232,9 +232,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Score each recommendation with a multi-factor approach:
-    // - 50% genre match (top genres only, not all)
+    // - 40% genre match (top genres only, not all)
     // - 30% content sensitivity compatibility
-    // - 20% age appropriateness bonus
+    // - 30% age appropriateness (with age gap penalty)
     const scoredRecommendations = recommendations
       .filter((media) => {
         const allGenresAndTopics = [...media.genres, ...media.topics]
@@ -307,27 +307,47 @@ export async function GET(request: NextRequest) {
             sensitivityScore = Math.max(0, Math.min(1, sensitivityScore))
           }
 
-          // --- Age appropriateness (20% of score) ---
+          // --- Age appropriateness (30% of score, with age gap penalty) ---
+          // Content too OLD for the viewer is hard-penalized.
+          // Content too YOUNG is soft-penalized based on the gap:
+          //   gap ≤ 3 → perfect (e.g. a 10-year-old watching a 7+ film)
+          //   gap 4-9 → gradual decline
+          //   gap 10+ → floor at 0.30
+          // Universal-appeal boost: highly-rated content (tmdbRating ≥ 7.5)
+          // suffers less penalty because it genuinely entertains all ages.
           let ageScore = 0.5 // Neutral if we don't know
           if (prefs.age !== null && media.expertAgeRec !== null) {
-            if (prefs.age >= 16 && media.expertAgeRec < 10) {
-              // Adult watching young-child content: penalize proportionally
-              // expertAgeRec 3 → 0.2, expertAgeRec 7 → 0.4, expertAgeRec 9 → 0.5
-              ageScore = 0.1 + (media.expertAgeRec / 10) * 0.4
-            } else if (media.expertAgeRec <= prefs.age) {
-              ageScore = 1.0 // Content is for their age or younger
-            } else if (media.expertAgeRec <= prefs.age + 1) {
-              ageScore = 0.7 // Close enough (1 year over)
+            if (media.expertAgeRec > prefs.age + 1) {
+              // Content too old for the viewer
+              ageScore = 0.2
+            } else if (media.expertAgeRec > prefs.age) {
+              // 1 year over — close enough
+              ageScore = 0.7
             } else {
-              ageScore = 0.2 // Too old for them
+              // Content is at or below viewer's age — check the gap
+              const gap = prefs.age - media.expertAgeRec
+              if (gap <= 3) {
+                ageScore = 1.0 // Within range, no penalty
+              } else {
+                // Gradual penalty: each year beyond 3 costs 0.10
+                const rawPenalty = (gap - 3) * 0.10
+                ageScore = Math.max(0.30, 1.0 - rawPenalty)
+
+                // Universal-appeal boost for highly-rated content
+                // e.g. Pixar/Ghibli films score well across all ages
+                const tmdbRating = media.tmdbRating ?? 0
+                if (tmdbRating >= 7.5) {
+                  const boost = Math.min(0.25, (tmdbRating - 7.5) * 0.15)
+                  ageScore = Math.min(1.0, ageScore + boost)
+                }
+              }
             }
           } else if (media.expertAgeRec !== null && media.expertAgeRec <= 7) {
-            // Unknown member age + young content: neutral (don't boost)
             ageScore = 0.5
           }
 
           // Weighted combination
-          const rawScore = (genreScore * 0.50) + (sensitivityScore * 0.30) + (ageScore * 0.20)
+          const rawScore = (genreScore * 0.40) + (sensitivityScore * 0.30) + (ageScore * 0.30)
           const matchPercentage = Math.min(100, Math.max(0, Math.round(rawScore * 100)))
 
           // Penalty for disliked genres

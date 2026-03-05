@@ -18,6 +18,7 @@ import * as readline from "readline"
 
 const prisma = new PrismaClient()
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function prompt(question: string, _hidden = false): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
