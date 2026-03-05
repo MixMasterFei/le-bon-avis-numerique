@@ -14,6 +14,7 @@ interface FamilyMember {
   name: string
   avatarEmoji: string
   birthYear: number | null
+  birthMonth: number | null
   _count?: {
     reactions: number
   }

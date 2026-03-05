@@ -38,6 +38,7 @@ interface FamilyMemberData {
   id: string
   name: string
   birthYear: number | null
+  birthMonth: number | null
   avatarEmoji: string
   avatarStyle?: string | null
   avatarSeed?: string | null
@@ -95,6 +96,7 @@ export default function ProfilPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [memberName, setMemberName] = useState("")
   const [memberBirthYear, setMemberBirthYear] = useState("")
+  const [memberBirthMonth, setMemberBirthMonth] = useState("")
   const [memberAvatarValue, setMemberAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [savingMember, setSavingMember] = useState(false)
 
@@ -243,6 +245,7 @@ export default function ProfilPage() {
     setEditingMemberId(null)
     setMemberName("")
     setMemberBirthYear("")
+    setMemberBirthMonth("")
     setMemberAvatarValue(defaultAvatarValue())
     setMemberDialogOpen(true)
   }
@@ -251,6 +254,7 @@ export default function ProfilPage() {
     setEditingMemberId(member.id)
     setMemberName(member.name)
     setMemberBirthYear(member.birthYear?.toString() || "")
+    setMemberBirthMonth(member.birthMonth?.toString() || "")
     if (member.avatarStyle && member.avatarSeed) {
       setMemberAvatarValue({
         style: member.avatarStyle,
@@ -278,6 +282,7 @@ export default function ProfilPage() {
         body: JSON.stringify({
           name: memberName.trim(),
           birthYear: memberBirthYear || undefined,
+          birthMonth: memberBirthMonth || undefined,
           avatarStyle: memberAvatarValue.style,
           avatarSeed: memberAvatarValue.seed,
           avatarOptions: memberAvatarValue.options ?? null,
@@ -468,19 +473,33 @@ export default function ProfilPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="memberBirthYear">Année de naissance</Label>
-                <Input
-                  id="memberBirthYear"
-                  type="number"
-                  min="1920"
-                  max={currentYear}
-                  value={memberBirthYear}
-                  onChange={(e) => setMemberBirthYear(e.target.value)}
-                  placeholder="Ex: 2015"
-                />
+                <Label htmlFor="memberBirthYear">Naissance</Label>
+                <div className="flex gap-2">
+                  <select
+                    id="memberBirthMonth"
+                    value={memberBirthMonth}
+                    onChange={(e) => setMemberBirthMonth(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">Mois</option>
+                    {["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map((m, i) => (
+                      <option key={i + 1} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                  <Input
+                    id="memberBirthYear"
+                    type="number"
+                    min="1920"
+                    max={currentYear}
+                    value={memberBirthYear}
+                    onChange={(e) => setMemberBirthYear(e.target.value)}
+                    placeholder="Année"
+                    className="w-24"
+                  />
+                </div>
                 {memberBirthYear && Number(memberBirthYear) >= 1920 && Number(memberBirthYear) <= currentYear && (
                   <p className="text-xs text-gray-400">
-                    {formatAgeFromBirthYear(Number(memberBirthYear))}
+                    {formatAgeFromBirthYear(Number(memberBirthYear), memberBirthMonth ? Number(memberBirthMonth) : null)}
                   </p>
                 )}
               </div>

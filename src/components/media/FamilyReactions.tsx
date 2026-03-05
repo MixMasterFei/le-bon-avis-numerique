@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
+import { getMemberAge } from "@/lib/age-utils"
 import {
   Users,
   Eye,
@@ -27,6 +28,7 @@ interface FamilyMemberWithReaction {
   id: string
   name: string
   birthYear: number | null
+  birthMonth: number | null
   avatarEmoji: string
   reaction: {
     id: string
@@ -285,7 +287,7 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
                   <span className="font-medium text-sm">{member.name}</span>
                   {member.birthYear && (
                     <span className="text-xs text-gray-400">
-                      ({new Date().getFullYear() - member.birthYear} ans)
+                      ({getMemberAge(member.birthYear, member.birthMonth)} ans)
                     </span>
                   )}
                 </div>

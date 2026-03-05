@@ -21,9 +21,19 @@ export function getAgeCategory(age: number): AgeCategory {
 }
 
 /**
- * Calculate member's age from birth year
+ * Calculate member's age from birth year and optional birth month.
+ * With birthMonth, returns precise age (accounts for whether birthday has passed this year).
+ * Without birthMonth, falls back to year-only approximation.
  */
-export function getMemberAge(birthYear: number | null): number | null {
+export function getMemberAge(birthYear: number | null, birthMonth?: number | null): number | null {
   if (!birthYear) return null
-  return new Date().getFullYear() - birthYear
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const yearDiff = currentYear - birthYear
+  if (birthMonth != null && birthMonth >= 1 && birthMonth <= 12) {
+    // Birthday hasn't happened yet this year → subtract 1
+    const currentMonth = now.getMonth() + 1 // 1-indexed
+    return currentMonth < birthMonth ? yearDiff - 1 : yearDiff
+  }
+  return yearDiff
 }

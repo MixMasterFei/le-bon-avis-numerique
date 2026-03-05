@@ -24,6 +24,7 @@ export async function GET(
         id: true,
         name: true,
         birthYear: true,
+        birthMonth: true,
         avatarEmoji: true,
         favoriteGenres: true,
         dislikedGenres: true,

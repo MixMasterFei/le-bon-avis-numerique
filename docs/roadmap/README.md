@@ -34,6 +34,18 @@ Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized
 
 ## Recent Completed Work (March 2026)
 
+### Mar 5 — Age Precision, Family Fit Improvements & Community Warnings
+- **Birth month support**: Added `birthMonth` field to FamilyMember for precise age calculation (was year-only). Updated all scoring routes, UI components, forms (profil + onboarding). SQL migration: `sql/add_birth_month.sql`
+- **Adults hidden from kids' cards**: Homepage cards for content rated under 10 no longer show adult family members (16+)
+- **Adult age scoring fix**: Adults (16+) on 10+ content no longer penalized in family-fit scoring (synced across single-item, batch, and recommendations routes)
+- **Blurred poster improvements**: Lighter blur (`blur-sm` instead of `blur-xl`), click-to-reveal toggle on detail pages
+- **Community family warning system**: `FamilyWarningVote` model + API for parents to flag concerning content. Auto-promotes to warning at 10 votes. Asterisk distinguishes community vs algorithmic warnings on cards
+- **Methodology page** (`/notre-methode`): Transparency page explaining badges, warnings, scoring, and sources
+
+### Future — Customizable Homepage Sections
+- Allow users to choose which sections appear on their homepage and in what order
+- Useful for households without children who want adult-focused content front and center
+
 ### Mar 4 — Marketing Repositioning & Copy Rewrite
 - **Full repositioning**: "review/analysis site" → "personalized family media recommendation engine"
 - **Pages rewritten**: `/a-propos`, `/nos-valeurs`, `/objectif` — all copy shifted from evaluation to discovery language

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getMemberAge } from "@/lib/age-utils"
 
 interface MemberPreferences {
   id: string
   name: string
   birthYear: number | null
+  birthMonth: number | null
   sensitivityViolence: number
   sensitivityScary: number
   sensitivitySexual: number
@@ -43,12 +45,7 @@ interface CompatibilityResult {
   hasAnyConcerns: boolean
 }
 
-// Calculate member's age from birth year
-function getMemberAge(birthYear: number | null): number | null {
-  if (!birthYear) return null
-  const currentYear = new Date().getFullYear()
-  return currentYear - birthYear
-}
+// getMemberAge imported from @/lib/age-utils
 
 // Calculate compatibility score for a single member against a media item
 function calculateMemberScore(
@@ -68,7 +65,7 @@ function calculateMemberScore(
   let score = 100
   const concerns: string[] = []
 
-  const memberAge = getMemberAge(member.birthYear)
+  const memberAge = getMemberAge(member.birthYear, member.birthMonth)
 
   // Age appropriateness check (major penalty if content is too mature)
   if (memberAge !== null && media.expertAgeRec !== null) {
@@ -233,6 +230,7 @@ export async function POST(request: NextRequest) {
           id: member.id,
           name: member.name,
           birthYear: member.birthYear,
+          birthMonth: member.birthMonth,
           sensitivityViolence: member.sensitivityViolence,
           sensitivityScary: member.sensitivityScary,
           sensitivitySexual: member.sensitivitySexual,
@@ -252,6 +250,7 @@ export async function POST(request: NextRequest) {
         id: member.id,
         name: member.name,
         birthYear: member.birthYear,
+        birthMonth: member.birthMonth,
         sensitivityViolence: familySettings.defaultSensitivityViolence,
         sensitivityScary: familySettings.defaultSensitivityScary,
         sensitivitySexual: familySettings.defaultSensitivitySexual,
@@ -267,7 +266,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Find the youngest member's age for initial filtering
-    const ages = memberPreferences.map(m => getMemberAge(m.birthYear)).filter(a => a !== null) as number[]
+    const ages = memberPreferences.map(m => getMemberAge(m.birthYear, m.birthMonth)).filter(a => a !== null) as number[]
     const youngestAge = ages.length > 0 ? Math.min(...ages) : null
 
     // Build initial query

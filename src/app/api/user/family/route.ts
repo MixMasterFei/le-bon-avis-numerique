@@ -19,6 +19,7 @@ export async function GET() {
         id: true,
         name: true,
         birthYear: true,
+        birthMonth: true,
         avatarEmoji: true,
         avatarStyle: true,
         avatarSeed: true,
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, birthYear, avatarEmoji, avatarStyle, avatarSeed, avatarOptions, favoriteGenres, dislikedGenres } = body
+    const { name, birthYear, birthMonth, avatarEmoji, avatarStyle, avatarSeed, avatarOptions, favoriteGenres, dislikedGenres } = body
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "Nom requis" }, { status: 400 })
@@ -107,6 +108,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         name: name.trim(),
         birthYear: birthYear ? parseInt(birthYear) : null,
+        birthMonth: birthMonth ? Math.min(12, Math.max(1, parseInt(birthMonth))) : null,
         avatarEmoji: avatarEmoji || "👧",
         ...(sanitizedAvatar.avatarStyle && { avatarStyle: sanitizedAvatar.avatarStyle }),
         ...(sanitizedAvatar.avatarSeed && { avatarSeed: sanitizedAvatar.avatarSeed }),

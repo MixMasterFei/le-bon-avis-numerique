@@ -67,13 +67,18 @@ function CreateMemberStep({
   const [emoji, setEmoji] = useState("👧")
   const [avatarValue, setAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [birthYear, setBirthYear] = useState("")
+  const [birthMonth, setBirthMonth] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
   const currentYear = new Date().getFullYear()
 
-  // Auto-detect role from birth year
-  const age = birthYear ? currentYear - parseInt(birthYear) : null
+  // Auto-detect role from birth year (with month precision if available)
+  const parsedMonth = birthMonth ? parseInt(birthMonth) : null
+  const yearDiff = birthYear ? currentYear - parseInt(birthYear) : null
+  const age = yearDiff !== null
+    ? (parsedMonth && parsedMonth >= 1 && parsedMonth <= 12 && (new Date().getMonth() + 1) < parsedMonth ? yearDiff - 1 : yearDiff)
+    : null
   const roleHint = age === null ? null : age < 13 ? "Enfant" : age < 18 ? "Ado" : "Adulte"
 
   async function handleCreate() {
@@ -95,6 +100,7 @@ function CreateMemberStep({
           avatarSeed: avatarValue.seed,
           avatarOptions: avatarValue.options ?? null,
           birthYear: birthYear ? parseInt(birthYear) : null,
+          birthMonth: birthMonth ? parseInt(birthMonth) : null,
         }),
       })
 
@@ -175,12 +181,23 @@ function CreateMemberStep({
         />
       </div>
 
-      {/* Birth year */}
+      {/* Birth date */}
       <div>
-        <label htmlFor="birth-year" className="block text-sm font-medium text-gray-700 mb-1">
-          Année de naissance <span className="text-gray-400">(optionnel)</span>
+        <label htmlFor="birth-month" className="block text-sm font-medium text-gray-700 mb-1">
+          Date de naissance <span className="text-gray-400">(optionnel)</span>
         </label>
         <div className="flex items-center gap-3">
+          <select
+            id="birth-month"
+            value={birthMonth}
+            onChange={(e) => setBirthMonth(e.target.value)}
+            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">Mois</option>
+            {["Janv.","Fév.","Mars","Avr.","Mai","Juin","Juil.","Août","Sept.","Oct.","Nov.","Déc."].map((m, i) => (
+              <option key={i + 1} value={i + 1}>{m}</option>
+            ))}
+          </select>
           <Input
             id="birth-year"
             type="number"
@@ -189,7 +206,7 @@ function CreateMemberStep({
             placeholder={String(currentYear - 8)}
             min={1940}
             max={currentYear}
-            className="w-32"
+            className="w-24"
           />
           {roleHint && (
             <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">

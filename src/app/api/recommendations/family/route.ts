@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getMemberAge } from "@/lib/age-utils"
 
 // GET /api/recommendations/family?memberIds=id1,id2,id3
 // Get recommendations for multiple family members (movie night mode)
@@ -56,15 +57,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate youngest child's age (for age-appropriate filtering)
-    const currentYear = new Date().getFullYear()
     let youngestAge: number | null = null
 
     for (const member of familyMembers) {
-      if (member.birthYear) {
-        const age = currentYear - member.birthYear
-        if (youngestAge === null || age < youngestAge) {
-          youngestAge = age
-        }
+      const age = getMemberAge(member.birthYear, member.birthMonth)
+      if (age != null && (youngestAge === null || age < youngestAge)) {
+        youngestAge = age
       }
     }
 
@@ -120,7 +118,7 @@ export async function GET(request: NextRequest) {
         .slice(0, 5)
         .map(([genre]) => genre)
 
-      const memberAge = member.birthYear ? currentYear - member.birthYear : null
+      const memberAge = getMemberAge(member.birthYear, member.birthMonth)
 
       memberPreferences[member.id] = {
         topGenres,
@@ -404,6 +402,7 @@ export async function GET(request: NextRequest) {
         avatarSeed: m.avatarSeed,
         avatarOptions: m.avatarOptions,
         birthYear: m.birthYear,
+        birthMonth: m.birthMonth,
         hasReactions: memberPreferences[m.id].hasPreferences,
       })),
       recommendations: scoredRecommendations.slice(0, 12),

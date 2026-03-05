@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       id: member.id,
       name: member.name,
       birthYear: member.birthYear,
+      birthMonth: member.birthMonth,
       avatarEmoji: member.avatarEmoji,
       avatarStyle: member.avatarStyle,
       avatarSeed: member.avatarSeed,

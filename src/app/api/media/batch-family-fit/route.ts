@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { COMMUNITY_WARNING_THRESHOLD } from "@/lib/family-warning"
+import { getMemberAge } from "@/lib/age-utils"
 
 // ---------------------------------------------------------------------------
 // Batch Family Fit API
@@ -28,8 +29,12 @@ function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, 
   if (expertAgeRec > memberAge) return 0.7
 
   // Content is at or below viewer's age — penalise large gaps
+  // BUT adults watching mature content (10+) is perfectly normal
   const gap = memberAge - expertAgeRec
   if (gap <= 3) return 1.0
+
+  // Adults (16+) watching content rated 10+ → no penalty
+  if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
 
   // Gradual penalty: each year beyond 3 costs 0.10, floor 0.30
   const rawPenalty = (gap - 3) * 0.10
@@ -155,12 +160,10 @@ export async function POST(request: NextRequest) {
       include: { contentMetrics: true },
     })
 
-    const currentYear = new Date().getFullYear()
-
     // Detect if household has any minor (under 18)
     const hasMinor = familyMembers.some((m) => {
-      if (m.birthYear == null) return false
-      return currentYear - m.birthYear < 18
+      const age = getMemberAge(m.birthYear, m.birthMonth)
+      return age != null && age < 18
     })
 
     // Batch-fetch community warning vote counts
@@ -208,7 +211,7 @@ export async function POST(request: NextRequest) {
       const fittingMembers: MemberFit[] = []
 
       for (const member of familyMembers) {
-        const memberAge = member.birthYear != null ? currentYear - member.birthYear : null
+        const memberAge = getMemberAge(member.birthYear, member.birthMonth)
         const hasPreferences = member.useCustomSettings && member.favoriteGenres.length > 0
 
         const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating)
@@ -244,6 +247,11 @@ export async function POST(request: NextRequest) {
 
         // Hard age gate: never show a child on content rated 3+ years above their age
         if (media.expertAgeRec != null && memberAge != null && media.expertAgeRec > memberAge + 2) {
+          continue
+        }
+
+        // Hide adults from young kids' content cards (not relevant to show)
+        if (memberAge != null && memberAge >= 16 && media.expertAgeRec != null && media.expertAgeRec < 10) {
           continue
         }
 

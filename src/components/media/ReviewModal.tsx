@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Star, User, GraduationCap, Baby, Users, Loader2 } from "lucide-react"
+import { getMemberAge } from "@/lib/age-utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -30,6 +31,7 @@ interface FamilyMember {
   name: string
   avatarEmoji: string
   birthYear?: number | null
+  birthMonth?: number | null
 }
 
 const roleOptions: { value: Role; label: string; icon: typeof User }[] = [
@@ -205,7 +207,7 @@ export function ReviewModal({
                     <span>{member.name}</span>
                     {member.birthYear && (
                       <span className="text-xs opacity-70">
-                        ({new Date().getFullYear() - member.birthYear} ans)
+                        ({getMemberAge(member.birthYear, member.birthMonth)} ans)
                       </span>
                     )}
                   </button>

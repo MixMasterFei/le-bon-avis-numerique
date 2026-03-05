@@ -81,8 +81,14 @@ export const mediaTypeLabels: Record<string, string> = {
  * either (currentYear - birthYear - 1) or (currentYear - birthYear).
  * Returns a range like "9–10 ans" to always be accurate.
  */
-export function formatAgeFromBirthYear(birthYear: number): string {
-  const currentYear = new Date().getFullYear()
+export function formatAgeFromBirthYear(birthYear: number, birthMonth?: number | null): string {
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  if (birthMonth != null && birthMonth >= 1 && birthMonth <= 12) {
+    const currentMonth = now.getMonth() + 1
+    const age = currentMonth < birthMonth ? currentYear - birthYear - 1 : currentYear - birthYear
+    return `${age} ans`
+  }
   const ageMax = currentYear - birthYear
   const ageMin = ageMax - 1
   return `${ageMin}–${ageMax} ans`

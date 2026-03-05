@@ -16,6 +16,7 @@ interface FamilyMember {
   id: string
   name: string
   birthYear: number | null
+  birthMonth: number | null
   avatarEmoji: string
   avatarStyle?: string | null
   avatarSeed?: string | null
@@ -184,7 +185,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     return selectedFamilyMembers
       .map(id => familyMembers.find(m => m.id === id))
       .filter((m): m is FamilyMember => !!m)
-      .map(m => ({ ...m, age: getMemberAge(m.birthYear) }))
+      .map(m => ({ ...m, age: getMemberAge(m.birthYear, m.birthMonth) }))
       .sort((a, b) => {
         if (a.age === null && b.age === null) return 0
         if (a.age === null) return 1
@@ -317,7 +318,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
       const selectedAges = updated
         .map(id => familyMembers.find(m => m.id === id))
         .filter((m): m is FamilyMember => !!m)
-        .map(m => getMemberAge(m.birthYear))
+        .map(m => getMemberAge(m.birthYear, m.birthMonth))
         .filter((a): a is number => a !== null)
       if (selectedAges.length > 0) {
         const youngest = Math.min(...selectedAges)
@@ -370,7 +371,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
       setUseFamilyFilter(true)
 
       const ages = familyMembers
-        .map(m => getMemberAge(m.birthYear))
+        .map(m => getMemberAge(m.birthYear, m.birthMonth))
         .filter((a): a is number => a !== null)
       if (ages.length > 0) {
         const youngest = Math.min(...ages)
@@ -572,7 +573,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
               {/* Individual members */}
               {familyMembers.map((member) => {
                 const isSelected = selectedFamilyMembers.includes(member.id)
-                const age = getMemberAge(member.birthYear)
+                const age = getMemberAge(member.birthYear, member.birthMonth)
                 const category = age !== null ? getAgeCategory(age) : null
                 const isChild = age !== null && age < 18
                 const completeness = getQuickCompleteness(member)

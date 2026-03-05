@@ -24,6 +24,7 @@ interface FamilyMemberCardMember {
   id: string
   name: string
   birthYear: number | null
+  birthMonth: number | null
   avatarEmoji: string
   avatarStyle?: string | null
   avatarSeed?: string | null
@@ -170,7 +171,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
             />
             <h3 className="font-bold text-gray-900 mt-2">{member.name}</h3>
             {member.birthYear && (
-              <span className="text-xs text-gray-500">{formatAgeFromBirthYear(member.birthYear)}</span>
+              <span className="text-xs text-gray-500">{formatAgeFromBirthYear(member.birthYear, member.birthMonth)}</span>
             )}
           </div>
 

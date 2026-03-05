@@ -318,6 +318,7 @@ model FamilyMember {
   userId          String   @map("user_id")
   name            String
   birthYear       Int?     @map("birth_year")
+  birthMonth      Int?     @map("birth_month")
   avatarEmoji     String   @default("👧") @map("avatar_emoji")
   avatarStyle     String?  @map("avatar_style")
   avatarSeed      String?  @map("avatar_seed")

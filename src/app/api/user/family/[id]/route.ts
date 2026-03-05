@@ -62,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params
     const body = await request.json()
-    const { name, birthYear, avatarEmoji, avatarStyle, avatarSeed, avatarOptions, favoriteGenres, dislikedGenres, interests } = body
+    const { name, birthYear, birthMonth, avatarEmoji, avatarStyle, avatarSeed, avatarOptions, favoriteGenres, dislikedGenres, interests } = body
 
     // Verify ownership
     const existing = await prisma.familyMember.findFirst({
@@ -81,6 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       data: {
         ...(name && { name: name.trim() }),
         ...(birthYear !== undefined && { birthYear: birthYear ? parseInt(birthYear) : null }),
+        ...(birthMonth !== undefined && { birthMonth: birthMonth ? Math.min(12, Math.max(1, parseInt(birthMonth))) : null }),
         ...(avatarEmoji && { avatarEmoji }),
         ...(sanitizedAvatar.avatarStyle !== null && { avatarStyle: sanitizedAvatar.avatarStyle }),
         ...(sanitizedAvatar.avatarSeed !== null && { avatarSeed: sanitizedAvatar.avatarSeed }),

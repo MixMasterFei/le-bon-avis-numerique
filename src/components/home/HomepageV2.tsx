@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Search, Users, SlidersHorizontal, Tv, ArrowRight, Sparkles, Film } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { getMemberAge } from "@/lib/age-utils"
 import { HeroSearch } from "./HeroSearch"
 import { NowInCinema } from "./NowInCinema"
 import { CuratedCollections } from "./CuratedCollections"
@@ -21,6 +22,7 @@ interface FamilyMember {
   name: string
   avatarEmoji: string
   birthYear: number | null
+  birthMonth: number | null
 }
 
 interface Recommendation {
@@ -87,7 +89,7 @@ function HeroV2({ session, familyMembers }: { session: HomepageV2Props["session"
               <p className="text-sm text-gray-500 mb-3">Recommandations rapides pour :</p>
               <div className="flex flex-wrap justify-center gap-3">
                 {familyMembers.slice(0, 5).map((member) => {
-                  const age = member.birthYear ? new Date().getFullYear() - member.birthYear : null
+                  const age = getMemberAge(member.birthYear, member.birthMonth)
                   return (
                     <Link
                       key={member.id}

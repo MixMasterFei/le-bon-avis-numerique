@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getMemberAge } from "@/lib/age-utils"
 
 // GET /api/recommendations?familyMemberId=xxx - Get recommendations for a family member
 export async function GET(request: NextRequest) {
@@ -66,17 +67,15 @@ export async function GET(request: NextRequest) {
           avatarSeed: familyMember.avatarSeed,
           avatarOptions: familyMember.avatarOptions,
           birthYear: familyMember.birthYear,
+          birthMonth: familyMember.birthMonth,
         },
         recommendations: [],
         message: "Ajoutez des réactions positives pour obtenir des recommandations",
       })
     }
 
-    // Calculate child's approximate age
-    const currentYear = new Date().getFullYear()
-    const childAge = familyMember.birthYear
-      ? currentYear - familyMember.birthYear
-      : null
+    // Calculate child's age (precise with birth month if available)
+    const childAge = getMemberAge(familyMember.birthYear, familyMember.birthMonth)
 
     // Collect data from loved/liked media
     const lovedGenres: Record<string, number> = {}

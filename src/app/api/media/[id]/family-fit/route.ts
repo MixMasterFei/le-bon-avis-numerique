@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getMemberAge } from "@/lib/age-utils"
 
 // ---------------------------------------------------------------------------
 // Family Fit API
@@ -288,12 +289,12 @@ export async function GET(
       )
     }
 
-    const currentYear = new Date().getFullYear()
+
 
     // Detect if household has any minor (under 18)
     const hasMinor = familyMembers.some((m) => {
-      if (m.birthYear == null) return false
-      return currentYear - m.birthYear < 18
+      const age = getMemberAge(m.birthYear, m.birthMonth)
+      return age != null && age < 18
     })
 
     const metrics = media.contentMetrics ?? {
@@ -354,7 +355,7 @@ export async function GET(
     }
 
     const members: FamilyFitMember[] = familyMembers.map((member) => {
-      const memberAge = member.birthYear != null ? currentYear - member.birthYear : null
+      const memberAge = getMemberAge(member.birthYear, member.birthMonth)
       const hasPreferences = member.useCustomSettings && member.favoriteGenres.length > 0
 
       // --- Compute affinity from watch history ---
