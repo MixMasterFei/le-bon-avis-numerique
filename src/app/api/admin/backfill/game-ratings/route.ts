@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getGameDetails } from "@/lib/igdb"
-import { verifyCronAuth } from "@/lib/cron-auth"
 
 export const maxDuration = 60
 
@@ -9,10 +8,9 @@ export const maxDuration = 60
  * Backfill IGDB ratings (total_rating → tmdbRating, total_rating_count → tmdbVoteCount)
  * for existing games that don't have ratings yet.
  * POST /api/admin/backfill/game-ratings
+ * Auth: admin routes are protected by middleware
  */
 export async function POST(request: Request) {
-  const authError = verifyCronAuth(request)
-  if (authError) return authError
 
   const body = await request.json().catch(() => ({}))
   const batchSize = Math.min(body.batch || 50, 100)
