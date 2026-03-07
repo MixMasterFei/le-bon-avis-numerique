@@ -31,7 +31,7 @@ const COLLECTIONS: Collection[] = [
     emoji: "🎬",
     limit: 15,
     category: "top",
-    query: { type: "MOVIE", genres: ["Animation"], maxAge: 7 },
+    query: { type: "MOVIE", genres: ["Animation"], maxAge: 10 },
   },
   {
     id: "top-films-famille",
