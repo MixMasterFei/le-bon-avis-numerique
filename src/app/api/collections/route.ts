@@ -1,132 +1,213 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
-// Thematic collections API
-// Returns curated lists of media based on themes, seasons, or criteria
+// Thematic collections API — SEO-optimized "Top X" curated lists
+// Each collection is capped at 10-15 items, sorted by quality (tmdbRating)
 
 interface Collection {
   id: string
   title: string
   description: string
+  intro: string
+  emoji: string
+  limit: number
+  category: "top" | "seasonal"
   query: {
     type?: "MOVIE" | "TV" | "GAME"
     topics?: string[]
     genres?: string[]
     maxAge?: number
-    minRating?: number
     year?: number
   }
 }
 
 const COLLECTIONS: Collection[] = [
-  // Year-based (reliable — all movies have release dates)
+  // ── Top curated lists (permanent, high SEO value) ──────────────────
   {
-    id: "best-movies-2024",
-    title: "Meilleurs films 2024",
-    description: "Les films les mieux notes sortis en 2024",
-    query: { type: "MOVIE", year: 2024 },
+    id: "top-films-animation-enfants",
+    title: "Top 15 des films d'animation pour enfants",
+    description: "Les meilleurs dessins animés pour les tout-petits, des classiques aux pépites récentes.",
+    intro: "Le Robot sauvage a ému toute une génération de parents en 2024. Totoro continue de fasciner les enfants 35 ans après sa sortie. Certains films d'animation ont ce pouvoir de traverser les époques. On a réuni nos 15 préférés pour les plus petits, ceux qu'on regarde un mercredi pluvieux ou un dimanche matin sous la couette. Des histoires douces, drôles, parfois émouvantes, mais toujours adaptées aux plus jeunes.",
+    emoji: "🎬",
+    limit: 15,
+    category: "top",
+    query: { type: "MOVIE", genres: ["Animation"], maxAge: 7 },
   },
   {
-    id: "best-movies-2025",
-    title: "Meilleurs films 2025",
-    description: "Les films les mieux notes sortis en 2025",
-    query: { type: "MOVIE", year: 2025 },
-  },
-  // Genre-based (reliable — all movies have genres from TMDB fr-FR)
-  {
-    id: "family-movies",
-    title: "Films en famille",
-    description: "Les meilleurs films a voir en famille, pour tous les ages",
-    query: { type: "MOVIE", maxAge: 10, genres: ["Familial"] },
+    id: "top-films-famille",
+    title: "Top 15 des meilleurs films en famille",
+    description: "Les films parfaits pour une soirée ciné en famille : drôles, émouvants et adaptés à tous les âges.",
+    intro: "La soirée ciné en famille, c'est sacré. Trouver LE film qui plaît à tout le monde, par contre, c'est un autre sujet. Les petits veulent du dessin animé, les grands veulent de l'action, les ados lèvent les yeux au ciel. Ces 15 films mettent tout le monde d'accord. On les a testés, et on n'a eu aucune mutinerie. Pop-corn non inclus.",
+    emoji: "👨‍👩‍👧‍👦",
+    limit: 15,
+    category: "top",
+    query: { type: "MOVIE", genres: ["Familial"], maxAge: 10 },
   },
   {
-    id: "teen-comedy",
-    title: "Comedies pour ados",
-    description: "Les meilleures comedies pour les adolescents",
-    query: { type: "MOVIE", maxAge: 16, genres: ["Comédie"] },
-  },
-  {
-    id: "animation-kids",
-    title: "Animation pour enfants",
-    description: "Les meilleurs dessins animes pour les plus jeunes",
-    query: { type: "MOVIE", maxAge: 7, genres: ["Animation"] },
-  },
-  {
-    id: "adventure",
-    title: "Films d'aventure",
-    description: "Action et exploration pour toute la famille",
-    query: { type: "MOVIE", genres: ["Aventure"] },
-  },
-  {
-    id: "fantasy",
-    title: "Films fantastiques",
-    description: "Magie et mondes imaginaires",
-    query: { type: "MOVIE", genres: ["Fantastique"] },
-  },
-  // Studio-based (topics from AI enrichment — exact casing matters)
-  {
-    id: "disney-classics",
-    title: "Classiques Disney",
-    description: "Les grands classiques Disney pour petits et grands",
+    id: "top-disney",
+    title: "Top 10 des classiques Disney",
+    description: "Les grands classiques Disney qui ont marqué des générations, du Roi Lion à la Reine des Neiges.",
+    intro: "On connaît les chansons par cœur. On pleure toujours aux mêmes scènes. Et on attend le bon moment pour les montrer à nos enfants, comme si on leur confiait un secret. Le Roi Lion, Aladdin, La Petite Sirène, La Reine des Neiges... Les classiques Disney de la Renaissance des années 90 et ceux qui ont renouvelé la magie depuis, le tout en 10 films.",
+    emoji: "🏰",
+    limit: 10,
+    category: "top",
     query: { type: "MOVIE", topics: ["Disney"] },
   },
   {
-    id: "pixar",
-    title: "Films Pixar",
-    description: "Tous les chefs-d'oeuvre du studio Pixar",
+    id: "top-pixar",
+    title: "Top 10 des films Pixar",
+    description: "Les chefs-d'œuvre du studio Pixar : Toy Story, Vice-Versa, Coco et bien d'autres.",
+    intro: "Toy Story a changé l'animation en 1995. Depuis, Pixar n'a jamais vraiment baissé le niveau. Vice-Versa a mis des mots sur les émotions de nos enfants. Coco parle du deuil avec une justesse rare. Là-Haut fait pleurer tout le monde dès les dix premières minutes. Et Ratatouille reste le chouchou des Français avec près de 8 millions d'entrées. Nos 10 préférés, ceux qui touchent autant les parents que les petits.",
+    emoji: "🚀",
+    limit: 10,
+    category: "top",
     query: { type: "MOVIE", topics: ["Pixar"] },
   },
   {
-    id: "studio-ghibli",
-    title: "Studio Ghibli",
-    description: "L'univers poetique du studio japonais",
+    id: "top-ghibli",
+    title: "Top 10 Studio Ghibli",
+    description: "L'univers poétique et enchanteur du studio japonais de Hayao Miyazaki.",
+    intro: "Si vos enfants ne connaissent pas encore Totoro, Chihiro ou Ponyo, c'est le moment. Le Studio Ghibli, fondé en 1985 par Hayao Miyazaki et Isao Takahata, a produit des films qu'on ne trouve nulle part ailleurs. Le Voyage de Chihiro a décroché l'Oscar et l'Ours d'or à Berlin. Princesse Mononoké a redéfini ce que l'animation pouvait raconter. Et les musiques de Joe Hisaishi restent en tête pendant des semaines. Des forêts qui respirent, des esprits bienveillants, des héroïnes courageuses. Ça ne ressemble à rien d'autre.",
+    emoji: "🌿",
+    limit: 10,
+    category: "top",
     query: { type: "MOVIE", topics: ["Studio Ghibli"] },
   },
-  // Theme-based (topics from enrichment)
   {
-    id: "superhero",
-    title: "Super-heros",
-    description: "Marvel, DC et autres aventures heroiques",
+    id: "top-films-aventure",
+    title: "Top 10 des films d'aventure pour enfants",
+    description: "Action, exploration et découvertes : les meilleurs films d'aventure adaptés aux enfants.",
+    intro: "Un bon film d'aventure, et les enfants veulent explorer le jardin dès le générique de fin. Trésors cachés, héros qui se dépassent, territoires inconnus. Ces 10 films font briller les yeux, donnent envie de bouger, et passent le test du « on le remet ? » au moment du dîner.",
+    emoji: "🗺️",
+    limit: 10,
+    category: "top",
+    query: { type: "MOVIE", genres: ["Aventure"], maxAge: 12 },
+  },
+  {
+    id: "top-comedies-ados",
+    title: "Top 10 des comédies pour ados",
+    description: "Les comédies les plus drôles et adaptées aux adolescents.",
+    intro: "Faire rire un ado, c'est un art. Trop bébé, il décroche. Trop vulgaire, on n'est pas tranquille en tant que parent. Ces 10 comédies tapent juste. De l'humour qui fait vraiment rire, des personnages auxquels ils s'identifient, et zéro moment gênant quand on regarde ensemble sur le canapé.",
+    emoji: "😂",
+    limit: 10,
+    category: "top",
+    query: { type: "MOVIE", genres: ["Comédie"], maxAge: 16 },
+  },
+  {
+    id: "top-super-heros",
+    title: "Top 10 des films de super-héros",
+    description: "Marvel, DC et autres aventures héroïques pour toute la famille.",
+    intro: "Les super-héros, ça fait rêver les enfants. Le problème, c'est que beaucoup de films du genre sont trop sombres ou trop violents pour les plus jeunes. Ces 10-là font rêver sans donner de cauchemars. Du courage, de la solidarité, et des capes qui claquent au vent.",
+    emoji: "🦸",
+    limit: 10,
+    category: "top",
     query: { type: "MOVIE", topics: ["Super-héros"] },
   },
   {
-    id: "educational",
-    title: "Films educatifs",
-    description: "Apprendre en s'amusant",
+    id: "top-films-educatifs",
+    title: "Top 10 des films éducatifs",
+    description: "Apprendre en s'amusant : les films qui éveillent la curiosité des enfants.",
+    intro: "Le secret d'un bon film éducatif, c'est que l'enfant ne se rend pas compte qu'il apprend. Il est juste captivé. Des documentaires qui rendent curieux, des histoires qui posent des questions, des personnages qui donnent envie de comprendre le monde. On en a retenu 10 qui font ça très bien.",
+    emoji: "📚",
+    limit: 10,
+    category: "top",
     query: { type: "MOVIE", topics: ["Éducatif"] },
   },
-  // Seasonal (topics from enrichment)
   {
-    id: "christmas-movies",
-    title: "Films de Noel",
-    description: "Les classiques et nouveautes pour les fetes",
+    id: "meilleurs-films-2025",
+    title: "Meilleurs films 2025 pour les familles",
+    description: "Les films sortis en 2025 les mieux notés et adaptés aux familles.",
+    intro: "Elio, le nouveau Pixar, emmène les enfants dans l'espace. Zootopie 2 arrive en fin d'année. 2025 a réservé de bonnes surprises au cinéma pour les familles. On met à jour cette liste au fil de l'année avec les films qui nous ont marqués, ceux qui font parler dans les cours de récré et ceux qu'on recommande sans hésiter.",
+    emoji: "⭐",
+    limit: 15,
+    category: "top",
+    query: { type: "MOVIE", year: 2025 },
+  },
+
+  // ── Seasonal collections ───────────────────────────────────────────
+  {
+    id: "films-noel-famille",
+    title: "Films de Noël en famille",
+    description: "Les classiques et nouveautés pour des fêtes magiques en famille.",
+    intro: "Le sapin est monté, les guirlandes clignotent, le chocolat chaud est prêt. Il manque le film. Vous êtes plutôt Maman j'ai raté l'avion ou Le Pôle Express ? Les deux camps trouveront leur bonheur ici, des tout-petits aux grands-parents. De quoi tenir toutes les soirées des vacances de Noël.",
+    emoji: "🎄",
+    limit: 15,
+    category: "seasonal",
     query: { type: "MOVIE", topics: ["Noël"] },
   },
   {
-    id: "halloween-movies",
-    title: "Films d'Halloween",
-    description: "Frissons et citrouilles pour toute la famille",
-    query: { type: "MOVIE", topics: ["Halloween"] },
+    id: "films-halloween-enfants",
+    title: "Films d'Halloween pour enfants",
+    description: "Frissons légers et citrouilles : des films d'Halloween adaptés aux enfants, sans cauchemars.",
+    intro: "Halloween, c'est l'occasion de se faire un peu peur. Mais juste un peu. Des citrouilles, des fantômes rigolos, des sorcières pas si méchantes. Pile ce qu'il faut pour entrer dans l'ambiance sans que personne ne finisse dans le lit des parents à 3h du matin.",
+    emoji: "🎃",
+    limit: 10,
+    category: "seasonal",
+    query: { type: "MOVIE", topics: ["Halloween"], maxAge: 10 },
   },
-  // Games (maxAge-based — reliable)
   {
-    id: "family-games",
-    title: "Jeux en famille",
-    description: "Les meilleurs jeux video pour jouer ensemble",
+    id: "films-vacances-ete",
+    title: "Films pour les vacances d'été",
+    description: "Soleil, aventures et bonne humeur : la sélection parfaite pour les vacances.",
+    intro: "Les grandes vacances, c'est aussi les jours de pluie, les après-midi trop chauds pour sortir et les longs trajets en voiture. Ces films sentent bon l'été, l'aventure et la liberté. Pile ce qu'il faut pour les journées où on veut rêver un peu sans bouger du canapé.",
+    emoji: "☀️",
+    limit: 15,
+    category: "seasonal",
+    query: { type: "MOVIE", topics: ["Vacances", "Été", "Plage", "Voyage"] },
+  },
+
+  // ── Gaming collections ─────────────────────────────────────────────
+  {
+    id: "top-jeux-famille",
+    title: "Top 10 des jeux vidéo en famille",
+    description: "Les meilleurs jeux pour jouer ensemble : coopération, fun et fous rires garantis.",
+    intro: "Jouer ensemble, c'est quand même mieux que chacun dans son coin avec son écran. On a cherché les jeux où parents et enfants s'amusent vraiment en même temps. Des jeux coopératifs, des jeux où on rigole, des jeux où même papa qui « ne joue jamais aux jeux vidéo » finit par demander une deuxième partie.",
+    emoji: "🎮",
+    limit: 10,
+    category: "top",
     query: { type: "GAME", maxAge: 10 },
   },
   {
-    id: "teen-games",
-    title: "Jeux pour ados",
-    description: "Selection de jeux adaptes aux adolescents",
+    id: "top-jeux-multijoueur-local",
+    title: "Top 10 des jeux multijoueur canapé",
+    description: "Les meilleurs jeux à partager sur le même écran, parfaits pour les soirées en famille.",
+    intro: "Tout le monde sur le canapé, les manettes qui s'échangent, et des fous rires. Overcooked pour cuisiner dans le chaos total, Mario Kart pour les courses endiablées, It Takes Two qui a été élu jeu de l'année. Pas besoin de deux consoles ni de connexion internet. Juste un écran et l'envie de jouer ensemble.",
+    emoji: "🛋️",
+    limit: 10,
+    category: "top",
+    query: { type: "GAME", topics: ["Multijoueur local", "Coopération", "Party game"] },
+  },
+  {
+    id: "top-jeux-ados",
+    title: "Top 10 des jeux pour ados",
+    description: "Sélection de jeux adaptés aux adolescents : aventure, sport et stratégie.",
+    intro: "Les ados veulent des jeux qui ne font pas « bébé » mais qui restent adaptés à leur âge. Pas toujours facile de trouver le bon équilibre. Ces 10 jeux cochent les deux cases : assez costauds pour les accrocher, assez clean pour que les parents soient tranquilles.",
+    emoji: "🕹️",
+    limit: 10,
+    category: "top",
     query: { type: "GAME", maxAge: 16 },
   },
-  // TV (maxAge-based — reliable)
+
+  // ── Seasonal gaming ────────────────────────────────────────────────
   {
-    id: "kids-series",
-    title: "Series pour enfants",
-    description: "Les meilleures series TV pour les petits",
-    query: { type: "TV", maxAge: 10 },
+    id: "jeux-vacances-ete",
+    title: "Jeux vidéo pour les vacances d'été 2026",
+    description: "Les jeux parfaits pour occuper les enfants pendant les grandes vacances.",
+    intro: "Deux mois de vacances, c'est long. Les enfants ont besoin de souffler aussi. Entre deux baignades et une partie de foot, ces jeux vidéo occupent intelligemment sans que les parents s'inquiètent du contenu. Adaptés à l'été, adaptés aux enfants.",
+    emoji: "🏖️",
+    limit: 10,
+    category: "seasonal",
+    query: { type: "GAME", maxAge: 12 },
+  },
+  {
+    id: "jeux-noel",
+    title: "Jeux vidéo à offrir pour Noël",
+    description: "Notre sélection de jeux vidéo à mettre sous le sapin, pour tous les âges.",
+    intro: "Trouver le bon jeu vidéo à offrir à Noël, c'est un casse-tête pour beaucoup de parents. Trop violent ? Trop compliqué ? Pas assez fun ? On a fait le tri. 10 jeux qu'on recommande sans hésiter, avec pour chacun l'âge adapté et ce qu'il faut savoir avant d'acheter.",
+    emoji: "🎁",
+    limit: 10,
+    category: "seasonal",
+    query: { type: "GAME", maxAge: 12 },
   },
 ]
 
@@ -134,14 +215,12 @@ export async function GET(request: NextRequest) {
   try {
   const searchParams = request.nextUrl.searchParams
   const collectionId = searchParams.get("id")
-  const limit = parseInt(searchParams.get("limit") || "20")
 
   // If no collection ID, return list of all collections with counts + preview posters
   if (!collectionId) {
     const weekNumber = Math.floor(Date.now() / 604800000)
 
     // Single DB query — fetch minimal fields for all items, then filter in JS.
-    // This avoids 34+ separate queries that exhaust the connection pool (limit=1).
     const allItems = await prisma.mediaItem.findMany({
       select: {
         type: true,
@@ -150,18 +229,26 @@ export async function GET(request: NextRequest) {
         expertAgeRec: true,
         releaseDate: true,
         posterUrl: true,
+        tmdbRating: true,
       },
-      orderBy: { createdAt: "desc" },
+      where: {
+        // Quality gate: require poster and age rating
+        posterUrl: { not: null },
+        expertAgeRec: { not: null },
+      },
+      orderBy: { tmdbRating: "desc" },
     })
 
     const collectionsWithCounts = COLLECTIONS.map((collection) => {
-      const matching = allItems.filter((item) => matchesQuery(item, collection.query))
+      const matching = allItems
+        .filter((item) => matchesQuery(item, collection.query))
+        .slice(0, collection.limit)
       const posters = matching
         .filter((item) => item.posterUrl)
-        .slice(0, 12)
+        .slice(0, 8)
         .map((item) => item.posterUrl)
 
-      // Weekly rotation
+      // Weekly rotation for poster variety
       const offset = (weekNumber * 4) % Math.max(posters.length, 1)
       const rotated = [...posters.slice(offset), ...posters.slice(0, offset)]
 
@@ -169,15 +256,17 @@ export async function GET(request: NextRequest) {
         id: collection.id,
         title: collection.title,
         description: collection.description,
+        emoji: collection.emoji,
+        limit: collection.limit,
+        category: collection.category,
         count: matching.length,
         previewPosters: rotated.slice(0, 4),
       }
-    }).filter((c) => c.count > 0)
+    }).filter((c) => c.count >= 3) // Only show collections with at least 3 items
 
     const response = NextResponse.json({
       collections: collectionsWithCounts,
     })
-    // Cache for 1 hour — collections rarely change
     response.headers.set("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=7200")
     return response
   }
@@ -191,17 +280,21 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  // Build the query
-  const items = await getCollectionItems(collection.query, limit)
+  // Build the query with quality gates
+  const items = await getCollectionItems(collection.query, collection.limit)
 
   return NextResponse.json({
     collection: {
       id: collection.id,
       title: collection.title,
       description: collection.description,
+      intro: collection.intro,
+      emoji: collection.emoji,
+      limit: collection.limit,
+      category: collection.category,
     },
     items,
-    total: await getCollectionCount(collection.query),
+    total: items.length,
   })
   } catch (error) {
     console.error("Collections API error:", error)
@@ -212,19 +305,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getCollectionCount(query: Collection["query"]): Promise<number> {
-  return prisma.mediaItem.count({
-    where: buildWhereClause(query),
-  })
-}
-
 async function getCollectionItems(query: Collection["query"], limit: number) {
+  const where = buildWhereClause(query)
+
+  // Quality gates: require poster + age rating
+  where.posterUrl = { not: null }
+  where.expertAgeRec = { not: null }
+
   const items = await prisma.mediaItem.findMany({
-    where: buildWhereClause(query),
+    where,
     include: { contentMetrics: true },
     orderBy: [
-      { expertAgeRec: "asc" },
-      { createdAt: "desc" },
+      { tmdbRating: "desc" },
+      { releaseDate: "desc" },
     ],
     take: limit,
   })
@@ -253,11 +346,9 @@ function buildWhereClause(query: Collection["query"]) {
     where.type = query.type
   }
 
-  if (query.maxAge) {
-    where.OR = [
-      { expertAgeRec: { lte: query.maxAge } },
-      { expertAgeRec: null },
-    ]
+  if (query.maxAge != null) {
+    // Strict: only items WITH an age rating at or below maxAge (no nulls)
+    where.expertAgeRec = { lte: query.maxAge }
   }
 
   if (query.year) {
@@ -286,7 +377,8 @@ function matchesQuery(
   if (query.type && item.type !== query.type) return false
 
   if (query.maxAge != null) {
-    if (item.expertAgeRec !== null && item.expertAgeRec > query.maxAge) return false
+    // Strict: require age rating AND must be ≤ maxAge
+    if (item.expertAgeRec === null || item.expertAgeRec > query.maxAge) return false
   }
 
   if (query.year) {
