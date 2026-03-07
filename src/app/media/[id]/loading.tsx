@@ -1,43 +1,52 @@
 export default function MediaDetailLoading() {
   return (
-    <div className="min-h-screen">
-      {/* Hero banner skeleton */}
-      <div className="relative h-[400px] bg-gradient-to-b from-violet-100 to-gray-50 animate-pulse" />
+    <div className="min-h-screen bg-background">
+      {/* Hero skeleton — matches actual dark hero layout */}
+      <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
+        <div className="container mx-auto px-4 py-8">
+          {/* Back button */}
+          <div className="h-10 w-24 bg-white/10 rounded-full mb-8 animate-pulse" />
 
-      <div className="container mx-auto px-4 -mt-32 relative z-10">
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Poster skeleton */}
-          <div className="flex-shrink-0">
-            <div className="w-64 h-96 bg-gray-200 rounded-2xl animate-pulse shadow-xl" />
-          </div>
-
-          {/* Info skeleton */}
-          <div className="flex-1 space-y-4 pt-4">
-            <div className="h-10 w-3/4 bg-white/80 rounded-lg animate-pulse" />
-            <div className="flex gap-2">
-              <div className="h-8 w-16 bg-violet-100 rounded-full animate-pulse" />
-              <div className="h-8 w-20 bg-gray-100 rounded-full animate-pulse" />
-              <div className="h-8 w-24 bg-gray-100 rounded-full animate-pulse" />
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+            {/* Poster skeleton */}
+            <div className="lg:w-1/4 shrink-0">
+              <div className="aspect-[2/3] rounded-xl bg-white/10 animate-pulse" />
             </div>
-            <div className="space-y-2 pt-4">
-              <div className="h-4 w-full bg-gray-100 rounded animate-pulse" />
-              <div className="h-4 w-5/6 bg-gray-100 rounded animate-pulse" />
-              <div className="h-4 w-4/6 bg-gray-100 rounded animate-pulse" />
+
+            {/* Info skeleton */}
+            <div className="flex-1 space-y-4">
+              {/* Badges */}
+              <div className="flex gap-3">
+                <div className="h-6 w-16 bg-white/10 rounded-full animate-pulse" />
+                <div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
+              </div>
+              {/* Title */}
+              <div className="h-8 w-3/4 bg-white/10 rounded animate-pulse" />
+              {/* Meta line */}
+              <div className="h-5 w-1/2 bg-white/10 rounded animate-pulse" />
+              {/* Synopsis lines */}
+              <div className="space-y-2 pt-2">
+                <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
+                <div className="h-4 w-5/6 bg-white/10 rounded animate-pulse" />
+                <div className="h-4 w-2/3 bg-white/10 rounded animate-pulse" />
+              </div>
+              {/* Rating bar */}
+              <div className="h-16 w-full bg-white/10 rounded-xl animate-pulse mt-4" />
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Tabs skeleton */}
-        <div className="mt-10 space-y-6">
-          <div className="flex gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 w-28 bg-gray-100 rounded-lg animate-pulse" />
-            ))}
+      {/* Content skeleton */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-gray-50 rounded-xl animate-pulse" />
-            ))}
+          <div className="space-y-6">
+            <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-60 bg-gray-100 rounded-xl animate-pulse" />
           </div>
         </div>
       </div>

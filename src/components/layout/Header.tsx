@@ -64,6 +64,16 @@ export function Header() {
       .catch(() => {})
   }, [session?.user?.id])
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = ""
+    }
+    return () => { document.body.style.overflow = "" }
+  }, [isMenuOpen])
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -369,7 +379,7 @@ export function Header() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="lg:hidden border-t bg-white">
+        <div className="lg:hidden border-t bg-white max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain touch-pan-y">
           <nav className="container mx-auto px-4 py-4 space-y-1">
             {navigation.map((item) => (
               <Link
