@@ -3,6 +3,139 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 
+// --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
+
+const GENTLE_TONES = new Set([
+  "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
+  "Drôle et léger", "Inspiré et motivant",
+])
+const DARK_TONES = new Set([
+  "Sombre et tendu", "Effrayant et angoissant", "Action intense",
+])
+
+function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, tmdbRating?: number | null): number {
+  if (expertAgeRec == null || memberAge == null) return 0.5
+  if (expertAgeRec > memberAge + 1) return 0.2
+  if (expertAgeRec > memberAge) return 0.7
+  const gap = memberAge - expertAgeRec
+  if (gap <= 3) return 1.0
+  if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
+  const rawPenalty = (gap - 3) * 0.10
+  let score = Math.max(0.30, 1.0 - rawPenalty)
+  const rating = tmdbRating ?? 0
+  if (rating >= 7.5) {
+    const boost = Math.min(0.25, (rating - 7.5) * 0.15)
+    score = Math.min(1.0, score + boost)
+  }
+  return score
+}
+
+function computeSensitivityScore(
+  metrics: { violence: number; sexNudity: number; language: number; substanceUse: number },
+  member: { sensitivityViolence: number; sensitivitySexual: number; sensitivityLanguage: number; sensitivitySubstances: number }
+): number {
+  const pairs: [number, number][] = [
+    [metrics.violence, member.sensitivityViolence],
+    [metrics.sexNudity, member.sensitivitySexual],
+    [metrics.language, member.sensitivityLanguage],
+    [metrics.substanceUse, member.sensitivitySubstances],
+  ]
+  let total = 0
+  let count = 0
+  for (const [metricValue, tolerance] of pairs) {
+    const effectiveTolerance = tolerance === 0 ? 2 : tolerance
+    const threshold = 4 - effectiveTolerance
+    const over = Math.max(0, metricValue - threshold)
+    total += Math.max(0, 1 - over * 0.25)
+    count++
+  }
+  return count === 0 ? 1.0 : total / count
+}
+
+function computeGenreScore(mediaGenres: string[], favoriteGenres: string[], dislikedGenres: string[] = []): number {
+  if (favoriteGenres.length === 0 && dislikedGenres.length === 0) return 0.5
+  const normalise = (s: string) => s.toLowerCase().trim()
+  const mediaSet = new Set(mediaGenres.map(normalise))
+  let score = 0.5
+  if (favoriteGenres.length > 0) {
+    const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
+    score = Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
+  }
+  if (dislikedGenres.length > 0) {
+    const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g))).length
+    score = Math.max(0, score - dislikedMatches * 0.3)
+  }
+  return score
+}
+
+function computeInterestsScore(mediaTopics: string[], emotionalThemes: string[], memberInterests: string[]): number {
+  if (memberInterests.length === 0) return 0.5
+  const normalise = (s: string) => s.toLowerCase().trim()
+  const mediaTagSet = new Set([...mediaTopics, ...emotionalThemes].map(normalise))
+  const matching = memberInterests.filter((i) => mediaTagSet.has(normalise(i))).length
+  if (matching === 0) return 0.3
+  return Math.min(1.0, 0.4 + matching * 0.2)
+}
+
+function computePositiveContentScore(
+  metrics: { positiveMessages: number; roleModels: number },
+  member: { preferPositiveMessages: number; preferRoleModels: number; preferEducational: number },
+  mediaTopics: string[]
+): number {
+  if (member.preferPositiveMessages <= 1 && member.preferRoleModels <= 1 && member.preferEducational <= 1) return 0.5
+  let score = 0.5
+  if (member.preferPositiveMessages >= 2) {
+    if (metrics.positiveMessages >= 4) score += 0.2
+    else if (metrics.positiveMessages >= 3) score += 0.1
+    else if (member.preferPositiveMessages === 3 && metrics.positiveMessages < 2) score -= 0.15
+  }
+  if (member.preferRoleModels >= 2) {
+    if (metrics.roleModels >= 4) score += 0.2
+    else if (metrics.roleModels >= 3) score += 0.1
+    else if (member.preferRoleModels === 3 && metrics.roleModels < 2) score -= 0.15
+  }
+  if (member.preferEducational >= 2) {
+    const isEducational = mediaTopics.some((t) => t === "Éducatif" || t === "Documentaire")
+    if (isEducational) score += 0.25
+    else if (member.preferEducational === 3) score -= 0.1
+  }
+  return Math.max(0, Math.min(1, score))
+}
+
+function computeAvoidScore(mediaTopics: string[], avoidTopics: string[]): number {
+  if (avoidTopics.length === 0) return 1.0
+  const normalise = (s: string) => s.toLowerCase().trim()
+  const mediaSet = new Set(mediaTopics.map(normalise))
+  return avoidTopics.some((t) => mediaSet.has(normalise(t))) ? 0 : 1.0
+}
+
+function computeToneScore(
+  toneTags: string[], pacing: string | null,
+  memberAge: number | null, sensitivityScary: number
+): number {
+  if (toneTags.length === 0 && !pacing) return 0.5
+  let score = 0.5
+  const hasGentle = toneTags.some((t) => GENTLE_TONES.has(t))
+  const hasDark = toneTags.some((t) => DARK_TONES.has(t))
+  if (memberAge !== null && memberAge < 7) {
+    if (hasGentle) score += 0.3
+    if (hasDark) score -= 0.4
+  } else if (memberAge !== null && memberAge < 13) {
+    if (hasGentle) score += 0.15
+    if (hasDark && sensitivityScary >= 2) score -= 0.3
+    else if (hasDark) score -= 0.1
+  } else {
+    if (hasGentle) score += 0.05
+    if (hasDark && sensitivityScary >= 3) score -= 0.15
+  }
+  if (pacing && memberAge !== null && memberAge < 5) {
+    if (pacing === "Rapide et frénétique") score -= 0.2
+    else if (pacing === "Dynamique") score -= 0.05
+    else if (pacing === "Très calme" || pacing === "Lent et contemplatif") score += 0.1
+  }
+  return Math.max(0, Math.min(1, score))
+}
+
 // GET /api/recommendations/family?memberIds=id1,id2,id3
 // Get recommendations for multiple family members (movie night mode)
 export async function GET(request: NextRequest) {
@@ -199,7 +332,7 @@ export async function GET(request: NextRequest) {
     const recommendations = await prisma.mediaItem.findMany({
       where: {
         id: { notIn: Array.from(allSeenMediaIds) },
-        type: { in: ["MOVIE", "TV"] },
+        type: "MOVIE",
         ...(hasGenres ? {
           OR: [
             { genres: { hasSome: sortedGenres } },
@@ -229,17 +362,13 @@ export async function GET(request: NextRequest) {
       for (const topic of prefs.avoidTopics) allAvoidTopics.add(topic)
     }
 
-    // Score each recommendation with a multi-factor approach:
-    // - 40% genre match (top genres only, not all)
-    // - 30% content sensitivity compatibility
-    // - 30% age appropriateness (with age gap penalty)
+    // Score each recommendation — same weighted formula as batch-family-fit
     const scoredRecommendations = recommendations
       .filter((media) => {
         const allGenresAndTopics = [...media.genres, ...media.topics]
         return !allGenresAndTopics.some(g => allDislikedGenres.has(g) || allAvoidTopics.has(g))
       })
       .map((media) => {
-        const allGenresAndTopics = [...media.genres, ...media.topics]
         const metrics = media.contentMetrics
 
         const memberMatches: Record<string, {
@@ -273,90 +402,54 @@ export async function GET(request: NextRequest) {
 
           membersWithPreferences++
 
-          // --- Genre match (50% of score) ---
-          const topGenreCount = Math.min(3, prefs.topGenres.length) || 1
-          const matchingGenres = prefs.topGenres.filter(g => allGenresAndTopics.includes(g)).length
-          const genreScore = Math.min(1, matchingGenres / topGenreCount) // 0-1
+          const ageScore = computeAgeScore(media.expertAgeRec, prefs.age, media.tmdbRating)
 
-          // --- Content sensitivity compatibility (30% of score) ---
-          let sensitivityScore = 1.0 // Start at perfect, deduct for issues
-          if (metrics) {
-            const checks = [
-              { level: metrics.violence, tolerance: prefs.sensitivity.violence },
-              { level: metrics.sexNudity, tolerance: prefs.sensitivity.sexual },
-              { level: metrics.language, tolerance: prefs.sensitivity.language },
-              { level: metrics.substanceUse, tolerance: prefs.sensitivity.substances },
-            ]
-            for (const check of checks) {
-              if (check.tolerance === 0) continue // Don't care
-              // Content level exceeds tolerance threshold: penalize proportionally
-              const threshold = check.tolerance === 3 ? 1 : check.tolerance === 2 ? 2 : 3
-              if (check.level > threshold) {
-                sensitivityScore -= 0.25 * (check.level - threshold)
-              }
-            }
-            // Bonus for positive content matching preferences
-            if (prefs.positivePrefs.positiveMessages >= 2 && metrics.positiveMessages >= 4) {
-              sensitivityScore += 0.1
-            }
-            if (prefs.positivePrefs.roleModels >= 2 && metrics.roleModels >= 4) {
-              sensitivityScore += 0.1
-            }
-            sensitivityScore = Math.max(0, Math.min(1, sensitivityScore))
-          }
+          const sensitivityScore = metrics
+            ? computeSensitivityScore(
+                { violence: metrics.violence, sexNudity: metrics.sexNudity, language: metrics.language, substanceUse: metrics.substanceUse },
+                { sensitivityViolence: prefs.sensitivity.violence, sensitivitySexual: prefs.sensitivity.sexual, sensitivityLanguage: prefs.sensitivity.language, sensitivitySubstances: prefs.sensitivity.substances }
+              )
+            : 0.5
 
-          // --- Age appropriateness (30% of score, with age gap penalty) ---
-          // Content too OLD for the viewer is hard-penalized.
-          // Content too YOUNG is soft-penalized based on the gap:
-          //   gap ≤ 3 → perfect (e.g. a 10-year-old watching a 7+ film)
-          //   gap 4-9 → gradual decline
-          //   gap 10+ → floor at 0.30
-          // Universal-appeal boost: highly-rated content (tmdbRating ≥ 7.5)
-          // suffers less penalty because it genuinely entertains all ages.
-          let ageScore = 0.5 // Neutral if we don't know
-          if (prefs.age !== null && media.expertAgeRec !== null) {
-            if (media.expertAgeRec > prefs.age + 1) {
-              // Content too old for the viewer
-              ageScore = 0.2
-            } else if (media.expertAgeRec > prefs.age) {
-              // 1 year over — close enough
-              ageScore = 0.7
-            } else {
-              // Content is at or below viewer's age — check the gap
-              const gap = prefs.age - media.expertAgeRec
-              if (gap <= 3) {
-                ageScore = 1.0 // Within range, no penalty
-              } else if (prefs.age >= 16 && media.expertAgeRec >= 10) {
-                ageScore = 1.0 // Adults watching mature content — no penalty
-              } else {
-                // Gradual penalty: each year beyond 3 costs 0.10
-                const rawPenalty = (gap - 3) * 0.10
-                ageScore = Math.max(0.30, 1.0 - rawPenalty)
+          const genreScore = computeGenreScore(media.genres, member.favoriteGenres || [], prefs.dislikedGenres)
 
-                // Universal-appeal boost for highly-rated content
-                // e.g. Pixar/Ghibli films score well across all ages
-                const tmdbRating = media.tmdbRating ?? 0
-                if (tmdbRating >= 7.5) {
-                  const boost = Math.min(0.25, (tmdbRating - 7.5) * 0.15)
-                  ageScore = Math.min(1.0, ageScore + boost)
-                }
-              }
-            }
-          } else if (media.expertAgeRec !== null && media.expertAgeRec <= 7) {
-            ageScore = 0.5
-          }
+          const interestsScore = computeInterestsScore(
+            media.topics,
+            metrics ? ((metrics.emotionalThemes ?? []) as string[]) : [],
+            member.interests || []
+          )
 
-          // Weighted combination
-          const rawScore = (genreScore * 0.40) + (sensitivityScore * 0.30) + (ageScore * 0.30)
-          const matchPercentage = Math.min(100, Math.max(0, Math.round(rawScore * 100)))
+          const positiveScore = metrics
+            ? computePositiveContentScore(
+                { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
+                prefs.positivePrefs,
+                media.topics
+              )
+            : 0.5
 
-          // Penalty for disliked genres
-          let penalty = 0
-          for (const disliked of prefs.dislikedGenres) {
-            if (allGenresAndTopics.includes(disliked)) penalty += 15
-          }
+          const avoidScore = computeAvoidScore(media.topics, prefs.avoidTopics)
 
-          const finalPercentage = Math.max(0, matchPercentage - penalty)
+          const toneScore = metrics
+            ? computeToneScore(
+                (metrics.toneTags ?? []) as string[],
+                (metrics.pacing ?? null) as string | null,
+                prefs.age,
+                prefs.sensitivity.scary
+              )
+            : 0.5
+
+          // Same weights as batch-family-fit & single family-fit
+          const rawScore =
+            ageScore * 0.30 +
+            sensitivityScore * 0.25 +
+            genreScore * 0.10 +
+            interestsScore * 0.10 +
+            0.10 * 0.5 + // affinity neutral (no reaction history in batch mode)
+            toneScore * 0.05 +
+            positiveScore * 0.05 +
+            avoidScore * 0.05
+
+          const finalPercentage = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
 
           memberMatches[member.id] = {
             name: member.name,

@@ -218,12 +218,12 @@ export function Header() {
           {/* Right Section */}
           <div className="flex items-center space-x-3 shrink-0">
             {status === "loading" ? (
-              <div className="h-8 w-20 bg-gray-100 animate-pulse rounded-full" />
+              <div className="h-8 w-8 sm:w-20 bg-gray-100 animate-pulse rounded-full" />
             ) : session?.user ? (
               <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200"
+                  className="flex items-center gap-2 px-2 sm:px-3 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-all duration-200"
                 >
                   <MemberAvatar
                     avatarStyle={userAvatar.style}
@@ -307,6 +307,11 @@ export function Header() {
               </div>
             ) : (
               <>
+                <Button variant="ghost" size="sm" className="sm:hidden p-2 rounded-full" asChild>
+                  <Link href="/connexion">
+                    <User className="h-5 w-5" />
+                  </Link>
+                </Button>
                 <Button variant="outline" size="sm" className="hidden sm:inline-flex rounded-full" asChild>
                   <Link href="/connexion">Connexion</Link>
                 </Button>
@@ -327,7 +332,7 @@ export function Header() {
         </div>
 
         {/* Mobile Search */}
-        <form onSubmit={handleSearch} className="md:hidden pb-3">
+        <form onSubmit={handleSearch} className="md:hidden pb-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -339,6 +344,27 @@ export function Header() {
             />
           </div>
         </form>
+
+        {/* Mobile Category Row */}
+        <nav className="lg:hidden flex items-center gap-1 pb-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors whitespace-nowrap"
+            >
+              <item.icon className="h-3.5 w-3.5" />
+              {item.name}
+            </Link>
+          ))}
+          <Link
+            href="/collections"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-full transition-colors whitespace-nowrap"
+          >
+            <Bookmark className="h-3.5 w-3.5" />
+            Collections
+          </Link>
+        </nav>
       </div>
 
       {/* Mobile Navigation */}
