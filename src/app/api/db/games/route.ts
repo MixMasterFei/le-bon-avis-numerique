@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       releaseDate: { lte: new Date() },
     }
 
-    // Require poster for featured sections
+    // Require poster (default true — games without posters are low quality)
     if (requirePoster || featured) {
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
@@ -53,6 +53,11 @@ export async function GET(request: NextRequest) {
         { posterUrl: { not: "" } },
         { posterUrl: { startsWith: "http" } },
       ]
+    }
+
+    // Require enrichment (expertAgeRec) unless searching or includeAll
+    if (!includeAll && !search) {
+      where.expertAgeRec = where.expertAgeRec ?? { not: null }
     }
 
     // Apply minimum quality filter (unless includeAll is set)
@@ -107,8 +112,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine sort order
-    let orderBy: any = { releaseDate: "desc" }
-    if (sortBy === "title") {
+    // Default: quality-weighted release date (best games first, then recent)
+    let orderBy: any = [{ dataQualityScore: "desc" }, { releaseDate: "desc" }]
+    if (sortBy === "releaseDate") {
+      orderBy = { releaseDate: "desc" }
+    } else if (sortBy === "title") {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {
       orderBy = { dataQualityScore: "desc" }

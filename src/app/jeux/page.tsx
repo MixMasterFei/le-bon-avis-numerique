@@ -92,6 +92,7 @@ export default function JeuxPage() {
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
           limit: ITEMS_PER_PAGE.toString(),
+          requirePoster: "true",
         })
         if (filters.maxAge < 18) {
           dbParams.set("maxAge", filters.maxAge.toString())
