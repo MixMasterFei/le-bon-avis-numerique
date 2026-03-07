@@ -422,7 +422,7 @@ export async function GET(request: NextRequest) {
           const positiveScore = metrics
             ? computePositiveContentScore(
                 { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
-                prefs.positivePrefs,
+                { preferPositiveMessages: prefs.positivePrefs.positiveMessages, preferRoleModels: prefs.positivePrefs.roleModels, preferEducational: prefs.positivePrefs.educational },
                 media.topics
               )
             : 0.5
