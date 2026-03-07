@@ -96,7 +96,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
   const completionPercent = [
     member.birthYear !== null ? 10 : 0,
     (member.avatarStyle != null || member.avatarEmoji !== "👧") ? 5 : 0,
-    (member.useCustomSettings && (member.favoriteGenres?.length ?? 0) > 0) ? 25 : 0,
+    (member.favoriteGenres?.length ?? 0) > 0 ? 25 : 0,
     [member.sensitivityViolence, member.sensitivityScary, member.sensitivitySexual, member.sensitivityLanguage, member.sensitivitySubstances]
       .some((v, i) => v !== [2, 2, 3, 2, 2][i]) ? 15 : 0,
     (member.avoidTopics?.length ?? 0) > 0 ? 5 : 0,
@@ -131,7 +131,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
+      <Card className="group relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 h-full flex flex-col">
         {/* Context menu */}
         <div className="absolute top-3 right-3 z-10">
           <DropdownMenu>
@@ -157,7 +157,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
           </DropdownMenu>
         </div>
 
-        <CardContent className="p-5">
+        <CardContent className="p-5 flex flex-col flex-1">
           {/* Header: Avatar + Name + Age */}
           <div className="flex flex-col items-center text-center mb-4">
             <MemberAvatar
@@ -269,7 +269,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-2 mt-auto pt-4">
             <Link href={`/profil/quiz/${member.id}`} className="flex-1">
               <Button variant="outline" size="sm" className="w-full text-xs gap-1">
                 <Sparkles className="h-3 w-3" />

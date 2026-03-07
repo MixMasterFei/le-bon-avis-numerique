@@ -19,6 +19,7 @@ interface MemberPreferences {
   favoriteGenres: string[]
   dislikedGenres: string[]
   avoidTopics: string[]
+  interests: string[]
 }
 
 interface CompatibilityResult {
@@ -60,6 +61,7 @@ function calculateMemberScore(
     roleModels: number
     genres: string[]
     topics: string[]
+    emotionalThemes: string[]
   }
 ): { score: number; concerns: string[] } {
   let score = 100
@@ -158,6 +160,14 @@ function calculateMemberScore(
     concerns.push(`Genre non apprécié: ${dislikedFound.join(", ")}`)
   }
 
+  // Interests matching (positive boost for topic/emotional theme overlap)
+  if (member.interests.length > 0) {
+    const normalise = (s: string) => s.toLowerCase().trim()
+    const mediaTagSet = new Set([...media.topics, ...media.emotionalThemes].map(normalise))
+    const matching = member.interests.filter((i) => mediaTagSet.has(normalise(i))).length
+    score += matching * 5 // +5 per matching interest
+  }
+
   // Topic avoidance (heavy penalty)
   const avoidedTopicsFound = member.avoidTopics.filter(t =>
     media.topics.includes(t) || media.genres.includes(t)
@@ -242,6 +252,7 @@ export async function POST(request: NextRequest) {
           favoriteGenres: member.favoriteGenres,
           dislikedGenres: member.dislikedGenres,
           avoidTopics: [...member.avoidTopics, ...(familySettings?.blockedTopics || [])],
+          interests: member.interests,
         }
       }
 
@@ -262,6 +273,7 @@ export async function POST(request: NextRequest) {
         favoriteGenres: member.favoriteGenres,
         dislikedGenres: member.dislikedGenres,
         avoidTopics: [...member.avoidTopics, ...familySettings.blockedTopics],
+        interests: member.interests,
       }
     })
 
@@ -329,9 +341,9 @@ export async function POST(request: NextRequest) {
       },
       take: 500,
       orderBy: [
+        { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+        { tmdbRating: { sort: "desc", nulls: "last" } },
         { dataQualityScore: "desc" },
-        { isEnriched: "desc" },
-        { title: "asc" },
       ],
     })
 
@@ -359,6 +371,7 @@ export async function POST(request: NextRequest) {
           roleModels: metrics.roleModels,
           genres: media.genres,
           topics: media.topics,
+          emotionalThemes: (metrics.emotionalThemes ?? []) as string[],
         })
 
         return {
@@ -402,8 +415,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Sort by family score and apply pagination
-    results.sort((a, b) => b.familyScore - a.familyScore)
+    // Sort by family score, then by popularity as tiebreaker
+    // Build a popularity lookup from the original DB results
+    const popularityMap = new Map<string, { voteCount: number; rating: number }>()
+    for (const media of mediaItems) {
+      popularityMap.set(media.id, {
+        voteCount: media.tmdbVoteCount ?? 0,
+        rating: media.tmdbRating ?? 0,
+      })
+    }
+    results.sort((a, b) => {
+      // Primary: family score descending
+      if (b.familyScore !== a.familyScore) return b.familyScore - a.familyScore
+      // Tiebreaker: popularity (vote count then rating)
+      const popA = popularityMap.get(a.mediaId) ?? { voteCount: 0, rating: 0 }
+      const popB = popularityMap.get(b.mediaId) ?? { voteCount: 0, rating: 0 }
+      if (popB.voteCount !== popA.voteCount) return popB.voteCount - popA.voteCount
+      return popB.rating - popA.rating
+    })
     const paginatedResults = results.slice(offset, offset + limit)
 
     return NextResponse.json({

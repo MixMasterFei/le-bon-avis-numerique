@@ -119,7 +119,7 @@ export function MemberPreferencesModal({
       const res = await fetch(`/api/user/family/${memberId}/preferences`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify({ ...preferences, useCustomSettings: true }),
       })
 
       if (res.ok) {
@@ -193,22 +193,11 @@ export function MemberPreferencesModal({
           <div className="text-center py-12 text-red-500">{error}</div>
         ) : preferences ? (
           <div className="space-y-6">
-            {/* Custom settings toggle */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <Label className="font-medium">Utiliser des parametres personnalises</Label>
-                <p className="text-sm text-gray-500">
-                  {preferences.useCustomSettings
-                    ? "Ce membre a ses propres preferences"
-                    : "Utilise les parametres par defaut de la famille"}
-                </p>
-              </div>
-              <Checkbox
-                checked={preferences.useCustomSettings}
-                onCheckedChange={(checked) =>
-                  updatePreference("useCustomSettings", Boolean(checked))
-                }
-              />
+            {/* Info note */}
+            <div className="p-3 bg-violet-50 rounded-lg">
+              <p className="text-sm text-violet-700">
+                Personnalisez les préférences de <strong>{memberName}</strong>. Ces réglages seront utilisés pour filtrer et recommander du contenu adapté.
+              </p>
             </div>
 
             {/* Tab navigation */}

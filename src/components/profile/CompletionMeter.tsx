@@ -47,7 +47,7 @@ function getCompletionItems(
   return [
     { label: "Ajouter l'année de naissance", done: member.birthYear !== null, weight: 10 },
     { label: "Choisir un avatar personnalisé", done: member.avatarStyle != null || member.avatarEmoji !== "👧", weight: 5 },
-    { label: "Compléter le quiz de préférences", done: member.useCustomSettings && member.favoriteGenres.length > 0, weight: 25 },
+    { label: "Définir les préférences (genres, sensibilité…)", done: member.favoriteGenres.length > 0, weight: 25 },
     { label: "Personnaliser les niveaux de sensibilité", done: sensitivityCustomized, weight: 15 },
     { label: "Ajouter des thèmes à éviter", done: member.avoidTopics.length > 0, weight: 5 },
     { label: "Ajouter au moins 3 réactions", done: reactionCount >= 3, weight: 15 },

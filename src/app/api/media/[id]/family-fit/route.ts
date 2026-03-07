@@ -102,15 +102,78 @@ function computeSensitivityScore(
   return count === 0 ? 1.0 : total / count
 }
 
-function computeGenreScore(mediaGenres: string[], favoriteGenres: string[]): number {
-  if (favoriteGenres.length === 0) return 0.5
+function computeGenreScore(mediaGenres: string[], favoriteGenres: string[], dislikedGenres: string[] = []): number {
+  if (favoriteGenres.length === 0 && dislikedGenres.length === 0) return 0.5
 
   const normalise = (s: string) => s.toLowerCase().trim()
   const mediaSet = new Set(mediaGenres.map(normalise))
-  const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
-  const denominator = Math.max(1, Math.min(3, favoriteGenres.length))
 
-  return Math.min(1.0, matching / denominator)
+  // Positive: favorite genre matches
+  let score = 0.5
+  if (favoriteGenres.length > 0) {
+    const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
+    const denominator = Math.max(1, Math.min(3, favoriteGenres.length))
+    score = Math.min(1.0, matching / denominator)
+  }
+
+  // Negative: disliked genre penalty (-0.3 per match)
+  if (dislikedGenres.length > 0) {
+    const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g))).length
+    score = Math.max(0, score - dislikedMatches * 0.3)
+  }
+
+  return score
+}
+
+function computeInterestsScore(mediaTopics: string[], emotionalThemes: string[], memberInterests: string[]): number {
+  if (memberInterests.length === 0) return 0.5
+
+  const normalise = (s: string) => s.toLowerCase().trim()
+  // Combine media topics + emotional themes for matching
+  const mediaTagSet = new Set([...mediaTopics, ...emotionalThemes].map(normalise))
+  const matching = memberInterests.filter((i) => mediaTagSet.has(normalise(i))).length
+
+  if (matching === 0) return 0.3 // slight penalty — no overlap
+  // 1 match = 0.6, 2 = 0.8, 3+ = 1.0
+  return Math.min(1.0, 0.4 + matching * 0.2)
+}
+
+function computePositiveContentScore(
+  metrics: { positiveMessages: number; roleModels: number },
+  member: { preferPositiveMessages: number; preferRoleModels: number; preferEducational: number },
+  mediaTopics: string[]
+): number {
+  // No strong preferences → neutral
+  if (member.preferPositiveMessages <= 1 && member.preferRoleModels <= 1 && member.preferEducational <= 1) return 0.5
+
+  let score = 0.5
+  let checks = 0
+
+  // Positive messages
+  if (member.preferPositiveMessages >= 2) {
+    checks++
+    if (metrics.positiveMessages >= 4) score += 0.2
+    else if (metrics.positiveMessages >= 3) score += 0.1
+    else if (member.preferPositiveMessages === 3 && metrics.positiveMessages < 2) score -= 0.15
+  }
+
+  // Role models
+  if (member.preferRoleModels >= 2) {
+    checks++
+    if (metrics.roleModels >= 4) score += 0.2
+    else if (metrics.roleModels >= 3) score += 0.1
+    else if (member.preferRoleModels === 3 && metrics.roleModels < 2) score -= 0.15
+  }
+
+  // Educational preference
+  if (member.preferEducational >= 2) {
+    checks++
+    const isEducational = mediaTopics.some((t) => t === "Éducatif" || t === "Documentaire")
+    if (isEducational) score += 0.25
+    else if (member.preferEducational === 3) score -= 0.1
+  }
+
+  return Math.max(0, Math.min(1, score))
 }
 
 function computeAvoidScore(mediaTopics: string[], avoidTopics: string[]): number {
@@ -192,6 +255,8 @@ function buildReason(
   genreScore: number,
   avoidScore: number,
   toneScore: number,
+  interestsScore: number,
+  positiveScore: number,
   memberAge: number | null,
   expertAgeRec: number | null,
   toneTags: string[]
@@ -232,9 +297,21 @@ function buildReason(
     }
   }
 
-  // Genre match
+  // Genre match / dislike
   if (genreScore >= 0.7) {
     parts.push("correspond à ses genres préférés")
+  } else if (genreScore <= 0.2) {
+    parts.push("genre non apprécié")
+  }
+
+  // Interests match
+  if (interestsScore >= 0.8) {
+    parts.push("correspond à ses centres d'intérêt")
+  }
+
+  // Positive content
+  if (positiveScore >= 0.8) {
+    parts.push("contenu éducatif/positif apprécié")
   }
 
   if (parts.length === 0) {
@@ -453,7 +530,7 @@ export async function GET(
           sensitivitySubstances: member.sensitivitySubstances,
         }
       )
-      const genreScore = computeGenreScore(media.genres, member.favoriteGenres)
+      const genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
       const avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
       const toneScore = computeToneScore(
         (metrics.toneTags ?? []) as string[],
@@ -461,15 +538,27 @@ export async function GET(
         memberAge,
         member.sensitivityScary
       )
+      const interestsScore = computeInterestsScore(
+        media.topics,
+        (metrics.emotionalThemes ?? []) as string[],
+        member.interests
+      )
+      const positiveScore = computePositiveContentScore(
+        { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
+        { preferPositiveMessages: member.preferPositiveMessages, preferRoleModels: member.preferRoleModels, preferEducational: member.preferEducational },
+        media.topics
+      )
 
-      // Weighted total with tone (35/30/10/5/10/10)
+      // Weighted total (30/25/10/10/10/5/5/5 = 100%)
       const rawScore =
-        ageScore * 0.35 +
-        sensitivityScore * 0.30 +
+        ageScore * 0.30 +
+        sensitivityScore * 0.25 +
         genreScore * 0.10 +
-        avoidScore * 0.05 +
+        interestsScore * 0.10 +
         affinityScore * 0.10 +
-        toneScore * 0.10
+        toneScore * 0.05 +
+        positiveScore * 0.05 +
+        avoidScore * 0.05
 
       const score = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
       const level = levelFromScore(score)
@@ -479,6 +568,8 @@ export async function GET(
         genreScore,
         avoidScore,
         toneScore,
+        interestsScore,
+        positiveScore,
         memberAge,
         media.expertAgeRec,
         (metrics.toneTags ?? []) as string[]
