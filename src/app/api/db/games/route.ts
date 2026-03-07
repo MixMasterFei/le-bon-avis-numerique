@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   const maxAge = searchParams.get("maxAge")
   const platform = searchParams.get("platform")
   const search = searchParams.get("q")
-  const sortBy = searchParams.get("sortBy") || "releaseDate" // releaseDate, quality, title
+  const sortBy = searchParams.get("sortBy") || "popularity" // popularity, releaseDate, quality, title
   const requirePoster = searchParams.get("requirePoster") === "true"
   const minQuality = searchParams.get("minQuality")
   const featured = searchParams.get("featured") === "true" // Get featured/popular games
@@ -118,7 +118,9 @@ export async function GET(request: NextRequest) {
       { tmdbRating: { sort: "desc", nulls: "last" } },
       { dataQualityScore: "desc" },
     ]
-    if (sortBy === "releaseDate") {
+    if (sortBy === "popularity") {
+      // Already set as default above
+    } else if (sortBy === "releaseDate") {
       orderBy = { releaseDate: "desc" }
     } else if (sortBy === "title") {
       orderBy = { title: "asc" }
