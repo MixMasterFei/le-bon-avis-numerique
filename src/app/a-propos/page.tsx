@@ -5,34 +5,34 @@ import { auth } from "@/lib/auth"
 
 export const metadata = {
   title: "À propos | Totem Avisé",
-  description: "Découvrez Totem Avisé — le moteur de recommandation qui aide les familles françaises à trouver les films, séries et jeux parfaits pour chaque membre du foyer.",
+  description: "Totem Avisé aide les familles françaises à trouver les films, séries et jeux adaptés à chaque membre du foyer.",
 }
 
 const howItWorks = [
   {
     step: "1",
     title: "Créez votre profil famille",
-    description: "Ajoutez chaque membre de votre foyer avec son âge et ses préférences. En 30 secondes, votre famille est prête.",
+    description: "Ajoutez chaque membre avec son âge et ses préférences. 30 secondes, c\u2019est fait.",
     icon: Users,
   },
   {
     step: "2",
-    title: "Recevez des recommandations",
-    description: "Notre moteur analyse chaque contenu sur 7 dimensions et le croise avec le profil de votre famille pour trouver ce qui convient à chacun.",
+    title: "On analyse, vous choisissez",
+    description: "Chaque contenu est passé au crible sur 7 critères (violence, langage, messages positifs\u2026) et croisé avec le profil de votre famille.",
     icon: Sparkles,
   },
   {
     step: "3",
     title: "Découvrez ensemble",
-    description: "Explorez par âge, par humeur ou par thème. Planifiez votre soirée cinéma en famille avec le bon contenu pour tout le monde.",
+    description: "Filtrez par âge, par humeur ou par thème. Trouvez le bon film pour le mercredi soir ou le jeu du week-end.",
     icon: Heart,
   },
 ]
 
 const stats = [
-  { label: "Contenus disponibles", value: "8 000+" },
-  { label: "Dimensions analysées", value: "7" },
-  { label: "Types de médias", value: "5" },
+  { label: "Contenus analysés", value: "8 000+" },
+  { label: "Critères évalués", value: "7" },
+  { label: "Types de médias", value: "4" },
 ]
 
 export default async function AProposPage() {
@@ -49,7 +49,7 @@ export default async function AProposPage() {
             À propos de Totem Avisé
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Trouvez le film, la série ou le jeu parfait pour chaque membre de votre famille — personnalisé selon l&apos;âge, les goûts et les sensibilités de chacun.
+            Le bon film pour le bon enfant, au bon moment. On aide les familles à s&apos;y retrouver dans la jungle des écrans.
           </p>
         </div>
       </section>
@@ -63,13 +63,13 @@ export default async function AProposPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">L&apos;histoire de Totem Avisé</h2>
                 <div className="space-y-4 text-gray-600 leading-relaxed">
                   <p>
-                    Tout a commencé par une question simple : <strong>&quot;Qu&apos;est-ce qu&apos;on regarde ce soir ?&quot;</strong> Avec des enfants d&apos;âges différents, trouver un contenu qui plaît à tout le monde — et qui convient à chacun — peut vite devenir un casse-tête.
+                    <strong>&quot;Qu&apos;est-ce qu&apos;on regarde ce soir ?&quot;</strong> La question revient chaque semaine. Et chaque semaine, c&apos;est le même problème : le petit veut un dessin animé, l&apos;aîné veut de l&apos;action, et les parents veulent être sûrs que personne ne va voir quelque chose d&apos;inadapté.
                   </p>
                   <p>
-                    Les classifications officielles donnent un âge, mais pas le contexte. Est-ce que ce film sera trop effrayant pour le petit dernier ? Est-ce que cette série captivera aussi l&apos;aîné ? Chaque famille est unique, et les réponses devraient l&apos;être aussi.
+                    Les classifications officielles donnent un âge, point final. Elles ne disent pas si le film va faire peur au petit dernier, ni si la série va captiver l&apos;ado. Chaque enfant est différent. Un gamin de 7 ans qui adore les dinosaures n&apos;a pas les mêmes besoins qu&apos;un autre du même âge qui a peur du noir.
                   </p>
                   <p>
-                    <strong>Totem Avisé</strong> a été créé pour résoudre exactement ce problème : un moteur de recommandation qui connaît votre famille et vous propose les contenus parfaits pour chaque moment — soirée cinéma, après-midi jeux, ou série à suivre ensemble.
+                    Totem Avisé est né de ce constat. On analyse chaque film, série et jeu sur 7 critères, on croise ça avec le profil de votre famille, et on vous dit ce qui colle vraiment. Pas de pub, pas de partenariat avec des studios. Juste des recommandations honnêtes pour les familles.
                   </p>
                 </div>
               </CardContent>
@@ -129,9 +129,9 @@ export default async function AProposPage() {
           <div className="text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
             {session ? (
               <>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Trouvez votre prochain coup de coeur</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">Trouvez votre prochain coup de cœur</h2>
                 <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-                  Explorez nos collections, utilisez les filtres par âge ou laissez notre moteur vous surprendre avec des recommandations personnalisées.
+                  Explorez nos collections par thème ou laissez-vous surprendre par les recommandations de votre famille.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
                   <Link
@@ -153,7 +153,7 @@ export default async function AProposPage() {
               <>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Essayez gratuitement</h2>
                 <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-                  Créez votre profil famille en 30 secondes et recevez des recommandations personnalisées pour chaque membre de votre foyer.
+                  Créez votre profil famille en 30 secondes. On s&apos;occupe du reste.
                 </p>
                 <div className="flex flex-wrap justify-center gap-4">
                   <Link

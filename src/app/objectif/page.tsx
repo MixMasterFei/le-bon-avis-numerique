@@ -4,46 +4,45 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Notre mission | Totem Avisé",
-  description: "Aider chaque famille à découvrir les films, séries et jeux parfaits pour chaque membre du foyer grâce à des recommandations personnalisées.",
+  description: "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer.",
 }
 
 const pillars = [
   {
     icon: Sparkles,
-    title: "Recommandations personnalisées",
-    description: "Chaque membre de votre famille a son profil. Nos suggestions s'adaptent à l'âge, aux goûts et aux sensibilités de chacun.",
+    title: "Adapté à chacun",
+    description: "Chaque membre de votre famille a son profil. Les suggestions tiennent compte de l\u2019âge, des goûts et de ce que chacun supporte ou pas. Un film parfait pour votre aîné de 12 ans n\u2019est pas forcément le bon pour le petit de 5 ans.",
     color: "text-violet-600",
     bg: "bg-violet-50",
   },
   {
     icon: Shield,
-    title: "Indépendance totale",
-    description: "Aucun studio, éditeur ou plateforme n'influence nos recommandations. Nous travaillons uniquement pour les familles.",
+    title: "Indépendants",
+    description: "Aucun studio, éditeur ou plateforme ne paie pour apparaître dans nos recommandations. Pas de pub, pas de placement, pas d\u2019affiliation. On travaille pour les familles, point.",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
   {
     icon: Users,
-    title: "Enrichi par la communauté",
-    description: "Les retours des familles améliorent nos recommandations en continu. Chaque réaction partagée bénéficie à tous.",
+    title: "Amélioré par les familles",
+    description: "Les parents qui utilisent Totem Avisé partagent leurs retours : \u00ab trop effrayant pour mon fils de 6 ans \u00bb, \u00ab ma fille de 9 ans a adoré \u00bb. Ces réactions améliorent les suggestions pour tout le monde.",
     color: "text-blue-600",
     bg: "bg-blue-50",
   },
   {
     icon: Lightbulb,
-    title: "Découverte facilitée",
-    description: "Par âge, par humeur, par thème ou par plateforme — trouvez le contenu idéal en quelques clics.",
+    title: "Simple à utiliser",
+    description: "Filtrez par âge, par genre, par plateforme de streaming ou par thème. Vous cherchez un film d\u2019aventure pour un enfant de 8 ans sur Disney+ ? Deux clics.",
     color: "text-amber-600",
     bg: "bg-amber-50",
   },
 ]
 
 const differences = [
-  "Recommandations personnalisées pour chaque membre de votre foyer",
-  "7 dimensions analysées : au-delà d'un simple âge recommandé",
-  "Prise en compte des messages positifs et des modèles inspirants",
-  "Filtrage par sensibilité : violence, langage, peur... selon vos limites",
-  "Films, séries, jeux vidéo, livres — tout au même endroit",
+  "On analyse 7 aspects du contenu, pas juste un âge minimum",
+  "On repère les messages positifs et les modèles inspirants",
+  "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur\u2026)",
+  "Films, séries, jeux vidéo, livres : tout au même endroit",
 ]
 
 export default function ObjectifPage() {
@@ -59,7 +58,7 @@ export default function ObjectifPage() {
             Notre mission
           </h1>
           <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Aider chaque famille à trouver le contenu parfait — celui qui plaît aux enfants, rassure les parents, et crée des moments partagés.
+            Aider chaque famille à trouver le contenu qui plaît aux enfants et rassure les parents.
           </p>
         </div>
       </section>
@@ -72,10 +71,10 @@ export default function ObjectifPage() {
               <CardContent className="p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Heart className="h-5 w-5 text-violet-500" />
-                  Ce que nous croyons
+                  Ce qu&apos;on croit
                 </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Chaque famille est unique. Un film parfait pour un enfant de 7 ans ne l&apos;est pas forcément pour un autre du même âge. Les goûts, les sensibilités et les valeurs de chaque foyer comptent — et les recommandations devraient en tenir compte.
+                  Chaque famille est unique. Un film parfait pour un enfant de 7 ans ne l&apos;est pas forcément pour un autre du même âge. Les goûts, les sensibilités et les valeurs de chaque foyer comptent. Les recommandations devraient en tenir compte.
                 </p>
               </CardContent>
             </Card>
@@ -83,10 +82,10 @@ export default function ObjectifPage() {
               <CardContent className="p-8">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-emerald-500" />
-                  Ce que nous proposons
+                  Ce qu&apos;on propose
                 </h2>
                 <p className="text-gray-600 leading-relaxed">
-                  Un moteur de recommandation qui connaît votre famille. Créez un profil pour chaque membre de votre foyer, et Totem Avisé vous suggère les films, séries et jeux qui correspondent vraiment — par âge, par goûts, et par moment.
+                  Un outil qui connaît votre famille. Créez un profil pour chaque membre, et Totem Avisé vous dit quels films, séries et jeux correspondent vraiment. Par âge, par goûts, par moment.
                 </p>
               </CardContent>
             </Card>
@@ -125,7 +124,7 @@ export default function ObjectifPage() {
           <div className="text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-3">Trouvez votre prochaine soirée en famille</h2>
             <p className="text-gray-600 mb-6">
-              Explorez des milliers de films, séries et jeux, filtrés pour votre famille.
+              Des milliers de films, séries et jeux analysés. Filtrés pour votre famille.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Link

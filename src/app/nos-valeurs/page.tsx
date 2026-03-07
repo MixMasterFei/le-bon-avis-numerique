@@ -4,7 +4,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Comment ça marche | Totem Avisé",
-  description: "Découvrez comment Totem Avisé analyse chaque contenu sur 7 dimensions pour vous recommander les films, séries et jeux parfaits pour votre famille.",
+  description: "Comment Totem Avisé analyse chaque contenu sur 7 critères pour recommander les films, séries et jeux adaptés à votre famille.",
 }
 
 const contentMetrics = [
@@ -135,7 +135,7 @@ export default function NosValeursPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Comment ça marche</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Découvrez comment nous analysons chaque contenu pour vous recommander ceux qui correspondent le mieux à votre famille.
+          Comment on évalue chaque contenu et pourquoi on recommande (ou pas) un film, une série ou un jeu pour votre famille.
         </p>
       </div>
 
@@ -148,18 +148,18 @@ export default function NosValeursPage() {
           </h2>
           <div className="space-y-4 text-gray-600">
             <p>
-              <strong>Totem Avisé</strong> est un moteur de recommandation conçu pour les familles.
-              Chaque contenu est analysé sur 7 dimensions pour que nos recommandations correspondent
-              vraiment à ce que vous cherchez — pas juste un âge, mais une compréhension complète.
+              <strong>Totem Avisé</strong> est fait pour les familles.
+              On analyse chaque contenu sur 7 critères pour aller au-delà d&apos;un simple âge minimum.
+              Violence, langage, messages positifs, modèles inspirants : on regarde tout.
             </p>
             <p>
-              Quand vous créez votre profil famille, notre moteur croise ces données avec l&apos;âge,
-              les sensibilités et les goûts de chaque membre de votre foyer.
-              Le résultat : des <strong>recommandations personnalisées</strong> qui s&apos;adaptent à votre famille.
+              Quand vous créez votre profil famille, on croise ces données avec l&apos;âge,
+              les sensibilités et les goûts de chaque membre.
+              Résultat : des suggestions qui collent vraiment à votre foyer.
             </p>
             <p>
-              Les retours de la <strong>communauté de familles</strong> enrichissent en continu
-              nos recommandations — chaque réaction partagée améliore les suggestions pour tout le monde.
+              Les retours des familles améliorent nos suggestions au fil du temps.
+              Quand un parent dit &quot;trop effrayant pour mon fils de 6 ans&quot;, ça profite à tout le monde.
             </p>
           </div>
         </CardContent>
@@ -330,13 +330,13 @@ export default function NosValeursPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-gray-600">
-            Plus les familles partagent leurs retours, plus nos recommandations deviennent pertinentes.
-            Les réactions de la communauté (mon enfant a adoré, c&apos;était trop effrayant, parfait pour cet âge...)
-            enrichissent directement le moteur de recommandation.
+            Plus les familles partagent leurs retours, plus les suggestions s&apos;affinent.
+            &quot;Mon enfant a adoré&quot;, &quot;c&apos;était trop effrayant&quot;, &quot;parfait pour cet âge&quot; :
+            chaque réaction améliore les recommandations pour tout le monde.
           </p>
           <p className="text-gray-600">
-            <strong>Participez</strong> en partageant les réactions de votre famille sur les contenus que vous connaissez.
-            Chaque retour améliore les recommandations pour toutes les familles.
+            Partagez les réactions de votre famille sur les contenus que vous connaissez.
+            Ça prend quelques secondes et ça aide toutes les familles.
           </p>
           <div className="flex gap-4 pt-4">
             <Link
@@ -366,10 +366,9 @@ export default function NosValeursPage() {
               Comment fonctionnent vos recommandations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Chaque contenu est analysé sur 7 dimensions (violence, langage, messages positifs, etc.)
-              à partir de multiples sources. Ces données sont ensuite croisées avec le profil
-              de votre famille — âge, sensibilités, goûts — pour générer des recommandations personnalisées.
-              Les retours de la communauté affinent ces recommandations en continu.
+              Chaque contenu est analysé sur 7 critères (violence, langage, messages positifs, substances, contenu sexuel, consumérisme, modèles positifs).
+              On croise ces données avec le profil de votre famille pour trouver ce qui colle.
+              Les retours des parents affinent les suggestions au fil du temps.
             </p>
           </div>
           <div>
@@ -389,9 +388,8 @@ export default function NosValeursPage() {
             </h3>
             <p className="text-gray-600 text-sm">
               Les classifications officielles donnent un âge minimum, point final.
-              Totem Avisé va plus loin : nous vous montrons exactement <em>pourquoi</em> un contenu
-              convient (ou pas) à un âge donné, et nos recommandations s&apos;adaptent aux sensibilités
-              propres à chaque membre de votre famille.
+              Totem Avisé vous montre <em>pourquoi</em> un contenu convient (ou pas) à un âge donné,
+              et les suggestions s&apos;adaptent aux sensibilités de chaque membre de votre famille.
             </p>
           </div>
         </CardContent>
