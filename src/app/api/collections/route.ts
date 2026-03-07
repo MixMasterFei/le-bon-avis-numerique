@@ -242,6 +242,7 @@ export async function GET(request: NextRequest) {
     const collectionsWithCounts = COLLECTIONS.map((collection) => {
       const matching = allItems
         .filter((item) => matchesQuery(item, collection.query))
+        .sort((a, b) => (b.tmdbRating ?? 7.0) - (a.tmdbRating ?? 7.0))
         .slice(0, collection.limit)
       const posters = matching
         .filter((item) => item.posterUrl)
@@ -312,15 +313,22 @@ async function getCollectionItems(query: Collection["query"], limit: number) {
   where.posterUrl = { not: null, notIn: ["/placeholder-poster.jpg", ""] }
   where.expertAgeRec = { not: null }
 
-  const items = await prisma.mediaItem.findMany({
+  // Fetch more than needed so we can sort nulls properly in JS
+  const raw = await prisma.mediaItem.findMany({
     where,
     include: { contentMetrics: true },
     orderBy: [
-      { tmdbRating: "desc" },
+      { tmdbRating: { sort: "desc", nulls: "last" } },
       { releaseDate: "desc" },
     ],
-    take: limit,
+    take: limit * 3,
   })
+
+  // Re-sort: treat null tmdbRating as 7.0 (decent default) so popular
+  // films without a backfilled rating don't get excluded
+  const items = raw
+    .sort((a, b) => (b.tmdbRating ?? 7.0) - (a.tmdbRating ?? 7.0))
+    .slice(0, limit)
 
   return items.map((item) => ({
     id: item.id,
