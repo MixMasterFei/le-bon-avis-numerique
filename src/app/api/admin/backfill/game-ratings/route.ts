@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     where: {
       type: "GAME",
       igdbId: { not: null },
-      tmdbRating: null,
+      tmdbVoteCount: null,
     },
     select: { id: true, igdbId: true, title: true },
     take: batchSize,
@@ -48,18 +48,19 @@ export async function POST(request: Request) {
       const rating = igdbGame.total_rating ? Math.round(igdbGame.total_rating) / 10 : null
       const voteCount = igdbGame.total_rating_count || null
 
-      if (rating || voteCount) {
-        await prisma.mediaItem.update({
-          where: { id: game.id },
-          data: {
-            tmdbRating: rating,
-            tmdbVoteCount: voteCount,
-          },
-        })
+      // Always update — set 0 for unrated games so they don't get re-queried
+      await prisma.mediaItem.update({
+        where: { id: game.id },
+        data: {
+          tmdbRating: rating ?? 0,
+          tmdbVoteCount: voteCount ?? 0,
+        },
+      })
+      if (rating) {
         updated++
         details.push(`${game.title}: ${rating}/10 (${voteCount} votes)`)
       } else {
-        details.push(`${game.title}: no rating on IGDB`)
+        details.push(`${game.title}: no rating (marked as 0)`)
       }
     } catch (error) {
       errors++
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
     updated,
     errors,
     remaining: await prisma.mediaItem.count({
-      where: { type: "GAME", igdbId: { not: null }, tmdbRating: null },
+      where: { type: "GAME", igdbId: { not: null }, tmdbVoteCount: null },
     }),
     details,
   })
