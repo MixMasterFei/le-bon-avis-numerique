@@ -64,6 +64,7 @@ interface MediaPageProps {
 
 // Extended type for database items with screenshots
 interface DatabaseMediaItem extends MockMediaItem {
+  numberOfSeasons?: number | null
   screenshots?: { id: string; url: string; width: number | null; height: number | null; order: number }[]
 }
 
@@ -136,6 +137,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       genres: dbMedia.genres || [],
       platforms: dbMedia.platforms || [],
       topics: dbMedia.topics || [],
+      numberOfSeasons: (dbMedia as any).numberOfSeasons ?? null,
       contentMetrics: dbMedia.contentMetrics
         ? {
             violence: dbMedia.contentMetrics.violence,
@@ -212,8 +214,8 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   if (!media) return {}
 
   const ageStr = media.expertAgeRec && media.expertAgeRec > 0
-    ? ` — À partir de ${media.expertAgeRec}+ ans ? Avis parents`
-    : " — Avis parents"
+    ? ` — Dès ${media.expertAgeRec} ans`
+    : ""
 
   const title = `${media.title}${ageStr}`
 
@@ -229,6 +231,9 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   return {
     title,
     description,
+    alternates: {
+      canonical: `/media/${id}`,
+    },
     keywords: [
       ...media.genres.slice(0, 5),
       typeLabel,
@@ -317,6 +322,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(media.numberOfSeasons && { numberOfSeasons: media.numberOfSeasons }),
         ...(aggregateRating && { aggregateRating }),
       }
       break

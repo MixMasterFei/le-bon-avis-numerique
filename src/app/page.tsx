@@ -1,6 +1,5 @@
 import Image from "next/image"
 import Link from "next/link"
-import { Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { RecommendationWizard } from "@/components/home/RecommendationWizard"
@@ -42,7 +41,7 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
           <div className="absolute inset-0">
             <Image
               src="/hero-banner.jpeg"
-              alt=""
+              alt="Famille regardant un film ensemble"
               fill
               className="object-cover"
               priority
@@ -55,10 +54,9 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
 
           <div className="container mx-auto px-4 py-14 md:py-20 relative">
             <div className="max-w-3xl mx-auto text-center">
-              <div className="inline-flex items-center gap-2 mb-6 px-5 py-2 bg-violet-600/15 backdrop-blur-sm rounded-full border border-violet-300/30">
-                <Shield className="h-5 w-5 text-emerald-600" />
-                <span className="text-sm font-medium text-gray-800">Trouvez les meilleurs contenus pour votre famille</span>
-              </div>
+              <h1 className="text-3xl md:text-4xl font-black text-gray-900 mb-6 drop-shadow-sm">
+                Trouvez les meilleurs contenus pour votre famille
+              </h1>
 
               <div className="max-w-xl mx-auto relative z-40">
                 <HeroSearch />

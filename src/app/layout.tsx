@@ -36,10 +36,13 @@ const edunline = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL("https://totemavise.com"),
   title: {
-    default: "Totem Avisé - Trouvez les films, séries et jeux parfaits pour votre famille",
+    default: "Totem Avisé — Films, Séries TV et Jeux Vidéo en famille",
     template: "%s | Totem Avisé",
   },
-  description: "Trouvez les films, séries et jeux parfaits pour chaque membre de votre famille. Recommandations personnalisées par âge, goûts et sensibilités. Gratuit et indépendant.",
+  description: "Trouvez les films, séries et jeux parfaits pour votre famille. Recommandations par âge, goûts et sensibilités. Gratuit.",
+  alternates: {
+    canonical: "/",
+  },
   keywords: ["recommandation film famille", "film pour enfant", "série netflix enfant", "jeux vidéo famille", "quoi regarder en famille", "recommandation par âge", "Totem Avisé", "totemavise"],
   authors: [{ name: "Totem Avisé" }],
   icons: {
@@ -55,6 +58,7 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     type: "website",
     siteName: "Totem Avisé",
+    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
   },
   twitter: {
     card: "summary_large_image",
