@@ -48,6 +48,9 @@ function transformGameToMediaItem(game: IGDBGame) {
     expertAgeRec: pegi?.age || null,
     director: developer?.company.name || null, // Using director field for developer
     topics: game.themes?.map((t) => t.name) || [],
+    // Store IGDB rating in shared rating fields (same as tmdbRating for movies)
+    tmdbRating: game.total_rating ? Math.round(game.total_rating) / 10 : null, // IGDB 0-100 → 0-10 scale
+    tmdbVoteCount: game.total_rating_count || null,
   }
 }
 

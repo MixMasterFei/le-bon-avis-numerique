@@ -112,8 +112,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine sort order
-    // Default: quality-weighted release date (best games first, then recent)
-    let orderBy: any = [{ dataQualityScore: "desc" }, { releaseDate: "desc" }]
+    // Default: popular games first (by IGDB rating stored in tmdbRating), then by quality score
+    let orderBy: any = [
+      { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+      { tmdbRating: { sort: "desc", nulls: "last" } },
+      { dataQualityScore: "desc" },
+    ]
     if (sortBy === "releaseDate") {
       orderBy = { releaseDate: "desc" }
     } else if (sortBy === "title") {
