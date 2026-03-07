@@ -229,7 +229,9 @@ export async function POST(request: NextRequest) {
     for (const media of mediaItems) {
       const metrics = media.contentMetrics ?? {
         violence: 0, sexNudity: 0, language: 0, substanceUse: 0,
+        positiveMessages: 3, roleModels: 3,
         toneTags: [] as string[], pacing: null as string | null,
+        emotionalThemes: [] as string[],
       }
 
       // Community-driven warning: enough parent flags to trigger warning

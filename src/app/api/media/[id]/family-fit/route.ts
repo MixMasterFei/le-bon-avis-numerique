@@ -379,8 +379,11 @@ export async function GET(
       sexNudity: 0,
       language: 0,
       substanceUse: 0,
+      positiveMessages: 3,
+      roleModels: 3,
       toneTags: [] as string[],
       pacing: null as string | null,
+      emotionalThemes: [] as string[],
     }
 
     // Family warning for 15+ content that's genuinely concerning
