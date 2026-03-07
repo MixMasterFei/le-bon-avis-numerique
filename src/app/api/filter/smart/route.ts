@@ -358,6 +358,7 @@ export async function POST(request: NextRequest) {
         substanceUse: 0,
         positiveMessages: 3,
         roleModels: 3,
+        emotionalThemes: [] as string[],
       }
 
       const memberResults = memberPreferences.map(member => {
