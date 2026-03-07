@@ -232,8 +232,8 @@ export async function GET(request: NextRequest) {
         tmdbRating: true,
       },
       where: {
-        // Quality gate: require poster and age rating
-        posterUrl: { not: null },
+        // Quality gate: require real poster (not placeholder) and age rating
+        posterUrl: { not: null, notIn: ["/placeholder-poster.jpg", ""] },
         expertAgeRec: { not: null },
       },
       orderBy: { tmdbRating: "desc" },
@@ -308,8 +308,8 @@ export async function GET(request: NextRequest) {
 async function getCollectionItems(query: Collection["query"], limit: number) {
   const where = buildWhereClause(query)
 
-  // Quality gates: require poster + age rating
-  where.posterUrl = { not: null }
+  // Quality gates: require real poster (not placeholder) + age rating
+  where.posterUrl = { not: null, notIn: ["/placeholder-poster.jpg", ""] }
   where.expertAgeRec = { not: null }
 
   const items = await prisma.mediaItem.findMany({
