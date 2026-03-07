@@ -51,6 +51,17 @@ export async function GET(
     if (!familyMember.useCustomSettings) {
       const familySettings = await prisma.familySettings.findUnique({
         where: { userId: session.user.id },
+        select: {
+          defaultSensitivityViolence: true,
+          defaultSensitivityScary: true,
+          defaultSensitivitySexual: true,
+          defaultSensitivityLanguage: true,
+          defaultSensitivitySubstances: true,
+          defaultPreferPositiveMessages: true,
+          defaultPreferRoleModels: true,
+          defaultPreferEducational: true,
+          blockedTopics: true,
+        },
       })
 
       if (familySettings) {
