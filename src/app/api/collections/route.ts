@@ -27,7 +27,7 @@ const COLLECTIONS: Collection[] = [
     id: "top-films-animation-enfants",
     title: "Top 15 des films d'animation pour enfants",
     description: "Les meilleurs dessins animés pour les tout-petits, des classiques aux pépites récentes.",
-    intro: "Le Robot sauvage a ému toute une génération de parents en 2024. Totoro continue de fasciner les enfants 35 ans après sa sortie. Certains films d'animation ont ce pouvoir de traverser les époques. On a réuni nos 15 préférés pour les plus petits, ceux qu'on regarde un mercredi pluvieux ou un dimanche matin sous la couette. Des histoires douces, drôles, parfois émouvantes, mais toujours adaptées aux plus jeunes.",
+    intro: "Certains films d'animation ont ce pouvoir de traverser les époques. Des classiques japonais aux pépites récentes, on a réuni nos 15 préférés pour les enfants, ceux qu'on regarde un mercredi pluvieux ou un dimanche matin sous la couette. Des histoires douces, drôles, parfois émouvantes, mais toujours adaptées aux plus jeunes.",
     emoji: "🎬",
     limit: 15,
     category: "top",
@@ -46,8 +46,8 @@ const COLLECTIONS: Collection[] = [
   {
     id: "top-disney",
     title: "Top 10 des classiques Disney",
-    description: "Les grands classiques Disney qui ont marqué des générations, du Roi Lion à la Reine des Neiges.",
-    intro: "On connaît les chansons par cœur. On pleure toujours aux mêmes scènes. Et on attend le bon moment pour les montrer à nos enfants, comme si on leur confiait un secret. Le Roi Lion, Aladdin, La Petite Sirène, La Reine des Neiges... Les classiques Disney de la Renaissance des années 90 et ceux qui ont renouvelé la magie depuis, le tout en 10 films.",
+    description: "Les grands classiques Disney qui ont marqué des générations.",
+    intro: "On connaît les chansons par cœur. On pleure toujours aux mêmes scènes. Et on attend le bon moment pour les montrer à nos enfants, comme si on leur confiait un secret. Les classiques de la Renaissance des années 90 et ceux qui ont renouvelé la magie depuis, le tout en 10 films.",
     emoji: "🏰",
     limit: 10,
     category: "top",
@@ -56,8 +56,8 @@ const COLLECTIONS: Collection[] = [
   {
     id: "top-pixar",
     title: "Top 10 des films Pixar",
-    description: "Les chefs-d'œuvre du studio Pixar : Toy Story, Vice-Versa, Coco et bien d'autres.",
-    intro: "Toy Story a changé l'animation en 1995. Depuis, Pixar n'a jamais vraiment baissé le niveau. Vice-Versa a mis des mots sur les émotions de nos enfants. Coco parle du deuil avec une justesse rare. Là-Haut fait pleurer tout le monde dès les dix premières minutes. Et Ratatouille reste le chouchou des Français avec près de 8 millions d'entrées. Nos 10 préférés, ceux qui touchent autant les parents que les petits.",
+    description: "Les chefs-d'œuvre du studio aux films inoubliables.",
+    intro: "Depuis le milieu des années 90, ce studio n'a jamais vraiment baissé le niveau. Des films qui mettent des mots sur les émotions de nos enfants, qui parlent du deuil avec justesse, qui font pleurer tout le monde dès les dix premières minutes. Nos 10 préférés, ceux qui touchent autant les parents que les petits.",
     emoji: "🚀",
     limit: 10,
     category: "top",
@@ -67,7 +67,7 @@ const COLLECTIONS: Collection[] = [
     id: "top-ghibli",
     title: "Top 10 Studio Ghibli",
     description: "L'univers poétique et enchanteur du studio japonais de Hayao Miyazaki.",
-    intro: "Si vos enfants ne connaissent pas encore Totoro, Chihiro ou Ponyo, c'est le moment. Le Studio Ghibli, fondé en 1985 par Hayao Miyazaki et Isao Takahata, a produit des films qu'on ne trouve nulle part ailleurs. Le Voyage de Chihiro a décroché l'Oscar et l'Ours d'or à Berlin. Princesse Mononoké a redéfini ce que l'animation pouvait raconter. Et les musiques de Joe Hisaishi restent en tête pendant des semaines. Des forêts qui respirent, des esprits bienveillants, des héroïnes courageuses. Ça ne ressemble à rien d'autre.",
+    intro: "Fondé en 1985 par deux maîtres de l'animation japonaise, ce studio a produit des films qu'on ne trouve nulle part ailleurs. Des œuvres récompensées aux Oscars et à Berlin, des musiques qui restent en tête pendant des semaines. Des forêts qui respirent, des esprits bienveillants, des héroïnes courageuses. Ça ne ressemble à rien d'autre.",
     emoji: "🌿",
     limit: 10,
     category: "top",
@@ -117,7 +117,7 @@ const COLLECTIONS: Collection[] = [
     id: "meilleurs-films-2025",
     title: "Meilleurs films 2025 pour les familles",
     description: "Les films sortis en 2025 les mieux notés et adaptés aux familles.",
-    intro: "Elio, le nouveau Pixar, emmène les enfants dans l'espace. Zootopie 2 arrive en fin d'année. 2025 a réservé de bonnes surprises au cinéma pour les familles. On met à jour cette liste au fil de l'année avec les films qui nous ont marqués, ceux qui font parler dans les cours de récré et ceux qu'on recommande sans hésiter.",
+    intro: "2025 a réservé de bonnes surprises au cinéma pour les familles. On met à jour cette liste au fil de l'année avec les films qui nous ont marqués, ceux qui font parler dans les cours de récré et ceux qu'on recommande sans hésiter.",
     emoji: "⭐",
     limit: 15,
     category: "top",
@@ -129,7 +129,7 @@ const COLLECTIONS: Collection[] = [
     id: "films-noel-famille",
     title: "Films de Noël en famille",
     description: "Les classiques et nouveautés pour des fêtes magiques en famille.",
-    intro: "Le sapin est monté, les guirlandes clignotent, le chocolat chaud est prêt. Il manque le film. Vous êtes plutôt Maman j'ai raté l'avion ou Le Pôle Express ? Les deux camps trouveront leur bonheur ici, des tout-petits aux grands-parents. De quoi tenir toutes les soirées des vacances de Noël.",
+    intro: "Le sapin est monté, les guirlandes clignotent, le chocolat chaud est prêt. Il manque le film. Classiques ou nouveautés, tous les camps trouveront leur bonheur ici, des tout-petits aux grands-parents. De quoi tenir toutes les soirées des vacances de Noël.",
     emoji: "🎄",
     limit: 15,
     category: "seasonal",
@@ -171,7 +171,7 @@ const COLLECTIONS: Collection[] = [
     id: "top-jeux-multijoueur-local",
     title: "Top 10 des jeux multijoueur canapé",
     description: "Les meilleurs jeux à partager sur le même écran, parfaits pour les soirées en famille.",
-    intro: "Tout le monde sur le canapé, les manettes qui s'échangent, et des fous rires. Overcooked pour cuisiner dans le chaos total, Mario Kart pour les courses endiablées, It Takes Two qui a été élu jeu de l'année. Pas besoin de deux consoles ni de connexion internet. Juste un écran et l'envie de jouer ensemble.",
+    intro: "Tout le monde sur le canapé, les manettes qui s'échangent, et des fous rires. Du chaos en cuisine, des courses endiablées, des aventures à deux qui ont été élues jeu de l'année. Pas besoin de deux consoles ni de connexion internet. Juste un écran et l'envie de jouer ensemble.",
     emoji: "🛋️",
     limit: 10,
     category: "top",
@@ -232,9 +232,10 @@ export async function GET(request: NextRequest) {
         tmdbRating: true,
       },
       where: {
-        // Quality gate: require real poster (not placeholder) and age rating
+        // Quality gate: require real poster (not placeholder), age rating, and already released
         posterUrl: { not: null, notIn: ["/placeholder-poster.jpg", ""] },
         expertAgeRec: { not: null },
+        releaseDate: { lte: new Date() },
       },
       orderBy: { tmdbRating: "desc" },
     })
@@ -309,9 +310,10 @@ export async function GET(request: NextRequest) {
 async function getCollectionItems(query: Collection["query"], limit: number) {
   const where = buildWhereClause(query)
 
-  // Quality gates: require real poster (not placeholder) + age rating
+  // Quality gates: require real poster (not placeholder), age rating, and already released
   where.posterUrl = { not: null, notIn: ["/placeholder-poster.jpg", ""] }
   where.expertAgeRec = { not: null }
+  where.releaseDate = { ...((where.releaseDate as object) || {}), lte: new Date() }
 
   // Fetch more than needed so we can sort nulls properly in JS
   const raw = await prisma.mediaItem.findMany({
