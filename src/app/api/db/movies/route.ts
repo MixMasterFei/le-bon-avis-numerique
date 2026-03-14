@@ -199,39 +199,40 @@ export async function GET(request: NextRequest) {
     // When weekly shuffle is active, fetch a larger pool then shuffle deterministically
     const fetchLimit = useWeeklyShuffle ? limit * 5 : limit
 
-    // Run sequentially for compatibility with pooled Postgres backends.
-    let movies = await withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where,
-        orderBy,
-        skip,
-        take: fetchLimit,
-        include: {
-          contentMetrics: true,
-          reviews: { select: { rating: true } },
-        },
-      })
-    )
+    // Run findMany and count in parallel for better performance
+    const [rawMovies, total] = await Promise.all([
+      withPrismaRetry(() =>
+        prisma.mediaItem.findMany({
+          where,
+          orderBy,
+          skip,
+          take: fetchLimit,
+          include: {
+            contentMetrics: true,
+            reviews: { select: { rating: true }, take: 50 },
+            _count: { select: { reviews: true } },
+          },
+        })
+      ),
+      withPrismaRetry(() => prisma.mediaItem.count({ where })).catch((countError) => {
+        console.warn("Movies count failed, using fallback total:", countError)
+        return skip + fetchLimit
+      }),
+    ])
+
+    let movies = rawMovies
 
     // Apply weekly shuffle: deterministic reorder based on ISO week number
     if (useWeeklyShuffle && movies.length > limit) {
       movies = seededShuffle(movies, getWeekSeed()).slice(0, limit)
     }
 
-    let total = movies.length
-    try {
-      total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
-    } catch (countError) {
-      console.warn("Movies count failed, using fallback total:", countError)
-      total = skip + movies.length
-    }
-
     // Transform to API format
     const transformedMovies = movies.map((movie) => {
       const ratings = movie.reviews.map((r) => r.rating)
-      const reviewCount = ratings.length
-      const reviewAvgRating = reviewCount > 0
-        ? Math.round((ratings.reduce((a, b) => a + b, 0) / reviewCount) * 10) / 10
+      const reviewCount = movie._count.reviews
+      const reviewAvgRating = ratings.length > 0
+        ? Math.round((ratings.reduce((a, b) => a + b, 0) / ratings.length) * 10) / 10
         : null
 
       return {

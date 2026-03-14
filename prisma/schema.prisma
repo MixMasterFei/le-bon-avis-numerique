@@ -176,6 +176,8 @@ model MediaItem {
   @@index([isEnriched])
   @@index([tmdbId])
   @@index([originalLanguage])
+  @@index([releaseDate])
+  @@index([type, releaseDate])
   @@map("media_items")
 }
 
