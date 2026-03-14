@@ -161,6 +161,33 @@ function computeToneScore(
   return Math.max(0, Math.min(1, score))
 }
 
+// Genres that should always flag caution, especially for minors
+const MATURE_GENRES = new Set(["horreur", "horror", "épouvante", "thriller", "crime"])
+
+function computeMatureContentPenalty(
+  mediaGenres: string[],
+  metrics: { violence: number; sexNudity: number },
+  expertAgeRec: number | null,
+  memberAge: number | null
+): number {
+  const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(g.toLowerCase()))
+  const hasHighViolence = metrics.violence >= 4
+  const hasHighSexual = metrics.sexNudity >= 4
+  const isMatureContent = hasMatureGenre || hasHighViolence || hasHighSexual
+
+  if (!isMatureContent) return 1.0
+
+  const isMinor = memberAge != null && memberAge < 18
+  const isChild = memberAge != null && memberAge < 13
+
+  if (isChild) return 0.25
+  if (isMinor) {
+    const isAgeAppropriate = expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
+    return isAgeAppropriate ? 0.55 : 0.35
+  }
+  return 1.0
+}
+
 // ---------------------------------------------------------------------------
 
 interface MemberFit {
@@ -241,13 +268,16 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      // Algorithmic family warning for 15+ content that's genuinely concerning
-      if (hasMinor && media.expertAgeRec != null && media.expertAgeRec >= 15) {
+      // Algorithmic family warning for mature/violent/horror content
+      if (hasMinor) {
         const hasConcerningGenre = media.genres.some((g) => CONCERNING_GENRES.has(g.toLowerCase()))
         const hasHighViolence = metrics.violence >= 4 || metrics.sexNudity >= 4
         const hasConcerningTone = ((metrics.toneTags ?? []) as string[]).some((t) => CONCERNING_TONES.has(t))
 
         if (hasConcerningGenre || hasHighViolence || hasConcerningTone) {
+          result[media.id] = { members: [], familyWarning: true }
+          continue
+        } else if (media.expertAgeRec != null && media.expertAgeRec >= 13 && (metrics.violence >= 3 || metrics.sexNudity >= 3)) {
           result[media.id] = { members: [], familyWarning: true }
           continue
         }
@@ -263,9 +293,17 @@ export async function POST(request: NextRequest) {
 
         let score: number
 
+        // Mature content penalty applies regardless of quiz completion
+        const maturePenaltyMultiplier = computeMatureContentPenalty(
+          media.genres,
+          { violence: metrics.violence, sexNudity: metrics.sexNudity },
+          media.expertAgeRec,
+          memberAge
+        )
+
         if (!hasPreferences) {
           // Age-only scoring for members without quiz
-          score = Math.round(Math.max(0, Math.min(100, ageScore * 100)))
+          score = Math.round(Math.max(0, Math.min(100, ageScore * maturePenaltyMultiplier * 100)))
         } else {
           const sensitivityScore = computeSensitivityScore(
             { violence: metrics.violence, sexNudity: metrics.sexNudity, language: metrics.language, substanceUse: metrics.substanceUse },
@@ -299,7 +337,7 @@ export async function POST(request: NextRequest) {
             positiveScore * 0.05 +
             avoidScore * 0.05
 
-          score = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
+          score = Math.round(Math.max(0, Math.min(100, rawScore * maturePenaltyMultiplier * 100)))
         }
 
         // Hard age gate: never show a child on content rated 3+ years above their age

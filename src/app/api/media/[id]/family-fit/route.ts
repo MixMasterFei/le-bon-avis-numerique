@@ -249,6 +249,50 @@ function levelFromScore(score: number): "excellent" | "good" | "moderate" | "poo
   return "poor"
 }
 
+// Genres that should always flag caution, especially for minors
+const MATURE_GENRES = new Set(["horreur", "horror", "épouvante", "thriller", "crime"])
+
+/**
+ * Compute a penalty for mature/violent/horror content.
+ * This applies regardless of quiz completion, based on genres + content metrics.
+ * Returns a multiplier: 1.0 = no penalty, 0.0 = maximum penalty.
+ */
+function computeMatureContentPenalty(
+  mediaGenres: string[],
+  metrics: { violence: number; sexNudity: number },
+  expertAgeRec: number | null,
+  memberAge: number | null
+): { multiplier: number; reason: string | null } {
+  const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(g.toLowerCase()))
+  const hasHighViolence = metrics.violence >= 4
+  const hasHighSexual = metrics.sexNudity >= 4
+  const isMatureContent = hasMatureGenre || hasHighViolence || hasHighSexual
+
+  if (!isMatureContent) return { multiplier: 1.0, reason: null }
+
+  const isMinor = memberAge != null && memberAge < 18
+  const isChild = memberAge != null && memberAge < 13
+
+  // Children under 13: strong penalty on horror/violent content
+  if (isChild) {
+    return { multiplier: 0.25, reason: "contenu mature inadapté aux enfants" }
+  }
+
+  // Teens 13-17: moderate penalty — these need parental attention
+  if (isMinor) {
+    // Even if age-appropriate (e.g., 15-year-old watching 15+ horror),
+    // parents should still see a warning
+    const isAgeAppropriate = expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
+    if (isAgeAppropriate) {
+      return { multiplier: 0.55, reason: "contenu mature, vigilance conseillée" }
+    }
+    return { multiplier: 0.35, reason: "contenu mature inadapté à son âge" }
+  }
+
+  // Adults: no score penalty, but add informational reason
+  return { multiplier: 1.0, reason: hasMatureGenre ? "contenu mature" : null }
+}
+
 function buildReason(
   ageScore: number,
   sensitivityScore: number,
@@ -386,17 +430,21 @@ export async function GET(
       emotionalThemes: [] as string[],
     }
 
-    // Family warning for 15+ content that's genuinely concerning
+    // Family warning for mature/violent/horror content when household has minors
     const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
     const CONCERNING_TONES = new Set(["Effrayant et angoissant", "Sombre et tendu", "Action intense"])
     let isFamilyWarning = false
 
-    if (hasMinor && media.expertAgeRec != null && media.expertAgeRec >= 15) {
+    if (hasMinor) {
       const hasConcerningGenre = media.genres.some((g) => CONCERNING_GENRES.has(g.toLowerCase()))
       const hasHighViolence = metrics.violence >= 4 || metrics.sexNudity >= 4
       const hasConcerningTone = ((metrics.toneTags ?? []) as string[]).some((t) => CONCERNING_TONES.has(t))
 
+      // Trigger warning for any horror/violent content (regardless of age rating)
+      // or for 13+ content with high violence/sexual metrics
       if (hasConcerningGenre || hasHighViolence || hasConcerningTone) {
+        isFamilyWarning = true
+      } else if (media.expertAgeRec != null && media.expertAgeRec >= 13 && (metrics.violence >= 3 || metrics.sexNudity >= 3)) {
         isFamilyWarning = true
       }
     }
@@ -491,17 +539,38 @@ export async function GET(
       const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating)
 
       // When quiz is NOT done, only use age score — don't inflate with defaults
+      // But still apply mature content penalty for horror/violent content
       if (!hasPreferences) {
-        const ageOnlyScore = Math.round(Math.max(0, Math.min(100, ageScore * 100)))
+        const maturePenalty = computeMatureContentPenalty(
+          media.genres,
+          { violence: metrics.violence, sexNudity: metrics.sexNudity },
+          media.expertAgeRec,
+          memberAge
+        )
+
+        const penalizedScore = ageScore * maturePenalty.multiplier
+        const ageOnlyScore = Math.round(Math.max(0, Math.min(100, penalizedScore * 100)))
         // Cap at "good" — never show "Excellent" without real preferences
         const level = ageOnlyScore >= 55 ? "good" as const : levelFromScore(ageOnlyScore)
-        const reason = ageScore >= 0.9
-          ? "Adapté à son âge"
-          : ageScore <= 0.3 && memberAge != null && media.expertAgeRec != null && media.expertAgeRec > memberAge
-            ? `Recommandé à partir de ${media.expertAgeRec} ans`
-            : ageScore <= 0.5 && memberAge != null && media.expertAgeRec != null && memberAge > media.expertAgeRec
-              ? "Peut sembler un peu jeune pour son âge"
-              : "Basé uniquement sur l'âge"
+
+        let reason: string
+        if (maturePenalty.reason && maturePenalty.multiplier < 1.0) {
+          // Mature content penalty takes priority in the reason
+          reason = maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1)
+        } else if (ageScore >= 0.9) {
+          reason = "Adapté à son âge"
+        } else if (ageScore <= 0.3 && memberAge != null && media.expertAgeRec != null && media.expertAgeRec > memberAge) {
+          reason = `Recommandé à partir de ${media.expertAgeRec} ans`
+        } else if (ageScore <= 0.5 && memberAge != null && media.expertAgeRec != null && memberAge > media.expertAgeRec) {
+          reason = "Peut sembler un peu jeune pour son âge"
+        } else {
+          reason = "Basé uniquement sur l'âge"
+        }
+
+        // For adults: add mature content info even without score penalty
+        if (maturePenalty.reason && maturePenalty.multiplier >= 1.0) {
+          reason = reason + ", " + maturePenalty.reason
+        }
 
         return {
           id: member.id,
@@ -563,9 +632,18 @@ export async function GET(
         positiveScore * 0.05 +
         avoidScore * 0.05
 
-      const score = Math.round(Math.max(0, Math.min(100, rawScore * 100)))
+      // Apply mature content penalty for horror/violent content
+      const maturePenalty = computeMatureContentPenalty(
+        media.genres,
+        { violence: metrics.violence, sexNudity: metrics.sexNudity },
+        media.expertAgeRec,
+        memberAge
+      )
+      const penalizedRawScore = rawScore * maturePenalty.multiplier
+
+      const score = Math.round(Math.max(0, Math.min(100, penalizedRawScore * 100)))
       const level = levelFromScore(score)
-      const reason = buildReason(
+      let reason = buildReason(
         ageScore,
         sensitivityScore,
         genreScore,
@@ -577,6 +655,14 @@ export async function GET(
         media.expertAgeRec,
         (metrics.toneTags ?? []) as string[]
       )
+
+      // Override reason if mature content penalty is the dominant factor
+      if (maturePenalty.reason && maturePenalty.multiplier < 1.0) {
+        reason = maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1)
+      } else if (maturePenalty.reason && maturePenalty.multiplier >= 1.0) {
+        // Adults: append mature content info
+        reason = reason + ", " + maturePenalty.reason
+      }
 
       return {
         id: member.id,
