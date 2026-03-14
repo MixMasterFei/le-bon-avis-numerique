@@ -80,18 +80,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const duration = Date.now() - startTime
-  await logCronRun("fix-posters", updated > 0 ? "success" : "skipped", duration, {
-    checked: items.length,
-    updated,
-    errors,
+  await logCronRun({
+    task: "fix-posters",
+    status: updated > 0 ? "success" : "partial",
+    summary: `Checked ${items.length}, updated ${updated}, errors ${errors}`,
+    details: { checked: items.length, updated, errors },
+    startTime,
   })
 
   return NextResponse.json({
     checked: items.length,
     updated,
     errors,
-    duration: `${duration}ms`,
+    duration: `${Date.now() - startTime}ms`,
     results,
   })
 }
