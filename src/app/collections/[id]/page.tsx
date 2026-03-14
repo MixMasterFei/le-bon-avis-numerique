@@ -16,6 +16,7 @@ interface CollectionData {
     emoji: string
     limit: number
     category: string
+    lastUpdated?: string
   }
   items: Array<{
     id: string
@@ -119,7 +120,11 @@ export default function CollectionPage() {
         <div className="mt-6 flex items-center gap-3 text-sm text-gray-400">
           <span>{data.total} titre{data.total > 1 ? "s" : ""} sélectionnés</span>
           <span>·</span>
-          <span>Mis à jour régulièrement</span>
+          <span>
+            {collection.lastUpdated
+              ? `Mis à jour en ${new Date(collection.lastUpdated + "-01").toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}`
+              : "Mis à jour régulièrement"}
+          </span>
         </div>
         <hr className="mt-6 border-gray-200" />
       </header>
@@ -222,7 +227,7 @@ export default function CollectionPage() {
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200 text-center">
         <p className="text-sm text-gray-400 mb-4">
-          Cette sélection est mise à jour régulièrement par notre équipe.
+          Cette sélection est éditée et vérifiée par notre équipe.
         </p>
         <Link
           href="/collections"
