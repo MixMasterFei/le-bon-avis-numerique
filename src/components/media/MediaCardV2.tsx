@@ -61,14 +61,14 @@ export interface MediaCardV2Props {
 
 function fitColor(score: number): string {
   if (score >= 75) return "bg-emerald-500"
-  if (score >= 55) return "bg-amber-500"
+  if (score >= 60) return "bg-amber-500"
   if (score >= 35) return "bg-orange-500"
   return "bg-red-500"
 }
 
 function fitDot(score: number): string {
   if (score >= 75) return "bg-emerald-400"
-  if (score >= 55) return "bg-amber-400"
+  if (score >= 60) return "bg-amber-400"
   if (score >= 35) return "bg-orange-400"
   return "bg-red-400"
 }

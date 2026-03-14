@@ -244,7 +244,7 @@ function computeToneScore(
 
 function levelFromScore(score: number): "excellent" | "good" | "moderate" | "poor" {
   if (score >= 75) return "excellent"
-  if (score >= 55) return "good"
+  if (score >= 60) return "good"
   if (score >= 35) return "moderate"
   return "poor"
 }
@@ -279,14 +279,13 @@ function computeMatureContentPenalty(
   }
 
   // Teens 13-17: moderate penalty — these need parental attention
+  // 0.45 for age-appropriate gives score 45 → "moderate" (not misleading "good")
   if (isMinor) {
-    // Even if age-appropriate (e.g., 15-year-old watching 15+ horror),
-    // parents should still see a warning
     const isAgeAppropriate = expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
     if (isAgeAppropriate) {
-      return { multiplier: 0.55, reason: "contenu mature, vigilance conseillée" }
+      return { multiplier: 0.45, reason: "contenu mature, vigilance conseillée" }
     }
-    return { multiplier: 0.35, reason: "contenu mature inadapté à son âge" }
+    return { multiplier: 0.25, reason: "contenu mature inadapté à son âge" }
   }
 
   // Adults: no score penalty, but add informational reason
@@ -551,7 +550,7 @@ export async function GET(
         const penalizedScore = ageScore * maturePenalty.multiplier
         const ageOnlyScore = Math.round(Math.max(0, Math.min(100, penalizedScore * 100)))
         // Cap at "good" — never show "Excellent" without real preferences
-        const level = ageOnlyScore >= 55 ? "good" as const : levelFromScore(ageOnlyScore)
+        const level = ageOnlyScore >= 60 ? "good" as const : levelFromScore(ageOnlyScore)
 
         let reason: string
         if (maturePenalty.reason && maturePenalty.multiplier < 1.0) {
@@ -680,9 +679,17 @@ export async function GET(
       }
     })
 
+    // Filter out adults from young kids' content (not useful to show on detail page)
+    const filteredMembers = members.filter((m) => {
+      if (m.age != null && m.age >= 16 && media.expertAgeRec != null && media.expertAgeRec < 10) {
+        return false
+      }
+      return true
+    })
+
     return NextResponse.json({
       status: isFamilyWarning ? "family_warning" : "ok",
-      members,
+      members: filteredMembers,
     })
   } catch (error) {
     console.error("Family fit error:", error)

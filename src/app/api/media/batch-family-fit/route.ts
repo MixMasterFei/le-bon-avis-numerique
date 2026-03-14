@@ -183,7 +183,7 @@ function computeMatureContentPenalty(
   if (isChild) return 0.25
   if (isMinor) {
     const isAgeAppropriate = expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
-    return isAgeAppropriate ? 0.55 : 0.35
+    return isAgeAppropriate ? 0.45 : 0.25
   }
   return 1.0
 }
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
             avatarSeed: member.avatarSeed,
             avatarOptions: member.avatarOptions as Record<string, unknown> | null,
             score,
-            level: score >= 75 ? "excellent" : score >= 55 ? "good" : score >= 35 ? "moderate" : "poor",
+            level: score >= 75 ? "excellent" : score >= 60 ? "good" : score >= 35 ? "moderate" : "poor",
           })
         }
       }
