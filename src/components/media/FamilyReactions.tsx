@@ -30,6 +30,9 @@ interface FamilyMemberWithReaction {
   birthYear: number | null
   birthMonth: number | null
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   reaction: {
     id: string
     reaction: string
@@ -61,7 +64,7 @@ const REACTIONS: {
   { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100", selectedBg: "bg-orange-100", ringColor: "ring-orange-400" },
 ]
 
-export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
+export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
@@ -205,8 +208,6 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
 
   // Show reactions with members who have reacted
   const membersWithReactions = members.filter((m) => m.reaction)
-  const membersWithoutReactions = members.filter((m) => !m.reaction)
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -254,9 +255,9 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg ${reactionInfo?.bgColor || "bg-gray-50"}`}
                 >
                   <MemberAvatar
-                    avatarStyle={(member as any).avatarStyle ?? null}
-                    avatarSeed={(member as any).avatarSeed ?? null}
-                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={member.avatarStyle ?? null}
+                    avatarSeed={member.avatarSeed ?? null}
+                    avatarOptions={(member.avatarOptions as Record<string, unknown>) ?? null}
                     avatarEmoji={member.avatarEmoji ?? null}
                     name={member.name}
                     size={20}
@@ -277,9 +278,9 @@ export function FamilyReactions({ mediaId, mediaTitle }: FamilyReactionsProps) {
               <div key={member.id} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <MemberAvatar
-                    avatarStyle={(member as any).avatarStyle ?? null}
-                    avatarSeed={(member as any).avatarSeed ?? null}
-                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={member.avatarStyle ?? null}
+                    avatarSeed={member.avatarSeed ?? null}
+                    avatarOptions={(member.avatarOptions as Record<string, unknown>) ?? null}
                     avatarEmoji={member.avatarEmoji ?? null}
                     name={member.name}
                     size={20}

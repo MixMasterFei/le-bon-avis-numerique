@@ -6,7 +6,7 @@ import { ArrowRight, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import type { MediaItem, MediaItem as MockMediaItem } from "@/lib/types"
 
 interface DbMovie {
   id: string
@@ -20,7 +20,7 @@ interface DbMovie {
   genres?: string[]
   platforms?: string[]
   topics?: string[]
-  contentMetrics?: any
+  contentMetrics?: MediaItem["contentMetrics"] | null
   toneTags?: string[]
   pacing?: string
 }

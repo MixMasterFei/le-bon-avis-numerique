@@ -14,9 +14,6 @@ const CONSOLE_PLATFORMS = [
   "PlayStation 4",
 ]
 
-// Exclude PC-only games (games that ONLY have these platforms)
-const PC_ONLY_PLATFORMS = ["PC", "Mac", "Linux"]
-
 // Default minimum quality to filter out obscure indie games
 // Higher = more strict, only well-known mainstream games
 const DEFAULT_MIN_QUALITY = 60
@@ -113,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     // Determine sort order
     // Default: popular games first (by IGDB rating stored in tmdbRating), then by quality score
-    let orderBy: any = [
+    let orderBy: Prisma.MediaItemOrderByWithRelationInput | Prisma.MediaItemOrderByWithRelationInput[] = [
       { tmdbVoteCount: { sort: "desc", nulls: "last" } },
       { tmdbRating: { sort: "desc", nulls: "last" } },
       { dataQualityScore: "desc" },

@@ -77,7 +77,7 @@ export function RequestContentModal({
       } else {
         setError(data.error || "Erreur lors de l'envoi")
       }
-    } catch (err) {
+    } catch {
       setError("Erreur de connexion")
     } finally {
       setSubmitting(false)

@@ -20,16 +20,6 @@ interface AvatarPickerProps {
 
 const FACES_PER_PAGE = 8
 
-/** Generate a batch of deterministic seeds */
-function generateSeedBatch(batchId: number): string[] {
-  const seeds: string[] = []
-  for (let i = 0; i < FACES_PER_PAGE; i++) {
-    // Use a deterministic-ish seed so the batch stays stable during renders
-    seeds.push(`pick-${batchId}-${i}-${Math.random().toString(36).slice(2, 8)}`)
-  }
-  return seeds
-}
-
 export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) {
   const [selectedBg, setSelectedBg] = useState<string | null>(
     (value.options?.backgroundColor as string) ?? null

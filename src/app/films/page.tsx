@@ -8,6 +8,29 @@ import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } fro
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
+interface ApiMediaRecord {
+  id: string | number
+  title?: string
+  originalTitle?: string
+  type?: string
+  releaseDate?: string | null
+  posterUrl?: string
+  synopsisFr?: string | null
+  officialRating?: string | null
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: MockMediaItem["contentMetrics"] | null
+  reviews?: unknown[]
+  reviewCount?: number
+  reviewAvgRating?: number | null
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
+  mediaId?: string
+}
+
 const ITEMS_PER_PAGE = 24
 
 export default function FilmsPage() {
@@ -27,7 +50,7 @@ export default function FilmsPage() {
     topics: [],
     searchQuery: "",
   })
-  const [source, setSource] = useState<"db" | "mock">("mock")
+  const [, setSource] = useState<"db" | "mock">("mock")
   const [dbMovies, setDbMovies] = useState<MockMediaItem[]>([])
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
@@ -47,7 +70,7 @@ export default function FilmsPage() {
           if (cinemaRes.ok) {
             const cinemaData = await cinemaRes.json()
             if (cinemaData.movies && cinemaData.movies.length > 0) {
-              const mapped: MockMediaItem[] = cinemaData.movies.map((m: any) => ({
+              const mapped: MockMediaItem[] = cinemaData.movies.map((m: ApiMediaRecord) => ({
                 id: String(m.id),
                 title: String(m.title || ""),
                 originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
@@ -104,7 +127,7 @@ export default function FilmsPage() {
           if (smartRes.ok) {
             const smartData = await smartRes.json()
             if (smartData.success && smartData.results) {
-              const mapped: MockMediaItem[] = smartData.results.map((r: any) => ({
+              const mapped: MockMediaItem[] = smartData.results.map((r: ApiMediaRecord) => ({
                 id: String(r.mediaId),
                 title: String(r.title || ""),
                 originalTitle: r.originalTitle ? String(r.originalTitle) : undefined,
@@ -167,7 +190,7 @@ export default function FilmsPage() {
         if (dbRes.ok) {
           const dbData = await dbRes.json()
           if (dbData.movies && dbData.movies.length > 0) {
-            const mapped: MockMediaItem[] = dbData.movies.map((m: any) => ({
+            const mapped: MockMediaItem[] = dbData.movies.map((m: ApiMediaRecord) => ({
               id: String(m.id),
               title: String(m.title || ""),
               originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,

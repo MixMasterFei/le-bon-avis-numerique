@@ -1,6 +1,6 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Loader2, Check, Plus, Sparkles, Film, ListOrdered } from "lucide-react"
@@ -77,7 +77,7 @@ interface FamilyMemberData {
 export default function ProfilPage() {
   const { data: session, status, update } = useSession()
   const [stats, setStats] = useState<UserStats | null>(null)
-  const [loadingStats, setLoadingStats] = useState(true)
+  const [, setLoadingStats] = useState(true)
   const [members, setMembers] = useState<FamilyMemberData[]>([])
   const [loadingMembers, setLoadingMembers] = useState(true)
 

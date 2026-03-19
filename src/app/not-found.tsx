@@ -1,4 +1,4 @@
-import { Search, Home, ArrowLeft } from "lucide-react"
+import { Search, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 

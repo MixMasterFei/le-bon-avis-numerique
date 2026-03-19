@@ -270,7 +270,7 @@ export async function POST(request: Request) {
         changes.push(
           `${movie.title} (${movieYear || "?"}): ${prev} → ${cncMatch.internalRating} [visa ${cncMatch.visaNumber}]`
         )
-      } catch (_err) {
+      } catch {
         errors++
       }
 

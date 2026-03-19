@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getPopularChildrensBooks, transformBook } from "@/lib/google-books"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const results = await getPopularChildrensBooks()
     const books = (results.items || []).map(transformBook)

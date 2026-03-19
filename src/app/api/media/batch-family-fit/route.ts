@@ -345,10 +345,7 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Hide adults from young kids' content cards (not relevant to show)
-        if (memberAge != null && memberAge >= 16 && media.expertAgeRec != null && media.expertAgeRec < 10) {
-          continue
-        }
+        // Adults always shown — universal-appeal content (Nintendo, Ghibli, etc.) is relevant to parents
 
         // Only include members with decent fit (>= 60)
         if (score >= 60) {

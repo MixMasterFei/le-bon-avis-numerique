@@ -268,6 +268,7 @@ export async function GET(request: NextRequest) {
 
     // Sort by score and take top 8
     recommendations.sort((a, b) => b.score - a.score)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const finalRecommendations = recommendations.slice(0, 8).map(({ score, ...media }) => media)
 
     return NextResponse.json({

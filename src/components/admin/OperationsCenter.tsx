@@ -139,7 +139,7 @@ const OPERATIONS: Array<{
       extractProgress: (data) => ({
         processed: data.results?.length || 0,
         total: data.results?.length || 0,
-        errors: data.results?.filter((r: any) => !r.success).length || 0,
+        errors: data.results?.filter((r: { success: boolean }) => !r.success).length || 0,
       }),
       buildSummary: (stats) => {
         const errs = stats.errors || 0

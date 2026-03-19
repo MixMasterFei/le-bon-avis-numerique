@@ -23,7 +23,7 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
 
   // Admin-only V2 preview: ?design=v2
   const searchParams = await props.searchParams
-  const isAdmin = (session?.user as any)?.role === "ADMIN"
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN"
   const useV2 = isAdmin && searchParams?.design === "v2"
 
   if (useV2) {

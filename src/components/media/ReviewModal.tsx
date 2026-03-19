@@ -30,6 +30,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear?: number | null
   birthMonth?: number | null
 }
@@ -71,7 +74,7 @@ export function ReviewModal({
   // Family member selection
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<string | null>(null)
-  const [loadingFamily, setLoadingFamily] = useState(false)
+  const [, setLoadingFamily] = useState(false)
 
   // Load family members when modal opens
   useEffect(() => {
@@ -197,9 +200,9 @@ export function ReviewModal({
                     )}
                   >
                     <MemberAvatar
-                      avatarStyle={(member as any).avatarStyle ?? null}
-                      avatarSeed={(member as any).avatarSeed ?? null}
-                      avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                      avatarStyle={member.avatarStyle ?? null}
+                      avatarSeed={member.avatarSeed ?? null}
+                      avatarOptions={member.avatarOptions ?? null}
                       avatarEmoji={member.avatarEmoji ?? null}
                       name={member.name}
                       size={20}
@@ -215,9 +218,9 @@ export function ReviewModal({
               </div>
               <p className="text-xs text-gray-500">
                 L&apos;avis sera publié au nom de : {reviewerDisplay.member && <MemberAvatar
-                  avatarStyle={(reviewerDisplay.member as any).avatarStyle ?? null}
-                  avatarSeed={(reviewerDisplay.member as any).avatarSeed ?? null}
-                  avatarOptions={((reviewerDisplay.member as any).avatarOptions as Record<string, unknown>) ?? null}
+                  avatarStyle={reviewerDisplay.member.avatarStyle ?? null}
+                  avatarSeed={reviewerDisplay.member.avatarSeed ?? null}
+                  avatarOptions={reviewerDisplay.member.avatarOptions ?? null}
                   avatarEmoji={reviewerDisplay.member.avatarEmoji ?? null}
                   name={reviewerDisplay.member.name}
                   size={16}

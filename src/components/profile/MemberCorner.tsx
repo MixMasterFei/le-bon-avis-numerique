@@ -16,11 +16,6 @@ import {
   X,
   Sparkles,
   Film,
-  Tv,
-  Gamepad2,
-  BookOpen,
-  Smartphone,
-  Save,
   Shield,
   Star,
   BarChart3,
@@ -38,6 +33,7 @@ import { MediaSearchAdd } from "./MediaSearchAdd"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
+import type { MediaType } from "@/lib/types"
 import { cn, formatAgeFromBirthYear } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
@@ -95,14 +91,6 @@ const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType
   BORED: { label: "S'est ennuyé", icon: Frown, color: "text-gray-500" },
   TOO_YOUNG: { label: "Trop jeune", icon: Baby, color: "text-blue-500" },
   TOO_OLD: { label: "Pas intéressé", icon: UserX, color: "text-orange-500" },
-}
-
-const TYPE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  MOVIE: Film,
-  TV: Tv,
-  GAME: Gamepad2,
-  BOOK: BookOpen,
-  APP: Smartphone,
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -532,7 +520,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 {member.reactions.slice(0, 5).map((reaction) => {
                   const config = REACTION_LABELS[reaction.reaction]
                   const Icon = config?.icon || Meh
-                  const routeId = toMediaRouteId(reaction.media.type as any, reaction.media.id)
+                  const routeId = toMediaRouteId(reaction.media.type as MediaType, reaction.media.id)
 
                   return (
                     <Link
@@ -621,7 +609,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               {filteredReactions.map((reaction) => {
                 const config = REACTION_LABELS[reaction.reaction]
                 const Icon = config?.icon || Meh
-                const routeId = toMediaRouteId(reaction.media.type as any, reaction.media.id)
+                const routeId = toMediaRouteId(reaction.media.type as MediaType, reaction.media.id)
 
                 return (
                   <div key={reaction.id} className="group relative">

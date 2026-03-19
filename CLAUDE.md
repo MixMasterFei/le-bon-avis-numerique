@@ -147,11 +147,11 @@ Automated maintenance across 3 days/week. All jobs use `CRON_SECRET` Bearer auth
 
 | Day | Time (UTC) | Tasks |
 |---|---|---|
-| Monday | 3:00 AM | Import new movies/TV from TMDB + Enrichment batch 1 (30 movies + 20 TV + 10 games) |
-| Thursday | 4:00 AM | Enrichment batch 2 (30 movies + 20 TV + 10 games) + Quality score recompute |
+| Monday | 3:00 AM | Import new movies/TV from TMDB + Enrichment batch 1 (10 movies + 10 TV + 10 games) |
+| Thursday | 4:00 AM | Enrichment batch 2 (10 movies + 10 TV + 10 games) + Quality score recompute |
 | Saturday | 5:00 AM | TMDB ratings backfill + Streaming platform updates + Similarity scores |
 
-**Total enrichment:** ~120 items/week via OpenAI GPT-4o-mini (~$0.20-0.50/week)
+**Total enrichment:** ~60 items/week via OpenAI GPT-4o-mini (~$0.10-0.25/week)
 
 **Manual trigger:** Actions tab > "Scheduled Maintenance" > Run workflow (select specific task)
 

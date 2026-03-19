@@ -26,8 +26,6 @@ function generateDiscussionPoints(
   title: string,
   type: string,
   metrics?: ContentMetrics,
-  genres?: string[],
-  topics?: string[]
 ): { icon: React.ElementType; category: string; question: string }[] {
   const points: { icon: React.ElementType; category: string; question: string }[] = []
 
@@ -92,7 +90,9 @@ export function TalkToYourKids({
   title,
   type,
   metrics,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   genres,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   topics,
   className
 }: TalkToYourKidsProps) {
@@ -101,7 +101,7 @@ export function TalkToYourKids({
   return null
 
   // Keep code below for potential future use with more specific/AI-generated content
-  const discussionPoints = generateDiscussionPoints(title, type, metrics, genres, topics)
+  const discussionPoints = generateDiscussionPoints(title, type, metrics)
 
   return (
     <Card className={cn("", className)}>

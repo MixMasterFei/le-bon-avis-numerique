@@ -14,6 +14,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
   birthMonth: number | null
   _count?: {
@@ -179,9 +182,9 @@ export function FamilyRecommendations() {
                 }`}
               >
                 <MemberAvatar
-                  avatarStyle={(member as any).avatarStyle ?? null}
-                  avatarSeed={(member as any).avatarSeed ?? null}
-                  avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                  avatarStyle={member.avatarStyle ?? null}
+                  avatarSeed={member.avatarSeed ?? null}
+                  avatarOptions={(member.avatarOptions as Record<string, unknown>) ?? null}
                   avatarEmoji={member.avatarEmoji ?? null}
                   name={member.name}
                   size={20}

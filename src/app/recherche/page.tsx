@@ -52,7 +52,7 @@ function RechercheContent() {
   const [results, setResults] = useState<MockMediaItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
-  const [source, setSource] = useState<"db" | "mock">("db")
+  const [, setSource] = useState<"db" | "mock">("db")
 
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim() || searchQuery.length < 2) {

@@ -145,7 +145,7 @@ export function UserMetricsModal({
       } else {
         setError(data.error || "Erreur lors de l'enregistrement")
       }
-    } catch (err) {
+    } catch {
       setError("Erreur de connexion")
     } finally {
       setSubmitting(false)

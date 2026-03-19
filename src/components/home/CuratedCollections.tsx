@@ -8,7 +8,7 @@ interface Collection {
   id: string
   title: string
   description: string
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   color: string
   bgGradient: string
   href: string

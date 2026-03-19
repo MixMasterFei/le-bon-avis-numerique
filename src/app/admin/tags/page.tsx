@@ -140,7 +140,7 @@ function TagsAdminContent() {
       } else {
         setMessage({ type: "error", text: data.error || "Failed to remove tag" })
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: "error", text: "An error occurred" })
     } finally {
       setActionLoading(false)

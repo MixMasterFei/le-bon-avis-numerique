@@ -188,7 +188,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Determine sort order
-    let orderBy: any = { releaseDate: "desc" }
+    let orderBy: Prisma.MediaItemOrderByWithRelationInput | Prisma.MediaItemOrderByWithRelationInput[] = { releaseDate: "desc" }
     if (sortBy === "title") {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {

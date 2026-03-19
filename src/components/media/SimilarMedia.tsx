@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "@/components/media/AgeBadge"
 import { toMediaRouteId } from "@/lib/media-route"
+import type { MediaType } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
 interface SimilarMediaProps {
@@ -101,7 +102,7 @@ export async function SimilarMedia({
       const fallback = await prisma.mediaItem.findMany({
         where: {
           id: { not: mediaId },
-          type: mediaType as any,
+          type: mediaType as MediaType,
           genres: { hasSome: genres },
           posterUrl: { not: null, startsWith: "http" },
           originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] },
@@ -209,7 +210,7 @@ export async function SimilarMedia({
         {similarMedia.map((item) => (
           <Link
             key={item.id}
-            href={`/media/${toMediaRouteId(item.type as any, item.id)}`}
+            href={`/media/${toMediaRouteId(item.type as MediaType, item.id)}`}
             className="group"
           >
             <div className="w-32 sm:w-36 shrink-0">

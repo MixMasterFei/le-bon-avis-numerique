@@ -1,16 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ArrowLeft, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { MemberCorner } from "@/components/profile/MemberCorner"
 import Link from "next/link"
 
 export default function MemberCornerPage() {
   const { memberId } = useParams<{ memberId: string }>()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
 
   useEffect(() => {

@@ -3,7 +3,6 @@ import {
   Gamepad2,
   Users,
   Globe,
-  Clock,
   DollarSign,
   Zap,
   BookOpen,
@@ -105,6 +104,7 @@ function StatusItem({
 }
 
 export function GameInfoCard({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   platforms,
   genres,
   gameModes,

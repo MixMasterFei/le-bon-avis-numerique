@@ -7,6 +7,29 @@ import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } fro
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
+interface ApiMediaRecord {
+  id: string | number
+  title?: string
+  originalTitle?: string
+  type?: string
+  releaseDate?: string | null
+  posterUrl?: string
+  synopsisFr?: string | null
+  officialRating?: string | null
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: MockMediaItem["contentMetrics"] | null
+  reviews?: unknown[]
+  reviewCount?: number
+  reviewAvgRating?: number | null
+  tmdbRating?: number | null
+  tmdbVoteCount?: number | null
+  mediaId?: string
+}
+
 const ITEMS_PER_PAGE = 24
 
 export default function SeriesPage() {
@@ -18,7 +41,7 @@ export default function SeriesPage() {
     topics: [],
     searchQuery: "",
   })
-  const [source, setSource] = useState<"db" | "mock">("mock")
+  const [, setSource] = useState<"db" | "mock">("mock")
   const [dbSeries, setDbSeries] = useState<MockMediaItem[]>([])
   const [dbTotalPages, setDbTotalPages] = useState(1)
   const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
@@ -59,7 +82,7 @@ export default function SeriesPage() {
           if (smartRes.ok) {
             const smartData = await smartRes.json()
             if (smartData.success && smartData.results) {
-              const mapped: MockMediaItem[] = smartData.results.map((r: any) => ({
+              const mapped: MockMediaItem[] = smartData.results.map((r: ApiMediaRecord) => ({
                 id: String(r.mediaId),
                 title: String(r.title || ""),
                 originalTitle: r.originalTitle ? String(r.originalTitle) : undefined,
@@ -121,7 +144,7 @@ export default function SeriesPage() {
         if (dbRes.ok) {
           const dbData = await dbRes.json()
           if (dbData.series && dbData.series.length > 0) {
-            const mapped: MockMediaItem[] = dbData.series.map((s: any) => ({
+            const mapped: MockMediaItem[] = dbData.series.map((s: ApiMediaRecord) => ({
               id: String(s.id),
               title: String(s.title || ""),
               originalTitle: s.originalTitle ? String(s.originalTitle) : undefined,

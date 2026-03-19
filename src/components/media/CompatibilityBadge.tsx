@@ -36,14 +36,6 @@ export function CompatibilityBadge({
 }: CompatibilityBadgeProps) {
   const [isOpen, setIsOpen] = useState(false)
 
-  // Determine color based on score
-  const getColor = (score: number) => {
-    if (score >= 80) return "bg-green-500"
-    if (score >= 60) return "bg-yellow-500"
-    if (score >= 40) return "bg-orange-500"
-    return "bg-red-500"
-  }
-
   const getTextColor = (score: number) => {
     if (score >= 80) return "text-green-700"
     if (score >= 60) return "text-yellow-700"

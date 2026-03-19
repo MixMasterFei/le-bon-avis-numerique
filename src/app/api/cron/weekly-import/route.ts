@@ -9,7 +9,6 @@ import {
   getMovieDetails,
   getFrenchCertification,
   getDirector,
-  getImageUrl,
   MovieGenres,
   mapCertificationToInternal,
   getPopularTVShows,
@@ -17,6 +16,8 @@ import {
   getTVFrenchRating,
   getMovieWatchProviders,
   getTVWatchProviders,
+  TMDBMovieDetails,
+  TMDBTVDetails,
 } from "@/lib/tmdb"
 import {
   uploadTMDBPoster,
@@ -24,7 +25,6 @@ import {
   isImageUrlValid,
   uploadPoster,
   isStorageEnabled,
-  isSupabaseUrl,
 } from "@/lib/supabase-storage"
 
 export const maxDuration = 60
@@ -55,7 +55,7 @@ interface ImportStats {
 
 // Check if a movie has French relevance (FR release, FR streaming, or French language)
 function hasMovieFrenchRelevance(
-  details: any,
+  details: TMDBMovieDetails,
   frCert: string | null
 ): boolean {
   // 1. French language original
@@ -63,18 +63,18 @@ function hasMovieFrenchRelevance(
   // 2. Has French certification (means it was released in France)
   if (frCert) return true
   // 3. Has FR release date entry (even without certification)
-  if (details.release_dates?.results?.some((r: any) => r.iso_3166_1 === "FR")) return true
+  if (details.release_dates?.results?.some((r: { iso_3166_1: string }) => r.iso_3166_1 === "FR")) return true
   return false
 }
 
 // Check if a TV show has French relevance
 function hasTVFrenchRelevance(
-  details: any,
+  details: TMDBTVDetails,
   frRating: string | null
 ): boolean {
   if (details.original_language === "fr") return true
   if (frRating) return true
-  if (details.content_ratings?.results?.some((r: any) => r.iso_3166_1 === "FR")) return true
+  if (details.content_ratings?.results?.some((r: { iso_3166_1: string }) => r.iso_3166_1 === "FR")) return true
   return false
 }
 
@@ -110,7 +110,7 @@ async function importMoviesFromSource(
         default:
           response = await getPopularMovies(page)
       }
-      allMovies.push(...response.results.map((m: any) => ({ id: m.id, title: m.title })))
+      allMovies.push(...response.results.map((m: { id: number; title: string }) => ({ id: m.id, title: m.title })))
       await new Promise((resolve) => setTimeout(resolve, 100))
     } catch {
       // Continue on page errors
@@ -151,7 +151,7 @@ async function importMoviesFromSource(
       const internalRating = mapCertificationToInternal(frCert)
       const ageRec = certificationToAge(frCert)
 
-      const genres = details.genres?.map((g: any) => g.name) || []
+      const genres = details.genres?.map((g: { id: number; name: string }) => g.name) || []
       const releaseDate = details.release_date ? new Date(details.release_date) : null
 
       // Pre-generate ID so we can upload images with deterministic paths
@@ -205,7 +205,7 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
   for (let page = 1; page <= pages; page++) {
     try {
       const response = await getPopularTVShows(page)
-      allShows.push(...response.results.map((s: any) => ({ id: s.id, name: s.name })))
+      allShows.push(...response.results.map((s: { id: number; name: string }) => ({ id: s.id, name: s.name })))
       await new Promise((resolve) => setTimeout(resolve, 100))
     } catch {
       // Continue
@@ -242,7 +242,7 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
       const internalRating = mapCertificationToInternal(frRating)
       const ageRec = certificationToAge(frRating)
 
-      const genres = details.genres?.map((g: any) => g.name) || []
+      const genres = details.genres?.map((g: { id: number; name: string }) => g.name) || []
       const releaseDate = details.first_air_date ? new Date(details.first_air_date) : null
 
       const id = randomUUID()

@@ -7,6 +7,27 @@ import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } fro
 import { Pagination } from "@/components/ui/pagination"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
+interface ApiMediaRecord {
+  id: string | number
+  title?: string
+  originalTitle?: string
+  type?: string
+  releaseDate?: string | null
+  posterUrl?: string
+  synopsisFr?: string | null
+  officialRating?: string | null
+  expertAgeRec?: number | null
+  communityAgeRec?: number | null
+  genres?: string[]
+  platforms?: string[]
+  topics?: string[]
+  contentMetrics?: MockMediaItem["contentMetrics"] | null
+  reviews?: unknown[]
+  reviewCount?: number
+  reviewAvgRating?: number | null
+  mediaId?: string
+}
+
 const ITEMS_PER_PAGE = 24
 
 export default function JeuxPage() {
@@ -57,7 +78,7 @@ export default function JeuxPage() {
           if (smartRes.ok) {
             const smartData = await smartRes.json()
             if (smartData.success && smartData.results) {
-              const mapped: MockMediaItem[] = smartData.results.map((r: any) => ({
+              const mapped: MockMediaItem[] = smartData.results.map((r: ApiMediaRecord) => ({
                 id: String(r.mediaId),
                 title: String(r.title || ""),
                 originalTitle: undefined,
@@ -117,7 +138,7 @@ export default function JeuxPage() {
         if (dbRes.ok) {
           const dbData = await dbRes.json()
           if (dbData.games && dbData.games.length > 0) {
-            const mapped: MockMediaItem[] = dbData.games.map((g: any) => ({
+            const mapped: MockMediaItem[] = dbData.games.map((g: ApiMediaRecord) => ({
               id: String(g.id),
               title: String(g.title || ""),
               originalTitle: undefined,

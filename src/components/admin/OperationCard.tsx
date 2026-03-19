@@ -149,7 +149,7 @@ export function OperationCard({
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
             {statLabels &&
               Object.entries(statLabels).map(([key, lbl]) => {
-                const val = (progress as any)[key]
+                const val = (progress as Record<string, unknown>)[key]
                 if (val === undefined || val === null) return null
                 return (
                   <span key={key} className="text-gray-600">

@@ -1,7 +1,7 @@
 "use client"
 
 import { Progress } from "@/components/ui/progress"
-import { cn, contentMetricLabels, getMetricColor } from "@/lib/utils"
+import { cn, contentMetricLabels } from "@/lib/utils"
 
 interface ContentMetrics {
   violence: number

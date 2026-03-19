@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { Prisma, StreamingType } from "@prisma/client"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     // Build where clause for media items
     const mediaType = searchParams.get("mediaType") // "MOVIE", "TV", or null for both
-    const mediaWhere: any = {
+    const mediaWhere: Prisma.MediaItemWhereInput = {
       posterUrl: { not: null, startsWith: "http" },
     }
     if (mediaType) {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by original language
     if (language) {
-      const languages = language.split(",").map((l: string) => l.trim())
+      const languages = language.split(",").map((l) => l.trim())
       mediaWhere.originalLanguage = { in: languages }
     }
 
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
         where: {
           provider: { contains: provider, mode: "insensitive" },
           country: "FR",
-          type: type as any,
+          type: type as StreamingType,
           media: mediaWhere,
         },
         include: {
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
           where: {
             provider: { contains: provider, mode: "insensitive" },
             country: "FR",
-            type: type as any,
+            type: type as StreamingType,
             media: mediaWhere,
           },
           select: { mediaId: true },

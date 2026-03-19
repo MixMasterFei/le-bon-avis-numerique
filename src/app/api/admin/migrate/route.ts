@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 // This endpoint helps verify/create tables if they don't exist
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     const session = await auth()
     if (!session?.user?.id) {

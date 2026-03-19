@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10")
     const status = searchParams.get("status")
 
-    const where: any = { userId: session.user.id }
+    const where: { userId: string; status?: string } = { userId: session.user.id }
     if (status) {
       where.status = status
     }

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { type, preset, limit = 20 } = body
+    const { preset, limit = 20 } = body
 
     if (!preset || !PRESETS[preset]) {
       return NextResponse.json(

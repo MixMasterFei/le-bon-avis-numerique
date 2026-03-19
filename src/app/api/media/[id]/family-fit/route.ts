@@ -147,11 +147,9 @@ function computePositiveContentScore(
   if (member.preferPositiveMessages <= 1 && member.preferRoleModels <= 1 && member.preferEducational <= 1) return 0.5
 
   let score = 0.5
-  let checks = 0
 
   // Positive messages
   if (member.preferPositiveMessages >= 2) {
-    checks++
     if (metrics.positiveMessages >= 4) score += 0.2
     else if (metrics.positiveMessages >= 3) score += 0.1
     else if (member.preferPositiveMessages === 3 && metrics.positiveMessages < 2) score -= 0.15
@@ -159,7 +157,6 @@ function computePositiveContentScore(
 
   // Role models
   if (member.preferRoleModels >= 2) {
-    checks++
     if (metrics.roleModels >= 4) score += 0.2
     else if (metrics.roleModels >= 3) score += 0.1
     else if (member.preferRoleModels === 3 && metrics.roleModels < 2) score -= 0.15
@@ -167,7 +164,6 @@ function computePositiveContentScore(
 
   // Educational preference
   if (member.preferEducational >= 2) {
-    checks++
     const isEducational = mediaTopics.some((t) => t === "Éducatif" || t === "Documentaire")
     if (isEducational) score += 0.25
     else if (member.preferEducational === 3) score -= 0.1
@@ -679,17 +675,9 @@ export async function GET(
       }
     })
 
-    // Filter out adults from young kids' content (not useful to show on detail page)
-    const filteredMembers = members.filter((m) => {
-      if (m.age != null && m.age >= 16 && media.expertAgeRec != null && media.expertAgeRec < 10) {
-        return false
-      }
-      return true
-    })
-
     return NextResponse.json({
       status: isFamilyWarning ? "family_warning" : "ok",
-      members: filteredMembers,
+      members,
     })
   } catch (error) {
     console.error("Family fit error:", error)

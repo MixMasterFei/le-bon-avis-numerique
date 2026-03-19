@@ -57,27 +57,27 @@ jobs:
           fi
           echo "::endgroup::"
 
-      - name: Enrich movies (batch of 30)
+      - name: Enrich movies (batch of 10)
         if: >-
           github.event.inputs.task != 'import'
         run: |
           echo "::group::Enrich movies"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"type":"movie","limit":30}' \
+            -d '{"type":"movie","limit":10}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           echo "::endgroup::"
 
-      - name: Enrich TV shows (batch of 20)
+      - name: Enrich TV shows (batch of 10)
         if: >-
           github.event.inputs.task != 'import'
         run: |
           echo "::group::Enrich TV"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"type":"tv","limit":20}' \
+            -d '{"type":"tv","limit":10}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           echo "::endgroup::"
 
@@ -86,7 +86,7 @@ jobs:
           github.event.inputs.task != 'import'
         run: |
           echo "::group::Enrich games"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"type":"game","limit":10}' \
@@ -105,27 +105,27 @@ jobs:
       github.event.inputs.task == 'quality' ||
       github.event.inputs.task == 'all'
     steps:
-      - name: Enrich movies (batch of 30)
+      - name: Enrich movies (batch of 10)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich movies"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"type":"movie","limit":30}' \
+            -d '{"type":"movie","limit":10}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           echo "::endgroup::"
 
-      - name: Enrich TV shows (batch of 20)
+      - name: Enrich TV shows (batch of 10)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich TV"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
-            -d '{"type":"tv","limit":20}' \
+            -d '{"type":"tv","limit":10}' \
             "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           echo "::endgroup::"
 
@@ -134,7 +134,7 @@ jobs:
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich games"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"type":"game","limit":10}' \
@@ -148,7 +148,7 @@ jobs:
         run: |
           echo "::group::Deep enrich"
           for i in 1 2; do
-            response=$(curl -sSfL -X POST \
+            response=$(curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"limit":5}' \
@@ -166,7 +166,7 @@ jobs:
           echo "::group::Quality scores"
           offset=0
           while true; do
-            response=$(curl -sSfL -X POST \
+            response=$(curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d "{\"limit\":500,\"offset\":$offset}" \
@@ -203,7 +203,7 @@ jobs:
         run: |
           echo "::group::Backfill ratings"
           for i in $(seq 1 20); do
-            response=$(curl -sSfL -X POST \
+            response=$(curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               "$SITE_URL/api/admin/backfill-ratings")
             remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null)
@@ -224,7 +224,7 @@ jobs:
         run: |
           echo "::group::Streaming movies"
           for offset in 0 50 100; do
-            curl -sSfL -X POST \
+            curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d "{\"limit\":50,\"offset\":$offset,\"mediaType\":\"MOVIE\"}" \
@@ -240,7 +240,7 @@ jobs:
         run: |
           echo "::group::Streaming TV"
           for offset in 0 50 100; do
-            curl -sSfL -X POST \
+            curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d "{\"limit\":50,\"offset\":$offset,\"mediaType\":\"TV\"}" \
@@ -255,7 +255,7 @@ jobs:
           github.event.inputs.task != 'streaming'
         run: |
           echo "::group::Similarity"
-          curl -sSfL -X POST \
+          curl -sSL -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"limit":100}' \

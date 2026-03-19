@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { getMovieDetails, getTVDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
-import { getGameDetails, getIGDBImageUrl, getPegiRating } from "@/lib/igdb"
 import { logCronRun } from "@/lib/cron-log"
 import OpenAI from "openai"
 
@@ -266,7 +264,7 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     let parsed
     try {
       parsed = JSON.parse(cleanedContent)
-    } catch (parseError) {
+    } catch {
       // If JSON parsing fails, log the content for debugging
       console.error(`JSON parse error for "${item.title}":`, cleanedContent.substring(0, 200))
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)

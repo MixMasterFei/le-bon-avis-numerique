@@ -35,7 +35,16 @@ interface DbMedia {
   genres?: string[]
   platforms?: string[]
   topics?: string[]
-  contentMetrics?: any
+  contentMetrics?: {
+    violence: number
+    sexNudity: number
+    language: number
+    consumerism: number
+    substanceUse: number
+    positiveMessages: number
+    roleModels: number
+    whatParentsNeedToKnow: string[]
+  } | null
   reviewCount?: number
   reviewAvgRating?: number | null
   tmdbRating?: number | null

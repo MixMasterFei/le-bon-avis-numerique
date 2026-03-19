@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Search, Users, SlidersHorizontal, Tv, ArrowRight, Sparkles, Film } from "lucide-react"
+import { Users, SlidersHorizontal, Tv, ArrowRight, Sparkles, Film } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { getMemberAge } from "@/lib/age-utils"
@@ -21,6 +21,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
   birthMonth: number | null
 }
@@ -97,9 +100,9 @@ function HeroV2({ session, familyMembers }: { session: HomepageV2Props["session"
                       className="group flex items-center gap-2 px-4 py-2.5 bg-white rounded-full border-2 border-violet-100 hover:border-violet-400 hover:shadow-md transition-all duration-200"
                     >
                       <MemberAvatar
-                        avatarStyle={(member as any).avatarStyle ?? null}
-                        avatarSeed={(member as any).avatarSeed ?? null}
-                        avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                        avatarStyle={member.avatarStyle ?? null}
+                        avatarSeed={member.avatarSeed ?? null}
+                        avatarOptions={member.avatarOptions ?? null}
                         avatarEmoji={member.avatarEmoji ?? null}
                         name={member.name}
                         size={24}
@@ -210,9 +213,9 @@ function ForYourFamily({ familyMembers }: { familyMembers: FamilyMember[] }) {
               }`}
             >
               <MemberAvatar
-                avatarStyle={(member as any).avatarStyle ?? null}
-                avatarSeed={(member as any).avatarSeed ?? null}
-                avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                avatarStyle={member.avatarStyle ?? null}
+                avatarSeed={member.avatarSeed ?? null}
+                avatarOptions={member.avatarOptions ?? null}
                 avatarEmoji={member.avatarEmoji ?? null}
                 name={member.name}
                 size={20}

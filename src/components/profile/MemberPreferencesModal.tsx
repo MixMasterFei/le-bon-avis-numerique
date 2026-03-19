@@ -10,8 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
 import { SensitivitySlider } from "@/components/ui/SensitivitySlider"
 import { TopicAvoider } from "@/components/ui/TopicAvoider"
 import {

@@ -83,7 +83,6 @@ interface ReviewSummaryProps {
 export function ReviewSummary({ reviews, className }: ReviewSummaryProps) {
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
   const kidReviews = reviews.filter((r) => r.role === "KID")
-  const educatorReviews = reviews.filter((r) => r.role === "EDUCATOR")
 
   const getAvgAge = (revs: Review[]) =>
     revs.length > 0

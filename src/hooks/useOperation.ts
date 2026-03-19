@@ -39,7 +39,7 @@ export interface OperationConfig {
   /** Delay between chunks in ms */
   delayMs?: number
   /** Extract progress from a single API response */
-  extractProgress: (data: any) => {
+  extractProgress: (data: Record<string, unknown>) => {
     processed: number
     total: number | null
     matched?: number
@@ -50,13 +50,13 @@ export interface OperationConfig {
   /** Build a summary string from accumulated stats */
   buildSummary: (stats: Record<string, number>) => string
   /** For chunked ops: determine if we're done */
-  isDone?: (data: any) => boolean
+  isDone?: (data: Record<string, unknown>) => boolean
   /** For chunked ops: get next URL params (e.g. offset) */
-  getNextParams?: (data: any, currentParams: URLSearchParams) => URLSearchParams | null
+  getNextParams?: (data: Record<string, unknown>, currentParams: URLSearchParams) => URLSearchParams | null
   /** Stat keys to accumulate across chunks */
   accumKeys?: string[]
   /** For the screenshots special case: detect rate limiting */
-  detectRateLimit?: (data: any, consecutiveEmpty: number) => boolean
+  detectRateLimit?: (data: Record<string, unknown>, consecutiveEmpty: number) => boolean
 }
 
 interface UseOperationReturn {
@@ -178,7 +178,7 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
           // Accumulate stats
           const keys = config.accumKeys || ["processed", "matched", "updated", "errors", "skipped"]
           for (const k of keys) {
-            const val = (chunkProgress as any)[k]
+            const val = (chunkProgress as Record<string, unknown>)[k]
             if (typeof val === "number") {
               accum[k] = (accum[k] || 0) + val
             }
@@ -200,7 +200,7 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
 
           // Rate limit detection (screenshots special case)
           if (config.detectRateLimit) {
-            const imported = (chunkProgress as any).imported ?? chunkProgress.updated ?? 0
+            const imported = (chunkProgress as Record<string, unknown>).imported as number | undefined ?? chunkProgress.updated ?? 0
             if (imported === 0 && (chunkProgress.errors || 0) > 0) {
               consecutiveEmpty++
             } else {
@@ -249,7 +249,7 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
         const chunkProgress = config.extractProgress(data)
         const keys = config.accumKeys || ["processed", "matched", "updated", "errors", "skipped"]
         for (const k of keys) {
-          const val = (chunkProgress as any)[k]
+          const val = (chunkProgress as Record<string, unknown>)[k]
           if (typeof val === "number") {
             accum[k] = val
           }

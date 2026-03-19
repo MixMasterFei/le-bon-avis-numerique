@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { Search, Film, Tv, Gamepad2, Loader2, Check, X } from "lucide-react"
+import { Search, Film, Tv, Gamepad2, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -74,7 +74,7 @@ export function QuickImportModal({
         setError(data.error)
         setResults([])
       }
-    } catch (err) {
+    } catch {
       setError("Erreur lors de la recherche")
       setResults([])
     } finally {
@@ -108,7 +108,7 @@ export function QuickImportModal({
       } else {
         setError(data.error || "Erreur lors de l'import")
       }
-    } catch (err) {
+    } catch {
       setError("Erreur lors de l'import")
     } finally {
       setImportingId(null)

@@ -120,7 +120,7 @@ function FilmsRechercheContent() {
         if (dbRes.ok) {
           const dbData = await dbRes.json()
           if (dbData.movies && dbData.movies.length > 0) {
-            const mapped: MockMediaItem[] = dbData.movies.map((m: any) => ({
+            const mapped: MockMediaItem[] = dbData.movies.map((m: Record<string, unknown>) => ({
               id: String(m.id),
               title: String(m.title || ""),
               originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
@@ -174,7 +174,7 @@ function FilmsRechercheContent() {
         }
         const data = await res.json()
         const movies = Array.isArray(data?.movies) ? data.movies : []
-        const mapped: MockMediaItem[] = movies.map((m: any) => ({
+        const mapped: MockMediaItem[] = movies.map((m: Record<string, unknown>) => ({
           id: String(m.id),
           title: String(m.title || ""),
           originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,

@@ -80,7 +80,7 @@ export function ImportPresetsBar({ onImportComplete }: ImportPresetsBarProps) {
           [preset.id]: { success: false, error: data.error },
         }))
       }
-    } catch (error) {
+    } catch {
       setResults((prev) => ({
         ...prev,
         [preset.id]: { success: false, error: "Erreur réseau" },

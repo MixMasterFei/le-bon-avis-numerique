@@ -9,11 +9,11 @@ import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import type { MediaItem, MediaItem as MockMediaItem } from "@/lib/types"
 
 type WizardType = "ALL" | "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
 
-const typeConfig: Array<{ value: WizardType; label: string; icon: any }> = [
+const typeConfig: Array<{ value: WizardType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { value: "ALL", label: "Tout", icon: Users },
   { value: "MOVIE", label: "Films", icon: Film },
   { value: "TV", label: "Séries", icon: Tv },
@@ -44,7 +44,7 @@ interface DbMedia {
   genres?: string[]
   platforms?: string[]
   topics?: string[]
-  contentMetrics?: any
+  contentMetrics?: MediaItem["contentMetrics"] | null
 }
 
 function mapDbToMockFormat(media: DbMedia): MockMediaItem {

@@ -15,6 +15,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
   birthMonth: number | null
   hasReactions: boolean
@@ -31,6 +34,9 @@ interface MediaRecommendation {
   memberMatches: Record<string, {
     name: string
     avatarEmoji: string
+    avatarStyle?: string | null
+    avatarSeed?: string | null
+    avatarOptions?: Record<string, unknown> | null
     matchScore: number
     matchPercentage: number
   }>
@@ -193,9 +199,9 @@ export function FamilyMovieNightSection() {
                   )}
                 >
                   <MemberAvatar
-                    avatarStyle={(member as any).avatarStyle ?? null}
-                    avatarSeed={(member as any).avatarSeed ?? null}
-                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={member.avatarStyle ?? null}
+                    avatarSeed={member.avatarSeed ?? null}
+                    avatarOptions={member.avatarOptions ?? null}
                     avatarEmoji={member.avatarEmoji ?? null}
                     name={member.name}
                     size={24}
@@ -307,9 +313,9 @@ export function FamilyMovieNightSection() {
                             title={`${match.name}: ${match.matchPercentage}%`}
                           >
                             <MemberAvatar
-                              avatarStyle={(match as any).avatarStyle ?? null}
-                              avatarSeed={(match as any).avatarSeed ?? null}
-                              avatarOptions={((match as any).avatarOptions as Record<string, unknown>) ?? null}
+                              avatarStyle={match.avatarStyle ?? null}
+                              avatarSeed={match.avatarSeed ?? null}
+                              avatarOptions={match.avatarOptions ?? null}
                               avatarEmoji={match.avatarEmoji ?? null}
                               name={match.name}
                               size={16}

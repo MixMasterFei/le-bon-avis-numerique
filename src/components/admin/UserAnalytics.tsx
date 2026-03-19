@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Star, MessageSquare, Clock } from "lucide-react"
+import { User, Star, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDistanceToNow } from "date-fns"
 import { fr } from "date-fns/locale"

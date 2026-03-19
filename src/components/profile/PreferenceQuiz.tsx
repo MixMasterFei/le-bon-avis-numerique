@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   Check,
   Loader2,
-  Sparkles,
   Film,
   Shield,
   Heart,
@@ -15,7 +14,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { TopicAvoider } from "@/components/ui/TopicAvoider"
 import { cn } from "@/lib/utils"
 

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process duplicates
-    for (const [title, duplicates] of gamesByTitle) {
+    for (const [, duplicates] of gamesByTitle) {
       if (duplicates.length <= 1) continue
 
       const primary = duplicates[0] // Keep the first (oldest) entry

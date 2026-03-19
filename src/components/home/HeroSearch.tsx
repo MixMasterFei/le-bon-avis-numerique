@@ -24,7 +24,7 @@ interface Suggestion {
   ageRec: number | null
 }
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   MOVIE: Film,
   TV: Tv,
   GAME: Gamepad2,

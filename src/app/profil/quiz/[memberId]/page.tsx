@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { ArrowLeft, Loader2, Sparkles } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PreferenceQuiz } from "@/components/profile/PreferenceQuiz"
 import Link from "next/link"
@@ -16,7 +16,7 @@ interface MemberInfo {
 
 export default function QuizPage() {
   const { memberId } = useParams<{ memberId: string }>()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const router = useRouter()
   const [member, setMember] = useState<MemberInfo | null>(null)
   const [loading, setLoading] = useState(true)

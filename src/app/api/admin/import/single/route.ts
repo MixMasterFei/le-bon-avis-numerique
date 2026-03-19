@@ -7,7 +7,6 @@ import {
   getFrenchCertification,
   getTVFrenchRating,
   getDirector,
-  getImageUrl,
   mapCertificationToInternal,
 } from "@/lib/tmdb"
 import {

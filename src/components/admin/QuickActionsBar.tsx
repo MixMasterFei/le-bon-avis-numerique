@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Plus, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Search, Film, Tv, Gamepad2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuickImportModal } from "./QuickImportModal"
 

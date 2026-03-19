@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ReportStatus } from "@prisma/client"
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get("status") || "PENDING"
 
     const reports = await prisma.reviewReport.findMany({
-      where: { status: status as any },
+      where: { status: status as ReportStatus },
       include: {
         user: {
           select: { id: true, name: true, email: true },

@@ -6,7 +6,7 @@ import { ArrowRight, Play, RefreshCw, Clock, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MediaCard } from "@/components/media/MediaCard"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import type { MediaItem, MediaItem as MockMediaItem } from "@/lib/types"
 
 interface StreamingMovie {
   id: string
@@ -19,7 +19,7 @@ interface StreamingMovie {
   expertAgeRec?: number | null
   communityAgeRec?: number | null
   genres?: string[]
-  contentMetrics?: any
+  contentMetrics?: MediaItem["contentMetrics"] | null
   toneTags?: string[]
   streaming?: {
     provider: string
@@ -34,7 +34,7 @@ function mapToMockFormat(movie: StreamingMovie): MockMediaItem {
     id: movie.id,
     title: movie.title,
     originalTitle: movie.originalTitle,
-    type: (movie.type as any) || "MOVIE",
+    type: (movie.type as MockMediaItem["type"]) || "MOVIE",
     releaseDate: movie.releaseDate ?? null,
     posterUrl: movie.posterUrl || "/placeholder-poster.jpg",
     synopsisFr: movie.synopsisFr ?? null,

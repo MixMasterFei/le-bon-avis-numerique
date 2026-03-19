@@ -7,12 +7,6 @@ export async function GET() {
   try {
     const movieTvFilter = { type: { in: ["MOVIE", "TV"] as ("MOVIE" | "TV")[] } }
 
-    // Valid internal certification values (French CSA + PEGI for games)
-    const validRatings = [
-      "TOUS_PUBLICS", "CSA_10", "CSA_12", "CSA_16", "CSA_18",
-      "PEGI_3", "PEGI_7", "PEGI_12", "PEGI_16", "PEGI_18",
-    ]
-
     const [
       total,
       withAgeRec,

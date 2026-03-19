@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { SimilaritySource } from "@prisma/client"
+import { SimilaritySource, MediaType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
 
 export const maxDuration = 60
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     let processed = 0
     let created = 0
-    let updated = 0
+    const updated = 0
 
     // Helper: save a similarity pair using upsert (avoids separate findFirst + create/update)
     async function savePair(idA: string, idB: string, score: number, reasons: string[]) {
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
         const candidates = await prisma.mediaItem.findMany({
           where: {
             id: { not: itemA.id },
-            type: itemA.type as any,
+            type: itemA.type as MediaType,
             isEnriched: true,
             posterUrl: { not: null },
             // Only fetch items that share at least one genre (drastically reduces candidates)

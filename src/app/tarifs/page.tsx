@@ -70,18 +70,6 @@ const plans: Plan[] = [
   },
 ]
 
-const testimonials = [
-  {
-    quote: "Enfin un site en francais qui comprend nos besoins de parents !",
-    author: "Marie L.",
-    role: "Maman de 2 enfants",
-  },
-  {
-    quote: "Les evaluations sont precises et m'aident vraiment a choisir.",
-    author: "Thomas D.",
-    role: "Papa de 3 enfants",
-  },
-]
 
 export default function TarifsPage() {
   return (

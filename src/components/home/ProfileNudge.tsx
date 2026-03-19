@@ -11,6 +11,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   useCustomSettings: boolean
   favoriteGenres: string[]
 }
@@ -63,9 +66,9 @@ export function ProfileNudge() {
           </h3>
           <div className="flex items-center gap-2 mb-2">
             <MemberAvatar
-              avatarStyle={(firstIncomplete as any).avatarStyle ?? null}
-              avatarSeed={(firstIncomplete as any).avatarSeed ?? null}
-              avatarOptions={((firstIncomplete as any).avatarOptions as Record<string, unknown>) ?? null}
+              avatarStyle={firstIncomplete.avatarStyle ?? null}
+              avatarSeed={firstIncomplete.avatarSeed ?? null}
+              avatarOptions={firstIncomplete.avatarOptions ?? null}
               avatarEmoji={firstIncomplete.avatarEmoji ?? null}
               name={firstIncomplete.name}
               size={24}

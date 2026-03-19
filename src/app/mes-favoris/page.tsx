@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { redirect } from "next/navigation"
-import { Heart, Loader2, Trash2 } from "lucide-react"
+import { Heart, Loader2 } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { Button } from "@/components/ui/button"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 export default function MesFavorisPage() {

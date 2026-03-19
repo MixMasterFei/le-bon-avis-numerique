@@ -7,7 +7,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -19,7 +18,6 @@ import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProviders } from "@/components/media/WatchProviders"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { FamilyFitCard } from "@/components/media/FamilyFitCard"
 import { FamilyFitHero } from "@/components/media/FamilyFitHero"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
 
@@ -137,7 +135,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       genres: dbMedia.genres || [],
       platforms: dbMedia.platforms || [],
       topics: dbMedia.topics || [],
-      numberOfSeasons: (dbMedia as any).numberOfSeasons ?? null,
+      numberOfSeasons: (dbMedia as unknown as { numberOfSeasons?: number | null }).numberOfSeasons ?? null,
       contentMetrics: dbMedia.contentMetrics
         ? {
             violence: dbMedia.contentMetrics.violence,
@@ -159,17 +157,20 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
             roleModels: 0,
             whatParentsNeedToKnow: [],
           },
-      reviews: dbMedia.reviews.map((r) => ({
-        id: r.id,
-        role: r.role as "PARENT" | "KID" | "EDUCATOR",
-        rating: r.rating,
-        ageSuggestion: r.ageSuggestion ?? 0,
-        comment: r.comment || "",
-        createdAt: r.createdAt.toISOString(),
-        editedAt: (r as any).editedAt?.toISOString() || null,
-        user: r.user ? { id: r.user.id, name: r.user.name, image: r.user.image } : undefined,
-        familyMember: (r as any).familyMember ? { id: (r as any).familyMember.id, name: (r as any).familyMember.name, avatarEmoji: (r as any).familyMember.avatarEmoji } : null,
-      })),
+      reviews: dbMedia.reviews.map((r) => {
+        const ext = r as unknown as { editedAt?: Date; familyMember?: { id: string; name: string; avatarEmoji?: string } }
+        return {
+          id: r.id,
+          role: r.role as "PARENT" | "KID" | "EDUCATOR",
+          rating: r.rating,
+          ageSuggestion: r.ageSuggestion ?? 0,
+          comment: r.comment || "",
+          createdAt: r.createdAt.toISOString(),
+          editedAt: ext.editedAt?.toISOString() || null,
+          user: r.user ? { id: r.user.id, name: r.user.name, image: r.user.image } : undefined,
+          familyMember: ext.familyMember ? { id: ext.familyMember.id, name: ext.familyMember.name, avatarEmoji: ext.familyMember.avatarEmoji } : null,
+        }
+      }),
       screenshots: dbMedia.screenshots?.map((s) => ({
         id: s.id,
         url: s.url,
@@ -208,7 +209,7 @@ const typeCategoryPaths: Record<string, { path: string; label: string }> = {
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: MediaPageProps): Promise<Metadata> {
   const { id } = await params
-  const { type, id: rawId } = parseMediaRouteId(id)
+  const { id: rawId } = parseMediaRouteId(id)
 
   const media = await fetchFromDatabase(rawId)
   if (!media) return {}

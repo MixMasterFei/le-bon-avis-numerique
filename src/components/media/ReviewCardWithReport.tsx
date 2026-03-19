@@ -56,6 +56,9 @@ interface Review {
     id: string
     name: string
     avatarEmoji: string
+    avatarStyle?: string | null
+    avatarSeed?: string | null
+    avatarOptions?: Record<string, unknown> | null
   } | null
 }
 
@@ -87,7 +90,8 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
   const [isSaving, setIsSaving] = useState(false)
 
   const isOwnReview = session?.user?.id === review.user?.id
-  const isAdmin = (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "MODERATOR"
+  const userWithRole = session?.user as { role?: string } | undefined
+  const isAdmin = userWithRole?.role === "ADMIN" || userWithRole?.role === "MODERATOR"
   const canDelete = isOwnReview || isAdmin
   const canEdit = isOwnReview
 
@@ -182,9 +186,9 @@ export function ReviewCardWithReport({ review, className, onDeleted, onUpdated }
               <div className="flex items-center gap-1.5">
                 {review.familyMember ? (
                   <MemberAvatar
-                    avatarStyle={(review.familyMember as any).avatarStyle ?? null}
-                    avatarSeed={(review.familyMember as any).avatarSeed ?? null}
-                    avatarOptions={((review.familyMember as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={review.familyMember.avatarStyle ?? null}
+                    avatarSeed={review.familyMember.avatarSeed ?? null}
+                    avatarOptions={review.familyMember.avatarOptions ?? null}
                     avatarEmoji={review.familyMember.avatarEmoji ?? null}
                     name={review.familyMember.name}
                     size={20}

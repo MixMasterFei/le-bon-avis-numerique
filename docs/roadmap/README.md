@@ -34,6 +34,17 @@ Full deployment plan from domain purchase to growth. 6 phases (A-F), prioritized
 
 ## Recent Completed Work (March 2026)
 
+### Mar 19 — ESLint Cleanup, Cron Fixes & Adult Scoring Fix (in progress)
+- **Adult filter removed**: Adults (Papa/Maman) no longer hidden from kid content (Nintendo, Ghibli, etc.) in family-fit and batch-family-fit routes
+- **Cron jobs fixed**: Reduced enrichment batch sizes (30→10) to avoid Vercel 60s timeout; dropped `-f` flag from curl to prevent pipeline failures
+- **ESLint warnings cleanup** (Phase F tech debt): Fixing all 222 warnings across 5 phases
+  - Phase 1 complete: Removed 77 unused imports/variables across ~50 files
+  - Phase 2 in progress: Replacing 110 `no-explicit-any` with proper types (~35 files, ~80% done)
+  - Phase 3 pending: Fix 18 React hooks warnings (set-state-in-effect, exhaustive-deps)
+  - Phase 4 pending: Fix 14 JSX/component warnings (unescaped entities, img element, empty object type)
+  - Phase 5 pending: Fix 2 prefer-const + restore ESLint rules from `warn` back to `error`
+- **Contact form verified**: End-to-end test confirmed Resend integration works
+
 ### Mar 5 — Age Precision, Family Fit Improvements & Community Warnings
 - **Birth month support**: Added `birthMonth` field to FamilyMember for precise age calculation (was year-only). Updated all scoring routes, UI components, forms (profil + onboarding). SQL migration: `sql/add_birth_month.sql`
 - **Adults hidden from kids' cards**: Homepage cards for content rated under 10 no longer show adult family members (16+)

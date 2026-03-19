@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getPopularGames, transformGame } from "@/lib/igdb"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const results = await getPopularGames()
     const games = results.map(transformGame)

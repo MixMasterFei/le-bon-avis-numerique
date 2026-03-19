@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
-import { Users, Popcorn, ChevronRight, ChevronDown, ChevronUp, Check, Sparkles, Film, RefreshCw } from "lucide-react"
+import { Users, Popcorn, ChevronDown, ChevronUp, Check, Sparkles, Film, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,9 @@ interface FamilyMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
   birthMonth: number | null
   hasReactions: boolean
@@ -32,6 +35,9 @@ interface MediaRecommendation {
   memberMatches: Record<string, {
     name: string
     avatarEmoji: string
+    avatarStyle?: string | null
+    avatarSeed?: string | null
+    avatarOptions?: Record<string, unknown> | null
     matchScore: number
     matchPercentage: number
   }>
@@ -138,9 +144,9 @@ export function FamilyMovieNight() {
                   )}
                 >
                   <MemberAvatar
-                    avatarStyle={(member as any).avatarStyle ?? null}
-                    avatarSeed={(member as any).avatarSeed ?? null}
-                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={member.avatarStyle ?? null}
+                    avatarSeed={member.avatarSeed ?? null}
+                    avatarOptions={(member.avatarOptions as Record<string, unknown>) ?? null}
                     avatarEmoji={member.avatarEmoji ?? null}
                     name={member.name}
                     size={24}
@@ -252,9 +258,9 @@ export function FamilyMovieNight() {
                             title={`${match.name}: ${match.matchPercentage}%`}
                           >
                             <MemberAvatar
-                              avatarStyle={(match as any).avatarStyle ?? null}
-                              avatarSeed={(match as any).avatarSeed ?? null}
-                              avatarOptions={((match as any).avatarOptions as Record<string, unknown>) ?? null}
+                              avatarStyle={match.avatarStyle ?? null}
+                              avatarSeed={match.avatarSeed ?? null}
+                              avatarOptions={(match.avatarOptions as Record<string, unknown>) ?? null}
                               avatarEmoji={match.avatarEmoji ?? null}
                               name={match.name}
                               size={16}

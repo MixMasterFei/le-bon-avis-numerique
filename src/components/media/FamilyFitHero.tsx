@@ -22,6 +22,9 @@ interface FamilyFitMember {
   id: string
   name: string
   avatarEmoji: string
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   age: number | null
   score: number
   level: "excellent" | "good" | "moderate" | "poor"
@@ -240,9 +243,9 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
                   <MemberAvatar
-                    avatarStyle={(member as any).avatarStyle ?? null}
-                    avatarSeed={(member as any).avatarSeed ?? null}
-                    avatarOptions={((member as any).avatarOptions as Record<string, unknown>) ?? null}
+                    avatarStyle={member.avatarStyle ?? null}
+                    avatarSeed={member.avatarSeed ?? null}
+                    avatarOptions={member.avatarOptions ?? null}
                     avatarEmoji={member.avatarEmoji ?? null}
                     name={member.name}
                     size={20}

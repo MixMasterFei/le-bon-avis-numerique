@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { CorrectionType } from "@prisma/client"
 
 // POST /api/corrections - Submit a new correction report
 export async function POST(request: NextRequest) {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       data: {
         mediaId,
         userId: session.user.id,
-        type: type as any,
+        type: type as CorrectionType,
         field: field || null,
         currentValue: currentValue || null,
         suggestedValue: suggestedValue || null,
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const mediaId = searchParams.get("mediaId")
 
-    const where: any = { userId: session.user.id }
+    const where: { userId: string; mediaId?: string } = { userId: session.user.id }
     if (mediaId) {
       where.mediaId = mediaId
     }

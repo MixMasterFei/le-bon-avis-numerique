@@ -64,7 +64,7 @@ function CreateMemberStep({
   existingMembers: CreatedMember[]
 }) {
   const [name, setName] = useState("")
-  const [emoji, setEmoji] = useState("👧")
+  const [emoji] = useState("👧")
   const [avatarValue, setAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [birthYear, setBirthYear] = useState("")
   const [birthMonth, setBirthMonth] = useState("")

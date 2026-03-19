@@ -15,9 +15,9 @@ interface AggregatedItem {
   source: "TMDB" | "IGDB" | "GOOGLE_BOOKS"
 }
 
-function normalizeItems(key: "movies" | "shows" | "games" | "books", data: any): AggregatedItem[] {
-  const list = Array.isArray(data?.[key]) ? data[key] : []
-  return list.map((item: any) => ({
+function normalizeItems(key: "movies" | "shows" | "games" | "books", data: Record<string, unknown>): AggregatedItem[] {
+  const list = Array.isArray(data?.[key]) ? (data[key] as Record<string, unknown>[]) : []
+  return list.map((item: Record<string, unknown>) => ({
     id: String(item.id),
     title: String(item.title || ""),
     originalTitle: item.originalTitle ? String(item.originalTitle) : undefined,
