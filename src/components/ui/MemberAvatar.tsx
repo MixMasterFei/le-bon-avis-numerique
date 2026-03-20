@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import Image from "next/image"
 import { getAvatarDataUri, resolveAvatar } from "@/lib/avatar"
 import { cn } from "@/lib/utils"
 
@@ -46,11 +47,12 @@ export function MemberAvatar({
     : ""
 
   return (
-    <img
+    <Image
       src={avatarUri}
       alt={name ? `Avatar de ${name}` : "Avatar"}
       width={size}
       height={size}
+      unoptimized
       className={cn(
         "rounded-full bg-gray-50 flex-shrink-0",
         ringClasses,

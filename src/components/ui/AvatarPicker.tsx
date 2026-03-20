@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
+import Image from "next/image"
 import { getAvatarDataUri, AVATAR_STYLES, BACKGROUND_COLORS, randomSeed, DEFAULT_STYLE } from "@/lib/avatar"
 import { cn } from "@/lib/utils"
 import { RefreshCw } from "lucide-react"
@@ -122,11 +123,12 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
               aria-label={`Style ${s.label}`}
               aria-pressed={value.style === s.id}
             >
-              <img
+              <Image
                 src={s.preview}
                 alt={s.label}
                 width={32}
                 height={32}
+                unoptimized
                 className="rounded-full"
                 draggable={false}
               />
@@ -170,9 +172,12 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
               aria-label="Choisir ce visage"
               aria-pressed={value.seed === seed}
             >
-              <img
+              <Image
                 src={uri}
                 alt=""
+                width={64}
+                height={64}
+                unoptimized
                 className="w-full h-full rounded-lg"
                 draggable={false}
               />

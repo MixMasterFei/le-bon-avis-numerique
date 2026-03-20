@@ -115,7 +115,7 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
                       </span>{" "}
                       {actionLabel}{" "}
                       {typeof details === "object" && details?.title ? (
-                        <span className="font-medium">"{details.title}"</span>
+                        <span className="font-medium">&quot;{details.title}&quot;</span>
                       ) : (
                         <span className="text-gray-500">{entityLabel}</span>
                       )}

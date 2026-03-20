@@ -134,7 +134,7 @@ export function GameInfoCard({
           Infos pour les parents
         </CardTitle>
         <p className="text-sm text-gray-500">
-          Ce qu'il faut savoir avant de jouer
+          Ce qu&apos;il faut savoir avant de jouer
         </p>
       </CardHeader>
       <CardContent className="space-y-2">

@@ -61,14 +61,14 @@ export function FamilyRecommendationsSection() {
         })
         .finally(() => setLoading(false))
     } else {
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
-  }, [session?.user?.id])
+  }, [session?.user, session?.user?.id])
 
   // Fetch recommendations when member is selected
   useEffect(() => {
     if (selectedMember) {
-      setLoadingRecs(true)
+      queueMicrotask(() => setLoadingRecs(true))
       fetch(`/api/recommendations?familyMemberId=${selectedMember}`)
         .then((res) => res.json())
         .then((data) => {
@@ -82,7 +82,7 @@ export function FamilyRecommendationsSection() {
   useEffect(() => {
     if (members.length > 0 && !selectedMember) {
       const memberWithReactions = members.find((m) => (m._count?.reactions || 0) > 0)
-      setSelectedMember(memberWithReactions?.id || members[0].id)
+      queueMicrotask(() => setSelectedMember(memberWithReactions?.id || members[0].id))
     }
   }, [members, selectedMember])
 

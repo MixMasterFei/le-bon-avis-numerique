@@ -129,7 +129,7 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
       )}
 
       {interests.length >= 20 && (
-        <p className="text-xs text-gray-400">Maximum de 20 centres d'intérêt atteint.</p>
+        <p className="text-xs text-gray-400">Maximum de 20 centres d&apos;intérêt atteint.</p>
       )}
     </div>
   )

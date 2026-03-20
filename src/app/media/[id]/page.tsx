@@ -221,7 +221,7 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   const title = `${media.title}${ageStr}`
 
   const typeLabel = typeLabels[media.type] || "Média"
-  let description = media.synopsisFr
+  const description = media.synopsisFr
     ? media.synopsisFr.slice(0, 155) + (media.synopsisFr.length > 155 ? "…" : "")
     : `${typeLabel} analysé par Totem Avisé. Découvrez notre avis détaillé et recommandation d'âge pour les familles.`
 

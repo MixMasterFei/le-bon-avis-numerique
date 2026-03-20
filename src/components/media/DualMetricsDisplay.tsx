@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Users, Award, Info } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -170,23 +170,23 @@ export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualM
   const [communityData, setCommunityData] = useState<CommunityData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchCommunityMetrics = async () => {
+  const fetchCommunityMetrics = useCallback(async () => {
     try {
       const res = await fetch(`/api/media/${mediaId}/community-metrics`)
       if (res.ok) {
         const data = await res.json()
-        setCommunityData(data)
+        queueMicrotask(() => setCommunityData(data))
       }
     } catch (err) {
       console.error("Failed to fetch community metrics:", err)
     } finally {
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
-  }
+  }, [mediaId])
 
   useEffect(() => {
     fetchCommunityMetrics()
-  }, [mediaId])
+  }, [fetchCommunityMetrics])
 
   // Don't render if no data at all
   if (!expertMetrics && !communityData?.hasData && !loading) {

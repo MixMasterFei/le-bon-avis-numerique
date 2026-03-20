@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Search, Plus, Check, Loader2, Heart, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -196,9 +197,12 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
                   >
                     {/* Poster thumbnail */}
                     {suggestion.posterUrl ? (
-                      <img
+                      <Image
                         src={suggestion.posterUrl}
                         alt=""
+                        width={32}
+                        height={48}
+                        unoptimized
                         className="w-8 h-12 object-cover rounded flex-shrink-0"
                       />
                     ) : (

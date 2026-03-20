@@ -69,14 +69,14 @@ export function FamilyRecommendations() {
         })
         .finally(() => setLoading(false))
     } else {
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
   }, [session])
 
   // Fetch recommendations when member is selected
   useEffect(() => {
     if (selectedMember) {
-      setLoadingRecs(true)
+      queueMicrotask(() => setLoadingRecs(true))
       fetch(`/api/recommendations?familyMemberId=${selectedMember}`)
         .then((res) => res.json())
         .then((data) => {

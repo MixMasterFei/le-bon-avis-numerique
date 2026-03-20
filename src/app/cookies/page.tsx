@@ -25,7 +25,7 @@ export default function CookiesPage() {
     if (savedPrefs) {
       try {
         const parsed = JSON.parse(savedPrefs)
-        setPreferences((prev) => ({ ...prev, ...parsed }))
+        queueMicrotask(() => setPreferences((prev) => ({ ...prev, ...parsed })))
       } catch {
         // Ignore parse errors
       }

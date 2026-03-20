@@ -48,9 +48,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       // For non-logged-in users, check localStorage
       const stored = localStorage.getItem("blur18Plus")
       if (stored !== null) {
-        setSettings({ blur18Plus: stored === "true" })
+        queueMicrotask(() => setSettings({ blur18Plus: stored === "true" }))
       }
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
   }, [session])
 

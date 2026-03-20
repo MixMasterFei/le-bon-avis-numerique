@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { getMemberAge } from "@/lib/age-utils"
@@ -73,26 +73,26 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
   const [expanded, setExpanded] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchReactions = async () => {
+  const fetchReactions = useCallback(async () => {
     try {
       const res = await fetch(`/api/user/reaction?mediaId=${mediaId}`)
       if (!res.ok) throw new Error("Erreur")
       const data = await res.json()
-      setMembers(data.familyMembers)
+      queueMicrotask(() => setMembers(data.familyMembers))
     } catch {
-      setError("Erreur lors du chargement")
+      queueMicrotask(() => setError("Erreur lors du chargement"))
     } finally {
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
-  }
+  }, [mediaId])
 
   useEffect(() => {
     if (session?.user) {
       fetchReactions()
     } else {
-      setLoading(false)
+      queueMicrotask(() => setLoading(false))
     }
-  }, [session?.user?.id, mediaId])
+  }, [session?.user?.id, mediaId, fetchReactions, session?.user])
 
   const handleReaction = async (memberId: string, reactionValue: string) => {
     const member = members.find((m) => m.id === memberId)

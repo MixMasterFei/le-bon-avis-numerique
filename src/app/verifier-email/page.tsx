@@ -17,7 +17,7 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     if (!token) {
-      setStatus("no-token")
+      queueMicrotask(() => setStatus("no-token"))
       return
     }
 

@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 2: If not enough similar items, fall back to genre-based recommendations
-    let recommendations: Array<{
+    const recommendations: Array<{
       id: string
       title: string
       type: string

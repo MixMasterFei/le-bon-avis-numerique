@@ -137,7 +137,7 @@ export default function ProfilPage() {
   // Fetch user profile (avatar + name) from DB
   useEffect(() => {
     if (!userId) return
-    if (session?.user?.name) setProfileName(session.user.name)
+    if (session?.user?.name) queueMicrotask(() => setProfileName(session.user.name!))
     fetch("/api/user/profile")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -157,7 +157,7 @@ export default function ProfilPage() {
         }
       })
       .catch(() => {})
-  }, [userId])
+  }, [userId, session?.user?.name])
 
   if (status === "loading") {
     return (

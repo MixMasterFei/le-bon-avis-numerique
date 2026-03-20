@@ -148,7 +148,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
   useEffect(() => {
     const fetchFamilyMembers = async () => {
       if (!session?.user) return
-      setLoadingFamily(true)
+      queueMicrotask(() => setLoadingFamily(true))
       try {
         const res = await fetch("/api/user/family")
         if (res.ok) {
@@ -162,7 +162,7 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
       }
     }
     fetchFamilyMembers()
-  }, [session?.user?.id])
+  }, [session?.user, session?.user?.id])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLDivElement>(null)

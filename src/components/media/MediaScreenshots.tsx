@@ -74,7 +74,7 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Camera className="h-5 w-5 text-blue-500" />
-            Captures d'ecran
+            Captures d&apos;ecran
           </CardTitle>
         </CardHeader>
         <CardContent>

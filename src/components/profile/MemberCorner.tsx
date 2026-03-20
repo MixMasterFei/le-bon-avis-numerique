@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Loader2,
   Heart,
@@ -529,10 +530,13 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       {reaction.media.posterUrl ? (
-                        <img
+                        <Image
                           src={reaction.media.posterUrl}
                           alt=""
+                          width={32}
+                          height={48}
                           className="w-8 h-12 object-cover rounded flex-shrink-0"
+                          unoptimized
                         />
                       ) : (
                         <div className="w-8 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
@@ -616,10 +620,12 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     <Link href={`/media/${routeId}`}>
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 relative">
                         {reaction.media.posterUrl ? (
-                          <img
+                          <Image
                             src={reaction.media.posterUrl}
                             alt={reaction.media.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

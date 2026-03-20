@@ -81,9 +81,8 @@ export function CronLogsSection() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => {
-    fetchLogs()
-  }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchLogs() }, [])
 
   return (
     <Card>

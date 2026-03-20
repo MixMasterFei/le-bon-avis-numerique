@@ -22,10 +22,10 @@ function FilmsRechercheContent() {
   const initialGenres = searchParams.get("genres")?.split(",").filter(Boolean) || []
   const initialPlatforms = searchParams.get("platforms")?.split(",").filter(Boolean) || []
   const initialSearch = searchParams.get("q") || ""
-  const initialMinQuality = searchParams.get("minQuality") ? parseInt(searchParams.get("minQuality")!) : undefined
-  const initialSortBy = searchParams.get("sortBy") || undefined
-  const initialExcludeGenres = searchParams.get("excludeGenres")?.split(",").filter(Boolean) || []
-  const initialRequirePoster = searchParams.get("requirePoster") === "true"
+  const initialMinQuality = useMemo(() => searchParams.get("minQuality") ? parseInt(searchParams.get("minQuality")!) : undefined, [searchParams])
+  const initialSortBy = useMemo(() => searchParams.get("sortBy") || undefined, [searchParams])
+  const initialExcludeGenres = useMemo(() => searchParams.get("excludeGenres")?.split(",").filter(Boolean) || [], [searchParams])
+  const initialRequirePoster = useMemo(() => searchParams.get("requirePoster") === "true", [searchParams])
   // Merge genres into topics for filtering (they work the same way in the API)
   const mergedTopics = [...new Set([...initialTopics, ...initialGenres])]
 
@@ -81,7 +81,7 @@ function FilmsRechercheContent() {
     const controller = new AbortController()
 
     async function load() {
-      setApiLoading(true)
+      queueMicrotask(() => setApiLoading(true))
       try {
         // First, try to fetch from database
         const dbParams = new URLSearchParams({
@@ -229,7 +229,7 @@ function FilmsRechercheContent() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy])
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy, initialExcludeGenres, initialMinQuality, initialRequirePoster, initialSortBy])
 
   const filteredMovies = useMemo(() => {
     return apiMovies

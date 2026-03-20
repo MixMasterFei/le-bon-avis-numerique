@@ -96,7 +96,7 @@ export function RequestContentModal({
         <DialogHeader>
           <DialogTitle>Demander un contenu</DialogTitle>
           <DialogDescription>
-            Demandez l'ajout d'un film, serie ou jeu a notre catalogue
+            Demandez l&apos;ajout d&apos;un film, série ou jeu à notre catalogue
           </DialogDescription>
         </DialogHeader>
 

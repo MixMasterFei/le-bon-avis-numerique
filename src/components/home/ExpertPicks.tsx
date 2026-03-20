@@ -125,6 +125,7 @@ export function ExpertPicks({ showLoginHint = false }: { showLoginHint?: boolean
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPicks().finally(() => setLoading(false))
   }, [fetchPicks])
 

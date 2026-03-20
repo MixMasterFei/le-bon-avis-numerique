@@ -63,14 +63,14 @@ export function FamilyMovieNight() {
         const res = await fetch("/api/user/family")
         if (res.ok) {
           const data = await res.json()
-          setFamilyMembers(data.familyMembers || [])
+          queueMicrotask(() => setFamilyMembers(data.familyMembers || []))
         }
       } catch {
         // No family members
       }
     }
     loadFamily()
-  }, [session?.user?.id])
+  }, [session?.user?.id, session?.user])
 
   const toggleMember = (memberId: string) => {
     setSelectedMembers(prev =>
