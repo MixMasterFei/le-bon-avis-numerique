@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { ContentRequestStatus, Prisma } from "@prisma/client"
 import { z } from "zod"
 
 // Validation schema for content request
@@ -89,9 +90,9 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10")
     const status = searchParams.get("status")
 
-    const where: { userId: string; status?: string } = { userId: session.user.id }
+    const where: Prisma.ContentRequestWhereInput = { userId: session.user.id }
     if (status) {
-      where.status = status
+      where.status = status as ContentRequestStatus
     }
 
     const [requests, total] = await Promise.all([

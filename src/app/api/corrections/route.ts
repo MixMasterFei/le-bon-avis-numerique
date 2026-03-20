@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { CorrectionType } from "@prisma/client"
+import { CorrectionType, Prisma } from "@prisma/client"
 
 // POST /api/corrections - Submit a new correction report
 export async function POST(request: NextRequest) {
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const mediaId = searchParams.get("mediaId")
 
-    const where: { userId: string; mediaId?: string } = { userId: session.user.id }
+    const where: Prisma.MediaCorrectionWhereInput = { userId: session.user.id }
     if (mediaId) {
       where.mediaId = mediaId
     }

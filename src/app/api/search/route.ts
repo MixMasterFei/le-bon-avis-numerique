@@ -21,10 +21,10 @@ function normalizeItems(key: "movies" | "shows" | "games" | "books", data: Recor
     id: String(item.id),
     title: String(item.title || ""),
     originalTitle: item.originalTitle ? String(item.originalTitle) : undefined,
-    synopsisFr: item.synopsisFr ?? null,
+    synopsisFr: (item.synopsisFr as string) ?? null,
     posterUrl: String(item.posterUrl || ""),
-    releaseDate: item.releaseDate ?? null,
-    rating: item.rating ?? null,
+    releaseDate: (item.releaseDate as string) ?? null,
+    rating: (item.rating as string) ?? null,
     type: (item.type as MediaType) || "MOVIE",
     source: key === "movies" || key === "shows" ? "TMDB" : key === "games" ? "IGDB" : "GOOGLE_BOOKS",
   }))

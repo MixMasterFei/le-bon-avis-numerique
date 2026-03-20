@@ -39,7 +39,8 @@ export interface OperationConfig {
   /** Delay between chunks in ms */
   delayMs?: number
   /** Extract progress from a single API response */
-  extractProgress: (data: Record<string, unknown>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extractProgress: (data: any) => {
     processed: number
     total: number | null
     matched?: number
@@ -50,9 +51,11 @@ export interface OperationConfig {
   /** Build a summary string from accumulated stats */
   buildSummary: (stats: Record<string, number>) => string
   /** For chunked ops: determine if we're done */
-  isDone?: (data: Record<string, unknown>) => boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  isDone?: (data: any) => boolean
   /** For chunked ops: get next URL params (e.g. offset) */
-  getNextParams?: (data: Record<string, unknown>, currentParams: URLSearchParams) => URLSearchParams | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getNextParams?: (data: any, currentParams: URLSearchParams) => URLSearchParams | null
   /** Stat keys to accumulate across chunks */
   accumKeys?: string[]
   /** For the screenshots special case: detect rate limiting */

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { Prisma, StreamingType } from "@prisma/client"
+import { MediaType, Prisma, StreamingType } from "@prisma/client"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       posterUrl: { not: null, startsWith: "http" },
     }
     if (mediaType) {
-      mediaWhere.type = mediaType
+      mediaWhere.type = mediaType as MediaType
     } else {
       mediaWhere.type = { in: ["MOVIE", "TV"] }
     }
