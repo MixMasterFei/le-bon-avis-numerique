@@ -24,7 +24,7 @@ function normalizeItems(key: "movies" | "shows" | "games" | "books", data: Recor
     synopsisFr: (item.synopsisFr as string) ?? null,
     posterUrl: String(item.posterUrl || ""),
     releaseDate: (item.releaseDate as string) ?? null,
-    rating: (item.rating as string) ?? null,
+    rating: (item.rating as number) ?? null,
     type: (item.type as MediaType) || "MOVIE",
     source: key === "movies" || key === "shows" ? "TMDB" : key === "games" ? "IGDB" : "GOOGLE_BOOKS",
   }))
