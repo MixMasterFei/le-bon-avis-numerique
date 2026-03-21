@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery, getClientIdentifier, checkRateLimit, RATE_LIMITS, rateLimitHeaders } from "@/lib/security"
 
 type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
@@ -85,9 +86,43 @@ export async function GET(request: NextRequest) {
     calls.push(fetch(`${request.nextUrl.origin}/api/books/search?q=${encodeURIComponent(query)}`))
   }
 
-  const settled = await Promise.allSettled(calls)
+  // Also search local DB with normalized matching (handles special chars like WALL·E)
+  const normalizedQuery = query.replace(/[^a-zA-Z0-9\s]/g, "").toLowerCase()
+  const dbPromise = normalizedQuery.length >= 2
+    ? prisma.$queryRaw<Array<{
+        id: string
+        title: string
+        type: string
+        synopsis_fr: string | null
+        poster_url: string | null
+        release_date: Date | null
+      }>>`
+        SELECT id, title, type, synopsis_fr, poster_url, release_date
+        FROM media_items
+        WHERE LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
+           OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
+           OR title ILIKE ${'%' + query + '%'}
+        LIMIT 10
+      `.catch(() => [])
+    : Promise.resolve([])
 
-  const items: AggregatedItem[] = []
+  const [settled, dbResults] = await Promise.all([
+    Promise.allSettled(calls),
+    dbPromise,
+  ])
+
+  // DB results go first (already enriched, have age ratings)
+  const items: AggregatedItem[] = dbResults.map(row => ({
+    id: row.id,
+    title: row.title,
+    originalTitle: undefined,
+    synopsisFr: row.synopsis_fr,
+    posterUrl: row.poster_url || "",
+    releaseDate: row.release_date?.toISOString() ?? null,
+    rating: null,
+    type: row.type as MediaType,
+    source: "TMDB" as const,
+  }))
   const errors: Record<string, string> = {}
 
   for (let i = 0; i < settled.length; i++) {
