@@ -159,7 +159,7 @@ export function Header() {
                       onClick={() => setIsAgeMenuOpen(false)}
                     >
                       <span className="font-medium">{range.name}</span>
-                      <span className="text-xs text-gray-400">{range.description}</span>
+                      <span className="text-xs text-gray-500">{range.description}</span>
                     </Link>
                   ))}
                 </div>
@@ -182,7 +182,7 @@ export function Header() {
                     item.comingSoon ? (
                       <div
                         key={item.name}
-                        className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-400 cursor-not-allowed"
+                        className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-500 cursor-not-allowed"
                       >
                         <div className="flex items-center gap-3">
                           <item.icon className="h-4 w-4" />
@@ -335,6 +335,7 @@ export function Header() {
             <button
               className="lg:hidden p-2 text-gray-600 hover:text-primary"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -405,7 +406,7 @@ export function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <span className="text-sm font-medium">{range.name}</span>
-                    <span className="text-xs text-gray-400">{range.description}</span>
+                    <span className="text-xs text-gray-500">{range.description}</span>
                   </Link>
                 ))}
               </div>
@@ -418,7 +419,7 @@ export function Header() {
                 item.comingSoon ? (
                   <div
                     key={item.name}
-                    className="flex items-center justify-between px-4 py-3 text-gray-400 cursor-not-allowed"
+                    className="flex items-center justify-between px-4 py-3 text-gray-500 cursor-not-allowed"
                   >
                     <div className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />

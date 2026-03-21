@@ -47,6 +47,7 @@ export function FamilyImageSection() {
                 src="/family-movie.jpg"
                 alt="Famille regardant un film ensemble"
                 fill
+                sizes="(max-width: 1024px) 50vw, 25vw"
                 className="object-cover"
               />
             </div>
@@ -55,6 +56,7 @@ export function FamilyImageSection() {
                 src="/parent-tablet.jpg"
                 alt="Parent et enfant avec tablette"
                 fill
+                sizes="(max-width: 1024px) 50vw, 25vw"
                 className="object-cover"
               />
             </div>
@@ -63,6 +65,7 @@ export function FamilyImageSection() {
                 src="/children-reading.jpg"
                 alt="Enfants lisant ensemble"
                 fill
+                sizes="(max-width: 1024px) 50vw, 25vw"
                 className="object-cover"
               />
             </div>

@@ -105,7 +105,8 @@ export function CookieConsent() {
                 </div>
                 <button
                   onClick={() => setShowDetails(false)}
-                  className="text-gray-400 hover:text-gray-600 p-1"
+                  className="text-gray-500 hover:text-gray-600 p-1"
+                  aria-label="Fermer"
                 >
                   <X className="h-4 w-4" />
                 </button>

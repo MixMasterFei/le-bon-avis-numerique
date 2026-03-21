@@ -269,7 +269,7 @@ export function MediaCardV2({
               {media.title}
             </h3>
             {media.releaseDate && (
-              <span className="text-[10px] text-gray-400 shrink-0">
+              <span className="text-[10px] text-gray-500 shrink-0">
                 {new Date(media.releaseDate).getFullYear()}
               </span>
             )}
@@ -308,7 +308,7 @@ export function MediaCardV2({
 
           {/* AI transparency label */}
           {showAiLabel && isAiEnriched && (
-            <p className="text-[9px] text-gray-400 leading-tight">
+            <p className="text-[9px] text-gray-500 leading-tight">
               Estimation IA
               {enrichmentSource === "AI_DEEP" && " (approfondie)"}
             </p>

@@ -2,10 +2,16 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HeroSearch } from "@/components/home/HeroSearch"
-import { RecommendationWizard } from "@/components/home/RecommendationWizard"
+import dynamic from "next/dynamic"
 import { FeaturedMovies } from "@/components/home/FeaturedMovies"
 import { FamilyImageSection } from "@/components/home/FamilyImageSection"
-import { FamilyMovieNight } from "@/components/home/FamilyMovieNight"
+
+const RecommendationWizard = dynamic(
+  () => import("@/components/home/RecommendationWizard").then(m => ({ default: m.RecommendationWizard }))
+)
+const FamilyMovieNight = dynamic(
+  () => import("@/components/home/FamilyMovieNight").then(m => ({ default: m.FamilyMovieNight }))
+)
 import { NewArrivals } from "@/components/home/NewArrivals"
 import { ExpertPicks } from "@/components/home/ExpertPicks"
 import { CuratedCollections } from "@/components/home/CuratedCollections"
@@ -43,6 +49,7 @@ export default async function HomePage(props: { searchParams?: Promise<{ design?
               src="/hero-banner.jpeg"
               alt="Famille regardant un film ensemble"
               fill
+              sizes="100vw"
               className="object-cover"
               priority
             />

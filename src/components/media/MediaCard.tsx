@@ -91,7 +91,7 @@ function CommunityRating({ avgRating, count }: { avgRating: number; count: numbe
     <div className="flex items-center gap-0.5" title={`${avgRating}/5 (${count} avis)`}>
       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
       <span className="text-[10px] font-semibold text-gray-600">{avgRating}</span>
-      <span className="text-[10px] text-gray-400">({count})</span>
+      <span className="text-[10px] text-gray-500">({count})</span>
     </div>
   )
 }
@@ -291,7 +291,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
               {media.title}
             </h3>
             {media.releaseDate && (
-              <span className="text-[10px] text-gray-400 shrink-0">{new Date(media.releaseDate).getFullYear()}</span>
+              <span className="text-[10px] text-gray-500 shrink-0">{new Date(media.releaseDate).getFullYear()}</span>
             )}
           </div>
 
