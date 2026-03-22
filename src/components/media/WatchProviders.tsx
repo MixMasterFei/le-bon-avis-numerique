@@ -40,15 +40,22 @@ interface WatchProvidersProps {
 export function WatchProviders({ providers, trailer, className = "" }: WatchProvidersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
-  // Collect and deduplicate streaming providers
+  // Collect and deduplicate providers by category
   const streamingProviders = deduplicateProviders(providers?.flatrate || [])
   const freeProviders = deduplicateProviders(providers?.free || [])
-  const previewProviders = deduplicateProviders([...streamingProviders, ...freeProviders]).slice(0, 3)
+  const rentProviders = deduplicateProviders(providers?.rent || [])
+  const buyProviders = deduplicateProviders(providers?.buy || [])
+
+  // Preview: prefer streaming/free, fall back to rent/buy
+  const primaryPreview = deduplicateProviders([...streamingProviders, ...freeProviders])
+  const previewProviders = primaryPreview.length > 0
+    ? primaryPreview.slice(0, 3)
+    : deduplicateProviders([...rentProviders, ...buyProviders]).slice(0, 3)
 
   const hasProviders = streamingProviders.length > 0 ||
     freeProviders.length > 0 ||
-    (providers?.rent?.length || 0) > 0 ||
-    (providers?.buy?.length || 0) > 0
+    rentProviders.length > 0 ||
+    buyProviders.length > 0
 
   if (!hasProviders && !trailer) {
     return null
@@ -82,12 +89,14 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
             onClick={() => setIsExpanded(!isExpanded)}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <span className="text-xs text-gray-400">Disponible sur</span>
+            <span className="text-xs text-gray-400">
+              {primaryPreview.length > 0 ? "Disponible sur" : "En location / achat"}
+            </span>
             <div className="flex -space-x-1">
               {previewProviders.map((provider) => (
                 <div
                   key={provider.provider_id}
-                  className="w-8 h-8 rounded-lg overflow-hidden bg-white shadow-sm ring-2 ring-gray-800"
+                  className="w-8 h-8 rounded-lg overflow-hidden shadow-sm"
                   title={provider.provider_name}
                 >
                   {provider.logo_path ? (
@@ -139,21 +148,21 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
           )}
 
           {/* Rent */}
-          {providers?.rent && providers.rent.length > 0 && (
+          {rentProviders.length > 0 && (
             <ProviderRow
               title="Location"
               icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={deduplicateProviders(providers.rent)}
+              providers={rentProviders}
               color="text-amber-400"
             />
           )}
 
           {/* Buy */}
-          {providers?.buy && providers.buy.length > 0 && (
+          {buyProviders.length > 0 && (
             <ProviderRow
               title="Achat"
               icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={deduplicateProviders(providers.buy)}
+              providers={buyProviders}
               color="text-purple-400"
             />
           )}
@@ -184,7 +193,7 @@ function ProviderRow({ title, icon, providers, color }: ProviderRowProps) {
             key={provider.provider_id}
             className="group relative"
           >
-            <div className="w-10 h-10 rounded-lg overflow-hidden bg-white shadow-sm ring-1 ring-white/20 transition-transform group-hover:scale-110">
+            <div className="w-10 h-10 rounded-lg overflow-hidden shadow-sm transition-transform group-hover:scale-110">
               {provider.logo_path ? (
                 <Image
                   src={getProviderLogoUrl(provider.logo_path, "w92")}
