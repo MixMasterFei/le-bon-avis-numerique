@@ -564,7 +564,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
       // First try DB-stored streaming data for instant response
       try {
         const dbStreaming = await prisma.streamingAvailability.findMany({
-          where: { mediaId: media.id, country: "FR" },
+          where: { mediaId: media.id, country: "FR", provider: { not: "_none" } },
           orderBy: { type: "asc" },
         })
 
