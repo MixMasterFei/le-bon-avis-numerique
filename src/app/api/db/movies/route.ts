@@ -193,6 +193,11 @@ export async function GET(request: NextRequest) {
       orderBy = { title: "asc" }
     } else if (sortBy === "quality") {
       // Sort by TMDB audience rating (actual movie quality), then data completeness as tiebreaker
+      // Require minimum votes to prevent obscure films with inflated ratings from dominating
+      where.AND = [
+        ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
+        { tmdbVoteCount: { gte: 50 } },
+      ]
       orderBy = [{ tmdbRating: { sort: "desc", nulls: "last" } }, { dataQualityScore: "desc" }]
     }
 

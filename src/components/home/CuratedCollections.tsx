@@ -77,7 +77,7 @@ const collections: Collection[] = [
     icon: Heart,
     color: "text-red-500",
     bgGradient: "from-red-100 to-pink-100",
-    href: "/films/recherche?genres=Drame,Famille&sortBy=quality&requirePoster=true",
+    href: "/films/recherche?genres=Familial&sortBy=quality&requirePoster=true",
   },
   {
     id: "animation",
