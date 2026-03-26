@@ -148,11 +148,11 @@ jobs:
         run: |
           echo "::group::Deep enrich"
           for i in 1 2; do
-            response=$(curl -sSL -X POST \
+            response=$(curl -sSL --max-time 55 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d '{"limit":5}' \
-              "$SITE_URL/api/admin/enrich-deep" 2>/dev/null)
+              -d '{"limit":3}' \
+              "$SITE_URL/api/admin/enrich-deep" 2>&1) || true
             remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null)
             enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null)
             echo "Batch $i: $enriched deep-enriched, $remaining remaining"
