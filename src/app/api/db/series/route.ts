@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
   try {
     const where: Prisma.MediaItemWhereInput = {
       type: "TV",
+      // Only show enriched content with age ratings
+      isEnriched: true,
+      expertAgeRec: { not: null },
       // Exclude future content (not yet released)
       releaseDate: { lte: new Date() },
     }

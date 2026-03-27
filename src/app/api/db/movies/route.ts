@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
   try {
     const where: Prisma.MediaItemWhereInput = {
       type: "MOVIE",
+      // Only show enriched movies with age ratings in public listings
+      isEnriched: true,
+      expertAgeRec: { not: null },
     }
 
     // Now playing: movies released in the last ~8 weeks (typical French theatrical window)
