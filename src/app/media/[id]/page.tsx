@@ -661,6 +661,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   alt={media.title}
                   expertAgeRec={media.expertAgeRec}
                   violenceScore={media.contentMetrics?.violence}
+                  mediaType={media.type}
                   priority
                 />
               </div>

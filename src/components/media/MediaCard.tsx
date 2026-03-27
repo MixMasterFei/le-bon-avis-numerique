@@ -160,8 +160,8 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
-  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies
-  const shouldBlur = settings.blur18Plus && (
+  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies/TV (not games — illustrated covers)
+  const shouldBlur = settings.blur18Plus && media.type !== "GAME" && (
     media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
     media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
   )
@@ -365,8 +365,8 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const contentTags = getContentTags(media.contentMetrics, media.toneTags)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
-  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies
-  const shouldBlur = settings.blur18Plus && (
+  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies/TV (not games — illustrated covers)
+  const shouldBlur = settings.blur18Plus && media.type !== "GAME" && (
     media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
     media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
   )

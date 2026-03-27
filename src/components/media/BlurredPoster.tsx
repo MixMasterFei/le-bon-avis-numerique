@@ -11,15 +11,17 @@ interface BlurredPosterProps {
   alt: string
   expertAgeRec: number | null
   violenceScore?: number | null
+  mediaType?: string
   className?: string
   sizes?: string
   priority?: boolean
 }
 
-export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, className, sizes, priority }: BlurredPosterProps) {
+export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, mediaType, className, sizes, priority }: BlurredPosterProps) {
   const { settings } = useSettings()
   const [revealed, setRevealed] = useState(false)
-  const shouldBlur = !revealed && settings.blur18Plus && (
+  // Don't blur game covers — illustrated artwork, not photographic
+  const shouldBlur = !revealed && settings.blur18Plus && mediaType !== "GAME" && (
     (expertAgeRec !== null && expertAgeRec >= 16) ||
     (violenceScore !== undefined && violenceScore !== null && violenceScore >= 4)
   )

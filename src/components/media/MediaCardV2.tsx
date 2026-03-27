@@ -116,6 +116,7 @@ export function MediaCardV2({
 
   const shouldBlur =
     settings.blur18Plus &&
+    media.type !== "GAME" &&
     media.expertAgeRec !== null &&
     media.expertAgeRec >= 16 &&
     media.contentMetrics?.violence !== undefined &&
