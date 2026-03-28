@@ -675,10 +675,10 @@ export async function GET(
       }
     })
 
-    return NextResponse.json({
-      status: isFamilyWarning ? "family_warning" : "ok",
-      members,
-    })
+    return NextResponse.json(
+      { status: isFamilyWarning ? "family_warning" : "ok", members },
+      { headers: { "Cache-Control": "private, max-age=60" } }
+    )
   } catch (error) {
     console.error("Family fit error:", error)
     return NextResponse.json(

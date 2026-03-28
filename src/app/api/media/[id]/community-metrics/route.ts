@@ -14,13 +14,13 @@ export async function GET(
       where: { mediaId: id },
     })
 
+    const cacheHeaders = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
+
     if (userMetrics.length === 0) {
-      return NextResponse.json({
-        success: true,
-        hasData: false,
-        count: 0,
-        averages: null,
-      })
+      return NextResponse.json(
+        { success: true, hasData: false, count: 0, averages: null },
+        { headers: cacheHeaders }
+      )
     }
 
     // Calculate averages
@@ -56,12 +56,10 @@ export async function GET(
       roleModels: Math.round((sum.roleModels / count) * 10) / 10,
     }
 
-    return NextResponse.json({
-      success: true,
-      hasData: true,
-      count,
-      averages,
-    })
+    return NextResponse.json(
+      { success: true, hasData: true, count, averages },
+      { headers: cacheHeaders }
+    )
   } catch (error) {
     console.error("Community metrics error:", error)
     return NextResponse.json(

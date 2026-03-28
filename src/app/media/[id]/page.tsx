@@ -1,7 +1,7 @@
 // Revalidate every hour — balances freshness with performance
 export const revalidate = 3600
 
-import { cache } from "react"
+import { cache, Suspense } from "react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
@@ -16,7 +16,7 @@ import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
-import { WatchProviders } from "@/components/media/WatchProviders"
+import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { FamilyFitHero } from "@/components/media/FamilyFitHero"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
@@ -42,13 +42,6 @@ import {
   getDirector,
   getTVFrenchRating,
   mapCertificationToInternal,
-  getMovieWatchProviders,
-  getTVWatchProviders,
-  getMovieVideos,
-  getTVVideos,
-  getBestTrailer,
-  type TMDBWatchProviderResult,
-  type TMDBVideo,
 } from "@/lib/tmdb"
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
@@ -376,8 +369,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
   let media: DatabaseMediaItem | null = null
   let source: "mock" | "external" | "database" = "mock"
-  let watchProviders: TMDBWatchProviderResult | null = null
-  let trailer: TMDBVideo | null = null
   let dbId: string | null = null // Track actual database UUID for reactions
 
   // First, try to fetch from database (works with UUID or external IDs)
@@ -543,76 +534,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
     notFound()
   }
 
-  // Fetch watch providers and trailer for movies/TV from TMDB
-  // Uses a timeout to prevent slow TMDB responses from blocking the page
-  const mediaType = media.type
-  if (mediaType === "MOVIE" || mediaType === "TV") {
-    let tmdbId: number | null = null
-
-    if (source === "database") {
-      // For DB items, try to get tmdbId from the already-fetched data or query
-      const dbItem = await prisma.mediaItem.findUnique({
-        where: { id: media.id },
-        select: { tmdbId: true }
-      })
-      tmdbId = dbItem?.tmdbId || null
-    } else if (source === "external") {
-      tmdbId = parseInt(rawId)
-    }
-
-    if (tmdbId && !isNaN(tmdbId)) {
-      // First try DB-stored streaming data for instant response
-      try {
-        const dbStreaming = await prisma.streamingAvailability.findMany({
-          where: { mediaId: media.id, country: "FR", provider: { not: "_none" } },
-          orderBy: { type: "asc" },
-        })
-
-        if (dbStreaming.length > 0) {
-          // Convert DB streaming to TMDB provider format for WatchProviders component
-          const flatrate = dbStreaming
-            .filter((s) => s.type === "SUBSCRIPTION")
-            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
-          const free = dbStreaming
-            .filter((s) => s.type === "FREE" || s.type === "ADS")
-            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
-          const rent = dbStreaming
-            .filter((s) => s.type === "RENT")
-            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
-          const buy = dbStreaming
-            .filter((s) => s.type === "BUY")
-            .map((s) => ({ provider_id: s.providerId || 0, provider_name: s.provider, logo_path: "", display_priority: 0 }))
-
-          if (flatrate.length > 0 || free.length > 0 || rent.length > 0 || buy.length > 0) {
-            watchProviders = { flatrate, free, rent, buy }
-          }
-        }
-      } catch {
-        // DB streaming lookup failed, will fall back to TMDB
-      }
-
-      // Fetch from TMDB with 5s timeout (for fresh logos + trailer)
-      try {
-        const tmdbPromise = Promise.all([
-          mediaType === "MOVIE"
-            ? getMovieWatchProviders(tmdbId)
-            : getTVWatchProviders(tmdbId),
-          mediaType === "MOVIE"
-            ? getMovieVideos(tmdbId)
-            : getTVVideos(tmdbId)
-        ])
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("TMDB timeout")), 5000)
-        )
-
-        const [providersResult, videosResult] = await Promise.race([tmdbPromise, timeoutPromise])
-        if (providersResult) watchProviders = providersResult
-        trailer = getBestTrailer(videosResult)
-      } catch {
-        // TMDB timed out or failed — DB streaming data (if any) already set above
-      }
-    }
-  }
+  // Watch providers and trailer are now fetched client-side via /api/media/[id]/extras
+  // This eliminates the 1-5s TMDB blocking from server render
 
   const avgRating =
     media.reviews?.length
@@ -701,8 +624,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 </div>
               )}
 
-              {/* Watch Providers & Trailer - Compact */}
-              <WatchProviders providers={watchProviders} trailer={trailer} className="mb-4" />
+              {/* Watch Providers & Trailer - loaded client-side */}
+              <WatchProvidersClient mediaId={dbId} mediaType={media.type} className="mb-4" />
 
               {/* Favorite, Watchlist & Review Actions */}
               <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
@@ -830,14 +753,25 @@ export default async function MediaPage({ params }: MediaPageProps) {
               </TabsContent>
             </Tabs>
 
-            {/* Similar Media */}
+            {/* Similar Media — streamed via Suspense to avoid blocking page render */}
             {dbId && (
-              <SimilarMedia
-                mediaId={dbId}
-                mediaType={media.type}
-                genres={media.genres}
-                topics={media.topics}
-              />
+              <Suspense fallback={
+                <div className="animate-pulse">
+                  <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+              }>
+                <SimilarMedia
+                  mediaId={dbId}
+                  mediaType={media.type}
+                  genres={media.genres}
+                  topics={media.topics}
+                />
+              </Suspense>
             )}
           </div>
 
