@@ -245,17 +245,29 @@ export function FamilyMovieNightSection() {
         {/* Results */}
         {showResults && recommendations.length > 0 && (
           <div className="space-y-4">
-            {/* Shared Genres */}
-            {sharedGenres.length > 0 && (
-              <div className="flex flex-wrap gap-2 items-center">
-                <span className="text-sm text-gray-500">Goûts communs :</span>
-                {sharedGenres.slice(0, 4).map((genre) => (
-                  <Badge key={genre} variant="secondary" className="bg-orange-100 text-orange-800 border-0">
-                    {genre}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            {/* Shared Genres + Refresh */}
+            <div className="flex items-center justify-between">
+              {sharedGenres.length > 0 && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm text-gray-500">Goûts communs :</span>
+                  {sharedGenres.slice(0, 4).map((genre) => (
+                    <Badge key={genre} variant="secondary" className="bg-orange-100 text-orange-800 border-0">
+                      {genre}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={fetchRecommendations}
+                disabled={loading}
+                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 shrink-0"
+              >
+                <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} />
+                Rafraîchir
+              </Button>
+            </div>
 
             {/* Recommendation Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

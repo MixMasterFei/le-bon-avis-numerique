@@ -13,13 +13,49 @@ const DARK_TONES = new Set([
   "Sombre et tendu", "Effrayant et angoissant", "Action intense",
 ])
 
-function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, tmdbRating?: number | null): number {
+// Studios/brands/IPs designed for all ages — no age gap penalty
+const FAMILY_VIP_BRANDS = new Set([
+  "disney", "pixar", "dreamworks", "studio ghibli",
+  "aardman", "illumination", "laika",
+  "nintendo", "lego", "minecraft",
+  "astérix", "asterix", "tintin",
+])
+
+// Default genres by age group — used when member has no quiz/reactions
+const DEFAULT_GENRES_BY_AGE: Record<string, string[]> = {
+  child:  ["Animation", "Aventure", "Comédie", "Famille", "Fantastique"],
+  tween:  ["Aventure", "Comédie", "Animation", "Fantastique", "Science-Fiction"],
+  teen:   ["Comédie", "Aventure", "Science-Fiction", "Fantastique", "Action"],
+  adult:  ["Comédie", "Drame", "Aventure", "Thriller", "Science-Fiction"],
+}
+
+function getAgeGroup(age: number | null): string {
+  if (age == null) return "teen"
+  if (age <= 9) return "child"
+  if (age <= 12) return "tween"
+  if (age <= 17) return "teen"
+  return "adult"
+}
+
+function computeAgeScore(
+  expertAgeRec: number | null, memberAge: number | null,
+  tmdbRating?: number | null, genres?: string[], topics?: string[]
+): number {
   if (expertAgeRec == null || memberAge == null) return 0.5
   if (expertAgeRec > memberAge + 1) return 0.2
   if (expertAgeRec > memberAge) return 0.7
   const gap = memberAge - expertAgeRec
   if (gap <= 3) return 1.0
   if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
+  // Family VIP brands: no age penalty
+  const lowerTopics = (topics || []).map(t => t.toLowerCase())
+  if (lowerTopics.some(t => FAMILY_VIP_BRANDS.has(t))) return 1.0
+  // Family/animation content: soft penalty, floor 0.75
+  const lowerGenres = (genres || []).map(g => g.toLowerCase())
+  if (lowerGenres.some(g => g === "animation" || g === "famille" || g === "familial" || g === "family")) {
+    return Math.max(0.75, 1.0 - (gap - 3) * 0.03)
+  }
+  // Standard penalty
   const rawPenalty = (gap - 3) * 0.10
   let score = Math.max(0.30, 1.0 - rawPenalty)
   const rating = tmdbRating ?? 0
@@ -245,13 +281,24 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      const memberAge = getMemberAge(member.birthYear, member.birthMonth)
+
       // Extract top 5 genres by weight
-      const topGenres = Object.entries(genres)
+      let topGenres = Object.entries(genres)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([genre]) => genre)
 
-      const memberAge = getMemberAge(member.birthYear, member.birthMonth)
+      // When no reactions and no quiz, use age-appropriate defaults
+      // so that sortedGenres isn't empty and the DB query filters to relevant content
+      const hasPreferences = member.reactions.length > 0 || favoriteGenres.length > 0
+      if (!hasPreferences && topGenres.length === 0) {
+        topGenres = DEFAULT_GENRES_BY_AGE[getAgeGroup(memberAge)]
+        // Also add to allGenres map so they contribute to shared genre scoring
+        for (const genre of topGenres) {
+          genres[genre] = (genres[genre] || 0) + 1
+        }
+      }
 
       memberPreferences[member.id] = {
         topGenres,
@@ -259,7 +306,7 @@ export async function GET(request: NextRequest) {
         dislikedGenres: member.dislikedGenres || [],
         avoidTopics: member.avoidTopics || [],
         mediaIds,
-        hasPreferences: member.reactions.length > 0 || favoriteGenres.length > 0,
+        hasPreferences,
         age: memberAge,
         sensitivity: {
           violence: member.sensitivityViolence,
@@ -328,6 +375,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query — if no shared genres, fall back to age-appropriate well-rated media
+    // Random skip to vary results on refresh (skip 0-60 of top results)
+    const randomSkip = Math.floor(Math.random() * 60)
     const hasGenres = sortedGenres.length > 0
     const recommendations = await prisma.mediaItem.findMany({
       where: {
@@ -343,14 +392,20 @@ export async function GET(request: NextRequest) {
         posterUrl: { not: null, startsWith: "http" },
         // Only European-language content
         originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] },
+        // Minimum popularity to avoid obscure niche content
+        tmdbVoteCount: { gte: 100 },
         ...ageFilter,
       },
       include: {
         contentMetrics: true,
       },
-      orderBy: hasGenres
-        ? [{ tmdbRating: { sort: "desc", nulls: "last" } }, { releaseDate: "desc" }]
-        : [{ tmdbRating: { sort: "desc", nulls: "last" } }],
+      // Sort by popularity first (mainstream over niche), then quality
+      orderBy: [
+        { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+        { tmdbRating: { sort: "desc", nulls: "last" } },
+        { releaseDate: "desc" },
+      ],
+      skip: randomSkip,
       take: 40, // Fetch more to allow scoring & filtering
     })
 
@@ -387,22 +442,26 @@ export async function GET(request: NextRequest) {
         for (const member of familyMembers) {
           const prefs = memberPreferences[member.id]
 
+          const ageScore = computeAgeScore(media.expertAgeRec, prefs.age, media.tmdbRating, media.genres, media.topics)
+
           if (!prefs.hasPreferences) {
+            // No quiz: use age-based scoring instead of hardcoded 50%
+            const agePercentage = Math.round(Math.max(0, Math.min(100, ageScore * 100)))
             memberMatches[member.id] = {
               name: member.name,
               avatarEmoji: member.avatarEmoji,
               avatarStyle: member.avatarStyle,
               avatarSeed: member.avatarSeed,
               avatarOptions: member.avatarOptions,
-              matchScore: 0,
-              matchPercentage: 50,
+              matchScore: agePercentage,
+              matchPercentage: agePercentage,
             }
+            totalMatchScore += agePercentage
+            membersWithPreferences++
             continue
           }
 
           membersWithPreferences++
-
-          const ageScore = computeAgeScore(media.expertAgeRec, prefs.age, media.tmdbRating)
 
           const sensitivityScore = metrics
             ? computeSensitivityScore(
