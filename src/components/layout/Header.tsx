@@ -32,7 +32,7 @@ const moreNavigation = [
   { name: "Nos valeurs & notations", href: "/nos-valeurs", icon: Heart },
   { name: "Nos guides", href: "/guides", icon: BookText },
   { name: "BD", href: "/bd", icon: BookOpen, comingSoon: true },
-  { name: "Notre blog", href: "/blog", icon: Newspaper, comingSoon: true },
+  { name: "Notre blog", href: "/blog", icon: Newspaper },
 ]
 
 export function Header() {

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 import { prisma } from "@/lib/prisma"
 import { toMediaRouteId } from "@/lib/media-route"
+import { sanityClient } from "@/sanity/client"
 
 // Revalidate sitemap every 6 hours (ISR) — picks up new cron imports
 export const revalidate = 21600
@@ -52,5 +53,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] DB query failed:", error instanceof Error ? error.message : error)
   }
 
-  return [...staticPages, ...mediaPages]
+  // Blog posts from Sanity
+  let blogPages: MetadataRoute.Sitemap = []
+  try {
+    const posts = await sanityClient.fetch<{ slug: string; publishedAt: string }[]>(
+      `*[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]{ "slug": slug.current, publishedAt }`
+    )
+    blogPages = posts.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }))
+    // Add the blog listing page
+    if (posts.length > 0) {
+      blogPages.unshift({
+        url: `${baseUrl}/blog`,
+        changeFrequency: "weekly" as const,
+        priority: 0.8,
+      })
+    }
+  } catch (error) {
+    console.error("[sitemap] Sanity query failed:", error instanceof Error ? error.message : error)
+  }
+
+  return [...staticPages, ...mediaPages, ...blogPages]
 }

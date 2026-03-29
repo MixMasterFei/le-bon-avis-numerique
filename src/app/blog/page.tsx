@@ -1,34 +1,72 @@
-import { Newspaper, Clock } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import type { Metadata } from "next"
+import { Newspaper } from "lucide-react"
+import { sanityClient } from "@/sanity/client"
+import { BlogCard } from "@/components/blog/BlogCard"
 
-export const metadata = {
-  title: "Notre blog | Totem Avisé",
-  description: "Articles et actualités sur l'éducation aux médias et la parentalité numérique",
+export const revalidate = 300 // 5-min ISR
+
+const PUBLISHED_POSTS_QUERY = `*[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc) {
+  "slug": slug.current,
+  title,
+  excerpt,
+  category,
+  publishedAt,
+  mainImage
+}`
+
+export const metadata: Metadata = {
+  title: "Blog — Conseils et actualités pour les familles",
+  description: "Articles sur le temps d'écran, les films, les jeux vidéo et la parentalité numérique. Conseils pratiques pour accompagner vos enfants dans le monde des médias.",
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "Blog | Totem Avisé",
+    description: "Articles et conseils pour les familles sur les médias et le numérique.",
+    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+  },
 }
 
-export default function BlogPage() {
+interface Post {
+  slug: string
+  title: string
+  excerpt: string
+  category: string
+  publishedAt: string
+  mainImage?: { asset?: { _ref?: string }; alt?: string }
+}
+
+export default async function BlogPage() {
+  let posts: Post[] = []
+  try {
+    posts = await sanityClient.fetch<Post[]>(PUBLISHED_POSTS_QUERY)
+  } catch (error) {
+    console.error("Failed to fetch blog posts:", error)
+  }
+
   return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="container mx-auto px-4 py-12">
       <div className="text-center mb-12">
         <div className="inline-flex p-4 bg-orange-100 rounded-full mb-6">
           <Newspaper className="h-8 w-8 text-orange-600" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Notre blog</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Articles, conseils et actualités sur l&apos;éducation aux médias et la parentalité numérique.
+          Articles, conseils et actualités sur le temps d&apos;écran, les films, les jeux vidéo et la parentalité numérique.
         </p>
       </div>
 
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Bientôt disponible</h2>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Notre blog est en préparation. Nous y partagerons des articles sur les tendances
-            médiatiques, des conseils pratiques pour les parents, et des analyses de contenus populaires.
-          </p>
-        </CardContent>
-      </Card>
+      {posts.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {posts.map((post) => (
+            <BlogCard key={post.slug} post={post} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 text-gray-500">
+          <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg font-medium">Aucun article pour le moment</p>
+          <p className="text-sm">Nos premiers articles arrivent bientôt !</p>
+        </div>
+      )}
     </div>
   )
 }

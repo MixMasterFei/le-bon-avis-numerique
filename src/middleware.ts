@@ -16,7 +16,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris"]
 
 // Routes that require admin role (both UI and API)
-const adminRoutes = ["/admin", "/api/admin"]
+const adminRoutes = ["/admin", "/api/admin", "/studio"]
 
 // API routes with their rate limit types
 const rateLimitedRoutes: Record<string, string> = {
