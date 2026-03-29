@@ -134,6 +134,52 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Marketing playbook | `docs/marketing/claude_mkt.md` |
 | Launch checklist | `docs/marketing/launch-checklist.md` |
 | Market analysis | `docs/marketing/market-analysis.md` |
+| Blog .docx drop folder | `blog/` |
+| Sanity config | `sanity.config.ts` |
+| Sanity CLI config | `sanity.cli.ts` |
+| Sanity env constants | `src/sanity/env.ts` |
+| Sanity client | `src/sanity/client.ts` |
+| Sanity image helper | `src/sanity/image.ts` |
+| Blog post schema | `src/sanity/schemas/post.ts` |
+| Sanity Studio page | `src/app/studio/[[...tool]]/page.tsx` |
+| Blog listing page | `src/app/blog/page.tsx` |
+| Blog post page | `src/app/blog/[slug]/page.tsx` |
+| Blog card component | `src/components/blog/BlogCard.tsx` |
+| Portable Text renderers | `src/components/blog/PortableTextComponents.tsx` |
+
+---
+
+## Blog (Sanity CMS)
+
+The blog lives at `totemavise.com/blog` and covers family digital wellness topics (screen time, movies, games, parenting). Content is managed via **Sanity CMS**.
+
+**Sanity project:** `9cylu9mu` (dataset: `production`)
+
+### Content workflow
+1. Writer drops `.docx` files in the `blog/` folder at project root
+2. Claude reads the `.docx`, extracts content (headings, text, images, formatting)
+3. Claude publishes to Sanity via API using `SANITY_API_WRITE_TOKEN`
+4. Blog pages auto-update via ISR (5-min revalidate)
+
+Alternative: write directly in Sanity Studio at `totemavise.com/studio`
+
+### Blog post schema (Sanity)
+- `title`, `slug`, `author`, `publishedAt`, `category`, `excerpt`, `mainImage`, `body` (Portable Text), `seoTitle`, `seoDescription`
+- Categories: "Temps d'écran", "Films & séries", "Jeux vidéo", "Parentalité numérique", "Guides pratiques", "Actualités"
+
+### Blog SEO
+- Each post has JSON-LD `Article` structured data
+- `generateMetadata()` for dynamic title/description/OG image
+- Blog posts included in sitemap (published only, no drafts)
+- ISR with `revalidate = 300` (5 min)
+
+### Required env vars (Sanity)
+```
+NEXT_PUBLIC_SANITY_PROJECT_ID=9cylu9mu
+NEXT_PUBLIC_SANITY_DATASET=production
+NEXT_PUBLIC_SANITY_API_VERSION=2024-01-01
+SANITY_API_WRITE_TOKEN=xxx          # For publishing via API (not needed for public reads)
+```
 
 ---
 
