@@ -16,7 +16,8 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris"]
 
 // Routes that require admin role (both UI and API)
-const adminRoutes = ["/admin", "/api/admin", "/studio"]
+const adminRoutes = ["/admin", "/api/admin"]
+// Note: /studio is NOT protected here — Sanity Studio has its own auth (Sanity accounts)
 
 // API routes with their rate limit types
 const rateLimitedRoutes: Record<string, string> = {
