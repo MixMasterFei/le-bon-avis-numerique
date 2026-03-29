@@ -66,40 +66,49 @@ jobs:
       github.event.inputs.task == 'quality' ||
       github.event.inputs.task == 'all'
     steps:
-      - name: Enrich movies (batch of 10)
+      - name: Enrich movies (2 batches of 5)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich movies"
-          curl -sSL --max-time 55 -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            -d '{"type":"movie","limit":10}' \
-            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          for i in 1 2; do
+            echo "Movie batch $i:"
+            curl -sSL --max-time 58 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"type":"movie","limit":5}' \
+              "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          done
           echo "::endgroup::"
 
-      - name: Enrich TV shows (batch of 10)
+      - name: Enrich TV shows (2 batches of 5)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich TV"
-          curl -sSL --max-time 55 -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            -d '{"type":"tv","limit":10}' \
-            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          for i in 1 2; do
+            echo "TV batch $i:"
+            curl -sSL --max-time 58 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"type":"tv","limit":5}' \
+              "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          done
           echo "::endgroup::"
 
-      - name: Enrich games (batch of 10)
+      - name: Enrich games (2 batches of 5)
         if: >-
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich games"
-          curl -sSL --max-time 55 -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            -d '{"type":"game","limit":10}' \
-            "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          for i in 1 2; do
+            echo "Game batch $i:"
+            curl -sSL --max-time 58 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"type":"game","limit":5}' \
+              "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          done
           echo "::endgroup::"
 
       - name: Deep enrichment (Pass 2 - GPT-5 + web search)
