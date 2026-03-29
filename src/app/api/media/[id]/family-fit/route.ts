@@ -34,7 +34,25 @@ interface FamilyFitMember {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, tmdbRating?: number | null): number {
+// Studios, brands, and IPs whose content is designed for all ages.
+// When a media item's topics match, the age gap penalty is removed entirely.
+const FAMILY_VIP_BRANDS = new Set([
+  // Animation studios
+  "disney", "pixar", "dreamworks", "studio ghibli",
+  "aardman", "illumination", "laika",
+  // Game brands
+  "nintendo", "lego", "minecraft",
+  // French/European IPs
+  "astérix", "asterix", "tintin",
+])
+
+function computeAgeScore(
+  expertAgeRec: number | null,
+  memberAge: number | null,
+  tmdbRating?: number | null,
+  genres?: string[],
+  topics?: string[]
+): number {
   if (expertAgeRec == null || memberAge == null) return 0.5
 
   // Too young for this content
@@ -48,14 +66,29 @@ function computeAgeScore(expertAgeRec: number | null, memberAge: number | null, 
   if (gap <= 3) return 1.0
 
   // Adults (16+) watching content rated 10+ → no penalty
-  // The gap penalty only applies to truly young content for the viewer
   if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
 
-  // Gradual penalty: each year beyond 3 costs 0.10, floor 0.30
+  // Family VIP brands: content designed for all ages (Nintendo, Pixar, Ghibli, etc.)
+  // No age gap penalty at all — parents and teens watching is the intended experience
+  const lowerTopics = (topics || []).map(t => t.toLowerCase())
+  if (lowerTopics.some(t => FAMILY_VIP_BRANDS.has(t))) return 1.0
+
+  // Family/animation content: very gentle penalty (floor 0.75)
+  // Parents and teens watching animated/family content is normal
+  const lowerGenres = (genres || []).map(g => g.toLowerCase())
+  const isFamilyContent = lowerGenres.some(g =>
+    g === "animation" || g === "famille" || g === "familial" || g === "family"
+  )
+  if (isFamilyContent) {
+    const softPenalty = (gap - 3) * 0.03
+    return Math.max(0.75, 1.0 - softPenalty)
+  }
+
+  // Non-family content: gradual penalty, each year beyond 3 costs 0.10, floor 0.30
   const rawPenalty = (gap - 3) * 0.10
   let score = Math.max(0.30, 1.0 - rawPenalty)
 
-  // Universal-appeal boost for highly-rated content (e.g. Pixar, Ghibli)
+  // Universal-appeal boost for highly-rated content (e.g. well-reviewed dramas)
   const rating = tmdbRating ?? 0
   if (rating >= 7.5) {
     const boost = Math.min(0.25, (rating - 7.5) * 0.15)
@@ -531,7 +564,7 @@ export async function GET(
       const affinityScore = affinity.hasConnection ? 1.0 : (affinity.genreAffinityScore ? affinity.genreAffinityScore / 100 * 0.5 : 0)
 
       // --- Weighted score components ---
-      const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating)
+      const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating, media.genres, media.topics)
 
       // When quiz is NOT done, only use age score — don't inflate with defaults
       // But still apply mature content penalty for horror/violent content

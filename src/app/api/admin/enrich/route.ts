@@ -59,8 +59,10 @@ const VALID_TOPICS = [
   "Cuisine", "Art", "Danse", "Théâtre",
   // History/society
   "Guerre", "Résistance", "Seconde Guerre mondiale",
-  // Studios
+  // Studios & brands
   "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
+  "Aardman", "Illumination", "Laika",
+  "LEGO", "Minecraft", "Astérix", "Tintin",
   // Seasonal
   "Noël", "Halloween",
   // Games
@@ -169,8 +171,8 @@ ARTS ET CULTURE:
 HISTOIRE ET SOCIETE:
 "Guerre", "Résistance", "Seconde Guerre mondiale"
 
-STUDIOS:
-"Disney", "Pixar", "DreamWorks", "Studio Ghibli"
+STUDIOS ET MARQUES:
+"Disney", "Pixar", "DreamWorks", "Studio Ghibli", "Aardman", "Illumination", "Laika", "LEGO", "Minecraft", "Astérix", "Tintin"
 
 SAISONNIER:
 "Noël", "Halloween"

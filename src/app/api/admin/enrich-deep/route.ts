@@ -22,6 +22,8 @@ const VALID_TOPICS = [
   "Cuisine", "Art", "Danse", "Théâtre",
   "Guerre", "Résistance", "Seconde Guerre mondiale",
   "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
+  "Aardman", "Illumination", "Laika",
+  "LEGO", "Minecraft", "Astérix", "Tintin",
   "Noël", "Halloween",
   "Nintendo", "PlayStation", "Xbox", "PC",
 ]
