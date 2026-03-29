@@ -71,7 +71,7 @@ jobs:
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich movies"
-          curl -sSL -X POST \
+          curl -sSL --max-time 55 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"type":"movie","limit":10}' \
@@ -83,7 +83,7 @@ jobs:
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich TV"
-          curl -sSL -X POST \
+          curl -sSL --max-time 55 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"type":"tv","limit":10}' \
@@ -95,7 +95,7 @@ jobs:
           github.event.inputs.task != 'quality'
         run: |
           echo "::group::Enrich games"
-          curl -sSL -X POST \
+          curl -sSL --max-time 55 -X POST \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{"type":"game","limit":10}' \
@@ -107,15 +107,16 @@ jobs:
           github.event.inputs.task != 'quality' &&
           github.event.inputs.task != 'enrich'
         run: |
+          set +e
           echo "::group::Deep enrich"
           for i in 1 2; do
             response=$(curl -sSL --max-time 55 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"limit":3}' \
-              "$SITE_URL/api/admin/enrich-deep" 2>&1) || true
-            remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null)
-            enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null)
+              "$SITE_URL/api/admin/enrich-deep" 2>&1)
+            remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null || echo "0")
+            enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null || echo "0")
             echo "Batch $i: $enriched deep-enriched, $remaining remaining"
             if [ "$remaining" = "0" ]; then break; fi
             sleep 3
@@ -124,21 +125,22 @@ jobs:
 
       - name: Recompute quality scores (all items)
         run: |
+          set +e
           echo "::group::Quality scores"
           offset=0
           while true; do
-            response=$(curl -sSL -X POST \
+            response=$(curl -sSL --max-time 55 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d "{\"limit\":500,\"offset\":$offset}" \
               "$SITE_URL/api/admin/quality/compute")
-            echo "$response" | jq -r '.progress // empty' 2>/dev/null
-            done=$(echo "$response" | jq -r '.done // false' 2>/dev/null)
-            if [ "$done" = "true" ]; then
+            echo "$response" | jq -r '.progress // empty' 2>/dev/null || true
+            done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo "false")
+            if [ "$done_flag" = "true" ]; then
               echo "Quality score computation complete"
               break
             fi
-            offset=$(echo "$response" | jq -r '.nextOffset // 0' 2>/dev/null)
+            offset=$(echo "$response" | jq -r '.nextOffset // 0' 2>/dev/null || echo "0")
             if [ "$offset" = "null" ] || [ "$offset" = "0" ]; then
               break
             fi
