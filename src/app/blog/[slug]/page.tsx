@@ -26,6 +26,7 @@ const POST_QUERY = `*[_type == "post" && slug.current == $slug && defined(publis
   "slug": slug.current,
   author,
   publishedAt,
+  _updatedAt,
   category,
   excerpt,
   mainImage,
@@ -48,6 +49,7 @@ interface Post {
   slug: string
   author: string
   publishedAt: string
+  _updatedAt?: string
   category: string
   excerpt: string
   mainImage?: { asset?: { _ref?: string }; alt?: string }
@@ -120,6 +122,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
 
+  const articleSection = CATEGORY_LABELS[post.category] || post.category
+  const postUrl = `https://totemavise.com/blog/${post.slug}`
+
   // JSON-LD Article structured data
   const jsonLd = {
     "@context": "https://schema.org",
@@ -127,6 +132,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.publishedAt,
+    dateModified: post._updatedAt || post.publishedAt,
+    inLanguage: "fr-FR",
+    articleSection,
     author: { "@type": "Person", name: post.author },
     publisher: {
       "@type": "Organization",
@@ -134,7 +142,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       logo: { "@type": "ImageObject", url: "https://totemavise.com/icon.png" },
     },
     ...(imageUrl ? { image: imageUrl } : {}),
-    mainEntityOfPage: `https://totemavise.com/blog/${post.slug}`,
+    mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
+    url: postUrl,
+  }
+
+  // BreadcrumbList JSON-LD
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: "https://totemavise.com" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://totemavise.com/blog" },
+      { "@type": "ListItem", position: 3, name: post.title },
+    ],
   }
 
   return (
@@ -142,6 +162,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       {/* Hero image */}

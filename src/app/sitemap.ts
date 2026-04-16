@@ -9,29 +9,31 @@ export const revalidate = 21600
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date()
+
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/films`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/series`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/jeux`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/livres`, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${baseUrl}/collections`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/recommandations`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/recherche`, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${baseUrl}/guides`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/notre-methode`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/a-propos`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/objectif`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/nos-valeurs`, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/contact`, changeFrequency: "monthly", priority: 0.3 },
+    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${baseUrl}/films`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/series`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/jeux`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/livres`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/recommandations`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/notre-methode`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${baseUrl}/a-propos`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/objectif`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/nos-valeurs`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     // Age range pages
-    { url: `${baseUrl}/age/2-4`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/5-7`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/8-10`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/11-12`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/13-15`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/16-plus`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/2-4`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/5-7`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/8-10`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/11-12`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/13-15`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${baseUrl}/age/16-plus`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
   ]
 
   // Media pages from database
@@ -65,10 +67,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }))
-    // Add the blog listing page
+    // Add the blog listing page (lastModified = newest published post)
     if (posts.length > 0) {
+      const latestPostDate = new Date(
+        posts.reduce((max, p) => (p.publishedAt > max ? p.publishedAt : max), posts[0].publishedAt)
+      )
       blogPages.unshift({
         url: `${baseUrl}/blog`,
+        lastModified: latestPostDate,
         changeFrequency: "weekly" as const,
         priority: 0.8,
       })

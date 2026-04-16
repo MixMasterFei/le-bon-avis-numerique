@@ -269,19 +269,34 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
       ...(category ? [{ "@type": "ListItem", position: 2, name: category.label, item: `${baseUrl}${category.path}` }] : []),
-      { "@type": "ListItem", position: category ? 3 : 2, name: media.title },
+      { "@type": "ListItem", position: category ? 3 : 2, name: media.title, item: pageUrl },
     ],
   }
 
-  // AggregateRating from TMDB (if available)
-  const aggregateRating = media.tmdbRating && media.tmdbVoteCount && media.tmdbVoteCount > 0
+  // AggregateRating: prefer internal user reviews when present, fall back to TMDB
+  const internalRatings = media.reviews?.map((r) => r.rating).filter((n) => typeof n === "number") || []
+  const internalCount = internalRatings.length
+  const internalAvg = internalCount > 0
+    ? Math.round((internalRatings.reduce((a, b) => a + b, 0) / internalCount) * 10) / 10
+    : 0
+
+  const aggregateRating = internalCount > 0
     ? {
         "@type": "AggregateRating",
-        ratingValue: media.tmdbRating,
-        bestRating: 10,
-        ratingCount: media.tmdbVoteCount,
+        ratingValue: internalAvg,
+        bestRating: 5,
+        worstRating: 1,
+        ratingCount: internalCount,
       }
-    : undefined
+    : media.tmdbRating && media.tmdbVoteCount && media.tmdbVoteCount > 0
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: media.tmdbRating,
+          bestRating: 10,
+          worstRating: 0,
+          ratingCount: media.tmdbVoteCount,
+        }
+      : undefined
 
   // Main entity based on type
   let mainEntity: Record<string, unknown>
@@ -296,6 +311,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
         description: media.synopsisFr || undefined,
         ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
         url: pageUrl,
+        inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.director && { director: { "@type": "Person", name: media.director } }),
         ...(media.genres.length > 0 && { genre: media.genres }),
@@ -313,6 +329,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
         description: media.synopsisFr || undefined,
         ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
         url: pageUrl,
+        inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.officialRating && { contentRating: media.officialRating }),
@@ -329,6 +346,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
         description: media.synopsisFr || undefined,
         ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
         url: pageUrl,
+        inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.platforms.length > 0 && { gamePlatform: media.platforms }),
@@ -345,6 +363,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
         description: media.synopsisFr || undefined,
         ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && { image: media.posterUrl }),
         url: pageUrl,
+        inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(aggregateRating && { aggregateRating }),

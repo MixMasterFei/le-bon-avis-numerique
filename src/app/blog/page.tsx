@@ -42,8 +42,43 @@ export default async function BlogPage() {
     console.error("Failed to fetch blog posts:", error)
   }
 
+  const baseUrl = "https://totemavise.com"
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${baseUrl}/blog` },
+    ],
+  }
+
+  const itemListLd = posts.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "Articles du blog Totem Avisé",
+        numberOfItems: posts.length,
+        itemListElement: posts.slice(0, 20).map((post, idx) => ({
+          "@type": "ListItem",
+          position: idx + 1,
+          url: `${baseUrl}/blog/${post.slug}`,
+          name: post.title,
+        })),
+      }
+    : null
+
   return (
     <div className="container mx-auto px-4 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {itemListLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+        />
+      )}
       <div className="text-center mb-12">
         <div className="inline-flex p-4 bg-orange-100 rounded-full mb-6">
           <Newspaper className="h-8 w-8 text-orange-600" />

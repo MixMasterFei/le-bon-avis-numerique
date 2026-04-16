@@ -79,6 +79,8 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable}`}>
       <head>
+        <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://image.tmdb.org" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -99,6 +101,29 @@ export default function RootLayout({
                 email: "contact@totemavise.com",
                 contactType: "customer service",
                 availableLanguage: "French",
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Totem Avisé",
+              alternateName: "Totem Avise",
+              url: "https://totemavise.com",
+              inLanguage: "fr-FR",
+              description: "Recommandations de films, séries, jeux et livres pour les familles françaises.",
+              publisher: { "@type": "Organization", name: "Totem Avisé" },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: "https://totemavise.com/recherche?q={search_term_string}",
+                },
+                "query-input": "required name=search_term_string",
               },
             }),
           }}

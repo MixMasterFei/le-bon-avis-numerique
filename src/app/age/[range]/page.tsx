@@ -1,14 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
-
-import { useEffect, useState, use } from "react"
-import { notFound } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Users, Loader2 } from "lucide-react"
+import { notFound } from "next/navigation"
+import { ArrowLeft, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
-import { Pagination } from "@/components/ui/pagination"
 import { Button } from "@/components/ui/button"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import { prisma } from "@/lib/prisma"
+import { withPrismaRetry } from "@/lib/prisma-retry"
+import { toMediaRouteId } from "@/lib/media-route"
+import type { MediaItem } from "@/lib/types"
+import type { Prisma } from "@prisma/client"
+
+export const revalidate = 1800 // 30-min ISR
 
 const ITEMS_PER_PAGE = 24
 
@@ -53,107 +54,144 @@ const ageRanges: Record<string, { min: number; max: number; label: string; descr
 
 interface AgePageProps {
   params: Promise<{ range: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default function AgePage({ params }: AgePageProps) {
-  const { range } = use(params)
+async function fetchAgeRangeMedia(min: number, max: number, page: number) {
+  const skip = (page - 1) * ITEMS_PER_PAGE
+
+  const where: Prisma.MediaItemWhereInput = {
+    expertAgeRec: { gte: min, lte: max },
+    posterUrl: { not: null, startsWith: "http" },
+    isEnriched: true,
+    AND: [{ tmdbVoteCount: { gte: 50 } }],
+  }
+
+  const [rawItems, total] = await Promise.all([
+    withPrismaRetry(() =>
+      prisma.mediaItem.findMany({
+        where,
+        orderBy: [{ expertAgeRec: "asc" }, { tmdbRating: { sort: "desc", nulls: "last" } }],
+        skip,
+        take: ITEMS_PER_PAGE,
+        include: {
+          contentMetrics: true,
+          reviews: { select: { rating: true } },
+        },
+      })
+    ),
+    withPrismaRetry(() => prisma.mediaItem.count({ where })).catch(() => skip + ITEMS_PER_PAGE),
+  ])
+
+  const items: MediaItem[] = rawItems.map((item) => ({
+    id: item.id,
+    title: item.title,
+    originalTitle: item.originalTitle || undefined,
+    type: item.type as MediaItem["type"],
+    releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+    posterUrl: item.posterUrl || "",
+    synopsisFr: item.synopsisFr,
+    officialRating: item.officialRating,
+    expertAgeRec: item.expertAgeRec,
+    communityAgeRec: item.communityAgeRec,
+    genres: item.genres || [],
+    platforms: item.platforms || [],
+    topics: item.topics || [],
+    contentMetrics: item.contentMetrics
+      ? {
+          violence: item.contentMetrics.violence,
+          sexNudity: item.contentMetrics.sexNudity,
+          language: item.contentMetrics.language,
+          consumerism: item.contentMetrics.consumerism,
+          substanceUse: item.contentMetrics.substanceUse,
+          positiveMessages: item.contentMetrics.positiveMessages,
+          roleModels: item.contentMetrics.roleModels,
+          whatParentsNeedToKnow: item.contentMetrics.whatParentsNeedToKnow || [],
+        }
+      : {
+          violence: 0,
+          sexNudity: 0,
+          language: 0,
+          consumerism: 0,
+          substanceUse: 0,
+          positiveMessages: 0,
+          roleModels: 0,
+          whatParentsNeedToKnow: [],
+        },
+    reviews: [],
+    reviewCount: item.reviews.length,
+    reviewAvgRating:
+      item.reviews.length > 0
+        ? item.reviews.reduce((acc, r) => acc + r.rating, 0) / item.reviews.length
+        : null,
+    tmdbRating: item.tmdbRating,
+    tmdbVoteCount: item.tmdbVoteCount,
+  }))
+
+  return { items, total, totalPages: Math.ceil(total / ITEMS_PER_PAGE) }
+}
+
+export default async function AgePage({ params, searchParams }: AgePageProps) {
+  const { range } = await params
+  const sp = await searchParams
   const ageRange = ageRanges[range]
-
-  const [currentPage, setCurrentPage] = useState(1)
-  const [dbItems, setDbItems] = useState<MockMediaItem[]>([])
-  const [dbTotalPages, setDbTotalPages] = useState(1)
-  const [dbTotalResults, setDbTotalResults] = useState<number | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  // Fetch from database
-  useEffect(() => {
-    if (!ageRange) return
-
-    let cancelled = false
-    const controller = new AbortController()
-
-    async function load() {
-      setLoading(true)
-      try {
-        const dbParams = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: ITEMS_PER_PAGE.toString(),
-          minAge: ageRange.min.toString(),
-          maxAge: ageRange.max.toString(),
-          sort: "age",
-          minVotes: "50",
-        })
-
-        const dbRes = await fetch(`/api/db/media?${dbParams}`, { signal: controller.signal })
-        if (dbRes.ok) {
-          const dbData = await dbRes.json()
-          if (dbData.items && dbData.items.length > 0) {
-            const mapped: MockMediaItem[] = dbData.items.map((item: any) => ({
-              id: String(item.id),
-              title: String(item.title || ""),
-              originalTitle: item.originalTitle ? String(item.originalTitle) : undefined,
-              type: item.type,
-              releaseDate: item.releaseDate ?? null,
-              posterUrl: String(item.posterUrl || ""),
-              synopsisFr: item.synopsisFr ?? null,
-              officialRating: item.officialRating ?? null,
-              expertAgeRec: item.expertAgeRec ?? null,
-              communityAgeRec: item.communityAgeRec ?? null,
-              genres: item.genres || [],
-              platforms: item.platforms || [],
-              topics: item.topics || [],
-              contentMetrics: item.contentMetrics || null,
-              reviews: [],
-              reviewCount: item.reviewCount || 0,
-              reviewAvgRating: item.reviewAvgRating ?? null,
-              tmdbRating: item.tmdbRating ?? null,
-              tmdbVoteCount: item.tmdbVoteCount ?? null,
-            }))
-
-            if (!cancelled) {
-              setDbItems(mapped)
-              setDbTotalPages(dbData.pagination?.totalPages || 1)
-              setDbTotalResults(dbData.pagination?.total || mapped.length)
-            }
-            return
-          }
-        }
-
-        // No results from DB
-        if (!cancelled) {
-          setDbItems([])
-          setDbTotalPages(1)
-          setDbTotalResults(0)
-        }
-      } catch {
-        if (!cancelled) {
-          setDbItems([])
-          setDbTotalPages(1)
-          setDbTotalResults(0)
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    load()
-
-    return () => {
-      cancelled = true
-      controller.abort()
-    }
-  }, [currentPage, ageRange])
 
   if (!ageRange) {
     notFound()
   }
 
-  const displayItems = dbItems
-  const totalPages = dbTotalPages
-  const totalCount = dbTotalResults ?? dbItems.length
+  const pageParam = typeof sp.page === "string" ? sp.page : Array.isArray(sp.page) ? sp.page[0] : "1"
+  const currentPage = Math.max(1, parseInt(pageParam || "1") || 1)
+
+  const { items, total, totalPages } = await fetchAgeRangeMedia(
+    ageRange.min,
+    ageRange.max,
+    currentPage
+  )
+
+  const baseUrl = "https://totemavise.com"
+
+  // BreadcrumbList JSON-LD
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      { "@type": "ListItem", position: 2, name: `Contenus ${ageRange.label}`, item: `${baseUrl}/age/${range}` },
+    ],
+  }
+
+  // ItemList JSON-LD
+  const itemListLd =
+    items.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: `Contenus pour les ${ageRange.label}`,
+          description: ageRange.description,
+          numberOfItems: total,
+          itemListElement: items.slice(0, 20).map((item, idx) => ({
+            "@type": "ListItem",
+            position: (currentPage - 1) * ITEMS_PER_PAGE + idx + 1,
+            url: `${baseUrl}/media/${toMediaRouteId(item.type, item.id)}`,
+            name: item.title,
+          })),
+        }
+      : null
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {itemListLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <Link
@@ -193,11 +231,9 @@ export default function AgePage({ params }: AgePageProps) {
 
       {/* Results Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <p className="text-gray-600">
-            {totalCount} résultat{totalCount !== 1 ? "s" : ""} pour cette tranche d&apos;âge
-          </p>
-        </div>
+        <p className="text-gray-600">
+          {total} résultat{total !== 1 ? "s" : ""} pour cette tranche d&apos;âge
+        </p>
         {totalPages > 1 && (
           <p className="text-sm text-gray-500">
             Page {currentPage} sur {totalPages}
@@ -206,27 +242,38 @@ export default function AgePage({ params }: AgePageProps) {
       </div>
 
       {/* Content */}
-      {loading ? (
-        <div className="text-center py-16 text-gray-500">
-          <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
-          <p className="text-lg font-medium">Chargement...</p>
-          <p className="text-sm">Récupération du catalogue</p>
-        </div>
-      ) : displayItems.length > 0 ? (
+      {items.length > 0 ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-            {displayItems.map((item) => (
+            {items.map((item) => (
               <MediaCard key={item.id} media={item} />
             ))}
           </div>
 
+          {/* Server-rendered pagination (URL-based) */}
           {totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              className="mt-8"
-            />
+            <nav className="mt-8 flex items-center justify-center gap-2" aria-label="Pagination">
+              {currentPage > 1 && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link
+                    href={`/age/${range}${currentPage - 1 > 1 ? `?page=${currentPage - 1}` : ""}`}
+                    rel="prev"
+                  >
+                    Précédent
+                  </Link>
+                </Button>
+              )}
+              <span className="px-3 text-sm text-gray-600">
+                {currentPage} / {totalPages}
+              </span>
+              {currentPage < totalPages && (
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/age/${range}?page=${currentPage + 1}`} rel="next">
+                    Suivant
+                  </Link>
+                </Button>
+              )}
+            </nav>
           )}
         </>
       ) : (
@@ -240,6 +287,7 @@ export default function AgePage({ params }: AgePageProps) {
           </p>
         </div>
       )}
+
     </div>
   )
 }

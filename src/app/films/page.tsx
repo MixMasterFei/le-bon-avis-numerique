@@ -95,12 +95,50 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     }
   }
 
+  // JSON-LD: BreadcrumbList + ItemList of currently visible items
+  const baseUrl = "https://totemavise.com"
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      { "@type": "ListItem", position: 2, name: "Films", item: `${baseUrl}/films` },
+    ],
+  }
+
+  const itemListLd = initialData?.items?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "Films pour la famille",
+        numberOfItems: initialData.pagination.total,
+        itemListElement: initialData.items.slice(0, 20).map((item, idx) => ({
+          "@type": "ListItem",
+          position: (page - 1) * 24 + idx + 1,
+          url: `${baseUrl}/media/movie:${encodeURIComponent(item.id)}`,
+          name: item.title,
+        })),
+      }
+    : null
+
   return (
-    <ClientFilmsPage
-      initialData={initialData}
-      initialFilters={{ minAge, maxAge, topics, platforms, search, sortBy }}
-      initialPage={page}
-      isCinema={isCinema}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {itemListLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+        />
+      )}
+      <ClientFilmsPage
+        initialData={initialData}
+        initialFilters={{ minAge, maxAge, topics, platforms, search, sortBy }}
+        initialPage={page}
+        isCinema={isCinema}
+      />
+    </>
   )
 }

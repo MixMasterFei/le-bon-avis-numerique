@@ -86,11 +86,48 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
     console.error("Series SSR fetch failed:", error)
   }
 
+  const baseUrl = "https://totemavise.com"
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: baseUrl },
+      { "@type": "ListItem", position: 2, name: "Séries", item: `${baseUrl}/series` },
+    ],
+  }
+
+  const itemListLd = initialData?.items?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        name: "Séries TV pour la famille",
+        numberOfItems: initialData.pagination.total,
+        itemListElement: initialData.items.slice(0, 20).map((item, idx) => ({
+          "@type": "ListItem",
+          position: (page - 1) * 24 + idx + 1,
+          url: `${baseUrl}/media/tv:${encodeURIComponent(item.id)}`,
+          name: item.title,
+        })),
+      }
+    : null
+
   return (
-    <ClientSeriesPage
-      initialData={initialData}
-      initialFilters={{ minAge, maxAge, topics, platforms, search, sortBy }}
-      initialPage={page}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {itemListLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+        />
+      )}
+      <ClientSeriesPage
+        initialData={initialData}
+        initialFilters={{ minAge, maxAge, topics, platforms, search, sortBy }}
+        initialPage={page}
+      />
+    </>
   )
 }
