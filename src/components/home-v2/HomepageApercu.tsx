@@ -10,6 +10,8 @@ import { ApercuCollections } from "./ApercuCollections"
 import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
 import { ApercuFooter } from "./ApercuFooter"
+import { ApercuNav } from "./ApercuNav"
+import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface HomepageApercuProps {
@@ -26,22 +28,8 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
         className="flex flex-col overflow-x-hidden"
         style={{ background: p.bg, color: p.ink }}
       >
-        {/* Preview banner — reminds Xavier this is the test page */}
-        <div
-          className="text-center text-xs py-2"
-          style={{ background: p.ink, color: p.bg }}
-        >
-          <span className="opacity-80">
-            Aperçu design · non visible par les utilisateurs ·{" "}
-            <a href="/apercu?font=poppins" className="underline">
-              tester avec Poppins
-            </a>
-            {" · "}
-            <a href="/apercu" className="underline">
-              revenir à Fraunces
-            </a>
-          </span>
-        </div>
+        <ApercuPreviewBanner />
+        <ApercuNav />
 
         <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
 
