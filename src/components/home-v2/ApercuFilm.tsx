@@ -17,7 +17,7 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { SimilarMedia } from "@/components/media/SimilarMedia"
+import { ApercuSimilarMedia } from "./ApercuSimilarMedia"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
@@ -310,11 +310,12 @@ export function ApercuFilm({
               titleAccentColor="accent2"
               serifClass={serifClass}
             >
-              <SimilarMedia
+              <ApercuSimilarMedia
                 mediaId={media.id}
                 mediaType={media.type}
                 genres={media.genres}
                 topics={media.topics}
+                serifClass={serifClass}
               />
             </ApercuSection>
           </div>
