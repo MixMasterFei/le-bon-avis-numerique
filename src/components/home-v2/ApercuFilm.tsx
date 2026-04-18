@@ -104,10 +104,10 @@ export function ApercuFilm({
 
         <FilmHero media={media} serifClass={serifClass} />
 
-        {/* Main body: 2/3 + 1/3 grid, cream canvas. Points clés and
-           screenshots now live in the main column rather than as
-           full-width bands above — tighter page, less scrolling. */}
-        <section className="py-8 md:py-12" style={{ background: p.bg }}>
+        {/* Main body: 2/3 + 1/3 grid on the deeper cream (bg2) so the
+           lighter hero reads as a distinct opening band.
+           Follows the Art Direction doc's bg → bg2 → bg rhythm. */}
+        <section className="py-8 md:py-12" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
               {/* Main column */}
@@ -236,21 +236,6 @@ export function ApercuFilm({
                     </TabsContent>
                   </Tabs>
                 </ApercuSection>
-
-                <ApercuSection
-                  eyebrow="À découvrir ensuite"
-                  title="Contenus"
-                  titleAccent="similaires"
-                  titleAccentColor="accent2"
-                  serifClass={serifClass}
-                >
-                  <SimilarMedia
-                    mediaId={media.id}
-                    mediaType={media.type}
-                    genres={media.genres}
-                    topics={media.topics}
-                  />
-                </ApercuSection>
               </div>
 
               {/* Sidebar — each widget in its own warm art-directed frame */}
@@ -310,6 +295,28 @@ export function ApercuFilm({
                 </ApercuSection>
               </aside>
             </div>
+          </div>
+        </section>
+
+        {/* Similar media: full-width band on the lighter bg so the
+           poster grid breathes across the whole container instead
+           of being cropped inside the 2/3 main column. */}
+        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <ApercuSection
+              eyebrow="À découvrir ensuite"
+              title="Contenus"
+              titleAccent="similaires"
+              titleAccentColor="accent2"
+              serifClass={serifClass}
+            >
+              <SimilarMedia
+                mediaId={media.id}
+                mediaType={media.type}
+                genres={media.genres}
+                topics={media.topics}
+              />
+            </ApercuSection>
           </div>
         </section>
 
