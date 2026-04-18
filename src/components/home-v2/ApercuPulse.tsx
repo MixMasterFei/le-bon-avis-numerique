@@ -79,7 +79,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
           <CountTile
             serifClass={serifClass}
             n={totalCatalog}
-            label="contenus évalués"
+            label="contenus analysés"
             accent={p.accent}
           />
           <CountTile
@@ -108,21 +108,21 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reactions}
-                label="réactions de membres de famille"
+                label="réactions partagées en famille"
               />
             )}
             {data.counts.ageVotes > 0 && (
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.ageVotes}
-                label="votes sur les âges recommandés"
+                label="votes sur l’âge recommandé"
               />
             )}
             {data.counts.reviews > 0 && (
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reviews}
-                label="avis rédigés par les parents"
+                label="avis rédigés par des parents"
               />
             )}
           </div>

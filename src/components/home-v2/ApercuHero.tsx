@@ -81,33 +81,33 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
               >
                 ✦
               </span>
-              Recommandations indépendantes, sans pub
+              Le guide indépendant des familles · sans publicité
             </div>
 
             <h1
               className={`${serifClass} text-4xl md:text-5xl lg:text-6xl leading-[1.02] tracking-tight font-medium m-0`}
               style={{ color: p.ink, letterSpacing: "-0.02em" }}
             >
-              Trouvez les
-              <br />
+              Les{" "}
               <em className="italic" style={{ color: p.accent }}>
                 bons contenus
               </em>
-              ,<br />
+              ,
+              <br />
               pour{" "}
               <span className="italic" style={{ color: p.accent2 }}>
                 chaque
               </span>{" "}
-              enfant.
+              âge du foyer.
             </h1>
 
             <p
               className="mt-6 md:mt-7 max-w-xl text-base md:text-lg leading-relaxed"
               style={{ color: p.ink2 }}
             >
-              Films, séries et jeux vidéo évalués par des parents — adaptés à
-              l’âge, aux goûts et aux sensibilités de chaque membre de votre
-              foyer.
+              Films, séries et jeux vidéo analysés en détail — pour des choix
+              médias éclairés, adaptés aux goûts et aux sensibilités de chaque
+              membre du foyer.
             </p>
 
             <div className="mt-8 max-w-xl relative z-30">
@@ -147,20 +147,20 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
               >
                 <Stat
                   n={formatCount(totalCatalog)}
-                  l="œuvres évaluées"
+                  l="œuvres analysées"
                   serifClass={serifClass}
                 />
                 {stats && stats.counts.families > 0 && (
                   <Stat
                     n={formatCount(stats.counts.families)}
-                    l="profils famille"
+                    l="foyers actifs"
                     serifClass={serifClass}
                   />
                 )}
                 {stats && stats.counts.reviews > 0 && (
                   <Stat
                     n={formatCount(stats.counts.reviews)}
-                    l="avis parents"
+                    l="avis de parents"
                     accent={p.accent}
                     serifClass={serifClass}
                   />
@@ -258,17 +258,17 @@ function HeroPosterCard({
             </div>
           )}
         </div>
-        <div
-          className="px-3.5 py-2.5 flex items-center justify-between text-[11px]"
-          style={{ color: p.ink2 }}
-        >
-          <span className={`${serifClass} text-sm line-clamp-1`} style={{ color: p.ink }}>
+        <div className="px-3.5 py-2.5" style={{ color: p.ink2 }}>
+          <div
+            className={`${serifClass} text-sm line-clamp-1`}
+            style={{ color: p.ink, letterSpacing: "-0.01em" }}
+          >
             {pick.title}
-          </span>
+          </div>
           {pick.genres[0] && (
-            <span className="line-clamp-1 max-w-[80px] text-right">
+            <div className="text-[10px] mt-0.5 line-clamp-1">
               {pick.genres[0]}
-            </span>
+            </div>
           )}
         </div>
       </div>

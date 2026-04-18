@@ -69,7 +69,7 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
               étape
             </h2>
             <p className="mt-2 text-sm md:text-base max-w-lg" style={{ color: p.ink2 }}>
-              Calibré selon le développement de l’enfant, pas juste une
+              Calibré selon chaque étape du développement, pas juste une
               étiquette d’âge.
             </p>
           </div>
