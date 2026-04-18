@@ -96,23 +96,24 @@ const LINKS: LinkCase[] = [
   { group: "age", label: "16+ ans", href: "/films?maxAge=99",
     expect: { maxAge: 99 } },
 
-  // Group C — theme tiles (8)
-  { group: "theme", label: "Aventure", href: "/films/recherche?genres=Aventure&maxViolence=3",
-    expect: { genre: "Aventure", maxViolence: 3 } },
+  // Group C — theme tiles (8). Genre-only filtering; no content-metric
+  // caps. Users clicking a genre want the full catalog of that genre.
+  { group: "theme", label: "Aventure", href: "/films/recherche?genres=Aventure",
+    expect: { genre: "Aventure" } },
   { group: "theme", label: "Animation", href: "/films/recherche?genres=Animation",
     expect: { genre: "Animation" } },
-  { group: "theme", label: "Fantastique", href: "/films/recherche?genres=Fantastique&maxViolence=3",
-    expect: { genre: "Fantastique", maxViolence: 3, allowEmpty: true } },
-  { group: "theme", label: "Comédie", href: "/films/recherche?genres=Comédie&maxViolence=2&maxSexual=2&maxLanguage=2",
-    expect: { genre: "Comédie", maxViolence: 2, maxSexual: 2, maxLanguage: 2 } },
+  { group: "theme", label: "Fantastique", href: "/films/recherche?genres=Fantastique",
+    expect: { genre: "Fantastique", allowEmpty: true } },
+  { group: "theme", label: "Comédie", href: "/films/recherche?genres=Comédie",
+    expect: { genre: "Comédie" } },
   { group: "theme", label: "Nature", href: "/films/recherche?topics=Nature",
     expect: { topic: "Nature", allowEmpty: true } },
-  { group: "theme", label: "Sci-Fi", href: "/films/recherche?genres=Science-Fiction&maxViolence=3",
-    expect: { genre: "Science-Fiction", maxViolence: 3, allowEmpty: true } },
-  { group: "theme", label: "Drame", href: "/films/recherche?genres=Drame&maxViolence=2&maxSexual=2&maxLanguage=2",
-    expect: { genre: "Drame", maxViolence: 2, maxSexual: 2, maxLanguage: 2, allowEmpty: true } },
-  { group: "theme", label: "Musique", href: "/films/recherche?genres=Musique&maxViolence=2&maxSexual=2&maxSubstance=2",
-    expect: { genre: "Musique", maxViolence: 2, maxSexual: 2, maxSubstance: 2, allowEmpty: true } },
+  { group: "theme", label: "Sci-Fi", href: "/films/recherche?genres=Science-Fiction",
+    expect: { genre: "Science-Fiction", allowEmpty: true } },
+  { group: "theme", label: "Drame", href: "/films/recherche?genres=Drame",
+    expect: { genre: "Drame" } },
+  { group: "theme", label: "Musique", href: "/films/recherche?genres=Musique",
+    expect: { genre: "Musique", allowEmpty: true } },
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────
