@@ -10,7 +10,7 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { FamilyFitHero } from "@/components/media/FamilyFitHero"
+import { FamilyFitCard } from "@/components/media/FamilyFitCard"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
@@ -428,9 +428,11 @@ function FilmHero({
             )}
           </div>
 
-          {/* FamilyFitHero — real per-member fit data, same component as live page */}
+          {/* FamilyFitCard — same API as FamilyFitHero but with the
+             light-theme palette that reads correctly on the warm cream
+             hero (the Hero variant assumes a dark backdrop). */}
           <div className="lg:w-72 xl:w-80 shrink-0">
-            <FamilyFitHero mediaId={media.id} />
+            <FamilyFitCard mediaId={media.id} />
           </div>
         </div>
       </div>
