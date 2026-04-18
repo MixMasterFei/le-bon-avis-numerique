@@ -14,7 +14,6 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { FamilyFitCard } from "@/components/media/FamilyFitCard"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
@@ -24,6 +23,8 @@ import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuFooter } from "./ApercuFooter"
+import { ApercuSection } from "./ApercuSection"
+import { ApercuFamilyFit } from "./ApercuFamilyFit"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface ApercuFilmMedia {
@@ -90,132 +91,228 @@ export function ApercuFilm({
         <ApercuPreviewBanner />
         <ApercuNav />
 
-        {/* Hero with warm-tinted blurred backdrop */}
         <FilmHero media={media} serifClass={serifClass} />
 
-        {/* Main content: 2/3 + 1/3 sidebar, mirrors the live /media/[id] layout */}
-        <div className="container mx-auto px-4 md:px-8 py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-            <div className="lg:col-span-2 space-y-7">
-              {media.contentMetrics && (
-                <WhatParentsNeedToKnow
-                  items={media.contentMetrics.whatParentsNeedToKnow}
-                />
-              )}
+        {/* Points clés: bg2 band */}
+        {media.contentMetrics &&
+          media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
+            <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
+              <div className="container mx-auto px-4 md:px-8">
+                <ApercuSection
+                  eyebrow="Ce qu’il faut savoir"
+                  title="Les"
+                  titleAccent="points clés"
+                  serifClass={serifClass}
+                >
+                  <WarmCard>
+                    <WhatParentsNeedToKnow
+                      items={media.contentMetrics.whatParentsNeedToKnow}
+                    />
+                  </WarmCard>
+                </ApercuSection>
+              </div>
+            </section>
+          )}
 
-              <TalkToYourKids
-                title={media.title}
-                type={media.type}
-                metrics={media.contentMetrics ?? {
-                  violence: 0,
-                  sexNudity: 0,
-                  language: 0,
-                  consumerism: 0,
-                  substanceUse: 0,
-                  positiveMessages: 0,
-                  roleModels: 0,
-                  whatParentsNeedToKnow: [],
-                }}
-                genres={media.genres}
-                topics={media.topics}
-              />
+        {/* Main body: 2/3 + 1/3 grid, cream canvas */}
+        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+              {/* Main column */}
+              <div className="lg:col-span-2 space-y-12">
+                <ApercuSection
+                  eyebrow="En parler"
+                  title="Discuter"
+                  titleAccent="avec vos enfants"
+                  titleAccentColor="accent2"
+                  serifClass={serifClass}
+                >
+                  <WarmCard>
+                    <TalkToYourKids
+                      title={media.title}
+                      type={media.type}
+                      metrics={
+                        media.contentMetrics ?? {
+                          violence: 0,
+                          sexNudity: 0,
+                          language: 0,
+                          consumerism: 0,
+                          substanceUse: 0,
+                          positiveMessages: 0,
+                          roleModels: 0,
+                          whatParentsNeedToKnow: [],
+                        }
+                      }
+                      genres={media.genres}
+                      topics={media.topics}
+                    />
+                  </WarmCard>
+                </ApercuSection>
 
-              <Tabs defaultValue="reviews" className="w-full">
-                <TabsList className="w-full justify-start">
-                  <TabsTrigger value="reviews">
-                    Avis ({media.reviews.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="details">Détails</TabsTrigger>
-                </TabsList>
+                <ApercuSection
+                  eyebrow="Avis & détails"
+                  title="Ce que disent"
+                  titleAccent="les parents"
+                  serifClass={serifClass}
+                >
+                  <Tabs defaultValue="reviews" className="w-full">
+                    <TabsList
+                      className="w-full justify-start"
+                      style={{ background: p.bg2 }}
+                    >
+                      <TabsTrigger value="reviews">
+                        Avis ({media.reviews.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="details">Détails</TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="reviews" className="space-y-4 mt-6">
-                  <ReviewsSection reviews={media.reviews} />
-                </TabsContent>
+                    <TabsContent value="reviews" className="space-y-4 mt-6">
+                      <WarmCard>
+                        <ReviewsSection reviews={media.reviews} />
+                      </WarmCard>
+                    </TabsContent>
 
-                <TabsContent value="details" className="mt-6">
-                  <Card
-                    className="border"
-                    style={{
-                      background: p.card,
-                      borderColor: p.line,
-                    }}
+                    <TabsContent value="details" className="mt-6">
+                      <WarmCard>
+                        <Card
+                          style={{
+                            background: "transparent",
+                            border: 0,
+                            boxShadow: "none",
+                          }}
+                        >
+                          <CardContent className="p-0 space-y-5">
+                            <div className="grid sm:grid-cols-2 gap-4">
+                              <DetailRow
+                                label="Type"
+                                value={mediaTypeLabels[media.type]}
+                              />
+                              {media.releaseDate && (
+                                <DetailRow
+                                  label="Date de sortie"
+                                  value={formatDateFr(media.releaseDate)}
+                                />
+                              )}
+                              {media.duration && (
+                                <DetailRow
+                                  label="Durée"
+                                  value={formatDuration(media.duration)}
+                                />
+                              )}
+                              {media.director && (
+                                <DetailRow
+                                  label="Réalisateur"
+                                  value={media.director}
+                                />
+                              )}
+                            </div>
+                            {media.topics.length > 0 && (
+                              <div>
+                                <h4
+                                  className="text-[11px] font-semibold mb-2 uppercase tracking-wide"
+                                  style={{ color: p.ink2 }}
+                                >
+                                  Thèmes
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {media.topics.map((t) => (
+                                    <Badge
+                                      key={t}
+                                      variant="secondary"
+                                      style={{
+                                        background: p.bg2,
+                                        color: p.ink2,
+                                        border: `1px solid ${p.line}`,
+                                      }}
+                                    >
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </WarmCard>
+                    </TabsContent>
+                  </Tabs>
+                </ApercuSection>
+
+                <ApercuSection
+                  eyebrow="À découvrir ensuite"
+                  title="Contenus"
+                  titleAccent="similaires"
+                  titleAccentColor="accent2"
+                  serifClass={serifClass}
+                >
+                  <SimilarMedia
+                    mediaId={media.id}
+                    mediaType={media.type}
+                    genres={media.genres}
+                    topics={media.topics}
+                  />
+                </ApercuSection>
+              </div>
+
+              {/* Sidebar — each widget in its own warm art-directed frame */}
+              <aside className="space-y-8">
+                <ApercuSection
+                  eyebrow="Réactions"
+                  title="Pour"
+                  titleAccent="votre foyer"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <FamilyReactions
+                        mediaId={media.id}
+                        mediaTitle={media.title}
+                      />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+
+                {media.contentMetrics && (
+                  <ApercuSection
+                    eyebrow="Les 7 critères"
+                    title="Analyse"
+                    titleAccent="en détail"
+                    tight
+                    serifClass={serifClass}
                   >
-                    <CardContent className="p-6 space-y-4">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <DetailRow
-                          label="Type"
-                          value={mediaTypeLabels[media.type]}
+                    <WarmCard padded={false}>
+                      <div className="p-5">
+                        <DualMetricsDisplay
+                          mediaId={media.id}
+                          mediaTitle={media.title}
+                          expertMetrics={media.contentMetrics}
                         />
-                        {media.releaseDate && (
-                          <DetailRow
-                            label="Date de sortie"
-                            value={formatDateFr(media.releaseDate)}
-                          />
-                        )}
-                        {media.duration && (
-                          <DetailRow
-                            label="Durée"
-                            value={formatDuration(media.duration)}
-                          />
-                        )}
-                        {media.director && (
-                          <DetailRow
-                            label="Réalisateur"
-                            value={media.director}
-                          />
-                        )}
                       </div>
-                      {media.topics.length > 0 && (
-                        <div>
-                          <h4
-                            className="text-sm font-medium mb-2"
-                            style={{ color: p.ink2 }}
-                          >
-                            Thèmes
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {media.topics.map((t) => (
-                              <Badge
-                                key={t}
-                                variant="secondary"
-                                style={{ background: p.bg2, color: p.ink2 }}
-                              >
-                                {t}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                    </WarmCard>
+                  </ApercuSection>
+                )}
 
-              <SimilarMedia
-                mediaId={media.id}
-                mediaType={media.type}
-                genres={media.genres}
-                topics={media.topics}
-              />
-            </div>
-
-            {/* Sidebar — exact same components as live page, 1/3 width */}
-            <div className="space-y-6">
-              <FamilyReactions mediaId={media.id} mediaTitle={media.title} />
-              {media.contentMetrics && (
-                <DualMetricsDisplay
-                  mediaId={media.id}
-                  mediaTitle={media.title}
-                  expertMetrics={media.contentMetrics}
-                />
-              )}
-              <ReportCorrectionButton
-                mediaId={media.id}
-                mediaTitle={media.title}
-              />
+                <ApercuSection
+                  eyebrow="Vous repérez une erreur ?"
+                  title="Aidez-nous"
+                  titleAccent="à corriger"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <ReportCorrectionButton
+                        mediaId={media.id}
+                        mediaTitle={media.title}
+                      />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+              </aside>
             </div>
           </div>
-        </div>
+        </section>
 
         <ApercuFooter serifClass={serifClass} />
       </div>
@@ -432,11 +529,10 @@ function FilmHero({
             )}
           </div>
 
-          {/* FamilyFitCard — same API as FamilyFitHero but with the
-             light-theme palette that reads correctly on the warm cream
-             hero (the Hero variant assumes a dark backdrop). */}
+          {/* Warm-palette family fit widget — replaces the indigo/purple
+             FamilyFitCard so the sidebar panel belongs to the cream canvas. */}
           <div className="lg:w-72 xl:w-80 shrink-0">
-            <FamilyFitCard mediaId={media.id} />
+            <ApercuFamilyFit mediaId={media.id} serifClass={serifClass} />
           </div>
         </div>
       </div>
@@ -446,11 +542,35 @@ function FilmHero({
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
+function WarmCard({
+  children,
+  padded = true,
+}: {
+  children: React.ReactNode
+  padded?: boolean
+}) {
+  const p = APERCU_PALETTE
+  return (
+    <div
+      className={`rounded-2xl overflow-hidden ${padded ? "p-5 md:p-6" : ""}`}
+      style={{
+        background: p.card,
+        border: `1px solid ${p.line}`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 function DetailRow({ label, value }: { label: string; value: string }) {
   const p = APERCU_PALETTE
   return (
     <div>
-      <h4 className="text-sm font-medium mb-1" style={{ color: p.ink2 }}>
+      <h4
+        className="text-[11px] font-semibold mb-1 uppercase tracking-wide"
+        style={{ color: p.ink2 }}
+      >
         {label}
       </h4>
       <p className="font-medium" style={{ color: p.ink }}>
