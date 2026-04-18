@@ -5,6 +5,10 @@ import { ApercuFilm } from "@/components/home-v2/ApercuFilm"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
 
+// Force full dynamic rendering so the session cookie is never cached
+// and useSession() on the client always sees the authenticated user.
+export const dynamic = "force-dynamic"
+
 const OWNER_EMAIL = "masterfei@gmail.com"
 
 interface SearchParams {

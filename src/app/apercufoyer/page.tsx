@@ -5,6 +5,8 @@ import { ApercuFoyer } from "@/components/home-v2/ApercuFoyer"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
 
+export const dynamic = "force-dynamic"
+
 const OWNER_EMAIL = "masterfei@gmail.com"
 
 interface SearchParams {
