@@ -108,7 +108,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reactions}
-                label="réactions partagées en famille"
+                label="réactions partagées dans la communauté"
               />
             )}
             {data.counts.ageVotes > 0 && (
@@ -122,7 +122,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reviews}
-                label="avis rédigés par des parents"
+                label="avis rédigés par la communauté"
               />
             )}
           </div>
@@ -167,7 +167,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
                 className={`${serifClass} text-lg md:text-xl font-medium`}
                 style={{ letterSpacing: "-0.02em" }}
               >
-                Cette semaine, les familles regardent
+                Cette semaine, les plus aimés
               </h3>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

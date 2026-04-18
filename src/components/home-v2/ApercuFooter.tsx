@@ -72,8 +72,8 @@ export function ApercuFooter({ serifClass }: { serifClass: string }) {
               className="text-sm leading-relaxed max-w-xs"
               style={{ color: "rgba(244,239,228,0.60)" }}
             >
-              Le guide indépendant des familles. Porté par des parents, pour
-              des parents.
+              Le guide indépendant pour chaque foyer. Sans algorithme, sans
+              publicité.
             </p>
             <div className="flex items-center gap-3 mt-4">
               {[

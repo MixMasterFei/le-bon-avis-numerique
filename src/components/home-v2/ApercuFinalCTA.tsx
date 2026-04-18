@@ -26,13 +26,13 @@ export function ApercuFinalCTA({
             style={{ letterSpacing: "-0.03em" }}
           >
             {isLoggedIn
-              ? "Prêts pour votre prochaine soirée famille ?"
-              : "Prêts à composer votre prochaine soirée famille ?"}
+              ? "Prêts pour votre prochaine soirée ?"
+              : "Prêts à composer votre prochaine soirée ?"}
           </h2>
           <p className="mt-4 text-sm md:text-base opacity-90 max-w-xl mx-auto">
             {isLoggedIn
               ? "Des recommandations adaptées à votre foyer, mises à jour chaque semaine."
-              : "Gratuit, sans publicité, sans algorithme opaque. Juste des parents qui s’entraident."}
+              : "Gratuit, sans publicité, sans algorithme opaque. Juste une communauté qui s’entraide."}
           </p>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
             {isLoggedIn ? (
@@ -42,7 +42,7 @@ export function ApercuFinalCTA({
                   className="px-7 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02]"
                   style={{ background: "#fff", color: p.ink }}
                 >
-                  Mon espace famille
+                  Mon espace
                 </Link>
                 <Link
                   href="/films"

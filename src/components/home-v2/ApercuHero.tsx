@@ -124,7 +124,7 @@ export function ApercuHero({
               >
                 ✦
               </span>
-              Le guide indépendant des familles · sans publicité
+              Indépendant · sans publicité · porté par la communauté
             </div>
 
             <h1
@@ -137,19 +137,19 @@ export function ApercuHero({
               </em>
               ,
               <br />
-              pour{" "}
+              choisis{" "}
               <span className="italic" style={{ color: p.accent2 }}>
-                chaque
-              </span>{" "}
-              âge du foyer.
+                en confiance
+              </span>
+              .
             </h1>
 
             <p
               className="mt-6 md:mt-7 max-w-xl text-base md:text-lg leading-relaxed"
               style={{ color: p.ink2 }}
             >
-              On analyse chaque film, série et jeu vidéo. Vous choisissez en
-              confiance, pour chaque âge de la maison.
+              On passe chaque film, série et jeu vidéo au crible. À vous de
+              choisir ce qui vous correspond.
             </p>
 
             <div className="mt-8 max-w-xl relative z-30">
@@ -366,7 +366,7 @@ function ProfilBadge({
           className={`${serifClass} text-[13px] font-semibold leading-tight`}
           style={{ color: p.ink }}
         >
-          {useReal ? "Votre foyer" : "Profil famille créé"}
+          {useReal ? "Votre foyer" : "Profil foyer créé"}
         </div>
         <div
           className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap"

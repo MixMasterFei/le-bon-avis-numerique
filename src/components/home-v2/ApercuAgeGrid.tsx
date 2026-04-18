@@ -69,8 +69,8 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
               étape
             </h2>
             <p className="mt-2 text-sm md:text-base max-w-lg" style={{ color: p.ink2 }}>
-              Pas juste une étiquette d’âge. On tient compte de ce que chaque
-              enfant peut comprendre et apprécier.
+              Pas juste une étiquette d’âge. On regarde le contenu réel,
+              pas l’année de naissance.
             </p>
           </div>
           <Link
