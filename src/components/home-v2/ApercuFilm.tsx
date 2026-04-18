@@ -1,4 +1,8 @@
-"use client"
+// Server component. Do NOT add "use client" here: SimilarMedia is a
+// server component that imports prisma, and importing it from a
+// client module silently breaks the hydration tree — every other
+// session-aware widget (Header avatar, FamilyFitCard, FamilyReactions)
+// stops activating because React never finishes reconciling the tree.
 
 import Image from "next/image"
 import { Star } from "lucide-react"
