@@ -26,6 +26,14 @@ function FilmsRechercheContent() {
   const initialSortBy = useMemo(() => searchParams.get("sortBy") || undefined, [searchParams])
   const initialExcludeGenres = useMemo(() => searchParams.get("excludeGenres")?.split(",").filter(Boolean) || [], [searchParams])
   const initialRequirePoster = useMemo(() => searchParams.get("requirePoster") === "true", [searchParams])
+  // Content-metric caps (0-5 scale). Read from URL and forward to the API.
+  // Values preserved verbatim through filter interactions so chip-driven
+  // safety caps don't silently drop when the user tweaks the sidebar.
+  const initialMaxViolence = useMemo(() => searchParams.get("maxViolence"), [searchParams])
+  const initialMaxSexual = useMemo(() => searchParams.get("maxSexual"), [searchParams])
+  const initialMaxLanguage = useMemo(() => searchParams.get("maxLanguage"), [searchParams])
+  const initialMaxSubstance = useMemo(() => searchParams.get("maxSubstance"), [searchParams])
+  const initialMaxConsumerism = useMemo(() => searchParams.get("maxConsumerism"), [searchParams])
   // Merge genres into topics for filtering (they work the same way in the API)
   const mergedTopics = [...new Set([...initialTopics, ...initialGenres])]
 
@@ -71,9 +79,14 @@ function FilmsRechercheContent() {
     if (initialExcludeGenres.length > 0) {
       params.set("excludeGenres", initialExcludeGenres.join(","))
     }
+    if (initialMaxViolence) params.set("maxViolence", initialMaxViolence)
+    if (initialMaxSexual) params.set("maxSexual", initialMaxSexual)
+    if (initialMaxLanguage) params.set("maxLanguage", initialMaxLanguage)
+    if (initialMaxSubstance) params.set("maxSubstance", initialMaxSubstance)
+    if (initialMaxConsumerism) params.set("maxConsumerism", initialMaxConsumerism)
     const newUrl = params.toString() ? `/films/recherche?${params}` : "/films/recherche"
     router.replace(newUrl, { scroll: false })
-  }, [router, initialSortBy, initialRequirePoster, initialMinQuality, initialExcludeGenres])
+  }, [router, initialSortBy, initialRequirePoster, initialMinQuality, initialExcludeGenres, initialMaxViolence, initialMaxSexual, initialMaxLanguage, initialMaxSubstance, initialMaxConsumerism])
 
   // Priority: 1. Database, 2. External API, 3. Mock data
   useEffect(() => {
@@ -115,6 +128,11 @@ function FilmsRechercheContent() {
         if (initialRequirePoster) {
           dbParams.set("requirePoster", "true")
         }
+        if (initialMaxViolence) dbParams.set("maxViolence", initialMaxViolence)
+        if (initialMaxSexual) dbParams.set("maxSexual", initialMaxSexual)
+        if (initialMaxLanguage) dbParams.set("maxLanguage", initialMaxLanguage)
+        if (initialMaxSubstance) dbParams.set("maxSubstance", initialMaxSubstance)
+        if (initialMaxConsumerism) dbParams.set("maxConsumerism", initialMaxConsumerism)
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {
@@ -229,7 +247,7 @@ function FilmsRechercheContent() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy, initialExcludeGenres, initialMinQuality, initialRequirePoster, initialSortBy])
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy, initialExcludeGenres, initialMinQuality, initialRequirePoster, initialSortBy, initialMaxViolence, initialMaxSexual, initialMaxLanguage, initialMaxSubstance, initialMaxConsumerism])
 
   const filteredMovies = useMemo(() => {
     return apiMovies

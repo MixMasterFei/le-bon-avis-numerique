@@ -73,6 +73,17 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const platforms = get(params, "platforms")?.split(",").filter(Boolean) || []
   const search = get(params, "q") || ""
   const sortBy = get(params, "sortBy") || "releaseDate"
+  const parseMetric = (key: string): number | undefined => {
+    const raw = get(params, key)
+    if (!raw) return undefined
+    const n = parseInt(raw)
+    return Number.isFinite(n) ? n : undefined
+  }
+  const maxViolence = parseMetric("maxViolence")
+  const maxSexual = parseMetric("maxSexual")
+  const maxLanguage = parseMetric("maxLanguage")
+  const maxSubstance = parseMetric("maxSubstance")
+  const maxConsumerism = parseMetric("maxConsumerism")
 
   // Cinema mode: don't SSR data (TMDB API is external, client-only)
   let initialData = null
@@ -89,6 +100,11 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         sortBy: sortBy !== "releaseDate" ? sortBy : undefined,
         requirePoster: true,
         language: "fr,en",
+        maxViolence,
+        maxSexual,
+        maxLanguage,
+        maxSubstance,
+        maxConsumerism,
       })
     } catch (error) {
       console.error("Films SSR fetch failed:", error)

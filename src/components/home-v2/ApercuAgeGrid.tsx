@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { APERCU_AGE_BUCKETS, APERCU_PALETTE } from "./apercuTheme"
+import { APERCU_AGE_BUCKETS, APERCU_PALETTE, buildAgeBucketHref } from "./apercuTheme"
 
 export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
@@ -14,10 +14,19 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
       const entries = await Promise.all(
         APERCU_AGE_BUCKETS.map(async (b) => {
           try {
-            const res = await fetch(
-              `/api/db/movies?maxAge=${b.maxAge}&minQuality=50&requirePoster=true&limit=1&page=1`,
-              { cache: "force-cache" }
-            )
+            // Count uses the same caps as the tile link so the number
+            // matches what the user will actually see on click.
+            const params = new URLSearchParams({
+              maxAge: String(b.maxAge),
+              minQuality: "50",
+              requirePoster: "true",
+              limit: "1",
+              page: "1",
+            })
+            for (const [k, v] of Object.entries(b.caps)) {
+              if (typeof v === "number") params.set(k, String(v))
+            }
+            const res = await fetch(`/api/db/movies?${params}`, { cache: "force-cache" })
             if (!res.ok) return [b.key, null] as const
             const data = await res.json()
             const total =
@@ -88,7 +97,7 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
             return (
               <Link
                 key={b.key}
-                href={`/films?maxAge=${b.maxAge}`}
+                href={buildAgeBucketHref(b)}
                 className="group rounded-2xl p-4 md:p-5 text-left relative overflow-hidden transition-all hover:-translate-y-0.5"
                 style={{
                   background: p.card,

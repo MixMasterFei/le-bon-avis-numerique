@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { fetchSeries, type MediaQueryFilters } from "@/lib/media-queries"
 
+const parseIntOrUndef = (v: string | null): number | undefined =>
+  v === null || v === "" ? undefined : parseInt(v)
+
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
 
   const filters: MediaQueryFilters = {
     page: parseInt(sp.get("page") || "1"),
     limit: parseInt(sp.get("limit") || "20"),
-    minAge: sp.get("minAge") ? parseInt(sp.get("minAge")!) : undefined,
-    maxAge: sp.get("maxAge") ? parseInt(sp.get("maxAge")!) : undefined,
+    minAge: parseIntOrUndef(sp.get("minAge")),
+    maxAge: parseIntOrUndef(sp.get("maxAge")),
+    maxViolence: parseIntOrUndef(sp.get("maxViolence")),
+    maxSexual: parseIntOrUndef(sp.get("maxSexual")),
+    maxLanguage: parseIntOrUndef(sp.get("maxLanguage")),
+    maxSubstance: parseIntOrUndef(sp.get("maxSubstance")),
+    maxConsumerism: parseIntOrUndef(sp.get("maxConsumerism")),
     genres: sp.get("genre") ? [sp.get("genre")!] : sp.get("genres")?.split(",").map(g => g.trim()) || undefined,
     topics: sp.get("topics")?.split(",").map(t => t.trim()) || undefined,
     platforms: sp.get("platforms")?.split(",").map(p => p.trim()) || undefined,

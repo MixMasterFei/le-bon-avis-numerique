@@ -25,6 +25,14 @@ export interface MediaQueryFilters {
   frenchOnly?: boolean
   shuffle?: string
   nowPlaying?: boolean
+  // Content-metric caps (0-5 scale, values from ContentMetrics table).
+  // Each filter excludes items whose metric exceeds the cap AND items
+  // without a ContentMetrics row (safer default for family-friendly URLs).
+  maxViolence?: number
+  maxSexual?: number
+  maxLanguage?: number
+  maxSubstance?: number
+  maxConsumerism?: number
   // Games-specific
   consoleOnly?: boolean
   includeAll?: boolean
@@ -134,6 +142,25 @@ function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxA
   }
 }
 
+function applyContentMetricCaps(
+  where: Prisma.MediaItemWhereInput,
+  filters: Pick<
+    MediaQueryFilters,
+    "maxViolence" | "maxSexual" | "maxLanguage" | "maxSubstance" | "maxConsumerism"
+  >,
+) {
+  const metricFilter: Record<string, { lte: number }> = {}
+  if (typeof filters.maxViolence === "number") metricFilter.violence = { lte: filters.maxViolence }
+  if (typeof filters.maxSexual === "number") metricFilter.sexNudity = { lte: filters.maxSexual }
+  if (typeof filters.maxLanguage === "number") metricFilter.language = { lte: filters.maxLanguage }
+  if (typeof filters.maxSubstance === "number") metricFilter.substanceUse = { lte: filters.maxSubstance }
+  if (typeof filters.maxConsumerism === "number") metricFilter.consumerism = { lte: filters.maxConsumerism }
+  if (Object.keys(metricFilter).length === 0) return
+  // Filtering on a 1:1 optional relation implicitly excludes items whose
+  // ContentMetrics row is missing — intentional for safety-focused filters.
+  appendAnd(where, { contentMetrics: metricFilter })
+}
+
 function applySearchFilter(where: Prisma.MediaItemWhereInput, search?: string, includeOriginalTitle = true) {
   if (!search) return
   const orConditions: Prisma.MediaItemWhereInput[] = [
@@ -241,6 +268,9 @@ export async function fetchMovies(filters: MediaQueryFilters = {}): Promise<Medi
   // Age
   applyAgeFilter(where, filters.minAge, filters.maxAge)
 
+  // Content-metric caps (violence, sexual, language, substance, consumerism)
+  applyContentMetricCaps(where, filters)
+
   // Genres
   if (filters.genres && filters.genres.length > 0) {
     if (filters.requireAllGenres) {
@@ -346,6 +376,7 @@ export async function fetchSeries(filters: MediaQueryFilters = {}): Promise<Medi
 
   applyLanguageFilter(where, filters.language, filters.frenchOnly)
   applyAgeFilter(where, filters.minAge, filters.maxAge)
+  applyContentMetricCaps(where, filters)
 
   // Series uses single-genre `has` for backward compat, plus hasSome for multi-genre
   if (filters.genres && filters.genres.length > 0) {
@@ -441,6 +472,7 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
   }
 
   applyAgeFilter(where, filters.minAge, filters.maxAge)
+  applyContentMetricCaps(where, filters)
 
   // Platform filter
   if (filters.platforms && filters.platforms.length > 0) {

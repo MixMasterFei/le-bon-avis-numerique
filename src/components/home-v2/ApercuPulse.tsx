@@ -108,7 +108,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reactions}
-                label="réactions partagées dans la communauté"
+                label="premières réactions des foyers inscrits"
               />
             )}
             {data.counts.ageVotes > 0 && (
@@ -122,7 +122,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
               <ActivityTile
                 serifClass={serifClass}
                 n={data.counts.reviews}
-                label="avis rédigés par la communauté"
+                label="premiers avis publiés"
               />
             )}
           </div>

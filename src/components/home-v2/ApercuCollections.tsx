@@ -4,16 +4,18 @@ import Link from "next/link"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 // Warm palette tones — all drawn from the age-grid family so the whole
-// page stays in a single chromatic universe.
+// page stays in a single chromatic universe. Adult-leaning genres
+// carry defensive content-metric caps so a family-oriented homepage
+// never lands users on an obviously inappropriate grid.
 const THEMES = [
-  { title: "Aventure", sub: "voyages & découvertes", color: "#E8A87C", href: "/films/recherche?genres=Aventure" },
+  { title: "Aventure", sub: "voyages & découvertes", color: "#E8A87C", href: "/films/recherche?genres=Aventure&maxViolence=3" },
   { title: "Animation", sub: "dessins animés", color: "#F4C7A6", href: "/films/recherche?genres=Animation" },
-  { title: "Fantastique", sub: "mondes enchantés", color: "#C9B7D9", href: "/films/recherche?genres=Fantastique" },
-  { title: "Comédie", sub: "rires en famille", color: "#F8D775", href: "/films/recherche?genres=Comédie" },
+  { title: "Fantastique", sub: "mondes enchantés", color: "#C9B7D9", href: "/films/recherche?genres=Fantastique&maxViolence=3" },
+  { title: "Comédie", sub: "rires en famille", color: "#F8D775", href: "/films/recherche?genres=Comédie&maxViolence=2&maxSexual=2&maxLanguage=2" },
   { title: "Nature", sub: "animaux & planète", color: "#B8D89A", href: "/films/recherche?topics=Nature" },
-  { title: "Sci-Fi", sub: "espace & futur", color: "#8DBDC9", href: "/films/recherche?genres=Science-Fiction" },
-  { title: "Drame", sub: "histoires émouvantes", color: "#D89AB0", href: "/films/recherche?genres=Drame" },
-  { title: "Musique", sub: "comédies musicales", color: "#E9C7A1", href: "/films/recherche?genres=Musique" },
+  { title: "Sci-Fi", sub: "espace & futur", color: "#8DBDC9", href: "/films/recherche?genres=Science-Fiction&maxViolence=3" },
+  { title: "Drame", sub: "histoires émouvantes", color: "#D89AB0", href: "/films/recherche?genres=Drame&maxViolence=2&maxSexual=2&maxLanguage=2" },
+  { title: "Musique", sub: "comédies musicales", color: "#E9C7A1", href: "/films/recherche?genres=Musique&maxViolence=2&maxSexual=2&maxSubstance=2" },
 ]
 
 export function ApercuCollections({ serifClass }: { serifClass: string }) {

@@ -124,7 +124,7 @@ export function ApercuHero({
               >
                 ✦
               </span>
-              Indépendant · sans publicité · porté par la communauté
+              Indépendant · sans publicité · fait main
             </div>
 
             <h1
@@ -162,8 +162,8 @@ export function ApercuHero({
               </span>
               {[
                 { label: "Animation", href: "/films/recherche?genres=Animation" },
-                { label: "Soirée famille", href: "/films?maxAge=10" },
-                { label: "Ados", href: "/films?maxAge=15" },
+                { label: "Soirée famille", href: "/films?maxAge=10&maxViolence=2&maxSexual=1&maxLanguage=1" },
+                { label: "Ados", href: "/films?maxAge=15&maxViolence=3" },
                 { label: "Sans violence", href: "/films/recherche?maxViolence=1" },
                 { label: "Écologie", href: "/films/recherche?topics=Nature" },
               ].map((t) => (
