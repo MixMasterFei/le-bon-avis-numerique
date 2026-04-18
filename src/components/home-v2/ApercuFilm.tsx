@@ -10,13 +10,15 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
+import { AgeVoteButton } from "@/components/media/AgeVoteButton"
+import { MediaPageClient } from "@/components/media/MediaPageClient"
+import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { SimilarMedia } from "@/components/media/SimilarMedia"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
-import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
@@ -56,6 +58,13 @@ interface ApercuFilmMedia {
     roleModels: number
     whatParentsNeedToKnow: string[]
   } | null
+  screenshots: Array<{
+    id: string
+    url: string
+    width: number | null
+    height: number | null
+    order: number
+  }>
   reviews: Array<{
     id: string
     role: "PARENT" | "KID" | "EDUCATOR"
@@ -76,9 +85,11 @@ interface ApercuFilmMedia {
 export function ApercuFilm({
   media,
   serifClass,
+  isAdmin,
 }: {
   media: ApercuFilmMedia
   serifClass: string
+  isAdmin: boolean
 }) {
   const p = APERCU_PALETTE
 
@@ -93,61 +104,49 @@ export function ApercuFilm({
 
         <FilmHero media={media} serifClass={serifClass} />
 
-        {/* Points clés: bg2 band */}
-        {media.contentMetrics &&
-          media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
-            <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
-              <div className="container mx-auto px-4 md:px-8">
-                <ApercuSection
-                  eyebrow="Ce qu’il faut savoir"
-                  title="Les"
-                  titleAccent="points clés"
-                  serifClass={serifClass}
-                >
-                  <WarmCard>
-                    <WhatParentsNeedToKnow
-                      items={media.contentMetrics.whatParentsNeedToKnow}
-                    />
-                  </WarmCard>
-                </ApercuSection>
-              </div>
-            </section>
-          )}
-
-        {/* Main body: 2/3 + 1/3 grid, cream canvas */}
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+        {/* Main body: 2/3 + 1/3 grid, cream canvas. Points clés and
+           screenshots now live in the main column rather than as
+           full-width bands above — tighter page, less scrolling. */}
+        <section className="py-8 md:py-12" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
               {/* Main column */}
-              <div className="lg:col-span-2 space-y-12">
-                <ApercuSection
-                  eyebrow="En parler"
-                  title="Discuter"
-                  titleAccent="avec vos enfants"
-                  titleAccentColor="accent2"
-                  serifClass={serifClass}
-                >
-                  <WarmCard>
-                    <TalkToYourKids
-                      title={media.title}
-                      type={media.type}
-                      metrics={
-                        media.contentMetrics ?? {
-                          violence: 0,
-                          sexNudity: 0,
-                          language: 0,
-                          consumerism: 0,
-                          substanceUse: 0,
-                          positiveMessages: 0,
-                          roleModels: 0,
-                          whatParentsNeedToKnow: [],
-                        }
-                      }
-                      genres={media.genres}
-                      topics={media.topics}
-                    />
-                  </WarmCard>
-                </ApercuSection>
+              <div className="lg:col-span-2 space-y-10">
+                {media.contentMetrics &&
+                  media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
+                    <ApercuSection
+                      eyebrow="Ce qu’il faut savoir"
+                      title="Les"
+                      titleAccent="points clés"
+                      serifClass={serifClass}
+                    >
+                      <WarmCard>
+                        <WhatParentsNeedToKnow
+                          items={media.contentMetrics.whatParentsNeedToKnow}
+                        />
+                      </WarmCard>
+                    </ApercuSection>
+                  )}
+
+                {media.screenshots.length > 0 && (
+                  <ApercuSection
+                    eyebrow="Extraits"
+                    title="Captures"
+                    titleAccent="d’écran"
+                    titleAccentColor="accent2"
+                    serifClass={serifClass}
+                  >
+                    <WarmCard padded={false}>
+                      <div className="p-3 md:p-4">
+                        <AdminScreenshotsWrapper
+                          screenshots={media.screenshots}
+                          title={media.title}
+                          isAdmin={isAdmin}
+                        />
+                      </div>
+                    </WarmCard>
+                  </ApercuSection>
+                )}
 
                 <ApercuSection
                   eyebrow="Avis & détails"
@@ -445,18 +444,43 @@ function FilmHero({
                   <span>{formatDuration(media.duration)}</span>
                 </>
               )}
-              {media.expertAgeRec !== null && (
-                <>
-                  <span style={{ color: p.line2 }}>·</span>
-                  <span
-                    className="px-2 py-0.5 rounded text-xs font-semibold"
-                    style={{ background: "#B8D89A", color: "#2D3E1E" }}
-                  >
-                    Dès {media.expertAgeRec} ans
-                  </span>
-                </>
-              )}
             </div>
+
+            {/* Age recommendation card with thumbs-up/down vote — same
+               AgeVoteButton as the live page, sitting in a warm panel. */}
+            {media.expertAgeRec !== null && (
+              <div
+                className="mt-5 inline-flex items-center gap-4 p-3 pr-4 rounded-xl"
+                style={{
+                  background: p.card,
+                  border: `1px solid ${p.line}`,
+                }}
+              >
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                  style={{ background: "#5C8A5C", color: "#fff" }}
+                >
+                  {media.expertAgeRec}+
+                </div>
+                <div>
+                  <div
+                    className="text-[11px] font-semibold uppercase tracking-wide"
+                    style={{ color: p.ink2 }}
+                  >
+                    Recommandation
+                  </div>
+                  <div
+                    className={`${serifClass} text-base font-medium`}
+                    style={{ color: p.ink, letterSpacing: "-0.01em" }}
+                  >
+                    dès {media.expertAgeRec} ans
+                  </div>
+                </div>
+                <div className="ml-2">
+                  <AgeVoteButton mediaId={media.id} />
+                </div>
+              </div>
+            )}
 
             {media.genres.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -485,12 +509,22 @@ function FilmHero({
               </p>
             )}
 
-            {/* Watch providers */}
+            {/* Watch providers (trailer + streaming services) */}
             <WatchProvidersClient
               mediaId={media.id}
               mediaType={media.type}
               className="mt-6"
             />
+
+            {/* Action bar — favorite, watchlist, review, share. Same
+               component as the live page so the user has parity. */}
+            <div className="mt-4">
+              <MediaPageClient
+                mediaId={media.id}
+                mediaTitle={media.title}
+                showActions
+              />
+            </div>
 
             {/* Rating summary */}
             {rating && (

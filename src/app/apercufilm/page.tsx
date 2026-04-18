@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/lib/auth"
+import { auth, isAdmin as checkIsAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuFilm } from "@/components/home-v2/ApercuFilm"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -46,6 +46,10 @@ export default async function ApercuFilmPage(props: {
     },
     include: {
       contentMetrics: true,
+      screenshots: {
+        orderBy: { order: "asc" },
+        take: 12,
+      },
       reviews: {
         include: { user: { select: { id: true, name: true, image: true } } },
         orderBy: { createdAt: "desc" },
@@ -63,6 +67,7 @@ export default async function ApercuFilmPage(props: {
     redirect("/apercu")
   }
 
+  const isAdmin = await checkIsAdmin()
   const searchParams = await props.searchParams
   const useFraunces = isFraunces(searchParams?.font)
   const serifClass = useFraunces
@@ -90,6 +95,13 @@ export default async function ApercuFilmPage(props: {
     tmdbRating: media.tmdbRating,
     tmdbVoteCount: media.tmdbVoteCount,
     officialRating: media.officialRating,
+    screenshots: media.screenshots.map((s) => ({
+      id: s.id,
+      url: s.url,
+      width: s.width,
+      height: s.height,
+      order: s.order,
+    })),
     contentMetrics: media.contentMetrics
       ? {
           violence: media.contentMetrics.violence,
@@ -131,7 +143,11 @@ export default async function ApercuFilmPage(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      <ApercuFilm media={mediaForClient} serifClass={serifClass} />
+      <ApercuFilm
+        media={mediaForClient}
+        serifClass={serifClass}
+        isAdmin={isAdmin}
+      />
     </div>
   )
 }
