@@ -98,16 +98,31 @@ export default async function ApercuFilmPage(props: {
           whatParentsNeedToKnow: media.contentMetrics.whatParentsNeedToKnow ?? [],
         }
       : null,
-    reviews: media.reviews.map((r) => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment,
-      ageSuggestion: r.ageSuggestion,
-      createdAt: r.createdAt.toISOString(),
-      user: r.user
-        ? { id: r.user.id, name: r.user.name, image: r.user.image }
-        : null,
-    })),
+    reviews: media.reviews.map((r) => {
+      const ext = r as unknown as {
+        editedAt?: Date | null
+        familyMember?: { id: string; name: string; avatarEmoji?: string } | null
+      }
+      return {
+        id: r.id,
+        role: r.role as "PARENT" | "KID" | "EDUCATOR",
+        rating: r.rating,
+        ageSuggestion: r.ageSuggestion ?? 0,
+        comment: r.comment || "",
+        createdAt: r.createdAt.toISOString(),
+        editedAt: ext.editedAt?.toISOString() || null,
+        user: r.user
+          ? { id: r.user.id, name: r.user.name, image: r.user.image }
+          : undefined,
+        familyMember: ext.familyMember
+          ? {
+              id: ext.familyMember.id,
+              name: ext.familyMember.name,
+              avatarEmoji: ext.familyMember.avatarEmoji ?? "",
+            }
+          : null,
+      }
+    }),
   }
 
   return (
