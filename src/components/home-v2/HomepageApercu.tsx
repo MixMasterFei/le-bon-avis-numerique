@@ -43,7 +43,7 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
           </span>
         </div>
 
-        <ApercuHero serifClass={serifClass} />
+        <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
 
         <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">

@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Aperçu — Totem Avisé",
-  description: "Aperçu interne du design v2 — non public.",
+  title: "Aperçu · Totem Avisé",
+  description: "Aperçu interne du design v2. Non public.",
   robots: { index: false, follow: false },
 }
 
