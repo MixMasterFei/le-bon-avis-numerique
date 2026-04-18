@@ -41,9 +41,9 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
 
   if (!data) {
     return (
-      <section className="py-16 md:py-20" style={{ background: p.bg2 }}>
+      <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
         <div className="container mx-auto px-4 md:px-8">
-          <div className="h-48 rounded-2xl animate-pulse" style={{ background: p.placeholder }} />
+          <div className="h-40 rounded-2xl animate-pulse" style={{ background: p.placeholder }} />
         </div>
       </section>
     )
@@ -54,19 +54,19 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
 
   return (
     <section
-      className="py-16 md:py-24"
+      className="py-10 md:py-14"
       style={{ background: p.bg2, color: p.ink }}
     >
       <div className="container mx-auto px-4 md:px-8">
-        <div className="text-center mb-12 md:mb-14">
+        <div className="text-center mb-8 md:mb-10">
           <div
-            className="text-xs font-semibold mb-2 uppercase tracking-wide"
+            className="text-[11px] font-semibold mb-1.5 uppercase tracking-wide"
             style={{ color: p.accent }}
           >
             En direct
           </div>
           <h2
-            className={`${serifClass} text-3xl md:text-5xl font-medium m-0`}
+            className={`${serifClass} text-2xl md:text-4xl font-medium m-0`}
             style={{ letterSpacing: "-0.03em" }}
           >
             Ça <em className="italic" style={{ color: p.accent }}>bouge</em>{" "}
@@ -75,7 +75,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
         </div>
 
         {/* Row 1: catalog counts */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7">
           <CountTile
             serifClass={serifClass}
             n={totalCatalog}
@@ -103,7 +103,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
         {(data.counts.reactions > 0 ||
           data.counts.ageVotes > 0 ||
           data.counts.reviews > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
             {data.counts.reactions > 0 && (
               <ActivityTile
                 serifClass={serifClass}
@@ -130,10 +130,10 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
 
         {/* Row 3: latest additions */}
         {data.latestAdditions.length > 0 && (
-          <div className="mb-12">
-            <div className="flex items-baseline justify-between mb-5">
+          <div className="mb-9">
+            <div className="flex items-baseline justify-between mb-4">
               <h3
-                className={`${serifClass} text-xl md:text-2xl font-medium`}
+                className={`${serifClass} text-lg md:text-xl font-medium`}
                 style={{ letterSpacing: "-0.02em" }}
               >
                 Fraîchement ajoutés
@@ -146,7 +146,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
                 Voir tout →
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {data.latestAdditions.map((item) => (
                 <PulsePoster
                   key={item.id}
@@ -162,15 +162,15 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
         {/* Row 4: weekly buzz */}
         {data.weeklyBuzz.length > 0 && (
           <div>
-            <div className="flex items-baseline justify-between mb-5">
+            <div className="flex items-baseline justify-between mb-4">
               <h3
-                className={`${serifClass} text-xl md:text-2xl font-medium`}
+                className={`${serifClass} text-lg md:text-xl font-medium`}
                 style={{ letterSpacing: "-0.02em" }}
               >
                 Cette semaine, les familles regardent
               </h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {data.weeklyBuzz.map((item) => (
                 <PulsePoster
                   key={item.id}

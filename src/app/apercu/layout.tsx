@@ -7,5 +7,15 @@ export const metadata: Metadata = {
 }
 
 export default function ApercuLayout({ children }: { children: React.ReactNode }) {
-  return children
+  return (
+    <>
+      {/*
+        Hide the global site <Footer /> on this route so the apercu
+        page can render its own warm-palette footer without the
+        violet site footer stacking underneath.
+      */}
+      <style>{`body > footer:not([data-apercu-footer]) { display: none !important; }`}</style>
+      {children}
+    </>
+  )
 }

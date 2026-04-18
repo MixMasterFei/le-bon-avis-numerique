@@ -64,8 +64,8 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
       className="relative overflow-hidden"
       style={{ background: p.bg, color: p.ink }}
     >
-      <div className="container mx-auto px-4 md:px-8 py-16 md:py-24">
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
+      <div className="container mx-auto px-4 md:px-8 py-10 md:py-16">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
           <div>
             <div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-7"
@@ -85,7 +85,7 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
             </div>
 
             <h1
-              className={`${serifClass} text-4xl md:text-6xl lg:text-7xl leading-[1.02] tracking-tight font-medium m-0`}
+              className={`${serifClass} text-4xl md:text-5xl lg:text-6xl leading-[1.02] tracking-tight font-medium m-0`}
               style={{ color: p.ink, letterSpacing: "-0.02em" }}
             >
               Trouvez les
@@ -169,7 +169,7 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
             )}
           </div>
 
-          <div className="relative h-[480px] md:h-[560px] hidden md:block">
+          <div className="relative h-[380px] md:h-[460px] hidden md:block">
             {picks.length > 0
               ? picks.slice(0, 4).map((pick, idx) => (
                   <HeroPosterCard
@@ -185,7 +185,7 @@ export function ApercuHero({ serifClass }: { serifClass: string }) {
               : Array.from({ length: 4 }).map((_, idx) => (
                   <div
                     key={idx}
-                    className="absolute w-[220px] aspect-[3/4] rounded-2xl animate-pulse"
+                    className="absolute w-[180px] aspect-[3/4] rounded-2xl animate-pulse"
                     style={{
                       ...POSITIONS[idx],
                       transform: `rotate(${TILT_STEPS[idx]}deg)`,
@@ -222,7 +222,7 @@ function HeroPosterCard({
   return (
     <Link
       href={`/media/${toMediaRouteId(pick.type, pick.id)}`}
-      className="absolute w-[220px] block transition-transform duration-300 hover:-translate-y-1"
+      className="absolute w-[180px] block transition-transform duration-300 hover:-translate-y-1"
       style={{
         ...pos,
         zIndex,
@@ -246,7 +246,7 @@ function HeroPosterCard({
               alt={pick.title}
               fill
               className="object-cover"
-              sizes="220px"
+              sizes="180px"
             />
           )}
           {ageLabel && (

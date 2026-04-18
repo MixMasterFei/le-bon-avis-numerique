@@ -46,20 +46,20 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
 
   return (
     <section
-      className="py-16 md:py-24"
+      className="py-10 md:py-14"
       style={{ background: p.bg, color: p.ink }}
     >
       <div className="container mx-auto px-4 md:px-8">
-        <div className="flex flex-wrap justify-between items-end gap-4 mb-10">
+        <div className="flex flex-wrap justify-between items-end gap-3 mb-7">
           <div>
             <div
-              className="text-xs font-semibold mb-2 uppercase tracking-wide"
+              className="text-[11px] font-semibold mb-1.5 uppercase tracking-wide"
               style={{ color: p.accent }}
             >
               Par âge
             </div>
             <h2
-              className={`${serifClass} text-3xl md:text-5xl font-medium m-0`}
+              className={`${serifClass} text-2xl md:text-4xl font-medium m-0`}
               style={{ letterSpacing: "-0.03em", color: p.ink }}
             >
               Adapté à{" "}
@@ -68,9 +68,9 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
               </em>{" "}
               étape
             </h2>
-            <p className="mt-3 text-base max-w-xl" style={{ color: p.ink2 }}>
-              Recommandations calibrées selon le développement de l’enfant,
-              pas juste une étiquette d’âge.
+            <p className="mt-2 text-sm md:text-base max-w-lg" style={{ color: p.ink2 }}>
+              Calibré selon le développement de l’enfant, pas juste une
+              étiquette d’âge.
             </p>
           </div>
           <Link
@@ -82,14 +82,14 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {APERCU_AGE_BUCKETS.map((b) => {
             const n = counts[b.key]
             return (
               <Link
                 key={b.key}
                 href={`/films?maxAge=${b.maxAge}`}
-                className="group rounded-[20px] p-6 pb-5 text-left relative overflow-hidden transition-all hover:-translate-y-1"
+                className="group rounded-2xl p-4 md:p-5 text-left relative overflow-hidden transition-all hover:-translate-y-0.5"
                 style={{
                   background: p.card,
                   border: `1px solid ${p.line2}`,
@@ -97,19 +97,19 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
                 }}
               >
                 <div
-                  className="text-xs font-medium tracking-wide mb-7"
+                  className="text-[11px] font-medium tracking-wide mb-4 md:mb-5"
                   style={{ color: p.ink2 }}
                 >
                   ans
                 </div>
                 <div
-                  className={`${serifClass} text-4xl md:text-5xl font-medium leading-none mb-2`}
+                  className={`${serifClass} text-3xl md:text-4xl font-medium leading-none mb-1.5`}
                   style={{ letterSpacing: "-0.02em" }}
                 >
                   {b.label}
                 </div>
-                <div className="text-sm font-semibold">{b.name}</div>
-                <div className="text-xs mt-0.5" style={{ color: p.ink2 }}>
+                <div className="text-[13px] font-semibold">{b.name}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: p.ink2 }}>
                   {n === null
                     ? "…"
                     : n === undefined
@@ -117,7 +117,7 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
                       : `${n.toLocaleString("fr-FR")} contenus`}
                 </div>
                 <div
-                  className="absolute top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors group-hover:opacity-100"
+                  className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full flex items-center justify-center text-xs transition-colors group-hover:opacity-100"
                   style={{ background: b.color, color: p.ink }}
                 >
                   →
