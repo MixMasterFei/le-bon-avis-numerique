@@ -15,6 +15,7 @@ import { cn, mediaTypeLabels } from "@/lib/utils"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 import { toMediaRouteId } from "@/lib/media-route"
 import { useSettings } from "@/contexts/SettingsContext"
+import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 
 const typeIcons = {
   MOVIE: Film,
@@ -160,10 +161,18 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
 
-  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies/TV (not games — illustrated covers)
-  const shouldBlur = settings.blur18Plus && media.type !== "GAME" && (
-    media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
-    media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
+  // Blur 15+ content with at least one mature metric. Source of truth:
+  // src/lib/should-blur-media.ts (also used by BlurredPoster).
+  const shouldBlur = shouldBlurMedia(
+    {
+      type: media.type,
+      expertAgeRec: media.expertAgeRec,
+      violence: media.contentMetrics?.violence,
+      sexNudity: media.contentMetrics?.sexNudity,
+      language: media.contentMetrics?.language,
+      substanceUse: media.contentMetrics?.substanceUse,
+    },
+    settings.blur18Plus,
   )
   const effectiveBlur = shouldBlur && !isBlurRemoved
 
@@ -194,6 +203,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
                 }}
                 role="button"
                 aria-label="Afficher le contenu"
+                title={BLUR_TOOLTIP}
               >
                 <div className="bg-black/60 rounded-full p-2">
                   <EyeOff className="h-5 w-5 text-white" />
@@ -265,6 +275,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
               }}
               role="button"
               aria-label="Afficher le contenu"
+              title={BLUR_TOOLTIP}
             >
               <div className="bg-black/60 rounded-full p-2">
                 <EyeOff className="h-5 w-5 text-white" />
@@ -365,10 +376,18 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
   const contentTags = getContentTags(media.contentMetrics, media.toneTags)
   const { settings } = useSettings()
   const [isBlurRemoved, setIsBlurRemoved] = useState(false)
-  // Blur only extreme content: violence level 5 (Mature) on 16+/18+ movies/TV (not games — illustrated covers)
-  const shouldBlur = settings.blur18Plus && media.type !== "GAME" && (
-    media.expertAgeRec !== null && media.expertAgeRec >= 16 &&
-    media.contentMetrics?.violence !== undefined && media.contentMetrics.violence >= 5
+  // Blur 15+ content with at least one mature metric. Source of truth:
+  // src/lib/should-blur-media.ts (also used by BlurredPoster).
+  const shouldBlur = shouldBlurMedia(
+    {
+      type: media.type,
+      expertAgeRec: media.expertAgeRec,
+      violence: media.contentMetrics?.violence,
+      sexNudity: media.contentMetrics?.sexNudity,
+      language: media.contentMetrics?.language,
+      substanceUse: media.contentMetrics?.substanceUse,
+    },
+    settings.blur18Plus,
   )
   const effectiveBlur = shouldBlur && !isBlurRemoved
 
@@ -400,6 +419,7 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
               }}
               role="button"
               aria-label="Afficher le contenu"
+              title={BLUR_TOOLTIP}
             >
               <div className="bg-black/60 rounded-full p-1.5">
                 <EyeOff className="h-4 w-4 text-white" />

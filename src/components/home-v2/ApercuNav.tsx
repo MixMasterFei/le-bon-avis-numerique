@@ -17,6 +17,7 @@ interface ApercuRoute {
 
 const ROUTES: ApercuRoute[] = [
   { href: "/apercu", label: "Accueil" },
+  { href: "/apercufilmslist", label: "Liste films" },
   { href: "/apercufilm", label: "Fiche film" },
   { href: "/apercufoyer", label: "Foyer" },
 ]

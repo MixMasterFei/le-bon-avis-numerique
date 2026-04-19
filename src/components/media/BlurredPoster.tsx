@@ -5,25 +5,47 @@ import Image from "next/image"
 import { EyeOff, Eye } from "lucide-react"
 import { useSettings } from "@/contexts/SettingsContext"
 import { cn } from "@/lib/utils"
+import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 
 interface BlurredPosterProps {
   src: string
   alt: string
   expertAgeRec: number | null
   violenceScore?: number | null
+  sexNudityScore?: number | null
+  languageScore?: number | null
+  substanceUseScore?: number | null
   mediaType?: string
   className?: string
   sizes?: string
   priority?: boolean
 }
 
-export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, mediaType, className, sizes, priority }: BlurredPosterProps) {
+export function BlurredPoster({
+  src,
+  alt,
+  expertAgeRec,
+  violenceScore,
+  sexNudityScore,
+  languageScore,
+  substanceUseScore,
+  mediaType,
+  className,
+  sizes,
+  priority,
+}: BlurredPosterProps) {
   const { settings } = useSettings()
   const [revealed, setRevealed] = useState(false)
-  // Don't blur game covers — illustrated artwork, not photographic
-  const shouldBlur = !revealed && settings.blur18Plus && mediaType !== "GAME" && (
-    (expertAgeRec !== null && expertAgeRec >= 16) ||
-    (violenceScore !== undefined && violenceScore !== null && violenceScore >= 4)
+  const shouldBlur = !revealed && shouldBlurMedia(
+    {
+      type: mediaType ?? "MOVIE",
+      expertAgeRec,
+      violence: violenceScore,
+      sexNudity: sexNudityScore,
+      language: languageScore,
+      substanceUse: substanceUseScore,
+    },
+    settings.blur18Plus,
   )
 
   return (
@@ -40,6 +62,7 @@ export function BlurredPoster({ src, alt, expertAgeRec, violenceScore, mediaType
         <button
           type="button"
           onClick={() => setRevealed(true)}
+          title={BLUR_TOOLTIP}
           className="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer"
         >
           <div className="bg-black/50 rounded-full p-2.5">
