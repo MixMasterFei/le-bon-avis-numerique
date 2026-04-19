@@ -80,13 +80,18 @@ async function parallelMap<T, R>(items: T[], concurrency: number, fn: (item: T) 
   return out
 }
 
-function buildPrompt(items: HydratedItem[]): string {
+function buildPrompt(items: HydratedItem[], existingTitles: string[]): string {
   const list = items
     .map((it, idx) => {
       const summary = (it.summary ?? "").slice(0, 400).replace(/\s+/g, " ")
       return `[${idx}] (${it.sourceName} · ${it.sourceCategory}) ${it.title}\n  URL: ${it.link}\n  IMG: ${it.imageUrl}\n  ${summary}`
     })
     .join("\n\n")
+
+  const alreadyPublished =
+    existingTitles.length > 0
+      ? `\n\n## Histoires DÉJÀ publiées (à ÉCARTER absolument)\n\nCes événements sont déjà couverts ces 72 dernières heures. N'émets AUCUNE histoire les concernant, même si de nouveaux articles les évoquent :\n${existingTitles.map((t) => `- "${t}"`).join("\n")}\n`
+      : ""
 
   return `Tu es l'éditeur de Totem Avisé, un guide pour familles françaises. Ta mission : repérer les ACTUALITÉS qui concernent directement les familles, les enfants, ou la parentalité numérique. Pas les essais, pas les opinions — de vraies nouvelles avec un angle famille clair.
 
@@ -140,7 +145,7 @@ Pour chaque histoire retenue, renvoie un objet JSON avec :
 
 Réponds UNIQUEMENT avec du JSON :
 {"stories": [ ... ]}
-
+${alreadyPublished}
 Articles :
 
 ${list}`
@@ -192,6 +197,7 @@ export interface DiscoverStats {
   storiesSynthesized: number
   storiesDroppedInvalid: number
   storiesPersisted: number
+  storiesUpdated: number
   archivedCount: number
   durationMs: number
   timings: {
@@ -259,6 +265,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       storiesSynthesized: 0,
       storiesDroppedInvalid: 0,
       storiesPersisted: 0,
+      storiesUpdated: 0,
       archivedCount: 0,
       durationMs: Date.now() - started,
       timings: {
@@ -270,10 +277,35 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
   }
 
-  // 4. Cluster + synthesize in one Claude call
+  // 4. Load existing PUBLISHED stories from the same 72h window so we
+  //    can both (a) tell Claude to skip them and (b) dedup at persist
+  //    time by source-URL overlap, even if Claude paraphrases the title.
+  const existingStories = await prisma.newsStory.findMany({
+    where: { status: "PUBLISHED", publishedAt: { gte: since } },
+    select: { id: true, slug: true, title: true, sources: true },
+  })
+
+  // Map every previously-published source URL to its existing story id.
+  // First-seen wins on collisions (a single URL ideally appears once).
+  const urlToExistingId = new Map<string, string>()
+  for (const story of existingStories) {
+    if (!Array.isArray(story.sources)) continue
+    for (const src of story.sources) {
+      if (typeof src !== "object" || src === null) continue
+      const url = (src as { url?: unknown }).url
+      if (typeof url === "string" && !urlToExistingId.has(url)) {
+        urlToExistingId.set(url, story.id)
+      }
+    }
+  }
+
+  // 5. Cluster + synthesize in one Claude call
   const synthStart = Date.now()
   const anthropic = getAnthropic()
-  const prompt = buildPrompt(unique)
+  const prompt = buildPrompt(
+    unique,
+    existingStories.map((s) => s.title),
+  )
   const response = await anthropic.messages.create({
     model: DEFAULT_MODEL,
     max_tokens: 8000,
@@ -324,10 +356,12 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   }
   const synthesizeMs = Date.now() - synthStart
 
-  // 5. Persist — upsert by slug (with numeric suffix on collision)
+  // 6. Persist — dedup by source-URL overlap before insert, fall back to
+  //    slug collision handling otherwise.
   const persistStart = Date.now()
   const now = new Date()
   let persisted = 0
+  let updated = 0
   for (const s of validStories) {
     const sources = s.sourceIndexes.map((i) => ({
       name: unique[i].sourceName,
@@ -340,47 +374,58 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       Math.min(...s.sourceIndexes.map((i) => unique[i].publishedAt.getTime())),
     )
 
+    // Dedup: if any source URL is already owned by a previously-persisted
+    // story (either from earlier runs OR earlier in this same loop),
+    // update that row in place instead of creating a duplicate.
+    let matchedExistingId: string | null = null
+    for (const src of sources) {
+      const id = urlToExistingId.get(src.url)
+      if (id) {
+        matchedExistingId = id
+        break
+      }
+    }
+
+    const data = {
+      title: s.title,
+      summary: s.summary,
+      body: s.body,
+      category: s.category,
+      sources,
+      imageUrl: s.imageUrl,
+      publishedAt,
+      relevanceScore: s.relevanceScore,
+      status: "PUBLISHED" as const,
+    }
+
+    if (matchedExistingId) {
+      await prisma.newsStory.update({
+        where: { id: matchedExistingId },
+        data,
+      })
+      // Refresh URL map with this story's full source set so subsequent
+      // stories in the same run also see them.
+      for (const src of sources) urlToExistingId.set(src.url, matchedExistingId)
+      updated++
+      continue
+    }
+
     let slug = s.slug || slugify(s.title) || `story-${now.getTime()}`
     let suffix = 1
-    // Collision protection: append -2, -3, ... if another non-matching story already owns the slug
+    // Slug-collision protection: append -2, -3, ... if another (non-overlapping)
+    // story already owns the slug. By construction we know it's not the same
+    // event because the URL-overlap check above didn't match.
     while (true) {
       const existing = await prisma.newsStory.findUnique({ where: { slug } })
       if (!existing) break
-      // If the existing row is from an older fetch (different title), nudge the slug
-      if (existing.title !== s.title) {
-        suffix++
-        slug = `${s.slug}-${suffix}`
-        continue
-      }
-      break
+      suffix++
+      slug = `${s.slug}-${suffix}`
     }
 
-    await prisma.newsStory.upsert({
-      where: { slug },
-      create: {
-        slug,
-        title: s.title,
-        summary: s.summary,
-        body: s.body,
-        category: s.category,
-        sources,
-        imageUrl: s.imageUrl,
-        publishedAt,
-        relevanceScore: s.relevanceScore,
-        status: "PUBLISHED",
-      },
-      update: {
-        title: s.title,
-        summary: s.summary,
-        body: s.body,
-        category: s.category,
-        sources,
-        imageUrl: s.imageUrl,
-        publishedAt,
-        relevanceScore: s.relevanceScore,
-        status: "PUBLISHED",
-      },
+    const created = await prisma.newsStory.create({
+      data: { slug, ...data },
     })
+    for (const src of sources) urlToExistingId.set(src.url, created.id)
     persisted++
   }
 
@@ -399,6 +444,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     storiesSynthesized: rawStories.length,
     storiesDroppedInvalid: droppedInvalid,
     storiesPersisted: persisted,
+    storiesUpdated: updated,
     archivedCount: archived.count,
     durationMs: Date.now() - started,
     timings: {
