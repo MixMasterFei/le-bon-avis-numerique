@@ -84,20 +84,27 @@ export default async function ApercuFilmsListPage(props: {
       })
     : []
 
-  // If members are selected, derive an effective max age from the
-  // youngest selected member + 3 (matches FilterSidebar auto-adjust).
-  // The user can still override via the slider; URL maxAge wins if set.
-  const effectiveMinAge = parseInt2(searchParams?.minAge, DEFAULT_MIN_AGE)
+  // If members are selected, derive an age band centered on the youngest
+  // selected member (±3 years) so the grid narrows to age-appropriate
+  // content rather than including everything from toddler-safe upwards.
+  // Explicit URL params always win over the auto-band.
+  let effectiveMinAge = parseInt2(searchParams?.minAge, DEFAULT_MIN_AGE)
   let effectiveMaxAge = parseInt2(searchParams?.maxAge, DEFAULT_MAX_AGE)
 
-  if (memberIds.length > 0 && !searchParams?.maxAge) {
+  if (memberIds.length > 0) {
     const selectedAges = memberIds
       .map((id) => familyMembers.find((m) => m.id === id))
       .filter((m): m is NonNullable<typeof m> => !!m)
       .map((m) => getMemberAge(m.birthYear, m.birthMonth))
       .filter((a): a is number => a !== null)
     if (selectedAges.length > 0) {
-      effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, Math.min(...selectedAges) + 3)
+      const youngest = Math.min(...selectedAges)
+      if (!searchParams?.maxAge) {
+        effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, youngest + 3)
+      }
+      if (!searchParams?.minAge) {
+        effectiveMinAge = Math.max(DEFAULT_MIN_AGE, youngest - 3)
+      }
     }
   }
 

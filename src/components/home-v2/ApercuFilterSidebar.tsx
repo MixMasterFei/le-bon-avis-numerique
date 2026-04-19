@@ -208,8 +208,9 @@ export function ApercuFilterSidebar({
       : [...memberIds, id]
     setMemberIds(next)
 
-    // Auto-adjust max age to the youngest selected member + 3 so the
-    // grid actually narrows to age-appropriate content.
+    // Center an age band around the youngest selected member (±3 years)
+    // so the grid shows content that actually fits them — not everything
+    // from 2+ upwards.
     if (next.length > 0) {
       const ages = next
         .map((mid) => familyMembers.find((m) => m.id === mid))
@@ -217,9 +218,12 @@ export function ApercuFilterSidebar({
         .map((m) => getMemberAge(m.birthYear, m.birthMonth))
         .filter((a): a is number => a !== null)
       if (ages.length > 0) {
-        const cap = Math.min(DEFAULT_MAX_AGE, Math.min(...ages) + 3)
+        const youngest = Math.min(...ages)
+        const cap = Math.min(DEFAULT_MAX_AGE, youngest + 3)
+        const floor = Math.max(DEFAULT_MIN_AGE, youngest - 3)
         setMaxAge(cap)
-        pushUrl({ memberIds: next, maxAge: cap })
+        setMinAge(floor)
+        pushUrl({ memberIds: next, minAge: floor, maxAge: cap })
         return
       }
     }
