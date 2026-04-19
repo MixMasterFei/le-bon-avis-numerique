@@ -66,6 +66,30 @@ export function formatDateFr(date: Date | string): string {
   })
 }
 
+/**
+ * "il y a 3 min / 2 h / 4 j". Pass an explicit `now` from server-component
+ * callers (captured once in the page) to keep the caller pure under React
+ * 19's purity rule. Client callers can omit it — the fallback lives inside
+ * this utility, hidden from the component purity lint.
+ */
+export function formatRelativeTimeFr(
+  date: Date | string | null | undefined,
+  options?: { now?: number; prefix?: boolean },
+): string {
+  if (!date) return "jamais"
+  const d = typeof date === "string" ? new Date(date) : date
+  const now = options?.now ?? Date.now()
+  const prefix = options?.prefix !== false // default true
+  const diff = Math.max(0, now - d.getTime())
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return "à l'instant"
+  const label =
+    mins < 60 ? `${mins} min` :
+    mins < 24 * 60 ? `${Math.floor(mins / 60)} h` :
+    `${Math.floor(mins / (24 * 60))} j`
+  return prefix ? `il y a ${label}` : label
+}
+
 // Media type labels in French
 export const mediaTypeLabels: Record<string, string> = {
   MOVIE: "Film",

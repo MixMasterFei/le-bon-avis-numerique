@@ -1,5 +1,6 @@
 "use client"
 
+import { type ReactNode } from "react"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
 import { ArrowLeft, ExternalLink } from "lucide-react"
@@ -11,6 +12,7 @@ import { APERCU_PALETTE } from "./apercuTheme"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
 
 export interface ApercuStoryDetail {
+  id: string
   slug: string
   title: string
   summary: string
@@ -35,9 +37,11 @@ function formatAbsolute(value: Date | string): string {
 export function ApercuDecouverteStory({
   story,
   serifClass,
+  commentsSlot,
 }: {
   story: ApercuStoryDetail
   serifClass: string
+  commentsSlot?: ReactNode
 }) {
   const p = APERCU_PALETTE
   return (
@@ -105,6 +109,8 @@ export function ApercuDecouverteStory({
           >
             <ReactMarkdown>{story.body}</ReactMarkdown>
           </article>
+
+          {commentsSlot}
 
           <div
             className="mt-12 pt-6"

@@ -19,9 +19,11 @@ interface ApercuDecouverteProps {
   stories: ApercuNewsCardData[]
   activeCategory: NewsCategoryKey
   serifClass: string
+  /** Only admins see the Rafraîchir button — refresh endpoint is admin-gated. */
+  canRefresh?: boolean
 }
 
-export function ApercuDecouverte({ stories, activeCategory, serifClass }: ApercuDecouverteProps) {
+export function ApercuDecouverte({ stories, activeCategory, serifClass, canRefresh = false }: ApercuDecouverteProps) {
   const p = APERCU_PALETTE
   const router = useRouter()
   const pathname = usePathname()
@@ -77,18 +79,20 @@ export function ApercuDecouverte({ stories, activeCategory, serifClass }: Apercu
                 L&apos;actualité qui compte pour les familles
               </h1>
             </div>
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
-              style={{ background: p.ink, color: p.bg }}
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-              />
-              {refreshing ? "Synthèse en cours…" : "Rafraîchir"}
-            </button>
+            {canRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-opacity hover:opacity-80 disabled:opacity-60"
+                style={{ background: p.ink, color: p.bg }}
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
+                />
+                {refreshing ? "Synthèse en cours…" : "Rafraîchir"}
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -121,20 +125,24 @@ export function ApercuDecouverte({ stories, activeCategory, serifClass }: Apercu
                 Aucune actualité pour l&apos;instant
               </div>
               <div className="text-sm mb-4" style={{ color: p.ink2 }}>
-                Lance une synthèse pour peupler cette rubrique.
+                {canRefresh
+                  ? "Lance une synthèse pour peupler cette rubrique."
+                  : "Revenez plus tard — de nouvelles actualités sont synthétisées chaque jour."}
               </div>
-              <button
-                type="button"
-                onClick={onRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
-                style={{ background: p.accent, color: "#FFFFFF" }}
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
-                />
-                {refreshing ? "Synthèse en cours…" : "Lancer une synthèse"}
-              </button>
+              {canRefresh && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+                  style={{ background: p.accent, color: "#FFFFFF" }}
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                  {refreshing ? "Synthèse en cours…" : "Lancer une synthèse"}
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-6">

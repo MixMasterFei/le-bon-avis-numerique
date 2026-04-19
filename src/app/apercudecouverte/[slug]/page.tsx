@@ -2,14 +2,13 @@ import { redirect, notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteStory, type ApercuStoryDetail } from "@/components/home-v2/ApercuDecouverteStory"
+import { NewsComments } from "@/components/home-v2/NewsComments"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { Prisma } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
-
-const OWNER_EMAIL = "masterfei@gmail.com"
 
 interface SearchParams {
   font?: string
@@ -38,21 +37,24 @@ export default async function ApercuDecouverteStoryPage(props: {
   params: Promise<{ slug: string }>
   searchParams?: Promise<SearchParams>
 }) {
+  const { slug } = await props.params
+
   let session
   try {
     session = await auth()
   } catch {
-    redirect("/")
+    redirect(`/connexion?next=/apercudecouverte/${slug}`)
   }
-  const user = session?.user as { email?: string | null; role?: string } | undefined
-  const isOwner = user?.email === OWNER_EMAIL || user?.role === "ADMIN"
-  if (!isOwner) redirect("/")
+  if (!session?.user?.id) {
+    redirect(`/connexion?next=/apercudecouverte/${slug}`)
+  }
+  const viewerId = session.user.id
 
-  const { slug } = await props.params
   const row = await prisma.newsStory.findUnique({ where: { slug } })
   if (!row) notFound()
 
   const story: ApercuStoryDetail = {
+    id: row.id,
     slug: row.slug,
     title: row.title,
     summary: row.summary,
@@ -71,7 +73,18 @@ export default async function ApercuDecouverteStoryPage(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      <ApercuDecouverteStory story={story} serifClass={serifClass} />
+      <ApercuDecouverteStory
+        story={story}
+        serifClass={serifClass}
+        commentsSlot={
+          <NewsComments
+            storyId={story.id}
+            slug={story.slug}
+            serifClass={serifClass}
+            viewerId={viewerId}
+          />
+        }
+      />
     </div>
   )
 }

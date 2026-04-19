@@ -11,8 +11,6 @@ import type { Prisma, NewsCategory } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
 
-const OWNER_EMAIL = "masterfei@gmail.com"
-
 interface SearchParams {
   font?: string
   cat?: string
@@ -51,11 +49,13 @@ export default async function ApercuDecouvertePage(props: {
   try {
     session = await auth()
   } catch {
-    redirect("/")
+    redirect("/connexion?next=/apercudecouverte")
   }
-  const user = session?.user as { email?: string | null; role?: string } | undefined
-  const isOwner = user?.email === OWNER_EMAIL || user?.role === "ADMIN"
-  if (!isOwner) redirect("/")
+  if (!session?.user?.id) {
+    redirect("/connexion?next=/apercudecouverte")
+  }
+  const role = (session.user as { role?: string }).role
+  const canRefresh = role === "ADMIN" || role === "MODERATOR"
 
   const searchParams = await props.searchParams
   const activeCategory = parseCategory(searchParams?.cat)
@@ -90,6 +90,7 @@ export default async function ApercuDecouvertePage(props: {
         stories={stories}
         activeCategory={activeCategory}
         serifClass={serifClass}
+        canRefresh={canRefresh}
       />
     </div>
   )

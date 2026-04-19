@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
+import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
@@ -14,15 +15,6 @@ export interface ApercuNewsCardData {
   category: NewsCategoryKey
   publishedAt: Date | string
   sources: NewsSourceRef[]
-}
-
-function formatRelativeTime(value: Date | string): string {
-  const d = typeof value === "string" ? new Date(value) : value
-  const diff = Date.now() - d.getTime()
-  const h = Math.max(1, Math.round(diff / (60 * 60 * 1000)))
-  if (h < 24) return `il y a ${h} h`
-  const days = Math.round(h / 24)
-  return `il y a ${days} j`
 }
 
 export function ApercuNewsCard({
@@ -67,7 +59,7 @@ export function ApercuNewsCard({
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <ApercuNewsSourcePills sources={story.sources} compact />
           <span className="text-[11px] whitespace-nowrap" style={{ color: p.ink2 }}>
-            {formatRelativeTime(story.publishedAt)}
+            {formatRelativeTimeFr(story.publishedAt)}
           </span>
         </div>
       </div>

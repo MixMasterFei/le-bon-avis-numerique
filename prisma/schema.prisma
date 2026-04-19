@@ -44,6 +44,9 @@ model User {
   adminActivities    AdminActivity[]
   ageVotes           AgeVote[]
   familyWarningVotes FamilyWarningVote[]
+  newsComments          NewsComment[]
+  newsCommentReactions  NewsCommentReaction[]
+  newsCommentReports    NewsCommentReport[]
 
   @@map("users")
 }
@@ -806,7 +809,69 @@ model NewsStory {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
+  comments NewsComment[]
+
   @@index([publishedAt])
   @@index([category, status])
   @@map("news_stories")
+}
+
+enum NewsCommentStatus {
+  VISIBLE
+  HIDDEN   // admin-hidden after moderation
+  DELETED  // author-deleted (kept for audit)
+}
+
+model NewsComment {
+  id          String            @id @default(uuid())
+  newsStoryId String            @map("news_story_id")
+  userId      String            @map("user_id")
+  body        String            @db.Text
+  status      NewsCommentStatus @default(VISIBLE)
+  editedAt    DateTime?         @map("edited_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  newsStory NewsStory             @relation(fields: [newsStoryId], references: [id], onDelete: Cascade)
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions NewsCommentReaction[]
+  reports   NewsCommentReport[]
+
+  @@index([newsStoryId, createdAt])
+  @@index([userId])
+  @@index([status])
+  @@map("news_comments")
+}
+
+model NewsCommentReaction {
+  id        String   @id @default(uuid())
+  commentId String   @map("comment_id")
+  userId    String   @map("user_id")
+  type      String   // "THUMBS_UP" | "HEART" | "QUESTION" — plain string to allow adding types without schema change
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment NewsComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, type])
+  @@index([commentId])
+  @@map("news_comment_reactions")
+}
+
+model NewsCommentReport {
+  id        String       @id @default(uuid())
+  commentId String       @map("comment_id")
+  userId    String       @map("user_id")
+  reason    ReportReason
+  details   String?      @db.Text
+  status    ReportStatus @default(PENDING)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  comment NewsComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([status])
+  @@map("news_comment_reports")
 }

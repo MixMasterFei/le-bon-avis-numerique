@@ -13,6 +13,7 @@ interface AdminActionQueueProps {
   correctionsPending: number
   requestsPending: number
   catalogUnenriched: number
+  newsReportsPending?: number
 }
 
 function fmtNumber(n: number): string {
@@ -24,6 +25,7 @@ export function AdminActionQueue({
   correctionsPending,
   requestsPending,
   catalogUnenriched,
+  newsReportsPending = 0,
 }: AdminActionQueueProps) {
   const p = APERCU_PALETTE
   const items: QueueItem[] = [
@@ -36,6 +38,11 @@ export function AdminActionQueue({
       count: requestsPending,
       label: "demandes de contenu",
       href: "/admin/requests",
+    },
+    {
+      count: newsReportsPending,
+      label: "signalements de commentaires",
+      href: "/admin/news-reports",
     },
     {
       count: catalogUnenriched,
@@ -62,7 +69,7 @@ export function AdminActionQueue({
           Aucune action requise. Tout est à jour.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {items.map((it) => {
             const urgent = it.count > 0
             return (

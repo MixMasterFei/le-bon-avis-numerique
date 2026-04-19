@@ -1,4 +1,5 @@
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { formatRelativeTimeFr } from "@/lib/utils"
 
 interface AdminHealthBandProps {
   catalogTotal: number
@@ -12,17 +13,6 @@ interface AdminHealthBandProps {
 
 function fmtNumber(n: number): string {
   return new Intl.NumberFormat("fr-FR").format(n)
-}
-
-function fmtRelative(d: Date | null, now: number): string {
-  if (!d) return "jamais"
-  const ms = now - d.getTime()
-  const mins = Math.floor(ms / 60000)
-  if (mins < 60) return `il y a ${mins} min`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `il y a ${hours} h`
-  const days = Math.floor(hours / 24)
-  return `il y a ${days} j`
 }
 
 export function AdminHealthBand({
@@ -60,7 +50,7 @@ export function AdminHealthBand({
       dot: catalogUnenriched > 1000 ? dotWarn : dotOk,
     },
     {
-      label: `Découverte synthétisée ${fmtRelative(lastNewsRun, now)}`,
+      label: `Découverte synthétisée ${formatRelativeTimeFr(lastNewsRun, { now })}`,
       dot: newsFresh ? dotOk : dotWarn,
     },
   ]
@@ -83,7 +73,7 @@ export function AdminHealthBand({
         className="ml-auto text-xs"
         style={{ color: p.ink2 }}
       >
-        dernière mise à jour {fmtRelative(generatedAt, now)}
+        dernière mise à jour {formatRelativeTimeFr(generatedAt, { now })}
       </span>
     </div>
   )

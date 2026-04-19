@@ -42,6 +42,7 @@ export interface AdminKpis {
   // Action queue
   correctionsPending: number
   requestsPending: number
+  newsReportsPending: number
 
   // 30-day time series for the growth chart
   dailyGrowth: DailyGrowthPoint[]
@@ -102,6 +103,7 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
 
     correctionsPending,
     requestsPending,
+    newsReportsPending,
 
     dailyGrowth,
 
@@ -139,6 +141,7 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
 
     prisma.mediaCorrection.count({ where: { status: "PENDING" } }),
     prisma.contentRequest.count({ where: { status: "PENDING" } }),
+    prisma.newsCommentReport.count({ where: { status: "PENDING" } }),
 
     fetchDailyGrowth(month),
 
@@ -187,6 +190,7 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     recoClicksPrevWeek,
     correctionsPending,
     requestsPending,
+    newsReportsPending,
     dailyGrowth,
     cronTasks: Array.from(taskMap.values()),
     cronErrors7d,
