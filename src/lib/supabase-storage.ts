@@ -97,6 +97,20 @@ export async function uploadScreenshot(
   return uploadImageFromUrl(sourceUrl, `screenshots/${screenshotId}.jpg`)
 }
 
+/**
+ * Mirrors a news story's lead image into Supabase. The storage path
+ * is keyed off a content hash of the source URL so the same image
+ * referenced from multiple stories dedupes naturally and re-runs are
+ * idempotent. Returns the Supabase public URL on success, null on
+ * failure (caller should drop the story).
+ */
+export async function uploadNewsImage(sourceUrl: string): Promise<string | null> {
+  if (!isStorageEnabled()) return null
+  const { createHash } = await import("crypto")
+  const hash = createHash("sha1").update(sourceUrl).digest("hex").slice(0, 20)
+  return uploadImageFromUrl(sourceUrl, `news/${hash}.jpg`)
+}
+
 // ── Upload TMDB images with fallback to original URL ─────────
 
 export async function uploadTMDBPoster(

@@ -2,8 +2,9 @@ import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, isImageReachable, type RssLikeItem } from "@/lib/news-image"
+import { resolveImage, type RssLikeItem } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
+import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import type { NewsCategory } from "@prisma/client"
 
 // ── Title-fingerprint dedup ───────────────────────────────────────────
@@ -387,17 +388,28 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     validStories.push(story)
   }
 
-  // 6. HEAD-check every chosen image in parallel. Stories whose imageUrl
-  //    doesn't return a real image type get dropped here so we never
-  //    persist a card that'll render as a broken image at the user.
-  const reachable = await Promise.all(
-    validStories.map((s) => isImageReachable(s.imageUrl)),
+  // 6. Mirror every chosen image into Supabase Storage. Many news
+  //    sites (Sortiraparis, Le Monde, etc.) block hotlinking via
+  //    Referer headers — the image returns 200 to a server-side HEAD
+  //    but 403 to the actual browser GET. By downloading and re-
+  //    serving from our own storage, we sidestep that entirely. As a
+  //    bonus: stories survive even if the source CDN goes down.
+  //    If the upload fails (origin returns <1KB blob, network error,
+  //    Supabase disabled in dev), we drop the story.
+  const mirrored = await Promise.all(
+    validStories.map((s) =>
+      isStorageEnabled() ? uploadNewsImage(s.imageUrl) : Promise.resolve(s.imageUrl),
+    ),
   )
   let droppedImageUnreachable = 0
   const liveStories: SynthesizedStory[] = []
   validStories.forEach((s, i) => {
-    if (reachable[i]) liveStories.push(s)
-    else droppedImageUnreachable++
+    const mirroredUrl = mirrored[i]
+    if (mirroredUrl) {
+      liveStories.push({ ...s, imageUrl: mirroredUrl })
+    } else {
+      droppedImageUnreachable++
+    }
   })
 
   const synthesizeMs = Date.now() - synthStart
