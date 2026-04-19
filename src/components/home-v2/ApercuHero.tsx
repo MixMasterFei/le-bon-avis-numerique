@@ -30,16 +30,19 @@ interface StatsShape {
 // Editorial tone labels rotate per card index so the showcase stays coherent
 // even when the underlying films change. Values are drawn from the site's
 // real enrichment vocabulary (tone tags).
-const CARD_LABELS = ["Tout doux", "Coup de cœur", "Fait rêver", "Aventureux"]
+const CARD_LABELS = ["Tout doux", "Coup de cœur", "Fait rêver", "Aventureux", "Émouvant"]
 
-// "Cards on a table" vibe: varied rotations and organic placement so the
-// layout reads as casually set down rather than carefully staged. Each
-// card pairs its own tilt + position + shadow depth.
+// Five-card "cluster on a table" arrangement: a focal card slightly
+// higher at the back, two top cards flanking it (one tilted hard right
+// like a casually dropped card), two bottom cards laid down on top of
+// the pile. Each card has its own tilt, position, shadow, and z-order
+// so the stacking feels natural rather than staged.
 const CARDS = [
-  { top: "2%",  right: "24%", tilt: -10, shadow: "0 12px 28px rgba(0,0,0,0.10)" },
-  { top: "6%",  right: "0%",  tilt:  5,  shadow: "0 28px 56px rgba(0,0,0,0.20)" },
-  { top: "42%", right: "22%", tilt:  8,  shadow: "0 16px 34px rgba(0,0,0,0.12)" },
-  { top: "48%", right: "2%",  tilt: -7,  shadow: "0 14px 30px rgba(0,0,0,0.11)" },
+  { top: "5%",  right: "36%", tilt: -6, shadow: "0 12px 28px rgba(0,0,0,0.10)", z: 12 },
+  { top: "0%",  right: "16%", tilt:  3, shadow: "0 24px 48px rgba(0,0,0,0.18)", z: 10 },
+  { top: "14%", right: "0%",  tilt: 14, shadow: "0 14px 30px rgba(0,0,0,0.11)", z: 11 },
+  { top: "40%", right: "26%", tilt: -4, shadow: "0 16px 34px rgba(0,0,0,0.12)", z: 14 },
+  { top: "46%", right: "10%", tilt: -5, shadow: "0 18px 36px rgba(0,0,0,0.13)", z: 15 },
 ]
 
 export function ApercuHero({
@@ -53,11 +56,11 @@ export function ApercuHero({
   const p = APERCU_PALETTE
 
   useEffect(() => {
-    fetch("/api/db/expert-picks?limit=6")
+    fetch("/api/db/expert-picks?limit=8")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (Array.isArray(data?.items)) {
-          setPicks(data.items.filter((i: HeroPick) => i.posterUrl).slice(0, 4))
+          setPicks(data.items.filter((i: HeroPick) => i.posterUrl).slice(0, 5))
         }
       })
       .catch(() => {})
@@ -176,9 +179,9 @@ export function ApercuHero({
             )}
           </div>
 
-          <div className="relative h-[540px] md:h-[600px] lg:h-[660px] hidden md:block">
+          <div className="relative h-[560px] md:h-[620px] lg:h-[680px] hidden md:block">
             {picks.length > 0
-              ? picks.slice(0, 4).map((pick, idx) => {
+              ? picks.slice(0, 5).map((pick, idx) => {
                   const c = CARDS[idx]
                   return (
                     <HeroPosterCard
@@ -187,7 +190,7 @@ export function ApercuHero({
                       tilt={c.tilt}
                       pos={{ top: c.top, right: c.right }}
                       shadow={c.shadow}
-                      zIndex={10 - idx}
+                      zIndex={c.z}
                       highlighted={idx === 1}
                       label={CARD_LABELS[idx]}
                       serifClass={serifClass}
@@ -197,12 +200,13 @@ export function ApercuHero({
               : CARDS.map((c, idx) => (
                   <div
                     key={idx}
-                    className="absolute w-[240px] aspect-[3/4] rounded-2xl animate-pulse"
+                    className="absolute w-[220px] aspect-[3/4] rounded-2xl animate-pulse"
                     style={{
                       top: c.top,
                       right: c.right,
                       transform: `rotate(${c.tilt}deg)`,
                       background: p.placeholder,
+                      zIndex: c.z,
                     }}
                   />
                 ))}
@@ -239,7 +243,7 @@ function HeroPosterCard({
   return (
     <Link
       href={`/media/${toMediaRouteId(pick.type, pick.id)}`}
-      className="absolute w-[240px] block transition-transform duration-300 hover:-translate-y-1"
+      className="absolute w-[220px] block transition-transform duration-300 hover:-translate-y-1"
       style={{
         ...pos,
         zIndex,
@@ -261,7 +265,7 @@ function HeroPosterCard({
               alt={pick.title}
               fill
               className="object-cover"
-              sizes="240px"
+              sizes="220px"
             />
           )}
           {ageLabel && (
