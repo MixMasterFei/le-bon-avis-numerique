@@ -1,11 +1,15 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import { EyeOff } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
+import { useSettings } from "@/contexts/SettingsContext"
 import { toMediaRouteId } from "@/lib/media-route"
+import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
+import { cn } from "@/lib/utils"
 import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor } from "./apercuTheme"
 
 export interface ApercuCardMedia {
@@ -15,6 +19,12 @@ export interface ApercuCardMedia {
   posterUrl: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
+  contentMetrics?: {
+    violence?: number | null
+    sexNudity?: number | null
+    language?: number | null
+    substanceUse?: number | null
+  } | null
 }
 
 export function ApercuMediaCard({
@@ -27,6 +37,8 @@ export function ApercuMediaCard({
   serifClass: string
 }) {
   const { getFamilyFit, registerMediaId } = useFamilyFit()
+  const { settings } = useSettings()
+  const [revealed, setRevealed] = useState(false)
   const p = APERCU_PALETTE
 
   useEffect(() => {
@@ -44,6 +56,23 @@ export function ApercuMediaCard({
 
   const visibleGenres = (media.genres ?? []).slice(0, 3)
 
+  // Same blur rule used everywhere else on the site (15+ AND any
+  // content metric >= 3). Eye-overlay reveals on click; tooltip
+  // points users to the parameters toggle.
+  const shouldBlur =
+    !revealed &&
+    shouldBlurMedia(
+      {
+        type: media.type,
+        expertAgeRec: media.expertAgeRec,
+        violence: media.contentMetrics?.violence,
+        sexNudity: media.contentMetrics?.sexNudity,
+        language: media.contentMetrics?.language,
+        substanceUse: media.contentMetrics?.substanceUse,
+      },
+      settings.blur18Plus,
+    )
+
   return (
     <Link
       href={`/media/${toMediaRouteId(media.type, media.id)}`}
@@ -58,13 +87,33 @@ export function ApercuMediaCard({
             src={media.posterUrl}
             alt={media.title}
             fill
-            className="object-cover"
+            className={cn(
+              "object-cover transition-all duration-300",
+              shouldBlur && "blur-sm brightness-90",
+            )}
             sizes="(max-width: 768px) 45vw, 20vw"
           />
         )}
+        {shouldBlur && (
+          <button
+            type="button"
+            title={BLUR_TOOLTIP}
+            aria-label="Afficher le contenu"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              setRevealed(true)
+            }}
+            className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+          >
+            <div className="bg-black/55 rounded-full p-2">
+              <EyeOff className="h-4 w-4 text-white" />
+            </div>
+          </button>
+        )}
         {ageLabel && (
           <div
-            className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight"
+            className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight z-20"
             style={{
               background: ageColors.bg,
               color: ageColors.text,

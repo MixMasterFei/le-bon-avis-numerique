@@ -119,15 +119,33 @@ export default async function ApercuFilmsListPage(props: {
     ? fraunces.className
     : "font-[var(--font-heading)]"
 
-  const items = result.items.map((m) => ({
-    id: m.id,
-    type: m.type as "MOVIE" | "TV" | "GAME",
-    title: m.title,
-    posterUrl: m.posterUrl ?? null,
-    expertAgeRec: m.expertAgeRec,
-    genres: m.genres,
-    releaseDate: m.releaseDate,
-  }))
+  const items = result.items.map((m) => {
+    const cm = m.contentMetrics as
+      | {
+          violence?: number | null
+          sexNudity?: number | null
+          language?: number | null
+          substanceUse?: number | null
+        }
+      | null
+    return {
+      id: m.id,
+      type: m.type as "MOVIE" | "TV" | "GAME",
+      title: m.title,
+      posterUrl: m.posterUrl ?? null,
+      expertAgeRec: m.expertAgeRec,
+      genres: m.genres,
+      releaseDate: m.releaseDate,
+      contentMetrics: cm
+        ? {
+            violence: cm.violence ?? null,
+            sexNudity: cm.sexNudity ?? null,
+            language: cm.language ?? null,
+            substanceUse: cm.substanceUse ?? null,
+          }
+        : null,
+    }
+  })
 
   // Build the filter-query string the pagination hrefs need so
   // page navigation preserves all active filters.
