@@ -71,13 +71,16 @@ export async function extractFromOgTags(url: string, timeoutMs = 2000): Promise<
 }
 
 export async function resolveImage(item: RssLikeItem): Promise<string | null> {
-  const fromRss = extractFromRss(item)
-  if (fromRss) return fromRss
+  // Try og:image FIRST — most sites publish a high-resolution share
+  // image in their OG meta tags but ship a small thumbnail in their
+  // RSS feed. og:image gives a noticeably better hero card. RSS
+  // sources are kept as fallbacks for sites where the article fetch
+  // fails or hotlink-protects the OG image too.
   if (item.link) {
     const og = await extractFromOgTags(item.link)
     if (og) return og
   }
-  return null
+  return extractFromRss(item)
 }
 
 /**

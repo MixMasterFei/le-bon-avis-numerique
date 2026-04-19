@@ -508,8 +508,11 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     persisted++
   }
 
-  // 6. Archive anything older than 14 days
-  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
+  // 6. Archive anything older than 180 days. Synthesised stories are
+  //    valuable on their own so we keep them browseable for ~6 months
+  //    via /apercudecouverte/actualites pagination, then quietly age
+  //    them out of the active feed.
+  const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000)
   const archived = await prisma.newsStory.updateMany({
     where: { status: "PUBLISHED", publishedAt: { lt: cutoff } },
     data: { status: "ARCHIVED" },

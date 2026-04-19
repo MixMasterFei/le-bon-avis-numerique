@@ -63,13 +63,30 @@ export default async function ApercuDecouverteActualitesPage(props: {
   const where: { status: "PUBLISHED"; category?: NewsCategory } = { status: "PUBLISHED" }
   if (activeCategory !== "ALL") where.category = activeCategory
 
+  // Fetch one extra row so we know whether a "Charger plus" page exists
+  // without an extra count query. Order matches the API's pagination
+  // (publishedAt desc + id desc tiebreak) so cursor logic stays aligned.
   const rows = await prisma.newsStory.findMany({
     where,
-    orderBy: [{ relevanceScore: "desc" }, { publishedAt: "desc" }],
-    take: 24,
+    orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+    take: 24 + 1,
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      summary: true,
+      imageUrl: true,
+      category: true,
+      publishedAt: true,
+      sources: true,
+    },
   })
 
-  const stories: ApercuNewsCardData[] = rows.map((r) => ({
+  const hasMore = rows.length > 24
+  const page = hasMore ? rows.slice(0, 24) : rows
+  const initialNextCursor = hasMore ? page[page.length - 1].id : null
+
+  const stories: ApercuNewsCardData[] = page.map((r) => ({
     slug: r.slug,
     title: r.title,
     summary: r.summary,
@@ -91,6 +108,7 @@ export default async function ApercuDecouverteActualitesPage(props: {
         activeCategory={activeCategory}
         serifClass={serifClass}
         canRefresh={canRefresh}
+        initialNextCursor={initialNextCursor}
       />
     </div>
   )

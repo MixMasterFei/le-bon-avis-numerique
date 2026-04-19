@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Plus } from "lucide-react"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsHeroCard } from "./ApercuNewsHeroCard"
@@ -21,9 +21,17 @@ interface ApercuDecouverteProps {
   serifClass: string
   /** Only admins see the Rafraîchir button — refresh endpoint is admin-gated. */
   canRefresh?: boolean
+  /** Cursor for the next "Charger plus" page — null means no more pages. */
+  initialNextCursor?: string | null
 }
 
-export function ApercuDecouverte({ stories, activeCategory, serifClass, canRefresh = false }: ApercuDecouverteProps) {
+export function ApercuDecouverte({
+  stories,
+  activeCategory,
+  serifClass,
+  canRefresh = false,
+  initialNextCursor = null,
+}: ApercuDecouverteProps) {
   const p = APERCU_PALETTE
   const router = useRouter()
   const pathname = usePathname()
@@ -31,7 +39,43 @@ export function ApercuDecouverte({ stories, activeCategory, serifClass, canRefre
   const [refreshing, setRefreshing] = useState(false)
   const [, startTransition] = useTransition()
 
-  const [hero, ...rest] = stories
+  // Pagination state — extra pages appended after the initial server-side load.
+  const [extra, setExtra] = useState<ApercuNewsCardData[]>([])
+  const [cursor, setCursor] = useState<string | null>(initialNextCursor)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Reset pagination state whenever the category or initial dataset changes
+  // (server re-render delivers a fresh first page on category switch).
+  const initialCursorRef = useRef(initialNextCursor)
+  useEffect(() => {
+    setExtra([])
+    setCursor(initialNextCursor)
+    initialCursorRef.current = initialNextCursor
+  }, [activeCategory, initialNextCursor])
+
+  const allStories = [...stories, ...extra]
+  const [hero, ...rest] = allStories
+
+  async function loadMore() {
+    if (!cursor || loadingMore) return
+    setLoadingMore(true)
+    try {
+      const params = new URLSearchParams({ cursor })
+      if (activeCategory !== "ALL") params.set("cat", activeCategory)
+      const res = await fetch(`/api/news?${params}`)
+      if (!res.ok) return
+      const data = (await res.json()) as {
+        stories: ApercuNewsCardData[]
+        nextCursor: string | null
+      }
+      setExtra((prev) => [...prev, ...data.stories])
+      setCursor(data.nextCursor)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   function setCategory(cat: NewsCategoryKey) {
     const params = new URLSearchParams(searchParams?.toString() ?? "")
@@ -152,6 +196,20 @@ export function ApercuDecouverte({ stories, activeCategory, serifClass, canRefre
                   {rest.map((s) => (
                     <ApercuNewsCard key={s.slug} story={s} serifClass={serifClass} />
                   ))}
+                </div>
+              )}
+              {cursor && (
+                <div className="flex justify-center pt-4">
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                    style={{ background: p.ink, color: p.bg }}
+                  >
+                    <Plus className={`w-4 h-4 ${loadingMore ? "animate-spin" : ""}`} />
+                    {loadingMore ? "Chargement…" : "Charger plus"}
+                  </button>
                 </div>
               )}
             </div>

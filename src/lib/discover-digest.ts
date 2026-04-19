@@ -113,7 +113,7 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
   const week = new Date(now.getTime() - 7 * MS_PER_DAY)
   const twoDays = new Date(now.getTime() - 2 * MS_PER_DAY)
   const threeDays = new Date(now.getTime() - 3 * MS_PER_DAY)
-  const month = new Date(now.getTime() - 30 * MS_PER_DAY)
+  const twoMonths = new Date(now.getTime() - 60 * MS_PER_DAY)
 
   const [
     heroRow,
@@ -144,18 +144,17 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
         category: true, publishedAt: true, sources: true,
       },
     }),
-    // Sorties — 6 family-appropriate recent releases. Filter to enriched
-    // items only (so we know expertAgeRec is real, not null) AND cap at
-    // 12+ so we never surface 15+/16+/horror/thriller content on what's
-    // meant to be a family digest hero row. Items without an age rating
-    // are excluded by design.
+    // Sorties — family-appropriate recent releases. Cap at age 13 so we
+    // cover Disney/Pixar/family cinema (often rated PG-13/12+) without
+    // surfacing horror/thriller content. Window widened to 60 days so
+    // there's enough material; expertAgeRec must exist (no unverified
+    // items lead the row).
     prisma.mediaItem.findMany({
       where: {
-        releaseDate: { gte: month, lte: now },
+        releaseDate: { gte: twoMonths, lte: now },
         posterUrl: { not: null },
         type: { in: ["MOVIE", "TV", "GAME"] },
-        isEnriched: true,
-        expertAgeRec: { not: null, lte: 12 },
+        expertAgeRec: { not: null, lte: 13 },
       },
       orderBy: { releaseDate: "desc" },
       take: 6,
