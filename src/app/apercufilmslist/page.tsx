@@ -99,8 +99,11 @@ export default async function ApercuFilmsListPage(props: {
       .filter((a): a is number => a !== null)
     if (selectedAges.length > 0) {
       const youngest = Math.min(...selectedAges)
+      // Cap maxAge at the member's actual age — a 10-year-old shouldn't
+      // see content rated 11+ or 12+. Floor stays at age - 3 so some
+      // younger-rated catalog still surfaces.
       if (!searchParams?.maxAge) {
-        effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, youngest + 3)
+        effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, youngest)
       }
       if (!searchParams?.minAge) {
         effectiveMinAge = Math.max(DEFAULT_MIN_AGE, youngest - 3)

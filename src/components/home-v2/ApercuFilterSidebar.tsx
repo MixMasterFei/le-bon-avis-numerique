@@ -219,7 +219,9 @@ export function ApercuFilterSidebar({
         .filter((a): a is number => a !== null)
       if (ages.length > 0) {
         const youngest = Math.min(...ages)
-        const cap = Math.min(DEFAULT_MAX_AGE, youngest + 3)
+        // Cap at the member's own age (no 11+ content for a 10-year-old).
+        // Floor at age - 3 so some younger-rated picks still surface.
+        const cap = Math.min(DEFAULT_MAX_AGE, youngest)
         const floor = Math.max(DEFAULT_MIN_AGE, youngest - 3)
         setMaxAge(cap)
         setMinAge(floor)
