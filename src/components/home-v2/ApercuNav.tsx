@@ -21,6 +21,8 @@ const ROUTES: ApercuRoute[] = [
   { href: "/apercufilm", label: "Fiche film" },
   { href: "/apercufoyer", label: "Foyer" },
   { href: "/apercudecouverte", label: "Découverte" },
+  { href: "/apercuinscription", label: "Inscription" },
+  { href: "/apercuquiz", label: "Quiz" },
 ]
 
 export function ApercuNav() {
