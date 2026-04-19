@@ -40,7 +40,13 @@ const typeLabels: Record<string, string> = {
   APP: "App",
 }
 
-export function HeroSearch() {
+interface HeroSearchProps {
+  /** Override classes applied to the submit button. Used by the Apercu
+   * hero to swap the default violet for the warm ink palette. */
+  submitClassName?: string
+}
+
+export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
   const router = useRouter()
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -191,7 +197,7 @@ export function HeroSearch() {
           />
           <Button
             type="submit"
-            className="absolute right-2 h-12 px-6 rounded-xl shadow-lg font-semibold transition-all duration-300 hover:scale-105"
+            className={`absolute right-2 h-12 px-6 rounded-xl shadow-lg font-semibold transition-all duration-300 hover:scale-105 ${submitClassName ?? ""}`}
             disabled={query.trim().length < 2}
           >
             Rechercher
