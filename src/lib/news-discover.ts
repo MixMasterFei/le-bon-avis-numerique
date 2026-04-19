@@ -94,14 +94,16 @@ Voici ${items.length} articles publiés ces 48 dernières heures. Chaque article
 
 ## Règle de clustering — la plus importante
 
-Une HISTOIRE = un événement précis couvert par AU MOINS 2 PUBLICATIONS DIFFÉRENTES.
+Deux chemins pour créer une histoire :
 
-**Événement précis** = une sortie de film/série/jeu, une annonce officielle, une étude publiée, une décision institutionnelle, une polémique spécifique nommable.
+**Chemin A (prioritaire) — événement multi-sources** : un événement précis couvert par **au moins 2 publications DIFFÉRENTES** (noms de sources distincts). C'est le signal le plus fort : la convergence de plusieurs rédactions = vraie actualité. Relevance ≥ 0.5 suffit.
+
+**Chemin B — single-source à forte pertinence** : un article isolé d'une seule source, mais avec un **angle famille très fort** (étude sérieuse, annonce institutionnelle, guide parental, recommandation d'âge concrète). Relevance **≥ 0.7 obligatoire** pour ce chemin — sinon écarte.
+
+**Événement précis** = une sortie de film/série/jeu, une annonce officielle, une étude publiée, une décision institutionnelle, une polémique spécifique nommable, une recommandation experte, un guide pratique daté.
 **Pas un thème** = "les livres", "les jeux vidéo en avril", "la philosophie", "les adaptations cinéma" — ce sont des catégories, pas des événements.
 
-Si tu ne trouves pas au moins 2 publications DIFFÉRENTES (par nom de source) qui couvrent exactement le même événement, **NE CRÉE PAS D'HISTOIRE**. Mieux vaut renvoyer peu d'histoires solides que beaucoup d'histoires inventées.
-
-N'invente JAMAIS de narratif qui relie deux sujets différents (ex : lier un article sur Tolkien et un article sur Saint Augustin en une seule histoire "univers littéraires" — INTERDIT, ce sont deux sujets).
+N'invente JAMAIS de narratif qui relie deux sujets différents (ex : lier un article sur Tolkien et un article sur Saint Augustin en une seule histoire "univers littéraires" — INTERDIT, ce sont deux sujets). Le clustering ne regroupe que des articles couvrant **exactement le même événement**.
 
 ## Règle d'angle famille
 
@@ -114,9 +116,8 @@ Le corps de l'histoire doit COMMENCER par une phrase qui énonce clairement l'an
 - Politique pure (élections, gouvernement, sauf impact direct école/famille)
 - Sport
 - Faits divers sans implication parentale
-- Essais/opinions sans événement précis
+- Essais/opinions sans événement précis ni angle famille
 - Polémiques industrie/culture sans angle enfant ou parent
-- Articles isolés (1 seule source)
 
 ## Format de sortie
 
@@ -125,14 +126,14 @@ Pour chaque histoire retenue, renvoie un objet JSON avec :
 - "summary": 1-2 phrases (<200 caractères) résumant l'événement et son angle famille
 - "body": 120-180 mots en markdown, 1er paragraphe = angle famille explicite, 2e paragraphe = les faits rapportés par les sources. Synthèse neutre. Ne jamais mentionner l'IA ni inventer de faits hors sources.
 - "category": PARENTHOOD | FILM_TV | GAMES | READING
-- "relevanceScore": 0 à 1, pertinence FAMILIALE (pas d'intérêt général) — >=0.5 obligatoire
+- "relevanceScore": 0 à 1, pertinence FAMILIALE (pas d'intérêt général). ≥ 0.5 pour multi-sources, ≥ 0.7 pour single-source
 - "imageUrl": URL exacte de l'IMG d'un des articles du cluster (jamais inventer)
-- "sourceIndexes": tableau des indexes des articles sources — MINIMUM 2 sources de NOMS DIFFÉRENTS
+- "sourceIndexes": tableau des indexes des articles sources du cluster
 
 ## Contraintes dures
 
 - Maximum 10 histoires, triées par pertinence décroissante
-- Chaque histoire a >=2 sources de noms différents
+- Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.7 obligatoire
 - Chaque imageUrl correspond exactement à l'IMG d'un article cité
 - Si tu ne trouves que 0, 1 ou 2 histoires solides, renvoie seulement celles-là
 - Français uniquement
@@ -204,7 +205,7 @@ export interface DiscoverStats {
 export async function runNewsDiscover(): Promise<DiscoverStats> {
   const started = Date.now()
   const parser = makeParser()
-  const since = new Date(Date.now() - 48 * 60 * 60 * 1000)
+  const since = new Date(Date.now() - 72 * 60 * 60 * 1000)
 
   // 1. Fetch all feeds in parallel
   const fetchStart = Date.now()
@@ -307,16 +308,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       droppedInvalid++
       continue
     }
-    // Require >=2 distinct source publishers (not just >=2 articles from the
-    // same outlet). This is what makes a story "newsworthy" vs. a single-outlet
-    // essay, and it also blocks thematic clustering across unrelated items.
+    // Two paths accepted:
+    //   A) multi-source (>=2 distinct publishers) + relevance >= 0.5
+    //   B) single-source + relevance >= 0.7 (strong family angle required)
+    // Anything else is dropped — keeps weak single-outlet essays out while
+    // still letting standout institutional studies or expert guides through.
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
-    if (distinctNames.size < 2) {
-      droppedInvalid++
-      continue
-    }
-    // Family-relevance floor — keeps single-angle industry news out
-    if (story.relevanceScore < 0.5) {
+    const isMultiSource = distinctNames.size >= 2
+    const minRelevance = isMultiSource ? 0.5 : 0.7
+    if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       continue
     }

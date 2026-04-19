@@ -36,17 +36,18 @@ const CARD_WIDTH = 170 // px
 const CARD_HEIGHT = Math.round((CARD_WIDTH * 4) / 3) // 227px — aspect 3:4
 
 // Five-card "snapshot on a table" arrangement following a 3+2 brick
-// stagger: top row drifts down-right with slight overlap, bottom row
-// offsets inward so it tucks between the top-row gaps. Rotations alternate
-// sign and stay in the ±4° range — enough to feel hand-placed, not enough
-// to look broken. Z-order = DOM order (the highlighted focal card gets
-// its visual prominence from a deeper shadow, not z-index).
+// stagger: top row drifts down-right, bottom row tucks between the
+// top-row gaps. Horizontal steps (180px) are wider than the card
+// (170px) so same-row neighbors don't pile up — the layered feel
+// comes from the vertical overlap between rows, not from horizontal
+// crowding. Rotations alternate sign and stay in the ±4° range.
+// Z-order = DOM order (focal card reads forward via deeper shadow).
 const CARDS = [
   { top: 0,   left: 0,   tilt: -3 },
-  { top: 30,  left: 150, tilt:  4 }, // focal
-  { top: 70,  left: 300, tilt: -2 },
-  { top: 180, left: 80,  tilt:  3 },
-  { top: 200, left: 230, tilt: -4 },
+  { top: 30,  left: 180, tilt:  4 }, // focal
+  { top: 70,  left: 360, tilt: -2 },
+  { top: 180, left: 90,  tilt:  3 },
+  { top: 200, left: 270, tilt: -4 },
 ]
 const HIGHLIGHT_SHADOW = "0 24px 48px rgba(0,0,0,0.18)"
 const DEFAULT_SHADOW = "0 6px 16px rgba(0,0,0,0.10)"
