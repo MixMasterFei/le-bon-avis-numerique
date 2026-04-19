@@ -79,3 +79,29 @@ export async function resolveImage(item: RssLikeItem): Promise<string | null> {
   }
   return null
 }
+
+/**
+ * HEAD-checks an image URL: returns true only if the response is 2xx
+ * AND the Content-Type starts with "image/". Used at persist time to
+ * guarantee that what gets stored will actually render in the browser.
+ * Falls back to false on any error or timeout — better to drop the
+ * story than show a broken-image card.
+ */
+export async function isImageReachable(url: string, timeoutMs = 3500): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+      headers: { "user-agent": "Mozilla/5.0 (compatible; TotemAviseBot/1.0)" },
+      redirect: "follow",
+    })
+    clearTimeout(timer)
+    if (!res.ok) return false
+    const ct = (res.headers.get("content-type") ?? "").toLowerCase()
+    return ct.startsWith("image/")
+  } catch {
+    return false
+  }
+}

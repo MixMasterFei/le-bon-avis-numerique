@@ -2,19 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Upload, Wrench, BarChart3, Activity } from "lucide-react"
 import {
-  ActionItemsSection,
   QuickActionsBar,
   ImportPresetsBar,
   StatsCollapsible,
-  CronLogsSection,
-  SystemHealthOverview,
   OperationsCenter,
   ActivityFeed,
   UserAnalytics,
 } from "@/components/admin"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { fraunces } from "@/components/home-v2/apercuFont"
 
 interface DashboardData {
   stats: {
@@ -77,6 +75,7 @@ export default function AdminOperationsPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const p = APERCU_PALETTE
+  const serifClass = fraunces.className
 
   const fetchData = useCallback(async () => {
     try {
@@ -94,9 +93,12 @@ export default function AdminOperationsPage() {
   }, [fetchData])
 
   return (
-    <div className="min-h-screen" style={{ background: p.bg, color: p.ink }}>
-      <div className="container mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-6">
-        <div>
+    <div
+      className={`min-h-screen ${fraunces.variable}`}
+      style={{ background: p.bg, color: p.ink }}
+    >
+      <div className="container mx-auto px-4 md:px-8 py-8 md:py-10 flex flex-col gap-10">
+        <header>
           <Link
             href="/admin"
             className="inline-flex items-center gap-1.5 text-sm mb-4 hover:opacity-70"
@@ -112,16 +114,20 @@ export default function AdminOperationsPage() {
             Opérations
           </div>
           <h1
-            className="text-3xl md:text-4xl font-medium leading-tight"
+            className={`${serifClass} text-3xl md:text-4xl font-medium leading-tight`}
             style={{ color: p.ink, letterSpacing: "-0.02em" }}
           >
             Maintenance & actions en masse
           </h1>
           <p className="text-sm mt-2 max-w-2xl" style={{ color: p.ink2 }}>
-            Tous les outils de gestion de contenu et de maintenance du catalogue.
-            Les chiffres clés restent sur le tableau de bord.
+            Tous les outils manuels pour gérer le catalogue. Les chiffres et
+            l&apos;état de santé système restent sur le{" "}
+            <Link href="/admin" className="underline" style={{ color: p.ink }}>
+              tableau de bord
+            </Link>
+            .
           </p>
-        </div>
+        </header>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -129,34 +135,53 @@ export default function AdminOperationsPage() {
           </div>
         ) : data ? (
           <>
-            <ActionItemsSection
-              pendingCorrections={data.actionItems.pendingCorrections}
-              pendingContentRequests={data.actionItems.pendingContentRequests}
-              lowQualityItems={data.actionItems.lowQualityItems}
-              pendingReports={data.actionItems.pendingReports}
-            />
+            <Section
+              icon={Upload}
+              title="Importer du contenu"
+              subtitle="Ajouter des œuvres au catalogue à la demande."
+              serifClass={serifClass}
+            >
+              <div className="flex flex-col gap-4">
+                <QuickActionsBar onImportComplete={fetchData} />
+                <ImportPresetsBar onImportComplete={fetchData} />
+              </div>
+            </Section>
 
-            <QuickActionsBar onImportComplete={fetchData} />
-            <ImportPresetsBar onImportComplete={fetchData} />
+            <Section
+              icon={Wrench}
+              title="Outils de maintenance"
+              subtitle="Enrichissement, qualité, streaming, similarités, correctifs ponctuels."
+              serifClass={serifClass}
+            >
+              <OperationsCenter onComplete={fetchData} />
+            </Section>
 
-            <StatsCollapsible
-              stats={data.stats}
-              languageDistribution={data.languageDistribution}
-            />
-
-            <CronLogsSection />
-
-            <SystemHealthOverview />
-
-            <OperationsCenter onComplete={fetchData} />
-
-            <div className="grid lg:grid-cols-2 gap-6">
-              <ActivityFeed activities={data.recentActivity} />
-              <UserAnalytics
-                topContributors={data.topContributors}
-                recentReviews={data.recentReviews}
+            <Section
+              icon={BarChart3}
+              title="Répartition du catalogue"
+              subtitle="Volume par type et distribution des langues d'origine."
+              serifClass={serifClass}
+            >
+              <StatsCollapsible
+                stats={data.stats}
+                languageDistribution={data.languageDistribution}
               />
-            </div>
+            </Section>
+
+            <Section
+              icon={Activity}
+              title="Activité récente"
+              subtitle="Dernières actions admin et contributions de la communauté."
+              serifClass={serifClass}
+            >
+              <div className="grid lg:grid-cols-2 gap-6">
+                <ActivityFeed activities={data.recentActivity} />
+                <UserAnalytics
+                  topContributors={data.topContributors}
+                  recentReviews={data.recentReviews}
+                />
+              </div>
+            </Section>
           </>
         ) : (
           <div className="text-center py-20" style={{ color: p.ink2 }}>
@@ -165,5 +190,48 @@ export default function AdminOperationsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+function Section({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+  serifClass,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  title: string
+  subtitle: string
+  children: React.ReactNode
+  serifClass: string
+}) {
+  const p = APERCU_PALETTE
+  return (
+    <section>
+      <div
+        className="flex items-start gap-3 pb-4 mb-5"
+        style={{ borderBottom: `1px solid ${p.line}` }}
+      >
+        <div
+          className="flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 mt-0.5"
+          style={{ background: p.bg2, color: p.accent }}
+        >
+          <Icon className="w-4 h-4" />
+        </div>
+        <div>
+          <h2
+            className={`${serifClass} text-xl md:text-2xl font-medium leading-tight`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            {title}
+          </h2>
+          <p className="text-sm mt-0.5" style={{ color: p.ink2 }}>
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      {children}
+    </section>
   )
 }

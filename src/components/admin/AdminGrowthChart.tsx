@@ -21,8 +21,10 @@ function formatDayLabel(iso: string): string {
 export function AdminGrowthChart({ data }: { data: DailyGrowthPoint[] }) {
   const p = APERCU_PALETTE
   return (
-    <div className="w-full h-[260px]">
-      <ResponsiveContainer width="100%" height="100%">
+    // min-w-0 lets the chart shrink inside a grid cell that would
+    // otherwise report -1 width on the first render pass.
+    <div className="w-full h-[260px] min-w-0">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={260} debounce={50}>
         <LineChart
           data={data}
           margin={{ top: 8, right: 16, left: -8, bottom: 0 }}

@@ -2,9 +2,35 @@ import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, type RssLikeItem } from "@/lib/news-image"
+import { resolveImage, isImageReachable, type RssLikeItem } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import type { NewsCategory } from "@prisma/client"
+
+// ── Title-fingerprint dedup ───────────────────────────────────────────
+// Catches paraphrased duplicates that the URL-overlap check misses
+// (Claude rewriting the same event with different wording on different
+// runs). Tokens are 4+ chars, accent-stripped, lowercased; Jaccard
+// similarity ≥ 0.5 = same story.
+
+function titleTokens(title: string): Set<string> {
+  return new Set(
+    title
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 4),
+  )
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0
+  let intersect = 0
+  for (const t of a) if (b.has(t)) intersect++
+  return intersect / (a.size + b.size - intersect)
+}
+
+const TITLE_DEDUP_THRESHOLD = 0.5
 
 interface HydratedItem {
   sourceName: string
@@ -196,6 +222,7 @@ export interface DiscoverStats {
   itemsDroppedNoImage: number
   storiesSynthesized: number
   storiesDroppedInvalid: number
+  storiesDroppedImageUnreachable: number
   storiesPersisted: number
   storiesUpdated: number
   archivedCount: number
@@ -264,6 +291,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       itemsDroppedNoImage: droppedNoImage,
       storiesSynthesized: 0,
       storiesDroppedInvalid: 0,
+      storiesDroppedImageUnreachable: 0,
       storiesPersisted: 0,
       storiesUpdated: 0,
       archivedCount: 0,
@@ -288,7 +316,11 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // Map every previously-published source URL to its existing story id.
   // First-seen wins on collisions (a single URL ideally appears once).
   const urlToExistingId = new Map<string, string>()
+  // Parallel: title fingerprints for the second dedup layer (catches
+  // paraphrased duplicates that share zero source URLs).
+  const titleFingerprints: Array<{ id: string; tokens: Set<string> }> = []
   for (const story of existingStories) {
+    titleFingerprints.push({ id: story.id, tokens: titleTokens(story.title) })
     if (!Array.isArray(story.sources)) continue
     for (const src of story.sources) {
       if (typeof src !== "object" || src === null) continue
@@ -354,35 +386,70 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     validStories.push(story)
   }
+
+  // 6. HEAD-check every chosen image in parallel. Stories whose imageUrl
+  //    doesn't return a real image type get dropped here so we never
+  //    persist a card that'll render as a broken image at the user.
+  const reachable = await Promise.all(
+    validStories.map((s) => isImageReachable(s.imageUrl)),
+  )
+  let droppedImageUnreachable = 0
+  const liveStories: SynthesizedStory[] = []
+  validStories.forEach((s, i) => {
+    if (reachable[i]) liveStories.push(s)
+    else droppedImageUnreachable++
+  })
+
   const synthesizeMs = Date.now() - synthStart
 
-  // 6. Persist — dedup by source-URL overlap before insert, fall back to
-  //    slug collision handling otherwise.
+  // 7. Persist with three dedup layers + source-name dedup.
   const persistStart = Date.now()
   const now = new Date()
   let persisted = 0
   let updated = 0
-  for (const s of validStories) {
-    const sources = s.sourceIndexes.map((i) => ({
-      name: unique[i].sourceName,
-      url: unique[i].link,
-      favicon: faviconFor(unique[i].link),
-      headline: unique[i].title,
-      publishedAt: unique[i].publishedAt.toISOString(),
-    }))
+  for (const s of liveStories) {
+    // Build the sources array, then collapse multiple entries from the
+    // same publisher down to one (first-seen) — keeps the UI's source
+    // pill row from showing "Sortiraparis · Sortiraparis · Sortiraparis…".
+    const seenNames = new Set<string>()
+    const sources = s.sourceIndexes
+      .map((i) => ({
+        name: unique[i].sourceName,
+        url: unique[i].link,
+        favicon: faviconFor(unique[i].link),
+        headline: unique[i].title,
+        publishedAt: unique[i].publishedAt.toISOString(),
+      }))
+      .filter((src) => {
+        if (seenNames.has(src.name)) return false
+        seenNames.add(src.name)
+        return true
+      })
     const publishedAt = new Date(
       Math.min(...s.sourceIndexes.map((i) => unique[i].publishedAt.getTime())),
     )
 
-    // Dedup: if any source URL is already owned by a previously-persisted
-    // story (either from earlier runs OR earlier in this same loop),
-    // update that row in place instead of creating a duplicate.
+    // Dedup layer A: any source URL already owned by an existing story?
     let matchedExistingId: string | null = null
     for (const src of sources) {
       const id = urlToExistingId.get(src.url)
       if (id) {
         matchedExistingId = id
         break
+      }
+    }
+
+    // Dedup layer B: title fingerprint Jaccard ≥ TITLE_DEDUP_THRESHOLD.
+    // Catches paraphrased duplicates that share no source URLs (e.g.
+    // "Miffy et Pokémon pour occuper les vacances" vs
+    // "Miffy et Pokémon parfaits pour les vacances").
+    if (!matchedExistingId) {
+      const newTokens = titleTokens(s.title)
+      for (const fp of titleFingerprints) {
+        if (jaccard(newTokens, fp.tokens) >= TITLE_DEDUP_THRESHOLD) {
+          matchedExistingId = fp.id
+          break
+        }
       }
     }
 
@@ -403,18 +470,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
         where: { id: matchedExistingId },
         data,
       })
-      // Refresh URL map with this story's full source set so subsequent
-      // stories in the same run also see them.
       for (const src of sources) urlToExistingId.set(src.url, matchedExistingId)
+      // Refresh fingerprint so within-run subsequent stories see it too.
+      const existingFp = titleFingerprints.find((fp) => fp.id === matchedExistingId)
+      if (existingFp) existingFp.tokens = titleTokens(s.title)
       updated++
       continue
     }
 
     let slug = s.slug || slugify(s.title) || `story-${now.getTime()}`
     let suffix = 1
-    // Slug-collision protection: append -2, -3, ... if another (non-overlapping)
-    // story already owns the slug. By construction we know it's not the same
-    // event because the URL-overlap check above didn't match.
     while (true) {
       const existing = await prisma.newsStory.findUnique({ where: { slug } })
       if (!existing) break
@@ -426,6 +491,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       data: { slug, ...data },
     })
     for (const src of sources) urlToExistingId.set(src.url, created.id)
+    titleFingerprints.push({ id: created.id, tokens: titleTokens(s.title) })
     persisted++
   }
 
@@ -443,6 +509,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     itemsDroppedNoImage: droppedNoImage,
     storiesSynthesized: rawStories.length,
     storiesDroppedInvalid: droppedInvalid,
+    storiesDroppedImageUnreachable: droppedImageUnreachable,
     storiesPersisted: persisted,
     storiesUpdated: updated,
     archivedCount: archived.count,
