@@ -29,9 +29,12 @@ interface SynthesizedStory {
 
 type RssParser = Parser<Record<string, unknown>, RssLikeItem & Record<string, unknown>>
 
+const MAX_ITEMS_PER_SOURCE = 5
+const MAX_TOTAL_ITEMS = 60
+
 function makeParser(): RssParser {
   return new Parser({
-    timeout: 8000,
+    timeout: 6000,
     customFields: {
       item: [
         ["media:content", "media:content", { keepArray: false }],
@@ -46,10 +49,17 @@ function makeParser(): RssParser {
 async function fetchOne(parser: RssParser, source: NewsSource, since: Date) {
   try {
     const feed = await parser.parseURL(source.url)
-    const items = (feed.items ?? []).filter((it) => {
-      const t = it.isoDate ? new Date(it.isoDate) : it.pubDate ? new Date(it.pubDate) : null
-      return t !== null && t > since && !!it.link && !!it.title
-    })
+    const items = (feed.items ?? [])
+      .filter((it) => {
+        const t = it.isoDate ? new Date(it.isoDate) : it.pubDate ? new Date(it.pubDate) : null
+        return t !== null && t > since && !!it.link && !!it.title
+      })
+      .sort((a, b) => {
+        const ta = new Date(a.isoDate ?? a.pubDate ?? 0).getTime()
+        const tb = new Date(b.isoDate ?? b.pubDate ?? 0).getTime()
+        return tb - ta
+      })
+      .slice(0, MAX_ITEMS_PER_SOURCE)
     return items.map((it) => ({ source, item: it }))
   } catch (err) {
     console.warn(`[news-discover] Skipping ${source.name}: ${(err as Error).message}`)
@@ -154,6 +164,12 @@ export interface DiscoverStats {
   storiesPersisted: number
   archivedCount: number
   durationMs: number
+  timings: {
+    fetchRssMs: number
+    resolveImagesMs: number
+    synthesizeMs: number
+    persistMs: number
+  }
 }
 
 export async function runNewsDiscover(): Promise<DiscoverStats> {
@@ -162,13 +178,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const since = new Date(Date.now() - 48 * 60 * 60 * 1000)
 
   // 1. Fetch all feeds in parallel
+  const fetchStart = Date.now()
   const fetchBatches = await Promise.all(NEWS_SOURCES.map((s) => fetchOne(parser, s, since)))
   const pairs = fetchBatches.flat()
+  const fetchRssMs = Date.now() - fetchStart
 
   // 2. Resolve image per item (drops anything without one)
+  const imageStart = Date.now()
   const hydrated: HydratedItem[] = []
   let droppedNoImage = 0
-  await parallelMap(pairs, 8, async ({ source, item }) => {
+  await parallelMap(pairs, 6, async ({ source, item }) => {
     const imageUrl = await resolveImage(item as RssLikeItem)
     if (!imageUrl) {
       droppedNoImage++
@@ -190,13 +209,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     })
   })
 
-  // 3. Dedup by URL
+  // 3. Dedup by URL, then cap to MAX_TOTAL_ITEMS by recency (keeps Claude under timeout)
   const seen = new Set<string>()
-  const unique = hydrated.filter((h) => {
-    if (seen.has(h.link)) return false
-    seen.add(h.link)
-    return true
-  })
+  const unique = hydrated
+    .filter((h) => {
+      if (seen.has(h.link)) return false
+      seen.add(h.link)
+      return true
+    })
+    .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
+    .slice(0, MAX_TOTAL_ITEMS)
+  const resolveImagesMs = Date.now() - imageStart
 
   if (unique.length === 0) {
     return {
@@ -208,10 +231,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       storiesPersisted: 0,
       archivedCount: 0,
       durationMs: Date.now() - started,
+      timings: {
+        fetchRssMs,
+        resolveImagesMs,
+        synthesizeMs: 0,
+        persistMs: 0,
+      },
     }
   }
 
   // 4. Cluster + synthesize in one Claude call
+  const synthStart = Date.now()
   const anthropic = getAnthropic()
   const prompt = buildPrompt(unique)
   const response = await anthropic.messages.create({
@@ -250,8 +280,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     validStories.push(story)
   }
+  const synthesizeMs = Date.now() - synthStart
 
   // 5. Persist — upsert by slug (with numeric suffix on collision)
+  const persistStart = Date.now()
   const now = new Date()
   let persisted = 0
   for (const s of validStories) {
@@ -316,6 +348,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     where: { status: "PUBLISHED", publishedAt: { lt: cutoff } },
     data: { status: "ARCHIVED" },
   })
+  const persistMs = Date.now() - persistStart
 
   return {
     sourcesFetched: NEWS_SOURCES.length,
@@ -326,5 +359,11 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     storiesPersisted: persisted,
     archivedCount: archived.count,
     durationMs: Date.now() - started,
+    timings: {
+      fetchRssMs,
+      resolveImagesMs,
+      synthesizeMs,
+      persistMs,
+    },
   }
 }

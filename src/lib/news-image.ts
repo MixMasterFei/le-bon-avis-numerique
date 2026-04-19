@@ -46,7 +46,7 @@ export function extractFromRss(item: RssLikeItem): string | null {
   return null
 }
 
-export async function extractFromOgTags(url: string, timeoutMs = 3000): Promise<string | null> {
+export async function extractFromOgTags(url: string, timeoutMs = 2000): Promise<string | null> {
   try {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
