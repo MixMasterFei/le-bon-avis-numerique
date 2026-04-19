@@ -31,15 +31,15 @@ interface StatsShape {
 // even when the underlying films change. Values are drawn from the site's
 // real enrichment vocabulary (tone tags).
 const CARD_LABELS = ["Tout doux", "Coup de cœur", "Fait rêver", "Aventureux"]
-const TILT_STEPS = [-4, 2, 4, -2]
 
-// Four editorial fan positions — generous breathing room between cards,
-// slight overlap kept for visual rhythm but no crumpled pile.
-const POSITIONS = [
-  { top: "0%", right: "30%" },
-  { top: "4%", right: "0%" },
-  { top: "50%", right: "32%" },
-  { top: "54%", right: "2%" },
+// "Cards on a table" vibe: varied rotations and organic placement so the
+// layout reads as casually set down rather than carefully staged. Each
+// card pairs its own tilt + position + shadow depth.
+const CARDS = [
+  { top: "2%",  right: "24%", tilt: -10, shadow: "0 12px 28px rgba(0,0,0,0.10)" },
+  { top: "6%",  right: "0%",  tilt:  5,  shadow: "0 28px 56px rgba(0,0,0,0.20)" },
+  { top: "42%", right: "22%", tilt:  8,  shadow: "0 16px 34px rgba(0,0,0,0.12)" },
+  { top: "48%", right: "2%",  tilt: -7,  shadow: "0 14px 30px rgba(0,0,0,0.11)" },
 ]
 
 export function ApercuHero({
@@ -76,8 +76,8 @@ export function ApercuHero({
       className="relative overflow-hidden"
       style={{ background: p.bg, color: p.ink }}
     >
-      <div className="container mx-auto px-4 md:px-8 py-10 md:py-16">
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
+      <div className="container mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-10 md:pb-14">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-start">
           <div>
             <div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-7"
@@ -176,27 +176,32 @@ export function ApercuHero({
             )}
           </div>
 
-          <div className="relative h-[580px] md:h-[640px] lg:h-[700px] hidden md:block">
+          <div className="relative h-[540px] md:h-[600px] lg:h-[660px] hidden md:block">
             {picks.length > 0
-              ? picks.slice(0, 4).map((pick, idx) => (
-                  <HeroPosterCard
-                    key={pick.id}
-                    pick={pick}
-                    tilt={TILT_STEPS[idx] ?? 0}
-                    pos={POSITIONS[idx]}
-                    zIndex={10 - idx}
-                    highlighted={idx === 1}
-                    label={CARD_LABELS[idx]}
-                    serifClass={serifClass}
-                  />
-                ))
-              : Array.from({ length: 4 }).map((_, idx) => (
+              ? picks.slice(0, 4).map((pick, idx) => {
+                  const c = CARDS[idx]
+                  return (
+                    <HeroPosterCard
+                      key={pick.id}
+                      pick={pick}
+                      tilt={c.tilt}
+                      pos={{ top: c.top, right: c.right }}
+                      shadow={c.shadow}
+                      zIndex={10 - idx}
+                      highlighted={idx === 1}
+                      label={CARD_LABELS[idx]}
+                      serifClass={serifClass}
+                    />
+                  )
+                })
+              : CARDS.map((c, idx) => (
                   <div
                     key={idx}
                     className="absolute w-[240px] aspect-[3/4] rounded-2xl animate-pulse"
                     style={{
-                      ...POSITIONS[idx],
-                      transform: `rotate(${TILT_STEPS[idx]}deg)`,
+                      top: c.top,
+                      right: c.right,
+                      transform: `rotate(${c.tilt}deg)`,
                       background: p.placeholder,
                     }}
                   />
@@ -212,6 +217,7 @@ function HeroPosterCard({
   pick,
   tilt,
   pos,
+  shadow,
   zIndex,
   highlighted,
   label,
@@ -220,6 +226,7 @@ function HeroPosterCard({
   pick: HeroPick
   tilt: number
   pos: { top: string; right: string }
+  shadow: string
   zIndex: number
   highlighted: boolean
   label: string
@@ -244,9 +251,7 @@ function HeroPosterCard({
         style={{
           background: p.card,
           border: `1px solid ${p.line}`,
-          boxShadow: highlighted
-            ? "0 28px 56px rgba(0,0,0,0.20)"
-            : "0 10px 28px rgba(0,0,0,0.10)",
+          boxShadow: shadow,
         }}
       >
         <div className="relative aspect-[3/4]" style={{ background: p.placeholder }}>
