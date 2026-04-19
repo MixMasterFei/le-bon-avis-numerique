@@ -48,3 +48,77 @@ export function buildAgeBucketHref(bucket: ApercuAgeBucket): string {
 export function isFraunces(fontFlag: string | undefined): boolean {
   return fontFlag !== "poppins"
 }
+
+// ── Color helpers for cards/badges ───────────────────────────────────
+// Pulls hexes from the same age + theme palettes documented in
+// docs/ART_DIRECTION.md so every label on the page belongs to one
+// chromatic universe.
+
+export interface BadgeColor {
+  bg: string
+  text: string
+}
+
+const NEUTRAL_BADGE: BadgeColor = {
+  bg: APERCU_PALETTE.bg2,
+  text: "#3a342c",
+}
+
+/**
+ * Map an age recommendation to its identity bucket color.
+ * Returns the cream `bg2` for unknown ages so empty/null doesn't
+ * silently inherit one bucket's color.
+ */
+export function ageBadgeColor(age: number | null | undefined): BadgeColor {
+  if (age === null || age === undefined) return NEUTRAL_BADGE
+  for (const b of APERCU_AGE_BUCKETS) {
+    if (age <= b.maxAge) {
+      return { bg: b.color, text: "#1E1A15" }
+    }
+  }
+  return NEUTRAL_BADGE
+}
+
+/**
+ * Genres that should look immediately worrying on a family-facing
+ * card. They get the brand's terracotta accent so a parent spots
+ * them at a glance without reading.
+ */
+const WARNING_GENRES = new Set([
+  "Horreur",
+  "Horror",
+  "Thriller",
+  "Guerre",
+  "War",
+])
+
+const GENRE_COLORS: Record<string, BadgeColor> = {
+  Animation: { bg: "#F4C7A6", text: "#5C3D1E" },
+  Aventure: { bg: "#E8A87C", text: "#5C2E1E" },
+  Comédie: { bg: "#F8D775", text: "#5C4500" },
+  Comedie: { bg: "#F8D775", text: "#5C4500" },
+  Fantastique: { bg: "#C9B7D9", text: "#3E2D5C" },
+  Famille: { bg: "#B8D89A", text: "#2D3E1E" },
+  "Science-Fiction": { bg: "#8DBDC9", text: "#1E3E47" },
+  "Sci-Fi": { bg: "#8DBDC9", text: "#1E3E47" },
+  Drame: { bg: "#D89AB0", text: "#5C2D40" },
+  Romance: { bg: "#D89AB0", text: "#5C2D40" },
+  Musique: { bg: "#E9C7A1", text: "#5C3F1E" },
+  Documentaire: { bg: "#B8D89A", text: "#2D3E1E" },
+  Action: { bg: "#E8A87C", text: "#5C2E1E" },
+  Crime: { bg: "#A79BC7", text: "#3E2D5C" },
+  Mystère: { bg: "#A79BC7", text: "#3E2D5C" },
+  Mystere: { bg: "#A79BC7", text: "#3E2D5C" },
+  Histoire: { bg: "#E9C7A1", text: "#5C3F1E" },
+  Western: { bg: "#E8A87C", text: "#5C2E1E" },
+}
+
+const WARNING_BADGE: BadgeColor = {
+  bg: APERCU_PALETTE.accent,
+  text: "#FFFFFF",
+}
+
+export function genreBadgeColor(genre: string): BadgeColor {
+  if (WARNING_GENRES.has(genre)) return WARNING_BADGE
+  return GENRE_COLORS[genre] ?? NEUTRAL_BADGE
+}

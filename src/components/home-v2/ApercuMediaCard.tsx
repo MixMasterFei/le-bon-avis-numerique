@@ -6,7 +6,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { toMediaRouteId } from "@/lib/media-route"
-import { APERCU_PALETTE } from "./apercuTheme"
+import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor } from "./apercuTheme"
 
 export interface ApercuCardMedia {
   id: string
@@ -37,9 +37,12 @@ export function ApercuMediaCard({
 
   const ageLabel =
     typeof media.expertAgeRec === "number" ? `${media.expertAgeRec}+` : null
+  const ageColors = ageBadgeColor(media.expertAgeRec)
 
   const titleClass =
     size === "sm" ? "text-[13px] leading-tight" : "text-sm leading-snug"
+
+  const visibleGenres = (media.genres ?? []).slice(0, 3)
 
   return (
     <Link
@@ -61,8 +64,12 @@ export function ApercuMediaCard({
         )}
         {ageLabel && (
           <div
-            className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-            style={{ background: "#B8D89A", color: "#2D3E1E" }}
+            className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight"
+            style={{
+              background: ageColors.bg,
+              color: ageColors.text,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+            }}
           >
             {ageLabel}
           </div>
@@ -75,17 +82,25 @@ export function ApercuMediaCard({
         >
           {media.title}
         </div>
-        {media.genres && media.genres.length > 0 && (
-          <div
-            className="text-[11px] mt-0.5 line-clamp-1"
-            style={{ color: p.ink2 }}
-          >
-            {media.genres[0]}
+        {visibleGenres.length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1 overflow-hidden max-h-[22px]">
+            {visibleGenres.map((g) => {
+              const c = genreBadgeColor(g)
+              return (
+                <span
+                  key={g}
+                  className="px-1.5 py-0.5 rounded text-[10px] font-semibold leading-tight whitespace-nowrap"
+                  style={{ background: c.bg, color: c.text }}
+                >
+                  {g}
+                </span>
+              )
+            })}
           </div>
         )}
       </div>
       {familyFit && familyFit.members.length > 0 && (
-        <div className="mt-1">
+        <div className="mt-1.5">
           <FamilyFitAvatars members={familyFit.members} compact />
         </div>
       )}
