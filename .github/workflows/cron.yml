@@ -57,6 +57,16 @@ jobs:
           fi
           echo "::endgroup::"
 
+      - name: Import CNC ratings (50 films)
+        run: |
+          set +e
+          echo "::group::CNC ratings import"
+          curl -sSL --max-time 280 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/admin/import-cnc-ratings?limit=50&only_missing=true" \
+            | jq '{matched, updated, errors, total}' 2>/dev/null || true
+          echo "::endgroup::"
+
   # ── Daily: Enrichment + deep enrichment + quality scores ─────────
   daily-enrich:
     name: Daily Enrichment & Quality

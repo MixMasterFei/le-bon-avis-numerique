@@ -263,3 +263,46 @@ Envoyé depuis le formulaire de contact de ${APP_NAME}
 
   return data
 }
+
+export async function sendCronFailureAlert(params: {
+  task: string
+  summary: string
+  details?: Record<string, unknown>
+}) {
+  const alertEmail = process.env.CRON_ALERT_EMAIL || "masterfei@gmail.com"
+
+  // Swallow send errors — alerting must never itself break the cron.
+  try {
+    const detailsJson = params.details
+      ? JSON.stringify(params.details, null, 2).slice(0, 2000)
+      : null
+
+    await getResend().emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: alertEmail,
+      subject: `[Cron failed] ${params.task}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; color: #1e293b; max-width: 640px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: #b91c1c; margin-top: 0;">⚠️ Cron failure — ${params.task}</h2>
+            <p style="color: #475569;">${params.summary}</p>
+            ${
+              detailsJson
+                ? `<pre style="background: #f1f5f9; padding: 16px; border-radius: 8px; font-size: 12px; overflow-x: auto; color: #334155;">${detailsJson}</pre>`
+                : ""
+            }
+            <p style="color: #64748b; font-size: 13px; margin-top: 24px;">
+              Vérifier la table <code>cron_logs</code> ou le tableau de bord admin pour plus de contexte.
+            </p>
+          </body>
+        </html>
+      `,
+      text: `Cron failure — ${params.task}\n\n${params.summary}${
+        detailsJson ? `\n\n${detailsJson}` : ""
+      }`,
+    })
+  } catch (err) {
+    console.error("Failed to send cron alert email:", err)
+  }
+}

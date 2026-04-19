@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { type Prisma } from "@prisma/client"
+import { sendCronFailureAlert } from "@/lib/email"
 
 /**
  * Log a cron/automated job execution to the database.
- * Call at the end of each automated route.
+ * Call at the end of each automated route. Sends an email alert
+ * to the owner when status === "error".
  */
 export async function logCronRun(params: {
   task: string
@@ -25,5 +27,14 @@ export async function logCronRun(params: {
   } catch (e) {
     // Never let logging failures break the actual job
     console.error("Failed to log cron run:", e)
+  }
+
+  if (params.status === "error") {
+    // Fire-and-forget; the helper swallows send errors internally.
+    await sendCronFailureAlert({
+      task: params.task,
+      summary: params.summary,
+      details: params.details,
+    })
   }
 }
