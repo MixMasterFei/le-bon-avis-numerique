@@ -113,15 +113,15 @@ export function ApercuHero({
               className={`${serifClass} text-4xl md:text-5xl lg:text-6xl leading-[1.02] tracking-tight font-medium m-0`}
               style={{ color: p.ink, letterSpacing: "-0.02em" }}
             >
-              Les{" "}
+              Trouvez les{" "}
               <em className="italic" style={{ color: p.accent }}>
                 bons contenus
               </em>
               ,
               <br />
-              choisis{" "}
+              pour{" "}
               <span className="italic" style={{ color: p.accent2 }}>
-                en confiance
+                votre foyer
               </span>
               .
             </h1>
