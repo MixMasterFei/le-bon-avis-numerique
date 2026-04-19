@@ -165,7 +165,8 @@ Pour chaque histoire retenue, renvoie un objet JSON avec :
 ## Contraintes dures
 
 - Maximum 10 histoires, triées par pertinence décroissante
-- Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.7 obligatoire
+- **Distribue à travers les 4 catégories** : vise 2-3 histoires par catégorie quand le matériel le permet. Évite de remplir 8 PARENTHOOD et 0 GAMES — la page Découverte affiche un onglet par catégorie et chaque onglet doit avoir du contenu.
+- Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.6 obligatoire
 - Chaque imageUrl correspond exactement à l'IMG d'un article cité
 - Si tu ne trouves que 0, 1 ou 2 histoires solides, renvoie seulement celles-là
 - Français uniquement
@@ -380,7 +381,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // still letting standout institutional studies or expert guides through.
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
     const isMultiSource = distinctNames.size >= 2
-    const minRelevance = isMultiSource ? 0.5 : 0.7
+    const minRelevance = isMultiSource ? 0.5 : 0.6
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       continue

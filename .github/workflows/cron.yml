@@ -6,8 +6,10 @@ on:
     - cron: "0 3 * * 1"
     # Daily 4:00 AM UTC — Enrichment + deep enrichment + quality scores
     - cron: "0 4 * * *"
-    # Daily 5:00 AM UTC — News discovery (admin-only feed)
-    - cron: "0 5 * * *"
+    # Twice daily — News discovery (06:00 + 18:00 UTC). Dedup pipeline
+    # handles re-runs natively (URL fingerprint + title fingerprint).
+    - cron: "0 6 * * *"
+    - cron: "0 18 * * *"
     # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
     - cron: "0 5 * * 6"
   workflow_dispatch:
@@ -265,7 +267,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     if: >-
-      github.event.schedule == '0 5 * * *' ||
+      github.event.schedule == '0 6 * * *' ||
+      github.event.schedule == '0 18 * * *' ||
       github.event.inputs.task == 'news-discover' ||
       github.event.inputs.task == 'all'
     steps:

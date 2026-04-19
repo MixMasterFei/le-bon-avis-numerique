@@ -1,45 +1,16 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { ApercuDecouverte } from "@/components/home-v2/ApercuDecouverte"
+import { fetchDiscoverDigest } from "@/lib/discover-digest"
+import { factOfTheWeek } from "@/lib/family-facts"
+import { DecouverteDigest } from "@/components/home-v2/DecouverteDigest"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
-import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
-import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
-import type { NewsCategoryKey } from "@/components/home-v2/apercuNewsLabels"
-import type { Prisma, NewsCategory } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
+export const revalidate = 60 // page is fully RSC, 1-min ISR is enough
 
 interface SearchParams {
   font?: string
-  cat?: string
-}
-
-function parseCategory(raw: string | undefined): NewsCategoryKey {
-  if (raw === "PARENTHOOD" || raw === "FILM_TV" || raw === "GAMES" || raw === "READING") {
-    return raw
-  }
-  return "ALL"
-}
-
-function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
-  if (!Array.isArray(raw)) return []
-  return raw.flatMap((entry): NewsSourceRef[] => {
-    if (typeof entry !== "object" || entry === null) return []
-    const e = entry as Record<string, unknown>
-    const name = typeof e.name === "string" ? e.name : ""
-    const url = typeof e.url === "string" ? e.url : ""
-    if (!name || !url) return []
-    return [
-      {
-        name,
-        url,
-        favicon: typeof e.favicon === "string" ? e.favicon : undefined,
-        headline: typeof e.headline === "string" ? e.headline : undefined,
-      },
-    ]
-  })
 }
 
 export default async function ApercuDecouvertePage(props: {
@@ -57,27 +28,11 @@ export default async function ApercuDecouvertePage(props: {
   const role = (session.user as { role?: string }).role
   const canRefresh = role === "ADMIN" || role === "MODERATOR"
 
-  const searchParams = await props.searchParams
-  const activeCategory = parseCategory(searchParams?.cat)
-
-  const where: { status: "PUBLISHED"; category?: NewsCategory } = { status: "PUBLISHED" }
-  if (activeCategory !== "ALL") where.category = activeCategory
-
-  const rows = await prisma.newsStory.findMany({
-    where,
-    orderBy: [{ relevanceScore: "desc" }, { publishedAt: "desc" }],
-    take: 15,
-  })
-
-  const stories: ApercuNewsCardData[] = rows.map((r) => ({
-    slug: r.slug,
-    title: r.title,
-    summary: r.summary,
-    imageUrl: r.imageUrl,
-    category: r.category,
-    publishedAt: r.publishedAt,
-    sources: toSources(r.sources),
-  }))
+  const [digest, searchParams] = await Promise.all([
+    fetchDiscoverDigest(),
+    props.searchParams,
+  ])
+  const fact = factOfTheWeek()
 
   const useFraunces = isFraunces(searchParams?.font)
   const serifClass = useFraunces
@@ -86,9 +41,9 @@ export default async function ApercuDecouvertePage(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      <ApercuDecouverte
-        stories={stories}
-        activeCategory={activeCategory}
+      <DecouverteDigest
+        digest={digest}
+        fact={fact}
         serifClass={serifClass}
         canRefresh={canRefresh}
       />

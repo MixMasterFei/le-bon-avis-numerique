@@ -29,7 +29,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Geek Junior",                     url: "https://www.geekjunior.fr/feed/",                                        category: "GAMES",      trustTier: 2 },
   { name: "Nintendo-Master",                 url: "https://www.nintendo-master.com/feed/",                                  category: "GAMES",      trustTier: 2 },
   { name: "Numerama Pop",                    url: "https://www.numerama.com/pop-culture/feed/",                             category: "GAMES",      trustTier: 1 },
-  { name: "20 Minutes Jeux vidéo",           url: "https://www.20minutes.fr/feeds/rss-jeux-video.xml",                      category: "GAMES",      trustTier: 2 },
+  { name: "20 Minutes Gaming",               url: "https://www.20minutes.fr/feeds/rss-gaming.xml",                          category: "GAMES",      trustTier: 2 },
 
   // READING
   { name: "1jour1actu",                      url: "https://feeds.feedburner.com/1jour1actu/BwmM3ey8dPF",                    category: "READING",    trustTier: 1 },
