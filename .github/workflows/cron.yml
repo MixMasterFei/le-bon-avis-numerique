@@ -6,6 +6,8 @@ on:
     - cron: "0 3 * * 1"
     # Daily 4:00 AM UTC — Enrichment + deep enrichment + quality scores
     - cron: "0 4 * * *"
+    # Daily 5:00 AM UTC — News discovery (admin-only feed)
+    - cron: "0 5 * * *"
     # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
     - cron: "0 5 * * 6"
   workflow_dispatch:
@@ -23,6 +25,7 @@ on:
           - quality
           - streaming
           - similarity
+          - news-discover
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -244,4 +247,29 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"limit":100}' \
             "$SITE_URL/api/admin/similarity/compute" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
+  # ── Daily: News discovery (admin-only synthesized news feed) ──────
+  daily-news-discover:
+    name: Daily News Discover
+    runs-on: ubuntu-latest
+    environment: Production
+    if: >-
+      github.event.schedule == '0 5 * * *' ||
+      github.event.inputs.task == 'news-discover' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Run news discovery
+        run: |
+          echo "::group::News Discover"
+          response=$(curl -sSfL --max-time 58 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/news-discover")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq . 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::News discover failed with HTTP $http_code"
+            exit 1
+          fi
           echo "::endgroup::"

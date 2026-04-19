@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/profil/", "/mes-avis/", "/ma-liste/", "/mes-favoris/"],
+        disallow: ["/admin/", "/api/", "/profil/", "/mes-avis/", "/ma-liste/", "/mes-favoris/", "/apercu", "/apercufilm", "/apercufilmslist", "/apercufoyer", "/apercudecouverte"],
       },
       {
         userAgent: "GPTBot",
