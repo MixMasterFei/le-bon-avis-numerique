@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
+import { FAMILY_VIP_BRAND_TOPICS_LOWER } from "@/lib/family-vip-brands"
 
 // --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
 
@@ -11,14 +12,6 @@ const GENTLE_TONES = new Set([
 ])
 const DARK_TONES = new Set([
   "Sombre et tendu", "Effrayant et angoissant", "Action intense",
-])
-
-// Studios/brands/IPs designed for all ages — no age gap penalty
-const FAMILY_VIP_BRANDS = new Set([
-  "disney", "pixar", "dreamworks", "studio ghibli",
-  "aardman", "illumination", "laika",
-  "nintendo", "lego", "minecraft",
-  "astérix", "asterix", "tintin",
 ])
 
 // Default genres by age group — used when member has no quiz/reactions
@@ -49,7 +42,7 @@ function computeAgeScore(
   if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
   // Family VIP brands: no age penalty
   const lowerTopics = (topics || []).map(t => t.toLowerCase())
-  if (lowerTopics.some(t => FAMILY_VIP_BRANDS.has(t))) return 1.0
+  if (lowerTopics.some(t => FAMILY_VIP_BRAND_TOPICS_LOWER.has(t))) return 1.0
   // Family/animation content: soft penalty, floor 0.75
   const lowerGenres = (genres || []).map(g => g.toLowerCase())
   if (lowerGenres.some(g => g === "animation" || g === "famille" || g === "familial" || g === "family")) {

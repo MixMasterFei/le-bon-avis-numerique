@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
+import { FAMILY_VIP_BRAND_TOPICS_LOWER } from "@/lib/family-vip-brands"
 
 // ---------------------------------------------------------------------------
 // Family Fit API
@@ -34,18 +35,6 @@ interface FamilyFitMember {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// Studios, brands, and IPs whose content is designed for all ages.
-// When a media item's topics match, the age gap penalty is removed entirely.
-const FAMILY_VIP_BRANDS = new Set([
-  // Animation studios
-  "disney", "pixar", "dreamworks", "studio ghibli",
-  "aardman", "illumination", "laika",
-  // Game brands
-  "nintendo", "lego", "minecraft",
-  // French/European IPs
-  "astérix", "asterix", "tintin",
-])
-
 function computeAgeScore(
   expertAgeRec: number | null,
   memberAge: number | null,
@@ -71,7 +60,7 @@ function computeAgeScore(
   // Family VIP brands: content designed for all ages (Nintendo, Pixar, Ghibli, etc.)
   // No age gap penalty at all — parents and teens watching is the intended experience
   const lowerTopics = (topics || []).map(t => t.toLowerCase())
-  if (lowerTopics.some(t => FAMILY_VIP_BRANDS.has(t))) return 1.0
+  if (lowerTopics.some(t => FAMILY_VIP_BRAND_TOPICS_LOWER.has(t))) return 1.0
 
   // Family/animation content: very gentle penalty (floor 0.75)
   // Parents and teens watching animated/family content is normal

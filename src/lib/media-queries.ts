@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
+import { FAMILY_VIP_BRAND_TOPICS } from "@/lib/family-vip-brands"
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -134,12 +135,23 @@ function applyLanguageFilter(
 }
 
 function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxAge?: number) {
-  if (minAge || maxAge) {
-    const ageFilter: Record<string, unknown> = { not: null }
-    if (minAge) ageFilter.gte = minAge
-    if (maxAge) ageFilter.lte = maxAge
-    where.expertAgeRec = ageFilter
-  }
+  if (!minAge && !maxAge) return
+
+  const ageFilter: Record<string, unknown> = { not: null }
+  if (minAge) ageFilter.gte = minAge
+  if (maxAge) ageFilter.lte = maxAge
+
+  // Family VIP brands (Ghibli, Nintendo, Pixar, etc.) bypass the age
+  // band: their content is designed for all ages, so a Totoro rated
+  // 5+ should still surface when the filter is centered on a 10-year-
+  // old. Wrap age + VIP as an OR so other filters (genres, platforms)
+  // still AND cleanly with the rest of the where clause.
+  appendAnd(where, {
+    OR: [
+      { expertAgeRec: ageFilter },
+      { topics: { hasSome: [...FAMILY_VIP_BRAND_TOPICS] } },
+    ],
+  })
 }
 
 function applyContentMetricCaps(

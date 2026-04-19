@@ -32,18 +32,27 @@ interface StatsShape {
 // real enrichment vocabulary (tone tags).
 const CARD_LABELS = ["Tout doux", "Coup de cœur", "Fait rêver", "Aventureux", "Émouvant"]
 
-// Five-card "cluster on a table" arrangement: a focal card slightly
-// higher at the back, two top cards flanking it (one tilted hard right
-// like a casually dropped card), two bottom cards laid down on top of
-// the pile. Each card has its own tilt, position, shadow, and z-order
-// so the stacking feels natural rather than staged.
+const CARD_WIDTH = 170 // px
+const CARD_HEIGHT = Math.round((CARD_WIDTH * 4) / 3) // 227px — aspect 3:4
+
+// Five-card "snapshot on a table" arrangement following a 3+2 brick
+// stagger: top row drifts down-right with slight overlap, bottom row
+// offsets inward so it tucks between the top-row gaps. Rotations alternate
+// sign and stay in the ±4° range — enough to feel hand-placed, not enough
+// to look broken. Z-order = DOM order (the highlighted focal card gets
+// its visual prominence from a deeper shadow, not z-index).
 const CARDS = [
-  { top: "5%",  right: "36%", tilt: -6, shadow: "0 12px 28px rgba(0,0,0,0.10)", z: 12 },
-  { top: "0%",  right: "16%", tilt:  3, shadow: "0 24px 48px rgba(0,0,0,0.18)", z: 10 },
-  { top: "14%", right: "0%",  tilt: 14, shadow: "0 14px 30px rgba(0,0,0,0.11)", z: 11 },
-  { top: "40%", right: "26%", tilt: -4, shadow: "0 16px 34px rgba(0,0,0,0.12)", z: 14 },
-  { top: "46%", right: "10%", tilt: -5, shadow: "0 18px 36px rgba(0,0,0,0.13)", z: 15 },
+  { top: 0,   left: 0,   tilt: -3 },
+  { top: 30,  left: 150, tilt:  4 }, // focal
+  { top: 70,  left: 300, tilt: -2 },
+  { top: 180, left: 80,  tilt:  3 },
+  { top: 200, left: 230, tilt: -4 },
 ]
+const HIGHLIGHT_SHADOW = "0 24px 48px rgba(0,0,0,0.18)"
+const DEFAULT_SHADOW = "0 6px 16px rgba(0,0,0,0.10)"
+
+// Stage height = bottom card's top + card height, with a little slack.
+const STAGE_HEIGHT = Math.max(...CARDS.map((c) => c.top)) + CARD_HEIGHT + 20
 
 export function ApercuHero({
   serifClass,
@@ -179,7 +188,10 @@ export function ApercuHero({
             )}
           </div>
 
-          <div className="relative h-[560px] md:h-[620px] lg:h-[680px] hidden md:block">
+          <div
+            className="relative hidden md:block mx-auto"
+            style={{ height: STAGE_HEIGHT, width: CARDS[2].left + CARD_WIDTH }}
+          >
             {picks.length > 0
               ? picks.slice(0, 5).map((pick, idx) => {
                   const c = CARDS[idx]
@@ -188,9 +200,9 @@ export function ApercuHero({
                       key={pick.id}
                       pick={pick}
                       tilt={c.tilt}
-                      pos={{ top: c.top, right: c.right }}
-                      shadow={c.shadow}
-                      zIndex={c.z}
+                      top={c.top}
+                      left={c.left}
+                      shadow={idx === 1 ? HIGHLIGHT_SHADOW : DEFAULT_SHADOW}
                       highlighted={idx === 1}
                       label={CARD_LABELS[idx]}
                       serifClass={serifClass}
@@ -200,13 +212,14 @@ export function ApercuHero({
               : CARDS.map((c, idx) => (
                   <div
                     key={idx}
-                    className="absolute w-[220px] aspect-[3/4] rounded-2xl animate-pulse"
+                    className="absolute rounded-2xl animate-pulse"
                     style={{
+                      width: CARD_WIDTH,
+                      height: CARD_HEIGHT,
                       top: c.top,
-                      right: c.right,
+                      left: c.left,
                       transform: `rotate(${c.tilt}deg)`,
                       background: p.placeholder,
-                      zIndex: c.z,
                     }}
                   />
                 ))}
@@ -220,18 +233,18 @@ export function ApercuHero({
 function HeroPosterCard({
   pick,
   tilt,
-  pos,
+  top,
+  left,
   shadow,
-  zIndex,
   highlighted,
   label,
   serifClass,
 }: {
   pick: HeroPick
   tilt: number
-  pos: { top: string; right: string }
+  top: number
+  left: number
   shadow: string
-  zIndex: number
   highlighted: boolean
   label: string
   serifClass: string
@@ -243,10 +256,11 @@ function HeroPosterCard({
   return (
     <Link
       href={`/media/${toMediaRouteId(pick.type, pick.id)}`}
-      className="absolute w-[220px] block transition-transform duration-300 hover:-translate-y-1"
+      className="absolute block transition-transform duration-300 hover:-translate-y-1"
       style={{
-        ...pos,
-        zIndex,
+        width: CARD_WIDTH,
+        top,
+        left,
         transform: `rotate(${tilt}deg)`,
       }}
     >
@@ -265,7 +279,7 @@ function HeroPosterCard({
               alt={pick.title}
               fill
               className="object-cover"
-              sizes="220px"
+              sizes={`${CARD_WIDTH}px`}
             />
           )}
           {ageLabel && (
