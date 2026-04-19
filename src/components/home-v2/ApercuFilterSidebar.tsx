@@ -344,8 +344,7 @@ export function ApercuFilterSidebar({
         </div>
       </div>
 
-      {/* Family members — compact horizontal pills, wrap to fit even with
-         5-6 members in a 280px sidebar. */}
+      {/* Family members — vertical list of full-width rows. */}
       {familyMembers.length > 0 && (
         <div>
           <SectionLabel>
@@ -354,7 +353,7 @@ export function ApercuFilterSidebar({
               Adapter à
             </span>
           </SectionLabel>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
             {familyMembers.map((m) => {
               const active = memberIds.includes(m.id)
               const age = getMemberAge(m.birthYear, m.birthMonth)
@@ -362,11 +361,10 @@ export function ApercuFilterSidebar({
                 <button
                   key={m.id}
                   onClick={() => toggleMember(m.id)}
-                  title={age !== null ? `${m.name} · ${age} ans` : m.name}
-                  className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full transition-colors"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl transition-colors text-left"
                   style={{
                     background: active ? p.bg2 : "transparent",
-                    border: `1px solid ${active ? p.accent2 : p.line2}`,
+                    border: `1px solid ${active ? p.line2 : "transparent"}`,
                   }}
                 >
                   <MemberAvatar
@@ -375,21 +373,28 @@ export function ApercuFilterSidebar({
                     avatarOptions={m.avatarOptions}
                     avatarEmoji={m.avatarEmoji}
                     name={m.name}
-                    size={22}
+                    size={28}
                     ring={active ? "green" : null}
                   />
-                  <span
-                    className="text-[12px] font-semibold leading-none"
-                    style={{ color: p.ink }}
-                  >
-                    {m.name}
-                  </span>
-                  {age !== null && (
-                    <span
-                      className="text-[10px] leading-none"
-                      style={{ color: p.ink2 }}
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className="text-sm font-semibold truncate"
+                      style={{ color: p.ink }}
                     >
-                      {age}
+                      {m.name}
+                    </div>
+                    {age !== null && (
+                      <div className="text-[11px]" style={{ color: p.ink2 }}>
+                        {age} ans
+                      </div>
+                    )}
+                  </div>
+                  {active && (
+                    <span
+                      className="text-[11px] font-semibold flex-shrink-0"
+                      style={{ color: p.accent2 }}
+                    >
+                      ✓
                     </span>
                   )}
                 </button>

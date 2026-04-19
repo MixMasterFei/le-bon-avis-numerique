@@ -19,48 +19,58 @@ interface FamilyFitAvatarsProps {
   className?: string
 }
 
+/**
+ * Per-member fit avatars under a media card. Always side-by-side
+ * (no overlap) so each member is individually identifiable. Avatar
+ * size shrinks as the member count grows so 5-6 members still fit
+ * inside a narrow poster card without piling up.
+ *
+ * In non-compact mode (used on big cards) each avatar carries the
+ * member's name underneath; compact mode (used on rails / small
+ * cards) shows avatars only.
+ */
 export function FamilyFitAvatars({ members, compact = false, className }: FamilyFitAvatarsProps) {
   if (members.length === 0) return null
 
-  const isOverlapping = members.length >= 4
+  // Shrink avatar size as the count grows so a foyer with 6 members
+  // still fits in a ~140px-wide card. All sizes are non-overlapping.
+  const baseSize = compact ? 20 : 24
+  const size =
+    members.length >= 6 ? baseSize - 6 :
+    members.length >= 4 ? baseSize - 4 :
+    baseSize
+
+  // Tighten the gap when it gets crowded too.
+  const gapClass =
+    members.length >= 6 ? "gap-0.5" :
+    members.length >= 4 ? "gap-1" :
+    "gap-1.5"
 
   return (
-    <div className={cn("flex items-center gap-0.5", className)}>
-      <div className={cn("flex items-center", isOverlapping ? "-space-x-1.5" : "gap-1.5")}>
-        {members.map((member, i) => {
-          return (
-            <div
-              key={member.id}
-              className={cn(
-                "flex flex-col items-center",
-                isOverlapping && i > 0 && "-ml-1.5"
-              )}
-              title={`${member.name} — ${member.score}% compatible`}
-            >
-              <MemberAvatar
-                avatarStyle={member.avatarStyle ?? null}
-                avatarSeed={member.avatarSeed ?? null}
-                avatarOptions={member.avatarOptions ?? null}
-                avatarEmoji={member.emoji ?? null}
-                name={member.name}
-                size={compact ? 20 : 24}
-                ring={null}
-                className="shadow-sm ring-1 ring-gray-200"
-              />
-              {!isOverlapping && !compact && (
-                <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">
-                  {member.name}
-                </span>
-              )}
-            </div>
-          )
-        })}
-      </div>
-      {isOverlapping && (
-        <span className="text-[9px] text-gray-400 ml-1">
-          {members.length} membres
-        </span>
-      )}
+    <div className={cn("flex items-start", gapClass, className)}>
+      {members.map((member) => (
+        <div
+          key={member.id}
+          className="flex flex-col items-center"
+          title={`${member.name} — ${member.score}% compatible`}
+        >
+          <MemberAvatar
+            avatarStyle={member.avatarStyle ?? null}
+            avatarSeed={member.avatarSeed ?? null}
+            avatarOptions={member.avatarOptions ?? null}
+            avatarEmoji={member.emoji ?? null}
+            name={member.name}
+            size={size}
+            ring={null}
+            className="shadow-sm ring-1 ring-gray-200"
+          />
+          {!compact && members.length <= 4 && (
+            <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">
+              {member.name}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   )
 }
