@@ -113,6 +113,11 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     prisma.mediaItem.count(),
     prisma.mediaItem.count({ where: { isEnriched: false } }),
 
+    // User + FamilyMember + MediaReaction + Review + CronLog + MediaItem
+    // are core tables and assumed to exist. Everything else (ageVote,
+    // recoClick, mediaCorrection, contentRequest, newsCommentReport) was
+    // added later and may not exist on every environment — wrap each in
+    // .catch so one missing table doesn't tank the whole dashboard.
     prisma.user.count({ where: { createdAt: { gte: week } } }),
     prisma.user.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }),
     prisma.user.count({ where: { createdAt: { gte: month } } }),
@@ -133,24 +138,20 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     prisma.review.count({ where: { createdAt: { gte: week } } }),
     prisma.review.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }),
 
-    prisma.ageVote.count({ where: { createdAt: { gte: week } } }),
-    prisma.ageVote.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }),
+    prisma.ageVote.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
+    prisma.ageVote.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }).catch(() => 0),
 
-    prisma.recoClick.count({ where: { createdAt: { gte: week } } }),
-    prisma.recoClick.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }),
+    prisma.recoClick.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
+    prisma.recoClick.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }).catch(() => 0),
 
-    prisma.mediaCorrection.count({ where: { status: "PENDING" } }),
-    prisma.contentRequest.count({ where: { status: "PENDING" } }),
-    // Table added in sql/add_news_comments.sql — if the migration hasn't
-    // landed on this environment yet, fall back to 0 rather than failing
-    // the whole dashboard (matches the `safeQuery` pattern documented in
-    // CLAUDE.md for freshly-added admin tables).
+    prisma.mediaCorrection.count({ where: { status: "PENDING" } }).catch(() => 0),
+    prisma.contentRequest.count({ where: { status: "PENDING" } }).catch(() => 0),
     prisma.newsCommentReport.count({ where: { status: "PENDING" } }).catch(() => 0),
 
-    fetchDailyGrowth(month),
+    fetchDailyGrowth(month).catch(() => [] as DailyGrowthPoint[]),
 
-    fetchCronRuns(week),
-    prisma.cronLog.count({ where: { status: "error", createdAt: { gte: week } } }),
+    fetchCronRuns(week).catch(() => [] as CronRunRow[]),
+    prisma.cronLog.count({ where: { status: "error", createdAt: { gte: week } } }).catch(() => 0),
   ])
 
   const familiesTotal = familiesGrouped.length
