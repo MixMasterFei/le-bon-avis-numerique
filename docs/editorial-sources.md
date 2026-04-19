@@ -45,7 +45,10 @@ News-driven, French-language, family-relevant, RSS-verified. This is what lives 
 | 11 | **Sortiraparis — Enfant & famille** | `https://www.sortiraparis.com/rss/enfant-famille` | PARENTHOOD | 3 | News | Medium | High-frequency family events/releases. Keeps Découverte fresh when institutional feeds go quiet. |
 | 12 | **IDBOOX — Livres enfants** | `https://www.idboox.com/livres-enfants/feed/` | READING | 3 | News + reviews | Strong | Kids-book reviews. Replaces Le Monde *Idées* in READING (mismatch in V1). |
 | 13 | **France Culture — Être et savoir** | `https://radiofrance-podcast.net/podcast09/rss_11192.xml` | PARENTHOOD | 1 | Essay/podcast | Strong | Weekly education + transmission podcast. Lower cadence but every episode on-brief. |
-| 14 | **Gamekult** | `https://www.gamekult.com/feed.xml` | GAMES | 1 | News | Medium | Editorial game coverage. Noisy for a family brand — filter loosely for PEGI-7/PEGI-12 in future work. |
+| 14 | **Geek Junior** | `https://www.geekjunior.fr/feed/` | GAMES | 2 | News + reviews | Strong | Kids/teens-focused tech & gaming. Closest to a "kids gaming press" outlet in French. |
+| 15 | **Nintendo-Master** | `https://www.nintendo-master.com/feed/` | GAMES | 2 | News | Medium-Strong | Nintendo-specific FR coverage — surfaces big Switch releases that kids care about. |
+| 16 | **Numerama Pop** | `https://www.numerama.com/pop-culture/feed/` | GAMES | 1 | News | Medium | Mainstream tech outlet's pop-culture section. Covers big releases (Fortnite, Minecraft, Pokémon) with family-readable framing. |
+| 17 | **20 Minutes Jeux vidéo** | `https://www.20minutes.fr/feeds/rss-jeux-video.xml` | GAMES | 2 | News | Medium | Mainstream gaming hits in family-readable language; helps cluster big stories with the other outlets. |
 
 **V1→V2 changes applied:**
 - Dropped: `lemonde.fr/idees/rss_full.xml`, `telerama.fr/rss/idees.xml`, `radiofrance.fr/franceinter/rss`, `la-croix.com/RSS/univers_famille`, Magicmaman, Famili, Première, BetaSeries, JeuxVideo.com.
