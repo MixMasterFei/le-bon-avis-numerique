@@ -1,38 +1,44 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { fetchMovies } from "@/lib/media-queries"
+import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { fraunces } from "@/components/home-v2/apercuFont"
-import { isFraunces, APERCU_AGE_BUCKETS, type ApercuAgeBucket } from "@/components/home-v2/apercuTheme"
+import { isFraunces } from "@/components/home-v2/apercuTheme"
 
 export const dynamic = "force-dynamic"
 
 const OWNER_EMAIL = "masterfei@gmail.com"
 const PAGE_SIZE = 24
-
-const SORT_OPTIONS = [
-  { key: "releaseDate", label: "Récents" },
-  { key: "quality", label: "Mieux notés" },
-  { key: "title", label: "A → Z" },
-] as const
-
-type SortKey = (typeof SORT_OPTIONS)[number]["key"]
+const DEFAULT_MIN_AGE = 2
+const DEFAULT_MAX_AGE = 18
 
 interface SearchParams {
   font?: string
+  q?: string
   sort?: string
-  age?: string
+  minAge?: string
+  maxAge?: string
+  platforms?: string
+  topics?: string
+  members?: string
   page?: string
 }
 
-function parseSort(raw: string | undefined): SortKey {
-  if (raw === "quality" || raw === "title" || raw === "releaseDate") return raw
-  return "releaseDate"
+function parseSort(raw: string | undefined): string {
+  return raw === "quality" || raw === "title" ? raw : "releaseDate"
 }
 
-function findAgeBucket(key: string | undefined): ApercuAgeBucket | null {
-  if (!key) return null
-  return APERCU_AGE_BUCKETS.find((b) => b.key === key) ?? null
+function parseList(raw: string | undefined): string[] {
+  if (!raw) return []
+  return raw.split(",").map((s) => s.trim()).filter(Boolean)
+}
+
+function parseInt2(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback
+  const n = parseInt(raw)
+  return Number.isFinite(n) ? n : fallback
 }
 
 export default async function ApercuFilmsListPage(props: {
@@ -45,26 +51,64 @@ export default async function ApercuFilmsListPage(props: {
     redirect("/")
   }
   const user = session?.user as
-    | { email?: string | null; role?: string }
+    | { id?: string; email?: string | null; role?: string }
     | undefined
   const isOwner = user?.email === OWNER_EMAIL || user?.role === "ADMIN"
   if (!isOwner) redirect("/")
 
   const searchParams = await props.searchParams
+  const search = (searchParams?.q ?? "").trim()
   const sortKey = parseSort(searchParams?.sort)
-  const ageBucket = findAgeBucket(searchParams?.age)
-  const pageNum = Math.max(1, parseInt(searchParams?.page ?? "1") || 1)
+  const memberIds = parseList(searchParams?.members)
+  const platforms = parseList(searchParams?.platforms)
+  const topics = parseList(searchParams?.topics)
+  const pageNum = Math.max(1, parseInt2(searchParams?.page, 1))
 
-  // Reuse the canonical movies query so the listing reflects the
-  // same data the live /films page uses.
+  // Fetch family members so the sidebar can show them as select-able
+  // chips. Same data /api/user/family returns, but pulled server-side
+  // so the sidebar hydrates with real members on first paint.
+  const familyMembers = user?.id
+    ? await prisma.familyMember.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          name: true,
+          birthYear: true,
+          birthMonth: true,
+          avatarEmoji: true,
+          avatarStyle: true,
+          avatarSeed: true,
+          avatarOptions: true,
+        },
+      })
+    : []
+
+  // If members are selected, derive an effective max age from the
+  // youngest selected member + 3 (matches FilterSidebar auto-adjust).
+  // The user can still override via the slider; URL maxAge wins if set.
+  const effectiveMinAge = parseInt2(searchParams?.minAge, DEFAULT_MIN_AGE)
+  let effectiveMaxAge = parseInt2(searchParams?.maxAge, DEFAULT_MAX_AGE)
+
+  if (memberIds.length > 0 && !searchParams?.maxAge) {
+    const selectedAges = memberIds
+      .map((id) => familyMembers.find((m) => m.id === id))
+      .filter((m): m is NonNullable<typeof m> => !!m)
+      .map((m) => getMemberAge(m.birthYear, m.birthMonth))
+      .filter((a): a is number => a !== null)
+    if (selectedAges.length > 0) {
+      effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, Math.min(...selectedAges) + 3)
+    }
+  }
+
   const result = await fetchMovies({
     page: pageNum,
     limit: PAGE_SIZE,
-    maxAge: ageBucket?.maxAge,
-    maxViolence: ageBucket?.caps.maxViolence,
-    maxSexual: ageBucket?.caps.maxSexual,
-    maxLanguage: ageBucket?.caps.maxLanguage,
-    maxSubstance: ageBucket?.caps.maxSubstance,
+    minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+    maxAge: effectiveMaxAge < DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    platforms: platforms.length > 0 ? platforms : undefined,
+    topics: topics.length > 0 ? topics : undefined,
+    search: search || undefined,
     sortBy: sortKey === "releaseDate" ? undefined : sortKey,
     requirePoster: true,
     language: "fr,en",
@@ -85,6 +129,18 @@ export default async function ApercuFilmsListPage(props: {
     releaseDate: m.releaseDate,
   }))
 
+  // Build the filter-query string the pagination hrefs need so
+  // page navigation preserves all active filters.
+  const filterSp = new URLSearchParams()
+  if (searchParams?.font) filterSp.set("font", searchParams.font)
+  if (search) filterSp.set("q", search)
+  if (sortKey !== "releaseDate") filterSp.set("sort", sortKey)
+  if (effectiveMinAge > DEFAULT_MIN_AGE) filterSp.set("minAge", String(effectiveMinAge))
+  if (effectiveMaxAge < DEFAULT_MAX_AGE) filterSp.set("maxAge", String(effectiveMaxAge))
+  if (platforms.length > 0) filterSp.set("platforms", platforms.join(","))
+  if (topics.length > 0) filterSp.set("topics", topics.join(","))
+  if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
+
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
       <ApercuFilmsList
@@ -92,11 +148,27 @@ export default async function ApercuFilmsListPage(props: {
         total={result.pagination.total}
         page={pageNum}
         totalPages={result.pagination.totalPages}
-        sortKey={sortKey}
-        sortOptions={SORT_OPTIONS as unknown as { key: string; label: string }[]}
-        activeAgeKey={ageBucket?.key ?? null}
-        ageBuckets={APERCU_AGE_BUCKETS}
         serifClass={serifClass}
+        familyMembers={familyMembers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          birthYear: m.birthYear,
+          birthMonth: m.birthMonth,
+          avatarEmoji: m.avatarEmoji,
+          avatarStyle: m.avatarStyle,
+          avatarSeed: m.avatarSeed,
+          avatarOptions: m.avatarOptions as Record<string, unknown> | null,
+        }))}
+        initialFilters={{
+          search,
+          sort: sortKey,
+          minAge: effectiveMinAge,
+          maxAge: effectiveMaxAge,
+          platforms,
+          topics,
+          familyMemberIds: memberIds,
+        }}
+        filterQuery={filterSp.toString()}
       />
     </div>
   )

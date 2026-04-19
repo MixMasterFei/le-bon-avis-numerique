@@ -4,28 +4,38 @@ import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuFooter } from "./ApercuFooter"
 import { ApercuMediaCard, type ApercuCardMedia } from "./ApercuMediaCard"
-import { APERCU_PALETTE, type ApercuAgeBucket } from "./apercuTheme"
+import { ApercuFilterSidebar } from "./ApercuFilterSidebar"
+import { APERCU_PALETTE } from "./apercuTheme"
+
+interface FamilyMember {
+  id: string
+  name: string
+  birthYear: number | null
+  birthMonth: number | null
+  avatarEmoji: string | null
+  avatarStyle: string | null
+  avatarSeed: string | null
+  avatarOptions: Record<string, unknown> | null
+}
 
 interface ApercuFilmsListProps {
   items: (ApercuCardMedia & { releaseDate: string | null })[]
   total: number
   page: number
   totalPages: number
-  sortKey: string
-  sortOptions: { key: string; label: string }[]
-  activeAgeKey: string | null
-  ageBuckets: ApercuAgeBucket[]
   serifClass: string
-}
-
-function buildHref(params: Record<string, string | number | undefined>): string {
-  const sp = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === "") continue
-    sp.set(k, String(v))
+  familyMembers: FamilyMember[]
+  initialFilters: {
+    search: string
+    sort: string
+    minAge: number
+    maxAge: number
+    platforms: string[]
+    topics: string[]
+    familyMemberIds: string[]
   }
-  const qs = sp.toString()
-  return qs ? `/apercufilmslist?${qs}` : "/apercufilmslist"
+  /** Search-param string (without `page`) so pagination can build hrefs server-side. */
+  filterQuery: string
 }
 
 export function ApercuFilmsList({
@@ -33,14 +43,12 @@ export function ApercuFilmsList({
   total,
   page,
   totalPages,
-  sortKey,
-  sortOptions,
-  activeAgeKey,
-  ageBuckets,
   serifClass,
+  familyMembers,
+  initialFilters,
+  filterQuery,
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
-  const activeBucket = ageBuckets.find((b) => b.key === activeAgeKey) ?? null
 
   return (
     <FamilyFitProvider>
@@ -74,142 +82,55 @@ export function ApercuFilmsList({
               <em className="italic" style={{ color: p.accent }}>
                 films
               </em>
-              {activeBucket && (
-                <>
-                  {" "}
-                  <span style={{ color: p.ink2 }}>·</span>{" "}
-                  <em className="italic" style={{ color: p.accent2 }}>
-                    {activeBucket.name}
-                  </em>
-                </>
-              )}
             </h1>
             <p
               className="mt-3 text-sm md:text-base"
               style={{ color: p.ink2 }}
             >
-              {total.toLocaleString("fr-FR")} films analysés{" "}
-              {activeBucket
-                ? `pour les ${activeBucket.label} ans`
-                : "pour votre foyer"}
-              . Page {page} sur {totalPages || 1}.
+              {total.toLocaleString("fr-FR")} films analysés.
+              {totalPages > 1 && ` Page ${page} sur ${totalPages}.`}
             </p>
           </div>
         </section>
 
-        {/* Filter strip — bg2 darker cream */}
-        <section
-          className="py-5 md:py-6"
-          style={{
-            background: p.bg2,
-            borderBottom: `1px solid ${p.line}`,
-          }}
-        >
-          <div className="container mx-auto px-4 md:px-8 space-y-4">
-            {/* Age tiles strip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="text-[11px] font-semibold uppercase tracking-wide mr-1"
-                style={{ color: p.ink2 }}
-              >
-                Âge
-              </span>
-              <Link
-                href={buildHref({ sort: sortKey === "releaseDate" ? undefined : sortKey })}
-                className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                style={{
-                  background: activeAgeKey === null ? p.ink : p.card,
-                  color: activeAgeKey === null ? p.bg : p.ink,
-                  border: `1px solid ${activeAgeKey === null ? p.ink : p.line2}`,
-                }}
-              >
-                Tous
-              </Link>
-              {ageBuckets.map((b) => {
-                const active = activeAgeKey === b.key
-                return (
-                  <Link
-                    key={b.key}
-                    href={buildHref({
-                      age: b.key,
-                      sort: sortKey === "releaseDate" ? undefined : sortKey,
-                    })}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                    style={{
-                      background: active ? p.ink : p.card,
-                      color: active ? p.bg : p.ink,
-                      border: `1px solid ${active ? p.ink : p.line2}`,
-                    }}
-                  >
-                    <span
-                      className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ background: b.color }}
-                    />
-                    {b.label} ans
-                  </Link>
-                )
-              })}
-            </div>
-
-            {/* Sort strip */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="text-[11px] font-semibold uppercase tracking-wide mr-1"
-                style={{ color: p.ink2 }}
-              >
-                Trier
-              </span>
-              {sortOptions.map((s) => {
-                const active = sortKey === s.key
-                return (
-                  <Link
-                    key={s.key}
-                    href={buildHref({
-                      age: activeAgeKey ?? undefined,
-                      sort: s.key === "releaseDate" ? undefined : s.key,
-                    })}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
-                    style={{
-                      background: active ? p.accent : p.card,
-                      color: active ? "#fff" : p.ink,
-                      border: `1px solid ${active ? p.accent : p.line2}`,
-                    }}
-                  >
-                    {s.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Grid — bg cream */}
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+        {/* Body: sticky sidebar (1/4) + grid (3/4), bg2 deeper cream */}
+        <section className="py-8 md:py-12" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
-            {items.length === 0 ? (
-              <EmptyState serifClass={serifClass} />
-            ) : (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5">
-                  {items.map((item) => (
-                    <ApercuMediaCard
-                      key={item.id}
-                      media={item}
-                      size="sm"
-                      serifClass={serifClass}
-                    />
-                  ))}
-                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-10 items-start">
+              {/* Sticky filter sidebar */}
+              <ApercuFilterSidebar
+                serifClass={serifClass}
+                familyMembers={familyMembers}
+                initialFilters={initialFilters}
+              />
 
-                <Pagination
-                  page={page}
-                  totalPages={totalPages}
-                  ageKey={activeAgeKey}
-                  sortKey={sortKey}
-                  serifClass={serifClass}
-                />
-              </>
-            )}
+              {/* Grid */}
+              <div>
+                {items.length === 0 ? (
+                  <EmptyState serifClass={serifClass} />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
+                      {items.map((item) => (
+                        <ApercuMediaCard
+                          key={item.id}
+                          media={item}
+                          size="sm"
+                          serifClass={serifClass}
+                        />
+                      ))}
+                    </div>
+
+                    <Pagination
+                      page={page}
+                      totalPages={totalPages}
+                      serifClass={serifClass}
+                      filterQuery={filterQuery}
+                    />
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -246,26 +167,30 @@ function EmptyState({ serifClass }: { serifClass: string }) {
 function Pagination({
   page,
   totalPages,
-  ageKey,
-  sortKey,
   serifClass,
+  filterQuery,
 }: {
   page: number
   totalPages: number
-  ageKey: string | null
-  sortKey: string
   serifClass: string
+  filterQuery: string
 }) {
   const p = APERCU_PALETTE
   if (totalPages <= 1) return null
 
-  const prev = page > 1 ? page - 1 : null
-  const next = page < totalPages ? page + 1 : null
+  const buildHref = (target: number) => {
+    const sp = new URLSearchParams(filterQuery)
+    sp.set("page", String(target))
+    return `/apercufilmslist?${sp.toString()}`
+  }
+
+  const prevHref = page > 1 ? buildHref(page - 1) : null
+  const nextHref = page < totalPages ? buildHref(page + 1) : null
 
   return (
     <div
       className="mt-10 pt-6 flex items-center justify-between"
-      style={{ borderTop: `1px solid ${p.line}` }}
+      style={{ borderTop: `1px solid ${p.line2}` }}
     >
       <div className="text-sm" style={{ color: p.ink2 }}>
         Page{" "}
@@ -275,30 +200,8 @@ function Pagination({
         sur {totalPages}
       </div>
       <div className="flex gap-2">
-        <PageLink
-          href={
-            prev
-              ? `/apercufilmslist?${new URLSearchParams({
-                  ...(ageKey ? { age: ageKey } : {}),
-                  ...(sortKey !== "releaseDate" ? { sort: sortKey } : {}),
-                  page: String(prev),
-                }).toString()}`
-              : null
-          }
-          label="← Précédent"
-        />
-        <PageLink
-          href={
-            next
-              ? `/apercufilmslist?${new URLSearchParams({
-                  ...(ageKey ? { age: ageKey } : {}),
-                  ...(sortKey !== "releaseDate" ? { sort: sortKey } : {}),
-                  page: String(next),
-                }).toString()}`
-              : null
-          }
-          label="Suivant →"
-        />
+        <PageLink href={prevHref} label="← Précédent" />
+        <PageLink href={nextHref} label="Suivant →" />
       </div>
     </div>
   )
