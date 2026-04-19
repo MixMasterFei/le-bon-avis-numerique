@@ -144,12 +144,18 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
         category: true, publishedAt: true, sources: true,
       },
     }),
-    // Sorties — 6 most recent dated catalog entries with a poster
+    // Sorties — 6 family-appropriate recent releases. Filter to enriched
+    // items only (so we know expertAgeRec is real, not null) AND cap at
+    // 12+ so we never surface 15+/16+/horror/thriller content on what's
+    // meant to be a family digest hero row. Items without an age rating
+    // are excluded by design.
     prisma.mediaItem.findMany({
       where: {
         releaseDate: { gte: month, lte: now },
         posterUrl: { not: null },
         type: { in: ["MOVIE", "TV", "GAME"] },
+        isEnriched: true,
+        expertAgeRec: { not: null, lte: 12 },
       },
       orderBy: { releaseDate: "desc" },
       take: 6,
