@@ -88,27 +88,56 @@ function buildPrompt(items: HydratedItem[]): string {
     })
     .join("\n\n")
 
-  return `Tu es l'éditeur de Totem Avisé, un guide pour familles françaises.
+  return `Tu es l'éditeur de Totem Avisé, un guide pour familles françaises. Ta mission : repérer les ACTUALITÉS qui concernent directement les familles, les enfants, ou la parentalité numérique. Pas les essais, pas les opinions — de vraies nouvelles avec un angle famille clair.
 
 Voici ${items.length} articles publiés ces 48 dernières heures. Chaque article a un index, une source, une catégorie, un titre, une URL, une image, et un résumé.
 
-Regroupe-les en HISTOIRES (un cluster d'articles couvrant le même sujet = une histoire). Pour chaque histoire, renvoie un objet JSON avec :
-- "title": titre éditorial accrocheur (en français, sans clickbait grossier)
-- "summary": résumé d'1 à 2 phrases (< 200 caractères)
-- "body": corps de 150 à 250 mots en markdown (synthèse neutre, paragraphes courts, jamais mentionner d'IA)
-- "category": une valeur parmi PARENTHOOD, FILM_TV, GAMES, READING
-- "relevanceScore": pertinence familiale, nombre entre 0 et 1
-- "imageUrl": l'URL exacte d'UNE des images des articles du cluster (jamais inventer)
-- "sourceIndexes": tableau des indexes des articles sources du cluster
+## Règle de clustering — la plus importante
 
-Règles :
-- Maximum 12 histoires, classées par pertinence décroissante
-- Chaque histoire DOIT regrouper au moins 1 article (sources vides = à supprimer)
-- Ignore politique pure, sport, faits divers sans angle familial
-- Chaque "imageUrl" DOIT correspondre exactement à l'IMG d'un des articles cités
+Une HISTOIRE = un événement précis couvert par AU MOINS 2 PUBLICATIONS DIFFÉRENTES.
+
+**Événement précis** = une sortie de film/série/jeu, une annonce officielle, une étude publiée, une décision institutionnelle, une polémique spécifique nommable.
+**Pas un thème** = "les livres", "les jeux vidéo en avril", "la philosophie", "les adaptations cinéma" — ce sont des catégories, pas des événements.
+
+Si tu ne trouves pas au moins 2 publications DIFFÉRENTES (par nom de source) qui couvrent exactement le même événement, **NE CRÉE PAS D'HISTOIRE**. Mieux vaut renvoyer peu d'histoires solides que beaucoup d'histoires inventées.
+
+N'invente JAMAIS de narratif qui relie deux sujets différents (ex : lier un article sur Tolkien et un article sur Saint Augustin en une seule histoire "univers littéraires" — INTERDIT, ce sont deux sujets).
+
+## Règle d'angle famille
+
+Chaque histoire doit avoir un **angle famille explicite** : impact sur les enfants, les parents, la vie de famille, les écrans à la maison, l'éducation, l'âge recommandé d'un contenu, la santé des jeunes, etc. Si l'angle famille n'est pas évident, **écarte l'histoire**.
+
+Le corps de l'histoire doit COMMENCER par une phrase qui énonce clairement l'angle famille ("Pour les parents qui…", "Les familles concernées par…", "À retenir pour les enfants de X ans :", etc.).
+
+## À écarter absolument
+
+- Politique pure (élections, gouvernement, sauf impact direct école/famille)
+- Sport
+- Faits divers sans implication parentale
+- Essais/opinions sans événement précis
+- Polémiques industrie/culture sans angle enfant ou parent
+- Articles isolés (1 seule source)
+
+## Format de sortie
+
+Pour chaque histoire retenue, renvoie un objet JSON avec :
+- "title": titre éditorial clair (français, sobre, pas de clickbait)
+- "summary": 1-2 phrases (<200 caractères) résumant l'événement et son angle famille
+- "body": 120-180 mots en markdown, 1er paragraphe = angle famille explicite, 2e paragraphe = les faits rapportés par les sources. Synthèse neutre. Ne jamais mentionner l'IA ni inventer de faits hors sources.
+- "category": PARENTHOOD | FILM_TV | GAMES | READING
+- "relevanceScore": 0 à 1, pertinence FAMILIALE (pas d'intérêt général) — >=0.5 obligatoire
+- "imageUrl": URL exacte de l'IMG d'un des articles du cluster (jamais inventer)
+- "sourceIndexes": tableau des indexes des articles sources — MINIMUM 2 sources de NOMS DIFFÉRENTS
+
+## Contraintes dures
+
+- Maximum 10 histoires, triées par pertinence décroissante
+- Chaque histoire a >=2 sources de noms différents
+- Chaque imageUrl correspond exactement à l'IMG d'un article cité
+- Si tu ne trouves que 0, 1 ou 2 histoires solides, renvoie seulement celles-là
 - Français uniquement
 
-Réponds UNIQUEMENT avec un objet JSON au format :
+Réponds UNIQUEMENT avec du JSON :
 {"stories": [ ... ]}
 
 Articles :
@@ -275,6 +304,19 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     // Anti-hallucination: imageUrl must match one of the source images
     if (!allowedImages.has(story.imageUrl)) {
+      droppedInvalid++
+      continue
+    }
+    // Require >=2 distinct source publishers (not just >=2 articles from the
+    // same outlet). This is what makes a story "newsworthy" vs. a single-outlet
+    // essay, and it also blocks thematic clustering across unrelated items.
+    const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
+    if (distinctNames.size < 2) {
+      droppedInvalid++
+      continue
+    }
+    // Family-relevance floor — keeps single-angle industry news out
+    if (story.relevanceScore < 0.5) {
       droppedInvalid++
       continue
     }
