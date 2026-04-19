@@ -141,7 +141,11 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
 
     prisma.mediaCorrection.count({ where: { status: "PENDING" } }),
     prisma.contentRequest.count({ where: { status: "PENDING" } }),
-    prisma.newsCommentReport.count({ where: { status: "PENDING" } }),
+    // Table added in sql/add_news_comments.sql — if the migration hasn't
+    // landed on this environment yet, fall back to 0 rather than failing
+    // the whole dashboard (matches the `safeQuery` pattern documented in
+    // CLAUDE.md for freshly-added admin tables).
+    prisma.newsCommentReport.count({ where: { status: "PENDING" } }).catch(() => 0),
 
     fetchDailyGrowth(month),
 
