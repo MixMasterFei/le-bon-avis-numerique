@@ -164,29 +164,6 @@ export function ApercuHero({
               ))}
             </div>
 
-            {totalCatalog !== null && (
-              <div
-                className="mt-10 pt-7 flex flex-wrap gap-8 md:gap-10"
-                style={{ borderTop: `1px solid ${p.line}` }}
-              >
-                <Stat
-                  n={formatCount(totalCatalog)}
-                  l="œuvres analysées"
-                  serifClass={serifClass}
-                />
-                <Stat
-                  n="7"
-                  l="critères par œuvre"
-                  accent={p.accent}
-                  serifClass={serifClass}
-                />
-                <Stat
-                  n="60+"
-                  l="thèmes explorés"
-                  serifClass={serifClass}
-                />
-              </div>
-            )}
           </div>
 
           <div
@@ -224,6 +201,13 @@ export function ApercuHero({
                     }}
                   />
                 ))}
+
+            {totalCatalog !== null && (
+              <HeroStatsBadge
+                totalCatalog={totalCatalog}
+                serifClass={serifClass}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -320,30 +304,48 @@ function HeroPosterCard({
   )
 }
 
-function Stat({
-  n,
-  l,
-  accent,
+/**
+ * Small floating pill overlaid on the card stage — replaces what used to
+ * be a bottom-of-hero stats row. Sells catalog depth at a glance and
+ * reclaims the vertical space.
+ */
+function HeroStatsBadge({
+  totalCatalog,
   serifClass,
 }: {
-  n: string
-  l: string
-  accent?: string
+  totalCatalog: number
   serifClass: string
 }) {
+  const p = APERCU_PALETTE
   return (
-    <div>
-      <div
-        className={`${serifClass} text-2xl md:text-3xl font-medium`}
-        style={{
-          letterSpacing: "-0.02em",
-          color: accent ?? "inherit",
-        }}
+    <div
+      className="absolute z-30 flex items-center gap-3 px-4 py-2.5 rounded-full"
+      style={{
+        background: p.card,
+        border: `1px solid ${p.line}`,
+        boxShadow: "0 14px 32px rgba(0,0,0,0.10)",
+        left: -16,
+        bottom: 12,
+      }}
+    >
+      <span
+        className="inline-flex w-6 h-6 rounded-full items-center justify-center text-[10px] flex-shrink-0"
+        style={{ background: p.accent2, color: "#fff", fontWeight: 600 }}
       >
-        {n}
-      </div>
-      <div className="text-xs mt-0.5" style={{ color: "rgba(0,0,0,0.55)" }}>
-        {l}
+        ✦
+      </span>
+      <div
+        className="text-[12px] leading-tight whitespace-nowrap"
+        style={{ color: p.ink }}
+      >
+        <strong className={serifClass} style={{ fontWeight: 600 }}>
+          {formatCount(totalCatalog)}
+        </strong>{" "}
+        œuvres{" "}
+        <span style={{ color: p.ink2 }}>·</span>{" "}
+        <strong style={{ color: p.accent, fontWeight: 600 }}>7</strong> critères{" "}
+        <span style={{ color: p.ink2 }}>·</span>{" "}
+        <strong style={{ fontWeight: 600 }}>60+</strong> thèmes
       </div>
     </div>
   )
