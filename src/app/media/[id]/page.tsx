@@ -7,9 +7,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
@@ -612,9 +611,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* Info */}
             <div className="flex-1 text-white min-w-0">
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <Badge variant="secondary" className="bg-white/20 text-white border-0">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
                   {mediaTypeLabels[media.type]}
-                </Badge>
+                </span>
                 <OfficialRatingBadge
                   rating={media.officialRating}
                   type={media.type}
@@ -709,77 +708,121 @@ export default async function MediaPage({ params }: MediaPageProps) {
               />
             )}
 
-            {/* Tabs */}
-            <Tabs defaultValue="reviews" className="w-full">
-              <TabsList className="w-full justify-start">
-                <TabsTrigger value="reviews">Avis ({media.reviews?.length || 0})</TabsTrigger>
-                <TabsTrigger value="details">Détails</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="reviews" className="space-y-4 mt-6">
-                <ReviewsSection reviews={media.reviews} />
-              </TabsContent>
-
-              <TabsContent value="details" className="mt-6">
-                <Card>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-1">Type</h4>
-                        <p className="font-medium">{mediaTypeLabels[media.type]}</p>
-                      </div>
-                      {media.releaseDate && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Date de sortie</h4>
-                          <p className="font-medium">{formatDateFr(media.releaseDate)}</p>
-                        </div>
-                      )}
-                      {media.duration && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">Durée</h4>
-                          <p className="font-medium">{media.duration} minutes</p>
-                        </div>
-                      )}
-                      {media.director && (
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-500 mb-1">
-                            {media.type === "BOOK" ? "Auteur" : media.type === "GAME" ? "Développeur" : "Réalisateur"}
-                          </h4>
-                          <p className="font-medium">{media.director}</p>
-                        </div>
-                      )}
+            <MediaDetailTabs
+              reviewsCount={media.reviews?.length || 0}
+              reviewsContent={<ReviewsSection reviews={media.reviews} />}
+              detailsContent={
+                <div
+                  className="rounded-2xl p-6 space-y-4"
+                  style={{
+                    background: "var(--color-warm-card)",
+                    border: "1px solid var(--color-warm-line)",
+                  }}
+                >
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <h4
+                        className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                        style={{ color: "var(--color-warm-ink2)" }}
+                      >
+                        Type
+                      </h4>
+                      <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                        {mediaTypeLabels[media.type]}
+                      </p>
                     </div>
-
-                    {/* Platforms with nice styling for games */}
-                    {media.type === "GAME" && media.platforms.length > 0 && (
-                      <PlatformIcons platforms={media.platforms} variant="full" />
-                    )}
-
-                    {media.topics.length > 0 && (
+                    {media.releaseDate && (
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">Thèmes</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {media.topics.map((topic) => (
-                            <Badge key={topic} variant="secondary">
-                              {topic}
-                            </Badge>
-                          ))}
-                        </div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Date de sortie
+                        </h4>
+                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                          {formatDateFr(media.releaseDate)}
+                        </p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                    {media.duration && (
+                      <div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Durée
+                        </h4>
+                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                          {media.duration} minutes
+                        </p>
+                      </div>
+                    )}
+                    {media.director && (
+                      <div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          {media.type === "BOOK"
+                            ? "Auteur"
+                            : media.type === "GAME"
+                              ? "Développeur"
+                              : "Réalisateur"}
+                        </h4>
+                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                          {media.director}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {media.type === "GAME" && media.platforms.length > 0 && (
+                    <PlatformIcons platforms={media.platforms} variant="full" />
+                  )}
+
+                  {media.topics.length > 0 && (
+                    <div>
+                      <h4
+                        className="text-xs font-semibold mb-2 uppercase tracking-wide"
+                        style={{ color: "var(--color-warm-ink2)" }}
+                      >
+                        Thèmes
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {media.topics.map((topic) => (
+                          <span
+                            key={topic}
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                            style={{
+                              background: "var(--color-warm-bg2)",
+                              color: "var(--color-warm-ink)",
+                            }}
+                          >
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              }
+            />
 
             {/* Similar Media — streamed via Suspense to avoid blocking page render */}
             {dbId && (
               <Suspense fallback={
                 <div className="animate-pulse">
-                  <div className="h-6 w-48 bg-gray-200 rounded mb-4" />
+                  <div
+                    className="h-6 w-48 rounded mb-4"
+                    style={{ background: "var(--color-warm-bg2)" }}
+                  />
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg" />
+                      <div
+                        key={i}
+                        className="aspect-[2/3] rounded-lg"
+                        style={{ background: "var(--color-warm-placeholder)" }}
+                      />
                     ))}
                   </div>
                 </div>
