@@ -7,7 +7,7 @@ import { Loader2, Check, Plus, Sparkles, Film, ListOrdered } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import {
   Dialog,
   DialogContent,
@@ -90,6 +90,11 @@ export default function ProfilPage() {
   const [profileAvatarValue, setProfileAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
+
+  // Discovery tab state (bottom of page)
+  const [discoveryTab, setDiscoveryTab] = useState<
+    "recommendations" | "movienight" | "lists"
+  >("recommendations")
 
   // Member edit/add state
   const [memberDialogOpen, setMemberDialogOpen] = useState(false)
@@ -301,9 +306,11 @@ export default function ProfilPage() {
   }
 
   const currentYear = new Date().getFullYear()
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:py-12 max-w-6xl space-y-8">
+    <div className="container mx-auto px-4 py-8 sm:py-12 max-w-6xl space-y-8" style={{ color: p.ink }}>
       {/* ================================================================ */}
       {/* ZONE A: Family Identity Hero                                     */}
       {/* ================================================================ */}
@@ -392,17 +399,33 @@ export default function ProfilPage() {
       {/* ================================================================ */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Mon foyer</h2>
-          <Button onClick={openAddMemberDialog} size="sm" className="gap-1.5">
+          <h2
+            className={`${serifClass} text-2xl font-medium`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Mon{" "}
+            <em className="italic" style={{ color: p.accent }}>
+              foyer
+            </em>
+          </h2>
+          <button
+            onClick={openAddMemberDialog}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: p.ink, color: p.bg }}
+          >
             <Plus className="h-4 w-4" />
             Ajouter
-          </Button>
+          </button>
         </div>
 
         {loadingMembers ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-72 bg-gray-100 rounded-xl animate-pulse" />
+              <div
+                key={i}
+                className="h-72 rounded-xl animate-pulse"
+                style={{ background: p.placeholder }}
+              />
             ))}
           </div>
         ) : members.length > 0 ? (
@@ -420,15 +443,21 @@ export default function ProfilPage() {
               </div>
             ))}
 
-            {/* Add member card */}
             <button
               onClick={openAddMemberDialog}
-              className="flex flex-col items-center justify-center gap-3 p-6 border-2 border-dashed border-gray-200 rounded-xl hover:border-violet-300 hover:bg-violet-50/30 transition-all min-h-[200px] group"
+              className="flex flex-col items-center justify-center gap-3 p-6 rounded-xl transition-all min-h-[200px] group hover:-translate-y-0.5"
+              style={{
+                border: `2px dashed ${p.line2}`,
+                background: "transparent",
+              }}
             >
-              <div className="w-12 h-12 rounded-full bg-gray-100 group-hover:bg-violet-100 flex items-center justify-center transition-colors">
-                <Plus className="h-6 w-6 text-gray-400 group-hover:text-violet-500 transition-colors" />
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+                style={{ background: p.bg2, color: p.accent }}
+              >
+                <Plus className="h-6 w-6" />
               </div>
-              <span className="text-sm text-gray-500 group-hover:text-violet-600 transition-colors">
+              <span className="text-sm" style={{ color: p.ink2 }}>
                 Ajouter un membre
               </span>
             </button>
@@ -436,11 +465,20 @@ export default function ProfilPage() {
         ) : (
           <button
             onClick={openAddMemberDialog}
-            className="w-full text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 hover:border-violet-300 hover:bg-violet-50/30 transition-all"
+            className="w-full text-center py-12 rounded-xl transition-all hover:-translate-y-0.5"
+            style={{
+              background: p.card,
+              border: `2px dashed ${p.line2}`,
+            }}
           >
-            <Plus className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">Ajoutez les membres de votre foyer</p>
-            <p className="text-gray-400 text-sm mt-1">
+            <Plus
+              className="h-10 w-10 mx-auto mb-3"
+              style={{ color: p.accent }}
+            />
+            <p className="font-medium" style={{ color: p.ink }}>
+              Ajoutez les membres de votre foyer
+            </p>
+            <p className="text-sm mt-1" style={{ color: p.ink2 }}>
               Pour recevoir des recommandations personnalisées
             </p>
           </button>
@@ -537,34 +575,38 @@ export default function ProfilPage() {
       {/* ZONE C: Discovery Tabs                                            */}
       {/* ================================================================ */}
       <section>
-        <Tabs defaultValue="recommendations">
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="recommendations" className="gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Recommandations</span>
-              <span className="sm:hidden">Recos</span>
-            </TabsTrigger>
-            <TabsTrigger value="movienight" className="gap-1.5">
-              <Film className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Soirée Ciné</span>
-              <span className="sm:hidden">Ciné</span>
-            </TabsTrigger>
-            <TabsTrigger value="lists" className="gap-1.5">
-              <ListOrdered className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Mes listes</span>
-              <span className="sm:hidden">Listes</span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="recommendations" className="mt-4">
-            <FamilyRecommendationsSection />
-          </TabsContent>
-          <TabsContent value="movienight" className="mt-4">
-            <FamilyMovieNightSection />
-          </TabsContent>
-          <TabsContent value="lists" className="mt-4">
-            <UserListsPreview />
-          </TabsContent>
-        </Tabs>
+        <div className="flex gap-2 mb-4 flex-wrap">
+          {[
+            { key: "recommendations" as const, label: "Recommandations", short: "Recos", icon: Sparkles },
+            { key: "movienight" as const, label: "Soirée Ciné", short: "Ciné", icon: Film },
+            { key: "lists" as const, label: "Mes listes", short: "Listes", icon: ListOrdered },
+          ].map((t) => {
+            const isActive = discoveryTab === t.key
+            const Icon = t.icon
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setDiscoveryTab(t.key)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors"
+                style={{
+                  background: isActive ? p.ink : p.card,
+                  color: isActive ? p.bg : p.ink,
+                  border: `1px solid ${isActive ? p.ink : p.line}`,
+                }}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{t.label}</span>
+                <span className="sm:hidden">{t.short}</span>
+              </button>
+            )
+          })}
+        </div>
+        <div className="mt-4">
+          {discoveryTab === "recommendations" && <FamilyRecommendationsSection />}
+          {discoveryTab === "movienight" && <FamilyMovieNightSection />}
+          {discoveryTab === "lists" && <UserListsPreview />}
+        </div>
       </section>
 
       {/* ================================================================ */}
