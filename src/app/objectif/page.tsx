@@ -1,142 +1,220 @@
-import { Target, Sparkles, Users, Heart, Lightbulb, ArrowRight, CheckCircle, Shield } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Sparkles, Users, Heart, Lightbulb, ArrowRight, Check, Shield } from "lucide-react"
 import Link from "next/link"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
   title: "Notre mission | Totem Avisé",
-  description: "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer.",
+  description:
+    "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer.",
 }
 
 const pillars = [
   {
     icon: Sparkles,
     title: "Adapté à chacun",
-    description: "Chaque membre de votre famille a son profil. Les suggestions tiennent compte de l\u2019âge, des goûts et de ce que chacun supporte ou pas. Un film parfait pour votre aîné de 12 ans n\u2019est pas forcément le bon pour le petit de 5 ans.",
-    color: "text-violet-600",
-    bg: "bg-violet-50",
+    description:
+      "Chaque membre de votre famille a son profil. Les suggestions tiennent compte de l'âge, des goûts et de ce que chacun supporte ou pas.",
   },
   {
     icon: Shield,
     title: "Indépendants",
-    description: "Aucun studio, éditeur ou plateforme ne paie pour apparaître dans nos recommandations. Pas de pub, pas de placement, pas d\u2019affiliation. On travaille pour les familles, point.",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
+    description:
+      "Aucun studio, éditeur ou plateforme ne paie pour apparaître dans nos recommandations. Pas de pub, pas de placement, pas d'affiliation.",
   },
   {
     icon: Users,
     title: "Amélioré par les familles",
-    description: "Les parents qui utilisent Totem Avisé partagent leurs retours : \u00ab trop effrayant pour mon fils de 6 ans \u00bb, \u00ab ma fille de 9 ans a adoré \u00bb. Ces réactions améliorent les suggestions pour tout le monde.",
-    color: "text-blue-600",
-    bg: "bg-blue-50",
+    description:
+      "Les parents qui utilisent Totem Avisé partagent leurs retours. Ces réactions améliorent les suggestions pour tout le monde.",
   },
   {
     icon: Lightbulb,
     title: "Simple à utiliser",
-    description: "Filtrez par âge, par genre, par plateforme de streaming ou par thème. Vous cherchez un film d\u2019aventure pour un enfant de 8 ans sur Disney+ ? Deux clics.",
-    color: "text-amber-600",
-    bg: "bg-amber-50",
+    description:
+      "Filtrez par âge, par genre, par plateforme de streaming ou par thème. Vous cherchez un film d'aventure sur Disney+ ? Deux clics.",
   },
 ]
 
 const differences = [
   "On analyse 7 aspects du contenu, pas juste un âge minimum",
   "On repère les messages positifs et les modèles inspirants",
-  "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur\u2026)",
+  "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur…)",
   "Films, séries, jeux vidéo, livres : tout au même endroit",
 ]
 
 export default function ObjectifPage() {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
   return (
-    <div className="min-h-screen">
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white py-20">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <div className="inline-flex p-4 bg-emerald-500/20 rounded-full mb-6">
-            <Target className="h-8 w-8 text-emerald-400" />
-          </div>
-          <h1 className="text-4xl lg:text-5xl font-bold mb-6">
+    <div
+      className="flex flex-col flex-1"
+      style={{ background: p.bg, color: p.ink }}
+    >
+      <section
+        className="py-16 md:py-20"
+        style={{ background: p.bg, borderBottom: `1px solid ${p.line}` }}
+      >
+        <div className="container mx-auto px-4 max-w-3xl text-center">
+          <div
+            className="text-[11px] font-semibold mb-3 uppercase tracking-wide"
+            style={{ color: p.accent }}
+          >
             Notre mission
+          </div>
+          <h1
+            className={`${serifClass} text-4xl md:text-5xl font-medium mb-5 leading-[1.05]`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Des{" "}
+            <em className="italic" style={{ color: p.accent }}>
+              recommandations
+            </em>{" "}
+            qui tiennent compte de votre foyer.
           </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Aider chaque famille à trouver le contenu qui plaît aux enfants et rassure les parents.
+          <p className="text-lg leading-relaxed" style={{ color: p.ink2 }}>
+            Aider chaque famille à trouver le contenu qui plaît aux enfants et
+            rassure les parents.
           </p>
         </div>
       </section>
 
-      {/* Vision / How */}
-      <section className="py-16">
+      <section className="py-14" style={{ background: p.bg2 }}>
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <Card className="border-violet-100">
-              <CardContent className="p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-violet-500" />
-                  Ce qu&apos;on croit
-                </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  Chaque famille est unique. Un film parfait pour un enfant de 7 ans ne l&apos;est pas forcément pour un autre du même âge. Les goûts, les sensibilités et les valeurs de chaque foyer comptent. Les recommandations devraient en tenir compte.
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="border-emerald-100">
-              <CardContent className="p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-emerald-500" />
-                  Ce qu&apos;on propose
-                </h2>
-                <p className="text-gray-600 leading-relaxed">
-                  Un outil qui connaît votre famille. Créez un profil pour chaque membre, et Totem Avisé vous dit quels films, séries et jeux correspondent vraiment. Par âge, par goûts, par moment.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 gap-5 mb-14">
+            <div
+              className="rounded-2xl p-6 lg:p-8"
+              style={{ background: p.card, border: `1px solid ${p.line}` }}
+            >
+              <h2
+                className={`${serifClass} text-xl md:text-2xl font-medium mb-3 flex items-center gap-2`}
+                style={{ color: p.ink, letterSpacing: "-0.02em" }}
+              >
+                <Heart
+                  className="h-5 w-5 flex-shrink-0"
+                  style={{ color: p.accent }}
+                />
+                Ce qu&apos;on croit
+              </h2>
+              <p className="leading-relaxed text-sm md:text-base" style={{ color: p.ink2 }}>
+                Chaque famille est unique. Un film parfait pour un enfant de 7
+                ans ne l&apos;est pas forcément pour un autre du même âge. Les
+                goûts, les sensibilités et les valeurs de chaque foyer comptent.
+              </p>
+            </div>
+            <div
+              className="rounded-2xl p-6 lg:p-8"
+              style={{ background: p.card, border: `1px solid ${p.line}` }}
+            >
+              <h2
+                className={`${serifClass} text-xl md:text-2xl font-medium mb-3 flex items-center gap-2`}
+                style={{ color: p.ink, letterSpacing: "-0.02em" }}
+              >
+                <Sparkles
+                  className="h-5 w-5 flex-shrink-0"
+                  style={{ color: p.accent2 }}
+                />
+                Ce qu&apos;on propose
+              </h2>
+              <p className="leading-relaxed text-sm md:text-base" style={{ color: p.ink2 }}>
+                Un outil qui connaît votre famille. Créez un profil pour chaque
+                membre, et Totem Avisé vous dit quels films, séries et jeux
+                correspondent vraiment.
+              </p>
+            </div>
           </div>
 
-          {/* What makes us different */}
-          <div className="mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Ce qui fait la différence</h2>
+          <div className="mb-14">
+            <h2
+              className={`${serifClass} text-2xl md:text-3xl font-medium mb-6 text-center`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Ce qui fait la{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                différence
+              </em>
+            </h2>
             <div className="space-y-3 max-w-xl mx-auto">
               {differences.map((item) => (
                 <div key={item} className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-gray-700">{item}</p>
+                  <Check
+                    className="h-5 w-5 flex-shrink-0 mt-0.5"
+                    style={{ color: p.accent2 }}
+                  />
+                  <p className="text-sm md:text-base" style={{ color: p.ink }}>
+                    {item}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Pillars */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Nos piliers</h2>
-          <div className="grid sm:grid-cols-2 gap-6 mb-16">
+          <h2
+            className={`${serifClass} text-2xl md:text-3xl font-medium mb-6 text-center`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Nos piliers
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-4 md:gap-5 mb-14">
             {pillars.map((pillar) => (
-              <Card key={pillar.title}>
-                <CardContent className="p-6">
-                  <div className={`inline-flex p-3 rounded-xl ${pillar.bg} mb-4`}>
-                    <pillar.icon className={`h-6 w-6 ${pillar.color}`} />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{pillar.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{pillar.description}</p>
-                </CardContent>
-              </Card>
+              <div
+                key={pillar.title}
+                className="rounded-2xl p-6"
+                style={{ background: p.card, border: `1px solid ${p.line}` }}
+              >
+                <div
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-full mb-4"
+                  style={{ background: p.bg2, color: p.accent }}
+                >
+                  <pillar.icon className="h-5 w-5" />
+                </div>
+                <h3
+                  className={`${serifClass} text-lg font-medium mb-2`}
+                  style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                >
+                  {pillar.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: p.ink2 }}>
+                  {pillar.description}
+                </p>
+              </div>
             ))}
           </div>
 
-          {/* CTA */}
-          <div className="text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Trouvez votre prochaine soirée en famille</h2>
-            <p className="text-gray-600 mb-6">
-              Des milliers de films, séries et jeux analysés. Filtrés pour votre famille.
+          <div
+            className="rounded-3xl p-8 text-center"
+            style={{ background: p.card, border: `1px solid ${p.line}` }}
+          >
+            <h2
+              className={`${serifClass} text-2xl md:text-3xl font-medium mb-3`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Trouvez votre prochaine{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                soirée en famille
+              </em>
+            </h2>
+            <p className="mb-6 text-sm md:text-base" style={{ color: p.ink2 }}>
+              Des milliers de films, séries et jeux analysés. Filtrés pour
+              votre famille.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/films"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: p.ink, color: p.bg }}
               >
                 Découvrir les films
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/inscription"
-                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{
+                  background: "transparent",
+                  color: p.ink,
+                  border: `1px solid ${p.line2}`,
+                }}
               >
                 Créer mon profil famille
               </Link>
