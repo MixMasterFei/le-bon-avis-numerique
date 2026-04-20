@@ -3,13 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Users } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Slider } from "@/components/ui/slider"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MediaCard } from "@/components/media/MediaCard"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import {
+  ApercuMediaCard,
+  type ApercuCardMedia,
+} from "@/components/home-v2/ApercuMediaCard"
+import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 type WizardType = "all" | "movie" | "tv" | "game" | "book" | "app"
 
@@ -25,66 +24,60 @@ type ChipKey = (typeof questionChips)[number]["key"]
 interface DbMedia {
   id: string
   title: string
-  originalTitle?: string
-  synopsisFr?: string
-  posterUrl: string
-  releaseDate?: string
+  posterUrl: string | null
   type: string
   expertAgeRec?: number | null
-  communityAgeRec?: number | null
   genres?: string[]
-  platforms?: string[]
-  topics?: string[]
   contentMetrics?: {
     violence: number
     sexNudity: number
     language: number
-    consumerism: number
     substanceUse: number
-    positiveMessages: number
-    roleModels: number
-    whatParentsNeedToKnow: string[]
   } | null
-  reviewCount?: number
-  reviewAvgRating?: number | null
-  tmdbRating?: number | null
-  tmdbVoteCount?: number | null
 }
 
-function mapDbToMockFormat(media: DbMedia): MockMediaItem {
+type CardItem = ApercuCardMedia & {
+  contentMetricsFull: {
+    violence: number
+    sexNudity: number
+    language: number
+    substanceUse: number
+  } | null
+}
+
+function mapDb(media: DbMedia): CardItem | null {
+  if (media.type !== "MOVIE" && media.type !== "TV" && media.type !== "GAME") {
+    return null
+  }
   return {
     id: media.id,
+    type: media.type,
     title: media.title,
-    originalTitle: media.originalTitle,
-    type: media.type as MockMediaItem["type"],
-    releaseDate: media.releaseDate ?? null,
-    posterUrl: media.posterUrl || "/placeholder-poster.jpg",
-    synopsisFr: media.synopsisFr ?? null,
-    officialRating: null,
+    posterUrl: media.posterUrl,
     expertAgeRec: media.expertAgeRec ?? null,
-    communityAgeRec: media.communityAgeRec ?? null,
     genres: media.genres || [],
-    platforms: media.platforms || [],
-    topics: media.topics || [],
-    contentMetrics: media.contentMetrics || {
-      violence: 0,
-      sexNudity: 0,
-      language: 0,
-      consumerism: 0,
-      substanceUse: 0,
-      positiveMessages: 0,
-      roleModels: 0,
-      whatParentsNeedToKnow: [],
-    },
-    reviews: [],
-    reviewCount: media.reviewCount || 0,
-    reviewAvgRating: media.reviewAvgRating ?? null,
-    tmdbRating: media.tmdbRating ?? null,
-    tmdbVoteCount: media.tmdbVoteCount ?? null,
+    contentMetrics: media.contentMetrics
+      ? {
+          violence: media.contentMetrics.violence,
+          sexNudity: media.contentMetrics.sexNudity,
+          language: media.contentMetrics.language,
+          substanceUse: media.contentMetrics.substanceUse,
+        }
+      : null,
+    contentMetricsFull: media.contentMetrics
+      ? {
+          violence: media.contentMetrics.violence,
+          sexNudity: media.contentMetrics.sexNudity,
+          language: media.contentMetrics.language,
+          substanceUse: media.contentMetrics.substanceUse,
+        }
+      : null,
   }
 }
 
 function RecosInner() {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   const sp = useSearchParams()
   const router = useRouter()
 
@@ -97,14 +90,15 @@ function RecosInner() {
       .filter(Boolean) as ChipKey[]
   )
 
-  const [age, setAge] = useState(Number.isFinite(initialAge) ? Math.min(Math.max(initialAge, 2), 18) : 8)
+  const [age, setAge] = useState(
+    Number.isFinite(initialAge) ? Math.min(Math.max(initialAge, 2), 18) : 8
+  )
   const [type, setType] = useState<WizardType>(initialType)
   const [chips, setChips] = useState<Set<ChipKey>>(initialChips)
-  const [allMedia, setAllMedia] = useState<MockMediaItem[]>([])
+  const [allMedia, setAllMedia] = useState<CardItem[]>([])
   const [loading, setLoading] = useState(true)
   const [displayCount, setDisplayCount] = useState(24)
 
-  // Fetch all media from database
   useEffect(() => {
     async function fetchMedia() {
       try {
@@ -112,10 +106,13 @@ function RecosInner() {
         if (!res.ok) throw new Error("DB error")
         const data = await res.json()
         if (Array.isArray(data?.media)) {
-          setAllMedia(data.media.map(mapDbToMockFormat))
+          const mapped = (data.media as DbMedia[])
+            .map(mapDb)
+            .filter((x): x is CardItem => x !== null)
+          setAllMedia(mapped)
         }
-      } catch (error) {
-        console.error("Failed to fetch media:", error)
+      } catch {
+        // ignore
       } finally {
         setLoading(false)
       }
@@ -123,17 +120,16 @@ function RecosInner() {
     fetchMedia()
   }, [])
 
-  // keep URL in sync (shareable)
   useEffect(() => {
     const qs = new URLSearchParams()
     qs.set("age", String(age))
     qs.set("type", type)
     if (chips.size > 0) qs.set("chips", Array.from(chips).join(","))
-    router.replace(`/recommandations?${qs.toString()}`)
+    router.replace(`/recommandations?${qs.toString()}`, { scroll: false })
   }, [age, chips, router, type])
 
   const filtered = useMemo(() => {
-    setDisplayCount(24) // Reset pagination when filters change
+    setDisplayCount(24)
     let items = allMedia
 
     if (type !== "all") {
@@ -145,7 +141,9 @@ function RecosInner() {
 
     for (const chip of questionChips) {
       if (chips.has(chip.key)) {
-        items = items.filter((m) => (m.contentMetrics?.[chip.key] ?? 99) <= chip.max)
+        items = items.filter(
+          (m) => (m.contentMetricsFull?.[chip.key] ?? 99) <= chip.max
+        )
       }
     }
 
@@ -161,145 +159,261 @@ function RecosInner() {
     })
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Recommandations</h1>
-          <p className="text-gray-600 mt-1">Chargement...</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div key={i} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const TYPE_TABS: { key: WizardType; label: string }[] = [
+    { key: "all", label: "Tout" },
+    { key: "movie", label: "Films" },
+    { key: "tv", label: "Séries" },
+    { key: "game", label: "Jeux" },
+    { key: "book", label: "Livres" },
+    { key: "app", label: "Apps" },
+  ]
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Recommandations</h1>
-        <p className="text-gray-600 mt-1">
-          Sélection personnalisée basée sur l&apos;âge et vos critères.
-        </p>
-      </div>
+    <FamilyFitProvider>
+      <div
+        className="flex flex-col flex-1"
+        style={{ background: p.bg, color: p.ink }}
+      >
+        <section
+          className="py-8 md:py-12"
+          style={{ background: p.bg, borderBottom: `1px solid ${p.line}` }}
+        >
+          <div className="container mx-auto px-4 md:px-8">
+            <div
+              className="text-[11px] font-semibold mb-2 uppercase tracking-wide"
+              style={{ color: p.accent }}
+            >
+              Personnalisé
+            </div>
+            <h1
+              className={`${serifClass} text-3xl md:text-5xl font-medium m-0 leading-[1.05]`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Nos{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                recommandations
+              </em>
+            </h1>
+            <p
+              className="mt-3 text-sm md:text-base max-w-2xl"
+              style={{ color: p.ink2 }}
+            >
+              Sélection basée sur l&apos;âge et vos critères.
+            </p>
+          </div>
+        </section>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <Card className="lg:sticky lg:top-24">
-            <CardContent className="p-6 space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Âge</span>
-                  <Badge className="bg-primary">{age} ans</Badge>
-                </div>
-                <div className="px-2">
-                  <Slider value={[age]} onValueChange={(v) => setAge(v[0])} min={2} max={18} step={1} />
-                  <div className="flex justify-between mt-2 text-xs text-gray-500">
+        <section className="flex-1 py-8 md:py-12" style={{ background: p.bg2 }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <div className="grid lg:grid-cols-[280px_1fr] gap-6 lg:gap-10 items-start">
+              <aside
+                className="rounded-2xl p-5 lg:sticky lg:top-24"
+                style={{
+                  background: p.card,
+                  border: `1px solid ${p.line}`,
+                }}
+              >
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: p.ink }}
+                    >
+                      Âge
+                    </span>
+                    <span
+                      className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                      style={{ background: p.ink, color: p.bg }}
+                    >
+                      {age} ans
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={2}
+                    max={18}
+                    step={1}
+                    value={age}
+                    onChange={(e) => setAge(parseInt(e.target.value))}
+                    className="w-full accent-[#1E1A15]"
+                  />
+                  <div
+                    className="flex justify-between mt-2 text-xs"
+                    style={{ color: p.ink2 }}
+                  >
                     <span>2</span>
                     <span>18</span>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-3">
-                <span className="text-sm font-medium text-gray-700">Catégorie</span>
-                <Tabs value={type} onValueChange={(v) => setType(v as WizardType)}>
-                  <TabsList className="w-full flex flex-wrap justify-start h-auto">
-                    <TabsTrigger value="all">Tout</TabsTrigger>
-                    <TabsTrigger value="movie">Films</TabsTrigger>
-                    <TabsTrigger value="tv">Séries</TabsTrigger>
-                    <TabsTrigger value="game">Jeux</TabsTrigger>
-                    <TabsTrigger value="book">Livres</TabsTrigger>
-                    <TabsTrigger value="app">Apps</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value={type} />
-                </Tabs>
-              </div>
-
-              <div className="space-y-3">
-                <span className="text-sm font-medium text-gray-700">Préférences</span>
-                <div className="flex flex-wrap gap-2">
-                  {questionChips.map((chip) => (
-                    <Badge
-                      key={chip.key}
-                      variant={chips.has(chip.key) ? "default" : "outline"}
-                      className="cursor-pointer select-none"
-                      onClick={() => toggleChip(chip.key)}
-                    >
-                      {chip.label}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <Button variant="outline" onClick={() => setChips(new Set())}>
-                Réinitialiser
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Results */}
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-gray-600">
-              {filtered.length} résultat{filtered.length !== 1 ? "s" : ""}
-            </p>
-          </div>
-
-          {filtered.length > 0 ? (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {filtered.slice(0, displayCount).map((m) => (
-                  <MediaCard key={`${m.type}:${m.id}`} media={m} />
-                ))}
-              </div>
-              {displayCount < filtered.length && (
-                <div className="flex justify-center mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={() => setDisplayCount((prev) => prev + 24)}
-                    className="rounded-full px-8"
+                <div className="mb-6">
+                  <span
+                    className="text-xs font-semibold mb-2 block"
+                    style={{ color: p.ink }}
                   >
-                    Voir plus ({filtered.length - displayCount} restants)
-                  </Button>
+                    Catégorie
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TYPE_TABS.map((t) => {
+                      const active = type === t.key
+                      return (
+                        <button
+                          key={t.key}
+                          type="button"
+                          onClick={() => setType(t.key)}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                          style={{
+                            background: active ? p.ink : p.bg2,
+                            color: active ? p.bg : p.ink,
+                            border: `1px solid ${active ? p.ink : p.line}`,
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16 text-gray-500">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Aucun résultat</p>
-              <p className="text-sm">Essayez d&apos;augmenter l&apos;âge ou de retirer un critère.</p>
+
+                <div className="mb-4">
+                  <span
+                    className="text-xs font-semibold mb-2 block"
+                    style={{ color: p.ink }}
+                  >
+                    Préférences
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {questionChips.map((chip) => {
+                      const active = chips.has(chip.key)
+                      return (
+                        <button
+                          key={chip.key}
+                          type="button"
+                          onClick={() => toggleChip(chip.key)}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                          style={{
+                            background: active ? p.accent : p.bg2,
+                            color: active ? "#fff" : p.ink,
+                            border: `1px solid ${active ? p.accent : p.line}`,
+                          }}
+                        >
+                          {chip.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {chips.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setChips(new Set())}
+                    className="inline-flex items-center justify-center gap-1 w-full px-3 py-2 rounded-full text-xs font-semibold transition-opacity hover:opacity-70"
+                    style={{
+                      background: "transparent",
+                      color: p.ink,
+                      border: `1px solid ${p.line2}`,
+                    }}
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </aside>
+
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <p className="text-sm" style={{ color: p.ink2 }}>
+                    {filtered.length} résultat
+                    {filtered.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+
+                {loading ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="aspect-[2/3] rounded-xl animate-pulse"
+                        style={{ background: p.placeholder }}
+                      />
+                    ))}
+                  </div>
+                ) : filtered.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                      {filtered.slice(0, displayCount).map((m) => (
+                        <ApercuMediaCard
+                          key={`${m.type}:${m.id}`}
+                          media={m}
+                          size="sm"
+                          serifClass={serifClass}
+                        />
+                      ))}
+                    </div>
+                    {displayCount < filtered.length && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDisplayCount((prev) => prev + 24)
+                          }
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                          style={{
+                            background: "transparent",
+                            color: p.ink,
+                            border: `1px solid ${p.line2}`,
+                          }}
+                        >
+                          Voir plus ({filtered.length - displayCount} restants)
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div
+                    className="text-center py-16 rounded-2xl"
+                    style={{
+                      background: p.card,
+                      border: `1px solid ${p.line}`,
+                    }}
+                  >
+                    <Users
+                      className="h-12 w-12 mx-auto mb-4"
+                      style={{ color: p.ink2, opacity: 0.4 }}
+                    />
+                    <p
+                      className={`${serifClass} text-xl font-medium mb-2`}
+                      style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                    >
+                      Aucun résultat
+                    </p>
+                    <p className="text-sm" style={{ color: p.ink2 }}>
+                      Essayez d&apos;augmenter l&apos;âge ou de retirer un
+                      critère.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        </section>
       </div>
-    </div>
+    </FamilyFitProvider>
   )
 }
 
 export default function RecommandationsPage() {
+  const p = APERCU_PALETTE
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8" />}>
+    <Suspense
+      fallback={
+        <div
+          className="container mx-auto px-4 py-8"
+          style={{ background: p.bg }}
+        />
+      }
+    >
       <RecosInner />
     </Suspense>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
