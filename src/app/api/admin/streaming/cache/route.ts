@@ -1,6 +1,37 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
+import { logCronRun } from "@/lib/cron-log"
+
+const INTER_REQUEST_DELAY_MS = 200
+const TMDB_FETCH_TIMEOUT_MS = 8000
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+/** Fetch with one retry on 429/5xx and an 8s timeout. Returns the
+ *  response (caller checks .ok) or null if all attempts failed. */
+async function tmdbFetchWithRetry(url: string): Promise<Response | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(TMDB_FETCH_TIMEOUT_MS) })
+      if (res.ok) return res
+      if ((res.status === 429 || res.status >= 500) && attempt === 0) {
+        await sleep(1000)
+        continue
+      }
+      return res // 404 and other non-retryable — return so caller can log status
+    } catch {
+      if (attempt === 0) {
+        await sleep(1000)
+        continue
+      }
+      return null
+    }
+  }
+  return null
+}
 
 // Per item: TMDB fetch + Prisma deleteMany + create(s). At 30 items
 // this was brushing the 60 s timeout under load. Bumped to 300 s
@@ -35,6 +66,7 @@ interface TMDBWatchProviders {
  * Chunked: processes a small batch per call, frontend loops until done.
  */
 export async function POST(request: Request) {
+  const startTime = Date.now()
   if (!TMDB_API_KEY) {
     return NextResponse.json(
       { success: false, error: "TMDB API key not configured" },
@@ -106,6 +138,9 @@ export async function POST(request: Request) {
     let processed = 0
     let updated = 0
     let errors = 0
+    // Track HTTP status code breakdown so cron_logs can tell us what
+    // actually went wrong next time (429 vs 404 vs 5xx vs network).
+    const statusBreakdown: Record<string, number> = {}
 
     for (const item of mediaItems) {
       processed++
@@ -114,9 +149,14 @@ export async function POST(request: Request) {
         const mediaType = item.type === "MOVIE" ? "movie" : "tv"
         const url = `${TMDB_BASE_URL}/${mediaType}/${item.tmdbId}/watch/providers?api_key=${TMDB_API_KEY}`
 
-        const response = await fetch(url)
-        if (!response.ok) {
+        const response = await tmdbFetchWithRetry(url)
+        if (!response || !response.ok) {
+          const key = response ? String(response.status) : "network"
+          statusBreakdown[key] = (statusBreakdown[key] ?? 0) + 1
           errors++
+          // Unconditional delay even after failures — without this, a
+          // burst of 429s just makes us hammer TMDB faster.
+          await sleep(INTER_REQUEST_DELAY_MS)
           continue
         }
 
@@ -183,26 +223,43 @@ export async function POST(request: Request) {
           await prisma.streamingAvailability.createMany({ data: records })
           updated++
         }
-
-        // Respect TMDB rate limits (40 req/10s)
-        await new Promise((r) => setTimeout(r, 300))
       } catch {
         errors++
+        statusBreakdown["exception"] = (statusBreakdown["exception"] ?? 0) + 1
       }
+      // Unconditional tail delay — runs after both success and failure
+      // paths so a 429 burst doesn't accelerate the loop.
+      await sleep(INTER_REQUEST_DELAY_MS)
     }
 
     const newRemaining = remaining - processed
+    const done = newRemaining <= 0
+
+    await logCronRun({
+      task: "streaming-cache",
+      status: errors > 0 ? "partial" : "success",
+      summary: `${updated} MAJ, ${errors} erreurs sur ${processed}`,
+      details: { processed, updated, errors, statusBreakdown, remaining: Math.max(0, newRemaining) },
+      startTime,
+    })
 
     return NextResponse.json({
       success: true,
-      done: newRemaining <= 0,
+      done,
       processed,
       updated,
       errors,
+      statusBreakdown,
       remaining: Math.max(0, newRemaining),
     })
   } catch (error) {
     console.error("Streaming cache error:", error)
+    await logCronRun({
+      task: "streaming-cache",
+      status: "error",
+      summary: error instanceof Error ? error.message : "streaming cache failed",
+      startTime,
+    })
     return NextResponse.json(
       { success: false, error: "Failed to cache streaming availability" },
       { status: 500 }
