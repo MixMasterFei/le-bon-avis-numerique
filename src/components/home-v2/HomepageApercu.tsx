@@ -9,9 +9,6 @@ import { ApercuAgeGrid } from "./ApercuAgeGrid"
 import { ApercuCollections } from "./ApercuCollections"
 import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
-import { ApercuFooter } from "./ApercuFooter"
-import { ApercuNav } from "./ApercuNav"
-import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface HomepageApercuProps {
@@ -28,9 +25,6 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
         className="flex flex-col overflow-x-hidden"
         style={{ background: p.bg, color: p.ink }}
       >
-        <ApercuPreviewBanner />
-        <ApercuNav />
-
         <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
 
         <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
@@ -62,8 +56,6 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
         <ApercuPulse serifClass={serifClass} />
 
         <ApercuFinalCTA serifClass={serifClass} isLoggedIn={isLoggedIn} />
-
-        <ApercuFooter serifClass={serifClass} />
       </div>
     </FamilyFitProvider>
   )
