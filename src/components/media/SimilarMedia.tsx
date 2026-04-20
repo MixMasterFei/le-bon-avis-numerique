@@ -5,6 +5,7 @@ import { AgeBadge } from "@/components/media/AgeBadge"
 import { toMediaRouteId } from "@/lib/media-route"
 import type { MediaType } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface SimilarMediaProps {
   mediaId: string
@@ -196,16 +197,22 @@ export async function SimilarMedia({
     return null
   }
 
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   return (
     <section className={cn("mt-10", className)}>
-      {/* Subtle divider */}
-      <div className="border-t border-gray-200 mb-6" />
+      <div className="mb-6" style={{ borderTop: `1px solid ${p.line}` }} />
 
-      <h2 className="text-lg font-bold text-gray-800 mb-4">
-        Dans le même genre
+      <h2
+        className={`${serifClass} text-xl md:text-2xl font-medium mb-4`}
+        style={{ color: p.ink, letterSpacing: "-0.02em" }}
+      >
+        Dans le même{" "}
+        <em className="italic" style={{ color: p.accent }}>
+          genre
+        </em>
       </h2>
 
-      {/* Horizontal scroll container */}
       <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-thin">
         {similarMedia.map((item) => (
           <Link
@@ -214,8 +221,13 @@ export async function SimilarMedia({
             className="group"
           >
             <div className="w-32 sm:w-36 shrink-0">
-              {/* Poster — 2:3 aspect ratio */}
-              <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-violet-100 shadow-md group-hover:shadow-lg group-hover:-translate-y-1 transition-all duration-300">
+              <div
+                className="relative aspect-[2/3] overflow-hidden rounded-xl group-hover:-translate-y-1 transition-all duration-300"
+                style={{
+                  background: p.placeholder,
+                  boxShadow: `0 2px 8px ${p.line}`,
+                }}
+              >
                 {item.posterUrl ? (
                   <SafeImage
                     src={item.posterUrl}
@@ -226,34 +238,46 @@ export async function SimilarMedia({
                     fallbackClassName="absolute inset-0"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs text-center p-2">
+                  <div
+                    className="absolute inset-0 flex items-center justify-center text-xs text-center p-2"
+                    style={{ color: p.ink2 }}
+                  >
                     {item.title}
                   </div>
                 )}
 
-                {/* Age badge overlay */}
                 {item.expertAgeRec != null && item.expertAgeRec > 0 && (
                   <div className="absolute top-1.5 left-1.5">
                     <AgeBadge age={item.expertAgeRec} size="xs" />
                   </div>
                 )}
 
-                {/* Hover gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-violet-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(30,26,21,0.5), transparent)",
+                  }}
+                />
               </div>
 
-              {/* Title */}
-              <h3 className="mt-2 px-0.5 text-xs font-semibold text-gray-800 line-clamp-2 leading-tight group-hover:text-violet-700 transition-colors">
+              <h3
+                className="mt-2 px-0.5 text-xs font-semibold line-clamp-2 leading-tight group-hover:opacity-70 transition-opacity"
+                style={{ color: p.ink }}
+              >
                 {item.title}
               </h3>
 
-              {/* Similarity reason tags */}
               {item.reasons.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1 px-0.5">
                   {item.reasons.slice(0, 2).map((reason) => (
                     <span
                       key={reason}
-                      className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium"
+                      className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: p.bg2,
+                        color: p.accent,
+                      }}
                     >
                       {translateReason(reason)}
                     </span>
