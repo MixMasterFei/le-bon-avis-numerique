@@ -1,19 +1,19 @@
-import { BookText, Clock, Monitor, Gamepad2, MessageCircle, Shield, Brain, ArrowRight } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Clock, Monitor, Gamepad2, MessageCircle, Shield, Brain, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
   title: "Nos guides — Accompagner vos enfants face aux écrans",
-  description: "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
+  description:
+    "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
 }
 
 const guides = [
   {
     title: "Temps d'écran par âge : repères et conseils",
-    description: "Combien de temps devant un écran selon l'âge ? Les recommandations de l'OMS et du CSA, et nos conseils pratiques pour chaque tranche d'âge.",
+    description:
+      "Combien de temps devant un écran selon l'âge ? Les recommandations de l'OMS et du CSA, et nos conseils pratiques pour chaque tranche d'âge.",
     icon: Monitor,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
     available: true,
     slug: "temps-ecran",
     content: [
@@ -26,10 +26,9 @@ const guides = [
   },
   {
     title: "Comprendre les classifications d'âge",
-    description: "PEGI, CSA, CNC... Que signifient ces classifications ? Leurs limites et comment notre système les complète.",
+    description:
+      "PEGI, CSA, CNC... Que signifient ces classifications ? Leurs limites et comment notre système les complète.",
     icon: Shield,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
     available: true,
     slug: "classifications",
     content: [
@@ -40,10 +39,9 @@ const guides = [
   },
   {
     title: "Choisir un jeu vidéo adapté",
-    description: "Au-delà du PEGI : comment évaluer si un jeu vidéo convient à votre enfant, repérer les microtransactions et le contenu addictif.",
+    description:
+      "Au-delà du PEGI : comment évaluer si un jeu vidéo convient à votre enfant, repérer les microtransactions et le contenu addictif.",
     icon: Gamepad2,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
     available: true,
     slug: "jeux-video",
     content: [
@@ -55,27 +53,24 @@ const guides = [
   },
   {
     title: "Parler des écrans avec vos enfants",
-    description: "Comment aborder le sujet des écrans sans conflit, instaurer des règles familiales et maintenir un dialogue constructif.",
+    description:
+      "Comment aborder le sujet des écrans sans conflit, instaurer des règles familiales et maintenir un dialogue constructif.",
     icon: MessageCircle,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
     available: false,
     slug: "dialogue-ecrans",
     content: [],
   },
   {
     title: "Développer l'esprit critique face aux médias",
-    description: "Apprendre à vos enfants à questionner ce qu'ils voient en ligne : publicité, désinformation, images retouchées.",
+    description:
+      "Apprendre à vos enfants à questionner ce qu'ils voient en ligne : publicité, désinformation, images retouchées.",
     icon: Brain,
-    color: "text-teal-600",
-    bg: "bg-teal-50",
     available: false,
     slug: "esprit-critique",
     content: [],
   },
 ]
 
-// Build FAQPage JSON-LD from guide content
 function buildFaqJsonLd() {
   const questions = guides
     .filter((g) => g.available && g.content.length > 0)
@@ -89,7 +84,6 @@ function buildFaqJsonLd() {
         },
       }))
     )
-
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -98,102 +92,168 @@ function buildFaqJsonLd() {
 }
 
 export default function GuidesPage() {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   const faqJsonLd = buildFaqJsonLd()
 
   return (
-    <div className="min-h-screen">
-      {/* FAQ Structured Data */}
+    <div
+      className="flex flex-col flex-1"
+      style={{ background: p.bg, color: p.ink }}
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 text-white py-20">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <div className="inline-flex p-4 bg-emerald-500/20 rounded-full mb-6">
-            <BookText className="h-8 w-8 text-emerald-400" />
+
+      <section
+        className="py-16 md:py-20"
+        style={{ background: p.bg, borderBottom: `1px solid ${p.line}` }}
+      >
+        <div className="container mx-auto px-4 max-w-3xl text-center">
+          <div
+            className="text-[11px] font-semibold mb-3 uppercase tracking-wide"
+            style={{ color: p.accent }}
+          >
+            Ressources
           </div>
-          <h1 className="text-4xl lg:text-5xl font-bold mb-6">
-            Nos guides
+          <h1
+            className={`${serifClass} text-4xl md:text-5xl font-medium mb-5 leading-[1.05]`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Nos{" "}
+            <em className="italic" style={{ color: p.accent }}>
+              guides
+            </em>
           </h1>
-          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Des guides pratiques pour accompagner vos enfants dans leur consommation médiatique, à chaque âge.
+          <p className="text-lg leading-relaxed" style={{ color: p.ink2 }}>
+            Des guides pratiques pour accompagner vos enfants dans leur
+            consommation médiatique, à chaque âge.
           </p>
         </div>
       </section>
 
-      {/* Guides list */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="space-y-12">
-            {guides.map((guide) => (
-              <div key={guide.slug} id={guide.slug}>
-                <Card className={!guide.available ? "opacity-75" : ""}>
-                  <CardContent className="p-6 lg:p-8">
-                    {/* Guide header */}
-                    <div className="flex items-start gap-4 mb-6">
-                      <div className={`inline-flex p-3 rounded-xl ${guide.bg} flex-shrink-0`}>
-                        <guide.icon className={`h-6 w-6 ${guide.color}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h2 className="text-xl font-bold text-gray-900">{guide.title}</h2>
-                          {!guide.available && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                              <Clock className="h-3 w-3" />
-                              Bientôt
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-gray-600">{guide.description}</p>
-                      </div>
-                    </div>
-
-                    {/* Guide content */}
-                    {guide.available && guide.content.length > 0 && (
-                      <div className="space-y-4 mt-6">
-                        {guide.content.map((item) => (
-                          <div key={item.age} className="border border-gray-100 rounded-xl p-4">
-                            <div className="flex items-baseline justify-between mb-2">
-                              <h3 className="font-semibold text-gray-900">{item.age}</h3>
-                              <span className="text-sm font-medium text-emerald-600">{item.rec}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 leading-relaxed">{item.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
+      <section className="py-12 md:py-16" style={{ background: p.bg2 }}>
+        <div className="container mx-auto px-4 max-w-4xl space-y-6">
+          {guides.map((guide) => (
+            <div
+              key={guide.slug}
+              id={guide.slug}
+              className="scroll-mt-24 rounded-3xl p-6 lg:p-8"
+              style={{
+                background: p.card,
+                border: `1px solid ${p.line}`,
+                opacity: guide.available ? 1 : 0.75,
+              }}
+            >
+              <div className="flex items-start gap-4 mb-5">
+                <div
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-full flex-shrink-0"
+                  style={{ background: p.bg2, color: p.accent }}
+                >
+                  <guide.icon className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h2
+                      className={`${serifClass} text-lg md:text-xl font-medium`}
+                      style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                    >
+                      {guide.title}
+                    </h2>
                     {!guide.available && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-xl text-center">
-                        <p className="text-sm text-gray-500">Ce guide est en cours de rédaction. Revenez bientôt !</p>
-                      </div>
+                      <span
+                        className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full"
+                        style={{ background: p.bg2, color: p.ink2 }}
+                      >
+                        <Clock className="h-3 w-3" />
+                        Bientôt
+                      </span>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                  <p className="text-sm md:text-base" style={{ color: p.ink2 }}>
+                    {guide.description}
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* CTA */}
-          <div className="mt-16 text-center bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Besoin d&apos;un avis précis ?</h2>
-            <p className="text-gray-600 mb-6 max-w-lg mx-auto">
-              Consultez nos analyses détaillées pour trouver le film, la série ou le jeu idéal pour votre famille.
+              {guide.available && guide.content.length > 0 && (
+                <div className="space-y-3 mt-5">
+                  {guide.content.map((item) => (
+                    <div
+                      key={item.age}
+                      className="rounded-xl p-4"
+                      style={{ background: p.bg2, border: `1px solid ${p.line}` }}
+                    >
+                      <div className="flex items-baseline justify-between mb-1.5 gap-2 flex-wrap">
+                        <h3 className="font-semibold text-sm" style={{ color: p.ink }}>
+                          {item.age}
+                        </h3>
+                        <span
+                          className="text-sm font-medium"
+                          style={{ color: p.accent }}
+                        >
+                          {item.rec}
+                        </span>
+                      </div>
+                      <p className="text-sm leading-relaxed" style={{ color: p.ink2 }}>
+                        {item.detail}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!guide.available && (
+                <div
+                  className="mt-4 p-4 rounded-xl text-center"
+                  style={{ background: p.bg2 }}
+                >
+                  <p className="text-sm" style={{ color: p.ink2 }}>
+                    Ce guide est en cours de rédaction. Revenez bientôt !
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div
+            className="rounded-3xl p-8 text-center"
+            style={{ background: p.card, border: `1px solid ${p.line}` }}
+          >
+            <h2
+              className={`${serifClass} text-2xl md:text-3xl font-medium mb-3`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Besoin d&apos;un avis{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                précis
+              </em>{" "}
+              ?
+            </h2>
+            <p className="mb-6 max-w-lg mx-auto text-sm md:text-base" style={{ color: p.ink2 }}>
+              Consultez nos analyses détaillées pour trouver le film, la série
+              ou le jeu idéal pour votre famille.
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
               <Link
                 href="/films"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+                style={{ background: p.ink, color: p.bg }}
               >
                 Explorer les contenus
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/nos-valeurs"
-                className="inline-flex items-center gap-2 px-6 py-3 border-2 border-emerald-600 text-emerald-700 rounded-xl font-medium hover:bg-emerald-50 transition-colors"
+                href="/notre-methode"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                style={{
+                  background: "transparent",
+                  color: p.ink,
+                  border: `1px solid ${p.line2}`,
+                }}
               >
-                Nos critères d&apos;évaluation
+                Notre méthode
               </Link>
             </div>
           </div>

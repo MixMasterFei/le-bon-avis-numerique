@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { Check, X, Crown, Heart, Users, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const SAGE = "#5C8A5C"
 
 interface PlanFeature {
   text: string
@@ -33,17 +33,17 @@ const plans: Plan[] = [
     period: "pour toujours",
     highlight: false,
     features: [
-      { text: "Tous les avis et evaluations", included: true },
-      { text: "Recherche et filtres par age", included: true },
-      { text: "Recommandations par age", included: true },
-      { text: "Classifications francaises (CNC, PEGI)", included: true },
-      { text: "Metriques de contenu detaillees", included: true },
-      { text: "Acces sur tous vos appareils", included: true },
+      { text: "Tous les avis et évaluations", included: true },
+      { text: "Recherche et filtres par âge", included: true },
+      { text: "Recommandations par âge", included: true },
+      { text: "Classifications françaises (CNC, PEGI)", included: true },
+      { text: "Métriques de contenu détaillées", included: true },
+      { text: "Accès sur tous vos appareils", included: true },
       { text: "Profils famille multiples", included: false },
-      { text: "Recommandations personnalisees avancees", included: false },
-      { text: "Experience sans publicite", included: false },
+      { text: "Recommandations personnalisées avancées", included: false },
+      { text: "Expérience sans publicité", included: false },
     ],
-    cta: "Creer un compte gratuit",
+    cta: "Créer un compte gratuit",
     ctaHref: "/inscription",
   },
   {
@@ -52,15 +52,15 @@ const plans: Plan[] = [
     price: "2,99",
     period: "/mois",
     highlight: true,
-    badge: "Bientot disponible",
+    badge: "Bientôt disponible",
     features: [
       { text: "Tout du plan Gratuit", included: true },
       { text: "Profils famille multiples", included: true, highlight: true },
-      { text: "Recommandations personnalisees avancees", included: true, highlight: true },
-      { text: "\"Ce soir on regarde\" suggestions", included: true, highlight: true },
-      { text: "Listes de lecture synchronisees", included: true, highlight: true },
-      { text: "Experience sans publicite", included: true, highlight: true },
-      { text: "Acces anticipe aux nouveautes", included: true, highlight: true },
+      { text: "Recommandations personnalisées avancées", included: true, highlight: true },
+      { text: "« Ce soir on regarde » suggestions", included: true, highlight: true },
+      { text: "Listes de lecture synchronisées", included: true, highlight: true },
+      { text: "Expérience sans publicité", included: true, highlight: true },
+      { text: "Accès anticipé aux nouveautés", included: true, highlight: true },
       { text: "Badge Soutien sur votre profil", included: true },
       { text: "Support prioritaire", included: true },
     ],
@@ -70,196 +70,291 @@ const plans: Plan[] = [
   },
 ]
 
-
 export default function TarifsPage() {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Header */}
-      <div className="container mx-auto px-4 py-16 text-center">
-        <Badge className="mb-4 bg-emerald-100 text-emerald-700 border-emerald-200">
-          Tarification simple et transparente
-        </Badge>
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-          Gratuit pour l&apos;essentiel,
-          <br />
-          <span className="text-emerald-600">Premium pour aller plus loin</span>
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Notre mission est d&apos;aider toutes les familles. C&apos;est pourquoi les fonctions essentielles
-          resteront toujours gratuites.
-        </p>
-      </div>
+    <div
+      className="flex flex-col flex-1"
+      style={{ background: p.bg, color: p.ink }}
+    >
+      <section
+        className="py-16 md:py-20"
+        style={{ background: p.bg, borderBottom: `1px solid ${p.line}` }}
+      >
+        <div className="container mx-auto px-4 max-w-3xl text-center">
+          <div
+            className="text-[11px] font-semibold mb-3 uppercase tracking-wide"
+            style={{ color: p.accent }}
+          >
+            Tarification
+          </div>
+          <h1
+            className={`${serifClass} text-4xl md:text-5xl font-medium mb-5 leading-[1.05]`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Gratuit pour l&apos;essentiel,{" "}
+            <em className="italic" style={{ color: p.accent }}>
+              Premium
+            </em>{" "}
+            pour aller plus loin
+          </h1>
+          <p className="text-lg" style={{ color: p.ink2 }}>
+            Notre mission est d&apos;aider toutes les familles. Les fonctions
+            essentielles resteront toujours gratuites.
+          </p>
+        </div>
+      </section>
 
-      {/* Pricing Cards */}
-      <div className="container mx-auto px-4 pb-16">
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan) => (
-            <Card
-              key={plan.name}
-              className={`relative ${plan.highlight ? "border-emerald-500 border-2 shadow-xl" : "border-gray-200"}`}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-emerald-500 text-white px-4 py-1">
-                    {plan.badge}
-                  </Badge>
-                </div>
-              )}
+      <section className="py-12" style={{ background: p.bg2 }}>
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="grid md:grid-cols-2 gap-6">
+            {plans.map((plan) => (
+              <div
+                key={plan.name}
+                className="relative rounded-3xl p-6 md:p-8"
+                style={{
+                  background: p.card,
+                  border: `${plan.highlight ? "2px" : "1px"} solid ${
+                    plan.highlight ? p.accent : p.line
+                  }`,
+                }}
+              >
+                {plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{ background: p.accent, color: "#fff" }}
+                    >
+                      {plan.badge}
+                    </span>
+                  </div>
+                )}
 
-              <CardHeader className="text-center pb-2">
-                <div className="flex justify-center mb-2">
-                  {plan.highlight ? (
-                    <div className="p-3 bg-emerald-100 rounded-full">
-                      <Crown className="h-6 w-6 text-emerald-600" />
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-gray-100 rounded-full">
-                      <Heart className="h-6 w-6 text-gray-600" />
-                    </div>
-                  )}
-                </div>
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-gray-900">{plan.price}€</span>
-                  <span className="text-gray-500 ml-1">{plan.period}</span>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-6">
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      {feature.included ? (
-                        <Check className={`h-5 w-5 mt-0.5 flex-shrink-0 ${feature.highlight ? "text-emerald-500" : "text-gray-400"}`} />
+                <div className="text-center pb-2">
+                  <div className="flex justify-center mb-3">
+                    <div
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full"
+                      style={{
+                        background: plan.highlight ? p.bg2 : p.bg2,
+                        color: plan.highlight ? p.accent : p.ink2,
+                      }}
+                    >
+                      {plan.highlight ? (
+                        <Crown className="h-5 w-5" />
                       ) : (
-                        <X className="h-5 w-5 mt-0.5 flex-shrink-0 text-gray-300" />
+                        <Heart className="h-5 w-5" />
                       )}
-                      <span className={`text-sm ${feature.included ? (feature.highlight ? "text-gray-900 font-medium" : "text-gray-700") : "text-gray-400"}`}>
+                    </div>
+                  </div>
+                  <h2
+                    className={`${serifClass} text-2xl font-medium`}
+                    style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                  >
+                    {plan.name}
+                  </h2>
+                  <p className="text-sm mt-1 mb-4" style={{ color: p.ink2 }}>
+                    {plan.description}
+                  </p>
+
+                  <div className="mb-6">
+                    <span
+                      className={`${serifClass} text-4xl font-medium`}
+                      style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                    >
+                      {plan.price}€
+                    </span>
+                    <span className="ml-1 text-sm" style={{ color: p.ink2 }}>
+                      {plan.period}
+                    </span>
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5 mb-6">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      {feature.included ? (
+                        <Check
+                          className="h-4 w-4 mt-0.5 flex-shrink-0"
+                          style={{
+                            color: feature.highlight ? SAGE : p.ink2,
+                          }}
+                        />
+                      ) : (
+                        <X
+                          className="h-4 w-4 mt-0.5 flex-shrink-0"
+                          style={{ color: p.line2 }}
+                        />
+                      )}
+                      <span
+                        className="text-sm"
+                        style={{
+                          color: feature.included
+                            ? feature.highlight
+                              ? p.ink
+                              : p.ink
+                            : p.ink2,
+                          fontWeight: feature.highlight ? 500 : 400,
+                        }}
+                      >
                         {feature.text}
                       </span>
                     </li>
                   ))}
                 </ul>
 
-                <Link href={plan.ctaHref}>
-                  <Button
-                    className={`w-full ${plan.highlight ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}
-                    variant={plan.highlight ? "default" : "outline"}
-                    disabled={plan.ctaDisabled}
-                  >
-                    {plan.cta}
-                  </Button>
+                <Link
+                  href={plan.ctaHref}
+                  aria-disabled={plan.ctaDisabled}
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+                  style={{
+                    background: plan.highlight ? p.ink : "transparent",
+                    color: plan.highlight ? p.bg : p.ink,
+                    border: `1px solid ${
+                      plan.highlight ? p.ink : p.line2
+                    }`,
+                    opacity: plan.ctaDisabled ? 0.5 : 1,
+                    pointerEvents: plan.ctaDisabled ? "none" : "auto",
+                  }}
+                >
+                  {plan.cta}
                 </Link>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Trust Section */}
-      <div className="bg-gray-50 py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Pourquoi c&apos;est gratuit ?
+      <section className="py-14" style={{ background: p.bg }}>
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center mb-10">
+            <h2
+              className={`${serifClass} text-2xl md:text-3xl font-medium mb-2`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Pourquoi c&apos;est{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                gratuit
+              </em>{" "}
+              ?
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Nous croyons que chaque parent merite d&apos;avoir acces a des informations fiables
-              pour proteger ses enfants, quel que soit son budget.
+            <p className="max-w-2xl mx-auto" style={{ color: p.ink2 }}>
+              Chaque parent mérite d&apos;avoir accès à des informations
+              fiables pour protéger ses enfants, quel que soit son budget.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="inline-flex p-4 bg-emerald-100 rounded-full mb-4">
-                <Heart className="h-6 w-6 text-emerald-600" />
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                icon: Heart,
+                title: "Mission sociale",
+                body: "Aider les familles est notre priorité, pas les profits.",
+              },
+              {
+                icon: Users,
+                title: "Communauté",
+                body: "Les membres Premium financent l'accès gratuit pour tous.",
+              },
+              {
+                icon: Sparkles,
+                title: "Pas de surprise",
+                body: "Les fonctions gratuites le resteront. Promis.",
+              },
+            ].map((it) => (
+              <div
+                key={it.title}
+                className="text-center rounded-2xl p-6"
+                style={{ background: p.card, border: `1px solid ${p.line}` }}
+              >
+                <div
+                  className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
+                  style={{ background: p.bg2, color: p.accent2 }}
+                >
+                  <it.icon className="h-5 w-5" />
+                </div>
+                <h3
+                  className={`${serifClass} text-lg font-medium mb-2`}
+                  style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                >
+                  {it.title}
+                </h3>
+                <p className="text-sm" style={{ color: p.ink2 }}>
+                  {it.body}
+                </p>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Mission sociale</h3>
-              <p className="text-sm text-gray-600">
-                Aider les familles est notre priorite, pas les profits.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex p-4 bg-emerald-100 rounded-full mb-4">
-                <Users className="h-6 w-6 text-emerald-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Communaute</h3>
-              <p className="text-sm text-gray-600">
-                Les membres Premium financent l&apos;acces gratuit pour tous.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex p-4 bg-emerald-100 rounded-full mb-4">
-                <Sparkles className="h-6 w-6 text-emerald-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Pas de surprise</h3>
-              <p className="text-sm text-gray-600">
-                Les fonctions gratuites le resteront. Promis.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* FAQ */}
-      <div className="container mx-auto px-4 py-16">
-        <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
-          Questions frequentes
-        </h2>
-
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Le plan gratuit est-il vraiment gratuit pour toujours ?
-            </h3>
-            <p className="text-gray-600">
-              Oui. Nous nous engageons a maintenir l&apos;acces gratuit aux avis, evaluations et
-              recommandations par age. C&apos;est le coeur de notre mission.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Quand le plan Premium sera-t-il disponible ?
-            </h3>
-            <p className="text-gray-600">
-              Nous travaillons sur les fonctionnalites Premium. Inscrivez-vous pour etre
-              averti du lancement et beneficier d&apos;une offre speciale early adopter.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-gray-900 mb-2">
-              Puis-je annuler mon abonnement Premium a tout moment ?
-            </h3>
-            <p className="text-gray-600">
-              Absolument. Aucun engagement, vous pouvez annuler quand vous voulez et
-              continuer a utiliser toutes les fonctions gratuites.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="bg-emerald-600 py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Pret a faire les bons choix pour votre famille ?
+      <section className="py-14" style={{ background: p.bg2 }}>
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2
+            className={`${serifClass} text-2xl md:text-3xl font-medium mb-6 text-center`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Questions fréquentes
           </h2>
-          <p className="text-emerald-100 mb-6 max-w-xl mx-auto">
+          <div className="space-y-4">
+            {[
+              {
+                q: "Le plan gratuit est-il vraiment gratuit pour toujours ?",
+                a: "Oui. Nous nous engageons à maintenir l'accès gratuit aux avis, évaluations et recommandations par âge. C'est le cœur de notre mission.",
+              },
+              {
+                q: "Quand le plan Premium sera-t-il disponible ?",
+                a: "Nous travaillons sur les fonctionnalités Premium. Inscrivez-vous pour être averti du lancement et bénéficier d'une offre early adopter.",
+              },
+              {
+                q: "Puis-je annuler mon abonnement Premium à tout moment ?",
+                a: "Absolument. Aucun engagement, vous pouvez annuler quand vous voulez et continuer à utiliser toutes les fonctions gratuites.",
+              },
+            ].map((f) => (
+              <div
+                key={f.q}
+                className="rounded-2xl p-5"
+                style={{ background: p.card, border: `1px solid ${p.line}` }}
+              >
+                <h3
+                  className="font-semibold mb-2 text-sm md:text-base"
+                  style={{ color: p.ink }}
+                >
+                  {f.q}
+                </h3>
+                <p className="text-sm" style={{ color: p.ink2 }}>
+                  {f.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section
+        className="py-12 text-center"
+        style={{ background: p.ink, color: p.bg }}
+      >
+        <div className="container mx-auto px-4 max-w-2xl">
+          <h2
+            className={`${serifClass} text-2xl md:text-3xl font-medium mb-3`}
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            Prêt à faire les bons choix pour votre famille ?
+          </h2>
+          <p className="mb-6 max-w-xl mx-auto opacity-70">
             Rejoignez des milliers de parents qui utilisent Totem Avisé.
           </p>
-          <Link href="/inscription">
-            <Button size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50">
-              Commencer gratuitement
-            </Button>
+          <Link
+            href="/inscription"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+            style={{ background: p.bg, color: p.ink }}
+          >
+            Commencer gratuitement
           </Link>
         </div>
-      </div>
+      </section>
     </div>
   )
 }
