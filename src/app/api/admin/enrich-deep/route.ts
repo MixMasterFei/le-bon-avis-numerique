@@ -4,7 +4,10 @@ import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import OpenAI from "openai"
 
-export const maxDuration = 60
+// Each item runs a web-search-enabled gpt-4o call (~15-30 s) plus Prisma
+// writes. Default batch of 3 = ~60-90 s, which blew past the 60 s ceiling.
+// Bumped to 300 s (5 min, Vercel Pro) to match the CNC import endpoint.
+export const maxDuration = 300
 
 // Pass 2: Deep enrichment — refines low-confidence items from Pass 1 using
 // a sharper model with web search. Model: gpt-4o (noticeably sharper than

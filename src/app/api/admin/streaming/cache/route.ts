@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
 
-export const maxDuration = 60
+// Per item: TMDB fetch + Prisma deleteMany + create(s). At 30 items
+// this was brushing the 60 s timeout under load. Bumped to 300 s
+// matching the other heavy admin jobs (CNC, enrich-deep).
+export const maxDuration = 300
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 const TMDB_BASE_URL = "https://api.themoviedb.org/3"
