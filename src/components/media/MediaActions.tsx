@@ -3,9 +3,11 @@
 import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { Heart, Bookmark, Loader2, MessageSquare, Share2, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const SAGE = "#5C8A5C"
 
 interface MediaActionsProps {
   mediaId: string
@@ -14,7 +16,50 @@ interface MediaActionsProps {
   onReviewClick?: () => void
 }
 
-export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClick }: MediaActionsProps) {
+interface PillButtonProps {
+  onClick?: () => void
+  disabled?: boolean
+  active?: boolean
+  activeColor?: string
+  children: React.ReactNode
+}
+
+function PillButton({
+  onClick,
+  disabled,
+  active,
+  activeColor,
+  children,
+}: PillButtonProps) {
+  const p = APERCU_PALETTE
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all disabled:opacity-60"
+      style={{
+        background: active
+          ? "rgba(255,255,255,0.95)"
+          : "rgba(255,255,255,0.12)",
+        color: active ? activeColor || p.ink : "#fff",
+        border: `1px solid ${
+          active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)"
+        }`,
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function MediaActions({
+  mediaId,
+  mediaTitle,
+  className = "",
+  onReviewClick,
+}: MediaActionsProps) {
+  const p = APERCU_PALETTE
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [isFavorite, setIsFavorite] = useState(false)
@@ -29,12 +74,11 @@ export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClic
     const url = window.location.href
     const title = mediaTitle || document.title
     const text = `${title} — Avis et recommandation d'âge sur Totem Avisé`
-
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url })
       } catch {
-        // User cancelled or share failed — ignore
+        // ignore
       }
     } else {
       await navigator.clipboard.writeText(url)
@@ -48,15 +92,15 @@ export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClic
       try {
         const [favRes, watchRes] = await Promise.all([
           fetch(`/api/user/favorite?mediaId=${mediaId}`),
-          session?.user ? fetch(`/api/user/watchlist?mediaId=${mediaId}`) : Promise.resolve(null)
+          session?.user
+            ? fetch(`/api/user/watchlist?mediaId=${mediaId}`)
+            : Promise.resolve(null),
         ])
-
         if (favRes.ok) {
           const favData = await favRes.json()
           setFavoriteCount(favData.count || 0)
           setIsFavorite(favData.isFavorite || false)
         }
-
         if (watchRes?.ok) {
           const watchData = await watchRes.json()
           setInWatchlist(watchData.inWatchlist || false)
@@ -67,34 +111,27 @@ export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClic
         setInitialLoading(false)
       }
     }
-
     fetchStatus()
   }, [mediaId, session])
 
   const handleFavorite = async () => {
     if (!session?.user) return
-
     setLoadingFavorite(true)
-    // Optimistic update
-    const waseFavorite = isFavorite
+    const wasFavorite = isFavorite
     setIsFavorite(!isFavorite)
-    setFavoriteCount(prev => waseFavorite ? prev - 1 : prev + 1)
-
+    setFavoriteCount((prev) => (wasFavorite ? prev - 1 : prev + 1))
     try {
       const res = await fetch("/api/user/favorite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaId }),
       })
-
       if (!res.ok) throw new Error("Failed")
-
       const data = await res.json()
       setIsFavorite(data.isFavorite)
     } catch {
-      // Revert on error
-      setIsFavorite(waseFavorite)
-      setFavoriteCount(prev => waseFavorite ? prev + 1 : prev - 1)
+      setIsFavorite(wasFavorite)
+      setFavoriteCount((prev) => (wasFavorite ? prev + 1 : prev - 1))
     } finally {
       setLoadingFavorite(false)
     }
@@ -102,82 +139,69 @@ export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClic
 
   const handleWatchlist = async () => {
     if (!session?.user) return
-
     setLoadingWatchlist(true)
-    // Optimistic update
     const wasInWatchlist = inWatchlist
     setInWatchlist(!inWatchlist)
-
     try {
       const res = await fetch("/api/user/watchlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaId }),
       })
-
       if (!res.ok) throw new Error("Failed")
-
       const data = await res.json()
       setInWatchlist(data.inWatchlist)
     } catch {
-      // Revert on error
       setInWatchlist(wasInWatchlist)
     } finally {
       setLoadingWatchlist(false)
     }
   }
 
-  // Share button — always visible regardless of auth state
   const shareButton = (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleShare}
-      className="gap-1.5 hover:text-emerald-500 hover:border-emerald-200 transition-colors"
-    >
-      {shared ? <Check className="h-4 w-4 text-emerald-500" /> : <Share2 className="h-4 w-4" />}
+    <PillButton onClick={handleShare} active={shared} activeColor={SAGE}>
+      {shared ? (
+        <Check className="h-4 w-4" style={{ color: SAGE }} />
+      ) : (
+        <Share2 className="h-4 w-4" />
+      )}
       <span className="text-xs">{shared ? "Copié !" : "Partager"}</span>
-    </Button>
+    </PillButton>
   )
 
   if (status === "loading" || initialLoading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Button variant="outline" size="sm" disabled className="gap-1.5">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
-        <Button variant="outline" size="sm" disabled className="gap-1.5">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
-        <Button variant="outline" size="sm" disabled className="gap-1.5">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
+        {[0, 1, 2].map((i) => (
+          <PillButton key={i} disabled>
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </PillButton>
+        ))}
         {shareButton}
       </div>
     )
   }
 
-  // Not logged in - show login prompt
   if (status === "unauthenticated") {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
         <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
-          <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-red-500">
+          <PillButton>
             <Heart className="h-4 w-4" />
             <span className="text-xs">{favoriteCount}</span>
-          </Button>
+          </PillButton>
         </Link>
         <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
-          <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-blue-500">
+          <PillButton>
             <Bookmark className="h-4 w-4" />
             <span className="text-xs">À voir</span>
-          </Button>
+          </PillButton>
         </Link>
         <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
-          <Button variant="outline" size="sm" className="gap-1.5 text-gray-400 hover:text-violet-500">
+          <PillButton>
             <MessageSquare className="h-4 w-4" />
             <span className="text-xs">Donner mon avis</span>
-          </Button>
+          </PillButton>
         </Link>
         {shareButton}
       </div>
@@ -186,54 +210,53 @@ export function MediaActions({ mediaId, mediaTitle, className = "", onReviewClic
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <Button
-        variant="outline"
-        size="sm"
+      <PillButton
         onClick={handleFavorite}
         disabled={loadingFavorite}
-        className={`gap-1.5 transition-colors ${
-          isFavorite
-            ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-            : "hover:text-red-500 hover:border-red-200"
-        }`}
+        active={isFavorite}
+        activeColor={p.accent}
       >
         {loadingFavorite ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500" : ""}`} />
+          <Heart
+            className="h-4 w-4"
+            style={{
+              fill: isFavorite ? p.accent : "transparent",
+              color: isFavorite ? p.accent : "currentColor",
+            }}
+          />
         )}
         <span className="text-xs">{favoriteCount}</span>
-      </Button>
+      </PillButton>
 
-      <Button
-        variant="outline"
-        size="sm"
+      <PillButton
         onClick={handleWatchlist}
         disabled={loadingWatchlist}
-        className={`gap-1.5 transition-colors ${
-          inWatchlist
-            ? "bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100"
-            : "hover:text-blue-500 hover:border-blue-200"
-        }`}
+        active={inWatchlist}
+        activeColor={SAGE}
       >
         {loadingWatchlist ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Bookmark className={`h-4 w-4 ${inWatchlist ? "fill-blue-500" : ""}`} />
+          <Bookmark
+            className="h-4 w-4"
+            style={{
+              fill: inWatchlist ? SAGE : "transparent",
+              color: inWatchlist ? SAGE : "currentColor",
+            }}
+          />
         )}
-        <span className="text-xs">{inWatchlist ? "Dans ma liste" : "À voir"}</span>
-      </Button>
+        <span className="text-xs">
+          {inWatchlist ? "Dans ma liste" : "À voir"}
+        </span>
+      </PillButton>
 
       {onReviewClick && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onReviewClick}
-          className="gap-1.5 hover:text-violet-500 hover:border-violet-200 transition-colors"
-        >
+        <PillButton onClick={onReviewClick}>
           <MessageSquare className="h-4 w-4" />
           <span className="text-xs">Donner mon avis</span>
-        </Button>
+        </PillButton>
       )}
 
       {shareButton}
