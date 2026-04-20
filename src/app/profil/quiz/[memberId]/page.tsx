@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { ArrowLeft, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { PreferenceQuiz } from "@/components/profile/PreferenceQuiz"
 import Link from "next/link"
+import { ArrowLeft, Loader2 } from "lucide-react"
+import { ApercuQuiz } from "@/components/home-v2/ApercuQuiz"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface MemberInfo {
   id: string
@@ -21,6 +21,7 @@ export default function QuizPage() {
   const [member, setMember] = useState<MemberInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const p = APERCU_PALETTE
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -59,19 +60,35 @@ export default function QuizPage() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="container mx-auto px-4 py-16 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div
+        className="container mx-auto px-4 py-16 flex justify-center"
+        style={{ background: p.bg }}
+      >
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: p.accent }} />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <p className="text-gray-500 mb-4">{error}</p>
-        <Button asChild variant="outline">
-          <Link href="/profil">Retour au profil</Link>
-        </Button>
+      <div
+        className="container mx-auto px-4 py-16 text-center"
+        style={{ background: p.bg }}
+      >
+        <p className="mb-4" style={{ color: p.ink2 }}>
+          {error}
+        </p>
+        <Link
+          href="/profil"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold"
+          style={{
+            background: "transparent",
+            color: p.ink,
+            border: `1px solid ${p.line2}`,
+          }}
+        >
+          Retour au profil
+        </Link>
       </div>
     )
   }
@@ -79,21 +96,21 @@ export default function QuizPage() {
   if (!member) return null
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
+    <div style={{ background: p.bg }}>
+      <div className="container mx-auto px-4 pt-8">
         <Link
-          href="/profil"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+          href={`/profil/membres/${member.id}`}
+          className="inline-flex items-center gap-1 text-sm hover:opacity-70"
+          style={{ color: p.ink2 }}
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour au profil
+          Retour à {member.name}
         </Link>
       </div>
-
-      <PreferenceQuiz
+      <ApercuQuiz
+        serifClass="font-serif"
         memberId={member.id}
         memberName={member.name}
-        memberEmoji={member.avatarEmoji}
       />
     </div>
   )

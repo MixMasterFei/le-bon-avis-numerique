@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Check, Plus, X } from "lucide-react"
-import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
-import { ApercuNav } from "./ApercuNav"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 const SAGE = "#5C8A5C"
@@ -56,15 +55,18 @@ interface Step {
   subtitle?: string
 }
 
-const STEPS: Step[] = [
-  { id: "genres-like", section: "Ses goûts", title: "Quels genres préfère votre enfant ?", subtitle: "Sélectionnez tout ce qu'il/elle aime regarder." },
-  { id: "genres-dislike", section: "Ses goûts", title: "Y a-t-il des genres à éviter ?", subtitle: "Optionnel — choisissez ceux qu'il/elle n'aime pas." },
-  { id: "sensitivity-scary", section: "Sa sensibilité", title: "Face à une scène effrayante…" },
-  { id: "sensitivity-violence", section: "Sa sensibilité", title: "Face à de la violence ou des bagarres…" },
-  { id: "sensitivity-language", section: "Sa sensibilité", title: "Face à des gros mots ou du langage cru…" },
-  { id: "positive-content", section: "Ce qui compte", title: "Quels contenus positifs cherchez-vous ?", subtitle: "Indiquez l'importance de chaque dimension." },
-  { id: "avoid-topics", section: "Sujets à éviter", title: "Y a-t-il des thèmes à exclure ?", subtitle: "Optionnel — sélectionnez ce qui ne convient pas à votre foyer." },
-]
+function buildSteps(name: string | undefined): Step[] {
+  const who = name ? name : "votre enfant"
+  return [
+    { id: "genres-like", section: "Ses goûts", title: `Quels genres préfère ${who} ?`, subtitle: "Sélectionnez tout ce qu'il/elle aime regarder." },
+    { id: "genres-dislike", section: "Ses goûts", title: "Y a-t-il des genres à éviter ?", subtitle: "Optionnel — choisissez ceux qu'il/elle n'aime pas." },
+    { id: "sensitivity-scary", section: "Sa sensibilité", title: "Face à une scène effrayante…" },
+    { id: "sensitivity-violence", section: "Sa sensibilité", title: "Face à de la violence ou des bagarres…" },
+    { id: "sensitivity-language", section: "Sa sensibilité", title: "Face à des gros mots ou du langage cru…" },
+    { id: "positive-content", section: "Ce qui compte", title: "Quels contenus positifs cherchez-vous ?", subtitle: "Indiquez l'importance de chaque dimension." },
+    { id: "avoid-topics", section: "Sujets à éviter", title: "Y a-t-il des thèmes à exclure ?", subtitle: "Optionnel — sélectionnez ce qui ne convient pas à votre foyer." },
+  ]
+}
 
 interface QuizState {
   favoriteGenres: string[]
@@ -90,18 +92,92 @@ const INITIAL: QuizState = {
   avoidTopics: [],
 }
 
-export function ApercuQuiz({ serifClass }: { serifClass: string }) {
+interface ApercuQuizProps {
+  serifClass: string
+  memberId?: string
+  memberName?: string
+}
+
+export function ApercuQuiz({ serifClass, memberId, memberName }: ApercuQuizProps) {
   const p = APERCU_PALETTE
+  const router = useRouter()
   const [stepIdx, setStepIdx] = useState(0)
   const [state, setState] = useState<QuizState>(INITIAL)
   const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(!!memberId)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
+  const STEPS = buildSteps(memberName)
   const step = STEPS[stepIdx]
   const isLast = stepIdx === STEPS.length - 1
 
+  useEffect(() => {
+    if (!memberId) {
+      setLoading(false)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/user/family/${memberId}/preferences`)
+        if (!res.ok) return
+        const data = await res.json()
+        const m = data.member
+        if (m && !cancelled) {
+          setState({
+            favoriteGenres: m.favoriteGenres || [],
+            dislikedGenres: m.dislikedGenres || [],
+            sensitivityScary: m.sensitivityScary ?? 2,
+            sensitivityViolence: m.sensitivityViolence ?? 2,
+            sensitivityLanguage: m.sensitivityLanguage ?? 2,
+            preferPositiveMessages: m.preferPositiveMessages ?? 1,
+            preferRoleModels: m.preferRoleModels ?? 1,
+            preferEducational: m.preferEducational ?? 1,
+            avoidTopics: m.avoidTopics || [],
+          })
+        }
+      } catch {
+        // Use defaults if fetch fails
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [memberId])
+
+  async function finish() {
+    if (!memberId) {
+      setDone(true)
+      return
+    }
+    setSaveError(null)
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/user/family/${memberId}/preferences`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...state, useCustomSettings: true }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        setSaveError(data?.error || "Erreur lors de l'enregistrement")
+        setSaving(false)
+        return
+      }
+      setDone(true)
+      router.refresh()
+    } catch {
+      setSaveError("Une erreur est survenue")
+      setSaving(false)
+    }
+  }
+
   function next() {
     if (isLast) {
-      setDone(true)
+      finish()
       return
     }
     setStepIdx((i) => Math.min(STEPS.length - 1, i + 1))
@@ -113,28 +189,39 @@ export function ApercuQuiz({ serifClass }: { serifClass: string }) {
   function toggleArr(field: "favoriteGenres" | "dislikedGenres" | "avoidTopics", value: string) {
     setState((s) => {
       const list = s[field]
-      const next = list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
-      // For genres: if user picks a "like", remove from "dislikes" and vice versa
+      const nextList = list.includes(value) ? list.filter((v) => v !== value) : [...list, value]
       if (field === "favoriteGenres") {
-        return { ...s, favoriteGenres: next, dislikedGenres: s.dislikedGenres.filter((g) => g !== value) }
+        return { ...s, favoriteGenres: nextList, dislikedGenres: s.dislikedGenres.filter((g) => g !== value) }
       }
       if (field === "dislikedGenres") {
-        return { ...s, dislikedGenres: next, favoriteGenres: s.favoriteGenres.filter((g) => g !== value) }
+        return { ...s, dislikedGenres: nextList, favoriteGenres: s.favoriteGenres.filter((g) => g !== value) }
       }
-      return { ...s, avoidTopics: next }
+      return { ...s, avoidTopics: nextList }
     })
+  }
+
+  if (loading) {
+    return (
+      <div
+        className="flex flex-col min-h-[60vh] items-center justify-center"
+        style={{ background: p.bg, color: p.ink }}
+      >
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: p.accent }} />
+      </div>
+    )
   }
 
   return (
     <div
-      className="flex flex-col min-h-screen overflow-x-hidden"
+      className="flex flex-col flex-1"
       style={{ background: p.bg, color: p.ink }}
     >
-      <ApercuPreviewBanner />
-      <ApercuNav />
-
       {done ? (
-        <DoneScreen serifClass={serifClass} />
+        <DoneScreen
+          serifClass={serifClass}
+          memberId={memberId}
+          memberName={memberName}
+        />
       ) : (
         <section className="container mx-auto px-4 md:px-8 py-10 md:py-16 max-w-2xl">
           <header className="mb-8">
@@ -206,11 +293,25 @@ export function ApercuQuiz({ serifClass }: { serifClass: string }) {
             )}
           </div>
 
+          {saveError && (
+            <div
+              className="rounded-xl px-3.5 py-2.5 mb-4 text-sm"
+              style={{
+                background: "rgba(209, 106, 74, 0.12)",
+                border: `1px solid ${p.accent}`,
+                color: p.ink,
+              }}
+              role="alert"
+            >
+              {saveError}
+            </div>
+          )}
+
           <footer className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={prev}
-              disabled={stepIdx === 0}
+              disabled={stepIdx === 0 || saving}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ color: p.ink, border: `1px solid ${p.line2}`, background: "transparent" }}
             >
@@ -223,14 +324,26 @@ export function ApercuQuiz({ serifClass }: { serifClass: string }) {
             <button
               type="button"
               onClick={next}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+              disabled={saving}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
               style={{
                 background: isLast ? p.accent : p.ink,
                 color: isLast ? "#fff" : p.bg,
               }}
             >
-              {isLast ? "Terminer" : "Suivant"}
-              {isLast ? <Check className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isLast ? (
+                <>
+                  Terminer
+                  <Check className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  Suivant
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </footer>
         </section>
@@ -508,8 +621,17 @@ function AvoidTopics({
   )
 }
 
-function DoneScreen({ serifClass }: { serifClass: string }) {
+function DoneScreen({
+  serifClass,
+  memberId,
+  memberName,
+}: {
+  serifClass: string
+  memberId?: string
+  memberName?: string
+}) {
   const p = APERCU_PALETTE
+  const backHref = memberId ? `/profil/membres/${memberId}` : "/profil"
   return (
     <section className="container mx-auto px-4 md:px-8 py-16 md:py-24 max-w-2xl">
       <div
@@ -526,23 +648,23 @@ function DoneScreen({ serifClass }: { serifClass: string }) {
           className={`${serifClass} text-3xl md:text-4xl font-medium mb-3`}
           style={{ color: p.ink, letterSpacing: "-0.02em" }}
         >
-          Profil prêt !
+          Profil prêt{memberName ? ` pour ${memberName}` : ""} !
         </h1>
         <p className="text-base mb-8 max-w-md mx-auto" style={{ color: p.ink2 }}>
           Le quiz est complété. Vos préférences orienteront chaque
           recommandation : les films seront filtrés selon la sensibilité, l&apos;âge
-          et les goûts de votre enfant.
+          et les goûts de{memberName ? ` ${memberName}` : " votre enfant"}.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link
-            href="/apercu"
+            href={backHref}
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
             style={{ background: p.ink, color: p.bg }}
           >
-            Retour à l&apos;aperçu
+            Retour au profil
           </Link>
           <Link
-            href="/apercufilmslist"
+            href="/films"
             className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
             style={{ background: "transparent", color: p.ink, border: `1px solid ${p.line2}` }}
           >
@@ -550,9 +672,6 @@ function DoneScreen({ serifClass }: { serifClass: string }) {
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-        <p className="text-xs mt-6" style={{ color: p.ink2 }}>
-          Aperçu — vos réponses ne sont pas enregistrées.
-        </p>
       </div>
     </section>
   )
