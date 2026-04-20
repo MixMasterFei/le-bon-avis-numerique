@@ -2,13 +2,14 @@ import type { Metadata } from "next"
 import { Inter, Poppins } from "next/font/google"
 import localFont from "next/font/local"
 import "./globals.css"
-import { Header } from "@/components/layout/Header"
-import { Footer } from "@/components/layout/Footer"
+import { SiteHeader } from "@/components/layout/SiteHeader"
+import { SiteFooter } from "@/components/layout/SiteFooter"
 import { CookieConsent } from "@/components/CookieConsent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
 import { Analytics } from "@vercel/analytics/react"
+import { fraunces } from "@/components/home-v2/apercuFont"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -77,7 +78,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable}`}>
+    <html lang="fr" className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable} ${fraunces.variable}`}>
       <head>
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
@@ -139,9 +140,9 @@ export default function RootLayout({
         <SessionProvider>
           <SettingsProvider>
             <ScrollRestoration />
-            <Header />
+            <SiteHeader />
             <main className="flex-1">{children}</main>
-            <Footer />
+            <SiteFooter />
             <CookieConsent />
           </SettingsProvider>
         </SessionProvider>
