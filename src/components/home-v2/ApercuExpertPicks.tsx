@@ -57,8 +57,7 @@ export function ApercuExpertPicks({ serifClass }: { serifClass: string }) {
             Nos{" "}
             <em className="italic" style={{ color: p.accent }}>
               coups de cœur
-            </em>{" "}
-            de la semaine
+            </em>
           </h2>
         </div>
         <button

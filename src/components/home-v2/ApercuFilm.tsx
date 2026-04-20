@@ -421,7 +421,7 @@ function FilmHero({
             </div>
 
             <h1
-              className={`${serifClass} text-3xl md:text-5xl lg:text-6xl font-medium leading-[1.05] m-0`}
+              className={`${serifClass} text-[28px] md:text-4xl lg:text-5xl font-medium leading-[1.05] m-0`}
               style={{ letterSpacing: "-0.02em", color: p.ink }}
             >
               {media.title}
@@ -510,7 +510,7 @@ function FilmHero({
 
             {media.synopsisFr && (
               <p
-                className="mt-6 text-base md:text-lg leading-relaxed max-w-2xl"
+                className="mt-6 text-[15px] md:text-base leading-relaxed max-w-2xl"
                 style={{ color: p.ink }}
               >
                 {media.synopsisFr}
