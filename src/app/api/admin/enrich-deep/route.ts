@@ -6,8 +6,9 @@ import OpenAI from "openai"
 
 export const maxDuration = 60
 
-// Pass 2: Deep enrichment using GPT-5 with web search
-// Targets low-confidence items flagged by Pass 1, verifies and corrects metrics
+// Pass 2: Deep enrichment — refines low-confidence items from Pass 1 using
+// a sharper model with web search. Model: gpt-4o (noticeably sharper than
+// the mini used in Pass 1; cost negligible at ~3 items/day).
 
 const VALID_TOPICS = [
   "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
@@ -164,7 +165,7 @@ Reponds UNIQUEMENT avec un JSON valide:
   try {
     // Use Responses API with web search tool
     const response = await openai.responses.create({
-      model: "gpt-5",
+      model: "gpt-4o",
       tools: [{ type: "web_search_preview" as const }],
       input: prompt,
       max_output_tokens: 1500,

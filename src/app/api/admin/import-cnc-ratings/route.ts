@@ -50,17 +50,38 @@ function toSentenceCase(title: string): string {
   })
 }
 
-// Try fetching from CNC API with a specific query
+const CNC_FETCH_TIMEOUT_MS = 8000
+const CNC_INTER_REQUEST_DELAY_MS = 200
+
+// Try fetching from CNC API with a specific query.
+// Wraps the underlying fetch with: 8s timeout, one retry on 429/5xx, and
+// a small inter-request delay in the caller so we don't blow past
+// tabular-api.data.gouv.fr's rate limits.
 async function fetchCNC(param: string, value: string, pageSize = 10): Promise<CNCRecord[]> {
   const url = `${CNC_API_BASE}?page=1&page_size=${pageSize}&${param}=${encodeURIComponent(value)}`
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return []
-    const json = await res.json()
-    return parseCNCRows(json.data || [])
-  } catch {
-    return []
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(CNC_FETCH_TIMEOUT_MS) })
+      if (res.ok) {
+        const json = await res.json()
+        await sleep(CNC_INTER_REQUEST_DELAY_MS)
+        return parseCNCRows(json.data || [])
+      }
+      // Retry once on rate-limit or server error; fall through on other codes.
+      if ((res.status === 429 || res.status >= 500) && attempt === 0) {
+        await sleep(1000)
+        continue
+      }
+      return []
+    } catch {
+      if (attempt === 0) {
+        await sleep(1000)
+        continue
+      }
+      return []
+    }
   }
+  return []
 }
 
 // Query CNC API for a specific movie title — tries multiple case variants
@@ -169,7 +190,11 @@ export async function POST(request: Request) {
     const url = new URL(request.url)
     const dryRun = url.searchParams.get("dry") === "true"
     const onlyMissing = url.searchParams.get("only_missing") !== "false"
-    const limit = parseInt(url.searchParams.get("limit") || "30") // small batches for Vercel 60s limit
+    // 15 items × up to 5 fetches/item = up to 75 HTTP calls per run, well
+    // under data.gouv.fr's rate ceiling after the 200ms inter-request
+    // delay added in fetchCNC. Safer than the old 30-item default which
+    // pushed us into 429 territory.
+    const limit = parseInt(url.searchParams.get("limit") || "15")
     const offset = parseInt(url.searchParams.get("offset") || "0")
 
     // Get DB movies to match
