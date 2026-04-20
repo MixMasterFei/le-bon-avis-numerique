@@ -166,7 +166,9 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
       where: { reaction: "LOVED", createdAt: { gte: week } },
       _count: { _all: true },
       orderBy: { _count: { mediaId: "desc" } },
-      take: 4,
+      // Grab a larger pool than needed so the TMDB-quality filter
+      // below can drop niche items and still leave 4 strong picks.
+      take: 16,
     }).catch(() => []),
     prisma.mediaReaction.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
     prisma.review.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
@@ -188,16 +190,27 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
 
   const recentReleases = releaseRows.map((r) => rowToMediaCard(r as MediaRow))
 
-  // Hydrate the loved media items with their data + count
+  // Hydrate the loved media items with their data + count.
+  // TMDB quality gate (≥ 6.5 rating, ≥ 200 votes) OR GAME exemption:
+  // games don't carry tmdbRating so they'd otherwise always fail the
+  // filter. The community LOVED signal already adds one layer of
+  // quality — this just prevents a niche one-off from surfacing.
   const lovedIds = lovedGrouped.map((g) => g.mediaId)
   const lovedMediaRows =
     lovedIds.length > 0
       ? await prisma.mediaItem.findMany({
-          where: { id: { in: lovedIds } },
+          where: {
+            id: { in: lovedIds },
+            OR: [
+              { type: "GAME" },
+              { tmdbRating: { gte: 6.5 }, tmdbVoteCount: { gte: 200 } },
+            ],
+          },
           select: mediaCardSelect,
         })
       : []
   const lovedById = new Map(lovedMediaRows.map((m) => [m.id, m]))
+  // Preserve the LOVED-count ordering from groupBy, then cap at 4.
   const topLoved: LovedMedia[] = lovedGrouped
     .map((g) => {
       const m = lovedById.get(g.mediaId)
@@ -205,6 +218,7 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
       return { ...rowToMediaCard(m as MediaRow), loveCount: g._count._all }
     })
     .filter((x): x is LovedMedia => x !== null)
+    .slice(0, 4)
 
   return {
     heroStory: hero,

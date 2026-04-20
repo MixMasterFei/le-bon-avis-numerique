@@ -33,12 +33,22 @@ export async function GET(request: NextRequest) {
           },
           OR: [
             {
+              // Movies/TV: hard TMDB quality gate so hero cards always
+              // read as well-received titles (not niche or unrated).
+              // Thresholds are intentionally stricter than the site-wide
+              // "Featured" bar (6.5 / 200) since these cards are the
+              // face of the aperçu page.
               type: { in: ["MOVIE", "TV"] },
               dataQualityScore: { gte: 70 },
               expertAgeRec: { not: null, lte: 12 },
               originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] },
+              tmdbRating: { gte: 7.0 },
+              tmdbVoteCount: { gte: 500 },
             },
             {
+              // Games stay on a dataQualityScore gate — IGDB's ratings
+              // aren't stored in tmdbRating, so applying the TMDB filter
+              // would wipe every game from the pool.
               type: "GAME",
               expertAgeRec: { not: null, lte: 12 },
               dataQualityScore: { gte: 75 },
