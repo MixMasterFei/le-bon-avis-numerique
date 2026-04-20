@@ -6,19 +6,19 @@ import { Sparkles, Sliders, User, MoreVertical, Edit2, Trash2, Heart, BarChart3 
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { CompletionMeter } from "./CompletionMeter"
 import { MemberPreferencesModal } from "./MemberPreferencesModal"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn, formatAgeFromBirthYear } from "@/lib/utils"
+import { formatAgeFromBirthYear } from "@/lib/utils"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import type { MediaType } from "@/lib/types"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const SAGE = "#5C8A5C"
 
 interface FamilyMemberCardMember {
   id: string
@@ -70,19 +70,20 @@ interface FamilyMemberCardProps {
 }
 
 const SENSITIVITY_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: "Libre", color: "bg-emerald-200" },
-  1: { label: "Modéré", color: "bg-amber-200" },
-  2: { label: "Sensible", color: "bg-orange-200" },
-  3: { label: "Strict", color: "bg-red-200" },
+  0: { label: "Libre", color: "#B8D89A" },
+  1: { label: "Modéré", color: "#F8D775" },
+  2: { label: "Sensible", color: "#E8A87C" },
+  3: { label: "Strict", color: "#D16A4A" },
 }
 
 export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardProps) {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [topRec, setTopRec] = useState<TopRec | null>(null)
 
   const lovedCount = member.reactions.filter((r) => r.reaction === "LOVED").length
 
-  // Aggregate sensitivity (average of 5 values)
   const avgSensitivity = Math.round(
     ((member.sensitivityViolence ?? 2) +
       (member.sensitivityScary ?? 2) +
@@ -92,7 +93,6 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
   )
   const sensitivityInfo = SENSITIVITY_LABELS[avgSensitivity] ?? SENSITIVITY_LABELS[2]
 
-  // Completion percentage (quick calc matching CompletionMeter logic)
   const completionPercent = [
     member.birthYear !== null ? 10 : 0,
     (member.avatarStyle != null || member.avatarEmoji !== "👧") ? 5 : 0,
@@ -105,9 +105,9 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
     (member.interests?.length ?? 0) > 0 ? 15 : 0,
   ].reduce((a, b) => a + b, 0)
 
-  const ringColor = completionPercent >= 80 ? "green" : completionPercent >= 50 ? "amber" : "red"
+  const ringColor: "green" | "amber" | "red" =
+    completionPercent >= 80 ? "green" : completionPercent >= 50 ? "amber" : "red"
 
-  // Lazy-load top recommendation
   useEffect(() => {
     if (member._count.reactions < 1) return
     const controller = new AbortController()
@@ -131,25 +131,33 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-1 h-full flex flex-col">
-        {/* Context menu */}
+      <div
+        className="group relative overflow-hidden transition-all duration-200 hover:-translate-y-1 h-full flex flex-col rounded-2xl"
+        style={{
+          background: p.card,
+          border: `1px solid ${p.line}`,
+          boxShadow: `0 2px 8px ${p.line}`,
+        }}
+      >
         <div className="absolute top-3 right-3 z-10">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+              <button
+                className="h-7 w-7 p-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-md inline-flex items-center justify-center"
+                style={{ color: p.ink2 }}
               >
                 <MoreVertical className="h-4 w-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={onEdit}>
                 <Edit2 className="h-3.5 w-3.5 mr-2" />
                 Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-600">
+              <DropdownMenuItem
+                onClick={onDelete}
+                style={{ color: p.accent }}
+              >
                 <Trash2 className="h-3.5 w-3.5 mr-2" />
                 Supprimer
               </DropdownMenuItem>
@@ -157,8 +165,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
           </DropdownMenu>
         </div>
 
-        <CardContent className="p-5 flex flex-col flex-1">
-          {/* Header: Avatar + Name + Age */}
+        <div className="p-5 flex flex-col flex-1">
           <div className="flex flex-col items-center text-center mb-4">
             <MemberAvatar
               avatarStyle={member.avatarStyle}
@@ -167,15 +174,21 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
               avatarEmoji={member.avatarEmoji}
               name={member.name}
               size={64}
-              ring={ringColor as "green" | "amber" | "red"}
+              ring={ringColor}
             />
-            <h3 className="font-bold text-gray-900 mt-2">{member.name}</h3>
+            <h3
+              className={`${serifClass} font-medium mt-2 text-lg`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              {member.name}
+            </h3>
             {member.birthYear && (
-              <span className="text-xs text-gray-500">{formatAgeFromBirthYear(member.birthYear, member.birthMonth)}</span>
+              <span className="text-xs" style={{ color: p.ink2 }}>
+                {formatAgeFromBirthYear(member.birthYear, member.birthMonth)}
+              </span>
             )}
           </div>
 
-          {/* Completion bar (compact) */}
           <CompletionMeter
             member={{
               birthYear: member.birthYear,
@@ -195,58 +208,66 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
             compact
           />
 
-          {/* Preferences at a glance */}
           <div className="mt-3 space-y-2">
-            {/* Favorite genres */}
             {(member.favoriteGenres?.length ?? 0) > 0 && (
               <div className="flex flex-wrap gap-1">
                 {member.favoriteGenres!.slice(0, 3).map((genre) => (
-                  <Badge key={genre} variant="secondary" className="text-[10px] px-1.5 py-0 bg-violet-100 text-violet-700">
+                  <span
+                    key={genre}
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                    style={{ background: p.bg2, color: p.ink }}
+                  >
                     {genre}
-                  </Badge>
+                  </span>
                 ))}
                 {member.favoriteGenres!.length > 3 && (
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-100 text-gray-500">
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                    style={{ background: p.bg2, color: p.ink2 }}
+                  >
                     +{member.favoriteGenres!.length - 3}
-                  </Badge>
+                  </span>
                 )}
               </div>
             )}
 
-            {/* Sensitivity indicator */}
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5">
                 {[0, 1, 2, 3].map((level) => (
                   <div
                     key={level}
-                    className={cn(
-                      "w-2.5 h-2.5 rounded-full",
-                      level <= avgSensitivity ? sensitivityInfo.color : "bg-gray-200"
-                    )}
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{
+                      background:
+                        level <= avgSensitivity
+                          ? sensitivityInfo.color
+                          : p.bg2,
+                    }}
                   />
                 ))}
               </div>
-              <span className="text-[10px] text-gray-500">{sensitivityInfo.label}</span>
+              <span className="text-[10px]" style={{ color: p.ink2 }}>
+                {sensitivityInfo.label}
+              </span>
             </div>
           </div>
 
-          {/* Quick stats */}
-          <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-500">
+          <div className="flex items-center justify-center gap-4 mt-3 text-xs" style={{ color: p.ink2 }}>
             <span className="flex items-center gap-1">
               <BarChart3 className="h-3 w-3" />
               {member._count.reactions}
             </span>
             <span className="flex items-center gap-1">
-              <Heart className="h-3 w-3 text-rose-400" />
+              <Heart className="h-3 w-3" style={{ color: p.accent }} />
               {lovedCount}
             </span>
           </div>
 
-          {/* Top recommendation (only show if score > 0) */}
           {topRec && topRec.matchScore > 0 && (
             <Link
               href={`/media/${toMediaRouteId(topRec.type as MediaType, topRec.id)}`}
-              className="mt-3 flex items-center gap-2 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              className="mt-3 flex items-center gap-2 p-2 rounded-lg transition-colors hover:opacity-80"
+              style={{ background: p.bg2 }}
             >
               {topRec.posterUrl ? (
                 <SafeImage
@@ -257,45 +278,65 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
                   className="rounded flex-shrink-0"
                 />
               ) : (
-                <div className="w-6 h-9 bg-gray-200 rounded flex-shrink-0" />
+                <div
+                  className="w-6 h-9 rounded flex-shrink-0"
+                  style={{ background: p.placeholder }}
+                />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-700 truncate">{topRec.title}</p>
-                <p className="text-[10px] text-emerald-600">
+                <p className="text-xs font-medium truncate" style={{ color: p.ink }}>
+                  {topRec.title}
+                </p>
+                <p className="text-[10px]" style={{ color: SAGE }}>
                   {topRec.matchScore}% compatible
                 </p>
               </div>
             </Link>
           )}
 
-          {/* Action buttons */}
           <div className="flex gap-2 mt-auto pt-4">
             <Link href={`/profil/quiz/${member.id}`} className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1">
+              <button
+                className="w-full text-xs inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-full font-semibold transition-opacity hover:opacity-80"
+                style={{
+                  background: "transparent",
+                  color: p.ink,
+                  border: `1px solid ${p.line2}`,
+                }}
+              >
                 <Sparkles className="h-3 w-3" />
                 Quiz
-              </Button>
+              </button>
             </Link>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 text-xs gap-1"
+            <button
+              className="flex-1 text-xs inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-full font-semibold transition-opacity hover:opacity-80"
+              style={{
+                background: "transparent",
+                color: p.ink,
+                border: `1px solid ${p.line2}`,
+              }}
               onClick={() => setPrefsOpen(true)}
             >
               <Sliders className="h-3 w-3" />
               Préfs
-            </Button>
+            </button>
             <Link href={`/profil/membres/${member.id}`} className="flex-1">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50">
+              <button
+                className="w-full text-xs inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-full font-semibold transition-opacity hover:opacity-80"
+                style={{
+                  background: p.bg2,
+                  color: p.accent,
+                  border: `1px solid ${p.line}`,
+                }}
+              >
                 <User className="h-3 w-3" />
                 Coin
-              </Button>
+              </button>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Preferences Modal */}
       <MemberPreferencesModal
         open={prefsOpen}
         onOpenChange={setPrefsOpen}
