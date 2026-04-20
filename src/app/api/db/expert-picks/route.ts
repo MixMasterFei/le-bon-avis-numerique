@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
+import { isSeasonalMismatch } from "@/lib/seasonal-filter"
 
 /**
  * Expert Picks endpoint — returns a curated mix of highly-rated,
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     // enough candidates for the JS scoring pass to pick from.
     const poolSize = 300
 
-    const items = await withPrismaRetry(() =>
+    const rawItems = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
           posterUrl: { not: null, startsWith: "http" },
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
           type: true,
           posterUrl: true,
           genres: true,
+          topics: true,
           expertAgeRec: true,
           communityAgeRec: true,
           tmdbRating: true,
@@ -87,6 +89,8 @@ export async function GET(request: NextRequest) {
         },
       })
     )
+
+    const items = rawItems.filter((i) => !isSeasonalMismatch(i))
 
     // ── Rank items by "pick-worthiness" ──
     // Without TMDB popularity data, we use available signals to prefer

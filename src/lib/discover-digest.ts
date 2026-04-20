@@ -3,6 +3,7 @@ import type { Prisma, NewsCategory } from "@prisma/client"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
 import type { ApercuCardMedia } from "@/components/home-v2/ApercuMediaCard"
+import { isSeasonalMismatch } from "@/lib/seasonal-filter"
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -71,6 +72,7 @@ interface MediaRow {
   posterUrl: string | null
   expertAgeRec: number | null
   genres: string[]
+  topics: string[]
   contentMetrics: {
     violence: number | null
     sexNudity: number | null
@@ -98,6 +100,7 @@ const mediaCardSelect = {
   posterUrl: true,
   expertAgeRec: true,
   genres: true,
+  topics: true,
   contentMetrics: {
     select: {
       violence: true,
@@ -188,7 +191,9 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
     .slice(0, 6)
     .map(rowToStory)
 
-  const recentReleases = releaseRows.map((r) => rowToMediaCard(r as MediaRow))
+  const recentReleases = releaseRows
+    .filter((r) => !isSeasonalMismatch(r as MediaRow))
+    .map((r) => rowToMediaCard(r as MediaRow))
 
   // Hydrate the loved media items with their data + count.
   // TMDB quality gate (≥ 6.5 rating, ≥ 200 votes) OR GAME exemption:
@@ -209,7 +214,11 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
           select: mediaCardSelect,
         })
       : []
-  const lovedById = new Map(lovedMediaRows.map((m) => [m.id, m]))
+  const lovedById = new Map(
+    lovedMediaRows
+      .filter((m) => !isSeasonalMismatch(m as MediaRow))
+      .map((m) => [m.id, m])
+  )
   // Preserve the LOVED-count ordering from groupBy, then cap at 4.
   const topLoved: LovedMedia[] = lovedGrouped
     .map((g) => {
