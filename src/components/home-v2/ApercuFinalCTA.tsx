@@ -32,7 +32,7 @@ export function ApercuFinalCTA({
           <p className="mt-4 text-sm md:text-base opacity-90 max-w-xl mx-auto">
             {isLoggedIn
               ? "Des recommandations adaptées à votre foyer, mises à jour chaque semaine."
-              : "Gratuit, sans publicité, sans algorithme opaque. Des analyses honnêtes, faites main."}
+              : "Gratuit et indépendant. Des analyses honnêtes, pensées pour les familles."}
           </p>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
             {isLoggedIn ? (

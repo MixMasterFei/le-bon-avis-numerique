@@ -116,7 +116,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                 >
                   ✦
                 </span>
-                Recherche indépendante · sans publicité
+                Recherche indépendante · pensée pour les familles
               </div>
 
               <h1
@@ -146,7 +146,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                 {[
                   { stat: "9 600 œuvres", body: "analysées sur 7 critères familiaux" },
                   { stat: "Recommandations", body: "adaptées à chaque membre du foyer" },
-                  { stat: "Indépendant", body: "sans publicité, sans algorithme caché" },
+                  { stat: "Indépendant", body: "pensé pour les familles, pas pour un algorithme" },
                 ].map((it, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span

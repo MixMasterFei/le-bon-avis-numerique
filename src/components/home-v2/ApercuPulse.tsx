@@ -99,35 +99,6 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
           />
         </div>
 
-        {/* Row 2: activity stats */}
-        {(data.counts.reactions > 0 ||
-          data.counts.ageVotes > 0 ||
-          data.counts.reviews > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
-            {data.counts.reactions > 0 && (
-              <ActivityTile
-                serifClass={serifClass}
-                n={data.counts.reactions}
-                label="premières réactions des foyers inscrits"
-              />
-            )}
-            {data.counts.ageVotes > 0 && (
-              <ActivityTile
-                serifClass={serifClass}
-                n={data.counts.ageVotes}
-                label="votes sur l’âge recommandé"
-              />
-            )}
-            {data.counts.reviews > 0 && (
-              <ActivityTile
-                serifClass={serifClass}
-                n={data.counts.reviews}
-                label="premiers avis publiés"
-              />
-            )}
-          </div>
-        )}
-
         {/* Row 3: latest additions */}
         {data.latestAdditions.length > 0 && (
           <div className="mb-9">
@@ -211,34 +182,6 @@ function CountTile({
         {n.toLocaleString("fr-FR")}
       </div>
       <div className="text-sm mt-2" style={{ color: p.ink2 }}>
-        {label}
-      </div>
-    </div>
-  )
-}
-
-function ActivityTile({
-  serifClass,
-  n,
-  label,
-}: {
-  serifClass: string
-  n: number
-  label: string
-}) {
-  const p = APERCU_PALETTE
-  return (
-    <div
-      className="rounded-2xl p-5 flex items-baseline gap-4"
-      style={{ background: "transparent", border: `1px solid ${p.line}` }}
-    >
-      <div
-        className={`${serifClass} text-2xl md:text-3xl font-medium`}
-        style={{ letterSpacing: "-0.02em", color: p.accent2 }}
-      >
-        {n.toLocaleString("fr-FR")}
-      </div>
-      <div className="text-sm" style={{ color: p.ink2 }}>
         {label}
       </div>
     </div>

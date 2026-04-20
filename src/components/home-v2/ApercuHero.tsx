@@ -106,7 +106,7 @@ export function ApercuHero({
               >
                 ✦
               </span>
-              Indépendant · sans publicité · fait main
+              Indépendant · pensé pour les familles
             </div>
 
             <h1
