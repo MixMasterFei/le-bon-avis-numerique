@@ -71,7 +71,18 @@ export async function GET(request: NextRequest) {
           dataQualityScore: true,
           releaseDate: true,
           contentMetrics: {
-            select: { toneTags: true, pacing: true, enrichmentSource: true },
+            select: {
+              toneTags: true,
+              pacing: true,
+              enrichmentSource: true,
+              // Required so ApercuMediaCard's shouldBlurMedia check has
+              // real values to compare against the 15+ / metric ≥ 3
+              // trigger. Without these, 15+ posters render crisp.
+              violence: true,
+              sexNudity: true,
+              language: true,
+              substanceUse: true,
+            },
           },
         },
       })
@@ -191,6 +202,14 @@ export async function GET(request: NextRequest) {
       releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
       toneTags: item.contentMetrics?.toneTags || [],
       pacing: item.contentMetrics?.pacing || null,
+      contentMetrics: item.contentMetrics
+        ? {
+            violence: item.contentMetrics.violence,
+            sexNudity: item.contentMetrics.sexNudity,
+            language: item.contentMetrics.language,
+            substanceUse: item.contentMetrics.substanceUse,
+          }
+        : null,
     }))
 
     return NextResponse.json({ items: transformed, seed })

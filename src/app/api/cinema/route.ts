@@ -38,7 +38,14 @@ export async function GET() {
       communityAgeRec: number | null
       genres: string[]
       topics: string[]
-      contentMetrics: { toneTags: string[]; pacing: string | null } | null
+      contentMetrics: {
+        toneTags: string[]
+        pacing: string | null
+        violence: number | null
+        sexNudity: number | null
+        language: number | null
+        substanceUse: number | null
+      } | null
     }> = []
 
     try {
@@ -58,7 +65,15 @@ export async function GET() {
             genres: true,
             topics: true,
             contentMetrics: {
-              select: { toneTags: true, pacing: true },
+              select: {
+                toneTags: true,
+                pacing: true,
+                // Required for Aperçu's 15+ blur (see shouldBlurMedia).
+                violence: true,
+                sexNudity: true,
+                language: true,
+                substanceUse: true,
+              },
             },
           },
         })
@@ -88,6 +103,14 @@ export async function GET() {
         genres: db?.genres ?? [],
         topics: db?.topics ?? [],
         toneTags: db?.contentMetrics?.toneTags ?? [],
+        contentMetrics: db?.contentMetrics
+          ? {
+              violence: db.contentMetrics.violence,
+              sexNudity: db.contentMetrics.sexNudity,
+              language: db.contentMetrics.language,
+              substanceUse: db.contentMetrics.substanceUse,
+            }
+          : null,
         inDatabase: !!db,
       }
     })

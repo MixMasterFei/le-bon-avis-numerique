@@ -45,6 +45,12 @@ export function ApercuStreaming({ serifClass }: { serifClass: string }) {
                 posterUrl: string | null
                 expertAgeRec?: number | null
                 genres?: string[]
+                contentMetrics?: {
+                  violence?: number | null
+                  sexNudity?: number | null
+                  language?: number | null
+                  substanceUse?: number | null
+                } | null
               }) => ({
                 id: m.id,
                 type: (m.type === "TV" ? "TV" : "MOVIE") as "MOVIE" | "TV",
@@ -52,6 +58,7 @@ export function ApercuStreaming({ serifClass }: { serifClass: string }) {
                 posterUrl: m.posterUrl,
                 expertAgeRec: m.expertAgeRec ?? null,
                 genres: m.genres ?? [],
+                contentMetrics: m.contentMetrics ?? null,
               })
             )
           )
