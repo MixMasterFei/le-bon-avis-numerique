@@ -1,8 +1,5 @@
 import Link from "next/link"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
-import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
-import { ApercuNav } from "./ApercuNav"
-import { ApercuFooter } from "./ApercuFooter"
 import { ApercuMediaCard, type ApercuCardMedia } from "./ApercuMediaCard"
 import { ApercuFilterSidebar } from "./ApercuFilterSidebar"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -36,6 +33,18 @@ interface ApercuFilmsListProps {
   }
   /** Search-param string (without `page`) so pagination can build hrefs server-side. */
   filterQuery: string
+  /** Route path used to build pagination hrefs (e.g. "/films"). */
+  route?: string
+  /** Eyebrow label ("Catalogue", "Séries TV", …). */
+  eyebrow?: string
+  /** Main title prefix, e.g. "Tous les". */
+  titlePrefix?: string
+  /** Title accent (italic + terracotta), e.g. "films". */
+  titleAccent?: string
+  /** Singular + plural noun for the count line. Defaults to "film/films". */
+  itemNoun?: { singular: string; plural: string }
+  /** Empty-state message, e.g. "Aucun film à afficher". */
+  emptyTitle?: string
 }
 
 export function ApercuFilmsList({
@@ -47,19 +56,22 @@ export function ApercuFilmsList({
   familyMembers,
   initialFilters,
   filterQuery,
+  route = "/films",
+  eyebrow = "Catalogue",
+  titlePrefix = "Tous les",
+  titleAccent = "films",
+  itemNoun = { singular: "film", plural: "films" },
+  emptyTitle = "Aucun film à afficher",
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
+  const countNoun = total === 1 ? itemNoun.singular : itemNoun.plural
 
   return (
     <FamilyFitProvider>
       <div
-        className="flex flex-col overflow-x-hidden min-h-screen"
+        className="flex flex-col overflow-x-hidden"
         style={{ background: p.bg, color: p.ink }}
       >
-        <ApercuPreviewBanner />
-        <ApercuNav />
-
-        {/* Hero band — bg cream */}
         <section
           className="py-8 md:py-12"
           style={{
@@ -72,22 +84,22 @@ export function ApercuFilmsList({
               className="text-[11px] font-semibold mb-2 uppercase tracking-wide"
               style={{ color: p.accent }}
             >
-              Catalogue
+              {eyebrow}
             </div>
             <h1
               className={`${serifClass} text-3xl md:text-5xl font-medium m-0 leading-[1.05]`}
               style={{ letterSpacing: "-0.02em", color: p.ink }}
             >
-              Tous les{" "}
+              {titlePrefix}{" "}
               <em className="italic" style={{ color: p.accent }}>
-                films
+                {titleAccent}
               </em>
             </h1>
             <p
               className="mt-3 text-sm md:text-base"
               style={{ color: p.ink2 }}
             >
-              {total.toLocaleString("fr-FR")} films analysés.
+              {total.toLocaleString("fr-FR")} {countNoun} analysés.
               {totalPages > 1 && ` Page ${page} sur ${totalPages}.`}
             </p>
           </div>
@@ -102,12 +114,13 @@ export function ApercuFilmsList({
                 serifClass={serifClass}
                 familyMembers={familyMembers}
                 initialFilters={initialFilters}
+                route={route}
               />
 
               {/* Grid */}
               <div>
                 {items.length === 0 ? (
-                  <EmptyState serifClass={serifClass} />
+                  <EmptyState serifClass={serifClass} title={emptyTitle} />
                 ) : (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-5">
@@ -126,6 +139,7 @@ export function ApercuFilmsList({
                       totalPages={totalPages}
                       serifClass={serifClass}
                       filterQuery={filterQuery}
+                      route={route}
                     />
                   </>
                 )}
@@ -134,13 +148,18 @@ export function ApercuFilmsList({
           </div>
         </section>
 
-        <ApercuFooter serifClass={serifClass} />
       </div>
     </FamilyFitProvider>
   )
 }
 
-function EmptyState({ serifClass }: { serifClass: string }) {
+function EmptyState({
+  serifClass,
+  title,
+}: {
+  serifClass: string
+  title: string
+}) {
   const p = APERCU_PALETTE
   return (
     <div
@@ -155,7 +174,7 @@ function EmptyState({ serifClass }: { serifClass: string }) {
         className={`${serifClass} text-2xl font-medium mb-2`}
         style={{ color: p.ink, letterSpacing: "-0.02em" }}
       >
-        Aucun film à afficher
+        {title}
       </div>
       <p className="text-sm">
         Essayez d’élargir la tranche d’âge ou de remettre à zéro les filtres.
@@ -169,11 +188,13 @@ function Pagination({
   totalPages,
   serifClass,
   filterQuery,
+  route,
 }: {
   page: number
   totalPages: number
   serifClass: string
   filterQuery: string
+  route: string
 }) {
   const p = APERCU_PALETTE
   if (totalPages <= 1) return null
@@ -181,7 +202,7 @@ function Pagination({
   const buildHref = (target: number) => {
     const sp = new URLSearchParams(filterQuery)
     sp.set("page", String(target))
-    return `/apercufilmslist?${sp.toString()}`
+    return `${route}?${sp.toString()}`
   }
 
   const prevHref = page > 1 ? buildHref(page - 1) : null

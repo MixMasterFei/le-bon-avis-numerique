@@ -43,6 +43,8 @@ interface ApercuFilterSidebarProps {
     topics: string[]
     familyMemberIds: string[]
   }
+  /** Route to push filter changes to. Defaults to "/films". */
+  route?: string
 }
 
 const SORT_OPTIONS = [
@@ -86,6 +88,7 @@ export function ApercuFilterSidebar({
   serifClass,
   familyMembers,
   initialFilters,
+  route = "/films",
 }: ApercuFilterSidebarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -162,7 +165,7 @@ export function ApercuFilterSidebar({
         if (finalMembers.length > 0) sp.set("members", finalMembers.join(","))
 
         const qs = sp.toString()
-        router.replace(qs ? `/apercufilmslist?${qs}` : "/apercufilmslist", {
+        router.replace(qs ? `${route}?${qs}` : route, {
           scroll: false,
         })
       },
@@ -176,6 +179,7 @@ export function ApercuFilterSidebar({
       platforms,
       topics,
       memberIds,
+      route,
     ],
   )
 
@@ -255,7 +259,7 @@ export function ApercuFilterSidebar({
     const font = searchParams.get("font")
     if (font) sp.set("font", font)
     const qs = sp.toString()
-    router.replace(qs ? `/apercufilmslist?${qs}` : "/apercufilmslist", {
+    router.replace(qs ? `${route}?${qs}` : route, {
       scroll: false,
     })
   }
