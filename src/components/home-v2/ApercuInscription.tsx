@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Eye, EyeOff, Check, X, ArrowRight } from "lucide-react"
-import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
-import { ApercuNav } from "./ApercuNav"
+import { signIn } from "next-auth/react"
+import { Eye, EyeOff, Check, X, ArrowRight, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 const SAGE = "#5C8A5C"
@@ -21,6 +20,10 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
   const [newsletterUpdates, setNewsletterUpdates] = useState<boolean | null>(null)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const passwordChecks = {
     length: password.length >= 8,
@@ -40,23 +43,60 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
     newsletterUpdates !== null &&
     acceptTerms
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!formValid) return
-    // Visual mockup only — never POSTs to /api/auth/register.
-    setSubmitted(true)
+    if (!formValid || isLoading) return
+    setErrorMessage(null)
+    setIsLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `${firstName} ${lastName}`.trim(),
+          email,
+          password,
+          preferences: {
+            newsletterWeekly,
+            newsletterMission,
+            newsletterUpdates,
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setErrorMessage(data.error || "Erreur lors de l'inscription")
+        setIsLoading(false)
+        return
+      }
+
+      setRegisteredEmail(email)
+      setSubmitted(true)
+    } catch {
+      setErrorMessage("Une erreur est survenue")
+      setIsLoading(false)
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true)
+    await signIn("google", { callbackUrl: "/profil" })
   }
 
   return (
     <div
-      className="flex flex-col min-h-screen overflow-x-hidden"
+      className="flex flex-col flex-1"
       style={{ background: p.bg, color: p.ink }}
     >
-      <ApercuPreviewBanner />
-      <ApercuNav />
-
       {submitted ? (
-        <SuccessScreen email={email} firstName={firstName} serifClass={serifClass} />
+        <SuccessScreen
+          email={registeredEmail}
+          firstName={firstName}
+          serifClass={serifClass}
+        />
       ) : (
         <section className="container mx-auto px-4 md:px-8 py-10 md:py-16">
           <div className="grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-16 items-start">
@@ -116,7 +156,10 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                       ✦
                     </span>
                     <div>
-                      <span className={`${serifClass} text-base`} style={{ color: p.ink, fontWeight: 600 }}>
+                      <span
+                        className={`${serifClass} text-base`}
+                        style={{ color: p.ink, fontWeight: 600 }}
+                      >
                         {it.stat}
                       </span>
                       <span className="text-sm ml-1.5" style={{ color: p.ink2 }}>
@@ -142,6 +185,20 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
               <p className="text-sm mb-6" style={{ color: p.ink2 }}>
                 Vos données restent privées et ne sont jamais revendues.
               </p>
+
+              {errorMessage && (
+                <div
+                  className="rounded-xl px-3.5 py-2.5 mb-4 text-sm"
+                  style={{
+                    background: "rgba(209, 106, 74, 0.12)",
+                    border: `1px solid ${p.accent}`,
+                    color: p.ink,
+                  }}
+                  role="alert"
+                >
+                  {errorMessage}
+                </div>
+              )}
 
               <form onSubmit={onSubmit} className="flex flex-col gap-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -235,7 +292,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                   />
                   <span style={{ color: p.ink2 }}>
                     J&apos;accepte les{" "}
-                    <Link href="/cgu" className="underline" style={{ color: p.ink }}>
+                    <Link href="/mentions-legales" className="underline" style={{ color: p.ink }}>
                       conditions d&apos;utilisation
                     </Link>{" "}
                     et la{" "}
@@ -248,12 +305,21 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
 
                 <button
                   type="submit"
-                  disabled={!formValid}
+                  disabled={!formValid || isLoading}
                   className="mt-2 inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{ background: p.ink, color: p.bg }}
                 >
-                  Créer mon compte
-                  <ArrowRight className="w-4 h-4" />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Création du compte...
+                    </>
+                  ) : (
+                    <>
+                      Créer mon compte
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
 
                 <div className="relative my-2">
@@ -275,10 +341,16 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
 
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                  onClick={handleGoogleSignIn}
+                  disabled={googleLoading}
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
                   style={{ background: p.bg2, color: p.ink, border: `1px solid ${p.line2}` }}
                 >
-                  <GoogleG />
+                  {googleLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <GoogleG />
+                  )}
                   Continuer avec Google
                 </button>
 
@@ -419,20 +491,17 @@ function SuccessScreen({
           >
             <li>Vérifiez votre boîte mail (et le dossier indésirables)</li>
             <li>Cliquez sur le lien de confirmation</li>
-            <li>Créez votre foyer et démarrez le quiz</li>
+            <li>Connectez-vous et créez votre foyer</li>
           </ol>
         </div>
         <Link
-          href="/apercuquiz"
+          href="/connexion"
           className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
           style={{ background: p.ink, color: p.bg }}
         >
-          Suivant : le quiz
+          Se connecter
           <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-xs mt-4" style={{ color: p.ink2 }}>
-          Aperçu — aucune inscription réelle n&apos;a été enregistrée.
-        </p>
       </div>
     </section>
   )
