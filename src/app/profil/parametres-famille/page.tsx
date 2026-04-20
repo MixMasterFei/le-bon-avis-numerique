@@ -19,11 +19,10 @@ import {
   Users,
   GraduationCap,
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { SensitivitySlider } from "@/components/ui/SensitivitySlider"
 import { TopicAvoider } from "@/components/ui/TopicAvoider"
 import Link from "next/link"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface FamilySettings {
   id: string
@@ -120,11 +119,17 @@ export default function FamilySettingsPage() {
     updateSetting("availablePlatforms", platforms)
   }
 
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
   if (status === "loading" || loading) {
     return (
-      <div className="container mx-auto px-4 py-12 max-w-3xl">
+      <div
+        className="container mx-auto px-4 py-12 max-w-3xl"
+        style={{ background: p.bg }}
+      >
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: p.accent }} />
         </div>
       </div>
     )
@@ -134,203 +139,251 @@ export default function FamilySettingsPage() {
     redirect("/connexion")
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/profil">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Parametres de la famille</h1>
-          <p className="text-gray-600">
-            Definissez les preferences par defaut pour tous les membres
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {settings && (
+  const sections: Array<{
+    icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+    iconColor: string
+    title: string
+    description: string
+    content: React.ReactNode
+  }> = [
+    {
+      icon: Shield,
+      iconColor: p.accent,
+      title: "Tolérance au contenu",
+      description:
+        "Ces paramètres s'appliquent par défaut à tous les membres. Chaque membre peut personnaliser ses propres préférences.",
+      content: settings ? (
         <div className="space-y-6">
-          {/* Sensitivity Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                Tolerance au contenu
-              </CardTitle>
-              <CardDescription>
-                Ces parametres s&apos;appliquent par defaut a tous les membres de votre famille.
-                Chaque membre peut personnaliser ses propres preferences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <SensitivitySlider
-                label="Violence"
-                icon={<Skull className="h-4 w-4" />}
-                value={settings.defaultSensitivityViolence}
-                onChange={(v) => updateSetting("defaultSensitivityViolence", v)}
-                type="sensitivity"
-              />
+          <SensitivitySlider
+            label="Violence"
+            icon={<Skull className="h-4 w-4" />}
+            value={settings.defaultSensitivityViolence}
+            onChange={(v) => updateSetting("defaultSensitivityViolence", v)}
+            type="sensitivity"
+          />
+          <SensitivitySlider
+            label="Contenu effrayant"
+            icon={<Ghost className="h-4 w-4" />}
+            value={settings.defaultSensitivityScary}
+            onChange={(v) => updateSetting("defaultSensitivityScary", v)}
+            type="sensitivity"
+          />
+          <SensitivitySlider
+            label="Contenu sexuel / Nudité"
+            icon={<Heart className="h-4 w-4" />}
+            value={settings.defaultSensitivitySexual}
+            onChange={(v) => updateSetting("defaultSensitivitySexual", v)}
+            type="sensitivity"
+          />
+          <SensitivitySlider
+            label="Langage grossier"
+            icon={<MessageCircle className="h-4 w-4" />}
+            value={settings.defaultSensitivityLanguage}
+            onChange={(v) => updateSetting("defaultSensitivityLanguage", v)}
+            type="sensitivity"
+          />
+          <SensitivitySlider
+            label="Drogues / Alcool"
+            icon={<Wine className="h-4 w-4" />}
+            value={settings.defaultSensitivitySubstances}
+            onChange={(v) => updateSetting("defaultSensitivitySubstances", v)}
+            type="sensitivity"
+          />
+        </div>
+      ) : null,
+    },
+    {
+      icon: Sparkles,
+      iconColor: p.accent2,
+      title: "Contenu préféré",
+      description:
+        "Indiquez l'importance que vous accordez à ces éléments positifs",
+      content: settings ? (
+        <div className="space-y-6">
+          <SensitivitySlider
+            label="Messages positifs"
+            icon={<Sparkles className="h-4 w-4" />}
+            value={settings.defaultPreferPositiveMessages}
+            onChange={(v) =>
+              updateSetting("defaultPreferPositiveMessages", v)
+            }
+            type="preference"
+          />
+          <SensitivitySlider
+            label="Modèles de comportement"
+            icon={<Users className="h-4 w-4" />}
+            value={settings.defaultPreferRoleModels}
+            onChange={(v) => updateSetting("defaultPreferRoleModels", v)}
+            type="preference"
+          />
+          <SensitivitySlider
+            label="Contenu éducatif"
+            icon={<GraduationCap className="h-4 w-4" />}
+            value={settings.defaultPreferEducational}
+            onChange={(v) => updateSetting("defaultPreferEducational", v)}
+            type="preference"
+          />
+        </div>
+      ) : null,
+    },
+    {
+      icon: AlertCircle,
+      iconColor: p.accent,
+      title: "Thèmes à éviter",
+      description:
+        "Ces thèmes seront exclus des recommandations pour toute la famille",
+      content: settings ? (
+        <TopicAvoider
+          topics={settings.blockedTopics}
+          onChange={(topics) => updateSetting("blockedTopics", topics)}
+        />
+      ) : null,
+    },
+    {
+      icon: Tv,
+      iconColor: p.accent2,
+      title: "Plateformes disponibles",
+      description:
+        "Sélectionnez les services de streaming auxquels vous êtes abonnés",
+      content: settings ? (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {PLATFORMS.map((platform) => {
+              const isSelected = settings.availablePlatforms.includes(
+                platform.id
+              )
+              return (
+                <button
+                  key={platform.id}
+                  onClick={() => togglePlatform(platform.id)}
+                  className="p-3 rounded-lg border-2 transition-all text-sm font-medium"
+                  style={{
+                    background: isSelected ? p.bg2 : "transparent",
+                    color: isSelected ? p.accent : p.ink,
+                    borderColor: isSelected ? p.accent : p.line2,
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${platform.color}`}
+                    />
+                    {platform.label}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-3 text-xs" style={{ color: p.ink2 }}>
+            Les recommandations privilégieront les contenus disponibles sur vos
+            plateformes
+          </p>
+        </>
+      ) : null,
+    },
+  ]
 
-              <SensitivitySlider
-                label="Contenu effrayant"
-                icon={<Ghost className="h-4 w-4" />}
-                value={settings.defaultSensitivityScary}
-                onChange={(v) => updateSetting("defaultSensitivityScary", v)}
-                type="sensitivity"
-              />
-
-              <SensitivitySlider
-                label="Contenu sexuel / Nudite"
-                icon={<Heart className="h-4 w-4" />}
-                value={settings.defaultSensitivitySexual}
-                onChange={(v) => updateSetting("defaultSensitivitySexual", v)}
-                type="sensitivity"
-              />
-
-              <SensitivitySlider
-                label="Langage grossier"
-                icon={<MessageCircle className="h-4 w-4" />}
-                value={settings.defaultSensitivityLanguage}
-                onChange={(v) => updateSetting("defaultSensitivityLanguage", v)}
-                type="sensitivity"
-              />
-
-              <SensitivitySlider
-                label="Drogues / Alcool"
-                icon={<Wine className="h-4 w-4" />}
-                value={settings.defaultSensitivitySubstances}
-                onChange={(v) => updateSetting("defaultSensitivitySubstances", v)}
-                type="sensitivity"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Positive Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                Contenu prefere
-              </CardTitle>
-              <CardDescription>
-                Indiquez l&apos;importance que vous accordez a ces elements positifs
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <SensitivitySlider
-                label="Messages positifs"
-                icon={<Sparkles className="h-4 w-4" />}
-                value={settings.defaultPreferPositiveMessages}
-                onChange={(v) => updateSetting("defaultPreferPositiveMessages", v)}
-                type="preference"
-              />
-
-              <SensitivitySlider
-                label="Modeles de comportement"
-                icon={<Users className="h-4 w-4" />}
-                value={settings.defaultPreferRoleModels}
-                onChange={(v) => updateSetting("defaultPreferRoleModels", v)}
-                type="preference"
-              />
-
-              <SensitivitySlider
-                label="Contenu educatif"
-                icon={<GraduationCap className="h-4 w-4" />}
-                value={settings.defaultPreferEducational}
-                onChange={(v) => updateSetting("defaultPreferEducational", v)}
-                type="preference"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Blocked Topics */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                Themes a eviter
-              </CardTitle>
-              <CardDescription>
-                Ces themes seront exclus des recommandations pour toute la famille
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TopicAvoider
-                topics={settings.blockedTopics}
-                onChange={(topics) => updateSetting("blockedTopics", topics)}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Streaming Platforms */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tv className="h-5 w-5 text-blue-500" />
-                Plateformes disponibles
-              </CardTitle>
-              <CardDescription>
-                Selectionnez les services de streaming auxquels vous etes abonnes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {PLATFORMS.map((platform) => {
-                  const isSelected = settings.availablePlatforms.includes(platform.id)
-                  return (
-                    <button
-                      key={platform.id}
-                      onClick={() => togglePlatform(platform.id)}
-                      className={`
-                        p-3 rounded-lg border-2 transition-all text-sm font-medium
-                        ${isSelected
-                          ? "border-primary bg-primary/5 text-primary"
-                          : "border-gray-200 text-gray-600 hover:border-gray-300"
-                        }
-                      `}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-3 h-3 rounded-full ${platform.color}`} />
-                        {platform.label}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-              <p className="mt-3 text-xs text-gray-500">
-                Les recommandations privilegieront les contenus disponibles sur vos plateformes
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Save Button */}
-          <div className="sticky bottom-4 flex justify-end">
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              size="lg"
-              className="shadow-lg"
+  return (
+    <div
+      className="flex flex-col flex-1"
+      style={{ background: p.bg, color: p.ink }}
+    >
+      <div className="container mx-auto px-4 py-8 max-w-3xl">
+        <div className="flex items-center gap-4 mb-8">
+          <Link
+            href="/profil"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full transition-opacity hover:opacity-80"
+            style={{
+              background: "transparent",
+              color: p.ink,
+              border: `1px solid ${p.line2}`,
+            }}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1
+              className={`${serifClass} text-2xl md:text-3xl font-medium`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
             >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : saved ? (
-                <Check className="h-4 w-4 mr-2" />
-              ) : null}
-              {saved ? "Enregistre!" : "Enregistrer les parametres"}
-            </Button>
+              Paramètres de la{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                famille
+              </em>
+            </h1>
+            <p className="text-sm mt-1" style={{ color: p.ink2 }}>
+              Définissez les préférences par défaut pour tous les membres
+            </p>
           </div>
         </div>
-      )}
+
+        {error && (
+          <div
+            className="rounded-xl p-4 mb-6 flex items-center gap-3"
+            style={{
+              background: "rgba(209, 106, 74, 0.12)",
+              border: `1px solid ${p.accent}`,
+            }}
+          >
+            <AlertCircle
+              className="h-5 w-5 flex-shrink-0"
+              style={{ color: p.accent }}
+            />
+            <p style={{ color: p.ink }}>{error}</p>
+          </div>
+        )}
+
+        {settings && (
+          <div className="space-y-5">
+            {sections.map((section) => (
+              <div
+                key={section.title}
+                className="rounded-2xl p-6"
+                style={{
+                  background: p.card,
+                  border: `1px solid ${p.line}`,
+                }}
+              >
+                <div className="mb-5">
+                  <h2
+                    className={`${serifClass} text-lg md:text-xl font-medium flex items-center gap-2`}
+                    style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                  >
+                    <section.icon
+                      className="h-5 w-5"
+                      style={{ color: section.iconColor }}
+                    />
+                    {section.title}
+                  </h2>
+                  <p className="text-sm mt-1" style={{ color: p.ink2 }}>
+                    {section.description}
+                  </p>
+                </div>
+                {section.content}
+              </div>
+            ))}
+
+            <div className="sticky bottom-4 flex justify-end">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{
+                  background: p.ink,
+                  color: p.bg,
+                  boxShadow: `0 4px 12px ${p.line2}`,
+                }}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <Check className="h-4 w-4" />
+                ) : null}
+                {saved ? "Enregistré !" : "Enregistrer les paramètres"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
