@@ -13,22 +13,24 @@
   --color-warm-line2: rgba(30, 26, 21, 0.15);
   --color-warm-placeholder: #E6DFCE;
 
-  /* Legacy tokens — kept while pages migrate stage-by-stage */
-  --color-primary: #7c3aed;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #fef3c7;
-  --color-secondary-foreground: #92400e;
-  --color-accent: #06b6d4;
+  /* Legacy tokens — retinted to warm palette so residual shadcn
+     usage (bg-primary, text-primary, etc.) inherits the new look
+     across pages that haven't been fully ported yet. */
+  --color-primary: #1E1A15;
+  --color-primary-foreground: #F5F1E9;
+  --color-secondary: #EDE7DA;
+  --color-secondary-foreground: #1E1A15;
+  --color-accent: #D16A4A;
   --color-accent-foreground: #ffffff;
-  --color-muted: #faf8f5;
-  --color-muted-foreground: #6b7280;
+  --color-muted: #EDE7DA;
+  --color-muted-foreground: #5E5850;
   --color-card: #ffffff;
-  --color-card-foreground: #1f2937;
+  --color-card-foreground: #1E1A15;
   --color-background: #F5F1E9;
   --color-foreground: #1E1A15;
-  --color-border: #e5e0db;
-  --color-input: #f5f3f0;
-  --color-ring: #7c3aed;
+  --color-border: rgba(30, 26, 21, 0.08);
+  --color-input: #EDE7DA;
+  --color-ring: #D16A4A;
 
   /* Popover/Dropdown colors */
   --color-popover: #ffffff;
