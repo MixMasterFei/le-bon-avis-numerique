@@ -1,0 +1,57 @@
+name: Lighthouse CI
+
+# Runs Lighthouse against the Vercel preview deploy on every PR, and
+# against production on pushes to main. Budgets are defined in
+# lighthouserc.json. CI fails if any budget is breached, which catches
+# perf regressions (oversized images, blocking scripts, slow LCP) at
+# PR time instead of post-merge.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lighthouse:
+    name: Performance budgets
+    runs-on: ubuntu-latest
+    # Allow the job to complete even if Vercel hasn't finished deploying
+    # — lhci will retry the URL fetch a few times before failing.
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.14.x
+
+      - name: Wait for Vercel preview
+        id: vercel
+        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          max_timeout: 600
+          check_interval: 10
+
+      - name: Run Lighthouse CI against preview
+        if: steps.vercel.outputs.url != ''
+        run: lhci autorun
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          LHCI_TARGET_URL: ${{ steps.vercel.outputs.url }}
+          # Fall back to totemavise.com for pushes to main where there's
+          # no preview URL — main deploys straight to prod.
+          LHCI_FALLBACK_URL: https://totemavise.com
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 30
