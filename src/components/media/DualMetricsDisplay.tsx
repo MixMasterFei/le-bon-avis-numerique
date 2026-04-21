@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Users, Award, Info } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { UserMetricsButton } from "./UserMetricsButton"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const SAGE = "#5C8A5C"
+const AMBER = "#C08A3E"
+const TERRACOTTA_MID = "#E08A5C"
 
 interface ContentMetrics {
   violence: number
@@ -28,73 +32,85 @@ interface CommunityData {
   averages: ContentMetrics | null
 }
 
-const METRIC_LABELS: Record<string, { label: string; description: string; example: string; isPositive?: boolean }> = {
+const METRIC_LABELS: Record<
+  string,
+  { label: string; description: string; example: string; isPositive?: boolean }
+> = {
   violence: {
     label: "Violence",
     description: "Mesure la présence de violence physique, verbale ou psychologique dans le contenu.",
-    example: "0 = Aucune violence. 5 = Violence intense et/ou graphique (combats, armes, sang)."
+    example: "0 = Aucune violence. 5 = Violence intense et/ou graphique (combats, armes, sang).",
   },
   sexNudity: {
     label: "Sexe/Nudité",
     description: "Évalue la présence de contenu sexuel, scènes romantiques explicites ou nudité.",
-    example: "0 = Aucun contenu. 5 = Scènes sexuelles explicites ou nudité complète."
+    example: "0 = Aucun contenu. 5 = Scènes sexuelles explicites ou nudité complète.",
   },
   language: {
     label: "Langage",
     description: "Indique la fréquence de langage grossier, insultes ou jurons.",
-    example: "0 = Langage adapté à tous. 5 = Insultes fréquentes, langage très vulgaire."
+    example: "0 = Langage adapté à tous. 5 = Insultes fréquentes, langage très vulgaire.",
   },
   consumerism: {
     label: "Consumérisme",
     description: "Mesure la présence de messages incitant à la consommation, placement de produits ou matérialisme.",
-    example: "0 = Pas de messages commerciaux. 5 = Forte incitation à l'achat, nombreux placements produits."
+    example: "0 = Pas de messages commerciaux. 5 = Forte incitation à l'achat, nombreux placements produits.",
   },
   substanceUse: {
     label: "Substances",
     description: "Évalue la représentation d'alcool, tabac, drogues ou autres substances.",
-    example: "0 = Aucune représentation. 5 = Consommation fréquente ou banalisée."
+    example: "0 = Aucune représentation. 5 = Consommation fréquente ou banalisée.",
   },
   positiveMessages: {
     label: "Messages +",
     description: "Note la présence de valeurs positives : amitié, courage, persévérance, empathie, entraide.",
     example: "0 = Pas de message particulier. 5 = Messages forts sur des valeurs importantes.",
-    isPositive: true
+    isPositive: true,
   },
   roleModels: {
     label: "Modèles +",
     description: "Évalue la qualité des personnages comme modèles : comportements admirables, résolution de problèmes, respect des autres.",
     example: "0 = Pas de modèle positif. 5 = Personnages exemplaires et inspirants.",
-    isPositive: true
+    isPositive: true,
   },
 }
 
 function MetricBar({
   value,
-  isPositive = false
+  isPositive = false,
 }: {
   value: number
   isPositive?: boolean
 }) {
+  const p = APERCU_PALETTE
   const percentage = (value / 5) * 100
   const color = isPositive
-    ? "bg-green-500"
+    ? SAGE
     : value <= 1
-    ? "bg-green-500"
-    : value <= 2
-    ? "bg-yellow-500"
-    : value <= 3
-    ? "bg-orange-500"
-    : "bg-red-500"
+      ? SAGE
+      : value <= 2
+        ? AMBER
+        : value <= 3
+          ? TERRACOTTA_MID
+          : p.accent
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div
+        className="flex-1 h-2 rounded-full overflow-hidden"
+        style={{ background: p.bg2 }}
+      >
         <div
-          className={`h-full ${color} transition-all`}
-          style={{ width: `${percentage}%` }}
+          className="h-full transition-all"
+          style={{ width: `${percentage}%`, background: color }}
         />
       </div>
-      <span className="text-xs font-medium w-4 text-right">{value}</span>
+      <span
+        className="text-xs font-medium w-4 text-right"
+        style={{ color: p.ink }}
+      >
+        {value}
+      </span>
     </div>
   )
 }
@@ -103,70 +119,102 @@ function MetricsColumn({
   title,
   icon: Icon,
   metrics,
-  count
+  count,
 }: {
   title: string
   icon: React.ElementType
   metrics: ContentMetrics | null
   count?: number
 }) {
+  const p = APERCU_PALETTE
+
   if (!metrics) {
     return (
-      <div className="flex-1 p-4 bg-gray-50 rounded-lg">
+      <div
+        className="flex-1 p-4 rounded-xl"
+        style={{ background: p.bg2 }}
+      >
         <div className="flex items-center gap-2 mb-3">
-          <Icon className="h-4 w-4 text-gray-400" />
-          <span className="text-sm font-medium text-gray-500">{title}</span>
+          <Icon className="h-4 w-4" style={{ color: p.ink2 }} />
+          <span className="text-sm font-medium" style={{ color: p.ink2 }}>
+            {title}
+          </span>
         </div>
-        <p className="text-sm text-gray-400 text-center py-4">
-          Pas de donnees
+        <p
+          className="text-sm text-center py-4"
+          style={{ color: p.ink2 }}
+        >
+          Pas de données
         </p>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 p-4 bg-gray-50 rounded-lg">
+    <div className="flex-1 p-4 rounded-xl" style={{ background: p.bg2 }}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-gray-600" />
-          <span className="text-sm font-medium">{title}</span>
+          <Icon className="h-4 w-4" style={{ color: p.accent }} />
+          <span className="text-sm font-medium" style={{ color: p.ink }}>
+            {title}
+          </span>
         </div>
         {count !== undefined && (
-          <span className="text-xs text-gray-500">({count} avis)</span>
+          <span className="text-xs" style={{ color: p.ink2 }}>
+            ({count} avis)
+          </span>
         )}
       </div>
 
       <TooltipProvider>
         <div className="space-y-2">
-          {Object.entries(METRIC_LABELS).map(([key, { label, description, example, isPositive }]) => (
-            <div key={key} className="flex items-center gap-2">
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <span className="text-[11px] text-gray-600 w-[85px] shrink-0 cursor-help underline decoration-dotted decoration-gray-400">
-                    {label}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="max-w-xs p-3">
-                  <p className="font-medium text-sm mb-1">{label}</p>
-                  <p className="text-xs text-gray-600 mb-2">{description}</p>
-                  <p className="text-xs text-gray-500 italic">{example}</p>
-                </TooltipContent>
-              </Tooltip>
-              <div className="flex-1 min-w-0">
-                <MetricBar
-                  value={Math.round((metrics[key as keyof ContentMetrics] || 0) * 10) / 10}
-                  isPositive={isPositive}
-                />
+          {Object.entries(METRIC_LABELS).map(
+            ([key, { label, description, example, isPositive }]) => (
+              <div key={key} className="flex items-center gap-2">
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="text-[11px] w-[85px] shrink-0 cursor-help underline decoration-dotted"
+                      style={{
+                        color: p.ink2,
+                        textDecorationColor: p.line2,
+                      }}
+                    >
+                      {label}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs p-3">
+                    <p className="font-medium text-sm mb-1">{label}</p>
+                    <p className="text-xs mb-2">{description}</p>
+                    <p className="text-xs italic opacity-70">{example}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <div className="flex-1 min-w-0">
+                  <MetricBar
+                    value={
+                      Math.round(
+                        (metrics[key as keyof ContentMetrics] || 0) * 10
+                      ) / 10
+                    }
+                    isPositive={isPositive}
+                  />
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </TooltipProvider>
     </div>
   )
 }
 
-export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualMetricsDisplayProps) {
+export function DualMetricsDisplay({
+  mediaId,
+  mediaTitle,
+  expertMetrics,
+}: DualMetricsDisplayProps) {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   const [communityData, setCommunityData] = useState<CommunityData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -188,45 +236,57 @@ export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualM
     fetchCommunityMetrics()
   }, [fetchCommunityMetrics])
 
-  // Don't render if no data at all
   if (!expertMetrics && !communityData?.hasData && !loading) {
     return null
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          Evaluation du contenu
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-gray-400" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Echelle de 0 a 5. Pour violence, sexe, langage, etc.: 0 = absent, 5 = tres present. Pour messages positifs et modeles: 5 = excellent.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex gap-4">
-          {/* Expert metrics */}
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <h3
+          className={`${serifClass} text-lg font-medium`}
+          style={{ color: p.ink, letterSpacing: "-0.02em" }}
+        >
+          Évaluation du contenu
+        </h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Info className="h-4 w-4" style={{ color: p.ink2 }} />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>
+                Échelle de 0 à 5. Pour violence, sexe, langage, etc. :
+                0 = absent, 5 = très présent. Pour messages positifs et
+                modèles : 5 = excellent.
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <div className="space-y-4">
+        <div className="flex gap-3">
           <MetricsColumn
             title="Totem Avisé"
             icon={Award}
             metrics={expertMetrics || null}
           />
 
-          {/* Community metrics */}
           {loading ? (
-            <div className="flex-1 p-4 bg-gray-50 rounded-lg flex items-center justify-center">
-              <span className="text-sm text-gray-400">Chargement...</span>
+            <div
+              className="flex-1 p-4 rounded-xl flex items-center justify-center"
+              style={{ background: p.bg2 }}
+            >
+              <span className="text-sm" style={{ color: p.ink2 }}>
+                Chargement...
+              </span>
             </div>
           ) : (
             <MetricsColumn
-              title="Communaute"
+              title="Communauté"
               icon={Users}
               metrics={communityData?.averages || null}
               count={communityData?.count}
@@ -234,13 +294,12 @@ export function DualMetricsDisplay({ mediaId, mediaTitle, expertMetrics }: DualM
           )}
         </div>
 
-        {/* Evaluate button inside the card */}
         <UserMetricsButton
           mediaId={mediaId}
           mediaTitle={mediaTitle}
           onSubmit={() => fetchCommunityMetrics()}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

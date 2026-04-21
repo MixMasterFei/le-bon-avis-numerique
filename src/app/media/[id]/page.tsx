@@ -18,7 +18,7 @@ import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { FamilyFitHero } from "@/components/media/FamilyFitHero"
-import { SimilarMedia } from "@/components/media/SimilarMedia"
+import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
@@ -827,12 +827,34 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   </div>
                 </div>
               }>
-                <SimilarMedia
-                  mediaId={dbId}
-                  mediaType={media.type}
-                  genres={media.genres}
-                  topics={media.topics}
-                />
+                <div>
+                  <div
+                    className="mb-6"
+                    style={{ borderTop: "1px solid var(--color-warm-line)" }}
+                  />
+                  <h2
+                    className="font-serif text-xl md:text-2xl font-medium mb-4"
+                    style={{
+                      color: "var(--color-warm-ink)",
+                      letterSpacing: "-0.02em",
+                    }}
+                  >
+                    Dans le même{" "}
+                    <em
+                      className="italic"
+                      style={{ color: "var(--color-warm-accent)" }}
+                    >
+                      genre
+                    </em>
+                  </h2>
+                  <ApercuSimilarMedia
+                    mediaId={dbId}
+                    mediaType={media.type}
+                    genres={media.genres}
+                    topics={media.topics}
+                    serifClass="font-serif"
+                  />
+                </div>
               </Suspense>
             )}
           </div>

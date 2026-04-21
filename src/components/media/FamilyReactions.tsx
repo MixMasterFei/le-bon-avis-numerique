@@ -20,9 +20,8 @@ import {
   Plus,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface FamilyMemberWithReaction {
   id: string
@@ -148,97 +147,120 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
     }
   }
 
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
+  const Shell = ({ children }: { children: React.ReactNode }) => (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      {children}
+    </div>
+  )
+
+  const SectionHeading = () => (
+    <h3
+      className={`${serifClass} text-lg font-medium flex items-center gap-2 mb-3`}
+      style={{ color: p.ink, letterSpacing: "-0.02em" }}
+    >
+      <Users className="h-5 w-5" style={{ color: p.accent }} />
+      Réactions de la famille
+    </h3>
+  )
+
   // Not logged in
   if (status === "unauthenticated") {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Réactions de la famille
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-3">
-            Connectez-vous pour enregistrer les réactions de votre famille à ce contenu.
-          </p>
-          <Button asChild size="sm">
-            <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>Se connecter</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <Shell>
+        <SectionHeading />
+        <p className="text-sm mb-3" style={{ color: p.ink2 }}>
+          Connectez-vous pour enregistrer les réactions de votre famille à ce
+          contenu.
+        </p>
+        <Link
+          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+          style={{ background: p.ink, color: p.bg }}
+        >
+          Se connecter
+        </Link>
+      </Shell>
     )
   }
 
   // Loading
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6 flex justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-        </CardContent>
-      </Card>
+      <Shell>
+        <div className="flex justify-center py-2">
+          <Loader2
+            className="h-5 w-5 animate-spin"
+            style={{ color: p.accent }}
+          />
+        </div>
+      </Shell>
     )
   }
 
   // No family members
   if (members.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Réactions de la famille
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-3">
-            Ajoutez les membres de votre famille pour enregistrer leurs réactions.
-          </p>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/profil">
-              <Plus className="h-4 w-4 mr-1" />
-              Ajouter un membre
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <Shell>
+        <SectionHeading />
+        <p className="text-sm mb-3" style={{ color: p.ink2 }}>
+          Ajoutez les membres de votre famille pour enregistrer leurs
+          réactions.
+        </p>
+        <Link
+          href="/profil"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{
+            background: "transparent",
+            color: p.ink,
+            border: `1px solid ${p.line2}`,
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Ajouter un membre
+        </Link>
+      </Shell>
     )
   }
 
   // Show reactions with members who have reacted
   const membersWithReactions = members.filter((m) => m.reaction)
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Réactions de la famille
-          </CardTitle>
-          {members.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-              className="text-xs"
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Réduire
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Ajouter réaction
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Shell>
+      <div className="flex items-center justify-between mb-3">
+        <h3
+          className={`${serifClass} text-lg font-medium flex items-center gap-2`}
+          style={{ color: p.ink, letterSpacing: "-0.02em" }}
+        >
+          <Users className="h-5 w-5" style={{ color: p.accent }} />
+          Réactions de la famille
+        </h3>
+        {members.length > 0 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-opacity hover:opacity-70"
+            style={{ color: p.ink2 }}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Réduire
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Ajouter
+              </>
+            )}
+          </button>
+        )}
+      </div>
+      <div className="space-y-4">
         {error && (
           <p className="text-sm text-red-500">{error}</p>
         )}
@@ -326,11 +348,12 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
 
         {/* Show prompt if no reactions yet */}
         {membersWithReactions.length === 0 && !expanded && (
-          <p className="text-sm text-gray-500">
-            Cliquez sur &quot;Ajouter réaction&quot; pour noter comment vos enfants ont réagi à ce contenu.
+          <p className="text-sm" style={{ color: p.ink2 }}>
+            Cliquez sur &quot;Ajouter&quot; pour noter comment vos enfants ont
+            réagi à ce contenu.
           </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </Shell>
   )
 }
