@@ -13,7 +13,6 @@ import {
   Tv,
   Gamepad2,
   BookOpen,
-  Library,
   User,
   LogOut,
   Settings,
@@ -36,16 +35,15 @@ interface NavItem {
   name: string
   href: string
   icon: typeof Film
-  adminOnly?: boolean
 }
 
-// Mangas is admin-only until catalog quality passes review (non-French
-// synopses, partial coverage). Remove `adminOnly: true` when ready to
-// launch publicly.
+// Mangas intentionally omitted from the top nav during soft launch —
+// catalog quality is still being calibrated (non-French synopses,
+// partial coverage). Admins reach /mangas via direct URL or the admin
+// dashboard. Add back here when ready for public launch.
 const navigation: NavItem[] = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
-  { name: "Mangas", href: "/mangas", icon: Library, adminOnly: true },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
 ]
 
@@ -135,8 +133,6 @@ export function SiteHeader() {
 
   const isAdmin = session?.user?.role === "ADMIN"
 
-  const visibleNavigation = navigation.filter((item) => !item.adminOnly || isAdmin)
-
   const navLinkStyle = {
     color: p.ink,
   }
@@ -186,7 +182,7 @@ export function SiteHeader() {
 
           <div className="hidden lg:flex flex-1 items-center justify-center">
             <nav className="flex items-center space-x-1">
-              {visibleNavigation.map((item) => (
+              {navigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -484,7 +480,7 @@ export function SiteHeader() {
         </form>
 
         <nav className="lg:hidden flex items-center gap-1 pb-2 overflow-x-auto -mx-1 px-1">
-          {visibleNavigation.map((item) => (
+          {navigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
@@ -520,7 +516,7 @@ export function SiteHeader() {
           style={{ background: p.bg, borderColor: p.line }}
         >
           <nav className="container mx-auto px-4 py-4 space-y-1">
-            {visibleNavigation.map((item) => (
+            {navigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
