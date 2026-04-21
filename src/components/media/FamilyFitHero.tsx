@@ -6,6 +6,10 @@ import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lig
 import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const SAGE = "#5C8A5C"
+const AMBER = "#C08A3E"
 
 // ---------------------------------------------------------------------------
 // Types (shared with FamilyFitCard)
@@ -53,26 +57,26 @@ const LEVEL_CONFIG: Record<
 > = {
   excellent: {
     label: "Excellent",
-    pillBg: "bg-green-500/20",
-    pillText: "text-green-300",
+    pillBg: "rgba(92, 138, 92, 0.14)",
+    pillText: SAGE,
     icon: Check,
   },
   good: {
     label: "Bon",
-    pillBg: "bg-blue-500/20",
-    pillText: "text-blue-300",
+    pillBg: "rgba(92, 138, 92, 0.10)",
+    pillText: SAGE,
     icon: Check,
   },
   moderate: {
     label: "Modéré",
-    pillBg: "bg-amber-500/20",
-    pillText: "text-amber-300",
+    pillBg: "rgba(192, 138, 62, 0.14)",
+    pillText: AMBER,
     icon: AlertTriangle,
   },
   poor: {
     label: "Attention",
-    pillBg: "bg-red-500/20",
-    pillText: "text-red-300",
+    pillBg: "rgba(209, 106, 74, 0.14)",
+    pillText: "#D16A4A",
     icon: XIcon,
   },
 }
@@ -82,20 +86,39 @@ const LEVEL_CONFIG: Record<
 // ---------------------------------------------------------------------------
 
 function HeroSkeleton() {
+  const p = APERCU_PALETTE
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
+    <div
+      className="rounded-xl p-5"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
       <div className="flex items-center gap-2 mb-4">
-        <div className="h-5 w-5 rounded bg-white/20 animate-pulse" />
-        <div className="h-5 w-36 rounded bg-white/20 animate-pulse" />
+        <div
+          className="h-5 w-5 rounded animate-pulse"
+          style={{ background: p.bg2 }}
+        />
+        <div
+          className="h-5 w-36 rounded animate-pulse"
+          style={{ background: p.bg2 }}
+        />
       </div>
       <div className="space-y-3">
         {[1, 2].map((i) => (
           <div key={i} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white/20 animate-pulse" />
-              <div className="h-4 w-20 rounded bg-white/20 animate-pulse" />
+              <div
+                className="h-8 w-8 rounded-full animate-pulse"
+                style={{ background: p.bg2 }}
+              />
+              <div
+                className="h-4 w-20 rounded animate-pulse"
+                style={{ background: p.bg2 }}
+              />
             </div>
-            <div className="h-6 w-16 rounded-full bg-white/20 animate-pulse" />
+            <div
+              className="h-6 w-16 rounded-full animate-pulse"
+              style={{ background: p.bg2 }}
+            />
           </div>
         ))}
       </div>
@@ -136,38 +159,58 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   // ---------- Loading ----------
   if (loading) return <HeroSkeleton />
 
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+  const shellStyle = {
+    background: p.card,
+    border: `1px solid ${p.line}`,
+  }
+
   // ---------- Not logged in ----------
   if (data?.status === "not_logged_in") {
     return (
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
+      <div className="rounded-2xl p-5" style={shellStyle}>
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg">
-            <Users className="h-4 w-4 text-white" />
+          <div
+            className="p-1.5 rounded-lg"
+            style={{ background: p.bg2, color: p.accent }}
+          >
+            <Users className="h-4 w-4" />
           </div>
-          <h3 className="text-base font-semibold text-white">
+          <h3
+            className={`${serifClass} text-base font-medium`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
             Adapté à votre foyer ?
           </h3>
         </div>
-        <p className="text-sm text-gray-300 leading-relaxed mb-4">
-          Créez un profil famille pour découvrir si ce contenu convient à chaque membre de votre foyer.
+        <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
+          Créez un profil famille pour découvrir si ce contenu convient à
+          chaque membre de votre foyer.
         </p>
         <div className="flex flex-col gap-2">
           <Link
             href="/inscription"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg transition-all"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90"
+            style={{ background: p.ink, color: p.bg }}
           >
             <UserPlus className="h-4 w-4" />
             Créer mon profil
           </Link>
           <Link
             href="/connexion"
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white/80 border border-white/20 hover:bg-white/10 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-80"
+            style={{
+              background: "transparent",
+              color: p.ink,
+              border: `1px solid ${p.line2}`,
+            }}
           >
             <LogIn className="h-4 w-4" />
             Se connecter
           </Link>
         </div>
-        <p className="text-xs text-gray-400 mt-3">
+        <p className="text-xs mt-3" style={{ color: p.ink2 }}>
           Gratuit — 2 minutes. Modifiable à tout moment.
         </p>
       </div>
@@ -177,21 +220,29 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   // ---------- No family members ----------
   if (data?.status === "no_family") {
     return (
-      <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
+      <div className="rounded-2xl p-5" style={shellStyle}>
         <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg">
-            <Users className="h-4 w-4 text-white" />
+          <div
+            className="p-1.5 rounded-lg"
+            style={{ background: p.bg2, color: p.accent }}
+          >
+            <Users className="h-4 w-4" />
           </div>
-          <h3 className="text-base font-semibold text-white">
+          <h3
+            className={`${serifClass} text-base font-medium`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
             Adapté à votre foyer ?
           </h3>
         </div>
-        <p className="text-sm text-gray-300 leading-relaxed mb-4">
-          Ajoutez les membres de votre foyer pour voir si ce contenu leur convient.
+        <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
+          Ajoutez les membres de votre foyer pour voir si ce contenu leur
+          convient.
         </p>
         <Link
           href="/profil"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 rounded-lg transition-all"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90"
+          style={{ background: p.ink, color: p.bg }}
         >
           <UserPlus className="h-4 w-4" />
           Ajouter un membre
@@ -208,23 +259,27 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   const isFamilyWarning = data.status === "family_warning"
 
   return (
-    <div className="bg-white/10 backdrop-blur-md rounded-xl p-5 border border-white/10">
-      <h3 className="text-base font-semibold text-white flex items-center gap-2 mb-2">
+    <div className="rounded-2xl p-5" style={shellStyle}>
+      <h3
+        className={`${serifClass} text-base font-medium flex items-center gap-2 mb-2`}
+        style={{ color: p.ink, letterSpacing: "-0.02em" }}
+      >
         {isFamilyWarning ? (
           <>
-            <ShieldAlert className="h-5 w-5 text-orange-400" />
-            <span className="text-orange-300">Attention famille</span>
+            <ShieldAlert className="h-5 w-5" style={{ color: p.accent }} />
+            <span style={{ color: p.accent }}>Attention famille</span>
           </>
         ) : (
           <>
-            <Users className="h-5 w-5 text-indigo-300" />
+            <Users className="h-5 w-5" style={{ color: p.accent }} />
             Adapté à ma famille ?
           </>
         )}
       </h3>
       {isFamilyWarning && (
-        <p className="text-sm text-orange-300/80 mb-3">
-          Ce contenu contient des éléments sensibles pour les familles avec enfants.
+        <p className="text-sm mb-3" style={{ color: p.accent }}>
+          Ce contenu contient des éléments sensibles pour les familles avec
+          enfants.
         </p>
       )}
 
@@ -250,9 +305,17 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
                     name={member.name}
                     size={20}
                   />
-                  <span className="font-medium text-sm text-white truncate">{member.name}</span>
+                  <span
+                    className="font-medium text-sm truncate"
+                    style={{ color: p.ink }}
+                  >
+                    {member.name}
+                  </span>
                   {member.age != null && (
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span
+                      className="text-xs flex-shrink-0"
+                      style={{ color: p.ink2 }}
+                    >
                       {member.age} ans
                     </span>
                   )}
@@ -261,10 +324,12 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
                 {/* Score pill */}
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0",
-                    config.pillBg,
-                    config.pillText
+                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0"
                   )}
+                  style={{
+                    background: config.pillBg,
+                    color: config.pillText,
+                  }}
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {config.label}
@@ -272,11 +337,16 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
               </div>
 
               {/* Reason */}
-              <p className="text-xs text-gray-400 pl-7">{member.reason}</p>
+              <p className="text-xs pl-7" style={{ color: p.ink2 }}>
+                {member.reason}
+              </p>
 
               {/* Affinity insight */}
               {member.affinity?.affinityReason && (
-                <p className="text-xs text-indigo-300 pl-7 flex items-center gap-1">
+                <p
+                  className="text-xs pl-7 flex items-center gap-1"
+                  style={{ color: p.accent2 }}
+                >
                   <Lightbulb className="h-3 w-3 flex-shrink-0" />
                   {member.affinity.affinityReason}
                 </p>
@@ -286,7 +356,8 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
               {member.hasPreferences === false && (
                 <Link
                   href={`/profil/quiz/${member.id}`}
-                  className="text-xs text-indigo-300 pl-7 flex items-center gap-1 hover:text-indigo-200 transition-colors"
+                  className="text-xs pl-7 flex items-center gap-1 hover:opacity-70 transition-opacity"
+                  style={{ color: p.accent }}
                 >
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
                   Faire le quiz pour des recommandations personnalisées

@@ -38,14 +38,9 @@ function PillButton({
       disabled={disabled}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all disabled:opacity-60"
       style={{
-        background: active
-          ? "rgba(255,255,255,0.95)"
-          : "rgba(255,255,255,0.12)",
-        color: active ? activeColor || p.ink : "#fff",
-        border: `1px solid ${
-          active ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.25)"
-        }`,
-        backdropFilter: "blur(6px)",
+        background: p.card,
+        color: active ? activeColor || p.ink : p.ink,
+        border: `1px solid ${active ? activeColor || p.ink : p.line2}`,
       }}
     >
       {children}

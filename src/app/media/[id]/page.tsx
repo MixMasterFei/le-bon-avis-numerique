@@ -577,26 +577,37 @@ export default async function MediaPage({ params }: MediaPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.mainEntity) }}
       />
 
-      {/* Hero Section with Backdrop */}
-      <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
-        {/* Backdrop Image — hidden for sensitive content */}
-        <div className="absolute inset-0 overflow-hidden">
+      {/* Hero Section — warm cream with blurred backdrop overlay */}
+      <section
+        className="relative"
+        style={{ background: "var(--color-warm-bg)" }}
+      >
+        {/* Blurred backdrop + warm cream overlay */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <HeroBackdrop
             src={media.posterUrl}
             expertAgeRec={media.expertAgeRec}
             violenceScore={media.contentMetrics?.violence}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(209, 106, 74, 0.10) 0%, rgba(245, 241, 233, 0.82) 45%, var(--color-warm-bg) 100%)",
+            }}
+          />
         </div>
 
         <div className="container mx-auto px-4 py-8 relative">
-          {/* Back Button */}
           <BackButton className="mb-8" />
 
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Poster */}
             <div className="lg:w-1/4 shrink-0">
-              <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl">
+              <div
+                className="relative aspect-[2/3] rounded-2xl overflow-hidden"
+                style={{ boxShadow: "0 24px 48px rgba(0,0,0,0.18)" }}
+              >
                 <BlurredPoster
                   src={media.posterUrl}
                   alt={media.title}
@@ -609,9 +620,18 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
 
             {/* Info */}
-            <div className="flex-1 text-white min-w-0">
+            <div
+              className="flex-1 min-w-0"
+              style={{ color: "var(--color-warm-ink)" }}
+            >
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
+                <span
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  style={{
+                    background: "var(--color-warm-bg2)",
+                    color: "var(--color-warm-ink)",
+                  }}
+                >
                   {mediaTypeLabels[media.type]}
                 </span>
                 <OfficialRatingBadge
@@ -650,27 +670,56 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
               {/* Rating Summary */}
               {(media.reviews?.length || 0) > 0 ? (
-                <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+                <div
+                  className="flex items-center gap-6 p-4 rounded-xl"
+                  style={{
+                    background: "var(--color-warm-card)",
+                    border: "1px solid var(--color-warm-line)",
+                  }}
+                >
                   <div className="flex items-center gap-2">
-                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                    <span className="text-2xl font-bold">{avgRating.toFixed(1)}</span>
-                    <span className="text-gray-400">/ 5</span>
+                    <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
+                    <span
+                      className="font-serif text-2xl font-medium"
+                      style={{
+                        color: "var(--color-warm-ink)",
+                        letterSpacing: "-0.02em",
+                      }}
+                    >
+                      {avgRating.toFixed(1)}
+                    </span>
+                    <span style={{ color: "var(--color-warm-ink2)" }}>/ 5</span>
                   </div>
-                  <div className="text-sm text-gray-400">
+                  <div
+                    className="text-sm"
+                    style={{ color: "var(--color-warm-ink2)" }}
+                  >
                     Basé sur {media.reviews.length} avis
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-                  <Star className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm text-gray-400">
+                <div
+                  className="flex items-center gap-3 p-4 rounded-xl"
+                  style={{
+                    background: "var(--color-warm-card)",
+                    border: "1px solid var(--color-warm-line)",
+                  }}
+                >
+                  <Star
+                    className="h-5 w-5"
+                    style={{ color: "var(--color-warm-ink2)" }}
+                  />
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--color-warm-ink2)" }}
+                  >
                     Aucun avis pour le moment — soyez le premier à donner votre avis !
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Family Fit — hero column (desktop: third column, mobile: stacked below) */}
+            {/* Family Fit — hero column */}
             {dbId && (
               <div className="lg:w-72 xl:w-80 shrink-0">
                 <FamilyFitHero mediaId={dbId} />
@@ -678,7 +727,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Content Section */}
       <div className="container mx-auto px-4 py-12">
