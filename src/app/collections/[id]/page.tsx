@@ -189,7 +189,7 @@ export default function CollectionPage() {
                   </div>
 
                   <Link href={mediaUrl} className="block">
-                    <div className="flex flex-col sm:flex-row gap-5">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-5">
                       <div
                         className="relative w-full sm:w-48 aspect-[2/3] sm:aspect-auto sm:h-72 rounded-xl overflow-hidden shrink-0"
                         style={{

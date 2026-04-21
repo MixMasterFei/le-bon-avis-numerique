@@ -146,17 +146,17 @@ export default function GuidesPage() {
                 opacity: guide.available ? 1 : 0.75,
               }}
             >
-              <div className="flex items-start gap-4 mb-5">
+              <div className="flex items-start gap-3 sm:gap-4 mb-5">
                 <div
-                  className="inline-flex items-center justify-center w-11 h-11 rounded-full flex-shrink-0"
+                  className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full flex-shrink-0"
                   style={{ background: p.bg2, color: p.accent }}
                 >
                   <guide.icon className="h-5 w-5" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h2
-                      className={`${serifClass} text-lg md:text-xl font-medium`}
+                      className={`${serifClass} text-base sm:text-lg md:text-xl font-medium`}
                       style={{ color: p.ink, letterSpacing: "-0.02em" }}
                     >
                       {guide.title}
@@ -171,7 +171,7 @@ export default function GuidesPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm md:text-base" style={{ color: p.ink2 }}>
+                  <p className="text-xs sm:text-sm md:text-base" style={{ color: p.ink2 }}>
                     {guide.description}
                   </p>
                 </div>
