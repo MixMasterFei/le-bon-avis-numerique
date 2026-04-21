@@ -17,6 +17,10 @@
   --color-line2: rgba(30, 26, 21, 0.15);
   --color-placeholder: #E6DFCE;
 
+  /* Semi-transparent header backdrop — declared as its own token so
+     dark mode can swap the rgba without a color-mix() call. */
+  --color-header-bg: rgba(245, 241, 233, 0.92);
+
   /* Backward-compat aliases — existing code throughout src/ uses
      --color-warm-* names. These point at the canonical tokens so
      dark mode also flows through them. */
@@ -87,6 +91,7 @@
   --color-line: rgba(244, 239, 228, 0.08);
   --color-line2: rgba(244, 239, 228, 0.14);
   --color-placeholder: #2F2A24;
+  --color-header-bg: rgba(27, 24, 21, 0.92);
 }
 
 /* Smooth the transition when users toggle — but skip this during the

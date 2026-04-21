@@ -58,9 +58,11 @@ export function ThemeToggle({ className }: { className?: string }) {
       title={label}
       className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-opacity hover:opacity-70 ${className ?? ""}`}
       style={{
-        background: "transparent",
+        // Subtle cream/near-black pill so the toggle reads as a
+        // distinct chip instead of blending with the header.
+        background: p.bg2,
         color: p.ink,
-        border: `1px solid ${p.line2}`,
+        border: `1px solid ${p.line}`,
       }}
     >
       {theme === null ? (

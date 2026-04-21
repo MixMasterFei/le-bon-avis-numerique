@@ -85,11 +85,13 @@ export default function RootLayout({
     >
       <head>
         {/* Theme resolution — runs before first paint to prevent FOUC.
-           Reads localStorage.theme first, then falls back to system
-           preference. Inline so it executes synchronously. */}
+           Default is warm/light; dark mode is opt-in only (requires an
+           explicit "dark" value in localStorage). We intentionally do
+           NOT follow prefers-color-scheme because the brand is
+           warm/light-first — users who want Soirée click the toggle. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`,
+            __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.dataset.theme=(t==='dark')?'dark':'light';}catch(e){document.documentElement.dataset.theme='light';}})();`,
           }}
         />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />

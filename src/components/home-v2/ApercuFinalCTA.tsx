@@ -40,7 +40,7 @@ export function ApercuFinalCTA({
                 <Link
                   href="/profil"
                   className="px-7 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  style={{ background: "#fff", color: p.ink }}
+                  style={{ background: "#fff", color: "#1E1A15" }}
                 >
                   Mon espace
                 </Link>
@@ -56,7 +56,7 @@ export function ApercuFinalCTA({
                 <Link
                   href="/inscription"
                   className="px-7 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02]"
-                  style={{ background: "#fff", color: p.ink }}
+                  style={{ background: "#fff", color: "#1E1A15" }}
                 >
                   Créer mon foyer gratuitement
                 </Link>

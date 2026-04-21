@@ -1,6 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 const BROWSE = [
   { name: "Films", href: "/films" },
@@ -58,11 +57,19 @@ const COLUMNS = [
 ]
 
 export function SiteFooter() {
-  const p = APERCU_PALETTE
+  // Footer uses hardcoded brand colors (dark band regardless of theme)
+  // instead of palette tokens, so the dark-mode palette doesn't invert
+  // it. Keep the dim rgba here for the secondary link colors.
   const dim = "rgba(244,239,228,0.60)"
 
   return (
-    <footer style={{ background: p.ink, color: p.bg }} className="relative">
+    <footer
+      // Footer stays as a fixed dark brand band in both light and dark
+      // modes — prevents the inversion where p.ink (=off-white in dark)
+      // would flip the footer to a light band inside a dark page.
+      style={{ background: "#1E1A15", color: "#F5F1E9" }}
+      className="relative"
+    >
       <div className="container mx-auto px-4 md:px-8 pt-14 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
@@ -77,13 +84,13 @@ export function SiteFooter() {
               <div className="flex items-baseline gap-1">
                 <span
                   className="text-lg uppercase tracking-tight"
-                  style={{ fontFamily: "var(--font-anton)", color: p.bg }}
+                  style={{ fontFamily: "var(--font-anton)", color: "#F5F1E9" }}
                 >
                   Totem
                 </span>
                 <span
                   className="text-xl uppercase"
-                  style={{ fontFamily: "var(--font-edunline)", color: p.accent }}
+                  style={{ fontFamily: "var(--font-edunline)", color: "#D16A4A" }}
                 >
                   Avisé
                 </span>
@@ -134,7 +141,7 @@ export function SiteFooter() {
               <h3
                 className="text-sm font-semibold mb-3"
                 style={{
-                  color: p.bg,
+                  color: "#F5F1E9",
                   letterSpacing: "0.02em",
                   fontFamily: "var(--font-serif)",
                 }}

@@ -135,7 +135,7 @@ export function SiteHeader() {
     <header
       className="sticky top-0 z-50 w-full border-b backdrop-blur-md"
       style={{
-        background: "rgba(245, 241, 233, 0.92)",
+        background: "var(--color-header-bg)",
         borderColor: p.line,
       }}
     >
