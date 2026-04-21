@@ -238,7 +238,7 @@ export default function ContactPage() {
                   >
                     Sujet
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {subjects.map((subject) => {
                       const active = formData.subject === subject.value
                       return (

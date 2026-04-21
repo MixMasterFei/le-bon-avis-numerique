@@ -103,7 +103,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
         />
       ) : (
         <section className="container mx-auto px-4 md:px-8 py-10 md:py-16">
-          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-16 items-start">
+          <div className="grid lg:grid-cols-[1.05fr_1fr] gap-6 lg:gap-16 items-start">
             {/* Left: editorial intro */}
             <div className="lg:pt-4">
               <div
@@ -245,7 +245,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  <ul className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2.5 text-[11px]">
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2.5 text-[11px]">
                     {[
                       { ok: passwordChecks.length, label: "8 caractères minimum" },
                       { ok: passwordChecks.upper, label: "Une majuscule" },

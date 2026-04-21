@@ -109,11 +109,11 @@ export default function TarifsPage() {
 
       <section className="py-12" style={{ background: p.bg2 }}>
         <div className="container mx-auto px-4 max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-4 md:gap-6">
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className="relative rounded-3xl p-6 md:p-8"
+                className="relative rounded-3xl p-5 sm:p-6 md:p-8"
                 style={{
                   background: p.card,
                   border: `${plan.highlight ? "2px" : "1px"} solid ${
