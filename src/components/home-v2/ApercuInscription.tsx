@@ -5,6 +5,7 @@ import Link from "next/link"
 import { signIn } from "next-auth/react"
 import { Eye, EyeOff, Check, X, ArrowRight, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { trackSignupCompleted } from "@/lib/analytics"
 
 const SAGE = "#5C8A5C"
 
@@ -75,6 +76,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
 
       setRegisteredEmail(email)
       setSubmitted(true)
+      trackSignupCompleted("email")
     } catch {
       setErrorMessage("Une erreur est survenue")
       setIsLoading(false)
@@ -83,6 +85,8 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
 
   async function handleGoogleSignIn() {
     setGoogleLoading(true)
+    // Fire analytics before the full-page redirect so Plausible catches it.
+    trackSignupCompleted("google")
     await signIn("google", { callbackUrl: "/profil" })
   }
 

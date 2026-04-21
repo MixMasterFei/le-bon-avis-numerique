@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react"
 import { ThumbsUp, ThumbsDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { trackAgeVote } from "@/lib/analytics"
 
 const SAGE = "#5C8A5C"
 
@@ -38,6 +39,7 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
   const handleVote = async (agree: boolean) => {
     if (!session?.user) return
     setSubmitting(true)
+    trackAgeVote(agree)
 
     // Optimistic update
     setData((prev) => {

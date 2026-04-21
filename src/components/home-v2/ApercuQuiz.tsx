@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Check, Plus, X, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { trackQuizCompleted } from "@/lib/analytics"
 
 const SAGE = "#5C8A5C"
 
@@ -168,6 +169,7 @@ export function ApercuQuiz({ serifClass, memberId, memberName }: ApercuQuizProps
         return
       }
       setDone(true)
+      trackQuizCompleted()
       router.refresh()
     } catch {
       setSaveError("Une erreur est survenue")

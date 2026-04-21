@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Sun, Moon } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { trackThemeToggled } from "@/lib/analytics"
 
 type Theme = "light" | "dark"
 
@@ -38,6 +39,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       // localStorage can throw in private mode / quota — non-fatal.
     }
     setTheme(next)
+    trackThemeToggled(next)
   }
 
   // Render a neutral placeholder until we know the theme (one paint).
