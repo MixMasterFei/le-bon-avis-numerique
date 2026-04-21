@@ -130,6 +130,21 @@ jobs:
           done
           echo "::endgroup::"
 
+      - name: Enrich mangas (2 batches of 5)
+        if: >-
+          github.event.inputs.task != 'quality'
+        run: |
+          echo "::group::Enrich mangas"
+          for i in 1 2; do
+            echo "Manga batch $i:"
+            curl -sSL --max-time 58 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"type":"manga","limit":5}' \
+              "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
+          done
+          echo "::endgroup::"
+
       - name: Deep enrichment (Pass 2 - GPT-5 + web search)
         if: >-
           github.event.inputs.task != 'quality' &&

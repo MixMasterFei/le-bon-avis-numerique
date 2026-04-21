@@ -40,6 +40,8 @@ interface RefreshStats {
   updated: number
   errors: number
   errorDetails: string[]
+  backfillMatched: number
+  backfillSkipped: number
 }
 
 async function lookupFrenchEdition(displayTitle: string, authors: string[]): Promise<{
@@ -145,9 +147,18 @@ export async function GET(req: NextRequest) {
   const dry = url.searchParams.get("dry") === "true"
   const pages = Math.min(Math.max(parseInt(url.searchParams.get("pages") ?? "2"), 1), 4)
 
-  const stats: RefreshStats = { fetched: 0, created: 0, updated: 0, errors: 0, errorDetails: [] }
+  const stats: RefreshStats = {
+    fetched: 0,
+    created: 0,
+    updated: 0,
+    errors: 0,
+    errorDetails: [],
+    backfillMatched: 0,
+    backfillSkipped: 0,
+  }
 
   try {
+    // Phase 1: AniList refresh.
     // Pull 2 pages × 50 = up to 100 recently-updated manga series.
     // AniList sorts by UPDATED_AT_DESC so these are the most active titles.
     for (let page = 1; page <= pages; page++) {
@@ -161,11 +172,51 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Phase 2: French-edition backfill for older rows that predate
+    // the Google Books lookup or whose first lookup failed. Capped so
+    // the whole cron stays under the 60s Vercel serverless limit.
+    if (!dry) {
+      const backfillCap = 15
+      const pending = await prisma.mediaItem.findMany({
+        where: { type: "MANGA", googleBookId: null },
+        orderBy: { createdAt: "asc" },
+        take: backfillCap,
+        select: { id: true, title: true, director: true, latestVolumeDate: true },
+      })
+
+      for (const item of pending) {
+        try {
+          const authors = item.director ? [item.director.split(",")[0].trim()] : []
+          const edition = await lookupFrenchEdition(item.title, authors)
+          if (edition.googleBookId) {
+            await prisma.mediaItem.update({
+              where: { id: item.id },
+              data: {
+                googleBookId: edition.googleBookId,
+                latestVolumeDate:
+                  edition.publishedAt &&
+                  (!item.latestVolumeDate || edition.publishedAt > item.latestVolumeDate)
+                    ? edition.publishedAt
+                    : undefined,
+              },
+            })
+            stats.backfillMatched += 1
+          } else {
+            stats.backfillSkipped += 1
+          }
+        } catch (e) {
+          stats.errors += 1
+          const msg = e instanceof Error ? e.message : String(e)
+          stats.errorDetails.push(`backfill ${item.id}: ${msg}`)
+        }
+      }
+    }
+
     const durationMs = Date.now() - startedAt
     await logCronRun({
       task: "weekly-manga",
       status: stats.errors > 0 ? "partial" : "success",
-      summary: `fetched=${stats.fetched} created=${stats.created} updated=${stats.updated} errors=${stats.errors}`,
+      summary: `fetched=${stats.fetched} created=${stats.created} updated=${stats.updated} backfillFR=${stats.backfillMatched}/${stats.backfillMatched + stats.backfillSkipped} errors=${stats.errors}`,
       details: { runId, dry, pages, stats },
       startTime: startedAt,
     })
