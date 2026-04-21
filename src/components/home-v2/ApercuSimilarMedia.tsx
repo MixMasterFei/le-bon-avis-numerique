@@ -47,6 +47,7 @@ export async function ApercuSimilarMedia({
   topics,
   serifClass,
 }: ApercuSimilarMediaProps) {
+  const TARGET = 10
   let similarMedia: SimilarItem[] = []
 
   try {
@@ -56,7 +57,7 @@ export async function ApercuSimilarMedia({
         OR: [{ mediaIdA: mediaId }, { mediaIdB: mediaId }],
       },
       orderBy: { similarityScore: "desc" },
-      take: 10,
+      take: TARGET,
       include: {
         mediaA: {
           select: {
@@ -83,25 +84,31 @@ export async function ApercuSimilarMedia({
       },
     })
 
-    similarMedia = similarities.map((sim) => {
-      const other = sim.mediaIdA === mediaId ? sim.mediaB : sim.mediaA
-      return {
-        id: other.id,
-        title: other.title,
-        type: other.type as string,
-        posterUrl: other.posterUrl,
-        expertAgeRec: other.expertAgeRec,
-        genres: other.genres,
-        releaseDate: other.releaseDate,
-        score: sim.similarityScore,
-      }
-    })
+    similarMedia = similarities
+      .map((sim) => {
+        const other = sim.mediaIdA === mediaId ? sim.mediaB : sim.mediaA
+        return {
+          id: other.id,
+          title: other.title,
+          type: other.type as string,
+          posterUrl: other.posterUrl,
+          expertAgeRec: other.expertAgeRec,
+          genres: other.genres,
+          releaseDate: other.releaseDate,
+          score: sim.similarityScore,
+        }
+      })
+      // Drop rows whose poster is missing so cards aren't empty
+      .filter((m) => m.posterUrl && m.posterUrl.startsWith("http"))
 
-    // 2. Fallback: genre-based scoring when no precomputed similarities
-    if (similarMedia.length === 0 && genres.length > 0) {
+    // 2. Top up from genre-based fallback when precomputed doesn't fill the rail.
+    //    Earlier behaviour only ran the fallback when precomputed === 0, so items
+    //    with a single similarity row would render a rail of one card.
+    if (similarMedia.length < TARGET && genres.length > 0) {
+      const alreadyIncluded = new Set(similarMedia.map((m) => m.id))
       const fallback = await prisma.mediaItem.findMany({
         where: {
-          id: { not: mediaId },
+          id: { not: mediaId, notIn: [...alreadyIncluded] },
           type: mediaType as MediaType,
           genres: { hasSome: genres },
           posterUrl: { not: null, startsWith: "http" },
@@ -159,7 +166,7 @@ export async function ApercuSimilarMedia({
       })
 
       scored.sort((a, b) => b.score - a.score)
-      similarMedia.push(...scored.slice(0, 10))
+      similarMedia.push(...scored.slice(0, TARGET - similarMedia.length))
     }
   } catch (error) {
     console.error("[ApercuSimilarMedia] Failed to fetch:", error)

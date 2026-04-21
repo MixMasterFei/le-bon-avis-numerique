@@ -594,8 +594,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
           />
         </div>
 
-        <div className="container mx-auto px-4 md:px-8 py-10 md:py-16 relative">
-          <BackButton className="mb-8" />
+        <div className="container mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-10 md:pb-14 relative">
+          <BackButton className="mb-6" />
 
           <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {/* Poster */}
