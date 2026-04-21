@@ -163,7 +163,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20 ring-4 ring-white/10">
           <Search className="absolute left-5 h-5 w-5 text-gray-500 pointer-events-none" />
           {loading && (
-            <Loader2 className="absolute right-36 h-4 w-4 text-gray-500 animate-spin" />
+            <Loader2 className="absolute right-14 sm:right-36 h-4 w-4 text-gray-500 animate-spin" />
           )}
           {query && !loading && (
             <button
@@ -175,7 +175,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
                 inputRef.current?.focus()
               }}
               aria-label="Effacer la recherche"
-              className="absolute right-36 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-600 transition-colors"
+              className="absolute right-14 sm:right-36 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -184,7 +184,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
             ref={inputRef}
             type="text"
             placeholder="Rechercher un film, une série, un jeu..."
-            className="w-full pl-14 pr-36 h-16 text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-2xl"
+            className="w-full pl-12 sm:pl-14 pr-14 sm:pr-36 h-14 sm:h-16 text-base sm:text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-2xl"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -197,10 +197,15 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
           />
           <Button
             type="submit"
-            className={`absolute right-2 h-12 px-6 rounded-xl shadow-lg font-semibold transition-all duration-300 hover:scale-105 ${submitClassName ?? ""}`}
+            aria-label="Rechercher"
+            // On mobile (<sm) the button becomes icon-only so the input has
+            // real room to breathe on 360-414px widths. Desktop keeps the
+            // "Rechercher" label.
+            className={`absolute right-2 h-10 sm:h-12 w-10 sm:w-auto sm:px-6 rounded-xl shadow-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center justify-center ${submitClassName ?? ""}`}
             disabled={query.trim().length < 2}
           >
-            Rechercher
+            <Search className="h-4 w-4 sm:hidden" />
+            <span className="hidden sm:inline">Rechercher</span>
           </Button>
         </div>
       </form>
@@ -234,9 +239,11 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         </div>
       )}
 
-      {/* Popular searches - Single line pills */}
-      <div className="mt-5 flex items-center justify-center gap-3">
-        <span className="text-gray-600 text-sm flex items-center gap-1.5 font-medium shrink-0">
+      {/* Popular searches — wrap on mobile so pills don't force
+          horizontal scroll. `whitespace-nowrap` kept on individual
+          pills so "Films pour enfants" doesn't split mid-phrase. */}
+      <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+        <span className="text-gray-600 text-xs sm:text-sm flex items-center gap-1.5 font-medium shrink-0">
           <TrendingUp className="h-4 w-4" />
           Populaire:
         </span>
@@ -244,7 +251,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
           <Link
             key={item.href}
             href={item.href}
-            className="text-sm bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-4 py-1.5 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm whitespace-nowrap"
+            className="text-xs sm:text-sm bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm whitespace-nowrap"
           >
             {item.label}
           </Link>
