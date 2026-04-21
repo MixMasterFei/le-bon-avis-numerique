@@ -699,7 +699,18 @@ export async function GET(
 
     return NextResponse.json(
       { status: isFamilyWarning ? "family_warning" : "ok", members },
-      { headers: { "Cache-Control": "private, max-age=60" } }
+      {
+        headers: {
+          // Family composition rarely changes minute-to-minute. Bump the
+          // cache so repeat visits during a session hit the browser cache
+          // instead of recomputing the full fit pipeline. `private` keeps
+          // it per-user (different households never share a cache entry).
+          // `stale-while-revalidate` lets us serve instantly while
+          // refreshing in the background.
+          "Cache-Control":
+            "private, max-age=300, stale-while-revalidate=600",
+        },
+      }
     )
   } catch (error) {
     console.error("Family fit error:", error)
