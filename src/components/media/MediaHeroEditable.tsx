@@ -2,12 +2,12 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
 import { AgeVoteButton } from "./AgeVoteButton"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface Review {
   role: string
@@ -41,6 +41,7 @@ export function MediaHeroEditable({
   originalTitle,
   reviews = [],
 }: MediaHeroEditableProps) {
+  const p = APERCU_PALETTE
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -128,28 +129,51 @@ export function MediaHeroEditable({
     }
   }
 
+  const warmInputClass =
+    "bg-white/70 border"
+
   return (
     <>
+      {/* Eyebrow */}
+      <div
+        className="text-[11px] font-semibold mb-2 uppercase tracking-wide"
+        style={{ color: p.accent }}
+      >
+        Analysé en détail
+      </div>
+
       {/* Title */}
       {isEditing ? (
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="text-3xl font-bold mb-2 bg-white/10 border-white/30 text-white placeholder:text-white/50"
+          className={`font-serif text-3xl font-medium mb-2 ${warmInputClass}`}
+          style={{ color: p.ink, borderColor: p.line2 }}
           placeholder="Titre"
         />
       ) : (
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">
+        <h1
+          className="font-serif text-[28px] md:text-4xl lg:text-5xl font-medium leading-[1.05] m-0"
+          style={{ letterSpacing: "-0.02em", color: p.ink }}
+        >
           {title}
         </h1>
       )}
 
       {originalTitle && originalTitle !== title && (
-        <p className="text-xl text-gray-400 mb-4">{originalTitle}</p>
+        <p
+          className="font-serif italic text-lg md:text-xl mt-2"
+          style={{ color: p.ink2 }}
+        >
+          {originalTitle}
+        </p>
       )}
 
       {/* Meta Info */}
-      <div className="flex flex-wrap items-center gap-4 text-gray-300 mb-6">
+      <div
+        className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
+        style={{ color: p.ink2 }}
+      >
         {releaseDate && (
           <span className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
@@ -163,7 +187,8 @@ export function MediaHeroEditable({
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
               type="number"
-              className="w-20 h-7 text-sm bg-white/10 border-white/30 text-white"
+              className={`w-20 h-7 text-sm ${warmInputClass}`}
+              style={{ color: p.ink, borderColor: p.line2 }}
               placeholder="min"
             />
             <span className="text-sm">min</span>
@@ -182,7 +207,8 @@ export function MediaHeroEditable({
             <Input
               value={director}
               onChange={(e) => setDirector(e.target.value)}
-              className="w-48 h-7 text-sm bg-white/10 border-white/30 text-white"
+              className={`w-48 h-7 text-sm ${warmInputClass}`}
+              style={{ color: p.ink, borderColor: p.line2 }}
               placeholder="Réalisateur"
             />
           </span>
@@ -193,27 +219,36 @@ export function MediaHeroEditable({
 
       {/* Genres */}
       {isEditing ? (
-        <div className="mb-4">
+        <div className="mt-4">
           <Input
             value={genresStr}
             onChange={(e) => setGenresStr(e.target.value)}
-            className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+            className={warmInputClass}
+            style={{ color: p.ink, borderColor: p.line2 }}
             placeholder="Genres (séparés par des virgules)"
           />
-          <p className="text-xs text-gray-400 mt-1">Séparés par des virgules</p>
+          <p className="text-xs mt-1" style={{ color: p.ink2 }}>
+            Séparés par des virgules
+          </p>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {initialGenres.map((genre) => (
-            <Badge
-              key={genre}
-              variant="outline"
-              className="border-white/30 text-white"
-            >
-              {genre}
-            </Badge>
-          ))}
-        </div>
+        initialGenres.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {initialGenres.map((genre) => (
+              <span
+                key={genre}
+                className="px-3 py-1 rounded-full text-xs"
+                style={{
+                  background: p.card,
+                  border: `1px solid ${p.line}`,
+                  color: p.ink2,
+                }}
+              >
+                {genre}
+              </span>
+            ))}
+          </div>
+        )
       )}
 
       {/* Synopsis */}
@@ -221,26 +256,33 @@ export function MediaHeroEditable({
         <Textarea
           value={synopsisFr}
           onChange={(e) => setSynopsisFr(e.target.value)}
-          className="mb-8 max-w-3xl bg-white/10 border-white/30 text-white placeholder:text-white/50 min-h-[120px]"
+          className={`mt-6 max-w-3xl min-h-[120px] ${warmInputClass}`}
+          style={{ color: p.ink, borderColor: p.line2 }}
           placeholder="Synopsis en français"
         />
       ) : (
-        <p className="text-gray-300 leading-relaxed mb-8 max-w-3xl">
-          {initialSynopsis}
-        </p>
+        initialSynopsis && (
+          <p
+            className="mt-6 text-[15px] md:text-base leading-relaxed max-w-2xl"
+            style={{ color: p.ink }}
+          >
+            {initialSynopsis}
+          </p>
+        )
       )}
 
-      {/* Age Recommendations Row - Expert + Community side by side */}
+      {/* Age Recommendations Row */}
       {isEditing ? (
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-sm text-gray-300">Âge expert:</span>
+        <div className="mt-6 flex items-center gap-2">
+          <span className="text-sm" style={{ color: p.ink2 }}>Âge expert:</span>
           <Input
             value={expertAgeRec}
             onChange={(e) => setExpertAgeRec(e.target.value)}
             type="number"
             min={0}
             max={21}
-            className="w-20 h-9 bg-white/10 border-white/30 text-white"
+            className={`w-20 h-9 ${warmInputClass}`}
+            style={{ color: p.ink, borderColor: p.line2 }}
             placeholder="Âge"
           />
         </div>
@@ -250,10 +292,23 @@ export function MediaHeroEditable({
 
       {/* Floating Admin Bar */}
       {isAdmin && (
-        <div className="fixed bottom-4 right-4 z-40 flex items-center gap-2 bg-white shadow-lg rounded-full px-4 py-2 border border-gray-200">
-          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+        <div
+          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full px-4 py-2"
+          style={{
+            background: p.card,
+            border: `1px solid ${p.line2}`,
+            boxShadow: "0 10px 28px rgba(30,26,21,0.14)",
+          }}
+        >
+          <span
+            className="text-[11px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
+            style={{
+              background: "rgba(216,154,74,0.14)",
+              color: "#8A5A1E",
+            }}
+          >
             Admin
-          </Badge>
+          </span>
           {isEditing ? (
             <>
               <Button
@@ -292,8 +347,8 @@ export function MediaHeroEditable({
   )
 }
 
-// Unified expert + community age recommendations row
 function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: number | null; reviews: Review[]; mediaId: string }) {
+  const p = APERCU_PALETTE
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
@@ -306,54 +361,89 @@ function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: num
     : null
   const totalReviews = reviews.length
 
-  const getBgColor = (age: number) => {
-    if (age <= 3) return "bg-emerald-500"
-    if (age <= 7) return "bg-emerald-600"
-    if (age <= 10) return "bg-amber-500"
-    if (age <= 13) return "bg-orange-500"
-    return "bg-red-500"
-  }
-
   if (!isRated && !parentAvg && !kidAvg) return null
 
+  const panelStyle = {
+    background: p.card,
+    border: `1px solid ${p.line}`,
+  } as const
+
   return (
-    <div className="flex flex-col sm:flex-row items-stretch gap-3 mb-6">
+    <div className="mt-6 flex flex-col sm:flex-row items-stretch gap-3">
       {/* Expert recommendation */}
       {isRated && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl">
-          <div className={`flex items-center justify-center h-12 w-12 rounded-full text-white font-bold text-lg shadow-md ${getBgColor(expertAge!)}`}>
+        <div
+          className="inline-flex items-center gap-4 p-3 pr-4 rounded-xl"
+          style={panelStyle}
+        >
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+            style={{ background: p.accent2, color: "#fff" }}
+          >
             {expertAge}+
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Recommandation</p>
-            <p className="text-xs text-white/60">dès {expertAge} ans</p>
+            <div
+              className="text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: p.ink2 }}
+            >
+              Recommandation
+            </div>
+            <div
+              className="font-serif text-base font-medium"
+              style={{ color: p.ink, letterSpacing: "-0.01em" }}
+            >
+              dès {expertAge} ans
+            </div>
           </div>
-          <AgeVoteButton mediaId={mediaId} className="ml-auto" />
+          <div className="ml-2">
+            <AgeVoteButton mediaId={mediaId} />
+          </div>
         </div>
       )}
 
       {/* Parent community */}
       {parentAvg !== null && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-violet-500/80 text-white font-bold text-base">
+        <div
+          className="inline-flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={panelStyle}
+        >
+          <div
+            className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
+            style={{ background: "#7C6BA8" }}
+          >
             {parentAvg}+
           </div>
           <div>
-            <p className="text-sm font-medium text-white/90">Parents</p>
-            <p className="text-xs text-white/50">{totalReviews} avis</p>
+            <p className="text-sm font-medium" style={{ color: p.ink }}>
+              Parents
+            </p>
+            <p className="text-xs" style={{ color: p.ink2 }}>
+              {totalReviews} avis
+            </p>
           </div>
         </div>
       )}
 
       {/* Kids community */}
       {kidAvg !== null && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-          <div className="flex items-center justify-center h-10 w-10 rounded-full bg-pink-500/80 text-white font-bold text-base">
+        <div
+          className="inline-flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={panelStyle}
+        >
+          <div
+            className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
+            style={{ background: "#D89AB0" }}
+          >
             {kidAvg}+
           </div>
           <div>
-            <p className="text-sm font-medium text-white/90">Enfants</p>
-            <p className="text-xs text-white/50">{kidReviews.length} avis</p>
+            <p className="text-sm font-medium" style={{ color: p.ink }}>
+              Enfants
+            </p>
+            <p className="text-xs" style={{ color: p.ink2 }}>
+              {kidReviews.length} avis
+            </p>
           </div>
         </div>
       )}

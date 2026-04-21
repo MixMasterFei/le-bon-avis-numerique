@@ -25,7 +25,7 @@ export function BackButton({ className, fallbackHref = "/" }: BackButtonProps) {
     <button
       onClick={handleBack}
       className={cn(
-        "inline-flex items-center gap-2 text-gray-300 hover:text-white transition-colors",
+        "inline-flex items-center gap-2 text-[var(--color-warm-ink2)] hover:text-[var(--color-warm-ink)] transition-colors",
         className
       )}
     >

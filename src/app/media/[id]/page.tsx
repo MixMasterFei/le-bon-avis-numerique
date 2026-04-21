@@ -7,7 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
@@ -17,12 +17,13 @@ import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
-import { FamilyFitHero } from "@/components/media/FamilyFitHero"
+import { ApercuFamilyFit } from "@/components/home-v2/ApercuFamilyFit"
+import { ApercuSection } from "@/components/home-v2/ApercuSection"
 import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
-import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
 import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
@@ -565,8 +566,14 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, id)
 
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="flex flex-col overflow-x-hidden min-h-screen"
+      style={{ background: p.bg, color: p.ink }}
+    >
       {/* JSON-LD Structured Data */}
       <script
         type="application/ld+json"
@@ -577,26 +584,29 @@ export default async function MediaPage({ params }: MediaPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.mainEntity) }}
       />
 
-      {/* Hero Section with Backdrop */}
-      <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
-        {/* Backdrop Image — hidden for sensitive content */}
+      {/* Hero — warm cream canvas with terracotta→cream gradient over a blurred poster */}
+      <section className="relative" style={{ background: p.bg }}>
         <div className="absolute inset-0 overflow-hidden">
           <HeroBackdrop
             src={media.posterUrl}
             expertAgeRec={media.expertAgeRec}
             violenceScore={media.contentMetrics?.violence}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent" />
         </div>
 
-        <div className="container mx-auto px-4 py-8 relative">
-          {/* Back Button */}
+        <div className="container mx-auto px-4 md:px-8 py-10 md:py-16 relative">
           <BackButton className="mb-8" />
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
+          <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
             {/* Poster */}
             <div className="lg:w-1/4 shrink-0">
-              <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-2xl">
+              <div
+                className="relative aspect-[2/3] rounded-2xl overflow-hidden mx-auto lg:mx-0 max-w-[280px] lg:max-w-none"
+                style={{
+                  background: p.placeholder,
+                  boxShadow: "0 24px 48px rgba(0,0,0,0.18)",
+                }}
+              >
                 <BlurredPoster
                   src={media.posterUrl}
                   alt={media.title}
@@ -609,9 +619,12 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
 
             {/* Info */}
-            <div className="flex-1 text-white min-w-0">
+            <div className="flex-1 min-w-0" style={{ color: p.ink }}>
               <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
+                <span
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                  style={{ background: p.bg2, color: p.ink }}
+                >
                   {mediaTypeLabels[media.type]}
                 </span>
                 <OfficialRatingBadge
@@ -637,309 +650,419 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
               {/* Platforms for games */}
               {media.type === "GAME" && media.platforms.length > 0 && (
-                <div className="mb-6">
+                <div className="mt-6">
                   <PlatformIcons platforms={media.platforms} variant="hero" />
                 </div>
               )}
 
               {/* Watch Providers & Trailer - loaded client-side */}
-              <WatchProvidersClient mediaId={dbId} mediaType={media.type} className="mb-4" />
+              <WatchProvidersClient mediaId={dbId} mediaType={media.type} className="mt-6" />
 
               {/* Favorite, Watchlist & Review Actions */}
-              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
+              <div className="mt-4">
+                <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
+              </div>
 
               {/* Rating Summary */}
               {(media.reviews?.length || 0) > 0 ? (
-                <div className="flex items-center gap-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-                  <div className="flex items-center gap-2">
-                    <Star className="h-6 w-6 fill-amber-400 text-amber-400" />
-                    <span className="text-2xl font-bold">{avgRating.toFixed(1)}</span>
-                    <span className="text-gray-400">/ 5</span>
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Basé sur {media.reviews.length} avis
-                  </div>
+                <div
+                  className="mt-6 inline-flex items-center gap-4 px-4 py-3 rounded-xl"
+                  style={{ background: p.card, border: `1px solid ${p.line}` }}
+                >
+                  <Star className="h-5 w-5" style={{ color: p.accent, fill: p.accent }} />
+                  <span
+                    className={`${serifClass} text-xl font-medium`}
+                    style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                  >
+                    {avgRating.toFixed(1)}
+                  </span>
+                  <span className="text-sm" style={{ color: p.ink2 }}>/ 5</span>
+                  <span
+                    className="text-xs pl-3"
+                    style={{ color: p.ink2, borderLeft: `1px solid ${p.line}` }}
+                  >
+                    {media.reviews.length} avis
+                  </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-                  <Star className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm text-gray-400">
+                <div
+                  className="mt-6 inline-flex items-center gap-3 px-4 py-3 rounded-xl"
+                  style={{ background: p.card, border: `1px solid ${p.line}` }}
+                >
+                  <Star className="h-5 w-5" style={{ color: p.ink2 }} />
+                  <span className="text-sm" style={{ color: p.ink2 }}>
                     Aucun avis pour le moment — soyez le premier à donner votre avis !
                   </span>
                 </div>
               )}
             </div>
 
-            {/* Family Fit — hero column (desktop: third column, mobile: stacked below) */}
+            {/* Family Fit — warm ApercuFamilyFit widget */}
             {dbId && (
               <div className="lg:w-72 xl:w-80 shrink-0">
-                <FamilyFitHero mediaId={dbId} />
+                <ApercuFamilyFit mediaId={dbId} serifClass={serifClass} />
               </div>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Content Section */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
-            {media.type !== "GAME" && (
-              <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
-            )}
+      {/* Body — 2/3 main + 1/3 sidebar on the deeper cream (bg2) */}
+      <section className="py-8 md:py-12" style={{ background: p.bg2 }}>
+        <div className="container mx-auto px-4 md:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
+            {/* Main column */}
+            <div className="lg:col-span-2 space-y-10">
+              {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
+              {media.type !== "GAME" &&
+                media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
+                  <ApercuSection
+                    eyebrow="Ce qu’il faut savoir"
+                    title="Les"
+                    titleAccent="points clés"
+                    serifClass={serifClass}
+                  >
+                    <WarmCard>
+                      <WhatParentsNeedToKnow
+                        items={media.contentMetrics.whatParentsNeedToKnow}
+                      />
+                    </WarmCard>
+                  </ApercuSection>
+                )}
 
-            {/* Talk to Your Kids - for movies/TV/books only (not games) */}
-            <TalkToYourKids
-              title={media.title}
-              type={media.type}
-              metrics={media.contentMetrics}
-              genres={media.genres}
-              topics={media.topics}
-            />
-
-            {/* Screenshots - from local database */}
-            {media.screenshots && media.screenshots.length > 0 && (
-              <AdminScreenshotsWrapper
-                screenshots={media.screenshots}
-                title={media.title}
-                isAdmin={adminUser}
-              />
-            )}
-
-            <MediaDetailTabs
-              reviewsCount={media.reviews?.length || 0}
-              reviewsContent={<ReviewsSection reviews={media.reviews} />}
-              detailsContent={
-                <div
-                  className="rounded-2xl p-6 space-y-4"
-                  style={{
-                    background: "var(--color-warm-card)",
-                    border: "1px solid var(--color-warm-line)",
-                  }}
+              {/* Screenshots - from local database */}
+              {media.screenshots && media.screenshots.length > 0 && (
+                <ApercuSection
+                  eyebrow="Extraits"
+                  title="Captures"
+                  titleAccent="d’écran"
+                  titleAccentColor="accent2"
+                  serifClass={serifClass}
                 >
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <h4
-                        className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                        style={{ color: "var(--color-warm-ink2)" }}
-                      >
-                        Type
-                      </h4>
-                      <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                        {mediaTypeLabels[media.type]}
-                      </p>
+                  <WarmCard padded={false}>
+                    <div className="p-3 md:p-4">
+                      <AdminScreenshotsWrapper
+                        screenshots={media.screenshots}
+                        title={media.title}
+                        isAdmin={adminUser}
+                      />
                     </div>
-                    {media.releaseDate && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Date de sortie
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {formatDateFr(media.releaseDate)}
-                        </p>
-                      </div>
-                    )}
-                    {media.duration && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Durée
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.duration} minutes
-                        </p>
-                      </div>
-                    )}
-                    {media.director && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          {media.type === "BOOK"
-                            ? "Auteur"
-                            : media.type === "GAME"
-                              ? "Développeur"
-                              : "Réalisateur"}
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.director}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  </WarmCard>
+                </ApercuSection>
+              )}
 
-                  {media.type === "GAME" && media.platforms.length > 0 && (
-                    <PlatformIcons platforms={media.platforms} variant="full" />
-                  )}
-
-                  {media.topics.length > 0 && (
-                    <div>
-                      <h4
-                        className="text-xs font-semibold mb-2 uppercase tracking-wide"
-                        style={{ color: "var(--color-warm-ink2)" }}
+              {/* Reviews + Details tabs */}
+              <ApercuSection
+                eyebrow="Avis & détails"
+                title="Ce que disent"
+                titleAccent="les parents"
+                serifClass={serifClass}
+              >
+                <MediaDetailTabs
+                  reviewsCount={media.reviews?.length || 0}
+                  reviewsContent={
+                    <WarmCard>
+                      <ReviewsSection reviews={media.reviews} />
+                    </WarmCard>
+                  }
+                  detailsContent={
+                    <WarmCard>
+                      <Card
+                        style={{
+                          background: "transparent",
+                          border: 0,
+                          boxShadow: "none",
+                        }}
                       >
-                        Thèmes
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {media.topics.map((topic) => (
-                          <span
-                            key={topic}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              background: "var(--color-warm-bg2)",
-                              color: "var(--color-warm-ink)",
-                            }}
+                        <CardContent className="p-0 space-y-5">
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <DetailRow label="Type" value={mediaTypeLabels[media.type]} />
+                            {media.releaseDate && (
+                              <DetailRow
+                                label="Date de sortie"
+                                value={formatDateFr(media.releaseDate)}
+                              />
+                            )}
+                            {media.duration && (
+                              <DetailRow
+                                label="Durée"
+                                value={`${media.duration} minutes`}
+                              />
+                            )}
+                            {media.director && (
+                              <DetailRow
+                                label={
+                                  media.type === "BOOK"
+                                    ? "Auteur"
+                                    : media.type === "GAME"
+                                      ? "Développeur"
+                                      : "Réalisateur"
+                                }
+                                value={media.director}
+                              />
+                            )}
+                          </div>
+
+                          {media.type === "GAME" && media.platforms.length > 0 && (
+                            <PlatformIcons platforms={media.platforms} variant="full" />
+                          )}
+
+                          {media.topics.length > 0 && (
+                            <div>
+                              <h4
+                                className="text-[11px] font-semibold mb-2 uppercase tracking-wide"
+                                style={{ color: p.ink2 }}
+                              >
+                                Thèmes
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {media.topics.map((topic) => (
+                                  <span
+                                    key={topic}
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    style={{
+                                      background: p.bg2,
+                                      color: p.ink2,
+                                      border: `1px solid ${p.line}`,
+                                    }}
+                                  >
+                                    {topic}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </WarmCard>
+                  }
+                />
+              </ApercuSection>
+            </div>
+
+            {/* Sidebar — each widget wrapped in its own warm frame */}
+            <aside className="space-y-8">
+              {/* Game Info Card - for games only */}
+              {media.type === "GAME" && (
+                <ApercuSection
+                  eyebrow="Fiche technique"
+                  title="Le"
+                  titleAccent="jeu en bref"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <GameInfoCard
+                        platforms={media.platforms}
+                        genres={media.genres}
+                        consumerism={media.contentMetrics.consumerism}
+                        violence={media.contentMetrics.violence}
+                      />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+              )}
+
+              {/* Family Reactions */}
+              {dbId && (
+                <ApercuSection
+                  eyebrow="Réactions"
+                  title="Pour"
+                  titleAccent="votre foyer"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <FamilyReactions mediaId={dbId} mediaTitle={media.title} />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+              )}
+
+              {/* Dual Content Metrics (Expert vs Community) - NOT for games */}
+              {dbId && media.type !== "GAME" && (
+                <ApercuSection
+                  eyebrow="Les 7 critères"
+                  title="Analyse"
+                  titleAccent="en détail"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <DualMetricsDisplay
+                        mediaId={dbId}
+                        mediaTitle={media.title}
+                        expertMetrics={media.contentMetrics}
+                      />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+              )}
+
+              {/* Fallback to single ContentGrid if no dbId - NOT for games */}
+              {!dbId && media.type !== "GAME" && (
+                <ApercuSection
+                  eyebrow="Contenu"
+                  title="Analyse"
+                  titleAccent="du contenu"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard>
+                    <ContentGrid metrics={media.contentMetrics} />
+                  </WarmCard>
+                </ApercuSection>
+              )}
+
+              {/* Report Correction Button */}
+              {dbId && (
+                <ApercuSection
+                  eyebrow="Vous repérez une erreur ?"
+                  title="Aidez-nous"
+                  titleAccent="à corriger"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard padded={false}>
+                    <div className="p-5">
+                      <ReportCorrectionButton
+                        mediaId={dbId}
+                        mediaTitle={media.title}
+                      />
+                    </div>
+                  </WarmCard>
+                </ApercuSection>
+              )}
+
+              {/* Related (only for demo/mock items for now) */}
+              {source === "mock" && (
+                <ApercuSection
+                  eyebrow="Suggestions"
+                  title="Vous pourriez"
+                  titleAccent="aussi aimer"
+                  tight
+                  serifClass={serifClass}
+                >
+                  <WarmCard>
+                    <div className="space-y-3">
+                      {mockMediaItems
+                        .filter((m) => m.id !== media.id && m.type === media.type)
+                        .slice(0, 3)
+                        .map((related) => (
+                          <Link
+                            key={related.id}
+                            href={`/media/${toMediaRouteId(related.type, related.id)}`}
+                            className="flex items-center gap-3 p-2 -mx-2 rounded-lg transition-colors"
+                            style={{ color: p.ink }}
                           >
-                            {topic}
-                          </span>
+                            <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
+                              <Image
+                                src={related.posterUrl}
+                                alt={related.title}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm line-clamp-1">{related.title}</p>
+                              <p className="text-xs" style={{ color: p.ink2 }}>
+                                {related.expertAgeRec === null || related.expertAgeRec === undefined
+                                  ? "Âge non renseigné"
+                                  : `${related.expertAgeRec}+ ans`}
+                              </p>
+                            </div>
+                          </Link>
                         ))}
-                      </div>
                     </div>
-                  )}
-                </div>
-              }
-            />
+                  </WarmCard>
+                </ApercuSection>
+              )}
+            </aside>
+          </div>
+        </div>
+      </section>
 
-            {/* Similar Media — streamed via Suspense to avoid blocking page render */}
-            {dbId && (
+      {/* Similar media — full-width band on the lighter bg so the poster grid breathes */}
+      {dbId && (
+        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <ApercuSection
+              eyebrow="À découvrir ensuite"
+              title="Contenus"
+              titleAccent="similaires"
+              titleAccentColor="accent2"
+              serifClass={serifClass}
+            >
               <Suspense fallback={
                 <div className="animate-pulse">
                   <div
-                    className="h-6 w-48 rounded mb-4"
-                    style={{ background: "var(--color-warm-bg2)" }}
-                  />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+                  >
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div
                         key={i}
                         className="aspect-[2/3] rounded-lg"
-                        style={{ background: "var(--color-warm-placeholder)" }}
+                        style={{ background: p.placeholder }}
                       />
                     ))}
                   </div>
                 </div>
               }>
-                <div>
-                  <div
-                    className="mb-6"
-                    style={{ borderTop: "1px solid var(--color-warm-line)" }}
-                  />
-                  <h2
-                    className="font-serif text-xl md:text-2xl font-medium mb-4"
-                    style={{
-                      color: "var(--color-warm-ink)",
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    Dans le même{" "}
-                    <em
-                      className="italic"
-                      style={{ color: "var(--color-warm-accent)" }}
-                    >
-                      genre
-                    </em>
-                  </h2>
-                  <ApercuSimilarMedia
-                    mediaId={dbId}
-                    mediaType={media.type}
-                    genres={media.genres}
-                    topics={media.topics}
-                    serifClass="font-serif"
-                  />
-                </div>
+                <ApercuSimilarMedia
+                  mediaId={dbId}
+                  mediaType={media.type}
+                  genres={media.genres}
+                  topics={media.topics}
+                  serifClass={serifClass}
+                />
               </Suspense>
-            )}
+            </ApercuSection>
           </div>
+        </section>
+      )}
+    </div>
+  )
+}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Game Info Card - for games only */}
-            {media.type === "GAME" && (
-              <GameInfoCard
-                platforms={media.platforms}
-                genres={media.genres}
-                consumerism={media.contentMetrics.consumerism}
-                violence={media.contentMetrics.violence}
-              />
-            )}
+// ─── Helpers ─────────────────────────────────────────────────────────
 
-            {/* Family Reactions */}
-            {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
+function WarmCard({
+  children,
+  padded = true,
+}: {
+  children: React.ReactNode
+  padded?: boolean
+}) {
+  const p = APERCU_PALETTE
+  return (
+    <div
+      className={`rounded-2xl overflow-hidden ${padded ? "p-5 md:p-6" : ""}`}
+      style={{
+        background: p.card,
+        border: `1px solid ${p.line}`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
 
-            {/* Dual Content Metrics (Expert vs Community) - NOT for games */}
-            {dbId && media.type !== "GAME" && (
-              <DualMetricsDisplay
-                mediaId={dbId}
-                mediaTitle={media.title}
-                expertMetrics={media.contentMetrics}
-              />
-            )}
-
-            {/* Fallback to single ContentGrid if no dbId - NOT for games */}
-            {!dbId && media.type !== "GAME" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Analyse du contenu</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ContentGrid metrics={media.contentMetrics} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Report Correction Button */}
-            {dbId && (
-              <ReportCorrectionButton mediaId={dbId} mediaTitle={media.title} />
-            )}
-
-            {/* Related (only for demo/mock items for now) */}
-            {source === "mock" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {mockMediaItems
-                    .filter((m) => m.id !== media.id && m.type === media.type)
-                    .slice(0, 3)
-                    .map((related) => (
-                      <Link
-                        key={related.id}
-                        href={`/media/${toMediaRouteId(related.type, related.id)}`}
-                        className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                          <Image
-                            src={related.posterUrl}
-                            alt={related.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm line-clamp-1">{related.title}</p>
-                          <p className="text-xs text-gray-500">
-                            {related.expertAgeRec === null || related.expertAgeRec === undefined
-                              ? "Âge non renseigné"
-                              : `${related.expertAgeRec}+ ans`}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-      </div>
+function DetailRow({ label, value }: { label: string; value: string }) {
+  const p = APERCU_PALETTE
+  return (
+    <div>
+      <h4
+        className="text-[11px] font-semibold mb-1 uppercase tracking-wide"
+        style={{ color: p.ink2 }}
+      >
+        {label}
+      </h4>
+      <p className="font-medium" style={{ color: p.ink }}>
+        {value}
+      </p>
     </div>
   )
 }
