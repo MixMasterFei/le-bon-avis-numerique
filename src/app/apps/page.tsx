@@ -98,7 +98,7 @@ export default function AppsPage() {
             </p>
 
             {apps.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
                 {apps.map((app) => (
                   <ApercuMediaCard
                     key={app.id}

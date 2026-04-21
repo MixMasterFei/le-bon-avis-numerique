@@ -121,8 +121,8 @@ export default function ConfidentialitePage() {
               bases legales suivantes :
             </p>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <table className="min-w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 pr-4">Traitement</th>
@@ -242,8 +242,8 @@ export default function ConfidentialitePage() {
           <CardContent className="prose prose-gray max-w-none">
             <p>Nous conservons vos donnees selon les durees suivantes :</p>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
+              <table className="min-w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="text-left py-2 pr-4">Type de donnees</th>

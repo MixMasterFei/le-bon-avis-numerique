@@ -229,8 +229,8 @@ export default function NosValeursPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">{metric.description}</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 px-2 font-medium text-gray-500 w-16">Note</th>
@@ -286,8 +286,8 @@ export default function NosValeursPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">{metric.description}</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm">
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-2 px-2 font-medium text-gray-500 w-16">Note</th>

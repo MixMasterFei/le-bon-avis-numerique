@@ -329,7 +329,7 @@ function RecosInner() {
                 </div>
 
                 {loading ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                     {Array.from({ length: 8 }).map((_, i) => (
                       <div
                         key={i}
@@ -340,7 +340,7 @@ function RecosInner() {
                   </div>
                 ) : filtered.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
                       {filtered.slice(0, displayCount).map((m) => (
                         <ApercuMediaCard
                           key={`${m.type}:${m.id}`}
