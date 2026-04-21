@@ -51,7 +51,11 @@ export function ApercuCollections({ serifClass }: { serifClass: string }) {
             key={t.title}
             href={t.href}
             className="group rounded-2xl px-5 py-6 md:px-6 md:py-7 min-h-[140px] md:min-h-[160px] flex flex-col justify-end transition-all hover:-translate-y-1"
-            style={{ background: t.color, color: p.ink }}
+            // Tile backgrounds are fixed pastel swatches (don't swap in
+            // dark mode), so the text needs to be a fixed dark ink too —
+            // using p.ink here would flip to off-white in dark and kill
+            // contrast on every tile.
+            style={{ background: t.color, color: "#1E1A15" }}
           >
             <div
               className={`${serifClass} text-xl md:text-2xl font-semibold leading-none`}
