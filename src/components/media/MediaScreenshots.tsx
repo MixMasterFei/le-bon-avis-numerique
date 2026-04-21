@@ -3,8 +3,8 @@
 import { useState } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Camera, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface Screenshot {
   id: string
@@ -22,7 +22,15 @@ interface MediaScreenshotsProps {
   onDeleteScreenshot?: (id: string) => void
 }
 
-export function MediaScreenshots({ screenshots, title, className, isAdmin, onDeleteScreenshot }: MediaScreenshotsProps) {
+export function MediaScreenshots({
+  screenshots,
+  title,
+  className,
+  isAdmin,
+  onDeleteScreenshot,
+}: MediaScreenshotsProps) {
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
 
@@ -30,8 +38,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
     return null
   }
 
-  // Deduplicate by URL (catches exact duplicates from double-imports)
-  // and remove near-duplicates by extracting the TMDB file path base
   const seen = new Set<string>()
   const uniqueScreenshots = screenshots.filter((s) => {
     if (seen.has(s.url)) return false
@@ -39,7 +45,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
     return true
   })
 
-  // Sort by order, cap at 6 for display
   const sortedScreenshots = [...uniqueScreenshots]
     .sort((a, b) => a.order - b.order)
     .slice(0, 6)
@@ -54,14 +59,17 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
   }
 
   const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? sortedScreenshots.length - 1 : prev - 1))
+    setCurrentIndex((prev) =>
+      prev === 0 ? sortedScreenshots.length - 1 : prev - 1
+    )
   }
 
   const goToNext = () => {
-    setCurrentIndex((prev) => (prev === sortedScreenshots.length - 1 ? 0 : prev + 1))
+    setCurrentIndex((prev) =>
+      prev === sortedScreenshots.length - 1 ? 0 : prev + 1
+    )
   }
 
-  // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") closeLightbox()
     if (e.key === "ArrowLeft") goToPrevious()
@@ -70,20 +78,27 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
 
   return (
     <>
-      <Card className={cn("", className)}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Camera className="h-5 w-5 text-blue-500" />
-            Captures d&apos;ecran
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div
+        className={cn("rounded-2xl", className)}
+        style={{ background: p.card, border: `1px solid ${p.line}` }}
+      >
+        <div className="p-5 pb-3">
+          <h3
+            className={`${serifClass} text-lg font-medium flex items-center gap-2`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            <Camera className="h-5 w-5" style={{ color: p.accent }} />
+            Captures d&apos;écran
+          </h3>
+        </div>
+        <div className="px-5 pb-5">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {sortedScreenshots.map((screenshot, index) => (
               <div key={screenshot.id} className="relative group">
                 <button
                   onClick={() => openLightbox(index)}
-                  className="relative w-full aspect-video overflow-hidden rounded-lg bg-gray-100 hover:ring-2 hover:ring-blue-500 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="relative w-full aspect-video overflow-hidden rounded-lg transition-all focus:outline-none"
+                  style={{ background: p.placeholder }}
                 >
                   <Image
                     src={screenshot.url}
@@ -101,7 +116,8 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
                         onDeleteScreenshot(screenshot.id)
                       }
                     }}
-                    className="absolute top-1 right-1 z-10 p-1 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    className="absolute top-1 right-1 z-10 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                    style={{ background: p.accent, color: "#fff" }}
                     aria-label="Supprimer cette capture"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -110,13 +126,14 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Lightbox */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(10, 8, 6, 0.94)" }}
           onClick={closeLightbox}
           onKeyDown={handleKeyDown}
           tabIndex={0}
@@ -124,7 +141,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
           aria-modal="true"
           aria-label="Image gallery"
         >
-          {/* Close button */}
           <button
             onClick={closeLightbox}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -133,7 +149,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
             <X className="h-6 w-6" />
           </button>
 
-          {/* Previous button */}
           {sortedScreenshots.length > 1 && (
             <button
               onClick={(e) => {
@@ -141,13 +156,12 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
                 goToPrevious()
               }}
               className="absolute left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-              aria-label="Image precedente"
+              aria-label="Image précédente"
             >
               <ChevronLeft className="h-8 w-8" />
             </button>
           )}
 
-          {/* Main image */}
           <div
             className="relative max-w-5xl max-h-[85vh] w-full h-full mx-16"
             onClick={(e) => e.stopPropagation()}
@@ -162,7 +176,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
             />
           </div>
 
-          {/* Next button */}
           {sortedScreenshots.length > 1 && (
             <button
               onClick={(e) => {
@@ -176,7 +189,6 @@ export function MediaScreenshots({ screenshots, title, className, isAdmin, onDel
             </button>
           )}
 
-          {/* Counter */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-white/10 text-white text-sm">
             {currentIndex + 1} / {sortedScreenshots.length}
           </div>

@@ -21,6 +21,12 @@
      dark mode can swap the rgba without a color-mix() call. */
   --color-header-bg: rgba(245, 241, 233, 0.92);
 
+  /* Mid-gradient stop used by the /media/[id] hero backdrop overlay.
+     Needs to be semi-transparent (so the blurred poster peeks through)
+     AND theme-aware (so it doesn't show cream on the dark page).
+     Dark mode overrides this below. */
+  --color-hero-mid: rgba(245, 241, 233, 0.82);
+
   /* Backward-compat aliases — existing code throughout src/ uses
      --color-warm-* names. These point at the canonical tokens so
      dark mode also flows through them. */
@@ -92,6 +98,7 @@
   --color-line2: rgba(244, 239, 228, 0.14);
   --color-placeholder: #2F2A24;
   --color-header-bg: rgba(27, 24, 21, 0.92);
+  --color-hero-mid: rgba(27, 24, 21, 0.82);
 }
 
 /* Smooth the transition when users toggle — but skip this during the

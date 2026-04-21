@@ -594,7 +594,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgba(209, 106, 74, 0.10) 0%, rgba(245, 241, 233, 0.82) 45%, var(--color-warm-bg) 100%)",
+                "linear-gradient(180deg, rgba(209, 106, 74, 0.10) 0%, var(--color-hero-mid) 45%, var(--color-warm-bg) 100%)",
             }}
           />
         </div>

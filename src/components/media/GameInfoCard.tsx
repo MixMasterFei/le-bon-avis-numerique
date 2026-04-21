@@ -11,7 +11,7 @@ import {
   XCircle,
   HelpCircle
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface GameInfoCardProps {
   // Game metadata
@@ -27,7 +27,6 @@ interface GameInfoCardProps {
   className?: string
 }
 
-// Determine if game likely has online features based on genres/modes
 function detectOnlineFeatures(genres?: string[], gameModes?: string[]): boolean {
   const onlineGenres = ["mmo", "multiplayer", "battle royale", "moba", "online"]
   const onlineModes = ["multiplayer", "online", "co-op", "pvp", "battle royale"]
@@ -42,9 +41,8 @@ function detectOnlineFeatures(genres?: string[], gameModes?: string[]): boolean 
   return genreMatch || modeMatch || false
 }
 
-// Determine game type for display
 function getGameType(genres?: string[]): string {
-  if (!genres || genres.length === 0) return "Jeu video"
+  if (!genres || genres.length === 0) return "Jeu vidéo"
 
   const genreLower = genres.map(g => g.toLowerCase())
 
@@ -55,15 +53,17 @@ function getGameType(genres?: string[]): string {
   if (genreLower.some(g => g.includes("sport"))) return "Sport"
   if (genreLower.some(g => g.includes("rpg") || g.includes("role"))) return "RPG"
   if (genreLower.some(g => g.includes("shooter") || g.includes("fps"))) return "Tir"
-  if (genreLower.some(g => g.includes("strategy"))) return "Strategie"
+  if (genreLower.some(g => g.includes("strategy"))) return "Stratégie"
   if (genreLower.some(g => g.includes("simulation"))) return "Simulation"
   if (genreLower.some(g => g.includes("music") || g.includes("rhythm"))) return "Rythme"
   if (genreLower.some(g => g.includes("fighting"))) return "Combat"
 
-  return genres[0] || "Jeu video"
+  return genres[0] || "Jeu vidéo"
 }
 
-// Status indicator component
+// Status rows use warm palette tokens so they adapt in dark mode.
+// "warning" still uses the terracotta accent (attention without alarm);
+// yes/no/unknown all use neutral ink tones on the page surface.
 function StatusItem({
   icon: Icon,
   label,
@@ -75,28 +75,41 @@ function StatusItem({
   status: "yes" | "no" | "unknown" | "warning"
   description?: string
 }) {
-  const statusConfig = {
-    yes: { icon: CheckCircle, color: "text-green-600", bg: "bg-green-50" },
-    no: { icon: XCircle, color: "text-gray-400", bg: "bg-gray-50" },
-    unknown: { icon: HelpCircle, color: "text-gray-400", bg: "bg-gray-50" },
-    warning: { icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" }
-  }
+  const p = APERCU_PALETTE
 
-  const config = statusConfig[status]
-  const StatusIcon = config.icon
+  const tone = {
+    yes: { color: p.accent2, bg: p.bg2 },
+    no: { color: p.ink2, bg: p.bg2 },
+    unknown: { color: p.ink2, bg: p.bg2 },
+    warning: { color: p.accent, bg: p.bg2 },
+  }[status]
+
+  const StatusIcon = {
+    yes: CheckCircle,
+    no: XCircle,
+    unknown: HelpCircle,
+    warning: AlertTriangle,
+  }[status]
 
   return (
-    <div className={cn("flex items-center gap-3 p-3 rounded-lg", config.bg)}>
+    <div
+      className="flex items-center gap-3 p-3 rounded-lg"
+      style={{ background: tone.bg }}
+    >
       <div className="shrink-0">
-        <Icon className={cn("h-5 w-5", config.color)} />
+        <Icon className="h-5 w-5" style={{ color: tone.color }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-medium text-sm text-gray-900">{label}</span>
-          <StatusIcon className={cn("h-4 w-4", config.color)} />
+          <span className="font-medium text-sm" style={{ color: p.ink }}>
+            {label}
+          </span>
+          <StatusIcon className="h-4 w-4" style={{ color: tone.color }} />
         </div>
         {description && (
-          <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+          <p className="text-xs mt-0.5" style={{ color: p.ink2 }}>
+            {description}
+          </p>
         )}
       </div>
     </div>
@@ -114,31 +127,37 @@ export function GameInfoCard({
   hasInGamePurchases: providedPurchases,
   className
 }: GameInfoCardProps) {
-  // Detect features
+  const p = APERCU_PALETTE
+  const serifClass = "font-serif"
+
   const hasOnline = providedOnline ?? detectOnlineFeatures(genres, gameModes)
   const hasPurchases = providedPurchases ?? (consumerism !== undefined && consumerism >= 3)
   const hasViolence = violence !== undefined && violence >= 3
   const gameType = getGameType(genres)
 
-  // Determine if multiplayer
   const isMultiplayer = gameModes?.some(m =>
     m.toLowerCase().includes("multiplayer") ||
     m.toLowerCase().includes("co-op")
   ) || hasOnline
 
   return (
-    <Card className={cn("", className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Gamepad2 className="h-5 w-5 text-green-600" />
+    <div
+      className={cn("rounded-2xl", className)}
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      <div className="p-5 pb-3">
+        <h3
+          className={`${serifClass} text-lg font-medium flex items-center gap-2`}
+          style={{ color: p.ink, letterSpacing: "-0.02em" }}
+        >
+          <Gamepad2 className="h-5 w-5" style={{ color: p.accent }} />
           Infos pour les parents
-        </CardTitle>
-        <p className="text-sm text-gray-500">
+        </h3>
+        <p className="text-sm mt-1" style={{ color: p.ink2 }}>
           Ce qu&apos;il faut savoir avant de jouer
         </p>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {/* Game Type */}
+      </div>
+      <div className="px-5 pb-5 space-y-2">
         <StatusItem
           icon={Gamepad2}
           label={gameType}
@@ -146,7 +165,6 @@ export function GameInfoCard({
           description={genres?.slice(0, 3).join(", ")}
         />
 
-        {/* Multiplayer / Online */}
         <StatusItem
           icon={isMultiplayer ? Users : Globe}
           label={isMultiplayer ? "Multijoueur" : "Solo uniquement"}
@@ -155,34 +173,31 @@ export function GameInfoCard({
             hasOnline
               ? "Interactions en ligne avec d'autres joueurs"
               : isMultiplayer
-                ? "Peut se jouer a plusieurs localement"
+                ? "Peut se jouer à plusieurs localement"
                 : "Se joue seul"
           }
         />
 
-        {/* In-game purchases */}
         <StatusItem
           icon={DollarSign}
-          label="Achats integres"
+          label="Achats intégrés"
           status={hasPurchases ? "warning" : "no"}
           description={
             hasPurchases
-              ? "Propose des achats avec de l'argent reel"
-              : "Pas d'achats supplementaires"
+              ? "Propose des achats avec de l'argent réel"
+              : "Pas d'achats supplémentaires"
           }
         />
 
-        {/* Violence indicator */}
         {hasViolence && (
           <StatusItem
             icon={Zap}
             label="Contenu violent"
             status="warning"
-            description="Contient des scenes de violence"
+            description="Contient des scènes de violence"
           />
         )}
 
-        {/* Reading level hint for younger games */}
         {genres?.some(g =>
           g.toLowerCase().includes("puzzle") ||
           g.toLowerCase().includes("education") ||
@@ -192,10 +207,10 @@ export function GameInfoCard({
             icon={BookOpen}
             label="Lecture minimale"
             status="yes"
-            description="Peu de texte a lire pour jouer"
+            description="Peu de texte à lire pour jouer"
           />
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
