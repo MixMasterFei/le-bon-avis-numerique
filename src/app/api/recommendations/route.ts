@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     // Always recommend across all main media types for diversity
     // (not just the types the user already reacted to)
-    const mediaTypes = ["MOVIE", "TV", "GAME"] as const
+    const mediaTypes = ["MOVIE", "TV", "GAME", "MANGA"] as const
 
     // Sort genres by weight
     const topGenres = Object.entries(lovedGenres)

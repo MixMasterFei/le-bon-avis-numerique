@@ -14,7 +14,7 @@ interface ContentMetrics {
 
 interface TalkToYourKidsProps {
   title: string
-  type: "GAME" | "MOVIE" | "TV" | "BOOK" | "APP"
+  type: "GAME" | "MOVIE" | "TV" | "BOOK" | "APP" | "MANGA"
   metrics?: ContentMetrics
   genres?: string[]
   topics?: string[]

@@ -31,7 +31,7 @@ interface FamilyMember {
 interface Recommendation {
   id: string
   title: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   posterUrl: string
   genres: string[]
   expertAgeRec: number | null

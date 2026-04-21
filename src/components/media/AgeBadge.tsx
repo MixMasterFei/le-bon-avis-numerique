@@ -48,7 +48,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
 
 interface OfficialRatingBadgeProps {
   rating: string | null | undefined
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   size?: "sm" | "md"
   showLabel?: boolean
   className?: string

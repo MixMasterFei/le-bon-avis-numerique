@@ -7,6 +7,7 @@ import { ApercuNowInCinema } from "./ApercuNowInCinema"
 import { ApercuStreaming } from "./ApercuStreaming"
 import { ApercuAgeGrid } from "./ApercuAgeGrid"
 import { ApercuCollections } from "./ApercuCollections"
+import { NouveautesMangaRail } from "./NouveautesMangaRail"
 import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -44,6 +45,13 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
         <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
             <ApercuStreaming serifClass={serifClass} />
+          </div>
+        </section>
+
+        {/* Self-hiding rail: renders null if fewer than 3 recent manga. */}
+        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <NouveautesMangaRail serifClass={serifClass} />
           </div>
         </section>
 

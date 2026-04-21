@@ -30,7 +30,7 @@ import { fr } from "date-fns/locale"
 interface ContentRequest {
   id: string
   title: string
-  mediaType: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  mediaType: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   externalId: string | null
   description: string | null
   status: string

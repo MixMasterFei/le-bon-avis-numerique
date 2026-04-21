@@ -25,7 +25,7 @@ interface RequestContentModalProps {
   open: boolean
   onClose: () => void
   defaultTitle?: string
-  defaultType?: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  defaultType?: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   externalId?: string
 }
 

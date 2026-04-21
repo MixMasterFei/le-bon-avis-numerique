@@ -32,7 +32,7 @@ interface ContentMetricsV2 {
 interface MediaItemV2 {
   id: string
   title: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   releaseDate: string | null
   posterUrl: string
   expertAgeRec: number | null

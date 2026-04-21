@@ -15,7 +15,7 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 interface ApiItem {
   id: string
   title: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   posterUrl: string | null
   expertAgeRec: number | null
   genres: string[]

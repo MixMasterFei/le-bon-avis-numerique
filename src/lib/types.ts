@@ -3,7 +3,7 @@ export interface MediaItem {
   id: string
   title: string
   originalTitle?: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   releaseDate: string | null
   posterUrl: string
   synopsisFr: string | null

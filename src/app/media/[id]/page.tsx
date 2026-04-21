@@ -56,6 +56,11 @@ interface MediaPageProps {
 // Extended type for database items with screenshots
 interface DatabaseMediaItem extends MockMediaItem {
   numberOfSeasons?: number | null
+  // Manga-specific (only set when type === "MANGA")
+  volumeCount?: number | null
+  chapterCount?: number | null
+  demographic?: string | null
+  status?: string | null
   screenshots?: { id: string; url: string; width: number | null; height: number | null; order: number }[]
 }
 
@@ -171,6 +176,10 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
         height: s.height,
         order: s.order,
       })) || [],
+      volumeCount: (dbMedia as unknown as { volumeCount?: number | null }).volumeCount ?? null,
+      chapterCount: (dbMedia as unknown as { chapterCount?: number | null }).chapterCount ?? null,
+      demographic: (dbMedia as unknown as { demographic?: string | null }).demographic ?? null,
+      status: (dbMedia as unknown as { status?: string | null }).status ?? null,
     }
   } catch (error) {
     console.error("Failed to fetch from database:", error)
@@ -189,6 +198,7 @@ const typeLabels: Record<string, string> = {
   GAME: "Jeu vidéo",
   BOOK: "Livre",
   APP: "Application",
+  MANGA: "Manga",
 }
 
 const typeCategoryPaths: Record<string, { path: string; label: string }> = {
@@ -197,6 +207,7 @@ const typeCategoryPaths: Record<string, { path: string; label: string }> = {
   GAME: { path: "/jeux", label: "Jeux vidéo" },
   BOOK: { path: "/livres", label: "Livres" },
   APP: { path: "/apps", label: "Applications" },
+  MANGA: { path: "/mangas", label: "Mangas" },
 }
 
 // Generate dynamic metadata for SEO
@@ -815,12 +826,61 @@ export default async function MediaPage({ params }: MediaPageProps) {
                         >
                           {media.type === "BOOK"
                             ? "Auteur"
-                            : media.type === "GAME"
-                              ? "Développeur"
-                              : "Réalisateur"}
+                            : media.type === "MANGA"
+                              ? "Auteur(s)"
+                              : media.type === "GAME"
+                                ? "Développeur"
+                                : "Réalisateur"}
                         </h4>
                         <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
                           {media.director}
+                        </p>
+                      </div>
+                    )}
+                    {media.type === "MANGA" && (media.volumeCount || media.chapterCount) && (
+                      <div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Volumes
+                        </h4>
+                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                          {media.volumeCount
+                            ? `${media.volumeCount} tome${media.volumeCount > 1 ? "s" : ""}`
+                            : `${media.chapterCount} chapitres`}
+                        </p>
+                      </div>
+                    )}
+                    {media.type === "MANGA" && media.demographic && (
+                      <div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Public cible
+                        </h4>
+                        <p className="font-medium capitalize" style={{ color: "var(--color-warm-ink)" }}>
+                          {media.demographic}
+                        </p>
+                      </div>
+                    )}
+                    {media.type === "MANGA" && media.status && (
+                      <div>
+                        <h4
+                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Statut
+                        </h4>
+                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
+                          {media.status === "ongoing"
+                            ? "En cours"
+                            : media.status === "completed"
+                              ? "Terminé"
+                              : media.status === "hiatus"
+                                ? "Pause"
+                                : media.status}
                         </p>
                       </div>
                     )}

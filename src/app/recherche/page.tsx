@@ -16,7 +16,7 @@ interface DbMediaItem {
   id: string
   title: string
   originalTitle?: string | null
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   posterUrl: string | null
   expertAgeRec: number | null
   genres: string[]

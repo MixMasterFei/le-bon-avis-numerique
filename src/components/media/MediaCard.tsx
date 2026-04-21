@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 
-import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, EyeOff, ShieldAlert } from "lucide-react"
+import { Film, Tv, Gamepad2, BookOpen, Smartphone, Star, EyeOff, ShieldAlert, Library } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
@@ -23,6 +23,7 @@ const typeIcons = {
   GAME: Gamepad2,
   BOOK: BookOpen,
   APP: Smartphone,
+  MANGA: Library,
 }
 
 interface FamilyFitMember {

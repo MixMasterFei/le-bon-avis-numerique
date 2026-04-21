@@ -18,7 +18,7 @@ const popularSearches = [
 interface Suggestion {
   id: string
   title: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   posterUrl: string | null
   year: number | null
   ageRec: number | null

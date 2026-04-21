@@ -28,7 +28,7 @@ export function parseMediaRouteId(routeId: string): { type: MediaType | null; id
   const decodedId = decodedRouteId.slice(sepIdx + 1)
 
   const type =
-    rawType === "MOVIE" || rawType === "TV" || rawType === "GAME" || rawType === "BOOK" || rawType === "APP"
+    rawType === "MOVIE" || rawType === "TV" || rawType === "GAME" || rawType === "BOOK" || rawType === "APP" || rawType === "MANGA"
       ? (rawType as MediaType)
       : null
 

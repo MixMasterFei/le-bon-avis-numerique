@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MediaCard } from "@/components/media/MediaCard"
 import type { MediaItem, MediaItem as MockMediaItem } from "@/lib/types"
 
-type WizardType = "ALL" | "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+type WizardType = "ALL" | "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
 
 const typeConfig: Array<{ value: WizardType; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { value: "ALL", label: "Tout", icon: Users },

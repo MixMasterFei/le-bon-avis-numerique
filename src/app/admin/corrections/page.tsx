@@ -236,7 +236,7 @@ export default function AdminCorrectionsPage() {
                   </div>
                   <div className="min-w-0">
                     <Link
-                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP", correction.media.id)}`}
+                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA", correction.media.id)}`}
                       className="font-medium text-sm hover:text-primary line-clamp-2"
                     >
                       {correction.media.title}
@@ -245,7 +245,7 @@ export default function AdminCorrectionsPage() {
                       {correction.media.type}
                     </p>
                     <Link
-                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP", correction.media.id)}`}
+                      href={`/media/${toMediaRouteId(correction.media.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA", correction.media.id)}`}
                       target="_blank"
                       className="text-xs text-primary hover:underline flex items-center gap-1 mt-2"
                     >

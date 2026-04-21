@@ -9,7 +9,7 @@ import Link from "next/link"
 
 interface RequestContentButtonProps {
   defaultTitle?: string
-  defaultType?: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  defaultType?: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   externalId?: string
   variant?: "default" | "outline" | "ghost"
   size?: "default" | "sm" | "lg"

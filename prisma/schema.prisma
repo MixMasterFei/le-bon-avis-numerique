@@ -107,6 +107,7 @@ enum MediaType {
   GAME
   BOOK
   APP
+  MANGA
 }
 
 enum ReviewerRole {
@@ -140,6 +141,14 @@ model MediaItem {
   tmdbId       Int?    @map("tmdb_id")
   igdbId       Int?    @unique @map("igdb_id")
   googleBookId String? @unique @map("google_book_id")
+  anilistId    Int?    @unique @map("anilist_id") // Manga series, from AniList GraphQL
+
+  // Manga-specific fields (populated for type = MANGA; null for other types)
+  volumeCount      Int?      @map("volume_count")        // Tankōbon count
+  chapterCount     Int?      @map("chapter_count")       // For ongoing series where volumes lag chapters
+  demographic      String?                                // "shounen" | "shoujo" | "seinen" | "josei"
+  status           String?                                // "ongoing" | "completed" | "hiatus"
+  latestVolumeDate DateTime? @map("latest_volume_date")  // Drives /mangas sort=newest + Nouveautés rail
 
   // TMDB audience ratings (used internally for quality ranking, not displayed)
   tmdbRating     Float? @map("tmdb_rating")      // vote_average (0-10 scale)
@@ -181,6 +190,7 @@ model MediaItem {
   @@index([originalLanguage])
   @@index([releaseDate])
   @@index([type, releaseDate])
+  @@index([type, latestVolumeDate]) // drives "Nouveautés manga" rail + /mangas sort=newest
   @@map("media_items")
 }
 
@@ -188,6 +198,7 @@ enum DataSource {
   TMDB
   IGDB
   GOOGLE_BOOKS
+  ANILIST     // Manga series metadata
   EXPERT      // Manually entered by expert
   COMMUNITY   // User-submitted
 }

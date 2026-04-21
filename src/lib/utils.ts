@@ -97,6 +97,7 @@ export const mediaTypeLabels: Record<string, string> = {
   GAME: "Jeu Vidéo",
   BOOK: "Livre",
   APP: "Application",
+  MANGA: "Manga",
 }
 
 /**

@@ -37,6 +37,8 @@ export interface MediaQueryFilters {
   // Games-specific
   consoleOnly?: boolean
   includeAll?: boolean
+  // Manga-specific: "shounen" | "shoujo" | "seinen" | "josei"
+  demographic?: string
 }
 
 export interface MediaQueryResult {
@@ -503,6 +505,91 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
     orderBy = { releaseDate: "desc" }
   } else if (filters.sortBy === "title") {
     orderBy = { title: "asc" }
+  } else if (filters.sortBy === "quality") {
+    orderBy = { dataQualityScore: "desc" }
+  }
+
+  const [rawItems, total] = await Promise.all([
+    withPrismaRetry(() =>
+      prisma.mediaItem.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: {
+          contentMetrics: true,
+          reviews: { select: { rating: true } },
+        },
+      })
+    ),
+    withPrismaRetry(() => prisma.mediaItem.count({ where })).catch(() => skip + limit),
+  ])
+
+  return {
+    items: rawItems.map(item => transformItem(item as PrismaMediaWithRelations)),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  }
+}
+
+// ── fetchMangas ──────────────────────────────────────────────────────
+
+export async function fetchMangas(filters: MediaQueryFilters = {}): Promise<MediaQueryResult> {
+  const page = filters.page ?? 1
+  const limit = filters.limit ?? 20
+  const skip = (page - 1) * limit
+
+  const where: Prisma.MediaItemWhereInput = {
+    type: "MANGA",
+    // Don't require enrichment — manga pipeline is new and we want
+    // imported-but-unanalyzed series to still show while enrichment
+    // catches up. Keep the releaseDate gate so future-dated imports
+    // stay out.
+    releaseDate: { lte: new Date() },
+  }
+
+  if (filters.requirePoster || filters.featured) {
+    applyPosterFilter(where)
+  }
+
+  if (filters.minQuality) {
+    where.dataQualityScore = { gte: filters.minQuality }
+  }
+
+  if (filters.demographic) {
+    where.demographic = filters.demographic.toLowerCase()
+  }
+
+  applyAgeFilter(where, filters.minAge, filters.maxAge)
+  applyContentMetricCaps(where, filters)
+
+  if (filters.genres && filters.genres.length > 0) {
+    where.genres = { hasSome: filters.genres }
+  }
+
+  if (filters.topics && filters.topics.length > 0) {
+    appendAnd(where, {
+      OR: [
+        { topics: { hasSome: filters.topics } },
+        { genres: { hasSome: filters.topics } },
+      ],
+    })
+  }
+
+  applySearchFilter(where, filters.search)
+
+  // Default sort: most recent tome (drives "Nouveautés manga" behavior).
+  // Falls back to releaseDate for series without a French-edition date yet.
+  let orderBy: Prisma.MediaItemOrderByWithRelationInput | Prisma.MediaItemOrderByWithRelationInput[] = [
+    { latestVolumeDate: { sort: "desc", nulls: "last" } },
+    { releaseDate: { sort: "desc", nulls: "last" } },
+  ]
+  if (filters.sortBy === "title") {
+    orderBy = { title: "asc" }
+  } else if (filters.sortBy === "popularity") {
+    orderBy = [
+      { tmdbRating: { sort: "desc", nulls: "last" } },
+      { dataQualityScore: "desc" },
+    ]
   } else if (filters.sortBy === "quality") {
     orderBy = { dataQualityScore: "desc" }
   }

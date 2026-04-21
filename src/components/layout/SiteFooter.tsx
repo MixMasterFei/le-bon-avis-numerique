@@ -4,6 +4,7 @@ import Image from "next/image"
 const BROWSE = [
   { name: "Films", href: "/films" },
   { name: "Séries TV", href: "/series" },
+  { name: "Mangas", href: "/mangas" },
   { name: "Jeux Vidéo", href: "/jeux" },
   { name: "Livres", href: "/livres" },
 ]

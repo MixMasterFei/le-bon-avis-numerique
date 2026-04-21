@@ -13,6 +13,7 @@ import {
   Tv,
   Gamepad2,
   BookOpen,
+  Library,
   User,
   LogOut,
   Settings,
@@ -34,6 +35,7 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 const navigation = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
+  { name: "Mangas", href: "/mangas", icon: Library },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
 ]
 

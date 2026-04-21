@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     const where: Prisma.MediaItemWhereInput = {}
 
     // Filter by type
-    if (type && ["MOVIE", "TV", "GAME", "BOOK", "APP"].includes(type)) {
-      where.type = type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+    if (type && ["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"].includes(type)) {
+      where.type = type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
     }
 
     // Filter by age range (for age-based pages)
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
       const fallbackItems = await withPrismaRetry(() =>
         prisma.mediaItem.findMany({
           where: {
-            ...(type && ["MOVIE", "TV", "GAME", "BOOK", "APP"].includes(type)
+            ...(type && ["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"].includes(type)
               ? { type: type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" }
               : {}),
           },

@@ -67,6 +67,9 @@ const VALID_TOPICS = [
   "Noël", "Halloween",
   // Games
   "Nintendo", "PlayStation", "Xbox", "PC",
+  // Manga-specific topics
+  "Shounen", "Shoujo", "Seinen", "Josei", "Japon",
+  "Arts martiaux", "Lycée", "Tranche de vie", "Romance", "Isekai",
 ]
 
 const VALID_TONE_TAGS = [
@@ -126,25 +129,59 @@ async function analyzeWithOpenAI(
     releaseDate?: Date | null
     officialRating?: string | null
     tmdbVoteCount?: number | null
+    demographic?: string | null
   },
   retryCount = 0
 ): Promise<ContentAnalysis> {
+  // Type label + noun used in the prompt. MANGA has its own phrasing so
+  // the model knows it's reviewing a Japanese print-format comic, not
+  // the anime adaptation or a Western comic.
+  const isManga = item.type === "MANGA"
+  const typeLabel = isManga
+    ? "Manga (bande dessinee japonaise en format papier)"
+    : item.type === "GAME"
+    ? "Jeu video"
+    : item.type === "TV"
+    ? "Serie TV"
+    : "Film"
+  const typeNoun = isManga
+    ? "ce manga"
+    : item.type === "GAME"
+    ? "jeu"
+    : item.type === "TV"
+    ? "cette serie"
+    : "ce film"
+
+  // Manga-specific rubric appended only when needed. Demographics shape
+  // expected tone/violence norms; fanservice and stylised violence are
+  // common in battle shounen and need explicit flagging.
+  const mangaRubric = isManga
+    ? `
+
+PARTICULARITES MANGA — TIENS EN COMPTE:
+- Public cible (${item.demographic || "non specifie"}) : shounen (ados garcons), shoujo (ados filles), seinen (adultes), josei (jeunes femmes adultes)
+- Fanservice (plans suggestifs, tenues courtes) est frequent dans le shounen/seinen — signale-le quand present
+- La violence stylisee (combats, sang stylise) est normale dans le shounen mais peut etre intense
+- Les mangas sont souvent PLUS matures que leurs adaptations anime pour un age equivalent : base-toi sur le support papier
+- Langage cru et themes adultes sont frequents en seinen/josei — n'hesite pas a monter a 16+/18+ si justifie`
+    : ""
+
   const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
 Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
 
 CONTENU:
 - Titre: ${item.title}
 ${item.originalTitle ? `- Titre original: ${item.originalTitle}` : ""}
-- Type: ${item.type === "GAME" ? "Jeu video" : item.type === "TV" ? "Serie TV" : "Film"}
+- Type: ${typeLabel}
 - Genres: ${item.genres.join(", ") || "Non specifie"}
 ${item.releaseDate ? `- Date de sortie: ${item.releaseDate.toISOString().split("T")[0]}` : ""}
 ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : ""}
-- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}
+- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}${mangaRubric}
 
 IMPORTANT:
 - Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
 - Le synopsis ne doit JAMAIS reveler de spoilers, retournements ou fin de l'histoire. Decris uniquement la premisse et le contexte initial.
-- Base ton analyse sur ta connaissance de ce ${item.type === "GAME" ? "jeu" : item.type === "TV" ? "cette serie" : "ce film"} si tu le connais
+- Base ton analyse sur ta connaissance de ${typeNoun} si tu le connais
 
 Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse — 3 a 8 tags par contenu):
 
@@ -173,6 +210,9 @@ HISTOIRE ET SOCIETE:
 
 STUDIOS ET MARQUES:
 "Disney", "Pixar", "DreamWorks", "Studio Ghibli", "Aardman", "Illumination", "Laika", "LEGO", "Minecraft", "Astérix", "Tintin"
+
+MANGA (utiliser uniquement si type = MANGA):
+"Shounen", "Shoujo", "Seinen", "Josei", "Japon", "Arts martiaux", "Lycée", "Tranche de vie", "Romance", "Isekai"
 
 SAISONNIER:
 "Noël", "Halloween"
@@ -418,6 +458,7 @@ export async function POST(request: NextRequest) {
           releaseDate: item.releaseDate,
           officialRating: item.officialRating,
           tmdbVoteCount: item.tmdbVoteCount,
+          demographic: item.demographic,
         })
 
         // Compute final confidence with heuristic adjustments

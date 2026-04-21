@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
           results.push({
             id: row.id,
             title: row.title,
-            type: row.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP",
+            type: row.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA",
             posterUrl: row.poster_url,
             releaseDate: row.release_date,
             expertAgeRec: row.expert_age_rec,

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
-import { Search, Plus, Check, Loader2, Heart, Film, Tv, Gamepad2, BookOpen, Smartphone } from "lucide-react"
+import { Search, Plus, Check, Loader2, Heart, Film, Tv, Gamepad2, BookOpen, Smartphone, Library } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Suggestion {
   id: string
   title: string
-  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
   posterUrl: string | null
   year: number | null
   ageRec: number | null
@@ -27,6 +27,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   GAME: Gamepad2,
   BOOK: BookOpen,
   APP: Smartphone,
+  MANGA: Library,
 }
 
 const typeLabels: Record<string, string> = {
@@ -35,6 +36,7 @@ const typeLabels: Record<string, string> = {
   GAME: "Jeu",
   BOOK: "Livre",
   APP: "App",
+  MANGA: "Manga",
 }
 
 export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded }: MediaSearchAddProps) {

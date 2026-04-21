@@ -7,7 +7,7 @@ import { z } from "zod"
 // Validation schema for content request
 const contentRequestSchema = z.object({
   title: z.string().min(1).max(255),
-  mediaType: z.enum(["MOVIE", "TV", "GAME", "BOOK", "APP"]),
+  mediaType: z.enum(["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"]),
   externalId: z.string().optional(),
   description: z.string().optional(),
 })

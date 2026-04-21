@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery, getClientIdentifier, checkRateLimit, RATE_LIMITS, rateLimitHeaders } from "@/lib/security"
 
-type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP"
+type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
 
 interface AggregatedItem {
   id: string

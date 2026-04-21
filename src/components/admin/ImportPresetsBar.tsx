@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Film, Tv, Gamepad2, Sparkles } from "lucide-react"
+import { Loader2, Film, Tv, Gamepad2, Sparkles, Library, CalendarClock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ImportPresetsBarProps {
@@ -49,6 +49,22 @@ const PRESETS: Preset[] = [
     description: "Jeux vidéo récents populaires",
     endpoint: "/api/admin/batch-import",
     params: { type: "GAME", preset: "recent", limit: 20 },
+  },
+  {
+    id: "mangas-popular",
+    label: "Mangas populaires",
+    icon: Library,
+    description: "Top mangas par popularité (AniList)",
+    endpoint: "/api/admin/import-manga",
+    params: { source: "popular", limit: 25 },
+  },
+  {
+    id: "mangas-weekly",
+    label: "Nouveautés manga",
+    icon: CalendarClock,
+    description: "Mangas avec chapitres récents — alimente la rail hebdo",
+    endpoint: "/api/admin/import-manga",
+    params: { source: "weekly", limit: 25 },
   },
 ]
 
