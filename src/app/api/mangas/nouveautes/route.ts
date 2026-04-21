@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAdmin } from "@/lib/auth"
 
 /**
  * Feed for the "Nouveautés manga de la semaine" homepage rail.
@@ -11,6 +12,11 @@ import { prisma } from "@/lib/prisma"
 export const revalidate = 300 // 5 min — cron writes, UI reads
 
 export async function GET() {
+  // Admin-only during soft launch (matches /mangas page gating).
+  if (!(await isAdmin())) {
+    return NextResponse.json({ items: [] })
+  }
+
   const cutoff = new Date()
   cutoff.setDate(cutoff.getDate() - 14)
 

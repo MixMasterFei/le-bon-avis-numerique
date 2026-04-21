@@ -1,10 +1,11 @@
 import Link from "next/link"
 import Image from "next/image"
 
+// "Mangas" intentionally omitted — admin-only until catalog quality
+// passes review. Admins access /mangas via the header.
 const BROWSE = [
   { name: "Films", href: "/films" },
   { name: "Séries TV", href: "/series" },
-  { name: "Mangas", href: "/mangas" },
   { name: "Jeux Vidéo", href: "/jeux" },
   { name: "Livres", href: "/livres" },
 ]

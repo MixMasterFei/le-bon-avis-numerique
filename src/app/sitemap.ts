@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/films`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/series`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/jeux`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/mangas`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    // /mangas intentionally omitted — admin-only during soft launch.
     { url: `${baseUrl}/livres`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/recommandations`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
@@ -41,7 +41,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let mediaPages: MetadataRoute.Sitemap = []
   try {
     const mediaItems = await prisma.mediaItem.findMany({
-      where: { posterUrl: { not: null }, dataQualityScore: { gte: 30 } },
+      where: {
+        posterUrl: { not: null },
+        dataQualityScore: { gte: 30 },
+        // Manga detail pages excluded from sitemap while the category
+        // is admin-only. Remove when the catalog launches publicly.
+        type: { not: "MANGA" },
+      },
       select: { id: true, type: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
     })

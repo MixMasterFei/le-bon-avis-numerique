@@ -14,6 +14,9 @@ import {
   BadgeCheck,
   Gamepad2,
   Trash2,
+  Library,
+  CalendarClock,
+  BookMarked,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -509,6 +512,97 @@ const OPERATIONS: Array<{
     icon: Trash2,
     color: "red",
     statLabels: { deleted: "supprimes", kept: "conserves" },
+  },
+  // ── Manga-specific operations ────────────────────────────────────
+  {
+    config: {
+      key: "enrichMangas",
+      endpoint: "/api/admin/enrich",
+      method: "POST",
+      body: { type: "manga", limit: 5 },
+      chunked: true,
+      delayMs: 3000,
+      accumKeys: ["processed", "enriched", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: null,
+        updated: data.enriched || 0,
+        errors: data.errors || 0,
+      }),
+      // /api/admin/enrich always returns eagerly; stop when the batch
+      // finds nothing new to enrich (processed === 0).
+      isDone: (data) => (data.processed || 0) === 0,
+      detectRateLimit: (_data, consecutiveEmpty) => consecutiveEmpty >= 2,
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} mangas enrichis${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Enrichir mangas",
+    description: "Analyse IA (âge, thèmes, public cible) sur les mangas",
+    icon: Library,
+    color: "indigo",
+    statLabels: { updated: "enrichis" },
+  },
+  {
+    config: {
+      key: "refreshManga",
+      endpoint: "/api/admin/import-manga",
+      method: "POST",
+      // Weekly source = AniList recently-updated series. Identical to
+      // the Sunday cron's first page; surfaces new volume/chapter counts
+      // and fresh latestVolumeDate so the homepage rail stays populated.
+      body: { source: "weekly", limit: 50 },
+      chunked: false,
+      extractProgress: (data) => ({
+        processed: (data.imported || 0) + (data.updated || 0) + (data.skipped || 0),
+        total: (data.imported || 0) + (data.updated || 0) + (data.skipped || 0),
+        updated: (data.imported || 0) + (data.updated || 0),
+        errors: (data.errors || []).length || 0,
+      }),
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} mangas créés/mis à jour${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Rafraîchir AniList",
+    description: "Récupérer les 50 mangas les plus récemment mis à jour",
+    icon: CalendarClock,
+    color: "purple",
+    statLabels: { updated: "rafraichis" },
+  },
+  {
+    config: {
+      key: "backfillMangaEditions",
+      endpoint: "/api/admin/backfill-manga-editions",
+      method: "POST",
+      body: { limit: 10 },
+      chunked: true,
+      delayMs: 1500,
+      accumKeys: ["processed", "matched", "skipped", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
+        updated: data.matched || 0,
+        skipped: data.skipped || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} éditions FR trouvées, ${stats.skipped || 0} sans match${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Éditions FR manga",
+    description: "Chercher l'édition française (ISBN, éditeur) via Google Books",
+    icon: BookMarked,
+    color: "emerald",
+    statLabels: { updated: "trouvees", skipped: "sans match" },
   },
 ]
 

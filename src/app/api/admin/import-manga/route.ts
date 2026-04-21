@@ -117,6 +117,10 @@ export async function POST(req: Request) {
         title: displayTitle,
         originalTitle: m.title.native ?? m.title.romaji ?? null,
         type: "MANGA" as const,
+        // AniList description is English — we store it so the enrichment
+        // pipeline has source material to translate. Enrichment overwrites
+        // this with a proper French synopsis. Users never see pre-enrichment
+        // manga rows because /mangas is admin-gated during soft launch.
         synopsisFr: m.description?.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "") || null,
         posterUrl: m.coverImage.extraLarge ?? m.coverImage.large ?? null,
         genres: normalizeGenres(m),

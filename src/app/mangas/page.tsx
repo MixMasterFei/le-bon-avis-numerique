@@ -1,14 +1,13 @@
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import { fetchMangas } from "@/lib/media-queries"
-import { auth } from "@/lib/auth"
+import { auth, isAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { MangaDemographicPills } from "@/components/mangas/MangaDemographicPills"
 
 export const revalidate = 300
 
-const DEFAULT_MIN_AGE = 2
 const DEFAULT_MAX_AGE = 18
 const PAGE_SIZE = 24
 const VALID_DEMOGRAPHICS = ["shounen", "shoujo", "seinen", "josei"] as const
@@ -82,6 +81,13 @@ export async function generateMetadata({
 }
 
 export default async function MangasPage({ searchParams }: MangasPageProps) {
+  // Admin-only for now. Manga catalog has non-French synopses on
+  // imports + partial French-market coverage; public launch waits
+  // until enrichment catches up and coverage is good.
+  if (!(await isAdmin())) {
+    notFound()
+  }
+
   const params = await searchParams
   const session = await auth()
   const userId = (session?.user as { id?: string } | undefined)?.id
@@ -90,7 +96,6 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
   const search = (get(params, "q") ?? "").trim()
   const sortKey = parseSort(get(params, "sort") || get(params, "sortBy"))
   const demographic = parseDemographic(get(params, "demographic"))
-  const memberIds = parseList(get(params, "members"))
   const topics = parseList(get(params, "topics"))
 
   const familyMembers = userId
@@ -110,31 +115,18 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
       })
     : []
 
-  let effectiveMinAge = parseInt2(get(params, "minAge"), DEFAULT_MIN_AGE)
-  let effectiveMaxAge = parseInt2(get(params, "maxAge"), DEFAULT_MAX_AGE)
-
-  if (memberIds.length > 0) {
-    const selectedAges = memberIds
-      .map((id) => familyMembers.find((m) => m.id === id))
-      .filter((m): m is NonNullable<typeof m> => !!m)
-      .map((m) => getMemberAge(m.birthYear, m.birthMonth))
-      .filter((a): a is number => a !== null)
-    if (selectedAges.length > 0) {
-      const youngest = Math.min(...selectedAges)
-      if (!get(params, "maxAge")) {
-        effectiveMaxAge = Math.min(DEFAULT_MAX_AGE, youngest)
-      }
-      if (!get(params, "minAge")) {
-        effectiveMinAge = Math.max(DEFAULT_MIN_AGE, youngest - 3)
-      }
-    }
-  }
+  // Mangas use demographic pills (shounen/shoujo/seinen/josei) as the
+  // primary discovery lens instead of the 2-18 age slider used for
+  // films/TV/games. Demographic already implies an age band and is the
+  // canonical way manga is organized in French bookstores — layering an
+  // age filter on top of that is redundant complexity. Age cap is still
+  // available via URL param for power users.
+  const explicitMaxAge = get(params, "maxAge") ? parseInt2(get(params, "maxAge"), DEFAULT_MAX_AGE) : undefined
 
   const result = await fetchMangas({
     page,
     limit: PAGE_SIZE,
-    minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
-    maxAge: effectiveMaxAge < DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    maxAge: explicitMaxAge,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,
     sortBy: sortKey !== "newest" ? sortKey : undefined,
@@ -178,10 +170,8 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
   if (search) filterSp.set("q", search)
   if (sortKey !== "newest") filterSp.set("sort", sortKey)
   if (demographic) filterSp.set("demographic", demographic)
-  if (effectiveMinAge > DEFAULT_MIN_AGE) filterSp.set("minAge", String(effectiveMinAge))
-  if (effectiveMaxAge < DEFAULT_MAX_AGE) filterSp.set("maxAge", String(effectiveMaxAge))
+  if (explicitMaxAge && explicitMaxAge < DEFAULT_MAX_AGE) filterSp.set("maxAge", String(explicitMaxAge))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
-  if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -220,11 +210,15 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
         initialFilters={{
           search,
           sort: sortKey,
-          minAge: effectiveMinAge,
-          maxAge: effectiveMaxAge,
+          // No default age range for mangas — demographic pills are the
+          // primary filter. Pass 0/99 so the sidebar doesn't preset a
+          // "2-18" constraint that would confuse demographic-based
+          // browsing.
+          minAge: 0,
+          maxAge: explicitMaxAge ?? 99,
           platforms: [],
           topics,
-          familyMemberIds: memberIds,
+          familyMemberIds: [],
         }}
         filterQuery={filterSp.toString()}
         route="/mangas"

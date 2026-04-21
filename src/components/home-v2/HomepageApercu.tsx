@@ -15,9 +15,10 @@ import { APERCU_PALETTE } from "./apercuTheme"
 interface HomepageApercuProps {
   isLoggedIn: boolean
   serifClass: string
+  isAdmin?: boolean
 }
 
-export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) {
+export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: HomepageApercuProps) {
   const p = APERCU_PALETTE
 
   return (
@@ -48,12 +49,14 @@ export function HomepageApercu({ isLoggedIn, serifClass }: HomepageApercuProps) 
           </div>
         </section>
 
-        {/* Self-hiding rail: renders null if fewer than 3 recent manga. */}
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
-          <div className="container mx-auto px-4 md:px-8">
-            <NouveautesMangaRail serifClass={serifClass} />
-          </div>
-        </section>
+        {/* Admin-only during soft launch. Self-hiding below 3 items. */}
+        {isAdmin && (
+          <section className="py-10 md:py-14" style={{ background: p.bg }}>
+            <div className="container mx-auto px-4 md:px-8">
+              <NouveautesMangaRail serifClass={serifClass} />
+            </div>
+          </section>
+        )}
 
         <section className="py-10 md:py-14" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">

@@ -6,6 +6,7 @@ import {
   Film,
   Tv,
   Gamepad2,
+  Library,
   RefreshCw,
   CheckCircle,
   AlertCircle,
@@ -52,7 +53,7 @@ interface EnrichmentResult {
   details: string[]
 }
 
-type MediaType = "all" | "movie" | "tv" | "game"
+type MediaType = "all" | "movie" | "tv" | "game" | "manga"
 
 export default function EnrichPage() {
   const [stats, setStats] = useState<EnrichmentStats | null>(null)
@@ -440,6 +441,7 @@ export default function EnrichPage() {
                   { value: "movie", label: "Films", icon: Film },
                   { value: "tv", label: "Series", icon: Tv },
                   { value: "game", label: "Jeux", icon: Gamepad2 },
+                  { value: "manga", label: "Mangas", icon: Library },
                 ].map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}

@@ -404,7 +404,7 @@ export async function POST(request: NextRequest) {
     // Build query based on type
     const typeFilter = type === "all"
       ? {}
-      : { type: type.toUpperCase() as "MOVIE" | "TV" | "GAME" }
+      : { type: type.toUpperCase() as "MOVIE" | "TV" | "GAME" | "MANGA" }
 
     // Build where clause based on mode
     let whereClause
