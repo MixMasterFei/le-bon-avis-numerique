@@ -5,6 +5,7 @@ import { Users, Award, Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { UserMetricsButton } from "./UserMetricsButton"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { MethodBadge } from "@/components/ui/MethodBadge"
 
 const SAGE = "#5C8A5C"
 const AMBER = "#C08A3E"
@@ -245,27 +246,33 @@ export function DualMetricsDisplay({
       className="rounded-2xl p-5"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <h3
-          className={`${serifClass} text-lg font-medium`}
-          style={{ color: p.ink, letterSpacing: "-0.02em" }}
-        >
-          Évaluation du contenu
-        </h3>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Info className="h-4 w-4" style={{ color: p.ink2 }} />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p>
-                Échelle de 0 à 5. Pour violence, sexe, langage, etc. :
-                0 = absent, 5 = très présent. Pour messages positifs et
-                modèles : 5 = excellent.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <h3
+            className={`${serifClass} text-lg font-medium`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            Évaluation du contenu
+          </h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Info className="h-4 w-4" style={{ color: p.ink2 }} />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>
+                  Échelle de 0 à 5. Pour violence, sexe, langage, etc. :
+                  0 = absent, 5 = très présent. Pour messages positifs et
+                  modèles : 5 = excellent.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <MethodBadge
+          anchor="metriques-contenu"
+          description="Les 7 métriques (violence, sexe, langage, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Elles sont recalibrées par les évaluations des foyers inscrits."
+        />
       </div>
       <div className="space-y-4">
         <div className="flex gap-3">

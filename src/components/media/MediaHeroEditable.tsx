@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
 import { AgeVoteButton } from "./AgeVoteButton"
+import { MethodBadge } from "@/components/ui/MethodBadge"
 
 interface Review {
   role: string
@@ -360,10 +361,16 @@ function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: num
           >
             {expertAge}+
           </div>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: WARM_INK }}>
-              Recommandation
-            </p>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: WARM_INK }}
+              >
+                Notre recommandation
+              </p>
+              <MethodBadge size="xs" />
+            </div>
             <p className="text-xs" style={{ color: WARM_INK2 }}>
               dès {expertAge} ans
             </p>

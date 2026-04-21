@@ -9,6 +9,7 @@ import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
+import { MethodBadge } from "@/components/ui/MethodBadge"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
@@ -831,12 +832,20 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
                   {media.topics.length > 0 && (
                     <div>
-                      <h4
-                        className="text-xs font-semibold mb-2 uppercase tracking-wide"
-                        style={{ color: "var(--color-warm-ink2)" }}
-                      >
-                        Thèmes
-                      </h4>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h4
+                          className="text-xs font-semibold uppercase tracking-wide"
+                          style={{ color: "var(--color-warm-ink2)" }}
+                        >
+                          Thèmes
+                        </h4>
+                        <MethodBadge
+                          size="xs"
+                          anchor="themes-detectes"
+                          label="Détectés automatiquement"
+                          description="Les thèmes sont détectés automatiquement à partir du contenu (synopsis, classifications, genres). Ils sont indicatifs et peuvent être affinés par les signalements de la communauté."
+                        />
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {media.topics.map((topic) => (
                           <span

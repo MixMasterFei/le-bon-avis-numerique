@@ -1,4 +1,4 @@
-import { ShieldAlert, Users, Award, Star, ThumbsUp, BookOpen } from "lucide-react"
+import { ShieldAlert, Users, Award, Star, ThumbsUp, BookOpen, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
@@ -10,13 +10,57 @@ export const metadata = {
 
 const sections = [
   {
-    id: "age",
+    id: "analyse-automatisee",
+    icon: Sparkles,
+    title: "Comment on analyse — en toute honnêteté",
+    content: [
+      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 7 critères.",
+      "Cette estimation n'est pas un verdict d'expert. C'est un point de départ, qui s'affine avec le temps grâce aux votes et réactions des foyers inscrits. Quand au moins 5 parents ont voté et que 70 % sont d'accord, un badge de consensus apparaît — vos retours remplacent progressivement l'analyse automatisée.",
+      "On ne dit pas « algorithme » pour faire joli. On dit « en calibrage » parce que c'est ce qui se passe : vous aidez à régler le cadran, pas à valider un résultat figé.",
+    ],
+    list: [
+      { label: "Recommandation d'âge", desc: "Estimée automatiquement à partir du synopsis + classifications officielles. Ajustée par vos votes « j'approuve / je conteste »." },
+      { label: "Métriques de contenu", desc: "Les 7 scores (violence, sexe, langage, substances, messages positifs, modèles positifs, valeur éducative) sont estimés automatiquement puis recalibrés par les évaluations de la communauté." },
+      { label: "Points clés pour les parents", desc: "Extraits automatiquement du contenu analysé. Indicatifs — à recouper avec la fiche complète et les avis." },
+      { label: "Thèmes détectés", desc: "Les tags thématiques sont détectés automatiquement. Ils peuvent être affinés par les signalements de la communauté." },
+    ],
+    after: "Pour chaque surface concernée, une petite pastille « Analyse automatisée · en calibrage » est visible sur les fiches. Elle vous rappelle la nature de l'estimation et vous invite à contribuer.",
+  },
+  {
+    id: "recommandations-age",
     icon: Award,
-    title: "Nos recommandations d'âge",
+    title: "D'où viennent nos recommandations d'âge",
     content: [
       "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC/CSA). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
-      "On s'appuie sur 7 critères : violence, contenu sexuel, langage, substances, messages positifs, modèles positifs et valeur éducative. Chaque critère est évalué sur une échelle de 0 à 5.",
+      "La recommandation initiale est générée par analyse automatisée (voir « Comment on analyse » ci-dessus). Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
       "Quand les données du CNC sont disponibles, on les affiche en complément. Sur chaque fiche, vous voyez les deux côte à côte : la classification officielle et notre recommandation.",
+    ],
+  },
+  {
+    id: "metriques-contenu",
+    icon: BookOpen,
+    title: "Les métriques de contenu (0–5)",
+    content: [
+      "Chaque contenu est noté sur 7 critères, une échelle de 0 à 5. Violence, sexe et nudité, langage, substances, consumérisme pour le « négatif » ; messages positifs, modèles positifs, valeur éducative pour le « positif ».",
+      "Comme les recommandations d'âge, ces scores démarrent en analyse automatisée puis sont recalibrés par les foyers qui évaluent eux-mêmes le contenu. Vous pouvez proposer vos propres scores depuis la fiche via « Évaluer ce contenu » — quand assez de parents contribuent, les scores communautaires remplacent progressivement les estimations initiales.",
+    ],
+  },
+  {
+    id: "points-cles",
+    icon: BookOpen,
+    title: "Les points clés pour les parents",
+    content: [
+      "Le bloc « Ce que les parents doivent savoir » résume, en 3 à 5 points, les éléments du contenu qui méritent une attention particulière : scène impressionnante, thématique complexe, scène d'amour explicite, langage cru, etc.",
+      "Ces points sont extraits automatiquement par analyse du contenu. Ils sont indicatifs et ne remplacent pas votre propre lecture de la fiche ni les avis des autres parents. Si un point manque ou semble incorrect, vous pouvez le signaler depuis la fiche.",
+    ],
+  },
+  {
+    id: "themes-detectes",
+    icon: BookOpen,
+    title: "Les thèmes détectés",
+    content: [
+      "Les tags thématiques (amitié, deuil, voyage, écologie, etc.) sont détectés automatiquement à partir du synopsis, des genres et des classifications. Ils servent à connecter des œuvres similaires et à alimenter le moteur de recommandation personnalisée.",
+      "Comme les autres signaux automatisés, ils peuvent être affinés par les signalements de la communauté. Si un thème central est absent ou si un thème listé ne correspond pas, vous pouvez nous le signaler.",
     ],
   },
   {
