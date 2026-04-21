@@ -43,6 +43,7 @@ export interface AdminKpis {
   correctionsPending: number
   requestsPending: number
   newsReportsPending: number
+  disagreedAgeItems: number
 
   // 30-day time series for the growth chart
   dailyGrowth: DailyGrowthPoint[]
@@ -105,6 +106,8 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     requestsPending,
     newsReportsPending,
 
+    disagreedAgeItems,
+
     dailyGrowth,
 
     cronRuns,
@@ -147,6 +150,8 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     prisma.mediaCorrection.count({ where: { status: "PENDING" } }).catch(() => 0),
     prisma.contentRequest.count({ where: { status: "PENDING" } }).catch(() => 0),
     prisma.newsCommentReport.count({ where: { status: "PENDING" } }).catch(() => 0),
+
+    countDisagreedAgeItems().catch(() => 0),
 
     fetchDailyGrowth(month).catch(() => [] as DailyGrowthPoint[]),
 
@@ -196,11 +201,43 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     correctionsPending,
     requestsPending,
     newsReportsPending,
+    disagreedAgeItems,
     dailyGrowth,
     cronTasks: Array.from(taskMap.values()),
     cronErrors7d,
     generatedAt: now,
   }
+}
+
+/**
+ * Counts media items where the community is actively pushing back on
+ * the automated age recommendation: ≥ 5 votes cast AND fewer than 50 %
+ * agree. Powers the "Désaccords communautaires" tile in
+ * AdminActionQueue — each item there needs a human eyeball (re-enrich
+ * or manual override).
+ */
+async function countDisagreedAgeItems(): Promise<number> {
+  // Fetch agree/disagree breakdown per media in one grouped query.
+  const rows = await prisma.ageVote.groupBy({
+    by: ["mediaId", "agree"],
+    _count: { _all: true },
+  })
+
+  // Aggregate by mediaId in JS — cheaper than a raw SQL pivot for the
+  // vote volume we realistically have.
+  const byMedia = new Map<string, { total: number; agrees: number }>()
+  for (const r of rows) {
+    const cur = byMedia.get(r.mediaId) ?? { total: 0, agrees: 0 }
+    cur.total += r._count._all
+    if (r.agree) cur.agrees += r._count._all
+    byMedia.set(r.mediaId, cur)
+  }
+
+  let count = 0
+  for (const { total, agrees } of byMedia.values()) {
+    if (total >= 5 && agrees / total < 0.5) count++
+  }
+  return count
 }
 
 interface DailyRow {

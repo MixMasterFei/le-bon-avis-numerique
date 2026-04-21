@@ -14,6 +14,7 @@ interface AdminActionQueueProps {
   requestsPending: number
   catalogUnenriched: number
   newsReportsPending?: number
+  disagreedAgeItems?: number
 }
 
 function fmtNumber(n: number): string {
@@ -26,9 +27,15 @@ export function AdminActionQueue({
   requestsPending,
   catalogUnenriched,
   newsReportsPending = 0,
+  disagreedAgeItems = 0,
 }: AdminActionQueueProps) {
   const p = APERCU_PALETTE
   const items: QueueItem[] = [
+    {
+      count: disagreedAgeItems,
+      label: "désaccords communautaires",
+      href: "/admin/disagreed-items",
+    },
     {
       count: correctionsPending,
       label: "corrections en attente",

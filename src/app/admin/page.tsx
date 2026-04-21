@@ -105,6 +105,7 @@ export default async function AdminDashboardPage(props: {
             requestsPending={kpis.requestsPending}
             catalogUnenriched={kpis.catalogUnenriched}
             newsReportsPending={kpis.newsReportsPending}
+            disagreedAgeItems={kpis.disagreedAgeItems}
           />
 
           <AdminCronStrip serifClass={serifClass} tasks={kpis.cronTasks} now={now} />
