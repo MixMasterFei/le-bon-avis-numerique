@@ -1,36 +1,51 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Warm Aperçu palette — site-wide design system */
-  --color-warm-bg: #F5F1E9;
-  --color-warm-bg2: #EDE7DA;
-  --color-warm-card: #FFFFFF;
-  --color-warm-ink: #1E1A15;
-  --color-warm-ink2: rgba(30, 26, 21, 0.60);
-  --color-warm-accent: #D16A4A;
-  --color-warm-accent2: #5C8A5C;
-  --color-warm-line: rgba(30, 26, 21, 0.08);
-  --color-warm-line2: rgba(30, 26, 21, 0.15);
-  --color-warm-placeholder: #E6DFCE;
-
-  /* Legacy tokens — retinted to warm palette so residual shadcn
-     usage (bg-primary, text-primary, etc.) inherits the new look
-     across pages that haven't been fully ported yet. */
-  --color-primary: #1E1A15;
-  --color-primary-foreground: #F5F1E9;
-  --color-secondary: #EDE7DA;
-  --color-secondary-foreground: #1E1A15;
+  /* Canonical Aperçu palette — site-wide design system.
+     Values are re-declared below via `:root` so dark mode can swap
+     them under [data-theme="dark"]. The @theme block just exposes
+     them to Tailwind so utilities like `text-[var(--color-ink)]`
+     compile correctly. */
+  --color-bg: #F5F1E9;
+  --color-bg2: #EDE7DA;
+  --color-card: #FFFFFF;
+  --color-ink: #1E1A15;
+  --color-ink2: rgba(30, 26, 21, 0.60);
   --color-accent: #D16A4A;
+  --color-accent2: #5C8A5C;
+  --color-line: rgba(30, 26, 21, 0.08);
+  --color-line2: rgba(30, 26, 21, 0.15);
+  --color-placeholder: #E6DFCE;
+
+  /* Backward-compat aliases — existing code throughout src/ uses
+     --color-warm-* names. These point at the canonical tokens so
+     dark mode also flows through them. */
+  --color-warm-bg: var(--color-bg);
+  --color-warm-bg2: var(--color-bg2);
+  --color-warm-card: var(--color-card);
+  --color-warm-ink: var(--color-ink);
+  --color-warm-ink2: var(--color-ink2);
+  --color-warm-accent: var(--color-accent);
+  --color-warm-accent2: var(--color-accent2);
+  --color-warm-line: var(--color-line);
+  --color-warm-line2: var(--color-line2);
+  --color-warm-placeholder: var(--color-placeholder);
+
+  /* Legacy shadcn tokens — mapped to canonical tokens so they
+     inherit dark mode for free. */
+  --color-primary: var(--color-ink);
+  --color-primary-foreground: var(--color-bg);
+  --color-secondary: var(--color-bg2);
+  --color-secondary-foreground: var(--color-ink);
   --color-accent-foreground: #ffffff;
-  --color-muted: #EDE7DA;
-  --color-muted-foreground: #5E5850;
-  --color-card: #ffffff;
-  --color-card-foreground: #1E1A15;
-  --color-background: #F5F1E9;
-  --color-foreground: #1E1A15;
-  --color-border: rgba(30, 26, 21, 0.08);
-  --color-input: #EDE7DA;
-  --color-ring: #D16A4A;
+  --color-muted: var(--color-bg2);
+  --color-muted-foreground: var(--color-ink2);
+  --color-card-foreground: var(--color-ink);
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-ink);
+  --color-border: var(--color-line);
+  --color-input: var(--color-bg2);
+  --color-ring: var(--color-accent);
 
   /* Popover/Dropdown colors */
   --color-popover: #ffffff;
@@ -53,6 +68,31 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-heading: 'Poppins', ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Dark mode (Soirée) — triggered by [data-theme="dark"] on <html>.
+   The blocking inline script in layout.tsx sets this attribute before
+   first paint based on localStorage.theme, then falling back to
+   prefers-color-scheme. No FOUC.
+   ───────────────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --color-bg: #1B1815;
+  --color-bg2: #221E1A;
+  --color-card: #2A2520;
+  --color-ink: #F4EFE4;
+  --color-ink2: rgba(244, 239, 228, 0.60);
+  --color-accent: #E58A6B;
+  --color-accent2: #9BC29B;
+  --color-line: rgba(244, 239, 228, 0.08);
+  --color-line2: rgba(244, 239, 228, 0.14);
+  --color-placeholder: #2F2A24;
+}
+
+/* Smooth the transition when users toggle — but skip this during the
+   initial blocking-script phase so the first paint is instant. */
+:root[data-theme] * {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 @layer base {

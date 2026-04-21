@@ -78,8 +78,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable} ${fraunces.variable}`}>
+    <html
+      lang="fr"
+      className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable} ${fraunces.variable}`}
+      suppressHydrationWarning
+    >
       <head>
+        {/* Theme resolution — runs before first paint to prevent FOUC.
+           Reads localStorage.theme first, then falls back to system
+           preference. Inline so it executes synchronously. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='light';}})();`,
+          }}
+        />
         <link rel="preconnect" href="https://image.tmdb.org" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
         <script

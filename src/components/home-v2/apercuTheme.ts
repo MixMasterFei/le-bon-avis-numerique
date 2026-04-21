@@ -1,14 +1,22 @@
+/**
+ * Palette values reference CSS custom properties declared in
+ * `src/app/globals.css`. That lets a single [data-theme="dark"]
+ * swap the whole palette for Soirée mode without touching any
+ * component — the browser resolves the `var(--color-*)` at paint
+ * time, and server components emit these strings directly into
+ * `style={{ background: p.bg }}` which HTML accepts verbatim.
+ */
 export const APERCU_PALETTE = {
-  bg: "#F5F1E9",
-  bg2: "#EDE7DA",
-  card: "#FFFFFF",
-  ink: "#1E1A15",
-  ink2: "rgba(30,26,21,0.60)",
-  accent: "#D16A4A",
-  accent2: "#5C8A5C",
-  line: "rgba(30,26,21,0.08)",
-  line2: "rgba(30,26,21,0.15)",
-  placeholder: "#E6DFCE",
+  bg: "var(--color-bg)",
+  bg2: "var(--color-bg2)",
+  card: "var(--color-card)",
+  ink: "var(--color-ink)",
+  ink2: "var(--color-ink2)",
+  accent: "var(--color-accent)",
+  accent2: "var(--color-accent2)",
+  line: "var(--color-line)",
+  line2: "var(--color-line2)",
+  placeholder: "var(--color-placeholder)",
 } as const
 
 // Each bucket carries the content-metric caps appropriate to the age.

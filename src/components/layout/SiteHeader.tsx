@@ -28,6 +28,7 @@ import {
   Users,
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 const navigation = [
@@ -298,6 +299,7 @@ export function SiteHeader() {
           </div>
 
           <div className="flex items-center space-x-3 shrink-0 ml-auto lg:ml-0">
+            <ThemeToggle className="hidden sm:inline-flex" />
             {status === "loading" ? (
               <div
                 className="h-8 w-8 sm:w-20 animate-pulse rounded-full"
@@ -668,6 +670,17 @@ export function SiteHeader() {
                 </Link>
               </div>
             )}
+
+            {/* Theme toggle — always present at the bottom of the mobile menu */}
+            <div
+              className="pt-4 mt-2 border-t flex items-center justify-between"
+              style={{ borderColor: p.line }}
+            >
+              <span className="text-sm" style={{ color: p.ink2 }}>
+                Apparence
+              </span>
+              <ThemeToggle />
+            </div>
           </nav>
         </div>
       )}
