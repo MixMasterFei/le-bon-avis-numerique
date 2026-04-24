@@ -59,6 +59,9 @@ export async function GET() {
           posterUrl: { not: null },
           releaseDate: { lte: new Date() },
           dataQualityScore: { gte: 50 },
+          // Manga is admin-only during soft launch — exclude from the
+          // public "Fraîchement ajoutés" rail so visitors don't see it.
+          type: { not: "MANGA" },
         },
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -87,7 +90,8 @@ export async function GET() {
     const buzzMediaIds = weeklyReactionsGrouped.map((r) => r.mediaId)
     const buzzMediaItems = buzzMediaIds.length
       ? await prisma.mediaItem.findMany({
-          where: { id: { in: buzzMediaIds }, posterUrl: { not: null } },
+          // Same MANGA exclusion as latestAdditions above (admin-only soft launch).
+          where: { id: { in: buzzMediaIds }, posterUrl: { not: null }, type: { not: "MANGA" } },
           select: { id: true, type: true, title: true, posterUrl: true },
         })
       : []

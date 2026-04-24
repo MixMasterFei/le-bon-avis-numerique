@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
     // First: standard Prisma contains search
     const results = await prisma.mediaItem.findMany({
       where: {
+        // Manga is admin-only during soft launch — exclude from public
+        // search suggestions. Re-enable by removing this constraint.
+        type: { not: "MANGA" },
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { originalTitle: { contains: query, mode: "insensitive" } },
@@ -52,8 +55,9 @@ export async function GET(request: NextRequest) {
       }>>`
         SELECT id, title, type, poster_url, release_date, expert_age_rec
         FROM media_items
-        WHERE LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
-           OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
+        WHERE type != 'MANGA'
+          AND (LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
+            OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'})
         LIMIT 8
       `
 

@@ -19,9 +19,13 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit
 
   try {
-    const where: Prisma.MediaItemWhereInput = {}
+    // Manga is admin-only during soft launch — exclude from this public
+    // endpoint by default. Callers that need it (admin tooling) can pass
+    // ?type=MANGA explicitly and it'll be used.
+    const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
 
-    // Filter by type
+    // Filter by type — overrides the default MANGA exclusion when caller
+    // explicitly asks for a type (including MANGA, e.g. /admin contexts).
     if (type && ["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"].includes(type)) {
       where.type = type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
     }

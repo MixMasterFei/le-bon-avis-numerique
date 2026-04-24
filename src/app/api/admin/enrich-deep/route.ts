@@ -194,6 +194,16 @@ Reponds UNIQUEMENT avec un JSON valide:
     try {
       parsed = JSON.parse(cleanedContent)
     } catch {
+      // OpenAI's safety filter sometimes returns plain refusal text
+      // ("I'm sorry, I can't assist with that") instead of JSON. Tag
+      // these so the outer handler can soft-skip them — they're not
+      // bugs, just titles the model won't analyze.
+      const isRefusal = /^(i'?m sorry|i cannot|i can'?t|sorry,)/i.test(cleanedContent.trim())
+      if (isRefusal) {
+        const err = new Error(`AI_REFUSED: ${cleanedContent.substring(0, 100)}`)
+        ;(err as Error & { isRefusal?: boolean }).isRefusal = true
+        throw err
+      }
       console.error(`Deep enrich JSON parse error for "${item.title}":`, cleanedContent.substring(0, 200))
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
     }
@@ -273,7 +283,16 @@ export async function POST(request: NextRequest) {
       where: { needsDeepEnrich: true },
     })
 
-    const result = { processed: items.length, enriched: 0, errors: 0, details: [] as string[] }
+    const result = {
+      processed: items.length,
+      enriched: 0,
+      errors: 0,
+      // OpenAI sometimes refuses (safety filter) on borderline content.
+      // We track those separately so they don't pollute the error count
+      // — they're soft-skipped and removed from the queue.
+      refused: 0,
+      details: [] as string[],
+    }
 
     for (const item of items) {
       if (!item.contentMetrics) continue
@@ -347,17 +366,38 @@ export async function POST(request: NextRequest) {
         // Rate limit between items
         await new Promise((resolve) => setTimeout(resolve, 1000))
       } catch (error) {
-        result.errors++
-        result.details.push(
-          `✗ Error: ${item.title}: ${error instanceof Error ? error.message : "Unknown error"}`
-        )
+        const isRefusal =
+          error instanceof Error && (error as Error & { isRefusal?: boolean }).isRefusal === true
+
+        if (isRefusal) {
+          // Remove from queue so we don't re-attempt the same item every
+          // night — the model isn't going to change its mind. Admin can
+          // manually enrich via the UI if they want.
+          try {
+            await prisma.contentMetrics.update({
+              where: { mediaId: item.id },
+              data: { needsDeepEnrich: false },
+            })
+          } catch {
+            // Non-fatal — worst case we retry next run.
+          }
+          result.refused++
+          result.details.push(`⊘ Refused: ${item.title} (skipped, removed from queue)`)
+        } else {
+          result.errors++
+          result.details.push(
+            `✗ Error: ${item.title}: ${error instanceof Error ? error.message : "Unknown error"}`
+          )
+        }
       }
     }
 
     await logCronRun({
       task: "enrich-deep",
+      // Refusals don't count as failures — they're a normal outcome for
+      // borderline content. Only real errors flip status to "partial".
       status: result.errors > 0 ? "partial" : "success",
-      summary: `${result.enriched} deep-enrichis sur ${result.processed}`,
+      summary: `${result.enriched} deep-enrichis sur ${result.processed}${result.refused > 0 ? ` (${result.refused} refusés)` : ""}`,
       details: result,
       startTime,
     })
