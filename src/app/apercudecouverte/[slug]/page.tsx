@@ -1,7 +1,11 @@
 import { redirect, notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ApercuDecouverteStory, type ApercuStoryDetail } from "@/components/home-v2/ApercuDecouverteStory"
+import {
+  ApercuDecouverteStory,
+  type ApercuStoryDetail,
+  type StoryResearch,
+} from "@/components/home-v2/ApercuDecouverteStory"
 import { NewsComments } from "@/components/home-v2/NewsComments"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
@@ -12,6 +16,28 @@ export const dynamic = "force-dynamic"
 
 interface SearchParams {
   font?: string
+}
+
+function toResearch(raw: Prisma.JsonValue | null): StoryResearch | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  if (
+    typeof r.studyTitle !== "string" ||
+    typeof r.organization !== "string" ||
+    typeof r.methodology !== "string" ||
+    typeof r.keyFinding !== "string"
+  ) {
+    return null
+  }
+  return {
+    studyTitle: r.studyTitle,
+    organization: r.organization,
+    year: typeof r.year === "number" ? r.year : null,
+    methodology: r.methodology,
+    keyFinding: r.keyFinding,
+    caveat: typeof r.caveat === "string" ? r.caveat : undefined,
+    sourceUrl: typeof r.sourceUrl === "string" ? r.sourceUrl : undefined,
+  }
 }
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
@@ -63,6 +89,7 @@ export default async function ApercuDecouverteStoryPage(props: {
     imageUrl: row.imageUrl,
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
+    research: toResearch((row as { research?: Prisma.JsonValue | null }).research ?? null),
   }
 
   const searchParams = await props.searchParams

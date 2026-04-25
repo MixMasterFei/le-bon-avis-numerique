@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
+import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
+import { Prisma } from "@prisma/client"
 import type { NewsCategory } from "@prisma/client"
 
 // ── Title-fingerprint dedup ───────────────────────────────────────────
@@ -64,6 +66,9 @@ interface SynthesizedStory {
   // if moderation fails (fail-open) — story still ships, just doesn't
   // get the kid-safe badge.
   audience?: Audience
+  // Optional "Ce que dit la recherche" sidebar. Populated by the
+  // research extraction pass when the body cites a qualifying study.
+  research?: ResearchSidebar | null
 }
 
 type RssParser = Parser<Record<string, unknown>, RssLikeItem & Record<string, unknown>>
@@ -490,17 +495,23 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   let droppedUnsuitable = 0
   const moderationStart = Date.now()
   await parallelMap(validStories, 4, async (s) => {
-    const verdict = await moderateStory({
-      title: s.title,
-      summary: s.summary,
-      body: s.body,
-      category: s.category,
-      // Pass the original (un-mirrored) image URL so the vision model
-      // can fetch it directly. Mirroring happens after this step, so
-      // we only have the source URL at this point.
-      imageUrl: s.imageUrl,
-    })
+    // Run moderation + research extraction in parallel — they're both
+    // independent LLM calls and we want to gate on both before persist.
+    const [verdict, research] = await Promise.all([
+      moderateStory({
+        title: s.title,
+        summary: s.summary,
+        body: s.body,
+        category: s.category,
+        // Pass the original (un-mirrored) image URL so the vision model
+        // can fetch it directly. Mirroring happens after this step, so
+        // we only have the source URL at this point.
+        imageUrl: s.imageUrl,
+      }),
+      extractResearch({ title: s.title, body: s.body }),
+    ])
     s.audience = verdict.audience
+    s.research = research
   })
   const moderatedStories = validStories.filter((s) => {
     if (s.audience === "unsuitable") {
@@ -600,6 +611,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       status: "PUBLISHED" as const,
       region: s.region,
       audience: s.audience ?? "parent_only",
+      research: s.research ? (s.research as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
     }
 
     if (matchedExistingId) {
