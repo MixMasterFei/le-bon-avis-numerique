@@ -6,9 +6,14 @@ on:
     - cron: "0 3 * * 1"
     # Daily 4:00 AM UTC — Enrichment + deep enrichment + quality scores
     - cron: "0 4 * * *"
-    # Twice daily — News discovery (06:00 + 18:00 UTC). Dedup pipeline
-    # handles re-runs natively (URL fingerprint + title fingerprint).
+    # Four times daily — News discovery (00:00 / 06:00 / 12:00 / 18:00
+    # UTC). Bumped from 2x→4x because DeepSeek pricing makes the run
+    # essentially free, and users now expect "fresh news on every visit"
+    # without a manual refresh button. Dedup pipeline handles re-runs
+    # natively (URL fingerprint + title fingerprint).
+    - cron: "0 0 * * *"
     - cron: "0 6 * * *"
+    - cron: "0 12 * * *"
     - cron: "0 18 * * *"
     # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
     - cron: "0 5 * * 6"
@@ -286,7 +291,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     if: >-
+      github.event.schedule == '0 0 * * *' ||
       github.event.schedule == '0 6 * * *' ||
+      github.event.schedule == '0 12 * * *' ||
       github.event.schedule == '0 18 * * *' ||
       github.event.inputs.task == 'news-discover' ||
       github.event.inputs.task == 'all'

@@ -2,6 +2,7 @@ import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
+import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
@@ -53,6 +54,10 @@ interface SynthesizedStory {
   relevanceScore: number
   imageUrl: string
   sourceIndexes: number[]
+  // Filled in by the pass-2 moderation step. Defaults to "parent_only"
+  // if moderation fails (fail-open) — story still ships, just doesn't
+  // get the kid-safe badge.
+  audience?: Audience
 }
 
 type RssParser = Parser<Record<string, unknown>, RssLikeItem & Record<string, unknown>>
@@ -248,6 +253,7 @@ export interface DiscoverStats {
   itemsDroppedNoImage: number
   storiesSynthesized: number
   storiesDroppedInvalid: number
+  storiesDroppedUnsuitable: number  // Pass-2 moderation rejects
   storiesDroppedImageUnreachable: number
   storiesPersisted: number
   storiesUpdated: number
@@ -257,6 +263,7 @@ export interface DiscoverStats {
     fetchRssMs: number
     resolveImagesMs: number
     synthesizeMs: number
+    moderationMs: number
     persistMs: number
   }
 }
@@ -317,6 +324,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       itemsDroppedNoImage: droppedNoImage,
       storiesSynthesized: 0,
       storiesDroppedInvalid: 0,
+      storiesDroppedUnsuitable: 0,
       storiesDroppedImageUnreachable: 0,
       storiesPersisted: 0,
       storiesUpdated: 0,
@@ -326,6 +334,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
         fetchRssMs,
         resolveImagesMs,
         synthesizeMs: 0,
+        moderationMs: 0,
         persistMs: 0,
       },
     }
@@ -443,6 +452,32 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     validStories.push(story)
   }
 
+  // 5b. Pass-2 family-safety moderation (independent LLM call per story).
+  //     Catches unsuitable subjects the synthesis prompt let through —
+  //     horror movie releases, true-crime sensationalism, weird/disturbing
+  //     content. Each story gets an `audience` tag (kid_safe | parent_only
+  //     | unsuitable). Unsuitable rows are dropped before persistence.
+  //     Fail-open: moderator errors → audience = "parent_only" (still ships).
+  let droppedUnsuitable = 0
+  const moderationStart = Date.now()
+  await parallelMap(validStories, 4, async (s) => {
+    const verdict = await moderateStory({
+      title: s.title,
+      summary: s.summary,
+      body: s.body,
+      category: s.category,
+    })
+    s.audience = verdict.audience
+  })
+  const moderatedStories = validStories.filter((s) => {
+    if (s.audience === "unsuitable") {
+      droppedUnsuitable++
+      return false
+    }
+    return true
+  })
+  const moderationMs = Date.now() - moderationStart
+
   // 6. Mirror every chosen image into Supabase Storage. Many news
   //    sites (Sortiraparis, Le Monde, etc.) block hotlinking via
   //    Referer headers — the image returns 200 to a server-side HEAD
@@ -452,13 +487,13 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //    If the upload fails (origin returns <1KB blob, network error,
   //    Supabase disabled in dev), we drop the story.
   const mirrored = await Promise.all(
-    validStories.map((s) =>
+    moderatedStories.map((s) =>
       isStorageEnabled() ? uploadNewsImage(s.imageUrl) : Promise.resolve(s.imageUrl),
     ),
   )
   let droppedImageUnreachable = 0
   const liveStories: SynthesizedStory[] = []
-  validStories.forEach((s, i) => {
+  moderatedStories.forEach((s, i) => {
     const mirroredUrl = mirrored[i]
     if (mirroredUrl) {
       liveStories.push({ ...s, imageUrl: mirroredUrl })
@@ -579,6 +614,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     itemsDroppedNoImage: droppedNoImage,
     storiesSynthesized: rawStories.length,
     storiesDroppedInvalid: droppedInvalid,
+    storiesDroppedUnsuitable: droppedUnsuitable,
     storiesDroppedImageUnreachable: droppedImageUnreachable,
     storiesPersisted: persisted,
     storiesUpdated: updated,
@@ -588,6 +624,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       fetchRssMs,
       resolveImagesMs,
       synthesizeMs,
+      moderationMs,
       persistMs,
     },
   }

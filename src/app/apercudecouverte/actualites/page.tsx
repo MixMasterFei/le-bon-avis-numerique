@@ -54,8 +54,9 @@ export default async function ApercuDecouverteActualitesPage(props: {
   if (!session?.user?.id) {
     redirect("/connexion?next=/apercudecouverte/actualites")
   }
-  const role = (session.user as { role?: string }).role
-  const canRefresh = role === "ADMIN" || role === "MODERATOR"
+  // Refresh capability deliberately not surfaced on the user-facing
+  // page (see canRefresh={false} below). News updates run via the
+  // server cron automatically.
 
   const searchParams = await props.searchParams
   const activeCategory = parseCategory(searchParams?.cat)
@@ -107,7 +108,10 @@ export default async function ApercuDecouverteActualitesPage(props: {
         stories={stories}
         activeCategory={activeCategory}
         serifClass={serifClass}
-        canRefresh={canRefresh}
+        // User-facing page should never expose a manual refresh button —
+        // news must auto-update server-side via the cron. Admin trigger
+        // still exists at /admin if a manual run is ever needed.
+        canRefresh={false}
         initialNextCursor={initialNextCursor}
       />
     </div>
