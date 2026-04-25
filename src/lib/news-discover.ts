@@ -466,6 +466,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       summary: s.summary,
       body: s.body,
       category: s.category,
+      // Pass the original (un-mirrored) image URL so the vision model
+      // can fetch it directly. Mirroring happens after this step, so
+      // we only have the source URL at this point.
+      imageUrl: s.imageUrl,
     })
     s.audience = verdict.audience
   })

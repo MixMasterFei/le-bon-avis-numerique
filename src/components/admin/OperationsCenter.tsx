@@ -17,6 +17,7 @@ import {
   Library,
   CalendarClock,
   BookMarked,
+  Newspaper,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -603,6 +604,39 @@ const OPERATIONS: Array<{
     icon: BookMarked,
     color: "emerald",
     statLabels: { updated: "trouvees", skipped: "sans match" },
+  },
+  {
+    config: {
+      key: "newsCleanupImages",
+      endpoint: "/api/admin/news-cleanup-images",
+      method: "POST",
+      body: { limit: 20 },
+      chunked: true,
+      delayMs: 1500,
+      accumKeys: ["processed", "archived", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
+        updated: data.archived || 0,
+        skipped: data.healthy || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} archivés, ${stats.skipped || 0} sains${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Nettoyer images news",
+    description: "Archiver les news dont l'image est cassée (404, vide, mauvais type)",
+    icon: Newspaper,
+    color: "red",
+    statLabels: { updated: "archivés", skipped: "sains" },
   },
 ]
 

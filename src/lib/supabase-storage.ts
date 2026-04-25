@@ -98,17 +98,101 @@ export async function uploadScreenshot(
 }
 
 /**
- * Mirrors a news story's lead image into Supabase. The storage path
- * is keyed off a content hash of the source URL so the same image
- * referenced from multiple stories dedupes naturally and re-runs are
- * idempotent. Returns the Supabase public URL on success, null on
- * failure (caller should drop the story).
+ * Quick dimension probe from JPEG/PNG/WebP/GIF magic bytes. Avoids
+ * pulling in `sharp` or `probe-image-size` (both add 5-15MB to the
+ * Lambda bundle). Returns null when format isn't recognized — caller
+ * should treat that as "unknown, accept" rather than reject, since
+ * some valid SVGs / odd CDN responses won't match any of these.
+ */
+function probeDimensions(buf: Uint8Array): { width: number; height: number } | null {
+  if (buf.length < 24) return null
+  // PNG: 8-byte signature, then IHDR with width(4) + height(4) at offset 16
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    const view = new DataView(buf.buffer, buf.byteOffset)
+    return { width: view.getUint32(16), height: view.getUint32(20) }
+  }
+  // GIF: width/height little-endian at offsets 6/8
+  if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46) {
+    const view = new DataView(buf.buffer, buf.byteOffset)
+    return { width: view.getUint16(6, true), height: view.getUint16(8, true) }
+  }
+  // JPEG: scan SOF marker (0xFFC0..C3) for dimensions. Most common case.
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2
+    while (i < buf.length - 8) {
+      if (buf[i] !== 0xff) return null
+      const marker = buf[i + 1]
+      if (marker >= 0xc0 && marker <= 0xc3) {
+        const view = new DataView(buf.buffer, buf.byteOffset)
+        return { width: view.getUint16(i + 7), height: view.getUint16(i + 5) }
+      }
+      const segLen = (buf[i + 2] << 8) | buf[i + 3]
+      i += 2 + segLen
+    }
+  }
+  return null
+}
+
+/**
+ * Mirrors a news story's lead image into Supabase. Tighter validation
+ * than the generic upload: rejects content-types that aren't images,
+ * payloads under 10KB (likely error/placeholder), and any image whose
+ * smallest dimension is under 200px (RSS thumbnails, tracking pixels,
+ * favicons). Idempotent — same source URL hashes to same storage path.
  */
 export async function uploadNewsImage(sourceUrl: string): Promise<string | null> {
   if (!isStorageEnabled()) return null
-  const { createHash } = await import("crypto")
-  const hash = createHash("sha1").update(sourceUrl).digest("hex").slice(0, 20)
-  return uploadImageFromUrl(sourceUrl, `news/${hash}.jpg`)
+  const supabase = getSupabaseAdmin()
+  if (!supabase) return null
+
+  try {
+    const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(15000) })
+    if (!response.ok) return null
+
+    const contentType = response.headers.get("content-type") || ""
+    if (!contentType.startsWith("image/")) {
+      console.warn(`[uploadNewsImage] non-image content-type "${contentType}" for ${sourceUrl}`)
+      return null
+    }
+
+    const arrayBuffer = await response.arrayBuffer()
+    // 10KB minimum — covers tracking pixels (1x1, ~70 bytes), tiny
+    // favicons, and most placeholder/error responses.
+    if (arrayBuffer.byteLength < 10_000) {
+      console.warn(`[uploadNewsImage] payload too small (${arrayBuffer.byteLength}B) for ${sourceUrl}`)
+      return null
+    }
+
+    const buf = new Uint8Array(arrayBuffer)
+    const dims = probeDimensions(buf)
+    // Only reject when we successfully probed AND the image is clearly
+    // a thumbnail. Unknown format → trust content-type and ship.
+    if (dims && Math.min(dims.width, dims.height) < 200) {
+      console.warn(`[uploadNewsImage] dimensions too small (${dims.width}x${dims.height}) for ${sourceUrl}`)
+      return null
+    }
+
+    const { createHash } = await import("crypto")
+    const hash = createHash("sha1").update(sourceUrl).digest("hex").slice(0, 20)
+    const storagePath = `news/${hash}.jpg`
+
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, buf, {
+        contentType,
+        upsert: true,
+        cacheControl: "31536000",
+      })
+    if (error) {
+      console.error(`[uploadNewsImage] storage upload error: ${error.message}`)
+      return null
+    }
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+    return data.publicUrl
+  } catch (err) {
+    console.error(`[uploadNewsImage] failed to upload ${sourceUrl}:`, err)
+    return null
+  }
 }
 
 // ── Upload TMDB images with fallback to original URL ─────────
