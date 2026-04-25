@@ -3,7 +3,11 @@ import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { runNewsDiscover } from "@/lib/news-discover"
 
-export const maxDuration = 60
+// Pipeline now does synthesis + per-story moderation (vision-capable
+// when OPENAI_API_KEY is set) + research extraction. Each LLM call
+// is 1-5s, so the 60s ceiling was getting tight with 8-10 stories.
+// Bump to 300s (Vercel Pro maximum) to give headroom.
+export const maxDuration = 300
 
 export async function GET(req: NextRequest) {
   if (!(await isCronOrAdminAuthorized(req))) {

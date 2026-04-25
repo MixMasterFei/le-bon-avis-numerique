@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { runWeeklyDossier } from "@/lib/news-dossier"
 import { logCronRun } from "@/lib/cron-log"
 
-export const maxDuration = 60
+// Long-read agent does one big LLM call (8K output tokens) plus
+// moderation + image mirror. 60s is borderline; 300s gives headroom.
+export const maxDuration = 300
 
 /**
  * Sunday 05:00 UTC — write the weekly "Dossier de la semaine".

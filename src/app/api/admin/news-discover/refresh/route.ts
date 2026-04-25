@@ -3,7 +3,9 @@ import { auth } from "@/lib/auth"
 import { logCronRun } from "@/lib/cron-log"
 import { runNewsDiscover } from "@/lib/news-discover"
 
-export const maxDuration = 60
+// Same as the cron route — pass-2 moderation + research extraction
+// can push past 60s on a full run. Vercel Pro caps at 300s.
+export const maxDuration = 300
 export const dynamic = "force-dynamic"
 
 const OWNER_EMAIL = "masterfei@gmail.com"
