@@ -38,6 +38,8 @@ const TITLE_DEDUP_THRESHOLD = 0.5
 interface HydratedItem {
   sourceName: string
   sourceCategory: NewsCategory
+  sourceRegion: "FR" | "INTL"
+  sourceCountry?: string
   title: string
   link: string
   summary: string
@@ -54,6 +56,10 @@ interface SynthesizedStory {
   relevanceScore: number
   imageUrl: string
   sourceIndexes: number[]
+  // "FR" = synthesized from at least one French source. "INTL" = all
+  // sources are international (Vu d'ailleurs tab). Computed at persist
+  // time from the cited sourceIndexes.
+  region: "FR" | "INTL"
   // Filled in by the pass-2 moderation step. Defaults to "parent_only"
   // if moderation fails (fail-open) — story still ships, just doesn't
   // get the kid-safe badge.
@@ -117,7 +123,11 @@ function buildPrompt(items: HydratedItem[], existingTitles: string[]): string {
   const list = items
     .map((it, idx) => {
       const summary = (it.summary ?? "").slice(0, 400).replace(/\s+/g, " ")
-      return `[${idx}] (${it.sourceName} · ${it.sourceCategory}) ${it.title}\n  URL: ${it.link}\n  IMG: ${it.imageUrl}\n  ${summary}`
+      // Tag international items so the synthesizer knows to translate
+      // and frame for French readers ("Aux États-Unis…", "En Allemagne…").
+      const regionTag =
+        it.sourceRegion === "INTL" ? ` · INTL${it.sourceCountry ? "/" + it.sourceCountry : ""}` : ""
+      return `[${idx}] (${it.sourceName} · ${it.sourceCategory}${regionTag}) ${it.title}\n  URL: ${it.link}\n  IMG: ${it.imageUrl}\n  ${summary}`
     })
     .join("\n\n")
 
@@ -142,6 +152,17 @@ Deux chemins pour créer une histoire :
 **Pas un thème** = "les livres", "les jeux vidéo en avril", "la philosophie", "les adaptations cinéma" — ce sont des catégories, pas des événements.
 
 N'invente JAMAIS de narratif qui relie deux sujets différents (ex : lier un article sur Tolkien et un article sur Saint Augustin en une seule histoire "univers littéraires" — INTERDIT, ce sont deux sujets). Le clustering ne regroupe que des articles couvrant **exactement le même événement**.
+
+## Sources internationales (Vu d'ailleurs)
+
+Certains articles viennent de sources INTL (étiquetés "· INTL/US", "· INTL/UK", "· INTL/DE" etc.) — ce sont des publications étrangères. Ne les regroupe **jamais** avec des sources FR pour former une histoire mixte : INTL et FR voyagent en clusters séparés. Une histoire est soit 100% FR, soit 100% INTL.
+
+Pour les histoires INTL :
+- **Traduis intégralement en français**, ne laisse pas de phrases en anglais ou autre langue.
+- Cadre l'angle pour des familles **françaises** : "Aux États-Unis, X districts scolaires interdisent les portables — voici ce qu'en disent les premières études", "Au Royaume-Uni, une étude montre que…", "En Allemagne, un nouveau guide parental recommande…".
+- Le 1er paragraphe doit explicitement situer le pays/contexte ("Aux États-Unis…", "Au Japon…", "Outre-Manche…").
+- Le 3e paragraphe doit faire le **pont avec les familles françaises** : ce que cela dit/peut inspirer ici, sans surinterpréter.
+- Le clustering INTL est plus tolérant : 1 source suffit si la pertinence ≥ 0.6 (c'est par essence une "vue d'ailleurs").
 
 ## Règle d'angle famille
 
@@ -206,7 +227,7 @@ function isStringArray(x: unknown): x is string[] {
   return Array.isArray(x) && x.every((v) => typeof v === "string")
 }
 
-function coerceStory(raw: unknown, itemCount: number): SynthesizedStory | null {
+function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): SynthesizedStory | null {
   if (typeof raw !== "object" || raw === null) return null
   const r = raw as Record<string, unknown>
   const title = typeof r.title === "string" ? r.title.trim() : ""
@@ -235,6 +256,11 @@ function coerceStory(raw: unknown, itemCount: number): SynthesizedStory | null {
   const wordCount = body.split(/\s+/).filter(Boolean).length
   if (wordCount < 200) return null
 
+  // Derive region from cited sources. Story is INTL only if ALL its
+  // sources are INTL (mixed clusters are caught by the prompt rule —
+  // this is a defensive belt).
+  const allIntl = sourceIndexes.length > 0 && sourceIndexes.every((i) => items[i]?.sourceRegion === "INTL")
+
   return {
     slug: slugify(title),
     title,
@@ -244,6 +270,7 @@ function coerceStory(raw: unknown, itemCount: number): SynthesizedStory | null {
     relevanceScore: Math.max(0, Math.min(1, relevanceScore)),
     imageUrl,
     sourceIndexes,
+    region: allIntl ? "INTL" : "FR",
   }
 }
 
@@ -297,6 +324,8 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     hydrated.push({
       sourceName: source.name,
       sourceCategory: source.category,
+      sourceRegion: source.region ?? "FR",
+      sourceCountry: source.country,
       title: item.title.trim(),
       link: item.link.trim(),
       summary: (item.contentSnippet ?? "").trim(),
@@ -427,7 +456,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const validStories: SynthesizedStory[] = []
   let droppedInvalid = 0
   for (const raw of rawStories) {
-    const story = coerceStory(raw, unique.length)
+    const story = coerceStory(raw, unique.length, unique)
     if (!story) {
       droppedInvalid++
       continue
@@ -569,6 +598,8 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       publishedAt,
       relevanceScore: s.relevanceScore,
       status: "PUBLISHED" as const,
+      region: s.region,
+      audience: s.audience ?? "parent_only",
     }
 
     if (matchedExistingId) {

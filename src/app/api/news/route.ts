@@ -47,9 +47,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const cursor = searchParams.get("cursor") // story id of the last item the client already has
     const category = parseCategory(searchParams.get("cat"))
+    const rawRegion = searchParams.get("region")
+    const region = rawRegion === "FR" || rawRegion === "INTL" ? rawRegion : null
 
     const where: Prisma.NewsStoryWhereInput = { status: "PUBLISHED" }
     if (category) where.category = category
+    if (region) where.region = region
 
     // Fetch one extra item to know whether there's a next page without
     // a separate count query.

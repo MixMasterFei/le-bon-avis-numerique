@@ -15,9 +15,19 @@ import {
 } from "./apercuNewsLabels"
 import { APERCU_PALETTE } from "./apercuTheme"
 
+type RegionKey = "ALL" | "FR" | "INTL"
+
+const REGION_LABEL: Record<RegionKey, string> = {
+  ALL: "Tout",
+  FR: "France",
+  INTL: "Vu d'ailleurs",
+}
+
 interface ApercuDecouverteProps {
   stories: ApercuNewsCardData[]
   activeCategory: NewsCategoryKey
+  /** "FR" = domestic, "INTL" = Vu d'ailleurs, "ALL" = mixed (default). */
+  activeRegion?: RegionKey
   serifClass: string
   /** Only admins see the Rafraîchir button — refresh endpoint is admin-gated. */
   canRefresh?: boolean
@@ -28,6 +38,7 @@ interface ApercuDecouverteProps {
 export function ApercuDecouverte({
   stories,
   activeCategory,
+  activeRegion = "ALL",
   serifClass,
   canRefresh = false,
   initialNextCursor = null,
@@ -44,14 +55,14 @@ export function ApercuDecouverte({
   const [cursor, setCursor] = useState<string | null>(initialNextCursor)
   const [loadingMore, setLoadingMore] = useState(false)
 
-  // Reset pagination state whenever the category or initial dataset changes
-  // (server re-render delivers a fresh first page on category switch).
+  // Reset pagination state whenever the category/region or initial dataset
+  // changes (server re-render delivers a fresh first page on switch).
   const initialCursorRef = useRef(initialNextCursor)
   useEffect(() => {
     setExtra([])
     setCursor(initialNextCursor)
     initialCursorRef.current = initialNextCursor
-  }, [activeCategory, initialNextCursor])
+  }, [activeCategory, activeRegion, initialNextCursor])
 
   const allStories = [...stories, ...extra]
   const [hero, ...rest] = allStories
@@ -62,6 +73,7 @@ export function ApercuDecouverte({
     try {
       const params = new URLSearchParams({ cursor })
       if (activeCategory !== "ALL") params.set("cat", activeCategory)
+      if (activeRegion !== "ALL") params.set("region", activeRegion)
       const res = await fetch(`/api/news?${params}`)
       if (!res.ok) return
       const data = (await res.json()) as {
@@ -81,6 +93,14 @@ export function ApercuDecouverte({
     const params = new URLSearchParams(searchParams?.toString() ?? "")
     if (cat === "ALL") params.delete("cat")
     else params.set("cat", cat)
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname)
+  }
+
+  function setRegion(region: RegionKey) {
+    const params = new URLSearchParams(searchParams?.toString() ?? "")
+    if (region === "ALL") params.delete("region")
+    else params.set("region", region)
     const qs = params.toString()
     router.replace(qs ? `${pathname}?${qs}` : pathname)
   }
@@ -139,6 +159,30 @@ export function ApercuDecouverte({
             )}
           </div>
 
+          {/* Region pills (FR / Vu d'ailleurs) — primary axis. Switches
+              between domestic French press and the international strand. */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            {(["ALL", "FR", "INTL"] as const).map((region) => {
+              const active = region === activeRegion
+              return (
+                <button
+                  key={region}
+                  type="button"
+                  onClick={() => setRegion(region)}
+                  className="px-3.5 py-1.5 rounded-full text-sm font-semibold transition-all"
+                  style={{
+                    background: active ? p.accent : "transparent",
+                    color: active ? "#FFFFFF" : p.ink,
+                    border: `1px solid ${active ? p.accent : p.line2}`,
+                  }}
+                >
+                  {REGION_LABEL[region]}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Category pills (secondary axis, narrows whatever region is active). */}
           <div className="flex flex-wrap gap-2 mb-8">
             {NEWS_CATEGORY_ORDER.map((cat) => {
               const active = cat === activeCategory

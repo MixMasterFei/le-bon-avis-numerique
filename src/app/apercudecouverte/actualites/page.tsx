@@ -14,12 +14,20 @@ export const dynamic = "force-dynamic"
 interface SearchParams {
   font?: string
   cat?: string
+  region?: string
 }
 
 function parseCategory(raw: string | undefined): NewsCategoryKey {
   if (raw === "PARENTHOOD" || raw === "FILM_TV" || raw === "GAMES" || raw === "READING") {
     return raw
   }
+  return "ALL"
+}
+
+// "FR" = domestic strand (default), "INTL" = Vu d'ailleurs.
+// Anything else falls back to "ALL" (mixed).
+function parseRegion(raw: string | undefined): "ALL" | "FR" | "INTL" {
+  if (raw === "FR" || raw === "INTL") return raw
   return "ALL"
 }
 
@@ -60,9 +68,13 @@ export default async function ApercuDecouverteActualitesPage(props: {
 
   const searchParams = await props.searchParams
   const activeCategory = parseCategory(searchParams?.cat)
+  const activeRegion = parseRegion(searchParams?.region)
 
-  const where: { status: "PUBLISHED"; category?: NewsCategory } = { status: "PUBLISHED" }
+  const where: { status: "PUBLISHED"; category?: NewsCategory; region?: string } = {
+    status: "PUBLISHED",
+  }
   if (activeCategory !== "ALL") where.category = activeCategory
+  if (activeRegion !== "ALL") where.region = activeRegion
 
   // Fetch one extra row so we know whether a "Charger plus" page exists
   // without an extra count query. Order matches the API's pagination
@@ -107,6 +119,7 @@ export default async function ApercuDecouverteActualitesPage(props: {
       <ApercuDecouverte
         stories={stories}
         activeCategory={activeCategory}
+        activeRegion={activeRegion}
         serifClass={serifClass}
         // User-facing page should never expose a manual refresh button —
         // news must auto-update server-side via the cron. Admin trigger

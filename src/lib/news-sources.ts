@@ -5,6 +5,14 @@ export interface NewsSource {
   url: string
   category: NewsCategory
   trustTier: 1 | 2 | 3
+  // "FR" = domestic French press (default). "INTL" = international
+  // family/parenting/screen-time press. INTL items get translated +
+  // framed for French families during synthesis and surface under the
+  // "Vu d'ailleurs" tab on /actualites.
+  region?: "FR" | "INTL"
+  // Country code for INTL sources (informational; helps the synthesis
+  // prompt write "Aux États-Unis…" / "En Allemagne…" framing).
+  country?: string
 }
 
 // V2 source list — see docs/editorial-sources.md for the research behind
@@ -34,4 +42,29 @@ export const NEWS_SOURCES: NewsSource[] = [
   // READING
   { name: "1jour1actu",                      url: "https://feeds.feedburner.com/1jour1actu/BwmM3ey8dPF",                    category: "READING",    trustTier: 1 },
   { name: "IDBOOX Livres enfants",           url: "https://www.idboox.com/livres-enfants/feed/",                            category: "READING",    trustTier: 3 },
+
+  // ── INTERNATIONAL (Vu d'ailleurs) ───────────────────────────────
+  // Family/parenting/screen-time press from outside France. Synthesized
+  // + translated into French for the "Vu d'ailleurs" tab. Curated to
+  // skip the gossip/lifestyle press and stick to substantive sources.
+
+  // PARENTHOOD international
+  { name: "NYT Well Family",                  url: "https://rss.nytimes.com/services/xml/rss/nyt/FamilyandRelationships.xml", category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
+  { name: "BBC Family & Education",           url: "https://feeds.bbci.co.uk/news/education/rss.xml",                         category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "UK" },
+  { name: "Guardian Family",                  url: "https://www.theguardian.com/lifeandstyle/family/rss",                     category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "UK" },
+  { name: "Common Sense Media — News",        url: "https://www.commonsensemedia.org/rss.xml",                                category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
+  { name: "Pew Research — Internet & Tech",   url: "https://www.pewresearch.org/internet/feed/",                              category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
+
+  // FILM_TV international
+  { name: "Variety Family",                   url: "https://variety.com/v/film/feed/",                                        category: "FILM_TV",    trustTier: 2, region: "INTL", country: "US" },
+  { name: "Hollywood Reporter Animation",     url: "https://www.hollywoodreporter.com/c/movies/animation/feed/",              category: "FILM_TV",    trustTier: 2, region: "INTL", country: "US" },
+  { name: "BBC Culture",                      url: "https://www.bbc.com/culture/feed.rss",                                    category: "FILM_TV",    trustTier: 1, region: "INTL", country: "UK" },
+
+  // GAMES international
+  { name: "Polygon",                          url: "https://www.polygon.com/rss/index.xml",                                   category: "GAMES",      trustTier: 1, region: "INTL", country: "US" },
+  { name: "GameSpot Family",                  url: "https://www.gamespot.com/feeds/news/",                                    category: "GAMES",      trustTier: 2, region: "INTL", country: "US" },
+
+  // READING international
+  { name: "Publishers Weekly Children's",     url: "https://www.publishersweekly.com/pw/feeds/recent/childrens.xml",          category: "READING",    trustTier: 1, region: "INTL", country: "US" },
+  { name: "School Library Journal",           url: "https://www.slj.com/?feed=rss2",                                          category: "READING",    trustTier: 1, region: "INTL", country: "US" },
 ]

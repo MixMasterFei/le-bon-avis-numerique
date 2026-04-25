@@ -820,10 +820,35 @@ model NewsStory {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
+  // Region the source publication is based in. "FR" = domestic French
+  // press (existing default). "INTL" = synthesized + translated from
+  // an international family-press source (NYT Parenting, BBC Family,
+  // etc.). Drives the "Vu d'ailleurs" tab on /actualites.
+  region         String          @default("FR")
+
+  // Story format: BRIEF = standard 300-450 word news item,
+  // DOSSIER = weekly long-read (800-1200 words) synthesizing 7 days
+  // of coverage on a single theme. Featured at top of /actualites.
+  storyType      String          @default("BRIEF") @map("story_type")
+
+  // Audience verdict from the pass-2 moderator. kid_safe = anyone can
+  // see, parent_only = adult eyes only (true crime, mature documentaries),
+  // unsuitable = dropped before persistence (so "unsuitable" never
+  // appears in the DB; field exists for future-proofing).
+  audience       String          @default("parent_only")
+
+  // "Ce que dit la recherche" sidebar — when the body cites a study,
+  // a separate agent extracts the canonical reference. JSON shape:
+  // { studyTitle, methodology, keyFinding, sampleSize, year, source, doi?, url? }
+  // Null when no study citation is detected.
+  research       Json?
+
   comments NewsComment[]
 
   @@index([publishedAt])
   @@index([category, status])
+  @@index([region, status])
+  @@index([storyType, status])
   @@map("news_stories")
 }
 
