@@ -20,6 +20,9 @@ on:
     # Sunday 4:00 AM UTC — Weekly manga refresh (AniList updated series
     # → refresh chapter/volume counts + latestVolumeDate for the rail)
     - cron: "0 4 * * 0"
+    # Sunday 5:00 AM UTC — Weekly dossier ("Dossier de la semaine")
+    # synthesizes one long-read from the past 7 days of brief stories.
+    - cron: "0 5 * * 0"
   workflow_dispatch:
     inputs:
       task:
@@ -37,6 +40,7 @@ on:
           - similarity
           - news-discover
           - weekly-manga
+          - weekly-dossier
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -334,6 +338,31 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Weekly manga failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Sunday 05:00 UTC: Weekly dossier (long-read synthesis) ────────
+  sunday-dossier:
+    name: Weekly Dossier
+    runs-on: ubuntu-latest
+    environment: Production
+    if: >-
+      github.event.schedule == '0 5 * * 0' ||
+      github.event.inputs.task == 'weekly-dossier' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Synthesize weekly dossier
+        run: |
+          echo "::group::Weekly dossier"
+          response=$(curl -sSfL --max-time 58 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/weekly-dossier")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq . 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Weekly dossier failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"

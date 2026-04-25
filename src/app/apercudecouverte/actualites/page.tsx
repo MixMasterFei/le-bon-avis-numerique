@@ -70,11 +70,37 @@ export default async function ApercuDecouverteActualitesPage(props: {
   const activeCategory = parseCategory(searchParams?.cat)
   const activeRegion = parseRegion(searchParams?.region)
 
-  const where: { status: "PUBLISHED"; category?: NewsCategory; region?: string } = {
+  const where: { status: "PUBLISHED"; category?: NewsCategory; region?: string; storyType?: string } = {
     status: "PUBLISHED",
   }
   if (activeCategory !== "ALL") where.category = activeCategory
   if (activeRegion !== "ALL") where.region = activeRegion
+  // Briefs only — the dossier is fetched separately and pinned at the
+  // top with featured treatment (see below).
+  where.storyType = "BRIEF"
+
+  // The most recent dossier (storyType = DOSSIER) — pinned above the
+  // brief grid when one exists in the past 14 days.
+  const dossierRow = await prisma.newsStory.findFirst({
+    where: {
+      status: "PUBLISHED",
+      storyType: "DOSSIER",
+      publishedAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+      ...(activeRegion !== "ALL" ? { region: activeRegion } : {}),
+      ...(activeCategory !== "ALL" ? { category: activeCategory } : {}),
+    },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      summary: true,
+      imageUrl: true,
+      category: true,
+      publishedAt: true,
+      sources: true,
+    },
+  })
 
   // Fetch one extra row so we know whether a "Charger plus" page exists
   // without an extra count query. Order matches the API's pagination
@@ -118,6 +144,19 @@ export default async function ApercuDecouverteActualitesPage(props: {
     <div className={useFraunces ? fraunces.variable : undefined}>
       <ApercuDecouverte
         stories={stories}
+        dossier={
+          dossierRow
+            ? {
+                slug: dossierRow.slug,
+                title: dossierRow.title,
+                summary: dossierRow.summary,
+                imageUrl: dossierRow.imageUrl,
+                category: dossierRow.category,
+                publishedAt: dossierRow.publishedAt,
+                sources: toSources(dossierRow.sources),
+              }
+            : null
+        }
         activeCategory={activeCategory}
         activeRegion={activeRegion}
         serifClass={serifClass}

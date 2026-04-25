@@ -25,6 +25,8 @@ const REGION_LABEL: Record<RegionKey, string> = {
 
 interface ApercuDecouverteProps {
   stories: ApercuNewsCardData[]
+  /** Latest weekly dossier (long-read), pinned above the brief grid when present. */
+  dossier?: ApercuNewsCardData | null
   activeCategory: NewsCategoryKey
   /** "FR" = domestic, "INTL" = Vu d'ailleurs, "ALL" = mixed (default). */
   activeRegion?: RegionKey
@@ -37,6 +39,7 @@ interface ApercuDecouverteProps {
 
 export function ApercuDecouverte({
   stories,
+  dossier = null,
   activeCategory,
   activeRegion = "ALL",
   serifClass,
@@ -234,6 +237,20 @@ export function ApercuDecouverte({
             </div>
           ) : (
             <div className="flex flex-col gap-6">
+              {/* Dossier de la semaine — pinned above the brief grid
+                  with a distinct "À LA UNE / DOSSIER" treatment so it
+                  reads as the editorial centerpiece. */}
+              {dossier && (
+                <div className="relative">
+                  <div
+                    className="absolute -top-3 left-4 z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: p.accent, color: "#FFFFFF" }}
+                  >
+                    Dossier de la semaine
+                  </div>
+                  <ApercuNewsHeroCard story={dossier} serifClass={serifClass} />
+                </div>
+              )}
               {hero && <ApercuNewsHeroCard story={hero} serifClass={serifClass} />}
               {rest.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
