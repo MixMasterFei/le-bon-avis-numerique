@@ -1,6 +1,7 @@
 import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
+import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
@@ -333,32 +334,58 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
   }
 
-  // 5. Cluster + synthesize in one Claude call
+  // 5. Cluster + synthesize in one model call.
+  //
+  // Provider selection:
+  //   - DeepSeek when DEEPSEEK_API_KEY is set (default — much cheaper
+  //     for high-volume cron jobs). V4-Flash returns plenty for
+  //     news clustering/summarization.
+  //   - Anthropic Claude Haiku as fallback when DeepSeek isn't
+  //     configured, or when NEWS_PROVIDER=anthropic is set explicitly.
+  // Set NEWS_PROVIDER=anthropic to force Claude even with both keys.
   const synthStart = Date.now()
-  const anthropic = getAnthropic()
+  const provider =
+    process.env.NEWS_PROVIDER === "anthropic"
+      ? "anthropic"
+      : isDeepSeekAvailable()
+        ? "deepseek"
+        : "anthropic"
   const prompt = buildPrompt(
     unique,
     existingStories.map((s) => s.title),
   )
-  const response = await anthropic.messages.create({
-    model: DEFAULT_MODEL,
-    max_tokens: 8000,
-    messages: [{ role: "user", content: prompt }],
-  })
 
-  const textBlock = response.content.find((c) => c.type === "text")
-  const rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
+  let rawText = ""
+  if (provider === "deepseek") {
+    const ds = getDeepSeek()
+    const response = await ds.chat.completions.create({
+      model: DEFAULT_DEEPSEEK_MODEL,
+      max_tokens: 8000,
+      messages: [{ role: "user", content: prompt }],
+    })
+    rawText = response.choices[0]?.message?.content ?? ""
+  } else {
+    const anthropic = getAnthropic()
+    const response = await anthropic.messages.create({
+      model: DEFAULT_MODEL,
+      max_tokens: 8000,
+      messages: [{ role: "user", content: prompt }],
+    })
+    const textBlock = response.content.find((c) => c.type === "text")
+    rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
+  }
+
   const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error("Claude did not return JSON")
+  if (!jsonMatch) throw new Error(`${provider} did not return JSON`)
 
   let parsed: unknown
   try {
     parsed = JSON.parse(jsonMatch[0])
   } catch {
-    throw new Error("Claude returned malformed JSON")
+    throw new Error(`${provider} returned malformed JSON`)
   }
   const rawStories = (parsed as { stories?: unknown[] })?.stories ?? []
-  if (!Array.isArray(rawStories)) throw new Error("Claude returned no stories array")
+  if (!Array.isArray(rawStories)) throw new Error(`${provider} returned no stories array`)
 
   const allowedImages = new Set(unique.map((u) => u.imageUrl))
   const validStories: SynthesizedStory[] = []
