@@ -1,7 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { SafeImage } from "@/components/ui/SafeImage"
+import Image from "next/image"
 import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
@@ -25,6 +26,14 @@ export function ApercuNewsCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
+  const [imageBroken, setImageBroken] = useState(false)
+
+  // Hide the entire card when the image fails to load — a broken
+  // placeholder card looks worse than missing card. Server-side already
+  // tries to drop image-less stories at synth time; this catches the
+  // remainder (legacy rows with stale URLs, mirrored files that 404).
+  if (imageBroken) return null
+
   return (
     <Link
       href={`/apercudecouverte/${story.slug}`}
@@ -32,12 +41,13 @@ export function ApercuNewsCard({
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
       <div className="relative aspect-[16/9] overflow-hidden" style={{ background: p.placeholder }}>
-        <SafeImage
+        <Image
           src={story.imageUrl}
           alt={story.title}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           sizes="(max-width: 768px) 100vw, 33vw"
+          onError={() => setImageBroken(true)}
         />
         <div
           className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"

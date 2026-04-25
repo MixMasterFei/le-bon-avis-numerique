@@ -1,18 +1,23 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
-import { fetchDiscoverDigest } from "@/lib/discover-digest"
-import { factOfTheWeek } from "@/lib/family-facts"
-import { DecouverteDigest } from "@/components/home-v2/DecouverteDigest"
-import { fraunces } from "@/components/home-v2/apercuFont"
-import { isFraunces } from "@/components/home-v2/apercuTheme"
 
 export const dynamic = "force-dynamic"
-export const revalidate = 60 // page is fully RSC, 1-min ISR is enough
 
 interface SearchParams {
   font?: string
+  cat?: string
 }
 
+/**
+ * /apercudecouverte was previously the "digest" landing — one feature
+ * story + a few rails. Xavier found it too sparse: users have to click
+ * through to see the rest of the news. Redirecting to /actualites gives
+ * the all-news view as the default landing instead. Auth check stays
+ * here so unauthenticated visitors still get bounced to /connexion.
+ *
+ * To restore the digest landing later, swap this back to the previous
+ * implementation (see git history for `DecouverteDigest` usage).
+ */
 export default async function ApercuDecouvertePage(props: {
   searchParams?: Promise<SearchParams>
 }) {
@@ -25,28 +30,15 @@ export default async function ApercuDecouvertePage(props: {
   if (!session?.user?.id) {
     redirect("/connexion?next=/apercudecouverte")
   }
-  const role = (session.user as { role?: string }).role
-  const canRefresh = role === "ADMIN" || role === "MODERATOR"
 
-  const [digest, searchParams] = await Promise.all([
-    fetchDiscoverDigest(),
-    props.searchParams,
-  ])
-  const fact = factOfTheWeek()
+  // Forward query params (font, cat) so deep links keep working.
+  const sp = (await props.searchParams) ?? {}
+  const qs = new URLSearchParams()
+  if (sp.font) qs.set("font", sp.font)
+  if (sp.cat) qs.set("cat", sp.cat)
+  const target = qs.toString()
+    ? `/apercudecouverte/actualites?${qs.toString()}`
+    : "/apercudecouverte/actualites"
 
-  const useFraunces = isFraunces(searchParams?.font)
-  const serifClass = useFraunces
-    ? fraunces.className
-    : "font-[var(--font-heading)]"
-
-  return (
-    <div className={useFraunces ? fraunces.variable : undefined}>
-      <DecouverteDigest
-        digest={digest}
-        fact={fact}
-        serifClass={serifClass}
-        canRefresh={canRefresh}
-      />
-    </div>
-  )
+  redirect(target)
 }

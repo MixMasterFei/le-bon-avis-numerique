@@ -1,7 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import { SafeImage } from "@/components/ui/SafeImage"
+import Image from "next/image"
 import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills } from "./ApercuNewsSourcePills"
@@ -16,6 +17,10 @@ export function ApercuNewsHeroCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
+  const [imageBroken, setImageBroken] = useState(false)
+  // Hide the hero entirely on broken image — better empty than a giant
+  // grey placeholder above the fold (matches ApercuNewsCard behavior).
+  if (imageBroken) return null
   return (
     <Link
       href={`/apercudecouverte/${story.slug}`}
@@ -57,13 +62,14 @@ export function ApercuNewsHeroCard({
         className="order-1 md:order-2 relative aspect-[16/10] md:aspect-auto md:min-h-[320px]"
         style={{ background: p.placeholder }}
       >
-        <SafeImage
+        <Image
           src={story.imageUrl}
           alt={story.title}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           sizes="(max-width: 768px) 100vw, 55vw"
           priority
+          onError={() => setImageBroken(true)}
         />
       </div>
     </Link>

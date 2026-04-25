@@ -152,15 +152,31 @@ Le corps de l'histoire doit COMMENCER par une phrase qui énonce clairement l'an
 - Essais/opinions sans événement précis ni angle famille
 - Polémiques industrie/culture sans angle enfant ou parent
 
+## Choix de l'image — règle famille
+
+L'image accompagne chaque histoire sur la page d'accueil et le site est destiné aux **familles avec enfants**. Tu DOIS choisir une image appropriée :
+
+- **À écarter** : visages déformés, maquillages d'horreur, créatures monstrueuses gros plan, scènes sanglantes, poses violentes, atmosphères d'horreur (clair-obscur menaçant, expressions terrifiées en gros plan), images d'âge clairement 16+/18+.
+- **À privilégier** : posters officiels, photos promotionnelles, captures d'écran d'action ou d'ambiance, portraits neutres, photos institutionnelles, illustrations éditoriales.
+
+Si aucune image acceptable n'est disponible parmi les articles du cluster, **écarte l'histoire entièrement** plutôt que d'utiliser une image effrayante. Mieux vaut moins d'histoires qu'une image qui choque un enfant qui passe devant l'écran.
+
 ## Format de sortie
 
 Pour chaque histoire retenue, renvoie un objet JSON avec :
 - "title": titre éditorial clair (français, sobre, pas de clickbait)
 - "summary": 1-2 phrases (<200 caractères) résumant l'événement et son angle famille
-- "body": 120-180 mots en markdown, 1er paragraphe = angle famille explicite, 2e paragraphe = les faits rapportés par les sources. Synthèse neutre. Ne jamais mentionner l'IA ni inventer de faits hors sources.
+- "body": **300-450 mots** en markdown, structuré en 3-4 paragraphes :
+  - **Para 1** (~80 mots) : angle famille explicite — qui est concerné, pourquoi maintenant. Hook qui donne envie de lire la suite.
+  - **Para 2** (~100-130 mots) : les faits rapportés. Si plusieurs sources sont disponibles, attribue chaque fait à sa source ("Selon Le Monde, ...", "Numerama rapporte que...", "L'étude publiée dans X indique..."). Une voix par paragraphe quand possible.
+  - **Para 3** (~80-120 mots) : contexte ou implications pour les familles — ce que ça change concrètement, à quel âge, dans quelles circonstances. C'est ici qu'on aide les parents à décider.
+  - **Para 4 optionnel** (~50-80 mots) : "À retenir" ou conseil pratique court (à mettre seulement si pertinent — sinon arrête à 3 paragraphes).
+
+  Synthèse neutre, jamais d'opinion personnelle, jamais "selon moi/nous". N'invente AUCUN fait absent des articles fournis. Pas de mention de l'IA. Cite les sources par leur nom de publication, pas par "source 1" ou "[2]".
+
 - "category": PARENTHOOD | FILM_TV | GAMES | READING
 - "relevanceScore": 0 à 1, pertinence FAMILIALE (pas d'intérêt général). ≥ 0.5 pour multi-sources, ≥ 0.7 pour single-source
-- "imageUrl": URL exacte de l'IMG d'un des articles du cluster (jamais inventer)
+- "imageUrl": URL exacte de l'IMG d'un des articles du cluster (jamais inventer). Respecter la règle d'image famille ci-dessus.
 - "sourceIndexes": tableau des indexes des articles sources du cluster
 
 ## Contraintes dures
@@ -168,7 +184,8 @@ Pour chaque histoire retenue, renvoie un objet JSON avec :
 - Maximum 10 histoires, triées par pertinence décroissante
 - **Distribue à travers les 4 catégories** : vise 2-3 histoires par catégorie quand le matériel le permet. Évite de remplir 8 PARENTHOOD et 0 GAMES — la page Découverte affiche un onglet par catégorie et chaque onglet doit avoir du contenu.
 - Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.6 obligatoire
-- Chaque imageUrl correspond exactement à l'IMG d'un article cité
+- Chaque imageUrl correspond exactement à l'IMG d'un article cité, ET respecte la règle famille
+- **Body de 300 mots minimum** — un body court est un signe que l'histoire n'a pas assez de matière, écarte plutôt que de bâcler
 - Si tu ne trouves que 0, 1 ou 2 histoires solides, renvoie seulement celles-là
 - Français uniquement
 
@@ -206,6 +223,12 @@ function coerceStory(raw: unknown, itemCount: number): SynthesizedStory | null {
   if (!title || !summary || !body || !imageUrl) return null
   if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING"].includes(category)) return null
   if (sourceIndexes.length === 0) return null
+
+  // Body must clear ~200 words. Anything shorter means the model didn't
+  // follow the depth spec — better to drop than ship a 2-paragraph
+  // article that looks like a Twitter post.
+  const wordCount = body.split(/\s+/).filter(Boolean).length
+  if (wordCount < 200) return null
 
   return {
     slug: slugify(title),
@@ -355,12 +378,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     existingStories.map((s) => s.title),
   )
 
+  // Bumped from 8000 → 14000 because body length spec went from 120-180
+  // words to 300-450 words across up to 10 stories. Each story can now
+  // run ~600 tokens of body text alone.
+  const MAX_TOKENS = 14000
   let rawText = ""
   if (provider === "deepseek") {
     const ds = getDeepSeek()
     const response = await ds.chat.completions.create({
       model: DEFAULT_DEEPSEEK_MODEL,
-      max_tokens: 8000,
+      max_tokens: MAX_TOKENS,
       messages: [{ role: "user", content: prompt }],
     })
     rawText = response.choices[0]?.message?.content ?? ""
@@ -368,7 +395,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     const anthropic = getAnthropic()
     const response = await anthropic.messages.create({
       model: DEFAULT_MODEL,
-      max_tokens: 8000,
+      max_tokens: MAX_TOKENS,
       messages: [{ role: "user", content: prompt }],
     })
     const textBlock = response.content.find((c) => c.type === "text")
