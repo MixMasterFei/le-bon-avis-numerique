@@ -169,7 +169,7 @@ export interface DossierStats {
   durationMs: number
 }
 
-export async function runWeeklyDossier(): Promise<DossierStats> {
+export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<DossierStats> {
   const started = Date.now()
   const since = new Date(Date.now() - DOSSIER_LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
 
@@ -178,20 +178,23 @@ export async function runWeeklyDossier(): Promise<DossierStats> {
   // (or a Sunday + Monday double-fire) producing near-duplicate
   // dossiers on the same theme. The Sunday cron is meant to be the
   // only producer; this just enforces it server-side.
-  const recentDossier = await prisma.newsStory.findFirst({
-    where: {
-      status: "PUBLISHED",
-      storyType: "DOSSIER",
-      publishedAt: { gte: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
-    },
-    select: { id: true, publishedAt: true, title: true },
-  })
-  if (recentDossier) {
-    return {
-      briefsConsidered: 0,
-      result: "skipped",
-      reason: `recent dossier exists (${recentDossier.publishedAt.toISOString().split("T")[0]}: "${recentDossier.title.slice(0, 60)}")`,
-      durationMs: Date.now() - started,
+  // Bypass with opts.force = true (e.g. after archiving stale dossiers).
+  if (!opts.force) {
+    const recentDossier = await prisma.newsStory.findFirst({
+      where: {
+        status: "PUBLISHED",
+        storyType: "DOSSIER",
+        publishedAt: { gte: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
+      },
+      select: { id: true, publishedAt: true, title: true },
+    })
+    if (recentDossier) {
+      return {
+        briefsConsidered: 0,
+        result: "skipped",
+        reason: `recent dossier exists (${recentDossier.publishedAt.toISOString().split("T")[0]}: "${recentDossier.title.slice(0, 60)}")`,
+        durationMs: Date.now() - started,
+      }
     }
   }
 

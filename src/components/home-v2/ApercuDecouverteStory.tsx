@@ -182,21 +182,81 @@ export function ApercuDecouverteStory({
           <ReadingTime body={story.body} serifClass={serifClass} />
 
           {/*
-            prose-lg gives larger body type + tighter line-height that
-            reads as editorial rather than blog. The custom paragraph
-            spacing (1.6em) is generous on purpose: Xavier specifically
-            asked for more breathing room between paragraphs.
+            Explicit ReactMarkdown component map — gives us bulletproof
+            paragraph spacing instead of relying on Tailwind's prose-p:
+            modifier (which can miss ReactMarkdown's <p> output depending
+            on how the plugin is wired). Each element type carries its
+            own typography. Generous mb-7 between paragraphs is the
+            "easy to read" Xavier specifically asked for.
           */}
-          <article
-            className="prose prose-lg prose-neutral max-w-none
-                       prose-p:leading-relaxed prose-p:mb-6
-                       prose-p:text-[17px] md:prose-p:text-[18px]
-                       prose-headings:font-medium prose-headings:tracking-tight
-                       prose-strong:font-semibold
-                       prose-a:underline-offset-4"
-            style={{ color: p.ink }}
-          >
-            <ReactMarkdown>{story.body}</ReactMarkdown>
+          <article className="max-w-none" style={{ color: p.ink }}>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p
+                    className="mb-7 last:mb-0 leading-[1.7] text-[17px] md:text-[18px]"
+                    style={{ color: p.ink }}
+                  >
+                    {children}
+                  </p>
+                ),
+                h2: ({ children }) => (
+                  <h2
+                    className={`${serifClass} mt-10 mb-4 text-2xl md:text-3xl font-medium leading-tight`}
+                    style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                  >
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3
+                    className={`${serifClass} mt-8 mb-3 text-xl md:text-2xl font-medium leading-tight`}
+                    style={{ color: p.ink, letterSpacing: "-0.01em" }}
+                  >
+                    {children}
+                  </h3>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-semibold" style={{ color: p.ink }}>
+                    {children}
+                  </strong>
+                ),
+                em: ({ children }) => (
+                  <em className="italic">{children}</em>
+                ),
+                a: ({ children, href }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-4 hover:opacity-70"
+                    style={{ color: p.accent }}
+                  >
+                    {children}
+                  </a>
+                ),
+                ul: ({ children }) => (
+                  <ul className="mb-7 space-y-2 list-disc pl-6 text-[17px] md:text-[18px] leading-[1.7]">
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="mb-7 space-y-2 list-decimal pl-6 text-[17px] md:text-[18px] leading-[1.7]">
+                    {children}
+                  </ol>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote
+                    className={`${serifClass} my-7 pl-5 italic text-lg md:text-xl leading-snug`}
+                    style={{ borderLeft: `3px solid ${p.accent}`, color: p.ink2 }}
+                  >
+                    {children}
+                  </blockquote>
+                ),
+              }}
+            >
+              {story.body}
+            </ReactMarkdown>
           </article>
 
           {commentsSlot}

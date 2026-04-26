@@ -28,8 +28,13 @@ export async function GET(req: NextRequest) {
   }
 
   const startedAt = Date.now()
+  // ?force=true bypasses the 6-day idempotency guard. Used after
+  // archiving stale dossiers so we can immediately regenerate under
+  // updated prompts without waiting for next week's cron.
+  const url = new URL(req.url)
+  const force = url.searchParams.get("force") === "true"
   try {
-    const stats = await runWeeklyDossier()
+    const stats = await runWeeklyDossier({ force })
     await logCronRun({
       task: "weekly-dossier",
       status: stats.result === "error" ? "error" : stats.result === "persisted" ? "success" : "partial",
