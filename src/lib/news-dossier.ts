@@ -46,7 +46,7 @@ interface DossierResult {
   briefIds: string[]              // Source briefs cited
 }
 
-const DOSSIER_PROMPT_HEADER = `Tu es l'éditeur en chef de Totem Avisé, un guide pour familles françaises. Une fois par semaine, tu écris un DOSSIER : une analyse longue (800-1200 mots) qui prend du recul sur l'actualité de la semaine.
+const DOSSIER_PROMPT_HEADER = `Tu es journaliste pour Totem Avisé, un guide pour familles françaises. Une fois par semaine, tu rédiges un DOSSIER : une mise en perspective de l'actualité de la semaine, **fondée sur ce que les sources rapportent** — jamais sur ton opinion.
 
 Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catégorisées. Ton travail :
 
@@ -54,23 +54,39 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
 
 2. **Choisis la catégorie** la plus pertinente pour ce thème : PARENTHOOD | FILM_TV | GAMES | READING.
 
-3. **Écris le dossier** en 4-5 paragraphes, **800 à 1200 mots** :
-   - **Para 1** (~100 mots) : ce que la semaine a montré. Hook éditorial qui annonce le thème.
-   - **Para 2-3** (~250-350 mots chacun) : les éléments clés. Cite les articles individuels par leur source ("Selon Le Monde…", "Une étude de Pew Research montre…"). Compare les angles, ne te contente pas de juxtaposer.
-   - **Para 4** (~150-200 mots) : ce qu'on retient pour les familles. Implications concrètes — à quel âge, dans quelles circonstances, qu'est-ce que ça change.
-   - **Para 5 optionnel** (~100 mots) : ouverture. Ce qui reste à observer la semaine prochaine.
+3. **Voix éditoriale — RELAYER, pas commenter** (règle critique) :
 
-4. **Choisis l'image** : prends l'imageUrl d'un des briefs cités (jamais inventer). Privilégie une image qui illustre bien le thème global, pas un détail secondaire.
+   **INTERDIT** :
+   - Titres avec qualificatif ou prise de position ("la semaine où la France a dit assez", "un signal alarmant", "un tournant", "enfin une réaction", "des promesses encore floues")
+   - Questions rhétoriques ("Pour combien de temps ?", "Mais à quel prix ?")
+   - Conclusions Totem ("on ne peut que saluer", "il est temps que…", "voilà qui change la donne")
+   - Vocabulaire éditorial : *enfin, malheureusement, fort heureusement, étonnamment, sans surprise, à juste titre, courageux, lucide, alarmant, inquiétant, prometteur*
+   - Formules qui prennent position implicite ("comme l'avait prédit", "rare lucidité de…", "preuve supplémentaire que…")
 
-5. **Cite seulement les briefs réellement utilisés**. Renvoie leurs ids dans \`briefIds\`. Si tu cites moins de 3 briefs distincts, c'est que le thème n'est pas assez mûr — renvoie \`{ "skip": true, "reason": "..." }\`.
+   **EXIGÉ** :
+   - Titre purement descriptif : "Cette semaine : trois initiatives sur l'âge minimum du smartphone" plutôt que "La semaine où la France a dit assez"
+   - **Chaque affirmation forte est attribuée nommément** : "Selon Le Monde, …", "Pew Research observe que…", "L'étude de l'INSERM publiée mardi rapporte que…"
+   - Tu peux comparer les sources entre elles ("Là où Le Monde insiste sur X, Numerama souligne Y") — c'est du journalisme, pas de l'opinion
+   - Si tu veux relayer une position forte, mets-la entre guillemets et attribue-la à la source citée
+   - Le dossier peut soulever des questions, mais en les attribuant : "Plusieurs experts cités par Le Monde s'interrogent sur…"
+
+4. **Écris le dossier** en 4-5 paragraphes, **800 à 1200 mots** :
+   - **Para 1** (~100 mots) : présentation factuelle du thème — quels événements / quels articles / quelle convergence. Pas d'éditorial.
+   - **Para 2-3** (~250-350 mots chacun) : les éléments clés, **chaque fait attribué à sa source par son nom**. Compare les angles ("Le Monde insiste sur X, tandis que Numerama observe Y"). Mets les chiffres entre guillemets explicitement avec leur source.
+   - **Para 4** (~150-200 mots) : ce que les sources disent des **implications pour les familles**. Pas "voilà ce que ça change" (Totem) mais "Selon les chercheurs cités…", "Le rapport souligne que les familles concernées…".
+   - **Para 5 optionnel** (~100 mots) : "Ce qui reste à observer" — questions ouvertes que les sources elles-mêmes posent (pas Totem).
+
+5. **Choisis l'image** : prends l'imageUrl d'un des briefs cités (jamais inventer). Privilégie une image neutre et grand public ; **évite les images d'horreur, de gore, ou de visages déformés**, même si le thème les contient (un dossier sur l'écran évite les photos d'enfants en gros plan dans le noir, par exemple). Préfère les images d'ensemble lumineuses.
+
+6. **Cite seulement les briefs réellement utilisés**. Renvoie leurs ids dans \`briefIds\`. Si tu cites moins de 3 briefs distincts, c'est que le thème n'est pas assez mûr — renvoie \`{ "skip": true, "reason": "..." }\`.
 
 Format de sortie (JSON sans markdown) :
 {
-  "topic": "phrase courte décrivant le thème",
+  "topic": "phrase courte décrivant le thème (descriptive, pas éditoriale)",
   "category": "PARENTHOOD" | "FILM_TV" | "GAMES" | "READING",
-  "title": "titre éditorial du dossier",
-  "summary": "1-2 phrases (<200 caractères)",
-  "body": "le dossier complet en markdown, 800-1200 mots",
+  "title": "titre factuel et descriptif du dossier",
+  "summary": "1-2 phrases (<200 caractères) — descriptives, pas évaluatives",
+  "body": "le dossier complet en markdown, 800-1200 mots, **avec une ligne vide entre chaque paragraphe**",
   "imageUrl": "URL exacte d'un brief cité",
   "briefIds": ["id1", "id2", ...]
 }
@@ -156,6 +172,28 @@ export interface DossierStats {
 export async function runWeeklyDossier(): Promise<DossierStats> {
   const started = Date.now()
   const since = new Date(Date.now() - DOSSIER_LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
+
+  // Idempotency guard: skip if a dossier has already been written in
+  // the past 6 days. Prevents runaway from a manually-triggered cron
+  // (or a Sunday + Monday double-fire) producing near-duplicate
+  // dossiers on the same theme. The Sunday cron is meant to be the
+  // only producer; this just enforces it server-side.
+  const recentDossier = await prisma.newsStory.findFirst({
+    where: {
+      status: "PUBLISHED",
+      storyType: "DOSSIER",
+      publishedAt: { gte: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
+    },
+    select: { id: true, publishedAt: true, title: true },
+  })
+  if (recentDossier) {
+    return {
+      briefsConsidered: 0,
+      result: "skipped",
+      reason: `recent dossier exists (${recentDossier.publishedAt.toISOString().split("T")[0]}: "${recentDossier.title.slice(0, 60)}")`,
+      durationMs: Date.now() - started,
+    }
+  }
 
   const briefs = (await prisma.newsStory.findMany({
     where: {

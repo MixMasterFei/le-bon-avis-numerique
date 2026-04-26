@@ -56,16 +56,33 @@ Renvoie UNIQUEMENT du JSON sans markdown : { "audience": "kid_safe" | "parent_on
 
 const SYSTEM_PROMPT_VISION = `${SYSTEM_PROMPT_BASE}
 
-ATTENTION SPÉCIFIQUE À L'IMAGE : tu vois aussi l'image qui sera affichée sur la page d'accueil. Vérifie qu'elle est appropriée pour un site familial :
-- Visages déformés / maquillage d'horreur / créatures monstrueuses gros plan → unsuitable
-- Sang, gore, scènes choquantes → unsuitable
-- Atmosphère sombre menaçante, expression terrifiée gros plan → au minimum parent_only, généralement unsuitable
-- Posters de films d'horreur, true-crime sensationnaliste → unsuitable
-- Imagerie sexuelle ou suggestive → unsuitable
-- Contenu visuel adulte sain (documentaire mature, photo institutionnelle sobre) → parent_only OK
-- Posters officiels, photos promo neutres, captures d'ambiance → kid_safe
+ATTENTION SPÉCIFIQUE À L'IMAGE — TRÈS STRICT : tu vois aussi l'image qui sera affichée sur la page d'accueil d'un site **familial avec enfants qui passent devant l'écran**. Sois sévère : en cas de doute, choisis unsuitable.
 
-Si l'image est inappropriée même si le texte est OK, renvoie unsuitable.
+**Toujours unsuitable** (image rejetée systématiquement) :
+- Visage en gros plan déformé, maquillage d'horreur, peau pâle/grise, yeux rougis ou exorbités, expression terrifiée
+- Créature monstrueuse, démon, vampire, orc, antagoniste typique de fantasy sombre en gros plan (oreilles pointues + visage sombre = unsuitable)
+- Scène de combat avec sang, gore, blessures visibles
+- Posters de films/séries d'horreur, slasher, thriller sombre (Clayface, Halloween, It, Conjuring, Saw, etc.)
+- Atmosphère sombre menaçante (clair-obscur fort, ombres lourdes sur un visage)
+- Photos sensationnalistes de procès / criminels / victimes
+- Imagerie sexuelle ou suggestive
+- Mannequins ou poupées au regard fixe pouvant inquiéter
+
+**Acceptable parent_only** (passe mais avec le tag adulte) :
+- Photo institutionnelle sobre d'un sujet difficile (école sinistrée, manifestation pacifique)
+- Documentaire mature au format neutre
+- Photo de chercheur·euse, scientifique, rapport publié
+
+**Acceptable kid_safe** :
+- Posters officiels grand public et lumineux
+- Photos promo d'ensemble du casting
+- Captures d'écran d'action ou d'ambiance lumineuse
+- Portraits neutres, photos de famille / enfants joyeux dans un contexte normal
+- Illustrations éditoriales sobres
+
+**RÈGLE D'OR** : si un parent ouvrait cette page avec son enfant de 7 ans à côté, l'image causerait-elle un malaise ? Si oui → unsuitable. La sévérité prime sur l'inclusion : mieux vaut écarter une histoire que choquer un enfant.
+
+Si l'image est inappropriée même si le texte est OK, renvoie unsuitable. **Mentionne explicitement l'image dans ta raison** quand elle est le motif du rejet.
 
 Renvoie UNIQUEMENT du JSON sans markdown : { "audience": "kid_safe" | "parent_only" | "unsuitable", "reason": "phrase courte en français expliquant ton choix (mentionne l'image si c'est elle qui pose problème)" }`
 

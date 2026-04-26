@@ -124,7 +124,11 @@ async function parallelMap<T, R>(items: T[], concurrency: number, fn: (item: T) 
   return out
 }
 
-function buildPrompt(items: HydratedItem[], existingTitles: string[]): string {
+function buildPrompt(
+  items: HydratedItem[],
+  existingTitles: string[],
+  recentImageUrls: string[],
+): string {
   const list = items
     .map((it, idx) => {
       const summary = (it.summary ?? "").slice(0, 400).replace(/\s+/g, " ")
@@ -141,7 +145,15 @@ function buildPrompt(items: HydratedItem[], existingTitles: string[]): string {
       ? `\n\n## Histoires DÉJÀ publiées (à ÉCARTER absolument)\n\nCes événements sont déjà couverts ces 72 dernières heures. N'émets AUCUNE histoire les concernant, même si de nouveaux articles les évoquent :\n${existingTitles.map((t) => `- "${t}"`).join("\n")}\n`
       : ""
 
-  return `Tu es l'éditeur de Totem Avisé, un guide pour familles françaises. Ta mission : repérer les ACTUALITÉS qui concernent directement les familles, les enfants, ou la parentalité numérique. Pas les essais, pas les opinions — de vraies nouvelles avec un angle famille clair.
+  // Anti-image-collision: list the images already used by recent
+  // PUBLISHED stories. The model must not pick any of these as the
+  // imageUrl for new stories, even when the same brief is cited.
+  const recentImagesNote =
+    recentImageUrls.length > 0
+      ? `\n\n## Images DÉJÀ utilisées (à ÉCARTER absolument)\n\nCes URLs d'image sont déjà attribuées à des histoires publiées récemment. NE PAS les choisir comme imageUrl, même si tu cites le même article source. Choisis une image alternative parmi les autres articles du cluster, ou écarte l'histoire si aucune image alternative n'existe.\n${recentImageUrls.map((u) => `- ${u}`).join("\n")}\n`
+      : ""
+
+  return `Tu es l'éditeur de Totem Avisé, un guide pour familles françaises. Ta mission : RELAYER fidèlement les actualités qui concernent les familles, les enfants, ou la parentalité numérique. Tu n'es ni un éditorialiste ni un militant — tu rapportes ce que les sources disent, en français, sans en rajouter.
 
 Voici ${items.length} articles publiés ces 48 dernières heures. Chaque article a un index, une source, une catégorie, un titre, une URL, une image, et un résumé.
 
@@ -187,23 +199,44 @@ Le corps de l'histoire doit COMMENCER par une phrase qui énonce clairement l'an
 
 L'image accompagne chaque histoire sur la page d'accueil et le site est destiné aux **familles avec enfants**. Tu DOIS choisir une image appropriée :
 
-- **À écarter** : visages déformés, maquillages d'horreur, créatures monstrueuses gros plan, scènes sanglantes, poses violentes, atmosphères d'horreur (clair-obscur menaçant, expressions terrifiées en gros plan), images d'âge clairement 16+/18+.
-- **À privilégier** : posters officiels, photos promotionnelles, captures d'écran d'action ou d'ambiance, portraits neutres, photos institutionnelles, illustrations éditoriales.
+- **À écarter ABSOLUMENT** : visages déformés, maquillages d'horreur, créatures monstrueuses gros plan, scènes sanglantes, poses violentes, atmosphères d'horreur (clair-obscur menaçant, expressions terrifiées en gros plan), posters de films d'horreur (Clayface, slasher, Halloween, etc.), photos sensationnalistes de procès/criminels, images d'âge clairement 16+/18+, oreilles pointues + visages pâles d'antagonistes (orcs, vampires, démons).
+- **À privilégier** : posters officiels grand public, photos promotionnelles d'ensemble du casting, captures d'écran d'action ou d'ambiance lumineuse, portraits neutres, photos institutionnelles, illustrations éditoriales.
 
 Si aucune image acceptable n'est disponible parmi les articles du cluster, **écarte l'histoire entièrement** plutôt que d'utiliser une image effrayante. Mieux vaut moins d'histoires qu'une image qui choque un enfant qui passe devant l'écran.
+
+## Voix éditoriale — RELAYER, pas commenter
+
+C'est la règle la plus importante. Tu n'es PAS éditorialiste. Tu rapportes ce que les sources disent.
+
+**INTERDIT** :
+- Les titres avec qualificatifs ("une initiative qui inspire", "un signal alarmant", "une décision courageuse", "la semaine où la France a dit assez")
+- Les questions rhétoriques ("Est-ce vraiment efficace ?", "Pour combien de temps ?")
+- Les conclusions personnelles ("on ne peut que saluer", "il est temps que…", "voilà qui change la donne")
+- Les prises de position implicites par choix de vocabulaire ("rare lucidité", "enfin", "courageux")
+- Les mots éditoriaux : *enfin, malheureusement, fort heureusement, étonnamment, sans surprise, comme prévu, à juste titre*
+- Les "Pour les parents qui…" en hook (c'est éditorial)
+
+**EXIGÉ** :
+- Titres descriptifs et factuels : "Greystones (Irlande) restreint le smartphone avant 13 ans" plutôt que "Greystones, une initiative qui inspire"
+- Le 1er paragraphe énonce QUI / QUOI / OÙ / QUAND, pas l'opinion
+- Toute affirmation d'impact ("les familles s'inquiètent", "les experts alertent") doit être attribuée nommément à une source : "Selon Le Monde, …", "Pew Research observe que …"
+- Les phrases qui ressemblent à un avis personnel doivent toujours être tirées explicitement d'une source citée
+- Si tu veux relayer une opinion forte, mets-la entre guillemets et attribue-la : « Cette initiative montre que… », a déclaré la maire (Le Monde, 23 avril)
+
+Une exception : Totem peut occasionnellement préciser un cadre famille FACTUEL ("La recommandation s'applique aux enfants de moins de 13 ans" — factuel, pas éditorial). Pas de prise de position morale.
 
 ## Format de sortie
 
 Pour chaque histoire retenue, renvoie un objet JSON avec :
-- "title": titre éditorial clair (français, sobre, pas de clickbait)
-- "summary": 1-2 phrases (<200 caractères) résumant l'événement et son angle famille
+- "title": titre **factuel et descriptif** (français, sobre, sans qualificatif éditorial). Préfère "Sortie de X au cinéma le 21 octobre" à "Le grand retour de X". Pas de "qui inspire", "qui choque", "à ne pas manquer", "alerte".
+- "summary": 1-2 phrases (<200 caractères) résumant l'événement. Reste descriptif.
 - "body": **300-450 mots** en markdown, structuré en 3-4 paragraphes :
-  - **Para 1** (~80 mots) : angle famille explicite — qui est concerné, pourquoi maintenant. Hook qui donne envie de lire la suite.
-  - **Para 2** (~100-130 mots) : les faits rapportés. Si plusieurs sources sont disponibles, attribue chaque fait à sa source ("Selon Le Monde, ...", "Numerama rapporte que...", "L'étude publiée dans X indique..."). Une voix par paragraphe quand possible.
-  - **Para 3** (~80-120 mots) : contexte ou implications pour les familles — ce que ça change concrètement, à quel âge, dans quelles circonstances. C'est ici qu'on aide les parents à décider.
-  - **Para 4 optionnel** (~50-80 mots) : "À retenir" ou conseil pratique court (à mettre seulement si pertinent — sinon arrête à 3 paragraphes).
+  - **Para 1** (~80 mots) : qui / quoi / où / quand. Pas de hook éditorial. Une phrase d'ouverture descriptive.
+  - **Para 2** (~100-130 mots) : les faits rapportés, **chaque fait attribué nommément** à sa source ("Selon Le Monde, …", "Numerama rapporte que…", "L'étude de Pew Research indique que…"). Une voix par paragraphe quand possible.
+  - **Para 3** (~80-120 mots) : contexte famille **rapporté depuis les sources** — "Selon les chercheurs, cela concerne particulièrement…", "Le rapport souligne que…". Pas de jugement Totem ; relaye ce que les articles disent du contexte famille.
+  - **Para 4 optionnel** (~50-80 mots) : si une source donne un conseil pratique daté, tu peux le citer ("Le ministère recommande que…"). Sinon, arrête à 3 paragraphes.
 
-  Synthèse neutre, jamais d'opinion personnelle, jamais "selon moi/nous". N'invente AUCUN fait absent des articles fournis. Pas de mention de l'IA. Cite les sources par leur nom de publication, pas par "source 1" ou "[2]".
+  N'invente AUCUN fait absent des articles fournis. Pas de mention de l'IA. Cite les sources par leur nom de publication, pas par "source 1" ou "[2]".
 
 - "category": PARENTHOOD | FILM_TV | GAMES | READING
 - "relevanceScore": 0 à 1, pertinence FAMILIALE (pas d'intérêt général). ≥ 0.5 pour multi-sources, ≥ 0.7 pour single-source
@@ -222,7 +255,7 @@ Pour chaque histoire retenue, renvoie un objet JSON avec :
 
 Réponds UNIQUEMENT avec du JSON :
 {"stories": [ ... ]}
-${alreadyPublished}
+${alreadyPublished}${recentImagesNote}
 Articles :
 
 ${list}`
@@ -286,6 +319,7 @@ export interface DiscoverStats {
   storiesSynthesized: number
   storiesDroppedInvalid: number
   storiesDroppedUnsuitable: number  // Pass-2 moderation rejects
+  storiesDroppedImageReused: number // Cross-story image dedup
   storiesDroppedImageUnreachable: number
   storiesPersisted: number
   storiesUpdated: number
@@ -359,6 +393,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       storiesSynthesized: 0,
       storiesDroppedInvalid: 0,
       storiesDroppedUnsuitable: 0,
+      storiesDroppedImageReused: 0,
       storiesDroppedImageUnreachable: 0,
       storiesPersisted: 0,
       storiesUpdated: 0,
@@ -379,8 +414,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //    time by source-URL overlap, even if Claude paraphrases the title.
   const existingStories = await prisma.newsStory.findMany({
     where: { status: "PUBLISHED", publishedAt: { gte: since } },
-    select: { id: true, slug: true, title: true, sources: true },
+    select: { id: true, slug: true, title: true, sources: true, imageUrl: true },
   })
+
+  // Cross-story image dedup: collect every imageUrl already in the
+  // 72h window so the synthesizer can avoid picking the same one for
+  // a new story (Greystones bug — same kids-on-phones photo reused
+  // across two unrelated stories on the same theme).
+  const recentImageUrls = existingStories
+    .map((s) => s.imageUrl)
+    .filter((u): u is string => typeof u === "string" && u.length > 0)
 
   // Map every previously-published source URL to its existing story id.
   // First-seen wins on collisions (a single URL ideally appears once).
@@ -419,6 +462,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const prompt = buildPrompt(
     unique,
     existingStories.map((s) => s.title),
+    recentImageUrls,
   )
 
   // Bumped from 8000 → 14000 because body length spec went from 120-180
@@ -458,8 +502,13 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   if (!Array.isArray(rawStories)) throw new Error(`${provider} returned no stories array`)
 
   const allowedImages = new Set(unique.map((u) => u.imageUrl))
+  // Defensive belt for the cross-story image dedup rule in the prompt.
+  // Tracks both already-published images AND images claimed by earlier
+  // stories within the same run, so two new stories can't share an image.
+  const usedImages = new Set<string>(recentImageUrls)
   const validStories: SynthesizedStory[] = []
   let droppedInvalid = 0
+  let droppedImageReused = 0
   for (const raw of rawStories) {
     const story = coerceStory(raw, unique.length, unique)
     if (!story) {
@@ -471,6 +520,14 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       droppedInvalid++
       continue
     }
+    // Cross-story image dedup: skip if this image is already in use by
+    // a previously-published story or by an earlier story in this run.
+    // The prompt asks the model to avoid this; this is the belt.
+    if (usedImages.has(story.imageUrl)) {
+      droppedImageReused++
+      continue
+    }
+    usedImages.add(story.imageUrl)
     // Two paths accepted:
     //   A) multi-source (>=2 distinct publishers) + relevance >= 0.5
     //   B) single-source + relevance >= 0.7 (strong family angle required)
@@ -662,6 +719,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     storiesSynthesized: rawStories.length,
     storiesDroppedInvalid: droppedInvalid,
     storiesDroppedUnsuitable: droppedUnsuitable,
+    storiesDroppedImageReused: droppedImageReused,
     storiesDroppedImageUnreachable: droppedImageUnreachable,
     storiesPersisted: persisted,
     storiesUpdated: updated,
