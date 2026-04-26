@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
+import type { Takeaway } from "@/components/home-v2/ARetenirCard"
+import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
 import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
@@ -115,25 +117,66 @@ function extractPhrase(rows: StoryRow[]): { quote: string; storyTitle: string; s
 
 /**
  * Derive 3 short takeaways from the latest dossier's body. Splits on
- * sentences in the final paragraph and picks the 3 shortest substantive
- * ones. Aperçu placeholder; the live version will use a dedicated agent.
+ * sentences in the final paragraph and tries to extract a "Selon X…"
+ * source attribution from each. Aperçu placeholder; the live version
+ * will use a dedicated agent that produces structured Takeaway objects
+ * directly.
  */
-function extractTakeaways(dossierBody: string | null): string[] {
+function extractTakeaways(dossierBody: string | null): Takeaway[] {
   if (!dossierBody) return []
   const paragraphs = dossierBody.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
-  // Prefer the last paragraph (typically the "à retenir" closing).
-  // Fall back to the second-to-last if the final is too short.
-  const target = paragraphs[paragraphs.length - 1]?.length > 100
-    ? paragraphs[paragraphs.length - 1]
-    : paragraphs[paragraphs.length - 2] ?? paragraphs[paragraphs.length - 1] ?? ""
+  const target =
+    paragraphs[paragraphs.length - 1]?.length > 100
+      ? paragraphs[paragraphs.length - 1]
+      : paragraphs[paragraphs.length - 2] ?? paragraphs[paragraphs.length - 1] ?? ""
   if (!target) return []
   const sentences = target
     .replace(/\*\*/g, "")
     .split(/(?<=[.!?])\s+(?=[A-Z«ÀÂÉÈÊËÎÏÔÙÛÜÇ])/)
     .map((s) => s.trim())
     .filter((s) => s.length >= 30 && s.length <= 180)
-  return sentences.slice(0, 3)
+  // Pull a source name out of "Selon Le Monde, …" / "Pew Research observe que…"
+  // Best-effort regex; misses → no source attribution rendered.
+  return sentences.slice(0, 3).map((text) => {
+    const m = text.match(/(?:Selon|D'apr[èé]s|Pour|Comme l'observe|Cit[ée] par)\s+(?:le\s+|la\s+|l'\s*)?([A-Z][\wÀ-ÿ' -]{2,40})/)
+    const m2 = text.match(/^([A-Z][\wÀ-ÿ' -]{2,40})\s+(?:rapporte|observe|indique|souligne|note|estime)/)
+    const source = (m?.[1] || m2?.[1])?.trim()
+    return { text, source: source && source.length < 40 ? source : undefined }
+  })
 }
+
+/**
+ * Curated list of recent scientific / institutional studies relevant
+ * to French families. Aperçu uses a hand-picked list to validate the
+ * UX; live cutover will source these from an RSS/Atom feed of Pew /
+ * INSERM / Cairn / Common Sense Media research releases.
+ */
+const CURATED_ETUDES: EtudeRef[] = [
+  {
+    organization: "Pew Research Center",
+    title: "Teens, Social Media and Technology 2024",
+    url: "https://www.pewresearch.org/internet/2024/12/12/teens-social-media-and-technology-2024/",
+    date: "déc. 2024",
+  },
+  {
+    organization: "INSERM",
+    title: "Effets des écrans sur le sommeil des adolescents",
+    url: "https://www.inserm.fr/dossier/sommeil/",
+    date: "2024",
+  },
+  {
+    organization: "Common Sense Media",
+    title: "The Common Sense Census: Media Use by Tweens and Teens",
+    url: "https://www.commonsensemedia.org/research/the-common-sense-census-media-use-by-tweens-and-teens-2021",
+    date: "2021",
+  },
+  {
+    organization: "Santé publique France",
+    title: "Santé mentale des jeunes — chiffres clés",
+    url: "https://www.santepubliquefrance.fr/maladies-et-traumatismes/sante-mentale",
+    date: "2024",
+  },
+]
 
 export default async function ApercuDecouverteV3Page(props: {
   searchParams?: Promise<SearchParams>
@@ -151,7 +194,16 @@ export default async function ApercuDecouverteV3Page(props: {
   const searchParams = await props.searchParams
 
   // ── Pull data in parallel ──────────────────────────────────────
-  const [frenchRows, intlRows, dossierRow, researchRow] = await Promise.all([
+  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const [
+    frenchRows,
+    intlRows,
+    dossierRow,
+    researchRow,
+    weekTotal,
+    weekIntl,
+    weekResearch,
+  ] = await Promise.all([
     // 12 most recent French briefs (1 hero + 3 top + ~8 older).
     prisma.newsStory.findMany({
       where: { status: "PUBLISHED", storyType: "BRIEF", region: "FR" },
@@ -193,6 +245,16 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, research: true,
       },
     }),
+    // Week stats — counts published in the last 7 days.
+    prisma.newsStory.count({
+      where: { status: "PUBLISHED", publishedAt: { gte: since7d } },
+    }),
+    prisma.newsStory.count({
+      where: { status: "PUBLISHED", publishedAt: { gte: since7d }, region: "INTL" },
+    }),
+    prisma.newsStory.count({
+      where: { status: "PUBLISHED", publishedAt: { gte: since7d }, research: { not: Prisma.JsonNull } },
+    }),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows
@@ -215,6 +277,16 @@ export default async function ApercuDecouverteV3Page(props: {
             : null
         })()
       : null,
+    etudes: CURATED_ETUDES,
+    weekStats: {
+      storiesPublished: weekTotal,
+      internationalCount: weekIntl,
+      studiesCited: weekResearch,
+      // Source count is a rough static for the Aperçu — reflects the
+      // NEWS_SOURCES list size. Live cutover can compute distinct
+      // source names from the past week.
+      sourcesCovered: 29,
+    },
   }
 
   const useFraunces = isFraunces(searchParams?.font)

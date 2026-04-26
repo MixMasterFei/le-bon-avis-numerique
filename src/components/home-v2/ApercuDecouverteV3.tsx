@@ -7,6 +7,9 @@ import { ApercuNewsCard, type ApercuNewsCardData } from "./ApercuNewsCard"
 import { PhraseDuJour } from "./PhraseDuJour"
 import { ARetenirCard } from "./ARetenirCard"
 import { RechercheHighlightCard } from "./RechercheHighlightCard"
+import { EtudesRecentesCard, type EtudeRef } from "./EtudesRecentesCard"
+import { WeekStatsCard, type WeekStats } from "./WeekStatsCard"
+import { SourcesTrustCard } from "./SourcesTrustCard"
 import { NewsletterCTA } from "./NewsletterCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { StoryResearch } from "./ApercuDecouverteStory"
@@ -26,9 +29,13 @@ export interface DecouverteV3Data {
   // Server picks the candidate from a recent story body.
   phrase: { quote: string; storyTitle: string; storySlug: string } | null
   // Sidebar: 3-bullet "À retenir" derived from the dossier (or null).
-  takeaways: string[]
+  takeaways: import("./ARetenirCard").Takeaway[]
   // Sidebar: latest story carrying a research sidebar.
   research: { research: StoryResearch; storyTitle: string; storySlug: string } | null
+  // Sidebar: curated scientific / institutional studies (sourced).
+  etudes: EtudeRef[]
+  // Sidebar: this week's editorial pulse counted from the DB.
+  weekStats: WeekStats
 }
 
 /**
@@ -102,6 +109,7 @@ export function ApercuDecouverteV3({
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
                 )}
+                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
                 {data.research && (
                   <RechercheHighlightCard
                     research={data.research.research}
@@ -110,6 +118,10 @@ export function ApercuDecouverteV3({
                     serifClass={serifClass}
                   />
                 )}
+                {data.etudes.length > 0 && (
+                  <EtudesRecentesCard etudes={data.etudes} serifClass={serifClass} />
+                )}
+                <SourcesTrustCard serifClass={serifClass} />
               </div>
 
               {/* Pull-quote break */}
@@ -184,8 +196,14 @@ export function ApercuDecouverteV3({
             </main>
 
             {/* ─────── DESKTOP STICKY SIDEBAR ─────── */}
+            {/* Five blocks stacked vertically. The sidebar is taller
+                than the viewport on purpose — sticky scroll lets the
+                reader catch each block as they progress through the
+                main feed. Order: takeaways (most actionable) →
+                research highlight → études (sourced links out) →
+                week stats (pulse) → sources trust (transparency). */}
             <aside className="hidden lg:block">
-              <div className="sticky top-24 flex flex-col gap-4">
+              <div className="sticky top-24 flex flex-col gap-4 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
                 )}
@@ -197,6 +215,11 @@ export function ApercuDecouverteV3({
                     serifClass={serifClass}
                   />
                 )}
+                {data.etudes.length > 0 && (
+                  <EtudesRecentesCard etudes={data.etudes} serifClass={serifClass} />
+                )}
+                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
+                <SourcesTrustCard serifClass={serifClass} />
               </div>
             </aside>
           </div>

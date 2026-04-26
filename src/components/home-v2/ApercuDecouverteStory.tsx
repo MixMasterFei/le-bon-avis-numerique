@@ -3,7 +3,7 @@
 import { type ReactNode } from "react"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
-import { ArrowLeft, ExternalLink, FlaskConical } from "lucide-react"
+import { ArrowLeft, ExternalLink, FlaskConical, Clock } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
@@ -177,8 +177,23 @@ export function ApercuDecouverteStory({
             </aside>
           )}
 
+          {/* Reading-time estimate (200 wpm — French average) sits
+              just above the body so readers know the commitment. */}
+          <ReadingTime body={story.body} serifClass={serifClass} />
+
+          {/*
+            prose-lg gives larger body type + tighter line-height that
+            reads as editorial rather than blog. The custom paragraph
+            spacing (1.6em) is generous on purpose: Xavier specifically
+            asked for more breathing room between paragraphs.
+          */}
           <article
-            className="prose prose-neutral max-w-none"
+            className="prose prose-lg prose-neutral max-w-none
+                       prose-p:leading-relaxed prose-p:mb-6
+                       prose-p:text-[17px] md:prose-p:text-[18px]
+                       prose-headings:font-medium prose-headings:tracking-tight
+                       prose-strong:font-semibold
+                       prose-a:underline-offset-4"
             style={{ color: p.ink }}
           >
             <ReactMarkdown>{story.body}</ReactMarkdown>
@@ -241,6 +256,26 @@ export function ApercuDecouverteStory({
           </div>
         </div>
       </section>
+    </div>
+  )
+}
+
+/**
+ * Compact reading-time chip rendered above the article body. Plain
+ * 200 wpm estimate — close to the French reading-rate norm. The
+ * <1 minute floor keeps a sub-150-word body from showing "0 min".
+ */
+function ReadingTime({ body, serifClass }: { body: string; serifClass: string }) {
+  const p = APERCU_PALETTE
+  const words = body.replace(/[#*_>\-]/g, " ").split(/\s+/).filter(Boolean).length
+  const minutes = Math.max(1, Math.round(words / 200))
+  return (
+    <div
+      className={`${serifClass} inline-flex items-center gap-1.5 text-xs mb-5 px-2.5 py-1 rounded-full`}
+      style={{ background: p.bg2, color: p.ink2 }}
+    >
+      <Clock className="w-3 h-3" />
+      <span>{minutes} min de lecture · {words.toLocaleString("fr-FR")} mots</span>
     </div>
   )
 }
