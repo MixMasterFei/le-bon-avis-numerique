@@ -5,7 +5,7 @@ import { CalendarDays } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { NextHoliday, Zone } from "@/lib/school-holidays"
 
-interface SerializableHoliday {
+export interface SerializableHoliday {
   description: string
   startISO: string
   endISO: string

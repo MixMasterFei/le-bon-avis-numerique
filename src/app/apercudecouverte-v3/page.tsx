@@ -278,12 +278,31 @@ export default async function ApercuDecouverteV3Page(props: {
   const frenchTop = frenchRest.slice(0, 3)
   const olderBriefs = frenchRest.slice(3) // remainder
 
+  // Page-level image dedup: dossier wins (it's the editorial centerpiece),
+  // then hero, then top briefs, then INTL, then older. Any later card
+  // sharing an already-claimed imageUrl is filtered out so the same
+  // photo never appears twice on the same page render. Particularly
+  // matters when a dossier and a brief both pull from the same source
+  // (la-croix.com publishes one photo for an entire event sequence).
+  const seenImages = new Set<string>()
+  const claim = <T extends { imageUrl?: string | null }>(card: T): T | null => {
+    if (!card.imageUrl) return null
+    if (seenImages.has(card.imageUrl)) return null
+    seenImages.add(card.imageUrl)
+    return card
+  }
+  const dossierCard = dossierRow ? claim(rowToCard(dossierRow)) : null
+  const heroCard = frenchHero ? claim(rowToCard(frenchHero)) : null
+  const topCards = frenchTop.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+  const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+  const olderCards = olderBriefs.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+
   const data: DecouverteV3Data = {
-    frenchHero: frenchHero ? rowToCard(frenchHero) : null,
-    frenchTop: frenchTop.map(rowToCard),
-    internationalTop: intlRows.map(rowToCard),
-    dossier: dossierRow ? rowToCard(dossierRow) : null,
-    olderBriefs: olderBriefs.map(rowToCard),
+    frenchHero: heroCard,
+    frenchTop: topCards,
+    internationalTop: intlCards,
+    dossier: dossierCard,
+    olderBriefs: olderCards,
     phrase: extractPhrase(frenchRows),
     takeaways: extractTakeaways(dossierRow?.body ?? null),
     research: researchRow

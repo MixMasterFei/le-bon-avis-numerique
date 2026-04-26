@@ -240,8 +240,11 @@ export function ApercuDecouverteV3({
                   5. Cette semaine en chiffres (pulse)
                   6. Recherche highlight
                   7. Études récentes (sourced links out)
-                  8. Sources de confiance (transparency footer) */}
-              <div className="sticky top-24 flex flex-col gap-4 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
+                  8. Sources de confiance (transparency footer)
+                  No max-height / no inner overflow — the sidebar
+                  extends with the page so all blocks are reachable
+                  by normal page scroll, not a nested scroll. */}
+              <div className="flex flex-col gap-4">
                 <VacancesScolairesCard
                   initialFR={data.holidayB}
                   initialZoneA={data.holidayA}
