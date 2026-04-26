@@ -2,6 +2,10 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
+import { holidayToSerializable } from "@/components/home-v2/VacancesScolairesCard"
+import { getNextHoliday } from "@/lib/school-holidays"
+import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
+import { getWeekendWeather } from "@/lib/weekend-weather"
 import type { Takeaway } from "@/components/home-v2/ARetenirCard"
 import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -203,6 +207,11 @@ export default async function ApercuDecouverteV3Page(props: {
     weekTotal,
     weekIntl,
     weekResearch,
+    holidayB,
+    holidayA,
+    holidayC,
+    anniversary,
+    weather,
   ] = await Promise.all([
     // 12 most recent French briefs (1 hero + 3 top + ~8 older).
     prisma.newsStory.findMany({
@@ -255,6 +264,14 @@ export default async function ApercuDecouverteV3Page(props: {
     prisma.newsStory.count({
       where: { status: "PUBLISHED", publishedAt: { gte: since7d }, research: { not: Prisma.JsonNull } },
     }),
+    // Sidebar widgets — all three fail-safe (they return null on error
+    // and the components hide themselves, so a flaky external API
+    // never breaks the page).
+    getNextHoliday("B"),
+    getNextHoliday("A"),
+    getNextHoliday("C"),
+    getCatalogAnniversary(),
+    getWeekendWeather(),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows
@@ -287,6 +304,11 @@ export default async function ApercuDecouverteV3Page(props: {
       // source names from the past week.
       sourcesCovered: 29,
     },
+    holidayB: holidayToSerializable(holidayB),
+    holidayA: holidayToSerializable(holidayA),
+    holidayC: holidayToSerializable(holidayC),
+    anniversary,
+    weather,
   }
 
   const useFraunces = isFraunces(searchParams?.font)

@@ -10,9 +10,17 @@ import { RechercheHighlightCard } from "./RechercheHighlightCard"
 import { EtudesRecentesCard, type EtudeRef } from "./EtudesRecentesCard"
 import { WeekStatsCard, type WeekStats } from "./WeekStatsCard"
 import { SourcesTrustCard } from "./SourcesTrustCard"
+import {
+  VacancesScolairesCard,
+  type SerializableHoliday,
+} from "./VacancesScolairesCard"
+import { AnniversaireCard } from "./AnniversaireCard"
+import { WeekendActivitesCard } from "./WeekendActivitesCard"
 import { NewsletterCTA } from "./NewsletterCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { StoryResearch } from "./ApercuDecouverteStory"
+import type { CatalogAnniversary } from "@/lib/catalog-anniversary"
+import type { WeekendWeather } from "@/lib/weekend-weather"
 
 export interface DecouverteV3Data {
   // Latest French story (rendered as the page hero).
@@ -36,6 +44,15 @@ export interface DecouverteV3Data {
   etudes: EtudeRef[]
   // Sidebar: this week's editorial pulse counted from the DB.
   weekStats: WeekStats
+  // Sidebar: school-holidays widget (Zone B is the default; cards
+  // for A and C are pre-fetched so the toggle is instant client-side).
+  holidayB: SerializableHoliday | null
+  holidayA: SerializableHoliday | null
+  holidayC: SerializableHoliday | null
+  // Sidebar: catalog anniversary ("Il y a X ans aujourd'hui sortait …").
+  anniversary: CatalogAnniversary | null
+  // Sidebar: weekend weather + matched activity ideas.
+  weather: WeekendWeather | null
 }
 
 /**
@@ -106,8 +123,20 @@ export function ApercuDecouverteV3({
                   not buried at the bottom on phones. Hidden on lg+
                   where the sticky sidebar takes over. */}
               <div className="lg:hidden flex flex-col gap-4 my-2">
+                <VacancesScolairesCard
+                  initialFR={data.holidayB}
+                  initialZoneA={data.holidayA}
+                  initialZoneC={data.holidayC}
+                  serifClass={serifClass}
+                />
+                {data.weather && (
+                  <WeekendActivitesCard weather={data.weather} serifClass={serifClass} />
+                )}
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
+                )}
+                {data.anniversary && (
+                  <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}
                 <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
                 {data.research && (
@@ -203,10 +232,32 @@ export function ApercuDecouverteV3({
                 research highlight → études (sourced links out) →
                 week stats (pulse) → sources trust (transparency). */}
             <aside className="hidden lg:block">
+              {/* Sidebar order, top-down:
+                  1. Vacances scolaires (most-checked widget — pin first)
+                  2. Week-end activités (météo) (immediate "today" feel)
+                  3. À retenir (editorial sticky)
+                  4. Anniversaire catalogue (nostalgia hook)
+                  5. Cette semaine en chiffres (pulse)
+                  6. Recherche highlight
+                  7. Études récentes (sourced links out)
+                  8. Sources de confiance (transparency footer) */}
               <div className="sticky top-24 flex flex-col gap-4 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
+                <VacancesScolairesCard
+                  initialFR={data.holidayB}
+                  initialZoneA={data.holidayA}
+                  initialZoneC={data.holidayC}
+                  serifClass={serifClass}
+                />
+                {data.weather && (
+                  <WeekendActivitesCard weather={data.weather} serifClass={serifClass} />
+                )}
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
                 )}
+                {data.anniversary && (
+                  <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
+                )}
+                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
                 {data.research && (
                   <RechercheHighlightCard
                     research={data.research.research}
@@ -218,7 +269,6 @@ export function ApercuDecouverteV3({
                 {data.etudes.length > 0 && (
                   <EtudesRecentesCard etudes={data.etudes} serifClass={serifClass} />
                 )}
-                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
                 <SourcesTrustCard serifClass={serifClass} />
               </div>
             </aside>
