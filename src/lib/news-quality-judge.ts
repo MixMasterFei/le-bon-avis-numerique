@@ -66,12 +66,13 @@ const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem 
 
 **Critères (note de 1 à 5 chacun, 5 = excellent, 1 = inacceptable) :**
 
-1. **sourceFidelity** : les affirmations sont-elles plausiblement attribuables aux sources citées ? Pénalise (note basse) si :
+1. **sourceFidelity** : les affirmations sont-elles plausiblement attribuables aux sources citées, ET l'article relaye-t-il le CONTENU des sources (pas leur existence) ? Pénalise (note basse) si :
    - L'article cite des chiffres précis sans nommer la source qui les a publiés.
    - L'article attribue une déclaration à une publication qui n'est pas dans la liste des sources fournies.
    - L'article invente des citations, noms de chercheurs, ou organisations qui n'apparaissent pas dans les sources.
-   - L'article fait des affirmations très spécifiques (statistiques, dates, lieux) qui ne ressemblent pas au style éditorial des sources citées.
-   Note 5 = chaque affirmation forte est attribuée nommément à une source plausible. Note 1 = hallucinations évidentes.
+   - **L'article décrit l'existence d'un article source plutôt que d'en relayer le contenu** : "Numerama publie un guide qui liste 10 jeux", "Le site X présente une sélection", "L'étude révèle des chiffres préoccupants" sans donner les éléments concrets (les jeux, la sélection, les chiffres). C'est de la paraphrase méta, pas du journalisme de relais. Note ≤ 2 obligatoire.
+   - L'article paraphrase la STRUCTURE éditoriale du source ("La rédaction précise avoir testé", "Le guide ne se contente pas de…") au lieu de livrer les faits.
+   Note 5 = chaque fait fort est nommément attribué ET les éléments concrets (noms, chiffres, dates) sont relayés directement. Note 1 = hallucinations ou méta-paraphrase pure.
 
 2. **neutrality** : voix éditoriale neutre, sans prise de position. Pénalise si :
    - Vocabulaire éditorial : *enfin, malheureusement, fort heureusement, étonnamment, sans surprise, à juste titre, courageux, lucide, alarmant, inquiétant, prometteur, salutaire, catastrophique*.
