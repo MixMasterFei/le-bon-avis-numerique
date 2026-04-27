@@ -4,6 +4,7 @@ import { getAnthropic, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from "@/lib/an
 import { slugify } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { moderateStory } from "@/lib/news-moderate"
+import { judgeStory } from "@/lib/news-quality-judge"
 import type { NewsCategory, Prisma } from "@prisma/client"
 
 /**
@@ -333,6 +334,20 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
     slug = `${slugify(parsed.title)}-${suffix}`
   }
 
+  // Pass-3 quality gate. Source-fidelity / neutrality / structural
+  // cleanliness / length-fit. Below threshold → PENDING_REVIEW so a
+  // human can decide rather than dropping the work entirely. Fails
+  // open if the judge LLM is unavailable.
+  const qualityVerdict = await judgeStory({
+    title: parsed.title,
+    summary: parsed.summary,
+    body: parsed.body,
+    category: parsed.category,
+    format: "DOSSIER",
+    sourceNames: sources.map((s) => s.name),
+  })
+  const finalStatus = qualityVerdict.passes ? "PUBLISHED" : "PENDING_REVIEW"
+
   const created = await prisma.newsStory.create({
     data: {
       slug,
@@ -344,12 +359,19 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
       imageUrl: mirroredUrl,
       publishedAt: new Date(),
       relevanceScore: 1, // dossiers always pinned
-      status: "PUBLISHED",
+      status: finalStatus,
       region,
       storyType: "DOSSIER",
       audience: verdict.audience,
     },
   })
+
+  if (!qualityVerdict.passes) {
+    console.warn(
+      `[news-dossier] dossier ${created.id} flagged PENDING_REVIEW — ` +
+        `overall=${qualityVerdict.overall} reason="${qualityVerdict.reason}"`,
+    )
+  }
 
   return {
     briefsConsidered: briefs.length,

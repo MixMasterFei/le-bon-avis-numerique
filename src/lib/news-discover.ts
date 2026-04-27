@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
+import { judgeStory } from "@/lib/news-quality-judge"
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
@@ -693,9 +694,28 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       slug = `${s.slug}-${suffix}`
     }
 
-    const created = await prisma.newsStory.create({
-      data: { slug, ...data },
+    // Pass-3 quality gate (only on fresh creates; updates are dedup
+    // merges where the body usually doesn't change drastically).
+    // Below threshold → PENDING_REVIEW so a human can decide.
+    const qualityVerdict = await judgeStory({
+      title: s.title,
+      summary: s.summary,
+      body: s.body,
+      category: s.category,
+      format: "BRIEF",
+      sourceNames: sources.map((src) => src.name),
     })
+    const qualityStatus = qualityVerdict.passes ? data.status : ("PENDING_REVIEW" as const)
+
+    const created = await prisma.newsStory.create({
+      data: { slug, ...data, status: qualityStatus },
+    })
+    if (!qualityVerdict.passes) {
+      console.warn(
+        `[news-discover] story ${created.id} flagged PENDING_REVIEW — ` +
+          `overall=${qualityVerdict.overall} reason="${qualityVerdict.reason}"`,
+      )
+    }
     for (const src of sources) urlToExistingId.set(src.url, created.id)
     titleFingerprints.push({ id: created.id, tokens: titleTokens(s.title) })
     persisted++

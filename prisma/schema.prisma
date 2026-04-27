@@ -808,6 +808,10 @@ enum NewsCategory {
 enum NewsStoryStatus {
   PUBLISHED
   ARCHIVED
+  // Quality judge flagged the article — below threshold on
+  // source-fidelity, neutrality, structural cleanliness, or length.
+  // Hidden from public surfaces; surfaced in /admin for human review.
+  PENDING_REVIEW
 }
 
 model NewsStory {
