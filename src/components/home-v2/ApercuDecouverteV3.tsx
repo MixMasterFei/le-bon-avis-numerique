@@ -8,8 +8,9 @@ import { PhraseDuJour } from "./PhraseDuJour"
 import { ARetenirCard } from "./ARetenirCard"
 import { RechercheHighlightCard } from "./RechercheHighlightCard"
 import { EtudesRecentesCard, type EtudeRef } from "./EtudesRecentesCard"
-import { WeekStatsCard, type WeekStats } from "./WeekStatsCard"
+import { CinemaTendancesCard } from "./CinemaTendancesCard"
 import { SourcesTrustCard } from "./SourcesTrustCard"
+import type { CinemaTendance } from "@/lib/news-cinema-tendances"
 import {
   VacancesScolairesCard,
   type SerializableHoliday,
@@ -42,8 +43,10 @@ export interface DecouverteV3Data {
   research: { research: StoryResearch; storyTitle: string; storySlug: string } | null
   // Sidebar: curated scientific / institutional studies (sourced).
   etudes: EtudeRef[]
-  // Sidebar: this week's editorial pulse counted from the DB.
-  weekStats: WeekStats
+  // Sidebar: family-friendly films currently in French theaters (replaces
+  // the prior meta-stats widget — Xavier wanted real-world numbers /
+  // catalog ties rather than "n articles published").
+  cinemaTendances: CinemaTendance[]
   // Sidebar: school-holidays widget (Zone B is the default; cards
   // for A and C are pre-fetched so the toggle is instant client-side).
   holidayB: SerializableHoliday | null
@@ -143,7 +146,9 @@ export function ApercuDecouverteV3({
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}
-                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
+                {data.cinemaTendances.length > 0 && (
+                  <CinemaTendancesCard tendances={data.cinemaTendances} serifClass={serifClass} />
+                )}
                 {data.research && (
                   <RechercheHighlightCard
                     research={data.research.research}
@@ -263,7 +268,9 @@ export function ApercuDecouverteV3({
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}
-                <WeekStatsCard stats={data.weekStats} serifClass={serifClass} />
+                {data.cinemaTendances.length > 0 && (
+                  <CinemaTendancesCard tendances={data.cinemaTendances} serifClass={serifClass} />
+                )}
                 {data.research && (
                   <RechercheHighlightCard
                     research={data.research.research}

@@ -100,8 +100,8 @@ export function WeatherCityPicker({
         setGeoLoading(false)
         setGeoError(
           err.code === err.PERMISSION_DENIED
-            ? "Autorisation refusée. Vous pouvez chercher votre ville à la main."
-            : "Position indisponible. Réessayez plus tard.",
+            ? "Autorisation refusée. Cliquez sur le cadenas dans la barre d'adresse pour réactiver la localisation, ou recherchez votre ville à la main ci-dessous."
+            : "Position indisponible. Réessayez plus tard ou recherchez votre ville à la main.",
         )
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },

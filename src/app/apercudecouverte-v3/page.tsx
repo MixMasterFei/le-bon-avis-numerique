@@ -5,6 +5,7 @@ import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/
 import { getNextHoliday, holidayToSerializable } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
+import { getCinemaTendances } from "@/lib/news-cinema-tendances"
 import type { Takeaway } from "@/components/home-v2/ARetenirCard"
 import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -203,7 +204,6 @@ export default async function ApercuDecouverteV3Page(props: {
   // warning and falls back to a safe empty value rather than taking
   // down the whole page. The page is rendered as a feed, so missing
   // a sidebar widget or a brief category degrades gracefully.
-  const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const safe = <T,>(label: string, fallback: T) => (err: unknown): T => {
     console.warn(`[apercudecouverte-v3] ${label} failed:`, err)
     return fallback
@@ -234,14 +234,12 @@ export default async function ApercuDecouverteV3Page(props: {
     intlRows,
     dossierRow,
     researchRow,
-    weekTotal,
-    weekIntl,
-    weekResearch,
     holidayB,
     holidayA,
     holidayC,
     anniversary,
     weather,
+    cinemaTendances,
   ] = await Promise.all([
     // 12 most recent French briefs (1 hero + 3 top + ~8 older).
     prisma.newsStory.findMany({
@@ -284,16 +282,6 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, research: true,
       },
     }).catch(safe<{ id: string; slug: string; title: string; research: Prisma.JsonValue | null } | null>("researchRow", null)),
-    // Week stats — counts published in the last 7 days.
-    prisma.newsStory.count({
-      where: { status: "PUBLISHED", publishedAt: { gte: since7d } },
-    }).catch(safe("weekTotal", 0)),
-    prisma.newsStory.count({
-      where: { status: "PUBLISHED", publishedAt: { gte: since7d }, region: "INTL" },
-    }).catch(safe("weekIntl", 0)),
-    prisma.newsStory.count({
-      where: { status: "PUBLISHED", publishedAt: { gte: since7d }, research: { not: Prisma.JsonNull } },
-    }).catch(safe("weekResearch", 0)),
     // Sidebar widgets — wrapped defensively so an external API blip
     // (data.education.gouv.fr, open-meteo) or a transient DB error in
     // the catalog query can't surface as a server-render failure.
@@ -308,6 +296,7 @@ export default async function ApercuDecouverteV3Page(props: {
         daily: [],
       }),
     ),
+    getCinemaTendances().catch(safe<Awaited<ReturnType<typeof getCinemaTendances>>>("cinemaTendances", [])),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows
@@ -350,15 +339,7 @@ export default async function ApercuDecouverteV3Page(props: {
         })()
       : null,
     etudes: CURATED_ETUDES,
-    weekStats: {
-      storiesPublished: weekTotal,
-      internationalCount: weekIntl,
-      studiesCited: weekResearch,
-      // Source count is a rough static for the Aperçu — reflects the
-      // NEWS_SOURCES list size. Live cutover can compute distinct
-      // source names from the past week.
-      sourcesCovered: 29,
-    },
+    cinemaTendances,
     holidayB: holidayToSerializable(holidayB),
     holidayA: holidayToSerializable(holidayA),
     holidayC: holidayToSerializable(holidayC),

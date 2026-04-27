@@ -24,39 +24,6 @@ const HEADLINE: Record<WeatherCondition, string> = {
   "clear-night": "Ciel dégagé",
 }
 
-const SUGGESTIONS: Record<WeatherCondition, string[]> = {
-  sunny: [
-    "Pique-nique ou vélo en famille",
-    "Sortie au parc ou jardin botanique",
-    "Visite d'un site en plein air",
-  ],
-  mixed: [
-    "Marché du dimanche puis musée",
-    "Cinéma jeunesse l'après-midi",
-    "Atelier créatif à la maison",
-  ],
-  rainy: [
-    "Soirée jeux de société",
-    "Cinéma ou séance lecture",
-    "Cuisine en famille",
-  ],
-  cold: [
-    "Musée ou exposition couverte",
-    "Patinoire si elle est ouverte",
-    "Lecture au coin du feu",
-  ],
-  snow: [
-    "Bonhomme de neige et luge",
-    "Chocolat chaud + livre",
-    "Film de Noël (même hors saison)",
-  ],
-  "clear-night": [
-    "Observation des étoiles depuis le balcon",
-    "Veillée contes ou lecture",
-    "Soirée jeux de société",
-  ],
-}
-
 const WEEKDAY_FR = ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."]
 
 function formatDayLabel(dateISO: string, todayISO: string): string {
@@ -170,10 +137,7 @@ export function MeteoFamilleCard({
 
             {/* 5-day strip */}
             {snapshot.daily.length > 0 && (
-              <div
-                className="grid grid-cols-5 gap-1.5 mb-4 pb-4"
-                style={{ borderBottom: `1px solid ${p.line2}` }}
-              >
+              <div className="grid grid-cols-5 gap-1.5">
                 {snapshot.daily.map((d) => {
                   const DIcon = ICON[d.condition]
                   return (
@@ -193,19 +157,6 @@ export function MeteoFamilleCard({
                 })}
               </div>
             )}
-
-            {/* Family activity suggestions */}
-            <div className="text-[11px] font-semibold uppercase tracking-wide mb-2" style={{ color: p.ink2 }}>
-              Idées famille
-            </div>
-            <ul className="space-y-1.5 text-sm" style={{ color: p.ink }}>
-              {SUGGESTIONS[current.condition].map((s, i) => (
-                <li key={i} className="leading-snug flex items-start gap-2">
-                  <span style={{ color: p.accent2 }}>·</span>
-                  <span>{s}</span>
-                </li>
-              ))}
-            </ul>
           </>
         ) : (
           <div className="text-sm py-4" style={{ color: p.ink2 }}>
