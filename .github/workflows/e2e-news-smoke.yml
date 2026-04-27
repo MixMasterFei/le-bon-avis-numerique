@@ -1,0 +1,64 @@
+name: E2E — News v3 smoke
+
+# Runs the Playwright smoke for /apercudecouverte-v3 against the live
+# production URL. Triggered:
+#   - On every push to main (post-deploy delay handled by retries inside
+#     the test — Playwright config has retries: 1 in CI).
+#   - On a daily schedule so we catch regressions from external API
+#     changes (Open-Meteo, the geocoding API, RSS feeds).
+#   - Manually via "Run workflow".
+#
+# When E2E_TEST_USER_EMAIL/PASSWORD repo secrets are set, the
+# authenticated suite runs too. Otherwise only the unauth redirect
+# test runs (the auth suite test.skip's itself).
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Daily at 06:00 UTC (08:00 Paris) — well after the nightly cron
+    # batch (04:00 UTC) finishes, so the page reflects fresh content.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: News v3 smoke
+    runs-on: ubuntu-latest
+    # Wait long enough for Vercel to deploy on push. The schedule and
+    # manual triggers don't need this, but a fixed sleep is the
+    # simplest way to keep all triggers in one job.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for Vercel deploy
+        if: github.event_name == 'push'
+        # 90s is enough for typical Vercel deploys on this app size.
+        # Tests have 1 retry built into playwright.config.ts.
+        run: sleep 90
+
+      - name: Run smoke
+        run: npx playwright test apercudecouverte-v3.spec.ts --project=chromium
+        env:
+          PLAYWRIGHT_BASE_URL: https://totemavise.com
+          E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}
+          E2E_TEST_USER_PASSWORD: ${{ secrets.E2E_TEST_USER_PASSWORD }}
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
