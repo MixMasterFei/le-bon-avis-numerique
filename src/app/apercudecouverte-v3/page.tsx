@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
 import { getNextHoliday, holidayToSerializable } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
-import { getWeekendWeather } from "@/lib/weekend-weather"
+import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
 import type { Takeaway } from "@/components/home-v2/ARetenirCard"
 import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -209,6 +209,26 @@ export default async function ApercuDecouverteV3Page(props: {
     return fallback
   }
 
+  // Resolve the user's saved weather city, then fetch the snapshot.
+  // Wrapped together so the page-level Promise.all kicks off the
+  // user lookup + weather fetch as a single dependent chain rather
+  // than serially after the Promise.all completes.
+  const userId = session.user.id
+  const weatherFlow = (async () => {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { weatherCityName: true, weatherCityLat: true, weatherCityLon: true },
+    })
+    const city: WeatherCity =
+      u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null
+        ? { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon }
+        : DEFAULT_CITY
+    const snapshot = await getWeatherForCity(city)
+    // If the API failed, return a city-only stub so the widget can
+    // still render the city header + picker, even if temps are blank.
+    return snapshot ?? { city, current: null, daily: [] }
+  })()
+
   const [
     frenchRows,
     intlRows,
@@ -281,7 +301,13 @@ export default async function ApercuDecouverteV3Page(props: {
     getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
     getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
     getCatalogAnniversary().catch(safe<Awaited<ReturnType<typeof getCatalogAnniversary>>>("anniversary", null)),
-    getWeekendWeather().catch(safe<Awaited<ReturnType<typeof getWeekendWeather>>>("weather", null)),
+    weatherFlow.catch(
+      safe<{ city: WeatherCity; current: null; daily: [] }>("weather", {
+        city: DEFAULT_CITY,
+        current: null,
+        daily: [],
+      }),
+    ),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows

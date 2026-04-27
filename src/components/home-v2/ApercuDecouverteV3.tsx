@@ -15,12 +15,12 @@ import {
   type SerializableHoliday,
 } from "./VacancesScolairesCard"
 import { AnniversaireCard } from "./AnniversaireCard"
-import { WeekendActivitesCard } from "./WeekendActivitesCard"
+import { MeteoFamilleCard } from "./MeteoFamilleCard"
 import { NewsletterCTA } from "./NewsletterCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { StoryResearch } from "./ApercuDecouverteStory"
 import type { CatalogAnniversary } from "@/lib/catalog-anniversary"
-import type { WeekendWeather } from "@/lib/weekend-weather"
+import type { WeatherSnapshot } from "@/lib/weather"
 
 export interface DecouverteV3Data {
   // Latest French story (rendered as the page hero).
@@ -51,8 +51,11 @@ export interface DecouverteV3Data {
   holidayC: SerializableHoliday | null
   // Sidebar: catalog anniversary ("Il y a X ans aujourd'hui sortait …").
   anniversary: CatalogAnniversary | null
-  // Sidebar: weekend weather + matched activity ideas.
-  weather: WeekendWeather | null
+  // Sidebar: per-user weather snapshot (current + 5-day) + activity
+  // ideas matched to today's condition. Null current/empty daily =
+  // upstream API failed; the card still renders the city header so
+  // the user can switch cities via the picker.
+  weather: WeatherSnapshot
 }
 
 /**
@@ -129,9 +132,7 @@ export function ApercuDecouverteV3({
                   initialZoneC={data.holidayC}
                   serifClass={serifClass}
                 />
-                {data.weather && (
-                  <WeekendActivitesCard weather={data.weather} serifClass={serifClass} />
-                )}
+                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
                 )}
@@ -251,9 +252,7 @@ export function ApercuDecouverteV3({
                   initialZoneC={data.holidayC}
                   serifClass={serifClass}
                 />
-                {data.weather && (
-                  <WeekendActivitesCard weather={data.weather} serifClass={serifClass} />
-                )}
+                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
                 {data.takeaways.length > 0 && (
                   <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
                 )}

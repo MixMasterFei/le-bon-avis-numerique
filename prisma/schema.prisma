@@ -27,6 +27,12 @@ model User {
   avatarOptions Json?     @map("avatar_options")
   role                UserRole  @default(USER)
   onboardingCompleted Boolean   @default(false) @map("onboarding_completed")
+  // "Météo famille" widget on /apercudecouverte-v3. Cross-device so
+  // home PC, work PC, and phone all show the same city. NULL = the
+  // user hasn't picked one and we fall back to Paris.
+  weatherCityName     String?   @map("weather_city_name")
+  weatherCityLat      Float?    @map("weather_city_lat")
+  weatherCityLon      Float?    @map("weather_city_lon")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
