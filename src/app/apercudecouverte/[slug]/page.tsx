@@ -18,6 +18,18 @@ interface SearchParams {
   font?: string
 }
 
+/**
+ * Strip "(article N)" leaks from dossier bodies. The synthesis agent
+ * is shown briefs prefixed with [0], [1], … and sometimes references
+ * them in prose as "Selon Numerama (article 3)". The numbers carry no
+ * meaning to the reader — strip them. Prompt fix in news-dossier.ts
+ * prevents new occurrences but existing dossiers already in DB still
+ * need this on render.
+ */
+function stripInternalRefs(body: string): string {
+  return body.replace(/\s*\(article\s+\d+\)/gi, "")
+}
+
 function toResearch(raw: Prisma.JsonValue | null): StoryResearch | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null
   const r = raw as Record<string, unknown>
@@ -84,7 +96,7 @@ export default async function ApercuDecouverteStoryPage(props: {
     slug: row.slug,
     title: row.title,
     summary: row.summary,
-    body: row.body,
+    body: stripInternalRefs(row.body),
     category: row.category,
     imageUrl: row.imageUrl,
     publishedAt: row.publishedAt,

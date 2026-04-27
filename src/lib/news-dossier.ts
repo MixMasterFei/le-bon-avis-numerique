@@ -62,6 +62,7 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
    - Conclusions Totem ("on ne peut que saluer", "il est temps que…", "voilà qui change la donne")
    - Vocabulaire éditorial : *enfin, malheureusement, fort heureusement, étonnamment, sans surprise, à juste titre, courageux, lucide, alarmant, inquiétant, prometteur*
    - Formules qui prennent position implicite ("comme l'avait prédit", "rare lucidité de…", "preuve supplémentaire que…")
+   - **Numéros d'articles** : ne mentionne JAMAIS "(article 3)", "[2]", "article numéro 5", etc. Les crochets que tu vois dans la liste ci-dessous sont à usage interne uniquement. Réfère-toi aux publications **par leur nom uniquement** ("Selon Le Monde", "Numerama rapporte", "AlloCiné précise"), jamais par leur position dans la liste.
 
    **EXIGÉ** :
    - Titre purement descriptif : "Cette semaine : trois initiatives sur l'âge minimum du smartphone" plutôt que "La semaine où la France a dit assez"
