@@ -198,7 +198,16 @@ export default async function ApercuDecouverteV3Page(props: {
   const searchParams = await props.searchParams
 
   // ── Pull data in parallel ──────────────────────────────────────
+  // Each fetch is individually fail-safe: any single failure logs a
+  // warning and falls back to a safe empty value rather than taking
+  // down the whole page. The page is rendered as a feed, so missing
+  // a sidebar widget or a brief category degrades gracefully.
   const since7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const safe = <T,>(label: string, fallback: T) => (err: unknown): T => {
+    console.warn(`[apercudecouverte-v3] ${label} failed:`, err)
+    return fallback
+  }
+
   const [
     frenchRows,
     intlRows,
@@ -222,7 +231,7 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
-    }),
+    }).catch(safe("frenchRows", [] as StoryRow[])),
     // 6 most recent international briefs.
     prisma.newsStory.findMany({
       where: { status: "PUBLISHED", storyType: "BRIEF", region: "INTL" },
@@ -232,7 +241,7 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
-    }),
+    }).catch(safe("intlRows", [] as StoryRow[])),
     // Latest weekly dossier (past 14 days).
     prisma.newsStory.findFirst({
       where: {
@@ -245,7 +254,7 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
-    }),
+    }).catch(safe<StoryRow | null>("dossierRow", null)),
     // Latest story carrying a populated research sidebar.
     prisma.newsStory.findFirst({
       where: { status: "PUBLISHED", research: { not: Prisma.JsonNull } },
@@ -253,25 +262,25 @@ export default async function ApercuDecouverteV3Page(props: {
       select: {
         id: true, slug: true, title: true, research: true,
       },
-    }),
+    }).catch(safe<{ id: string; slug: string; title: string; research: Prisma.JsonValue | null } | null>("researchRow", null)),
     // Week stats — counts published in the last 7 days.
     prisma.newsStory.count({
       where: { status: "PUBLISHED", publishedAt: { gte: since7d } },
-    }),
+    }).catch(safe("weekTotal", 0)),
     prisma.newsStory.count({
       where: { status: "PUBLISHED", publishedAt: { gte: since7d }, region: "INTL" },
-    }),
+    }).catch(safe("weekIntl", 0)),
     prisma.newsStory.count({
       where: { status: "PUBLISHED", publishedAt: { gte: since7d }, research: { not: Prisma.JsonNull } },
-    }),
-    // Sidebar widgets — all three fail-safe (they return null on error
-    // and the components hide themselves, so a flaky external API
-    // never breaks the page).
-    getNextHoliday("B"),
-    getNextHoliday("A"),
-    getNextHoliday("C"),
-    getCatalogAnniversary(),
-    getWeekendWeather(),
+    }).catch(safe("weekResearch", 0)),
+    // Sidebar widgets — wrapped defensively so an external API blip
+    // (data.education.gouv.fr, open-meteo) or a transient DB error in
+    // the catalog query can't surface as a server-render failure.
+    getNextHoliday("B").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayB", null)),
+    getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
+    getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
+    getCatalogAnniversary().catch(safe<Awaited<ReturnType<typeof getCatalogAnniversary>>>("anniversary", null)),
+    getWeekendWeather().catch(safe<Awaited<ReturnType<typeof getWeekendWeather>>>("weather", null)),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows
