@@ -16,7 +16,9 @@ import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma } from "@prisma/client"
 
 export const dynamic = "force-dynamic"
-export const revalidate = 60 // 1-min ISR — cron writes news, page reads
+// Note: `revalidate` removed — incompatible with `force-dynamic` and
+// every render is per-request anyway. Cron writes news to the DB, the
+// page reads it on each visit (auth-gated, low traffic).
 
 interface SearchParams {
   font?: string
@@ -196,6 +198,27 @@ export default async function ApercuDecouverteV3Page(props: {
   }
 
   const searchParams = await props.searchParams
+
+  try {
+    return await renderPageBody(searchParams)
+  } catch (err) {
+    // Aperçu — exhaustive diagnostic surface so the page never silently
+    // hits the global error boundary. Once v3 stabilizes this falls
+    // back to the regular error.tsx like the rest of the app.
+    console.error("[apercudecouverte-v3] render failed:", err)
+    const message = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error && err.stack ? err.stack : ""
+    return (
+      <div style={{ padding: "2rem", fontFamily: "monospace", fontSize: "12px", whiteSpace: "pre-wrap" }}>
+        <h1 style={{ fontSize: "16px", marginBottom: "1rem" }}>Aperçu v3 — diagnostic</h1>
+        <div style={{ marginBottom: "0.5rem" }}><strong>message:</strong> {message}</div>
+        <div style={{ opacity: 0.7 }}>{stack}</div>
+      </div>
+    )
+  }
+}
+
+async function renderPageBody(searchParams: SearchParams | undefined) {
 
   // ── Pull data in parallel ──────────────────────────────────────
   // Each fetch is individually fail-safe: any single failure logs a
