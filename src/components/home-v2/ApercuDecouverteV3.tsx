@@ -5,7 +5,6 @@ import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsHeroCard } from "./ApercuNewsHeroCard"
 import { ApercuNewsCard, type ApercuNewsCardData } from "./ApercuNewsCard"
 import { PhraseDuJour } from "./PhraseDuJour"
-import { ARetenirCard } from "./ARetenirCard"
 import { RechercheHighlightCard } from "./RechercheHighlightCard"
 import { EtudesRecentesCard, type EtudeRef } from "./EtudesRecentesCard"
 import { CinemaTendancesCard } from "./CinemaTendancesCard"
@@ -37,8 +36,6 @@ export interface DecouverteV3Data {
   // Editorial pull-quote inserted between French and INTL sections.
   // Server picks the candidate from a recent story body.
   phrase: { quote: string; storyTitle: string; storySlug: string } | null
-  // Sidebar: 3-bullet "À retenir" derived from the dossier (or null).
-  takeaways: import("./ARetenirCard").Takeaway[]
   // Sidebar: latest story carrying a research sidebar.
   research: { research: StoryResearch; storyTitle: string; storySlug: string } | null
   // Sidebar: curated scientific / institutional studies (sourced).
@@ -140,9 +137,6 @@ export function ApercuDecouverteV3({
                   serifClass={serifClass}
                 />
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
-                {data.takeaways.length > 0 && (
-                  <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
-                )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}
@@ -244,13 +238,12 @@ export function ApercuDecouverteV3({
             <aside className="hidden lg:block">
               {/* Sidebar order, top-down:
                   1. Vacances scolaires (most-checked widget — pin first)
-                  2. Week-end activités (météo) (immediate "today" feel)
-                  3. À retenir (editorial sticky)
-                  4. Anniversaire catalogue (nostalgia hook)
-                  5. Cette semaine en chiffres (pulse)
-                  6. Recherche highlight
-                  7. Études récentes (sourced links out)
-                  8. Sources de confiance (transparency footer)
+                  2. Météo famille (immediate "today" feel + city picker)
+                  3. Anniversaire catalogue (nostalgia hook)
+                  4. Au cinéma cette semaine (catalog tie-in)
+                  5. Recherche highlight
+                  6. Études récentes (sourced links out)
+                  7. Sources de confiance (transparency footer)
                   No max-height / no inner overflow — the sidebar
                   extends with the page so all blocks are reachable
                   by normal page scroll, not a nested scroll. */}
@@ -262,9 +255,6 @@ export function ApercuDecouverteV3({
                   serifClass={serifClass}
                 />
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
-                {data.takeaways.length > 0 && (
-                  <ARetenirCard takeaways={data.takeaways} serifClass={serifClass} />
-                )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}

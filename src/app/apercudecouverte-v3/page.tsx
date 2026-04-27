@@ -6,7 +6,6 @@ import { getNextHoliday, holidayToSerializable } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
 import { getCinemaTendances } from "@/lib/news-cinema-tendances"
-import type { Takeaway } from "@/components/home-v2/ARetenirCard"
 import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
@@ -119,36 +118,6 @@ function extractPhrase(rows: StoryRow[]): { quote: string; storyTitle: string; s
     }
   }
   return null
-}
-
-/**
- * Derive 3 short takeaways from the latest dossier's body. Splits on
- * sentences in the final paragraph and tries to extract a "Selon X…"
- * source attribution from each. Aperçu placeholder; the live version
- * will use a dedicated agent that produces structured Takeaway objects
- * directly.
- */
-function extractTakeaways(dossierBody: string | null): Takeaway[] {
-  if (!dossierBody) return []
-  const paragraphs = dossierBody.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
-  const target =
-    paragraphs[paragraphs.length - 1]?.length > 100
-      ? paragraphs[paragraphs.length - 1]
-      : paragraphs[paragraphs.length - 2] ?? paragraphs[paragraphs.length - 1] ?? ""
-  if (!target) return []
-  const sentences = target
-    .replace(/\*\*/g, "")
-    .split(/(?<=[.!?])\s+(?=[A-Z«ÀÂÉÈÊËÎÏÔÙÛÜÇ])/)
-    .map((s) => s.trim())
-    .filter((s) => s.length >= 30 && s.length <= 180)
-  // Pull a source name out of "Selon Le Monde, …" / "Pew Research observe que…"
-  // Best-effort regex; misses → no source attribution rendered.
-  return sentences.slice(0, 3).map((text) => {
-    const m = text.match(/(?:Selon|D'apr[èé]s|Pour|Comme l'observe|Cit[ée] par)\s+(?:le\s+|la\s+|l'\s*)?([A-Z][\wÀ-ÿ' -]{2,40})/)
-    const m2 = text.match(/^([A-Z][\wÀ-ÿ' -]{2,40})\s+(?:rapporte|observe|indique|souligne|note|estime)/)
-    const source = (m?.[1] || m2?.[1])?.trim()
-    return { text, source: source && source.length < 40 ? source : undefined }
-  })
 }
 
 /**
@@ -329,7 +298,6 @@ export default async function ApercuDecouverteV3Page(props: {
     dossier: dossierCard,
     olderBriefs: olderCards,
     phrase: extractPhrase(frenchRows),
-    takeaways: extractTakeaways(dossierRow?.body ?? null),
     research: researchRow
       ? (() => {
           const r = toResearch((researchRow as { research?: Prisma.JsonValue | null }).research ?? null)
