@@ -56,6 +56,10 @@ export interface DecouverteV3Data {
   // upstream API failed; the card still renders the city header so
   // the user can switch cities via the picker.
   weather: WeatherSnapshot
+  // True for admin users (always) or any authenticated user when
+  // NEWSLETTER_PUBLIC=true. Controls whether the bottom-of-page CTA
+  // shows a working form or the "en bêta privée" stub.
+  canSubscribe: boolean
 }
 
 /**
@@ -278,7 +282,7 @@ export function ApercuDecouverteV3({
 
           {/* Newsletter — full width below the grid, after the user has
               scrolled the whole feed. */}
-          <NewsletterCTA serifClass={serifClass} />
+          <NewsletterCTA serifClass={serifClass} canSubscribe={data.canSubscribe} />
         </div>
       </section>
     </div>

@@ -364,6 +364,11 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayC: holidayToSerializable(holidayC),
     anniversary,
     weather,
+    // Newsletter signup is admin-only until Xavier validates the
+    // digest format + cron automation. Flip NEWSLETTER_PUBLIC=true
+    // on Vercel to open it to all authenticated users.
+    canSubscribe:
+      session.user.role === "ADMIN" || process.env.NEWSLETTER_PUBLIC === "true",
   }
 
   const useFraunces = isFraunces(searchParams?.font)

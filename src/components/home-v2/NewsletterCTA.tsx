@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Send, CheckCircle2, Loader2 } from "lucide-react"
+import { Mail, Send, CheckCircle2, Loader2, Lock } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 type SubmitState =
@@ -18,8 +18,19 @@ type SubmitState =
  * Wired to /api/newsletter/subscribe → Resend Audiences. Idempotent:
  * resubmitting an already-subscribed email shows the "already there"
  * message rather than failing.
+ *
+ * `canSubscribe` is the admin-gate flag from the server (admin role
+ * OR NEWSLETTER_PUBLIC=true). When false, renders an "en bêta" stub
+ * instead of the form so non-admin testers can't subscribe to a
+ * newsletter Xavier hasn't validated yet.
  */
-export function NewsletterCTA({ serifClass }: { serifClass: string }) {
+export function NewsletterCTA({
+  serifClass,
+  canSubscribe,
+}: {
+  serifClass: string
+  canSubscribe: boolean
+}) {
   const p = APERCU_PALETTE
   const [email, setEmail] = useState("")
   const [state, setState] = useState<SubmitState>({ kind: "idle" })
@@ -83,7 +94,15 @@ export function NewsletterCTA({ serifClass }: { serifClass: string }) {
         <p className="text-sm md:text-base mb-6 max-w-md mx-auto" style={{ opacity: 0.8 }}>
           Les actualités qui comptent pour les familles, condensées en quelques minutes de lecture. Gratuit et sans publicité.
         </p>
-        {state.kind === "success" ? (
+        {!canSubscribe ? (
+          <div
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
+            style={{ background: "rgba(30,26,21,0.85)", color: "#F5F1E9" }}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            En bêta privée. Inscriptions bientôt ouvertes.
+          </div>
+        ) : state.kind === "success" ? (
           <div
             className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
             style={{ background: "#1E1A15", color: "#F5F1E9" }}

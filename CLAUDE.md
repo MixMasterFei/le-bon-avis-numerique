@@ -357,4 +357,5 @@ OPENAI_API_KEY                    # AI enrichment
 CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
 RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
+NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
 ```
