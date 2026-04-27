@@ -356,4 +356,5 @@ GOOGLE_BOOKS_API_KEY              # Books
 OPENAI_API_KEY                    # AI enrichment
 CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
+RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
 ```

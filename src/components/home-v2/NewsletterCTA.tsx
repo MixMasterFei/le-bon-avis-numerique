@@ -1,18 +1,67 @@
 "use client"
 
-import { Mail, Send } from "lucide-react"
+import { useState } from "react"
+import { Mail, Send, CheckCircle2, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
+
+type SubmitState =
+  | { kind: "idle" }
+  | { kind: "submitting" }
+  | { kind: "success"; message: string }
+  | { kind: "error"; message: string }
 
 /**
  * Bottom-of-page newsletter signup. Lives below the older briefs
  * (after the user has scrolled through the whole feed) — the natural
  * place to offer "want this delivered weekly?".
  *
- * For the Aperçu the form is non-functional — we'll wire to Resend
- * (already in the stack) once the layout ships.
+ * Wired to /api/newsletter/subscribe → Resend Audiences. Idempotent:
+ * resubmitting an already-subscribed email shows the "already there"
+ * message rather than failing.
  */
 export function NewsletterCTA({ serifClass }: { serifClass: string }) {
   const p = APERCU_PALETTE
+  const [email, setEmail] = useState("")
+  const [state, setState] = useState<SubmitState>({ kind: "idle" })
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setState({ kind: "submitting" })
+    try {
+      const res = await fetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = (await res.json()) as
+        | { status: "subscribed" | "already"; email: string }
+        | { error: string }
+      if (!res.ok || "error" in data) {
+        setState({
+          kind: "error",
+          message:
+            "error" in data
+              ? data.error
+              : "Une erreur est survenue. Réessayez dans quelques instants.",
+        })
+        return
+      }
+      setState({
+        kind: "success",
+        message:
+          data.status === "already"
+            ? "Vous êtes déjà inscrit·e — merci !"
+            : "Inscription confirmée. À très bientôt dans votre boîte mail.",
+      })
+      setEmail("")
+    } catch {
+      setState({
+        kind: "error",
+        message: "Réseau indisponible. Réessayez dans un instant.",
+      })
+    }
+  }
 
   return (
     <section className="my-12 md:my-16">
@@ -34,33 +83,53 @@ export function NewsletterCTA({ serifClass }: { serifClass: string }) {
         <p className="text-sm md:text-base mb-6 max-w-md mx-auto" style={{ opacity: 0.8 }}>
           Les actualités qui comptent pour les familles, condensées en quelques minutes de lecture. Gratuit et sans publicité.
         </p>
-        <form
-          className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto"
-          onSubmit={(e) => {
-            e.preventDefault()
-            // Wire to Resend in the live cutover — for the Aperçu this
-            // is a layout placeholder.
-          }}
-        >
-          <input
-            type="email"
-            placeholder="votre.email@exemple.fr"
-            required
-            className="flex-1 px-4 py-3 rounded-full text-sm focus:outline-none focus:ring-2"
-            style={{
-              background: "rgba(255,255,255,0.95)",
-              color: "#1E1A15",
-            }}
-          />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02]"
+        {state.kind === "success" ? (
+          <div
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-semibold"
             style={{ background: "#1E1A15", color: "#F5F1E9" }}
           >
-            <Send className="w-3.5 h-3.5" />
-            S&apos;abonner
-          </button>
-        </form>
+            <CheckCircle2 className="w-4 h-4" />
+            {state.message}
+          </div>
+        ) : (
+          <form
+            className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto"
+            onSubmit={onSubmit}
+          >
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="votre.email@exemple.fr"
+              required
+              disabled={state.kind === "submitting"}
+              autoComplete="email"
+              className="flex-1 px-4 py-3 rounded-full text-sm focus:outline-none focus:ring-2 disabled:opacity-60"
+              style={{
+                background: "rgba(255,255,255,0.95)",
+                color: "#1E1A15",
+              }}
+            />
+            <button
+              type="submit"
+              disabled={state.kind === "submitting"}
+              className="inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02] disabled:opacity-60"
+              style={{ background: "#1E1A15", color: "#F5F1E9" }}
+            >
+              {state.kind === "submitting" ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              S&apos;abonner
+            </button>
+          </form>
+        )}
+        {state.kind === "error" && (
+          <p className="text-[12px] mt-3 font-medium" style={{ color: "#1E1A15" }}>
+            {state.message}
+          </p>
+        )}
         <p className="text-[11px] mt-3" style={{ opacity: 0.6 }}>
           Désabonnement en un clic. Aucune publicité.
         </p>
