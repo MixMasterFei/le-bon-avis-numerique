@@ -20,6 +20,32 @@ export interface NextHoliday {
   isOngoing: boolean
 }
 
+// Serialized form for crossing the RSC boundary. The card component is
+// a client component, so Date can't go through the network payload as
+// a Date — convert to ISO strings on the server first. Lives here (not
+// in the card file) because the card is "use client" and any export
+// from there gets tagged client-only.
+export interface SerializableHoliday {
+  description: string
+  startISO: string
+  endISO: string
+  zone: Zone
+  daysUntilStart: number
+  isOngoing: boolean
+}
+
+export function holidayToSerializable(h: NextHoliday | null): SerializableHoliday | null {
+  if (!h) return null
+  return {
+    description: h.description,
+    startISO: h.startDate.toISOString(),
+    endISO: h.endDate.toISOString(),
+    zone: h.zone,
+    daysUntilStart: h.daysUntilStart,
+    isOngoing: h.isOngoing,
+  }
+}
+
 // ── Cache ─────────────────────────────────────────────────────────
 
 interface CacheEntry {

@@ -2,8 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
-import { holidayToSerializable } from "@/components/home-v2/VacancesScolairesCard"
-import { getNextHoliday } from "@/lib/school-holidays"
+import { getNextHoliday, holidayToSerializable } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeekendWeather } from "@/lib/weekend-weather"
 import type { Takeaway } from "@/components/home-v2/ARetenirCard"
@@ -198,27 +197,6 @@ export default async function ApercuDecouverteV3Page(props: {
   }
 
   const searchParams = await props.searchParams
-
-  try {
-    return await renderPageBody(searchParams)
-  } catch (err) {
-    // Aperçu — exhaustive diagnostic surface so the page never silently
-    // hits the global error boundary. Once v3 stabilizes this falls
-    // back to the regular error.tsx like the rest of the app.
-    console.error("[apercudecouverte-v3] render failed:", err)
-    const message = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error && err.stack ? err.stack : ""
-    return (
-      <div style={{ padding: "2rem", fontFamily: "monospace", fontSize: "12px", whiteSpace: "pre-wrap" }}>
-        <h1 style={{ fontSize: "16px", marginBottom: "1rem" }}>Aperçu v3 — diagnostic</h1>
-        <div style={{ marginBottom: "0.5rem" }}><strong>message:</strong> {message}</div>
-        <div style={{ opacity: 0.7 }}>{stack}</div>
-      </div>
-    )
-  }
-}
-
-async function renderPageBody(searchParams: SearchParams | undefined) {
 
   // ── Pull data in parallel ──────────────────────────────────────
   // Each fetch is individually fail-safe: any single failure logs a

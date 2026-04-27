@@ -3,28 +3,12 @@
 import { useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
-import type { NextHoliday, Zone } from "@/lib/school-holidays"
+import type { Zone, SerializableHoliday } from "@/lib/school-holidays"
 
-export interface SerializableHoliday {
-  description: string
-  startISO: string
-  endISO: string
-  zone: Zone
-  daysUntilStart: number
-  isOngoing: boolean
-}
-
-export function holidayToSerializable(h: NextHoliday | null): SerializableHoliday | null {
-  if (!h) return null
-  return {
-    description: h.description,
-    startISO: h.startDate.toISOString(),
-    endISO: h.endDate.toISOString(),
-    zone: h.zone,
-    daysUntilStart: h.daysUntilStart,
-    isOngoing: h.isOngoing,
-  }
-}
+// Re-exported for back-compat with existing client-side imports.
+// Source of truth lives in @/lib/school-holidays so the server page
+// can call holidayToSerializable without crossing the RSC boundary.
+export type { SerializableHoliday } from "@/lib/school-holidays"
 
 function formatRange(startISO: string, endISO: string): string {
   const start = new Date(startISO)
