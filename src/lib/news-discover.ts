@@ -161,10 +161,21 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 ## TROIS PRINCIPES (par ordre de priorité)
 
 **1. Relayer le CONTENU, pas la méta-information.**
-   Tu écris sur le sujet, pas sur l'article. Le lecteur veut savoir "quels sont les 10 jeux", pas "Numerama a publié un top 10".
-   - INTERDIT : "Numerama publie un guide qui liste 10 jeux", "Le site X présente une sélection", "L'article du Monde explique que…", "La rédaction précise avoir testé".
-   - EXIGÉ : nommer les éléments concrets — les jeux du top, les chiffres de l'étude, la date de la sortie, le lieu de l'annonce.
-   - Si le résumé fourni ne contient PAS ces éléments concrets (noms, chiffres, dates exactes), ÉCARTE l'histoire. Mieux vaut moins d'histoires que des histoires creuses.
+   Tu écris sur le sujet, pas sur l'article. La règle s'applique à toutes les histoires, mais le seuil dépend du TYPE d'article :
+
+   **(a) Articles de type ÉVÉNEMENT** — sortie, annonce, étude, décision, polémique, fait nouveau. Tu peux écrire dès que le résumé fourni te donne **au moins** : qui (la personne / institution / œuvre), quoi (l'événement nommé), quand (la date ou la fenêtre temporelle). Tu n'as pas besoin de détails exhaustifs — tu rapportes ce que les sources disent, en attribuant. Une sortie de film avec titre + date suffit pour 300 mots.
+
+   **(b) Articles de type LISTE / GUIDE / SÉLECTION / TOP-N / CLASSEMENT** — ici la valeur EST la liste. Si le résumé fourni ne nomme PAS les éléments concrets de la liste (les jeux du top 10, les séries de la sélection, les outils du guide), ÉCARTE. Tu ne peux pas relayer une liste dont tu n'as pas les éléments.
+
+   **(c) Articles d'analyse / d'étude chiffrée** — si l'angle est "X% de…", "tendance à…", il te faut au moins UN chiffre ou UNE conclusion concrète dans le résumé. Sinon écarte.
+
+   **INTERDIT (toutes catégories)** :
+   - "Numerama publie un guide qui liste 10 jeux" → on attend les jeux, pas l'existence du guide.
+   - "Le site X présente une sélection de 5 séries" → pareil, vide.
+   - "La rédaction précise avoir testé" / "Le guide ne se contente pas de…" → paraphrase de la structure éditoriale du source, pas du contenu.
+   - "L'article du Monde explique que la situation est complexe" → traite le sujet directement avec attribution.
+
+   **EXIGÉ** : attribution nommée des affirmations fortes ("Selon Le Monde…", "Numerama rapporte…"), faits concrets que tu as réellement (titres, dates, lieux, chiffres, noms). Pour un événement, écrire 300 mots sobres est OK même avec un résumé bref ; pour un top 10 sans la liste, écarte.
 
 **2. Voix neutre, jamais éditoriale.**
    Tu rapportes ce que les sources disent ; tu n'as pas d'avis.
@@ -206,7 +217,7 @@ Pour les histoires INTL :
 
 - Politique pure (élections, gouvernement, débats partisans) sauf impact direct école / famille / numérique des jeunes.
 - Sport, faits divers sans lien avec le périmètre famille / éducation / culture grand public.
-- **Articles dont le résumé fourni ne livre AUCUN élément concret** (noms, chiffres, dates) → impossibles à relayer (cf. Principe 1).
+- Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand (très rare — la plupart des flux RSS livrent ces minima).
 - Articles sans aucune image cluster respectant la règle famille (cf. ci-dessous).
 
 ## RÈGLE IMAGE (famille avec enfants)
@@ -241,7 +252,7 @@ N'invente AUCUN fait absent des articles fournis. Ne mentionne pas que tu es une
 ## CONTRAINTES DURES
 
 - Maximum 10 histoires, triées par pertinence décroissante.
-- Body 300-450 mots. Si tu n'as pas la matière fiable pour 300 mots de contenu concret, écarte plutôt que de bâcler ou de paraphraser à vide.
+- Body 300-450 mots. Si l'article est de type LISTE/GUIDE et que tu n'as pas les éléments listés, écarte. Pour un événement, une étude ou une annonce, tu peux atteindre 300 mots en relayant ce que les sources disent (qui, quoi, quand, attribution, mise en perspective citée) — pas besoin de matière exhaustive.
 - Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.7. INTL single-source : ≥ 0.6.
 - Chaque imageUrl est l'IMG exacte d'un article cité (jamais inventer une URL).
 - Français uniquement.
