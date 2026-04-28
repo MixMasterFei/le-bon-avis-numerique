@@ -17,6 +17,12 @@ import {
 import type { CalendarHoliday } from "@/lib/school-holidays"
 import { AnniversaireCard } from "./AnniversaireCard"
 import { MeteoFamilleCard } from "./MeteoFamilleCard"
+import { AirQualiteCard } from "./AirQualiteCard"
+import { JourANoterCard } from "./JourANoterCard"
+import { PenseBeteCard } from "./PenseBeteCard"
+import type { AirQualitySnapshot } from "@/lib/air-quality"
+import type { NotableDateInstance } from "@/lib/notable-dates"
+import type { DeadlineInstance } from "@/lib/family-deadlines"
 import { NewsletterCTA } from "./NewsletterCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { StoryResearch } from "./ApercuDecouverteStory"
@@ -60,6 +66,15 @@ export interface DecouverteV3Data {
   // upstream API failed; the card still renders the city header so
   // the user can switch cities via the picker.
   weather: WeatherSnapshot
+  // Sidebar: air quality + pollen for the same saved city. Null when
+  // the upstream Open-Meteo Air Quality API is unreachable.
+  airQuality: AirQualitySnapshot | null
+  // Sidebar: well-known French civic / cultural dates (next 120
+  // days), curated. Empty array hides the widget.
+  notableDates: NotableDateInstance[]
+  // Sidebar: recurring family administrative deadlines (impôts, école,
+  // CAF…) within the next 180 days. Empty array hides the widget.
+  deadlines: DeadlineInstance[]
   // True for admin users (always) or any authenticated user when
   // NEWSLETTER_PUBLIC=true. Controls whether the bottom-of-page CTA
   // shows a working form or the "en bêta privée" stub.
@@ -134,6 +149,9 @@ export function ApercuDecouverteV3({
                   not buried at the bottom on phones. Hidden on lg+
                   where the sticky sidebar takes over. */}
               <div className="lg:hidden flex flex-col gap-4 my-2">
+                {data.deadlines.length > 0 && (
+                  <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
+                )}
                 <VacancesScolairesCard
                   initialFR={data.holidayB}
                   initialZoneA={data.holidayA}
@@ -141,7 +159,13 @@ export function ApercuDecouverteV3({
                   calendar={data.holidayCalendar}
                   serifClass={serifClass}
                 />
+                {data.notableDates.length > 0 && (
+                  <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
+                )}
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                {data.airQuality && (
+                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
+                )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}
@@ -253,6 +277,9 @@ export function ApercuDecouverteV3({
                   extends with the page so all blocks are reachable
                   by normal page scroll, not a nested scroll. */}
               <div className="flex flex-col gap-4">
+                {data.deadlines.length > 0 && (
+                  <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
+                )}
                 <VacancesScolairesCard
                   initialFR={data.holidayB}
                   initialZoneA={data.holidayA}
@@ -260,7 +287,13 @@ export function ApercuDecouverteV3({
                   calendar={data.holidayCalendar}
                   serifClass={serifClass}
                 />
+                {data.notableDates.length > 0 && (
+                  <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
+                )}
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                {data.airQuality && (
+                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
+                )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
                 )}

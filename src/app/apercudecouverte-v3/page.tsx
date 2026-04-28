@@ -5,7 +5,10 @@ import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/
 import { getNextHoliday, getHolidayCalendar, holidayToSerializable, type CalendarHoliday } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
+import { getAirQualityForCity } from "@/lib/air-quality"
 import { getCinemaTendances } from "@/lib/news-cinema-tendances"
+import { getUpcomingNotableDates, type NotableDateInstance } from "@/lib/notable-dates"
+import { getUpcomingDeadlines, type DeadlineInstance } from "@/lib/family-deadlines"
 import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces } from "@/components/home-v2/apercuTheme"
@@ -183,7 +186,8 @@ export default async function ApercuDecouverteV3Page(props: {
   // user lookup + weather fetch as a single dependent chain rather
   // than serially after the Promise.all completes.
   const userId = session.user.id
-  const weatherFlow = (async () => {
+  // Resolve the saved city once, then fan out to weather + air quality.
+  const cityFlow = (async () => {
     const u = await prisma.user.findUnique({
       where: { id: userId },
       select: { weatherCityName: true, weatherCityLat: true, weatherCityLon: true },
@@ -192,11 +196,13 @@ export default async function ApercuDecouverteV3Page(props: {
       u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null
         ? { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon }
         : DEFAULT_CITY
-    const snapshot = await getWeatherForCity(city)
-    // If the API failed, return a city-only stub so the widget can
-    // still render the city header + picker, even if temps are blank.
-    return snapshot ?? { city, current: null, daily: [] }
+    return city
   })()
+  const weatherFlow = cityFlow.then(async (city) => {
+    const snapshot = await getWeatherForCity(city)
+    return snapshot ?? { city, current: null, daily: [] }
+  })
+  const airQualityFlow = cityFlow.then(getAirQualityForCity)
 
   const [
     frenchRows,
@@ -209,7 +215,10 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayCalendar,
     anniversary,
     weather,
+    airQuality,
     cinemaTendances,
+    notableDates,
+    deadlines,
   ] = await Promise.all([
     // 12 most recent French briefs (1 hero + 3 top + ~8 older).
     prisma.newsStory.findMany({
@@ -267,7 +276,12 @@ export default async function ApercuDecouverteV3Page(props: {
         daily: [],
       }),
     ),
+    airQualityFlow.catch(safe<Awaited<typeof airQualityFlow>>("airQuality", null)),
     getCinemaTendances().catch(safe<Awaited<ReturnType<typeof getCinemaTendances>>>("cinemaTendances", [])),
+    // Curated lists — pure JS, fail-open shouldn't be needed but the
+    // safe wrapper keeps the failure-mode pattern consistent.
+    Promise.resolve(getUpcomingNotableDates()).catch(safe<NotableDateInstance[]>("notableDates", [])),
+    Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
   ])
 
   const [frenchHero, ...frenchRest] = frenchRows
@@ -316,6 +330,9 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayCalendar,
     anniversary,
     weather,
+    airQuality,
+    notableDates,
+    deadlines,
     // Newsletter signup is admin-only until Xavier validates the
     // digest format + cron automation. Flip NEWSLETTER_PUBLIC=true
     // on Vercel to open it to all authenticated users.
