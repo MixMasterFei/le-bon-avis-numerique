@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CalendarDays } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { Zone, SerializableHoliday } from "@/lib/school-holidays"
@@ -39,12 +39,15 @@ export function VacancesScolairesCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
-  // Lazy-init from localStorage so the user's last zone choice sticks.
-  const [zone, setZone] = useState<Zone>(() => {
-    if (typeof window === "undefined") return "B"
+  // Always start from "B" so server-rendered HTML matches the client's
+  // first render (no hydration mismatch). Restore the saved zone in a
+  // post-hydration effect — a one-frame visual flicker on cold loads
+  // is preferable to a React #418 hydration error.
+  const [zone, setZone] = useState<Zone>("B")
+  useEffect(() => {
     const stored = window.localStorage.getItem("totem.holidayZone")
-    return stored === "A" || stored === "B" || stored === "C" ? stored : "B"
-  })
+    if (stored === "A" || stored === "C") setZone(stored)
+  }, [])
 
   const data = zone === "A" ? initialZoneA : zone === "C" ? initialZoneC : initialFR
   if (!data) return null  // API failed and no cache — hide the widget

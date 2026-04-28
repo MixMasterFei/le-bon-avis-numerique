@@ -15,14 +15,14 @@ interface ApercuRoute {
   label: string
 }
 
+// Trimmed to routes that actually exist. /apercu, /apercufilmslist,
+// /apercuinscription, /apercuquiz were removed earlier — keeping
+// dead links here triggers RSC-prefetch 404s in the console.
 const ROUTES: ApercuRoute[] = [
-  { href: "/apercu", label: "Accueil" },
-  { href: "/apercufilmslist", label: "Liste films" },
   { href: "/apercufilm", label: "Fiche film" },
   { href: "/apercufoyer", label: "Foyer" },
   { href: "/apercudecouverte", label: "Découverte" },
-  { href: "/apercuinscription", label: "Inscription" },
-  { href: "/apercuquiz", label: "Quiz" },
+  { href: "/apercudecouverte-v3", label: "Découverte v3" },
 ]
 
 export function ApercuNav() {
