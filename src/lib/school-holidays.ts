@@ -46,6 +46,66 @@ export function holidayToSerializable(h: NextHoliday | null): SerializableHolida
   }
 }
 
+// ── Calendar (3-month view with all 3 zones) ───────────────────────
+
+// One holiday entry as the calendar widget needs it. "ALL" zone covers
+// holidays that apply to every academy at once (Toussaint, Noël, Été).
+export interface CalendarHoliday {
+  description: string  // "Vacances de printemps", etc.
+  startISO: string     // YYYY-MM-DD
+  endISO: string       // YYYY-MM-DD (inclusive)
+  zone: Zone | "ALL"
+}
+
+function parseRowZone(rowZones: string): Zone | "ALL" | null {
+  const lower = rowZones.toLowerCase()
+  if (lower.includes("toutes zones")) return "ALL"
+  if (lower.includes("zone a")) return "A"
+  if (lower.includes("zone b")) return "B"
+  if (lower.includes("zone c")) return "C"
+  return null
+}
+
+/**
+ * Returns all upcoming holidays grouped per (zone, period). The API
+ * returns one row per (academy × holiday) — ~12 academies per zone,
+ * so de-dup on (zone, description, startDate) before returning so
+ * the widget doesn't render the same colored bar 12 times.
+ *
+ * Caps at 90 days from today to keep the payload small (the calendar
+ * shows ~3 months).
+ */
+export async function getHolidayCalendar(): Promise<CalendarHoliday[]> {
+  const holidays = await fetchHolidays()
+  if (holidays.length === 0) return []
+
+  const now = new Date()
+  const cutoff = now.getTime() + 90 * 24 * 60 * 60 * 1000
+
+  const seen = new Set<string>()
+  const out: CalendarHoliday[] = []
+  for (const row of holidays) {
+    const zone = parseRowZone(row.zones)
+    if (!zone) continue
+    const start = new Date(row.start_date).getTime()
+    const end = new Date(row.end_date).getTime()
+    if (end < now.getTime()) continue   // already past
+    if (start > cutoff) continue        // beyond 90-day window
+    const startISO = new Date(start).toISOString().slice(0, 10)
+    const endISO = new Date(end).toISOString().slice(0, 10)
+    const key = `${zone}|${row.description}|${startISO}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ description: row.description, startISO, endISO, zone })
+  }
+  // Sort by start date, then by zone for stable rendering.
+  out.sort((a, b) => {
+    const d = a.startISO.localeCompare(b.startISO)
+    return d !== 0 ? d : a.zone.localeCompare(b.zone)
+  })
+  return out
+}
+
 // ── Cache ─────────────────────────────────────────────────────────
 
 interface CacheEntry {

@@ -14,6 +14,7 @@ import {
   VacancesScolairesCard,
   type SerializableHoliday,
 } from "./VacancesScolairesCard"
+import type { CalendarHoliday } from "@/lib/school-holidays"
 import { AnniversaireCard } from "./AnniversaireCard"
 import { MeteoFamilleCard } from "./MeteoFamilleCard"
 import { NewsletterCTA } from "./NewsletterCTA"
@@ -49,6 +50,9 @@ export interface DecouverteV3Data {
   holidayB: SerializableHoliday | null
   holidayA: SerializableHoliday | null
   holidayC: SerializableHoliday | null
+  // 90-day calendar of upcoming holidays for all 3 zones (drives the
+  // expandable calendar view inside VacancesScolairesCard).
+  holidayCalendar: CalendarHoliday[]
   // Sidebar: catalog anniversary ("Il y a X ans aujourd'hui sortait …").
   anniversary: CatalogAnniversary | null
   // Sidebar: per-user weather snapshot (current + 5-day) + activity
@@ -134,6 +138,7 @@ export function ApercuDecouverteV3({
                   initialFR={data.holidayB}
                   initialZoneA={data.holidayA}
                   initialZoneC={data.holidayC}
+                  calendar={data.holidayCalendar}
                   serifClass={serifClass}
                 />
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
@@ -252,6 +257,7 @@ export function ApercuDecouverteV3({
                   initialFR={data.holidayB}
                   initialZoneA={data.holidayA}
                   initialZoneC={data.holidayC}
+                  calendar={data.holidayCalendar}
                   serifClass={serifClass}
                 />
                 <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />

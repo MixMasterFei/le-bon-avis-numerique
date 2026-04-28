@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
-import { getNextHoliday, holidayToSerializable } from "@/lib/school-holidays"
+import { getNextHoliday, getHolidayCalendar, holidayToSerializable, type CalendarHoliday } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
 import { getCinemaTendances } from "@/lib/news-cinema-tendances"
@@ -206,6 +206,7 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayB,
     holidayA,
     holidayC,
+    holidayCalendar,
     anniversary,
     weather,
     cinemaTendances,
@@ -257,6 +258,7 @@ export default async function ApercuDecouverteV3Page(props: {
     getNextHoliday("B").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayB", null)),
     getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
     getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
+    getHolidayCalendar().catch(safe<CalendarHoliday[]>("holidayCalendar", [])),
     getCatalogAnniversary().catch(safe<Awaited<ReturnType<typeof getCatalogAnniversary>>>("anniversary", null)),
     weatherFlow.catch(
       safe<{ city: WeatherCity; current: null; daily: [] }>("weather", {
@@ -311,6 +313,7 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayB: holidayToSerializable(holidayB),
     holidayA: holidayToSerializable(holidayA),
     holidayC: holidayToSerializable(holidayC),
+    holidayCalendar,
     anniversary,
     weather,
     // Newsletter signup is admin-only until Xavier validates the
