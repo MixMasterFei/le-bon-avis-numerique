@@ -63,8 +63,13 @@ interface RawHoliday {
 let cache: CacheEntry | null = null
 const CACHE_MS = 24 * 60 * 60 * 1000  // 24h
 
+// The dataset has 2,300+ records back to 2009. Order ASC + limit=100
+// returned only 2009-2010 entries — the entire upcoming calendar was
+// past page 1 and got filtered out by `endDate > now`. Switching to
+// DESC + filtering server-side via `where=end_date>=now()` returns
+// only the upcoming holidays we actually need.
 const API_URL =
-  "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=100&order_by=start_date"
+  "https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-calendrier-scolaire/records?limit=100&order_by=start_date&where=end_date%3E%3Dnow()"
 
 async function fetchHolidays(): Promise<RawHoliday[]> {
   if (cache && Date.now() - cache.fetchedAt < CACHE_MS) {
