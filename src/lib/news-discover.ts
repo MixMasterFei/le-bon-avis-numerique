@@ -179,17 +179,17 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **EXIGÉ** : attribution nommée des affirmations fortes ("Selon Le Monde…", "Numerama rapporte…"), faits concrets que tu as réellement (titres, dates, lieux, chiffres, noms). Pour un événement, écrire 300 mots sobres est OK même avec un résumé bref ; pour un top 10 sans la liste, écarte.
 
-   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : "Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox.") :
+   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : "Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné."). Le brief produit doit faire **300-450 mots**, comme dans cet exemple :
 
-   > "Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2.
+   > "Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox la semaine du 25 avril. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2 : la Voie de l'eau, sorti fin 2022. Selon AlloCiné, le film conserve les acteurs principaux des volets précédents, dont Sam Worthington dans le rôle de Jake Sully et Zoe Saldana dans celui de Neytiri.
    >
-   > Selon AlloCiné, le film est distribué en France par Disney et conserve les acteurs principaux, dont Sam Worthington et Zoe Saldana. La date du 19 décembre s'inscrit dans la fenêtre des sorties familiales pour les vacances de Noël.
+   > La date du 19 décembre s'inscrit dans la fenêtre des sorties familiales pour les vacances de Noël, créneau exploité par chaque opus précédent de la saga. Variety rapporte que le scénario explore le peuple Ash, une nouvelle tribu Na'vi orientée sur le feu, après l'introduction du peuple Metkayina (peuple de l'eau) dans le précédent volet. Premiere indique que le tournage en motion-capture a duré près de quatre ans entre la Nouvelle-Zélande et les studios Manhattan Beach, en Californie.
    >
-   > Premiere et Variety rapportent que le film explore le peuple Ash, une nouvelle tribu Na'vi orientée sur le feu, après l'introduction du peuple Metkayina dans le précédent volet aquatique. La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, selon Variety.
+   > La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, selon Variety, comme le précédent volet (3h12). Disney a précisé à AlloCiné que le film sera distribué simultanément en IMAX, 3D HFR (high frame rate) et version standard, mais la stratégie tarifaire pour les séances premium n'a pas encore été détaillée pour la France.
    >
-   > Aucun classement officiel français n'a été publié à ce jour, mais les deux premiers volets étaient classés tous publics avec avertissement. Les distributeurs n'ont pas non plus précisé la stratégie de sortie en IMAX et 3D pour la France."
+   > Aucun classement officiel français n'a été publié à ce jour. Les deux premiers volets de la saga étaient classés tous publics avec avertissement, mention liée à des scènes de bataille. Le CNC précisera son avis dans les semaines précédant la sortie. Une bande-annonce mondiale est attendue lors de la convention CinemaCon de Las Vegas, selon Premiere."
 
-   Cet exemple est ACCEPTABLE même si le résumé fourni était court : il livre titre, date, distribution, contexte, et attribue chaque fait à sa source. C'est l'écart entre le résumé brut (limité) et le brief structuré que tu produis.
+   Cet exemple (≈ 320 mots) est ACCEPTABLE même si le résumé fourni était court : il livre titre, date, casting, lieu de tournage, durée approximative, format de distribution, état du classement officiel — chaque fait étant attribué nommément à sa source. C'est l'écart attendu entre le résumé brut (limité) et le brief structuré que tu produis. **Vise toujours 300-450 mots** ; un brief de 200 mots sera rejeté par le contrôle qualité aval.
 
 **2. Voix neutre, jamais éditoriale.**
    Tu rapportes ce que les sources disent ; tu n'as pas d'avis.
@@ -322,15 +322,27 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     .map((n) => Number(n))
     .filter((n) => Number.isInteger(n) && n >= 0 && n < itemCount)
 
-  if (!title || !summary || !body || !imageUrl) return null
-  if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING"].includes(category)) return null
-  if (sourceIndexes.length === 0) return null
+  if (!title || !summary || !body || !imageUrl) {
+    console.warn(`[news-discover] coerce: missing field title="${title.slice(0, 60)}" hasSum=${!!summary} hasBody=${!!body} hasImg=${!!imageUrl}`)
+    return null
+  }
+  if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING"].includes(category)) {
+    console.warn(`[news-discover] coerce: bad category="${category}" title="${title.slice(0, 60)}"`)
+    return null
+  }
+  if (sourceIndexes.length === 0) {
+    console.warn(`[news-discover] coerce: empty sourceIndexes title="${title.slice(0, 60)}"`)
+    return null
+  }
 
   // Body must clear ~200 words. Anything shorter means the model didn't
   // follow the depth spec — better to drop than ship a 2-paragraph
   // article that looks like a Twitter post.
   const wordCount = body.split(/\s+/).filter(Boolean).length
-  if (wordCount < 200) return null
+  if (wordCount < 200) {
+    console.warn(`[news-discover] coerce: body too short (${wordCount}w) title="${title.slice(0, 60)}"`)
+    return null
+  }
 
   // Derive region from cited sources. Story is INTL only if ALL its
   // sources are INTL (mixed clusters are caught by the prompt rule —
@@ -548,14 +560,26 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   let droppedInvalid = 0
   let droppedImageReused = 0
   for (const raw of rawStories) {
+    // Lightweight title for logging when coerce fails outright.
+    const rawTitle = (raw && typeof raw === "object" && typeof (raw as { title?: unknown }).title === "string")
+      ? (raw as { title: string }).title.slice(0, 80)
+      : "(no title)"
+
     const story = coerceStory(raw, unique.length, unique)
     if (!story) {
       droppedInvalid++
+      // Surface the specific shape failure so Vercel logs explain why
+      // the LLM's output was rejected (most often: body too short, or
+      // category outside the allowed enum).
+      console.warn(`[news-discover] dropped invalid shape: "${rawTitle}"`)
       continue
     }
     // Anti-hallucination: imageUrl must match one of the source images
     if (!allowedImages.has(story.imageUrl)) {
       droppedInvalid++
+      console.warn(
+        `[news-discover] dropped image-not-in-cluster: "${story.title.slice(0, 80)}" url=${story.imageUrl.slice(0, 100)}`,
+      )
       continue
     }
     // Cross-story image dedup: skip if this image is already in use by
@@ -576,6 +600,9 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     const minRelevance = isMultiSource ? 0.5 : 0.6
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
+      console.warn(
+        `[news-discover] dropped low-relevance: "${story.title.slice(0, 80)}" score=${story.relevanceScore} ${isMultiSource ? "multi" : "single"}`,
+      )
       continue
     }
     validStories.push(story)
