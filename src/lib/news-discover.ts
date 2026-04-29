@@ -4,6 +4,7 @@ import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
+import { loadCatalogIndex, linkifyStoryBody, type LinkableMedia } from "@/lib/news-linkify"
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
@@ -678,6 +679,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const now = new Date()
   let persisted = 0
   let updated = 0
+  // Pre-load the catalog index once for the whole batch — every story
+  // body gets scanned for catalog-title matches, replacing them with
+  // /media/<id> markdown links. Bring news traffic back to the catalog.
+  let catalogIndex: LinkableMedia[] = []
+  try {
+    catalogIndex = await loadCatalogIndex()
+  } catch (err) {
+    console.warn("[news-discover] catalog index load failed:", err)
+  }
   for (const s of liveStories) {
     // Build the sources array, then collapse multiple entries from the
     // same publisher down to one (first-seen) — keeps the UI's source
@@ -724,10 +734,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       }
     }
 
+    // Inject /media/<id> links for catalog titles mentioned in the
+    // body. Capture the first match as relatedMediaId for the bottom
+    // 'Voir la fiche complète sur Totem Avisé' CTA on the story page.
+    const { body: linkedBody, primaryMediaId } = linkifyStoryBody(s.body, catalogIndex)
+
     const data = {
       title: s.title,
       summary: s.summary,
-      body: s.body,
+      body: linkedBody,
       category: s.category,
       sources,
       imageUrl: s.imageUrl,
@@ -737,6 +752,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       region: s.region,
       audience: s.audience ?? "parent_only",
       research: s.research ? (s.research as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+      relatedMediaId: primaryMediaId,
     }
 
     if (matchedExistingId) {

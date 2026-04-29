@@ -853,6 +853,13 @@ model NewsStory {
   // Null when no study citation is detected.
   research       Json?
 
+  // Primary catalog subject — the media item the story is most clearly
+  // about (set at persist time by the linkifier when a title in the
+  // body matches a catalog row). Drives the "Voir la fiche complète
+  // sur Totem Avisé" CTA at the bottom of the story page. Null when
+  // no catalog match was found (most news, parenting articles, etc).
+  relatedMediaId String?         @map("related_media_id")
+
   comments NewsComment[]
 
   @@index([publishedAt])

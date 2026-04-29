@@ -3,7 +3,7 @@
 import { type ReactNode } from "react"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
-import { ArrowLeft, ExternalLink, FlaskConical, Clock } from "lucide-react"
+import { ArrowLeft, ExternalLink, FlaskConical, Clock, ChevronRight } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
@@ -33,6 +33,8 @@ export interface ApercuStoryDetail {
   sources: NewsSourceRef[]
   /** Optional "Ce que dit la recherche" sidebar block. */
   research?: StoryResearch | null
+  /** Optional primary catalog subject — drives the bottom CTA. */
+  relatedMedia?: { id: string; title: string; type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"; posterUrl: string | null } | null
 }
 
 function formatAbsolute(value: Date | string): string {
@@ -258,6 +260,48 @@ export function ApercuDecouverteStory({
               {story.body}
             </ReactMarkdown>
           </article>
+
+          {/* Primary catalog subject CTA — when the story is about a
+              specific film / show / game / book in our catalog, link
+              the reader through to the media detail page. Bring news
+              traffic back to the catalog. */}
+          {story.relatedMedia && (
+            <Link
+              href={`/media/${story.relatedMedia.id}`}
+              className="mt-10 flex items-center gap-4 rounded-2xl p-4 transition-opacity hover:opacity-80"
+              style={{ background: p.bg2, border: `1px solid ${p.line}` }}
+            >
+              {story.relatedMedia.posterUrl && (
+                <div
+                  className="relative shrink-0 rounded overflow-hidden"
+                  style={{ width: 56, height: 84, background: p.placeholder }}
+                >
+                  <SafeImage
+                    src={story.relatedMedia.posterUrl}
+                    alt={story.relatedMedia.title}
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div
+                  className="text-[10px] font-semibold uppercase tracking-wider mb-1"
+                  style={{ color: p.accent }}
+                >
+                  Voir la fiche complète sur Totem Avisé
+                </div>
+                <div
+                  className={`${serifClass} text-lg font-medium leading-snug`}
+                  style={{ color: p.ink }}
+                >
+                  {story.relatedMedia.title}
+                </div>
+              </div>
+              <ChevronRight className="w-5 h-5 shrink-0" style={{ color: p.ink2 }} />
+            </Link>
+          )}
 
           {commentsSlot}
 

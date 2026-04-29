@@ -5,6 +5,7 @@ import { slugify } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { moderateStory } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
+import { loadCatalogIndex, linkifyStoryBody } from "@/lib/news-linkify"
 import type { NewsCategory, Prisma } from "@prisma/client"
 
 /**
@@ -348,12 +349,24 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
   })
   const finalStatus = qualityVerdict.passes ? "PUBLISHED" : "PENDING_REVIEW"
 
+  // Linkify + capture primary catalog match (powers the bottom CTA).
+  let linkedBody = parsed.body
+  let primaryMediaId: string | null = null
+  try {
+    const catalogIndex = await loadCatalogIndex()
+    const result = linkifyStoryBody(parsed.body, catalogIndex)
+    linkedBody = result.body
+    primaryMediaId = result.primaryMediaId
+  } catch (err) {
+    console.warn("[news-dossier] linkify failed:", err)
+  }
+
   const created = await prisma.newsStory.create({
     data: {
       slug,
       title: parsed.title,
       summary: parsed.summary,
-      body: parsed.body,
+      body: linkedBody,
       category: parsed.category,
       sources: sources as unknown as Prisma.InputJsonValue,
       imageUrl: mirroredUrl,
@@ -363,6 +376,7 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
       region,
       storyType: "DOSSIER",
       audience: verdict.audience,
+      relatedMediaId: primaryMediaId,
     },
   })
 

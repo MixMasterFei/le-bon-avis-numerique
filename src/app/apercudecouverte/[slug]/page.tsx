@@ -91,6 +91,19 @@ export default async function ApercuDecouverteStoryPage(props: {
   const row = await prisma.newsStory.findUnique({ where: { slug } })
   if (!row) notFound()
 
+  // Pull the catalog row for the primary subject (set by the
+  // linkifier at synthesis time). Drives the "Voir la fiche complète
+  // sur Totem Avisé" CTA at the bottom of the body.
+  const relatedMediaIdRaw = (row as { relatedMediaId?: string | null }).relatedMediaId ?? null
+  const relatedMedia = relatedMediaIdRaw
+    ? await prisma.mediaItem
+        .findUnique({
+          where: { id: relatedMediaIdRaw },
+          select: { id: true, title: true, type: true, posterUrl: true },
+        })
+        .catch(() => null)
+    : null
+
   const story: ApercuStoryDetail = {
     id: row.id,
     slug: row.slug,
@@ -102,6 +115,7 @@ export default async function ApercuDecouverteStoryPage(props: {
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
     research: toResearch((row as { research?: Prisma.JsonValue | null }).research ?? null),
+    relatedMedia,
   }
 
   const searchParams = await props.searchParams
