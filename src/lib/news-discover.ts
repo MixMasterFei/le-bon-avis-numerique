@@ -156,7 +156,7 @@ function buildPrompt(
 
   return `Tu es l'éditeur de Totem Avisé, un guide d'actualité pour les foyers français — parents, grands-parents, enseignants, mais aussi tous les adultes qui suivent les sujets famille / éducation / numérique sans forcément avoir d'enfants. Ton lecteur ouvre la page pour S'INFORMER vite — il veut le SUJET, pas un compte-rendu de quel article a publié quoi.
 
-**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens entre 5 et 10 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu as appliqué les filtres trop strictement. Les filtres "à écarter" servent à exclure les listes-sans-éléments et les méta-paraphrases ; ils ne servent PAS à exclure les annonces, sorties, études et décisions normales, qui constituent la majorité des articles attendus. Un titre + une date + une source nommée suffisent pour rédiger un brief de 300 mots solide.
+**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 3 à 8 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 8 histoires faibles est pire que 3 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
 
 Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
 
@@ -168,6 +168,8 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
    **(a) Articles de type ÉVÉNEMENT** — sortie, annonce, étude, décision, polémique, fait nouveau. Tu peux écrire dès que le résumé fourni te donne **au moins** : qui (la personne / institution / œuvre), quoi (l'événement nommé), quand (la date ou la fenêtre temporelle). Tu n'as pas besoin de détails exhaustifs — tu rapportes ce que les sources disent, en attribuant. Une sortie de film avec titre + date suffit pour 300 mots.
 
    **(b) Articles de type LISTE / GUIDE / SÉLECTION / TOP-N / CLASSEMENT** — ici la valeur EST la liste. Si le résumé fourni ne nomme PAS les éléments concrets de la liste (les jeux du top 10, les séries de la sélection, les outils du guide), ÉCARTE. Tu ne peux pas relayer une liste dont tu n'as pas les éléments.
+
+   **EXEMPLE NÉGATIF — à NE PAS retenir** : un article intitulé "4 séries Netflix à ne pas manquer en avril selon AlloCiné" dont le résumé fourni dit simplement "AlloCiné liste quatre séries Netflix à rattraper avant la fin du mois d'avril." → **ÉCARTE**. Le résumé ne nomme aucune série. Écrire "AlloCiné a sélectionné quatre séries Netflix pour ce mois d'avril, en privilégiant des productions récentes…" serait de la méta-paraphrase exactement comme l'exemple Numerama interdit plus bas. Tu ne peux pas inventer les noms des séries pour combler le manque.
 
    **(c) Articles d'analyse / d'étude chiffrée** — si l'angle est "X% de…", "tendance à…", il te faut au moins UN chiffre ou UNE conclusion concrète dans le résumé. Sinon écarte.
 
@@ -233,6 +235,7 @@ Pour les histoires INTL :
 - Sport, faits divers sans lien avec le périmètre famille / éducation / culture grand public.
 - Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand (très rare — la plupart des flux RSS livrent ces minima).
 - Articles sans aucune image cluster respectant la règle famille (cf. ci-dessous).
+- **Sorties / annonces de produits clairement adultes (16+/18+) sans angle parental** : un nouveau RPG dark fantasy mature, un thriller violent pour adultes, un livre sombre pour public averti — l'annonce promotionnelle seule ne convient pas. EXCEPTION : si l'article aborde l'angle parental ("attention parents : ce jeu n'est pas adapté aux enfants malgré son aspect", "le PEGI 18 surprend les familles", "comment expliquer aux ados qu'ils ne peuvent pas y jouer") alors c'est légitime. La promotion d'une sortie 16+/18+ n'a pas sa place ici ; la mise en garde parentale concrète, oui.
 
 ## RÈGLE IMAGE (famille avec enfants)
 
