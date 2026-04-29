@@ -60,6 +60,11 @@ export function VacancesScolairesCard({
   const [expanded, setExpanded] = useState(false)
   useEffect(() => {
     const stored = window.localStorage.getItem("totem.holidayZone")
+    // setState-in-effect is required here: we deliberately render
+    // "B" on first paint (matching SSR) and only swap to the saved
+    // zone post-hydration. Any non-effect approach would re-introduce
+    // the React #418 hydration mismatch this hook was added to fix.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored === "A" || stored === "C") setZone(stored)
   }, [])
 
@@ -106,7 +111,7 @@ export function VacancesScolairesCard({
                   background: active ? p.ink : "transparent",
                   color: active ? p.bg : p.ink2,
                 }}
-                aria-selected={active}
+                aria-pressed={active}
                 aria-label={`Zone ${z}`}
               >
                 {z}

@@ -108,13 +108,6 @@ export function WeatherCityPicker({
     )
   }
 
-  const cityLabel = (c: GeocodedCity): string => {
-    const parts = [c.name]
-    if (c.admin1 && c.admin1 !== c.name) parts.push(c.admin1)
-    if (c.country) parts.push(c.country)
-    return parts.join(", ")
-  }
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"

@@ -245,6 +245,7 @@ export default async function ApercuDecouverteV3Page(props: {
       where: {
         status: "PUBLISHED",
         storyType: "DOSSIER",
+        // eslint-disable-next-line react-hooks/purity -- server component, fresh per-request render is correct
         publishedAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { publishedAt: "desc" },

@@ -13,12 +13,14 @@ import type { StoryResearch } from "./ApercuDecouverteStory"
  */
 export function RechercheHighlightCard({
   research,
-  storyTitle,
   storySlug,
   serifClass,
 }: {
   research: StoryResearch
-  storyTitle: string
+  // storyTitle prop kept on the type at call sites but not displayed
+  // — the source attribution inside `research` already carries the
+  // editorial weight. Drop the prop fully if no caller cares.
+  storyTitle?: string
   storySlug: string
   serifClass: string
 }) {
