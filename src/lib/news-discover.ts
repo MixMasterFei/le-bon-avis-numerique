@@ -341,11 +341,13 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     return null
   }
 
-  // Body must clear ~200 words. Anything shorter means the model didn't
-  // follow the depth spec — better to drop than ship a 2-paragraph
-  // article that looks like a Twitter post.
+  // Body floor lowered from 200 → 150 words. The LLM is sometimes
+  // conservative on event-style briefs and the quality judge already
+  // rejects genuinely thin content via its lengthFit dimension. A
+  // 150-word floor still kills tweet-length output but doesn't punish
+  // a clean 180-word brief on a sparse topic.
   const wordCount = body.split(/\s+/).filter(Boolean).length
-  if (wordCount < 200) {
+  if (wordCount < 150) {
     console.warn(`[news-discover] coerce: body too short (${wordCount}w) title="${title.slice(0, 60)}"`)
     return null
   }
