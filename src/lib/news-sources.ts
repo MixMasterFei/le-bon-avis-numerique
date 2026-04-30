@@ -74,14 +74,16 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Pew Research — Internet & Tech",   url: "https://www.pewresearch.org/internet/feed/",                              category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
   // Germany
   { name: "Spiegel Familie",                  url: "https://www.spiegel.de/familie/index.rss",                                category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "DE" },
-  { name: "Süddeutsche — Familie",            url: "https://rss.sueddeutsche.de/rss/Familie",                                 category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "DE" },
+  // Süddeutsche has no family-specific RSS path — Topthemen is the
+  // stable feed and the synthesis filter narrows to family content.
+  { name: "Süddeutsche — Topthemen",          url: "https://rss.sueddeutsche.de/rss/Topthemen",                               category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "DE" },
   // Italy
-  { name: "Repubblica Scuola",                url: "https://www.repubblica.it/rss/scuola/rss2.0.xml",                         category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "IT" },
+  // Repubblica's school-specific RSS was retired; using homepage feed
+  // (synthesis filter culls non-family items).
+  { name: "Repubblica",                       url: "https://www.repubblica.it/rss/homepage/rss2.0.xml",                       category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "IT" },
   { name: "Corriere — Scuola",                url: "https://xml2.corriereobjects.it/rss/scuola.xml",                          category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "IT" },
   // Spain
-  { name: "El País — Mamás & Papás",          url: "https://elpais.com/rss/elpais/mamas_papas.xml",                           category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "ES" },
-  // Belgium (FR-language source for Belgian context — language match, separate country)
-  { name: "Le Soir — Famille",                url: "https://www.lesoir.be/rss/feed?section=societe%2Ffamille",                category: "PARENTHOOD", trustTier: 2, region: "INTL", country: "BE" },
+  { name: "El País — Mamás & Papás",          url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/mamas-papas/portada", category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "ES" },
   // Netherlands
   { name: "NL Times Family",                  url: "https://nltimes.nl/rss.xml",                                              category: "PARENTHOOD", trustTier: 2, region: "INTL", country: "NL" },
 
@@ -89,8 +91,8 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Variety Family",                   url: "https://variety.com/v/film/feed/",                                        category: "FILM_TV",    trustTier: 2, region: "INTL", country: "US" },
   { name: "Hollywood Reporter Animation",     url: "https://www.hollywoodreporter.com/c/movies/animation/feed/",              category: "FILM_TV",    trustTier: 2, region: "INTL", country: "US" },
   { name: "BBC Culture",                      url: "https://www.bbc.com/culture/feed.rss",                                    category: "FILM_TV",    trustTier: 1, region: "INTL", country: "UK" },
-  // EU film press
-  { name: "Cineuropa",                        url: "https://www.cineuropa.org/rss/?lang=en",                                  category: "FILM_TV",    trustTier: 2, region: "INTL", country: "EU" },
+  // (Cineuropa RSS returned 403 due to User-Agent block; removed
+  // until we have a feed they don't block.)
 
   // GAMES international
   { name: "Polygon",                          url: "https://www.polygon.com/rss/index.xml",                                   category: "GAMES",      trustTier: 1, region: "INTL", country: "US" },
