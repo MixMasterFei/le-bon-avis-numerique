@@ -4,7 +4,14 @@ import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
-import { loadCatalogIndex, linkifyStoryBody, type LinkableMedia } from "@/lib/news-linkify"
+import { loadCatalogIndex, linkifyStoryBody, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
+
+// Stories whose primary catalog match has a recommended age at or
+// above this threshold get demoted to PENDING_REVIEW instead of
+// auto-publishing on the family-news page. Catches Kill Bill,
+// Mortal Kombat, Saw, and similar violent/mature franchises that
+// slip past the synthesis prompt's "adult content" rule.
+const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem } from "@/lib/news-image"
@@ -236,7 +243,7 @@ Pour les histoires INTL :
 - Sport, faits divers sans lien avec le périmètre famille / éducation / culture grand public.
 - Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand (très rare — la plupart des flux RSS livrent ces minima).
 - Articles sans aucune image cluster respectant la règle famille (cf. ci-dessous).
-- **Sorties / annonces de produits clairement adultes (16+/18+) sans angle parental** : un nouveau RPG dark fantasy mature, un thriller violent pour adultes, un livre sombre pour public averti — l'annonce promotionnelle seule ne convient pas. EXCEPTION : si l'article aborde l'angle parental ("attention parents : ce jeu n'est pas adapté aux enfants malgré son aspect", "le PEGI 18 surprend les familles", "comment expliquer aux ados qu'ils ne peuvent pas y jouer") alors c'est légitime. La promotion d'une sortie 16+/18+ n'a pas sa place ici ; la mise en garde parentale concrète, oui.
+- **Sorties / annonces de produits clairement adultes (16+/18+) sans angle parental** : films violents (Kill Bill, John Wick, Saw, Halloween, Hostel), franchises de combat sanglant (Mortal Kombat), RPG dark fantasy mature (Dawnwalker, Diablo, Elden Ring), thrillers d'horreur, livres sombres pour public averti, jeux PEGI 18 — l'annonce promotionnelle seule **ne convient pas**, même si elle est ÉVÉNEMENT (sortie datée, casting confirmé). EXCEPTION : si l'article aborde explicitement l'angle parental (« attention parents : ce jeu n'est pas adapté aux enfants malgré son aspect », « le PEGI 18 surprend les familles », « comment expliquer aux ados qu'ils ne peuvent pas y jouer ») alors c'est légitime. **Test rapide : si le titre du contenu (Kill Bill, Mortal Kombat, etc.) suggère violence / horreur / contenu mature à un parent français, écarte sauf angle parental explicite.**
 
 ## RÈGLE IMAGE (famille avec enfants)
 
@@ -759,6 +766,22 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // 'Voir la fiche complète sur Totem Avisé' CTA on the story page.
     const { body: linkedBody, primaryMediaId } = linkifyStoryBody(s.body, catalogIndex)
 
+    // Adult-content guard: if the primary catalog match is age 14+,
+    // the story is about a film/show/game whose audience isn't this
+    // page's. Demote to PENDING_REVIEW so a human can decide whether
+    // to publish (parental-warning angle) or archive (pure
+    // promotion). Catches Kill Bill, Mortal Kombat, Saw, etc.
+    const primary = primaryMediaId ? findInCatalog(catalogIndex, primaryMediaId) : undefined
+    const isAdultMatch =
+      primary?.expertAgeRec !== null &&
+      primary?.expertAgeRec !== undefined &&
+      primary.expertAgeRec >= ADULT_CONTENT_AGE_FLOOR
+    if (isAdultMatch) {
+      console.warn(
+        `[news-discover] demoted to PENDING_REVIEW (adult catalog match age=${primary?.expertAgeRec}): "${s.title.slice(0, 80)}"`,
+      )
+    }
+
     const data = {
       title: s.title,
       summary: s.summary,
@@ -768,7 +791,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       imageUrl: s.imageUrl,
       publishedAt,
       relevanceScore: s.relevanceScore,
-      status: "PUBLISHED" as const,
+      status: isAdultMatch ? ("PENDING_REVIEW" as const) : ("PUBLISHED" as const),
       region: s.region,
       audience: s.audience ?? "parent_only",
       research: s.research ? (s.research as unknown as Prisma.InputJsonValue) : Prisma.DbNull,

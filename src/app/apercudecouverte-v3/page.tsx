@@ -101,10 +101,17 @@ function rowToCard(row: StoryRow): ApercuNewsCardData {
  */
 function extractPhrase(rows: StoryRow[]): { quote: string; storyTitle: string; storySlug: string } | null {
   for (const row of rows) {
-    // Strip markdown headings + lists, then split on French sentence punct.
+    // Strip markdown: headings, lists, AND inline links — bodies are
+    // now linkified (catalog titles get [text](/media/<id>) syntax),
+    // and the phrase widget renders plain text, so the brackets and
+    // url would otherwise leak through visibly.
     const cleaned = row.body
       .replace(/^#+ .*$/gm, "")
       .replace(/^\s*[-*]\s+/gm, "")
+      // Inline link: [text](url) → text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Bold/italic markers (just in case the LLM emits any)
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\s+/g, " ")
       .trim()
     const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-Z«ÀÂÉÈÊËÎÏÔÙÛÜÇ])/)

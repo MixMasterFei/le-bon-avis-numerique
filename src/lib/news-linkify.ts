@@ -15,6 +15,10 @@ import { prisma } from "@/lib/prisma"
 export interface LinkableMedia {
   id: string
   title: string
+  // Used downstream to gate adult-rated catalog matches into
+  // PENDING_REVIEW instead of auto-publishing them on the family
+  // news page (Kill Bill: The Whole Bloody Affair, Saw, etc).
+  expertAgeRec: number | null
 }
 
 /**
@@ -35,13 +39,22 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
       { tmdbVoteCount: { sort: "desc", nulls: "last" } },
     ],
     take: 5000,
-    select: { id: true, title: true },
+    select: { id: true, title: true, expertAgeRec: true },
   })
   return rows
     .filter((r) => r.title.length >= 4)
     // Drop titles that match overly-generic English/French stop-word
     // patterns ("It", "Up", "And", "On", "Le", "Lui", "Toi").
     .filter((r) => !/^[A-Z][a-z]{0,2}$/.test(r.title))
+}
+
+/**
+ * Convenience: lookup by id in a catalog index. Used after linkify
+ * to inspect the primary subject's age recommendation and decide
+ * whether to demote the story to PENDING_REVIEW.
+ */
+export function findInCatalog(catalog: LinkableMedia[], id: string): LinkableMedia | undefined {
+  return catalog.find((c) => c.id === id)
 }
 
 function escapeRegex(s: string): string {
