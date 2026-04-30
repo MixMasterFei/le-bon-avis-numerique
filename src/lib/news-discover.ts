@@ -83,7 +83,15 @@ interface SynthesizedStory {
 type RssParser = Parser<Record<string, unknown>, RssLikeItem & Record<string, unknown>>
 
 const MAX_ITEMS_PER_SOURCE = 5
-const MAX_TOTAL_ITEMS = 60
+// Total items we forward to the synthesis LLM. Split into a per-
+// region budget to guarantee INTL representation — without this,
+// the FR firehose (lemonde, la-croix, etc. publish hourly) crowds
+// out the slower-cadence INTL feeds (NYT, BBC, Spiegel, El País
+// often publish 2-3 family items/day) when we just take top-60-by-
+// recency. 50 FR + 25 INTL keeps the prompt under timeout while
+// reliably surfacing 'Vu d'ailleurs' material.
+const FR_BUDGET = 50
+const INTL_BUDGET = 25
 
 function makeParser(): RssParser {
   return new Parser({
@@ -461,16 +469,20 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     })
   })
 
-  // 3. Dedup by URL, then cap to MAX_TOTAL_ITEMS by recency (keeps Claude under timeout)
+  // 3. Dedup by URL, then take a per-region budget by recency.
+  //    Without the FR/INTL split, the high-cadence FR feeds crowd
+  //    INTL out of the synthesis pool entirely.
   const seen = new Set<string>()
-  const unique = hydrated
+  const sortedRecent = hydrated
     .filter((h) => {
       if (seen.has(h.link)) return false
       seen.add(h.link)
       return true
     })
     .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
-    .slice(0, MAX_TOTAL_ITEMS)
+  const fr = sortedRecent.filter((h) => h.sourceRegion !== "INTL").slice(0, FR_BUDGET)
+  const intl = sortedRecent.filter((h) => h.sourceRegion === "INTL").slice(0, INTL_BUDGET)
+  const unique = [...fr, ...intl]
   const resolveImagesMs = Date.now() - imageStart
 
   if (unique.length === 0) {
