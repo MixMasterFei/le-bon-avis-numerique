@@ -43,7 +43,7 @@ export function ApercuNewsHeroCard({
           </span>
         </div>
         <h2
-          className={`${serifClass} text-3xl md:text-4xl leading-[1.05] font-medium`}
+          className={`${serifClass} text-2xl md:text-3xl leading-[1.1] font-medium`}
           style={{ color: p.ink, letterSpacing: "-0.02em" }}
         >
           {story.title}

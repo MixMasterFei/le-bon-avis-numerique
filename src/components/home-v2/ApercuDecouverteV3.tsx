@@ -115,7 +115,7 @@ export function ApercuDecouverteV3({
               Découverte · Aperçu v3
             </div>
             <h1
-              className={`${serifClass} text-3xl md:text-5xl font-medium leading-[1.05] max-w-2xl`}
+              className={`${serifClass} text-2xl md:text-4xl font-medium leading-[1.05] max-w-2xl`}
               style={{ color: p.ink, letterSpacing: "-0.02em" }}
             >
               L&apos;actualité qui compte{" "}
