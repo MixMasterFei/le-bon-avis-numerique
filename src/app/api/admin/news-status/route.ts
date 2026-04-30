@@ -20,7 +20,7 @@ export async function GET() {
 
   try {
     const grouped = await prisma.newsStory.groupBy({
-      by: ["status", "storyType", "region"],
+      by: ["status", "storyType", "region", "category"],
       _count: { _all: true },
     })
 
@@ -64,6 +64,7 @@ export async function GET() {
         status: g.status,
         storyType: g.storyType,
         region: g.region,
+        category: g.category,
         count: g._count._all,
       })),
       recentPublished,
