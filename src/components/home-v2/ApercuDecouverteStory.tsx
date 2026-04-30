@@ -21,6 +21,16 @@ export interface StoryResearch {
   sourceUrl?: string
 }
 
+export interface RelatedMediaCard {
+  id: string
+  title: string
+  type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
+  posterUrl: string | null
+  expertAgeRec: number | null
+  genres: string[]
+  releaseYear: number | null
+}
+
 export interface ApercuStoryDetail {
   id: string
   slug: string
@@ -33,8 +43,9 @@ export interface ApercuStoryDetail {
   sources: NewsSourceRef[]
   /** Optional "Ce que dit la recherche" sidebar block. */
   research?: StoryResearch | null
-  /** Optional primary catalog subject — drives the bottom CTA. */
-  relatedMedia?: { id: string; title: string; type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"; posterUrl: string | null } | null
+  /** Up to 3 catalog subjects mentioned in the body. Renders as
+   *  mini-cards at the bottom — replaces inline links + single CTA. */
+  relatedMediaList?: RelatedMediaCard[]
 }
 
 function formatAbsolute(value: Date | string): string {
@@ -261,46 +272,69 @@ export function ApercuDecouverteStory({
             </ReactMarkdown>
           </article>
 
-          {/* Primary catalog subject CTA — when the story is about a
-              specific film / show / game / book in our catalog, link
-              the reader through to the media detail page. Bring news
-              traffic back to the catalog. */}
-          {story.relatedMedia && (
-            <Link
-              href={`/media/${story.relatedMedia.id}`}
-              className="mt-10 flex items-center gap-4 rounded-2xl p-4 transition-opacity hover:opacity-80"
-              style={{ background: p.bg2, border: `1px solid ${p.line}` }}
-            >
-              {story.relatedMedia.posterUrl && (
-                <div
-                  className="relative shrink-0 rounded overflow-hidden"
-                  style={{ width: 56, height: 84, background: p.placeholder }}
-                >
-                  <SafeImage
-                    src={story.relatedMedia.posterUrl}
-                    alt={story.relatedMedia.title}
-                    fill
-                    sizes="56px"
-                    className="object-cover"
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div
-                  className="text-[10px] font-semibold uppercase tracking-wider mb-1"
-                  style={{ color: p.accent }}
-                >
-                  Voir la fiche complète sur Totem Avisé
-                </div>
-                <div
-                  className={`${serifClass} text-lg font-medium leading-snug`}
-                  style={{ color: p.ink }}
-                >
-                  {story.relatedMedia.title}
-                </div>
+          {/* Mini fiches Totem Avisé — catalog subjects mentioned in
+              the body, rendered as small cards instead of scattering
+              inline links across the prose. Up to 3, in order of
+              first mention. Each links to /media/<id>. */}
+          {story.relatedMediaList && story.relatedMediaList.length > 0 && (
+            <div className="mt-10">
+              <div
+                className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                style={{ color: p.accent }}
+              >
+                {story.relatedMediaList.length === 1
+                  ? "À découvrir sur Totem Avisé"
+                  : "À découvrir sur Totem Avisé"}
               </div>
-              <ChevronRight className="w-5 h-5 shrink-0" style={{ color: p.ink2 }} />
-            </Link>
+              <div className="flex flex-col gap-3">
+                {story.relatedMediaList.map((m) => (
+                  <Link
+                    key={m.id}
+                    href={`/media/${m.id}`}
+                    className="flex gap-4 rounded-2xl p-4 transition-opacity hover:opacity-80"
+                    style={{ background: p.bg2, border: `1px solid ${p.line}` }}
+                  >
+                    {m.posterUrl && (
+                      <div
+                        className="relative shrink-0 rounded overflow-hidden"
+                        style={{ width: 64, height: 96, background: p.placeholder }}
+                      >
+                        <SafeImage
+                          src={m.posterUrl}
+                          alt={m.title}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                      <div
+                        className={`${serifClass} text-lg font-medium leading-snug`}
+                        style={{ color: p.ink }}
+                      >
+                        {m.title}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap text-[11px]" style={{ color: p.ink2 }}>
+                        {m.releaseYear && <span>{m.releaseYear}</span>}
+                        {m.expertAgeRec !== null && (
+                          <span
+                            className="inline-block px-1.5 py-0.5 rounded font-bold text-[10px]"
+                            style={{ background: p.accent, color: "#FFFFFF" }}
+                          >
+                            {m.expertAgeRec}+
+                          </span>
+                        )}
+                        {m.genres.length > 0 && (
+                          <span>{m.genres.slice(0, 2).join(" · ")}</span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 shrink-0 self-center" style={{ color: p.ink2 }} />
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
 
           {commentsSlot}

@@ -859,6 +859,11 @@ model NewsStory {
   // sur Totem Avisé" CTA at the bottom of the story page. Null when
   // no catalog match was found (most news, parenting articles, etc).
   relatedMediaId String?         @map("related_media_id")
+  // Full ordered list of catalog matches (first match = primary).
+  // Replaces the inline-linking approach: bodies stay clean, the
+  // related items render as mini-cards at the bottom of the page.
+  // Up to 3 are displayed; we store more in case rendering rules change.
+  relatedMediaIds String[]       @default([]) @map("related_media_ids")
 
   comments NewsComment[]
 

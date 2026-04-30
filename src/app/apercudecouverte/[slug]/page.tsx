@@ -91,18 +91,47 @@ export default async function ApercuDecouverteStoryPage(props: {
   const row = await prisma.newsStory.findUnique({ where: { slug } })
   if (!row) notFound()
 
-  // Pull the catalog row for the primary subject (set by the
-  // linkifier at synthesis time). Drives the "Voir la fiche complète
-  // sur Totem Avisé" CTA at the bottom of the body.
-  const relatedMediaIdRaw = (row as { relatedMediaId?: string | null }).relatedMediaId ?? null
-  const relatedMedia = relatedMediaIdRaw
-    ? await prisma.mediaItem
-        .findUnique({
-          where: { id: relatedMediaIdRaw },
-          select: { id: true, title: true, type: true, posterUrl: true },
-        })
-        .catch(() => null)
-    : null
+  // Pull catalog rows for all matched subjects (up to 3, in order
+  // of first mention). Renders as mini-cards at the bottom of the
+  // body — replaces the prior single-CTA + inline-links approach
+  // (Xavier preferred clean prose with explicit cards over scattered
+  // links).
+  const idsRaw = (row as { relatedMediaIds?: string[] | null }).relatedMediaIds ?? []
+  const fallbackId = (row as { relatedMediaId?: string | null }).relatedMediaId
+  const relatedIds: string[] = idsRaw.length > 0 ? idsRaw : fallbackId ? [fallbackId] : []
+  let relatedMediaList: NonNullable<ApercuStoryDetail["relatedMediaList"]> = []
+  if (relatedIds.length > 0) {
+    try {
+      const rows = await prisma.mediaItem.findMany({
+        where: { id: { in: relatedIds } },
+        select: {
+          id: true,
+          title: true,
+          type: true,
+          posterUrl: true,
+          expertAgeRec: true,
+          genres: true,
+          releaseDate: true,
+        },
+      })
+      // Preserve the matched-order rather than DB row order.
+      const byId = new Map(rows.map((r) => [r.id, r]))
+      relatedMediaList = relatedIds
+        .map((id) => byId.get(id))
+        .filter((r): r is NonNullable<typeof r> => !!r)
+        .map((r) => ({
+          id: r.id,
+          title: r.title,
+          type: r.type,
+          posterUrl: r.posterUrl,
+          expertAgeRec: r.expertAgeRec,
+          genres: r.genres ?? [],
+          releaseYear: r.releaseDate ? new Date(r.releaseDate).getFullYear() : null,
+        }))
+    } catch {
+      // Catalog read blip — render the body without related cards.
+    }
+  }
 
   const story: ApercuStoryDetail = {
     id: row.id,
@@ -115,7 +144,7 @@ export default async function ApercuDecouverteStoryPage(props: {
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
     research: toResearch((row as { research?: Prisma.JsonValue | null }).research ?? null),
-    relatedMedia,
+    relatedMediaList,
   }
 
   const searchParams = await props.searchParams

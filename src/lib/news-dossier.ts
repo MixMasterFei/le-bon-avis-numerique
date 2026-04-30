@@ -5,7 +5,7 @@ import { slugify } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { moderateStory } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
-import { loadCatalogIndex, linkifyStoryBody } from "@/lib/news-linkify"
+import { loadCatalogIndex, extractCatalogMatches } from "@/lib/news-linkify"
 import type { NewsCategory, Prisma } from "@prisma/client"
 
 /**
@@ -349,24 +349,23 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
   })
   const finalStatus = qualityVerdict.passes ? "PUBLISHED" : "PENDING_REVIEW"
 
-  // Linkify + capture primary catalog match (powers the bottom CTA).
-  let linkedBody = parsed.body
-  let primaryMediaId: string | null = null
+  // Find catalog matches in the body. Body stays unchanged — related
+  // items render as mini-cards at the bottom of the story page.
+  let matchedIds: string[] = []
   try {
     const catalogIndex = await loadCatalogIndex()
-    const result = linkifyStoryBody(parsed.body, catalogIndex)
-    linkedBody = result.body
-    primaryMediaId = result.primaryMediaId
+    matchedIds = extractCatalogMatches(parsed.body, catalogIndex, 3)
   } catch (err) {
-    console.warn("[news-dossier] linkify failed:", err)
+    console.warn("[news-dossier] catalog match failed:", err)
   }
+  const primaryMediaId = matchedIds[0] ?? null
 
   const created = await prisma.newsStory.create({
     data: {
       slug,
       title: parsed.title,
       summary: parsed.summary,
-      body: linkedBody,
+      body: parsed.body,
       category: parsed.category,
       sources: sources as unknown as Prisma.InputJsonValue,
       imageUrl: mirroredUrl,
@@ -377,6 +376,7 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
       storyType: "DOSSIER",
       audience: verdict.audience,
       relatedMediaId: primaryMediaId,
+      relatedMediaIds: matchedIds,
     },
   })
 

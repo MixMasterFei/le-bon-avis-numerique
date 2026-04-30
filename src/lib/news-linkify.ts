@@ -90,61 +90,53 @@ function escapeRegex(s: string): string {
 }
 
 /**
- * Replace the first occurrence of each catalog title in the body
- * with a markdown link to /media/<id>. Returns the rewritten body
- * plus the id of the **first** catalog title that matched (used to
- * surface the bottom-of-story CTA).
+ * Scan the body for catalog title mentions and return the matched
+ * catalog ids, in order of first occurrence, deduped. Body is NOT
+ * modified — Xavier's editorial preference is to keep prose clean
+ * and surface related catalog items as mini-cards at the bottom of
+ * the story page rather than peppering inline links.
  *
  * Sort titles by length DESC so longer titles win over shorter ones
  * that contain them ("Final Fantasy VII Rebirth" before "Final
- * Fantasy"). Matching is case-insensitive but the original body
- * casing is preserved.
+ * Fantasy"). Returns up to `limit` ids (caller renders 3 cards).
  */
-export function linkifyStoryBody(
+export function extractCatalogMatches(
   body: string,
   catalog: LinkableMedia[],
-): { body: string; primaryMediaId: string | null } {
-  if (!body || catalog.length === 0) return { body, primaryMediaId: null }
+  limit = 3,
+): string[] {
+  if (!body || catalog.length === 0) return []
 
-  // Sort longest titles first so they take priority during matching.
+  // Sort longest titles first so the long-title-takes-priority rule
+  // works: ("Final Fantasy VII Rebirth" recorded before "Final
+  // Fantasy" so the same body span isn't double-counted).
   const sorted = [...catalog].sort((a, b) => b.title.length - a.title.length)
 
-  let result = body
-  let primaryMediaId: string | null = null
-  // Track positions already replaced so we don't link inside an
-  // already-linked range (avoid `[[X](/...)](/...)` nesting).
-  const replacedRanges: Array<{ start: number; end: number }> = []
+  const matchedIds: string[] = []
+  const claimedRanges: Array<{ start: number; end: number }> = []
 
   for (const item of sorted) {
-    // Word boundary ensures we match "Avatar" but not "Avatar3D" or
-    // "Avatara". Case-insensitive flag ('i') lets us catch both
-    // "Avatar 3" and "AVATAR 3" while preserving the original case
-    // in the substitution.
+    if (matchedIds.length >= limit) break
+    if (matchedIds.includes(item.id)) continue
     const re = new RegExp(`\\b${escapeRegex(item.title)}\\b`, "i")
-    const match = result.match(re)
+    const match = body.match(re)
     if (!match || match.index === undefined) continue
-
-    // Skip if this match overlaps an already-replaced range (which
-    // would mean a longer title containing this one was already
-    // linked here).
     const start = match.index
     const end = start + match[0].length
-    if (replacedRanges.some((r) => start < r.end && end > r.start)) continue
-
-    // Skip matches inside an existing markdown link `[…](…)` to
-    // avoid nesting (the dossier prompt may have produced its own
-    // links).
-    const linkPrefixIdx = result.lastIndexOf("[", start)
-    const linkOpenAfter = linkPrefixIdx >= 0 ? result.indexOf("]", linkPrefixIdx) : -1
-    if (linkPrefixIdx >= 0 && linkOpenAfter > start) continue
-
-    const replacement = `[${match[0]}](/media/${item.id})`
-    result = result.slice(0, start) + replacement + result.slice(end)
-    // The replacement is longer than the original; track the new
-    // range in result-coordinates so subsequent iterations skip it.
-    replacedRanges.push({ start, end: start + replacement.length })
-    if (!primaryMediaId) primaryMediaId = item.id
+    // Skip when a longer title already claimed this span (avoids
+    // counting "Final Fantasy" once "Final Fantasy VII Rebirth" hit).
+    if (claimedRanges.some((r) => start < r.end && end > r.start)) continue
+    claimedRanges.push({ start, end })
+    matchedIds.push(item.id)
   }
 
-  return { body: result, primaryMediaId }
+  // Re-order results by their position in the body so the FIRST
+  // mention determines the primary subject (mini-card #1).
+  matchedIds.sort((a, b) => {
+    const aRange = claimedRanges[matchedIds.indexOf(a)]
+    const bRange = claimedRanges[matchedIds.indexOf(b)]
+    return (aRange?.start ?? 0) - (bRange?.start ?? 0)
+  })
+
+  return matchedIds
 }

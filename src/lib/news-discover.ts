@@ -4,7 +4,7 @@ import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
-import { loadCatalogIndex, linkifyStoryBody, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
+import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
 
 // Stories whose primary catalog match has a recommended age at or
 // above this threshold get demoted to PENDING_REVIEW instead of
@@ -784,10 +784,11 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       }
     }
 
-    // Inject /media/<id> links for catalog titles mentioned in the
-    // body. Capture the first match as relatedMediaId for the bottom
-    // 'Voir la fiche complète sur Totem Avisé' CTA on the story page.
-    const { body: linkedBody, primaryMediaId } = linkifyStoryBody(s.body, catalogIndex)
+    // Find catalog title mentions in the body. We don't modify the
+    // body — related items render as mini-cards at the bottom of
+    // the story page (cleaner reading flow, no inline link clutter).
+    const matchedIds = extractCatalogMatches(s.body, catalogIndex, 3)
+    const primaryMediaId = matchedIds[0] ?? null
 
     // Adult-content guard: if the primary catalog match is age 14+,
     // the story is about a film/show/game whose audience isn't this
@@ -808,7 +809,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     const data = {
       title: s.title,
       summary: s.summary,
-      body: linkedBody,
+      body: s.body,
       category: s.category,
       sources,
       imageUrl: s.imageUrl,
@@ -819,6 +820,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       audience: s.audience ?? "parent_only",
       research: s.research ? (s.research as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
       relatedMediaId: primaryMediaId,
+      relatedMediaIds: matchedIds,
     }
 
     if (matchedExistingId) {
