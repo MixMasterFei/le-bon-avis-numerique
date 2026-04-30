@@ -104,10 +104,10 @@ export function ApercuDecouverteV3({
       <ApercuPreviewBanner />
       <ApercuNav />
 
-      <section className="py-10 md:py-14">
+      <section className="py-8 md:py-12">
         <div className="container mx-auto px-4 md:px-8">
           {/* Page header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <div
               className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
               style={{ color: p.accent }}
@@ -130,7 +130,7 @@ export function ApercuDecouverteV3({
               between the FR briefs and the INTL section. */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-12">
             {/* ─────── MAIN FEED ─────── */}
-            <main className="min-w-0 flex flex-col gap-6">
+            <main className="min-w-0 flex flex-col gap-5">
               {/* French hero */}
               {data.frenchHero && (
                 <ApercuNewsHeroCard story={data.frenchHero} serifClass={serifClass} />

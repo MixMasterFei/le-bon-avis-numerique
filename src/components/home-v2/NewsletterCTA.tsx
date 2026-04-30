@@ -75,7 +75,7 @@ export function NewsletterCTA({
   }
 
   return (
-    <section className="my-12 md:my-16">
+    <section className="my-8 md:my-12">
       <div
         className="rounded-3xl px-6 md:px-12 py-10 md:py-14 text-center"
         style={{

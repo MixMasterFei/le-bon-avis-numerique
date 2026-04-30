@@ -28,9 +28,9 @@ export function PhraseDuJour({
   const p = APERCU_PALETTE
 
   return (
-    <section className="my-10 md:my-14">
+    <section className="my-4 md:my-6">
       <div
-        className="relative rounded-3xl px-6 md:px-10 py-8 md:py-10"
+        className="relative rounded-3xl px-6 md:px-10 py-6 md:py-8"
         style={{
           background: `linear-gradient(135deg, ${p.bg2} 0%, ${p.card} 100%)`,
           border: `1px solid ${p.line}`,
