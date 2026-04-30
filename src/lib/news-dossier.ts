@@ -305,7 +305,7 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
 
   // Build the sources list from cited briefs' sources (flatten + dedupe).
   const seenUrls = new Set<string>()
-  const sources: Array<{ name: string; url: string; favicon?: string; headline?: string }> = []
+  const sources: Array<{ name: string; url: string; favicon?: string; headline?: string; country?: string }> = []
   for (const b of citedBriefs) {
     if (!Array.isArray(b.sources)) continue
     for (const raw of b.sources) {
@@ -320,6 +320,10 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
         url,
         favicon: typeof src.favicon === "string" ? src.favicon : undefined,
         headline: typeof src.headline === "string" ? src.headline : undefined,
+        // Carry the country tag from the upstream brief into the
+        // dossier's flat source list — drives the flag emoji in the
+        // Vu d'ailleurs source pills.
+        country: typeof src.country === "string" ? src.country : undefined,
       })
     }
   }

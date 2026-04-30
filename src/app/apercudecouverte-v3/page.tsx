@@ -40,6 +40,7 @@ function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
         url,
         favicon: typeof e.favicon === "string" ? e.favicon : undefined,
         headline: typeof e.headline === "string" ? e.headline : undefined,
+        country: typeof e.country === "string" ? e.country : undefined,
       },
     ]
   })

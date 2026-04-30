@@ -750,6 +750,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
         favicon: faviconFor(unique[i].link),
         headline: unique[i].title,
         publishedAt: unique[i].publishedAt.toISOString(),
+        // ISO country code for INTL items (US, UK, DE, IT…). Renders
+        // as a flag emoji in the source pill on Vu d'ailleurs cards.
+        // Undefined for FR sources (no flag shown — clean look).
+        country: unique[i].sourceCountry,
       }))
       .filter((src) => {
         if (seenNames.has(src.name)) return false
