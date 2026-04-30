@@ -42,11 +42,39 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
     select: { id: true, title: true, expertAgeRec: true },
   })
   return rows
-    .filter((r) => r.title.length >= 4)
-    // Drop titles that match overly-generic English/French stop-word
-    // patterns ("It", "Up", "And", "On", "Le", "Lui", "Toi").
-    .filter((r) => !/^[A-Z][a-z]{0,2}$/.test(r.title))
+    .filter((r) => r.title.length >= 5)
+    // Drop titles that are common French/English words. These produce
+    // false-positive links ("From", "Elle", "Up", "It", "On", "Lui",
+    // "L'Attachement" — the body's "elle/from/l'attachement" gets
+    // spuriously linked to unrelated catalog entries).
+    .filter((r) => !COMMON_WORD_TITLES.has(r.title.toLowerCase()))
+    // Drop titles that are a single common French article + a word —
+    // "L'Attachement" matches "l'attachement" (a regular noun in a
+    // body about something else). Risk of mis-link too high.
+    .filter((r) => !/^[LDMSTNCJ]['']/i.test(r.title))
 }
+
+// Single-word titles that collide with common French/English words.
+// Lowercased for case-insensitive comparison. List is intentionally
+// conservative — when in doubt, exclude the catalog title (better a
+// missed link than a wrong one). Add to this list as new mis-links
+// surface in review.
+const COMMON_WORD_TITLES = new Set<string>([
+  // English common words (often catalog titles too)
+  "from", "with", "into", "over", "down", "back", "home", "love",
+  "life", "time", "year", "good", "best", "first", "last",
+  "after", "again", "alone", "alive", "dead", "lost", "found",
+  // French common words
+  "elle", "lui", "toi", "moi", "nous", "vous", "leur", "leurs",
+  "tout", "tous", "rien", "tout", "alors", "ainsi", "donc",
+  "encore", "même", "très", "plus", "moins", "aussi", "comme",
+  "voici", "voilà", "ici", "là-bas", "celui", "celle", "cela",
+  "depuis", "pendant", "avant", "après", "selon", "dans", "sans",
+  "pour", "avec", "par", "sur", "sous", "vers", "chez",
+  // Brand-style single words that overlap with common English/French words
+  "up", "it", "on", "you", "her", "him", "us", "we",
+  "le", "la", "les", "un", "une", "des", "du", "de",
+])
 
 /**
  * Convenience: lookup by id in a catalog index. Used after linkify
