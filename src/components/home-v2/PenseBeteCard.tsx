@@ -22,8 +22,12 @@ function formatShort(iso: string, daysUntil: number): string {
   if (daysUntil === 0) return "Aujourd'hui"
   if (daysUntil === 1) return "Demain"
   if (daysUntil <= 30) return `Dans ${daysUntil} j`
-  const d = new Date(iso + "T00:00:00")
-  return `${d.getDate()} ${MONTH_FR[d.getMonth()]}`
+  // Parse with explicit Z + use UTC accessors so server (UTC) and
+  // client (Paris) compute the same getDate()/getMonth() output.
+  // Without this, the ISO is interpreted in different time zones
+  // → React #418 hydration error.
+  const d = new Date(iso + "T00:00:00Z")
+  return `${d.getUTCDate()} ${MONTH_FR[d.getUTCMonth()]}`
 }
 
 /**

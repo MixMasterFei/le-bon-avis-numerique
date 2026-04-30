@@ -28,14 +28,24 @@ const WEEKDAY_FR = ["Dim.", "Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam."]
 
 function formatDayLabel(dateISO: string, todayISO: string): string {
   if (dateISO === todayISO) return "Auj."
-  const d = new Date(dateISO + "T00:00:00")
-  return WEEKDAY_FR[d.getDay()]
+  // Parse with explicit Z + use UTC methods. Otherwise server (UTC)
+  // interprets "2026-04-29T00:00:00" as UTC and client (Paris)
+  // interprets it as Paris-local — different getDay() → hydration
+  // mismatch.
+  const d = new Date(dateISO + "T00:00:00Z")
+  return WEEKDAY_FR[d.getUTCDay()]
 }
 
 function formatSunset(iso: string | null): string | null {
   if (!iso) return null
-  const d = new Date(iso)
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+  // Open-Meteo with timezone=auto returns the sunset already in the
+  // city's local clock as "2026-04-29T19:24" (no offset). Parsing
+  // with new Date(iso) interprets it as the runtime's local time —
+  // server (UTC) and client (Paris) get different epoch values →
+  // hydration mismatch. Slice the HH:MM directly to keep it stable.
+  const m = iso.match(/T(\d{2}):(\d{2})/)
+  if (!m) return null
+  return `${m[1]}h${m[2]}`
 }
 
 /**

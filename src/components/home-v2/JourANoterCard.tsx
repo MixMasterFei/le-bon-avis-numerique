@@ -13,8 +13,11 @@ const MONTH_FR = [
 function formatShort(iso: string, daysUntil: number): string {
   if (daysUntil === 0) return "Aujourd'hui"
   if (daysUntil === 1) return "Demain"
-  const d = new Date(iso + "T00:00:00")
-  return `${d.getDate()} ${MONTH_FR[d.getMonth()]}`
+  // Parse with explicit Z + use UTC accessors. Without the Z, server
+  // (UTC) and client (Paris) interpret the ISO differently → mismatched
+  // getDate()/getMonth() output → React #418 on hydrate.
+  const d = new Date(iso + "T00:00:00Z")
+  return `${d.getUTCDate()} ${MONTH_FR[d.getUTCMonth()]}`
 }
 
 /**

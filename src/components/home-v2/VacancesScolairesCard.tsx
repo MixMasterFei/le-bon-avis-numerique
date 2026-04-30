@@ -20,11 +20,17 @@ const ZONE_COLOR: Record<Zone, string> = {
 const ALL_ZONE_COLOR = "#A79BC7" // soft violet for "Toutes zones"
 
 function formatRange(startISO: string, endISO: string): string {
-  const start = new Date(startISO)
-  const end = new Date(endISO)
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
-  return `${fmt(start)} → ${fmt(end)}`
+  // Force Europe/Paris formatting so server (UTC) and client (Paris)
+  // produce the same output. The ISO strings already carry Z, but
+  // toLocaleDateString without an explicit timeZone uses the runtime
+  // default → server says one date, client says another → React #418.
+  const fmt = (iso: string) =>
+    new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "long",
+      timeZone: "Europe/Paris",
+    }).format(new Date(iso))
+  return `${fmt(startISO)} → ${fmt(endISO)}`
 }
 
 /**
@@ -178,9 +184,13 @@ interface DayHoliday {
 function buildDayIndex(holidays: CalendarHoliday[]): Map<string, DayHoliday[]> {
   const idx = new Map<string, DayHoliday[]>()
   for (const h of holidays) {
-    const start = new Date(h.startISO + "T00:00:00")
-    const end = new Date(h.endISO + "T00:00:00")
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    // UTC parsing + UTC iteration so the YYYY-MM-DD keys we produce
+    // match the YYYY-MM-DD keys the MonthGrid generates from
+    // (year, month, day). Mixing local-zone parse with toISOString
+    // shifted dates by ±1 day in zones east of UTC.
+    const start = new Date(h.startISO + "T00:00:00Z")
+    const end = new Date(h.endISO + "T00:00:00Z")
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
       const key = d.toISOString().slice(0, 10)
       const list = idx.get(key) ?? []
       list.push({ zone: h.zone, description: h.description })
@@ -254,10 +264,20 @@ function MonthGrid({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
-  const todayISO = new Date().toISOString().slice(0, 10)
+  // "Today" in Paris time, formatted as YYYY-MM-DD to match the keys
+  // we use in buildDayIndex. UTC-only would mark the wrong day during
+  // 00:00–02:00 Paris (when UTC is still on the previous date).
+  const todayISO = new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date())
   // ISO weekday: Mon=1 … Sun=7. JS Sunday=0, so shift.
-  const firstWeekday = ((new Date(year, month, 1).getDay() + 6) % 7) // 0=Mon, 6=Sun
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  // Use UTC accessors so the weekday matches across server (UTC) and
+  // client (Paris) — Date.UTC + getUTCDay is timezone-independent.
+  const firstWeekday = ((new Date(Date.UTC(year, month, 1)).getUTCDay() + 6) % 7) // 0=Mon, 6=Sun
+  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
 
   const cells: Array<number | null> = []
   for (let i = 0; i < firstWeekday; i++) cells.push(null)
