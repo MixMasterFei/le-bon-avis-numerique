@@ -182,17 +182,17 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **EXIGÉ** : attribution nommée des affirmations fortes ("Selon Le Monde…", "Numerama rapporte…"), faits concrets que tu as réellement (titres, dates, lieux, chiffres, noms). Pour un événement, écrire 300 mots sobres est OK même avec un résumé bref ; pour un top 10 sans la liste, écarte.
 
-   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : "Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné."). Le brief produit doit faire **300-450 mots**, comme dans cet exemple :
+   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné.). Le brief produit doit faire **300-450 mots**, comme dans cet exemple (le contenu ci-dessous est ce que tu mettrais dans le champ "body" d'une histoire) :
 
-   > "Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox la semaine du 25 avril. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2 : la Voie de l'eau, sorti fin 2022. Selon AlloCiné, le film conserve les acteurs principaux des volets précédents, dont Sam Worthington dans le rôle de Jake Sully et Zoe Saldana dans celui de Neytiri.
-   >
-   > La date du 19 décembre s'inscrit dans la fenêtre des sorties familiales pour les vacances de Noël, créneau exploité par chaque opus précédent de la saga. Variety rapporte que le scénario explore le peuple Ash, une nouvelle tribu Na'vi orientée sur le feu, après l'introduction du peuple Metkayina (peuple de l'eau) dans le précédent volet. Premiere indique que le tournage en motion-capture a duré près de quatre ans entre la Nouvelle-Zélande et les studios Manhattan Beach, en Californie.
-   >
-   > La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, selon Variety, comme le précédent volet (3h12). Disney a précisé à AlloCiné que le film sera distribué simultanément en IMAX, 3D HFR (high frame rate) et version standard, mais la stratégie tarifaire pour les séances premium n'a pas encore été détaillée pour la France.
-   >
-   > Aucun classement officiel français n'a été publié à ce jour. Les deux premiers volets de la saga étaient classés tous publics avec avertissement, mention liée à des scènes de bataille. Le CNC précisera son avis dans les semaines précédant la sortie. Une bande-annonce mondiale est attendue lors de la convention CinemaCon de Las Vegas, selon Premiere."
+   Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox la semaine du 25 avril. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2 : la Voie de l'eau, sorti fin 2022. Selon AlloCiné, le film conserve les acteurs principaux des volets précédents, dont Sam Worthington dans le rôle de Jake Sully et Zoe Saldana dans celui de Neytiri.
 
-   Cet exemple (≈ 320 mots) est ACCEPTABLE même si le résumé fourni était court : il livre titre, date, casting, lieu de tournage, durée approximative, format de distribution, état du classement officiel — chaque fait étant attribué nommément à sa source. C'est l'écart attendu entre le résumé brut (limité) et le brief structuré que tu produis. **Vise toujours 300-450 mots** ; un brief de 200 mots sera rejeté par le contrôle qualité aval.
+   La date du 19 décembre s'inscrit dans la fenêtre des sorties familiales pour les vacances de Noël, créneau exploité par chaque opus précédent de la saga. Variety rapporte que le scénario explore le peuple Ash, une nouvelle tribu Na'vi orientée sur le feu, après l'introduction du peuple Metkayina (peuple de l'eau) dans le précédent volet. Premiere indique que le tournage en motion-capture a duré près de quatre ans entre la Nouvelle-Zélande et les studios Manhattan Beach, en Californie.
+
+   La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, selon Variety, comme le précédent volet (3h12). Disney a précisé à AlloCiné que le film sera distribué simultanément en IMAX, 3D HFR (high frame rate) et version standard, mais la stratégie tarifaire pour les séances premium n'a pas encore été détaillée pour la France.
+
+   Aucun classement officiel français n'a été publié à ce jour. Les deux premiers volets de la saga étaient classés tous publics avec avertissement, mention liée à des scènes de bataille. Le CNC précisera son avis dans les semaines précédant la sortie. Une bande-annonce mondiale est attendue lors de la convention CinemaCon de Las Vegas, selon Premiere.
+
+   Cet exemple (≈ 320 mots) est ACCEPTABLE même si le résumé fourni était court : il livre titre, date, casting, lieu de tournage, durée approximative, format de distribution, état du classement officiel — chaque fait étant attribué nommément à sa source. C'est l'écart attendu entre le résumé brut (limité) et le brief structuré que tu produis. **Vise toujours 300-450 mots** ; un brief de 200 mots sera rejeté par le contrôle qualité aval. **N'utilise PAS de double-quote ASCII " dans le body** — utilise les guillemets français « » pour les citations directes (cf. règle d'échappement JSON plus bas).
 
 **2. Voix neutre, jamais éditoriale.**
    Tu rapportes ce que les sources disent ; tu n'as pas d'avis.
@@ -297,6 +297,8 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 
 Réponds UNIQUEMENT avec ce JSON, sans markdown, sans texte avant ou après :
 {"stories": [{"title": "...", "summary": "...", "body": "...", "category": "PARENTHOOD|FILM_TV|GAMES|READING", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
+
+**RÈGLE D'ÉCHAPPEMENT JSON — CRITIQUE** : à l'intérieur des champs string ("title", "summary", "body"), n'utilise **JAMAIS** de double-quote ASCII " — utilise UNIQUEMENT les guillemets français « » pour les citations directes, et l'apostrophe typographique ' (ou ' droite). Une " non-échappée à l'intérieur d'un body casse le parseur JSON et toutes les histoires de la réponse sont perdues. Si tu hésites, remplace toute " par « ou » selon le contexte.
 ${alreadyPublished}${recentImagesNote}
 Articles :
 
@@ -543,17 +545,33 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
   }
 
-  const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error(`${provider} did not return JSON`)
-
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(jsonMatch[0])
-  } catch {
-    throw new Error(`${provider} returned malformed JSON`)
+  // Strip markdown code fences (```json … ```) before extracting the
+  // outer JSON object — DeepSeek occasionally wraps responses despite
+  // the "no markdown" instruction. Then parse leniently: if extraction
+  // or parse fails, log the head and continue with an empty story
+  // list so the cron returns "0 synthesized" rather than a 500.
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "")
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+  let rawStories: unknown[] = []
+  if (!jsonMatch) {
+    console.warn(`[news-discover] ${provider} did not return JSON. head=${rawText.slice(0, 200)}`)
+  } else {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as { stories?: unknown[] }
+      const candidate = parsed?.stories
+      if (Array.isArray(candidate)) {
+        rawStories = candidate
+      } else {
+        console.warn(`[news-discover] ${provider} returned no stories array (type=${typeof candidate})`)
+      }
+    } catch (e) {
+      // Most common cause: unescaped " inside a body string.
+      const msg = e instanceof Error ? e.message : "unknown"
+      console.warn(
+        `[news-discover] ${provider} returned malformed JSON: ${msg}. head=${jsonMatch[0].slice(0, 300)}`,
+      )
+    }
   }
-  const rawStories = (parsed as { stories?: unknown[] })?.stories ?? []
-  if (!Array.isArray(rawStories)) throw new Error(`${provider} returned no stories array`)
 
   const allowedImages = new Set(unique.map((u) => u.imageUrl))
   // Defensive belt for the cross-story image dedup rule in the prompt.
