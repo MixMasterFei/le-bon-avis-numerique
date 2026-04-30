@@ -1,15 +1,20 @@
 name: Lighthouse CI
 
-# Runs Lighthouse against the Vercel preview deploy on every PR, and
-# against production on pushes to main. Budgets are defined in
-# lighthouserc.json. CI fails if any budget is breached, which catches
-# perf regressions (oversized images, blocking scripts, slow LCP) at
-# PR time instead of post-merge.
+# Runs Lighthouse against the Vercel preview deploy on PRs and on
+# manual dispatch. Push-to-main was disabled (April 2026) because
+# Vercel deployment-protection makes the auto-generated preview URL
+# unreachable from public CI on direct pushes — every push produced a
+# 13-minute timeout failure email with no actionable signal. Use
+# workflow_dispatch to run an on-demand Lighthouse audit against prod.
 on:
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL to audit (defaults to production)"
+        required: false
+        default: "https://totemavise.com"
 
 jobs:
   lighthouse:
@@ -30,23 +35,22 @@ jobs:
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli@0.14.x
 
-      - name: Wait for Vercel preview
+      - name: Wait for Vercel preview (PR only)
         id: vercel
+        if: github.event_name == 'pull_request'
         uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           max_timeout: 600
           check_interval: 10
 
-      - name: Run Lighthouse CI against preview
-        if: steps.vercel.outputs.url != ''
+      - name: Run Lighthouse CI
         run: lhci autorun
         env:
           LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
-          LHCI_TARGET_URL: ${{ steps.vercel.outputs.url }}
-          # Fall back to totemavise.com for pushes to main where there's
-          # no preview URL — main deploys straight to prod.
-          LHCI_FALLBACK_URL: https://totemavise.com
+          # PR runs use the Vercel preview URL; manual dispatch uses
+          # the input (defaults to prod totemavise.com).
+          LHCI_TARGET_URL: ${{ steps.vercel.outputs.url || github.event.inputs.target_url || 'https://totemavise.com' }}
 
       - name: Upload Lighthouse reports
         if: always()
