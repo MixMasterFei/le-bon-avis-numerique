@@ -54,12 +54,20 @@ function toResearch(raw: Prisma.JsonValue | null): StoryResearch | null {
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   if (!Array.isArray(raw)) return []
+  // Dedup by publisher name at render time. Older dossiers in DB
+  // were aggregated with URL-based dedup (one pill per article URL),
+  // which produces "La Croix Enfants & ados · La Croix Enfants &
+  // ados · …" when multiple La Croix articles were cited. New
+  // dossiers dedup by name at synthesis time; this guards the older
+  // rows already in storage.
+  const seen = new Set<string>()
   return raw.flatMap((entry): NewsSourceRef[] => {
     if (typeof entry !== "object" || entry === null) return []
     const e = entry as Record<string, unknown>
     const name = typeof e.name === "string" ? e.name : ""
     const url = typeof e.url === "string" ? e.url : ""
-    if (!name || !url) return []
+    if (!name || !url || seen.has(name)) return []
+    seen.add(name)
     return [
       {
         name,

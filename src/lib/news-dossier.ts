@@ -303,8 +303,12 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
     }
   }
 
-  // Build the sources list from cited briefs' sources (flatten + dedupe).
-  const seenUrls = new Set<string>()
+  // Build the sources list from cited briefs' sources. Dedup by
+  // NAME (not URL): if 3 different La Croix Enfants & ados articles
+  // get cited across the dossier's briefs, we want ONE La Croix pill,
+  // not three. The first URL we see for a given publisher wins (links
+  // to the first cited article from that source).
+  const seenNames = new Set<string>()
   const sources: Array<{ name: string; url: string; favicon?: string; headline?: string; country?: string }> = []
   for (const b of citedBriefs) {
     if (!Array.isArray(b.sources)) continue
@@ -313,8 +317,8 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
       const src = raw as Record<string, unknown>
       const url = typeof src.url === "string" ? src.url : ""
       const name = typeof src.name === "string" ? src.name : ""
-      if (!url || !name || seenUrls.has(url)) continue
-      seenUrls.add(url)
+      if (!url || !name || seenNames.has(name)) continue
+      seenNames.add(name)
       sources.push({
         name,
         url,

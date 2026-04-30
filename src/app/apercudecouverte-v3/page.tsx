@@ -28,12 +28,17 @@ interface SearchParams {
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   if (!Array.isArray(raw)) return []
+  // Dedup by publisher name at render time (older dossiers in DB
+  // were aggregated with URL-based dedup → multiple pills per
+  // publisher when several articles from the same source were cited).
+  const seen = new Set<string>()
   return raw.flatMap((entry): NewsSourceRef[] => {
     if (typeof entry !== "object" || entry === null) return []
     const e = entry as Record<string, unknown>
     const name = typeof e.name === "string" ? e.name : ""
     const url = typeof e.url === "string" ? e.url : ""
-    if (!name || !url) return []
+    if (!name || !url || seen.has(name)) return []
+    seen.add(name)
     return [
       {
         name,
