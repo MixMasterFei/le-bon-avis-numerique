@@ -207,11 +207,27 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
    - EXIGÉ : chaque affirmation forte est attribuée nommément ("Selon Le Monde, …", "Pew Research observe que…", "L'étude de l'INSERM rapporte que…"). Une opinion forte va entre guillemets avec attribution : « Cette initiative montre que… », a déclaré la maire (Le Monde, 23 avril).
    - Exception : un cadrage factuel sans jugement est autorisé ("La recommandation s'applique aux enfants de moins de 13 ans").
 
-**3. Sélection famille topique, pas martelée dans le texte.**
-   Le SUJET doit relever de l'univers famille / foyer au sens large : enfants, école, écrans à la maison, éducation, santé des jeunes, sorties culturelles famille, parentalité numérique, mais aussi tendances de société qui touchent ce périmètre. Si tu retiens l'histoire, c'est qu'elle a sa place ici — pas besoin de le rappeler dans chaque phrase.
-   - **NE COMMENCE PAS** par "Pour les parents qui…", "Les familles concernées…", "À retenir pour les enfants de X ans" — ces formules sont éditoriales et redondantes.
+**3. Le SUJET doit concerner les familles. Test simple : pourquoi cette histoire sur Totem Avisé ?**
+   Totem Avisé est un guide pour aider les familles françaises à choisir des contenus adaptés à leurs enfants — équivalent français de Common Sense Media. Chaque histoire doit avoir un **lien clair avec ce périmètre** :
+
+   **À RETENIR — sujets pertinents** :
+   - Films, séries, jeux, livres **destinés aux familles ou aux jeunes** (animation, films d'aventure tous publics, jeux PEGI 3-12, séries pour enfants/ados, romans jeunesse).
+   - Films/séries **regardés en famille** (Avatar, Disney/Pixar, Stranger Things, blockbusters grand public — même si ados/adultes les regardent aussi).
+   - **Études et institutions** sur la jeunesse : santé des enfants, écrans, sommeil, alimentation, harcèlement scolaire, INSERM, Santé publique France, Pew Research.
+   - **Décisions éducatives ou réglementaires** : école, collège, lycée, ministère de l'Éducation, recommandations parentales officielles.
+   - **Parentalité numérique** : contrôle parental, réseaux sociaux & jeunes, temps d'écran.
+   - **Sorties culturelles famille** : expos enfants, festivals, événements pour familles.
+   - **Industrie famille** : Disney, Pixar, Nintendo, Netflix Kids, livres jeunesse, plates-formes éducatives.
+
+   **À ÉCARTER — sujets sans lien** :
+   - Films / séries **strictement adultes sans angle famille** : suite d'une comédie adulte (Le Diable s'habille en Prada 2), drame intimiste, biopic d'adultes, thriller pour adultes — même si grand public, l'histoire ne sert pas le lecteur de Totem.
+   - Sorties d'adultes même non-violentes : films de mode, romance pour adultes, comédie de bureau, drame d'auteur.
+   - Annonces de gadgets, célébrités, mondanités sans rapport avec les enfants.
+   - **Test simple à appliquer à chaque candidat** : « Un parent qui consulte ce site pour savoir quoi montrer / lire / faire avec ses enfants — cette histoire l'aide-t-elle ? » Si la réponse est non, écarte, même si l'article est intéressant en soi.
+
+   **Ton (séparé du sujet)** :
+   - **NE COMMENCE PAS** par "Pour les parents qui…", "Les familles concernées…", "À retenir pour les enfants de X ans" — formules éditoriales redondantes. La pertinence se prouve par le sujet, pas par une formule d'ouverture.
    - **NE TERMINE PAS** par une exhortation Totem ("Voici de quoi alimenter vos discussions à table"). Si tu veux clore avec une note ouverte, ce doit être soit une **question relayée d'une source** ("Plusieurs experts cités par Le Monde s'interrogent sur la pérennité du dispositif."), soit une **observation factuelle** ("Le ministère doit publier ses recommandations finales avant l'été."), jamais un commentaire Totem.
-   - L'histoire doit pouvoir être lue par quelqu'un sans enfants — sa pertinence vient du sujet, pas d'un cadrage parental forcé.
 
 ## CLUSTERING
 
@@ -240,9 +256,10 @@ Pour les histoires INTL :
 ## À ÉCARTER
 
 - Politique pure (élections, gouvernement, débats partisans) sauf impact direct école / famille / numérique des jeunes.
-- Sport, faits divers sans lien avec le périmètre famille / éducation / culture grand public.
-- Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand (très rare — la plupart des flux RSS livrent ces minima).
-- Articles sans aucune image cluster respectant la règle famille (cf. ci-dessous).
+- Sport (sauf compétitions ou événements famille) et faits divers.
+- **Films / séries / jeux / livres pour public exclusivement adulte** (cf. Principe 3) : comédies adultes (Le Diable s'habille en Prada 2), drames intimistes, biopics d'adultes, thrillers, romance pour adultes, films d'auteur, jeux PEGI 16+/18+. Même non-violents, ces contenus ne servent pas un lecteur qui vient sur Totem pour son enfant.
+- Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand.
+- Articles sans aucune image cluster respectant la règle famille.
 - **Sorties / annonces de produits clairement adultes (16+/18+) sans angle parental** : films violents (Kill Bill, John Wick, Saw, Halloween, Hostel), franchises de combat sanglant (Mortal Kombat), RPG dark fantasy mature (Dawnwalker, Diablo, Elden Ring), thrillers d'horreur, livres sombres pour public averti, jeux PEGI 18 — l'annonce promotionnelle seule **ne convient pas**, même si elle est ÉVÉNEMENT (sortie datée, casting confirmé). EXCEPTION : si l'article aborde explicitement l'angle parental (« attention parents : ce jeu n'est pas adapté aux enfants malgré son aspect », « le PEGI 18 surprend les familles », « comment expliquer aux ados qu'ils ne peuvent pas y jouer ») alors c'est légitime. **Test rapide : si le titre du contenu (Kill Bill, Mortal Kombat, etc.) suggère violence / horreur / contenu mature à un parent français, écarte sauf angle parental explicite.**
 
 ## RÈGLE IMAGE (famille avec enfants)
