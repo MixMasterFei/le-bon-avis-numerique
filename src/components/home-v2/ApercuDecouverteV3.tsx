@@ -145,47 +145,6 @@ export function ApercuDecouverteV3({
                 </div>
               )}
 
-              {/* Mobile-only: sidebar content inlines here so it's
-                  not buried at the bottom on phones. Hidden on lg+
-                  where the sticky sidebar takes over. */}
-              <div className="lg:hidden flex flex-col gap-4 my-2">
-                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
-                {data.airQuality && (
-                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
-                )}
-                {data.deadlines.length > 0 && (
-                  <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
-                )}
-                <VacancesScolairesCard
-                  initialFR={data.holidayB}
-                  initialZoneA={data.holidayA}
-                  initialZoneC={data.holidayC}
-                  calendar={data.holidayCalendar}
-                  serifClass={serifClass}
-                />
-                {data.notableDates.length > 0 && (
-                  <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
-                )}
-                {data.anniversary && (
-                  <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
-                )}
-                {data.cinemaTendances.length > 0 && (
-                  <CinemaTendancesCard tendances={data.cinemaTendances} serifClass={serifClass} />
-                )}
-                {data.research && (
-                  <RechercheHighlightCard
-                    research={data.research.research}
-                    storyTitle={data.research.storyTitle}
-                    storySlug={data.research.storySlug}
-                    serifClass={serifClass}
-                  />
-                )}
-                {data.etudes.length > 0 && (
-                  <EtudesRecentesCard etudes={data.etudes} serifClass={serifClass} />
-                )}
-                <SourcesTrustCard serifClass={serifClass} />
-              </div>
-
               {/* Pull-quote break */}
               {data.phrase && (
                 <PhraseDuJour
@@ -255,6 +214,55 @@ export function ApercuDecouverteV3({
                   </div>
                 </div>
               )}
+
+              {/* Mobile-only: sidebar content inlines AFTER the news
+                  feed so the reading flow stays uninterrupted. Xavier's
+                  call (April 2026): widgets become a 'browse mode'
+                  block at the end rather than wedging into the news.
+                  Hidden on lg+ where the sticky sidebar handles them. */}
+              <div className="lg:hidden flex flex-col gap-4 mt-8">
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: p.ink2 }}
+                >
+                  Le foyer
+                </div>
+                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                {data.airQuality && (
+                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
+                )}
+                {data.deadlines.length > 0 && (
+                  <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
+                )}
+                <VacancesScolairesCard
+                  initialFR={data.holidayB}
+                  initialZoneA={data.holidayA}
+                  initialZoneC={data.holidayC}
+                  calendar={data.holidayCalendar}
+                  serifClass={serifClass}
+                />
+                {data.notableDates.length > 0 && (
+                  <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
+                )}
+                {data.anniversary && (
+                  <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
+                )}
+                {data.cinemaTendances.length > 0 && (
+                  <CinemaTendancesCard tendances={data.cinemaTendances} serifClass={serifClass} />
+                )}
+                {data.research && (
+                  <RechercheHighlightCard
+                    research={data.research.research}
+                    storyTitle={data.research.storyTitle}
+                    storySlug={data.research.storySlug}
+                    serifClass={serifClass}
+                  />
+                )}
+                {data.etudes.length > 0 && (
+                  <EtudesRecentesCard etudes={data.etudes} serifClass={serifClass} />
+                )}
+                <SourcesTrustCard serifClass={serifClass} />
+              </div>
             </main>
 
             {/* ─────── DESKTOP STICKY SIDEBAR ─────── */}
