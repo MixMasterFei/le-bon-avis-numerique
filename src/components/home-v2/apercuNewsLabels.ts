@@ -8,6 +8,7 @@ export const NEWS_CATEGORY_LABEL: Record<NewsCategoryKey, string> = {
   FILM_TV: "Cinéma & séries",
   GAMES: "Jeux vidéo",
   READING: "Lectures",
+  TECH: "Tech & IA",
 }
 
 export const NEWS_CATEGORY_ORDER: NewsCategoryKey[] = [
@@ -16,4 +17,5 @@ export const NEWS_CATEGORY_ORDER: NewsCategoryKey[] = [
   "FILM_TV",
   "GAMES",
   "READING",
+  "TECH",
 ]

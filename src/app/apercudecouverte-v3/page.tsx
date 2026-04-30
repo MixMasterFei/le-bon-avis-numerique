@@ -220,6 +220,7 @@ export default async function ApercuDecouverteV3Page(props: {
   const [
     frenchRows,
     intlRows,
+    techRows,
     dossierRow,
     researchRow,
     holidayB,
@@ -233,9 +234,16 @@ export default async function ApercuDecouverteV3Page(props: {
     notableDates,
     deadlines,
   ] = await Promise.all([
-    // 12 most recent French briefs (1 hero + 3 top + ~8 older).
+    // 12 most recent French briefs in the 4 main categories. TECH is
+    // excluded here so it doesn't double-render in both the main grid
+    // and the dedicated 'Tech & IA' section below.
     prisma.newsStory.findMany({
-      where: { status: "PUBLISHED", storyType: "BRIEF", region: "FR" },
+      where: {
+        status: "PUBLISHED",
+        storyType: "BRIEF",
+        region: "FR",
+        category: { in: ["PARENTHOOD", "FILM_TV", "GAMES", "READING"] },
+      },
       orderBy: { publishedAt: "desc" },
       take: 12,
       select: {
@@ -243,7 +251,7 @@ export default async function ApercuDecouverteV3Page(props: {
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("frenchRows", [] as StoryRow[])),
-    // 6 most recent international briefs.
+    // 6 most recent international briefs (any category, including TECH).
     prisma.newsStory.findMany({
       where: { status: "PUBLISHED", storyType: "BRIEF", region: "INTL" },
       orderBy: { publishedAt: "desc" },
@@ -253,6 +261,19 @@ export default async function ApercuDecouverteV3Page(props: {
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
+    // 6 most recent TECH briefs (FR + INTL mixed). Renders as a
+    // dedicated "Tech & IA" section between the main French grid and
+    // the dossier — Xavier's call: families need to be way more aware
+    // of generative AI / parental tech / online safety.
+    prisma.newsStory.findMany({
+      where: { status: "PUBLISHED", storyType: "BRIEF", category: "TECH" },
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+      select: {
+        id: true, slug: true, title: true, summary: true, body: true,
+        imageUrl: true, category: true, publishedAt: true, sources: true,
+      },
+    }).catch(safe("techRows", [] as StoryRow[])),
     // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
     // the most recent dossier is always within 4 days; if a cron run
     // failed and the latest is older than 5 days, the page hides the
@@ -322,12 +343,14 @@ export default async function ApercuDecouverteV3Page(props: {
   const heroCard = frenchHero ? claim(rowToCard(frenchHero)) : null
   const topCards = frenchTop.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
   const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+  const techCards = techRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
   const olderCards = olderBriefs.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
 
   const data: DecouverteV3Data = {
     frenchHero: heroCard,
     frenchTop: topCards,
     internationalTop: intlCards,
+    techTop: techCards,
     dossier: dossierCard,
     olderBriefs: olderCards,
     phrase: extractPhrase(frenchRows),

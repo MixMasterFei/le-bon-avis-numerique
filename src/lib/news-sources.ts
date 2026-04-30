@@ -53,6 +53,18 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "20 Minutes Gaming",               url: "https://www.20minutes.fr/feeds/rss-gaming.xml",                          category: "GAMES",      trustTier: 2 },
   { name: "Jeuxvideo.com",                   url: "https://www.jeuxvideo.com/rss/rss-news.xml",                             category: "GAMES",      trustTier: 2 },
 
+  // TECH — generative AI, parental tech, social media regulation,
+  // screen-time tools, EdTech, devices. The synthesis filter narrows
+  // each broad-tech feed to family-relevant items via the editorial
+  // line. Distinct from GAMES (video game industry / releases).
+  { name: "Numerama Tech",                   url: "https://www.numerama.com/tech/feed/",                                    category: "TECH",       trustTier: 1 },
+  { name: "Frandroid",                       url: "https://www.frandroid.com/feed",                                         category: "TECH",       trustTier: 2 },
+  { name: "Le Monde Pixels",                 url: "https://www.lemonde.fr/pixels/rss_full.xml",                             category: "TECH",       trustTier: 1 },
+  { name: "01net",                           url: "https://www.01net.com/actualites/feed/",                                 category: "TECH",       trustTier: 2 },
+  { name: "Korben",                          url: "https://korben.info/feed",                                               category: "TECH",       trustTier: 3 },
+  { name: "ZDNet France",                    url: "https://www.zdnet.fr/feeds/rss/actualites/",                             category: "TECH",       trustTier: 2 },
+  { name: "Siècle Digital",                  url: "https://siecledigital.fr/feed/",                                         category: "TECH",       trustTier: 2 },
+
   // READING — children's literature is thin in our base; expanding to
   // give the page a real reading-news anchor
   { name: "1jour1actu",                      url: "https://feeds.feedburner.com/1jour1actu/BwmM3ey8dPF",                    category: "READING",    trustTier: 1 },
@@ -93,6 +105,11 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "BBC Culture",                      url: "https://www.bbc.com/culture/feed.rss",                                    category: "FILM_TV",    trustTier: 1, region: "INTL", country: "UK" },
   // (Cineuropa RSS returned 403 due to User-Agent block; removed
   // until we have a feed they don't block.)
+
+  // TECH international — family-tech / AI press
+  { name: "MIT Technology Review",            url: "https://www.technologyreview.com/feed/",                                  category: "TECH",       trustTier: 1, region: "INTL", country: "US" },
+  { name: "The Verge",                        url: "https://www.theverge.com/rss/index.xml",                                  category: "TECH",       trustTier: 1, region: "INTL", country: "US" },
+  { name: "Ars Technica",                     url: "https://feeds.arstechnica.com/arstechnica/index",                         category: "TECH",       trustTier: 1, region: "INTL", country: "US" },
 
   // GAMES international
   { name: "Polygon",                          url: "https://www.polygon.com/rss/index.xml",                                   category: "GAMES",      trustTier: 1, region: "INTL", country: "US" },

@@ -803,6 +803,11 @@ enum NewsCategory {
   FILM_TV
   GAMES
   READING
+  // Family-relevant tech & generative AI: parental tech, social
+  // media regulation, screen-time tools, EdTech, ChatGPT-with-kids,
+  // device launches that touch family life. Distinct from GAMES
+  // (video game industry / releases).
+  TECH
 }
 
 enum NewsStoryStatus {

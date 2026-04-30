@@ -67,7 +67,7 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
 
 1. **Identifie LE thème dominant** : le sujet où il y a le plus de matière (plusieurs articles convergents, plusieurs angles complémentaires, une tendance qui émerge). Pas un sujet qui apparaît dans un seul article — un sujet qui revient. **Idéalement il rassemble des briefs de 5 publications différentes ou plus** ; c'est ce qui en fait un dossier plutôt qu'un brief allongé.
 
-2. **Choisis la catégorie** la plus pertinente pour ce thème : PARENTHOOD | FILM_TV | GAMES | READING.
+2. **Choisis la catégorie** la plus pertinente pour ce thème : PARENTHOOD | FILM_TV | GAMES | READING | TECH. TECH = IA générative, contrôle parental, régulation des réseaux sociaux pour les jeunes, outils de temps d'écran, EdTech, annonces d'appareils touchant la vie famille (distinct de GAMES qui couvre l'industrie du jeu vidéo).
 
 3. **Voix éditoriale — RELAYER, pas commenter** (règle critique) :
 
@@ -105,7 +105,7 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
 Format de sortie (JSON sans markdown) :
 {
   "topic": "phrase courte décrivant le thème (descriptive, pas éditoriale)",
-  "category": "PARENTHOOD" | "FILM_TV" | "GAMES" | "READING",
+  "category": "PARENTHOOD" | "FILM_TV" | "GAMES" | "READING" | "TECH",
   "title": "titre factuel et descriptif du dossier",
   "summary": "1-2 phrases (<200 caractères) — descriptives, pas évaluatives",
   "body": "le dossier complet en markdown, 1000-1500 mots, avec une ligne vide entre chaque paragraphe ; sous-titres ### autorisés et bienvenus pour les longs dossiers",
@@ -168,7 +168,7 @@ function parseDossierResponse(raw: string): DossierResult | { skip: true; reason
     ) {
       return null
     }
-    if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING"].includes(parsed.category)) return null
+    if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING", "TECH"].includes(parsed.category)) return null
     return {
       topic: parsed.topic,
       category: parsed.category as NewsCategory,

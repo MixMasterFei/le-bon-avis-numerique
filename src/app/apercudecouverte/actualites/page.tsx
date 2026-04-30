@@ -18,7 +18,13 @@ interface SearchParams {
 }
 
 function parseCategory(raw: string | undefined): NewsCategoryKey {
-  if (raw === "PARENTHOOD" || raw === "FILM_TV" || raw === "GAMES" || raw === "READING") {
+  if (
+    raw === "PARENTHOOD" ||
+    raw === "FILM_TV" ||
+    raw === "GAMES" ||
+    raw === "READING" ||
+    raw === "TECH"
+  ) {
     return raw
   }
   return "ALL"

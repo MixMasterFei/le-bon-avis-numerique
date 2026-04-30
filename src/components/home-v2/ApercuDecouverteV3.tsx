@@ -34,6 +34,10 @@ export interface DecouverteV3Data {
   frenchHero: ApercuNewsCardData | null
   // Next 3 most recent French briefs (3-up grid below the hero).
   frenchTop: ApercuNewsCardData[]
+  // Tech & IA strand — dedicated 3-up grid between French briefs
+  // and the dossier. Mixes FR + INTL TECH-category briefs (since
+  // the topic is inherently global; flags differentiate origin).
+  techTop: ApercuNewsCardData[]
   // International strand inlined as its own section (no tab).
   internationalTop: ApercuNewsCardData[]
   // Latest weekly dossier (long-read), pinned with featured treatment.
@@ -142,6 +146,38 @@ export function ApercuDecouverteV3({
                   {data.frenchTop.map((s) => (
                     <ApercuNewsCard key={s.slug} story={s} serifClass={serifClass} />
                   ))}
+                </div>
+              )}
+
+              {/* Tech & IA strand — Xavier's dedicated section so
+                  families see the AI/tech angle as a deliberate
+                  editorial choice, not buried in the main grid. */}
+              {data.techTop.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex items-end justify-between gap-3 mb-5 flex-wrap">
+                    <div>
+                      <div
+                        className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
+                        style={{ color: p.accent }}
+                      >
+                        Tech &amp; IA · Pour les familles
+                      </div>
+                      <h2
+                        className={`${serifClass} text-2xl md:text-3xl font-medium leading-[1.05] m-0`}
+                        style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                      >
+                        Comprendre le numérique{" "}
+                        <em className="italic" style={{ color: p.accent }}>
+                          en famille
+                        </em>
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {data.techTop.slice(0, 6).map((s) => (
+                      <ApercuNewsCard key={s.slug} story={s} serifClass={serifClass} />
+                    ))}
+                  </div>
                 </div>
               )}
 

@@ -231,6 +231,7 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
    - **Parentalité numérique** : contrôle parental, réseaux sociaux & jeunes, temps d'écran.
    - **Sorties culturelles famille** : expos enfants, festivals, événements pour familles.
    - **Industrie famille** : Disney, Pixar, Nintendo, Netflix Kids, livres jeunesse, plates-formes éducatives.
+   - **Tech & IA pour les familles** (catégorie TECH) : ChatGPT/IA générative dans la vie famille (comment l'expliquer aux enfants, l'utiliser ensemble, l'encadrer), régulation des réseaux sociaux pour les jeunes, outils de contrôle parental, EdTech, annonces d'appareils touchant la vie famille (smartphones jeunesse, liseuses enfants), études sur l'usage du numérique chez les jeunes. **Cherche activement l'angle famille dans les actus tech** — un lancement d'un nouveau modèle d'IA n'est en soi pas pertinent ; en revanche "5 façons d'utiliser ChatGPT avec ses enfants" ou "l'IA dans les devoirs scolaires : ce que disent les profs" l'est.
 
    **À ÉCARTER — sujets sans lien** :
    - Films / séries **strictement adultes sans angle famille** : suite d'une comédie adulte (Le Diable s'habille en Prada 2), drame intimiste, biopic d'adultes, thriller pour adultes — même si grand public, l'histoire ne sert pas le lecteur de Totem.
@@ -313,7 +314,7 @@ JSON par histoire :
    - **Para 2** (~100-130 mots) — Les éléments concrets : les jeux nommés, les chiffres clés, les dates précises, les noms de personnes ou d'études. Chaque fait attribué nommément. Ne paraphrase pas la STRUCTURE de l'article ("le guide ne se contente pas de…") — livre les éléments directement. Si une déclaration figure dans la source, intègre-la en citation directe attribuée.
    - **Para 3** (~80-120 mots) — Mise en perspective relayée depuis les sources : conséquences chiffrées, réactions citées (souvent l'endroit naturel d'une 2ᵉ citation directe), comparaisons que les sources elles-mêmes établissent. Pas de jugement Totem.
    - **Para 4** (optionnel, ~50-80 mots) — Soit un détail pratique attribué (date, lieu, montant, recommandation officielle), soit une question ouverte relayée d'une source ("Plusieurs experts cités par Le Monde s'interrogent sur…"), soit une citation finale forte attribuée. Jamais une conclusion Totem.
-- "category" : PARENTHOOD | FILM_TV | GAMES | READING.
+- "category" : PARENTHOOD | FILM_TV | GAMES | READING | TECH. TECH = IA générative, contrôle parental, régulation des réseaux sociaux pour les jeunes, outils de temps d'écran, EdTech, annonces d'appareils touchant la vie famille (distinct de GAMES qui couvre l'industrie du jeu vidéo).
 - "relevanceScore" : 0 à 1, pertinence FAMILIALE (pas intérêt général).
 - "imageUrl" : URL exacte de l'IMG d'un article du cluster, conforme à la règle famille.
 - "sourceIndexes" : tableau des indexes des articles cités (entiers).
@@ -334,7 +335,7 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 ## OUTPUT
 
 Réponds UNIQUEMENT avec ce JSON, sans markdown, sans texte avant ou après :
-{"stories": [{"title": "...", "summary": "...", "body": "...", "category": "PARENTHOOD|FILM_TV|GAMES|READING", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
+{"stories": [{"title": "...", "summary": "...", "body": "...", "category": "PARENTHOOD|FILM_TV|GAMES|READING|TECH", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
 
 **RÈGLE D'ÉCHAPPEMENT JSON — CRITIQUE** : à l'intérieur des champs string ("title", "summary", "body"), n'utilise **JAMAIS** de double-quote ASCII " — utilise UNIQUEMENT les guillemets français « » pour les citations directes, et l'apostrophe typographique ' (ou ' droite). Une " non-échappée à l'intérieur d'un body casse le parseur JSON et toutes les histoires de la réponse sont perdues. Si tu hésites, remplace toute " par « ou » selon le contexte.
 ${alreadyPublished}${recentImagesNote}
@@ -370,7 +371,7 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     console.warn(`[news-discover] coerce: missing field title="${title.slice(0, 60)}" hasSum=${!!summary} hasBody=${!!body} hasImg=${!!imageUrl}`)
     return null
   }
-  if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING"].includes(category)) {
+  if (!["PARENTHOOD", "FILM_TV", "GAMES", "READING", "TECH"].includes(category)) {
     console.warn(`[news-discover] coerce: bad category="${category}" title="${title.slice(0, 60)}"`)
     return null
   }
