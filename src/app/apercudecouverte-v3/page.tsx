@@ -253,13 +253,16 @@ export default async function ApercuDecouverteV3Page(props: {
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
-    // Latest weekly dossier (past 14 days).
+    // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
+    // the most recent dossier is always within 4 days; if a cron run
+    // failed and the latest is older than 5 days, the page hides the
+    // dossier section rather than showing stale content.
     prisma.newsStory.findFirst({
       where: {
         status: "PUBLISHED",
         storyType: "DOSSIER",
         // eslint-disable-next-line react-hooks/purity -- server component, fresh per-request render is correct
-        publishedAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) },
+        publishedAt: { gte: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { publishedAt: "desc" },
       select: {

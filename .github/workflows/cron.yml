@@ -20,9 +20,11 @@ on:
     # Sunday 4:00 AM UTC — Weekly manga refresh (AniList updated series
     # → refresh chapter/volume counts + latestVolumeDate for the rail)
     - cron: "0 4 * * 0"
-    # Sunday 5:00 AM UTC — Weekly dossier ("Dossier de la semaine")
-    # synthesizes one long-read from the past 7 days of brief stories.
-    - cron: "0 5 * * 0"
+    # Tuesday + Friday 5:00 AM UTC — Twice-weekly dossier ("Dossier de
+    # la semaine") synthesizes a deeper long-read from the past 7 days
+    # of briefs. Tuesday catches weekend + Monday news for early-week
+    # reading; Friday gathers the week's themes for weekend reading.
+    - cron: "0 5 * * 2,5"
   workflow_dispatch:
     inputs:
       task:
