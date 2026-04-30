@@ -177,7 +177,12 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **(b) Articles de type LISTE / GUIDE / SÉLECTION / TOP-N / CLASSEMENT** — ici la valeur EST la liste. Si le résumé fourni ne nomme PAS les éléments concrets de la liste (les jeux du top 10, les séries de la sélection, les outils du guide), ÉCARTE. Tu ne peux pas relayer une liste dont tu n'as pas les éléments.
 
-   **EXEMPLE NÉGATIF — à NE PAS retenir** : un article intitulé "4 séries Netflix à ne pas manquer en avril selon AlloCiné" dont le résumé fourni dit simplement "AlloCiné liste quatre séries Netflix à rattraper avant la fin du mois d'avril." → **ÉCARTE**. Le résumé ne nomme aucune série. Écrire "AlloCiné a sélectionné quatre séries Netflix pour ce mois d'avril, en privilégiant des productions récentes…" serait de la méta-paraphrase exactement comme l'exemple Numerama interdit plus bas. Tu ne peux pas inventer les noms des séries pour combler le manque.
+   **EXEMPLE NÉGATIF — à NE PAS retenir** : un article intitulé "4 séries Netflix à ne pas manquer en avril selon AlloCiné" → **ÉCARTE dans tous les cas** :
+   - Si le résumé ne nomme PAS les séries : impossible à relayer (méta-paraphrase comme l'exemple Numerama).
+   - Si le résumé nomme les séries mais qu'elles sont pour adultes (drames, thrillers, romance) : sujet hors-périmètre Totem (cf. Principe 3).
+   - Si le résumé nomme des séries famille (animation, séries jeunesse) : envisageable, mais en pratique ces sélections AlloCiné/Allociné Séries / Le Figaro Cinéma sont presque toujours pour adultes — par défaut, **écarte**.
+
+   Même règle pour les sélections Le Monde, Télérama, Le Figaro, Première : un guide de sortie hebdomadaire ne sert pas le lecteur Totem sauf si les œuvres listées sont explicitement pour familles/jeunes.
 
    **(c) Articles d'analyse / d'étude chiffrée** — si l'angle est "X% de…", "tendance à…", il te faut au moins UN chiffre ou UNE conclusion concrète dans le résumé. Sinon écarte.
 
@@ -221,6 +226,7 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **À ÉCARTER — sujets sans lien** :
    - Films / séries **strictement adultes sans angle famille** : suite d'une comédie adulte (Le Diable s'habille en Prada 2), drame intimiste, biopic d'adultes, thriller pour adultes — même si grand public, l'histoire ne sert pas le lecteur de Totem.
+   - **Adaptations littéraires d'œuvres pour adultes** : romans pour adultes adaptés en film/série (La Maison aux esprits d'Isabel Allende, Sukkwan Island de David Vann, drames littéraires Goncourt). Même si « famille » apparaît dans le synopsis (saga familiale, drame père-fils), si l'œuvre originale est destinée à un lectorat adulte, l'adaptation reste hors-périmètre.
    - Sorties d'adultes même non-violentes : films de mode, romance pour adultes, comédie de bureau, drame d'auteur.
    - Annonces de gadgets, célébrités, mondanités sans rapport avec les enfants.
    - **Test simple à appliquer à chaque candidat** : « Un parent qui consulte ce site pour savoir quoi montrer / lire / faire avec ses enfants — cette histoire l'aide-t-elle ? » Si la réponse est non, écarte, même si l'article est intéressant en soi.
