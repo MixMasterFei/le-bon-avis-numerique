@@ -149,6 +149,10 @@ export function ApercuDecouverteV3({
                   not buried at the bottom on phones. Hidden on lg+
                   where the sticky sidebar takes over. */}
               <div className="lg:hidden flex flex-col gap-4 my-2">
+                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                {data.airQuality && (
+                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
+                )}
                 {data.deadlines.length > 0 && (
                   <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
                 )}
@@ -161,10 +165,6 @@ export function ApercuDecouverteV3({
                 />
                 {data.notableDates.length > 0 && (
                   <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
-                )}
-                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
-                {data.airQuality && (
-                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
                 )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
@@ -265,18 +265,25 @@ export function ApercuDecouverteV3({
                 research highlight → études (sourced links out) →
                 week stats (pulse) → sources trust (transparency). */}
             <aside className="hidden lg:block">
-              {/* Sidebar order, top-down:
-                  1. Vacances scolaires (most-checked widget — pin first)
-                  2. Météo famille (immediate "today" feel + city picker)
-                  3. Anniversaire catalogue (nostalgia hook)
-                  4. Au cinéma cette semaine (catalog tie-in)
-                  5. Recherche highlight
-                  6. Études récentes (sourced links out)
-                  7. Sources de confiance (transparency footer)
+              {/* Sidebar order, top-down (Météo + Air on top per Xavier):
+                  1. Météo famille (instant "today" anchor + city picker)
+                  2. Air & pollens (paired with weather)
+                  3. Pense-Bête famille (recurring deadlines)
+                  4. Vacances scolaires (high-utility, calendar expand)
+                  5. Jour à noter (cultural / civic dates)
+                  6. Anniversaire catalogue (nostalgia hook)
+                  7. Au cinéma cette semaine (catalog tie-in)
+                  8. Recherche highlight
+                  9. Études récentes (sourced links out)
+                  10. Sources de confiance (transparency footer)
                   No max-height / no inner overflow — the sidebar
                   extends with the page so all blocks are reachable
                   by normal page scroll, not a nested scroll. */}
               <div className="flex flex-col gap-4">
+                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                {data.airQuality && (
+                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
+                )}
                 {data.deadlines.length > 0 && (
                   <PenseBeteCard deadlines={data.deadlines} serifClass={serifClass} />
                 )}
@@ -289,10 +296,6 @@ export function ApercuDecouverteV3({
                 />
                 {data.notableDates.length > 0 && (
                   <JourANoterCard dates={data.notableDates} serifClass={serifClass} />
-                )}
-                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
-                {data.airQuality && (
-                  <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
                 )}
                 {data.anniversary && (
                   <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />
