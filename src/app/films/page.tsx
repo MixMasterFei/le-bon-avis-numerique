@@ -154,7 +154,11 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     page,
     limit: PAGE_SIZE,
     minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
-    maxAge: effectiveMaxAge < DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    // <= (not <) so maxAge=18 from the homepage "16+" age tile is
+    // treated as a real filter (expertAgeRec ≤ 18 AND NOT NULL),
+    // not silently dropped. Without this, the 16+ tile routes to
+    // the same page as the default browse with no visible filter.
+    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
     platforms: platforms.length > 0 ? platforms : undefined,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,

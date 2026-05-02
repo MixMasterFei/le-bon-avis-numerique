@@ -149,7 +149,9 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
     page,
     limit: PAGE_SIZE,
     minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
-    maxAge: effectiveMaxAge < DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    // <= (not <) — see films/page.tsx note: keeps the homepage "16+"
+    // age tile from being silently a no-op when maxAge equals the default cap.
+    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
     platforms: platforms.length > 0 ? platforms : undefined,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,

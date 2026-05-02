@@ -42,7 +42,11 @@ export const APERCU_AGE_BUCKETS: ApercuAgeBucket[] = [
   { key: "8-10", maxAge: 10, label: "8–10", name: "Grands enfants", color: "#B8D89A", caps: { maxViolence: 2, maxSexual: 1, maxLanguage: 1, maxSubstance: 1 } },
   { key: "11-12", maxAge: 12, label: "11–12", name: "Pré-ados", color: "#8DBDC9", caps: { maxViolence: 2, maxSexual: 1, maxLanguage: 2, maxSubstance: 1 } },
   { key: "13-15", maxAge: 15, label: "13–15", name: "Ados", color: "#A79BC7", caps: { maxViolence: 3, maxSexual: 2, maxLanguage: 3, maxSubstance: 2 } },
-  { key: "16+", maxAge: 99, label: "16+", name: "Jeunes adultes", color: "#D89AB0", caps: {} },
+  // maxAge: 18 (not 99) so the films page actually applies the filter
+  // — its DEFAULT_MAX_AGE is 18 and any maxAge >= that is silently
+  // dropped, which made "16+" route to the same page as the default
+  // browse (no active filter, misleading URL).
+  { key: "16+", maxAge: 18, label: "16+", name: "Jeunes adultes", color: "#D89AB0", caps: {} },
 ]
 
 export function buildAgeBucketHref(bucket: ApercuAgeBucket): string {

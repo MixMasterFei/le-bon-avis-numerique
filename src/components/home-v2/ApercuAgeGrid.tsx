@@ -14,12 +14,16 @@ export function ApercuAgeGrid({ serifClass }: { serifClass: string }) {
       const entries = await Promise.all(
         APERCU_AGE_BUCKETS.map(async (b) => {
           try {
-            // Count uses the same caps as the tile link so the number
-            // matches what the user will actually see on click.
+            // Count must mirror the filter set the films page actually
+            // applies (films/page.tsx) so the number on the tile matches
+            // what the user sees on click. Films page uses requirePoster
+            // + language=fr,en + the maxAge/caps; it does NOT apply
+            // minQuality. Diverging from that here produces a misleading
+            // "X contenus" badge.
             const params = new URLSearchParams({
               maxAge: String(b.maxAge),
-              minQuality: "50",
               requirePoster: "true",
+              language: "fr,en",
               limit: "1",
               page: "1",
             })
