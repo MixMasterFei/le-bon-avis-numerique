@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsHeroCard } from "./ApercuNewsHeroCard"
@@ -254,6 +255,21 @@ export function ApercuDecouverteV3({
                   </div>
                 </div>
               )}
+
+              {/* "Voir toutes les actualités" — natural next step after
+                  the user has scanned the editorial selection (hero +
+                  top 3 + older). Links to the full paginated archive.
+                  TODO: when /actualites ships as the public route,
+                  swap the href to it. */}
+              <div className="mt-8 flex justify-center">
+                <Link
+                  href="/apercudecouverte/actualites"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+                  style={{ background: p.ink, color: p.bg }}
+                >
+                  Voir toutes les actualités <span aria-hidden>→</span>
+                </Link>
+              </div>
 
               {/* Mobile-only: sidebar content inlines AFTER the news
                   feed so the reading flow stays uninterrupted. Xavier's

@@ -242,13 +242,14 @@ export default async function ApercuDecouverteV3Page(props: {
     notableDates,
     deadlines,
   ] = await Promise.all([
-    // Top 12 French briefs in the 4 main categories, ordered by
-    // relevanceScore (which the synthesis prompt sets based on source
-    // clustering — multi-source events score 0.5+, single-source
-    // family-strong angles score 0.7+) then by recency. The hero
-    // pick downstream filters for sources.length >= 3 so the
-    // prominent slot is always multi-source. TECH excluded — it has
-    // its own 'Tech & IA' section below.
+    // Top 18 French briefs in the 4 main categories, ordered by
+    // recency. We pull more than the 4 visible slots (hero + 3 top)
+    // so the page-level image-dedup has room to backfill if the
+    // first picks collide on imageUrl. The hero pick downstream
+    // selects the most-recent multi-source story (sources.length >= 3)
+    // — recency-first ordering means the hero is also the freshest
+    // serious news, not just the highest-relevance ever. TECH excluded
+    // — it has its own 'Tech & IA' section below.
     prisma.newsStory.findMany({
       where: {
         status: "PUBLISHED",
@@ -256,8 +257,8 @@ export default async function ApercuDecouverteV3Page(props: {
         region: "FR",
         category: { in: ["PARENTHOOD", "FILM_TV", "GAMES", "READING"] },
       },
-      orderBy: [{ relevanceScore: "desc" }, { publishedAt: "desc" }],
-      take: 12,
+      orderBy: { publishedAt: "desc" },
+      take: 18,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
@@ -378,11 +379,13 @@ export default async function ApercuDecouverteV3Page(props: {
     return best
   })()
   const frenchHero = heroIdx >= 0 ? frenchRows[heroIdx] : undefined
+  // After hero removal, the rest is in chronological order (the query
+  // is publishedAt DESC). The "top 3" + "older briefs" split happens
+  // below, after image-dedup, so the visible top grid is always full
+  // even when collisions remove a card.
   const frenchRest = heroIdx >= 0
     ? [...frenchRows.slice(0, heroIdx), ...frenchRows.slice(heroIdx + 1)]
     : frenchRows
-  const frenchTop = frenchRest.slice(0, 3)
-  const olderBriefs = frenchRest.slice(3) // remainder
 
   // Page-level image dedup: dossier wins (it's the editorial centerpiece),
   // then hero, then top briefs, then INTL, then older. Any later card
@@ -399,10 +402,25 @@ export default async function ApercuDecouverteV3Page(props: {
   }
   const dossierCard = dossierRow ? claim(rowToCard(dossierRow)) : null
   const heroCard = frenchHero ? claim(rowToCard(frenchHero)) : null
-  const topCards = frenchTop.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+
+  // Backfill loop: walk frenchRest in chronological order, accumulate
+  // up to 3 surviving (post-dedup) cards into topCards, then push the
+  // rest into olderCards. Guarantees the "L'actualité qui compte" 3-up
+  // grid is always full as long as enough French briefs exist after
+  // dedup — no more visible empty slots when an image collides with
+  // the hero or dossier.
+  const TOP_TARGET = 3
+  const topCards: ApercuNewsCardData[] = []
+  const olderCards: ApercuNewsCardData[] = []
+  for (const row of frenchRest) {
+    const card = claim(rowToCard(row))
+    if (!card) continue
+    if (topCards.length < TOP_TARGET) topCards.push(card)
+    else olderCards.push(card)
+  }
+
   const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
   const techCards = techRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
-  const olderCards = olderBriefs.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
 
   const data: DecouverteV3Data = {
     frenchHero: heroCard,
