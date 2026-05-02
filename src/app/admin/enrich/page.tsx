@@ -71,12 +71,12 @@ export default function EnrichPage() {
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [selectedType, setSelectedType] = useState<MediaType>(initialTypeFromQuery())
-  // Default batch tuned for Vercel's 60s serverless ceiling: each
-  // gpt-5-mini analysis runs ~6-8s including the inter-item delay,
-  // so 5 items = ~35-45s with comfortable headroom. Was 25 — which
-  // reliably triggered 504 gateway timeouts on the manual button
-  // (auto-mode already used 5; only the one-shot path was broken).
-  const [batchSize, setBatchSize] = useState(5)
+  // Default batch tuned for Vercel's 60s serverless ceiling. The
+  // server caps each gpt-5-mini call at 18s (AbortController) and
+  // bails the loop at 35s elapsed, so 3 items × 18s + delays fits
+  // safely with headroom for a final in-flight item to finish.
+  // Earlier defaults of 5 (and originally 25) blew the timeout.
+  const [batchSize, setBatchSize] = useState(3)
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -172,9 +172,12 @@ export default function EnrichPage() {
     let totalDone = 0
     let totalErrors = 0
 
-    // Use small batches (5 items) in auto mode to stay within Vercel's 60s function timeout
-    // Each item takes ~7-8s for OpenAI analysis, so 5 items ≈ 40s
-    const autoBatchSize = 5
+    // Auto mode uses 3-item batches to stay safely under Vercel's
+    // 60s function timeout. Server caps each gpt-5-mini call at 18s
+    // and bails the loop at 35s elapsed, so 3 items + delays fits
+    // with comfortable headroom even when individual analyses run
+    // long. (Was 5; bumped down after seeing FUNCTION_INVOCATION_TIMEOUT.)
+    const autoBatchSize = 3
 
     while (!stopRequestedRef.current && !controller.signal.aborted) {
       try {
@@ -497,10 +500,10 @@ export default function EnrichPage() {
                 className="w-full p-2 border rounded-lg"
                 disabled={enriching}
               >
-                <option value={3}>3 contenus (~25s)</option>
-                <option value={5}>5 contenus (~40s)</option>
-                <option value={10}>10 contenus (~80s, peut timeout)</option>
-                <option value={25}>25 contenus (~3min, risque de timeout)</option>
+                <option value={3}>3 contenus (~30s, recommandé)</option>
+                <option value={5}>5 contenus (~50s, peut bailler tôt)</option>
+                <option value={10}>10 contenus (server bailera à 35s)</option>
+                <option value={25}>25 contenus (server bailera à 35s)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Cout estime: ~{(batchSize * 0.0013).toFixed(3)}$ (gpt-5-mini)

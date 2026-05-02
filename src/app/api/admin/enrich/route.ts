@@ -277,14 +277,29 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
 }`
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
-        { role: "user", content: prompt },
-      ],
-      max_completion_tokens: 2000,
-    })
+    // Per-call abort — gpt-5-mini occasionally takes 30-45s on a single
+    // analysis, which blows Vercel's 60s function ceiling after just one
+    // or two items. Capping each call at 18s lets the loop bail on slow
+    // items and move on, so the response always returns under budget.
+    // OpenAI SDK's default timeout is 10 minutes — way too long for us.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 18_000)
+    let response
+    try {
+      response = await openai.chat.completions.create(
+        {
+          model: "gpt-5-mini",
+          messages: [
+            { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
+            { role: "user", content: prompt },
+          ],
+          max_completion_tokens: 1500,
+        },
+        { signal: controller.signal },
+      )
+    } finally {
+      clearTimeout(timer)
+    }
 
     const content = response.choices[0]?.message?.content
     if (!content) {
@@ -440,12 +455,13 @@ export async function POST(request: NextRequest) {
     result.processed = items.length
     result.details.push(`Found ${items.length} items to enrich`)
 
-    // Safety bail before Vercel's 60s gateway ceiling — gpt-5-mini
-    // calls vary 4-10s each. We stop accepting new items once we've
-    // burned 50s so the response always returns JSON instead of
-    // tipping into a 504/HTML body. Caller (auto-mode loop) just
-    // re-invokes to pick up the rest.
-    const TIME_BUDGET_MS = 50_000
+    // Safety bail before Vercel's 60s gateway ceiling. With per-item
+    // 18s OpenAI timeout (see analyzeWithOpenAI), worst case for a
+    // single item is ~20s including post-processing + the inter-item
+    // delay. Bail at 35s leaves ~25s headroom — enough to finish a
+    // last in-flight item and still return JSON before the gateway
+    // 504s. Caller (auto-mode loop) re-invokes to pick up the rest.
+    const TIME_BUDGET_MS = 35_000
     let bailedOnTime = false
 
     for (const item of items) {
