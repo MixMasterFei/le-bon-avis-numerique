@@ -55,11 +55,22 @@ interface EnrichmentResult {
 
 type MediaType = "all" | "movie" | "tv" | "game" | "manga"
 
+// Initial type read from ?type=<x> URL param so the dashboard's
+// EnrichmentStockpile rows can deep-link straight to the format the
+// user wants to enrich (e.g. /admin/enrich?type=manga). Falls back
+// to "all" for unknown values or no param.
+function initialTypeFromQuery(): MediaType {
+  if (typeof window === "undefined") return "all"
+  const t = new URLSearchParams(window.location.search).get("type")?.toLowerCase()
+  if (t === "movie" || t === "tv" || t === "game" || t === "manga") return t
+  return "all"
+}
+
 export default function EnrichPage() {
   const [stats, setStats] = useState<EnrichmentStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
-  const [selectedType, setSelectedType] = useState<MediaType>("all")
+  const [selectedType, setSelectedType] = useState<MediaType>(initialTypeFromQuery())
   const [batchSize, setBatchSize] = useState(25)
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)

@@ -19,6 +19,7 @@ export async function GET() {
     // Run queries that should always work
     const [
       mediaStats,
+      unenrichedStats,
       lowQualityCount,
       topContributors,
       recentReviews,
@@ -28,6 +29,15 @@ export async function GET() {
       prisma.mediaItem.groupBy({
         by: ["type"],
         _count: true,
+      }),
+
+      // Unenriched counts by type — drives the EnrichmentStockpile
+      // panel on /admin/operations (and matches the same breakdown
+      // already shown on /admin's dashboard action queue).
+      prisma.mediaItem.groupBy({
+        by: ["type"],
+        _count: { _all: true },
+        where: { isEnriched: false },
       }),
 
       // Low quality items (score < 50)
@@ -145,9 +155,15 @@ export async function GET() {
       reviewCount: c._count,
     }))
 
+    const unenrichedByType = unenrichedStats
+      .map((s) => ({ type: String(s.type), count: s._count._all }))
+      .sort((a, b) => b.count - a.count)
+    const unenrichedTotal = unenrichedByType.reduce((acc, r) => acc + r.count, 0)
+
     return NextResponse.json({
       success: true,
       stats,
+      unenriched: { total: unenrichedTotal, byType: unenrichedByType },
       actionItems,
       recentActivity: recentActivity.map((a) => ({
         id: a.id,

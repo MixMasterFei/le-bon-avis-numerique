@@ -104,6 +104,7 @@ export default async function AdminDashboardPage(props: {
             correctionsPending={kpis.correctionsPending}
             requestsPending={kpis.requestsPending}
             catalogUnenriched={kpis.catalogUnenriched}
+            catalogUnenrichedByType={kpis.catalogUnenrichedByType}
             newsReportsPending={kpis.newsReportsPending}
             disagreedAgeItems={kpis.disagreedAgeItems}
           />

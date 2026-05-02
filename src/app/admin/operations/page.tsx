@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Loader2, Upload, Wrench, BarChart3, Activity } from "lucide-react"
+import { ArrowLeft, Loader2, Upload, Wrench, BarChart3, Activity, Sparkles, CalendarClock } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,
@@ -11,6 +11,8 @@ import {
   ActivityFeed,
   UserAnalytics,
 } from "@/components/admin"
+import { EnrichmentStockpile } from "@/components/admin/EnrichmentStockpile"
+import { CronLogsSection } from "@/components/admin/CronLogsSection"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { fraunces } from "@/components/home-v2/apercuFont"
 
@@ -22,6 +24,10 @@ interface DashboardData {
     books: number
     apps: number
     averageQualityScore: number
+  }
+  unenriched?: {
+    total: number
+    byType: Array<{ type: string; count: number }>
   }
   actionItems: {
     pendingCorrections: number
@@ -147,13 +153,38 @@ export default function AdminOperationsPage() {
               </div>
             </Section>
 
+            {data.unenriched && (
+              <Section
+                icon={Sparkles}
+                title="Stock à enrichir"
+                subtitle="Œuvres en attente d'enrichissement IA, ventilées par format."
+                serifClass={serifClass}
+              >
+                <EnrichmentStockpile
+                  serifClass={serifClass}
+                  total={data.unenriched.total}
+                  byType={data.unenriched.byType}
+                  variant="panel"
+                />
+              </Section>
+            )}
+
             <Section
               icon={Wrench}
               title="Outils de maintenance"
-              subtitle="Enrichissement, qualité, streaming, similarités, correctifs ponctuels."
+              subtitle="Recherche par mot-clé + opérations groupées par domaine. Cliquez le titre d'un groupe pour le replier."
               serifClass={serifClass}
             >
               <OperationsCenter onComplete={fetchData} />
+            </Section>
+
+            <Section
+              icon={CalendarClock}
+              title="Jobs automatiques"
+              subtitle="Dernières exécutions cron — santé par tâche et historique récent. Indicateur visible aussi sur le tableau de bord."
+              serifClass={serifClass}
+            >
+              <CronLogsSection />
             </Section>
 
             <Section

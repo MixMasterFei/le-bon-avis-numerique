@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   Database,
   Globe,
@@ -18,6 +18,9 @@ import {
   CalendarClock,
   BookMarked,
   Newspaper,
+  Search,
+  ChevronDown,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -668,29 +671,219 @@ const OPERATIONS: Array<{
     color: "amber",
     statLabels: { updated: "taguées" },
   },
+  {
+    config: {
+      key: "newsReverifyRelated",
+      endpoint: "/api/admin/news/reverify-related",
+      method: "POST",
+      // Re-runs the catalog-subject linkifier + LLM verifier on every
+      // PUBLISHED story to strip false-positive related-items cards.
+      // Cursor-passing because we touch ALL stories (no IS NULL filter
+      // to make resume natural).
+      chunked: true,
+      delayMs: 1500,
+      accumKeys: ["scanned", "updated", "cleared", "unchanged"],
+      extractProgress: (data) => ({
+        processed: data.scanned || 0,
+        total: typeof data.remaining === "number" ? (data.scanned || 0) + data.remaining : null,
+        updated: data.updated || 0,
+        skipped: data.unchanged || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data) => {
+        if (!data.lastId) return null
+        const next = new URLSearchParams()
+        next.set("afterId", data.lastId)
+        return next
+      },
+      buildSummary: (stats) =>
+        `${stats.updated || 0} mises à jour (${stats.cleared || 0} vidées, ${stats.unchanged || 0} inchangées)`,
+    },
+    label: "Re-vérifier liens catalogue",
+    description: "Filtrer via LLM les faux positifs dans les mini-cartes de fin d'article (Lost / Up / Friends mal liés)",
+    icon: Newspaper,
+    color: "amber",
+    statLabels: { updated: "corrigées", skipped: "inchangées" },
+  },
 ]
 
-// ── Component ──────────────────────────────────────────────
+// ── Grouping ───────────────────────────────────────────────
+// Group operations by purpose so the wall-of-tiles becomes scannable.
+// Operations not listed in any group fall into "Autres" — keeps new
+// operations visible until they're explicitly placed.
+
+interface OperationGroup {
+  label: string
+  description: string
+  keys: string[]
+}
+
+const GROUPS: OperationGroup[] = [
+  {
+    label: "Actualités",
+    description: "Pipeline news : nettoyage images, provenance, liens catalogue",
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsReverifyRelated"],
+  },
+  {
+    label: "Catalogue & qualité",
+    description: "Schéma DB, langues, classifications, scores qualité, nettoyage",
+    keys: [
+      "syncDb",
+      "backfillLanguage",
+      "computeQuality",
+      "fixTP",
+      "backfillCertifications",
+      "cleanupNonFrench",
+    ],
+  },
+  {
+    label: "Enrichissement IA",
+    description: "Pass 2 d'enrichissement profond, matrices de similarité",
+    keys: ["deepEnrich", "computeSimilarity"],
+  },
+  {
+    label: "Mangas",
+    description: "Imports AniList + enrichissement manga + éditions FR",
+    keys: ["enrichMangas", "refreshManga", "backfillMangaEditions"],
+  },
+  {
+    label: "Plateformes & classifications",
+    description: "Disponibilités streaming, import classifications CNC",
+    keys: ["cacheStreaming", "importCNC"],
+  },
+  {
+    label: "Médias & images",
+    description: "Screenshots, migration vers Supabase Storage, covers IGDB",
+    keys: ["importScreenshots", "migrateStorage", "fixGameCovers"],
+  },
+]
 
 interface OperationsCenterProps {
   onComplete?: () => void
 }
 
 export function OperationsCenter({ onComplete }: OperationsCenterProps) {
+  const [query, setQuery] = useState("")
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  // Reverse index: key → operation, so we render in group order without
+  // mutating the OPERATIONS array. New ops with no group end up in "Autres".
+  const byKey = useMemo(() => {
+    const map = new Map<string, (typeof OPERATIONS)[number]>()
+    for (const op of OPERATIONS) map.set(op.config.key, op)
+    return map
+  }, [])
+
+  const groupedOps = useMemo(() => {
+    const seen = new Set<string>()
+    const groups: Array<{ group: OperationGroup; ops: typeof OPERATIONS }> = GROUPS.map((g) => ({
+      group: g,
+      ops: g.keys
+        .map((k) => {
+          const op = byKey.get(k)
+          if (op) seen.add(k)
+          return op
+        })
+        .filter((op): op is (typeof OPERATIONS)[number] => !!op),
+    }))
+    const orphans = OPERATIONS.filter((op) => !seen.has(op.config.key))
+    if (orphans.length > 0) {
+      groups.push({
+        group: { label: "Autres", description: "Opérations non encore groupées", keys: [] },
+        ops: orphans,
+      })
+    }
+    return groups
+  }, [byKey])
+
+  // Filter by free-text search on label + description. Empty query = pass-through.
+  const q = query.trim().toLowerCase()
+  const visibleGroups = groupedOps
+    .map(({ group, ops }) => ({
+      group,
+      ops: q
+        ? ops.filter(
+            (op) =>
+              op.label.toLowerCase().includes(q) ||
+              op.description.toLowerCase().includes(q),
+          )
+        : ops,
+    }))
+    .filter(({ ops }) => ops.length > 0)
+
+  function toggle(label: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {OPERATIONS.map((op) => (
-        <OperationItem
-          key={op.config.key}
-          config={op.config}
-          label={op.label}
-          description={op.description}
-          icon={op.icon}
-          colors={COLORS[op.color]}
-          statLabels={op.statLabels}
-          onComplete={onComplete}
+    <div className="space-y-6">
+      {/* Search bar — filters across all groups by label / description. */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filtrer les opérations…"
+          className="w-full pl-9 pr-3 py-2 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         />
-      ))}
+      </div>
+
+      {visibleGroups.length === 0 && (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          Aucune opération ne correspond à « {query} ».
+        </p>
+      )}
+
+      {visibleGroups.map(({ group, ops }) => {
+        const isCollapsed = collapsed.has(group.label)
+        // When the user is searching, force-expand so matches are visible
+        // even in groups they previously collapsed.
+        const open = q ? true : !isCollapsed
+        return (
+          <section key={group.label}>
+            <button
+              type="button"
+              onClick={() => toggle(group.label)}
+              className="w-full flex items-center justify-between gap-2 mb-3 text-left group/section"
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  {open ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  <h3 className="text-sm font-semibold tracking-tight">{group.label}</h3>
+                  <span className="text-xs text-muted-foreground">({ops.length})</span>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6 mt-0.5">{group.description}</p>
+              </div>
+            </button>
+            {open && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {ops.map((op) => (
+                  <OperationItem
+                    key={op.config.key}
+                    config={op.config}
+                    label={op.label}
+                    description={op.description}
+                    icon={op.icon}
+                    colors={COLORS[op.color]}
+                    statLabels={op.statLabels}
+                    onComplete={onComplete}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 }

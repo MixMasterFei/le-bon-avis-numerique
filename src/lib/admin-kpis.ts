@@ -16,10 +16,20 @@ export interface DailyGrowthPoint {
   families: number
 }
 
+export interface UnenrichedByType {
+  type: string  // MediaType: MOVIE | TV | GAME | BOOK | MANGA
+  count: number
+}
+
 export interface AdminKpis {
   // Catalog
   catalogTotal: number
   catalogUnenriched: number
+  // Drilldown for the dashboard's "œuvres à enrichir" stat — was a single
+  // opaque number ("1069 to enhance") with no way to tell which formats
+  // are responsible. Surfaced as inline rows so the user knows whether
+  // it's a movies issue, a manga issue, etc., before clicking through.
+  catalogUnenrichedByType: UnenrichedByType[]
 
   // Growth — this week / last week / month
   usersWeek: number
@@ -82,6 +92,7 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
   const [
     catalogTotal,
     catalogUnenriched,
+    catalogUnenrichedByTypeRaw,
 
     usersWeek,
     usersPrevWeek,
@@ -115,6 +126,11 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
   ] = await Promise.all([
     prisma.mediaItem.count(),
     prisma.mediaItem.count({ where: { isEnriched: false } }),
+    prisma.mediaItem.groupBy({
+      by: ["type"],
+      _count: { _all: true },
+      where: { isEnriched: false },
+    }),
 
     // User + FamilyMember + MediaReaction + Review + CronLog + MediaItem
     // are core tables and assumed to exist. Everything else (ageVote,
@@ -181,9 +197,17 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     })
   }
 
+  // Sort largest-first so the dashboard stockpile leads with the most
+  // pressing format. Type names are stringified to match the inline
+  // rows on EnrichmentStockpile (which is type-agnostic).
+  const catalogUnenrichedByType: UnenrichedByType[] = catalogUnenrichedByTypeRaw
+    .map((row) => ({ type: String(row.type), count: row._count._all }))
+    .sort((a, b) => b.count - a.count)
+
   return {
     catalogTotal,
     catalogUnenriched,
+    catalogUnenrichedByType,
     usersWeek,
     usersPrevWeek,
     usersMonth,

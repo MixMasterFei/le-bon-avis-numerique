@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { EnrichmentStockpile } from "./EnrichmentStockpile"
+import type { UnenrichedByType } from "@/lib/admin-kpis"
 
 interface QueueItem {
   count: number
@@ -13,6 +15,7 @@ interface AdminActionQueueProps {
   correctionsPending: number
   requestsPending: number
   catalogUnenriched: number
+  catalogUnenrichedByType: UnenrichedByType[]
   newsReportsPending?: number
   disagreedAgeItems?: number
 }
@@ -26,10 +29,13 @@ export function AdminActionQueue({
   correctionsPending,
   requestsPending,
   catalogUnenriched,
+  catalogUnenrichedByType,
   newsReportsPending = 0,
   disagreedAgeItems = 0,
 }: AdminActionQueueProps) {
   const p = APERCU_PALETTE
+  // Triage queues without enrichment — that one gets its own drillable
+  // widget below since it's the only count with a meaningful breakdown.
   const items: QueueItem[] = [
     {
       count: disagreedAgeItems,
@@ -51,14 +57,9 @@ export function AdminActionQueue({
       label: "signalements de commentaires",
       href: "/admin/news-reports",
     },
-    {
-      count: catalogUnenriched,
-      label: "œuvres à enrichir",
-      href: "/admin/operations",
-    },
   ]
 
-  const nothingToDo = items.every((i) => i.count === 0)
+  const nothingToDo = items.every((i) => i.count === 0) && catalogUnenriched === 0
 
   return (
     <div>
@@ -111,6 +112,11 @@ export function AdminActionQueue({
               </Link>
             )
           })}
+          <EnrichmentStockpile
+            serifClass={serifClass}
+            total={catalogUnenriched}
+            byType={catalogUnenrichedByType}
+          />
         </div>
       )}
     </div>
