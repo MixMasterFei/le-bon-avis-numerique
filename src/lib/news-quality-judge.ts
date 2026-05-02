@@ -33,6 +33,11 @@ export interface JudgeInput {
   title: string
   summary: string
   body: string
+  // The "Ce que ça signifie pour les familles" box. Optional only
+  // for backward compat with legacy briefs; new BRIEF format briefs
+  // must always supply one (the structureFit dimension penalises
+  // missing values for BRIEF format).
+  familyTakeaway?: string | null
   category: NewsCategory | string
   format: StoryFormat
   // Source publication names for the fidelity check (we don't fetch
@@ -47,6 +52,12 @@ export interface JudgeScores {
   neutrality: number          // 1-5
   structuralCleanliness: number // 1-5
   lengthFit: number           // 1-5
+  // BRIEF-only: 2 H2 sections + at least 1 « » direct quote in body.
+  // For DOSSIER, the LLM should default to 4 (different format spec).
+  structureFit: number        // 1-5
+  // BRIEF-only: familyTakeaway present, 60-120 words, no platitudes.
+  // For DOSSIER, the LLM should default to 4 (no takeaway field).
+  familyTakeawayPresent: number // 1-5
 }
 
 export interface JudgeVerdict {
@@ -62,7 +73,7 @@ export interface JudgeVerdict {
 const MIN_OVERALL = 3
 const MIN_PER_DIMENSION = 2
 
-const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem Avisé, un site d'actualité famille français. Tu reçois un article synthétisé à partir de sources, et tu le notes sur 4 critères.
+const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem Avisé, un site d'actualité famille français. Tu reçois un article synthétisé à partir de sources, et tu le notes sur 6 critères.
 
 **Critères (note de 1 à 5 chacun, 5 = excellent, 1 = inacceptable) :**
 
@@ -74,12 +85,12 @@ const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem 
    - L'article paraphrase la STRUCTURE éditoriale du source ("La rédaction précise avoir testé", "Le guide ne se contente pas de…") au lieu de livrer les faits.
    Note 5 = chaque fait fort est nommément attribué ET les éléments concrets (noms, chiffres, dates) sont relayés directement. Note 1 = hallucinations ou méta-paraphrase pure.
 
-2. **neutrality** : voix éditoriale neutre, sans prise de position. Pénalise si :
+2. **neutrality** : voix éditoriale neutre dans le BODY (le familyTakeaway, lui, est éditorial par design — ne le pénalise PAS au titre de la neutralité). Pénalise le body si :
    - Vocabulaire éditorial : *enfin, malheureusement, fort heureusement, étonnamment, sans surprise, à juste titre, courageux, lucide, alarmant, inquiétant, prometteur, salutaire, catastrophique*.
-   - Conclusions Totem ("on ne peut que saluer", "il est temps que…", "voilà qui change la donne").
+   - Conclusions Totem dans le body ("on ne peut que saluer", "il est temps que…", "voilà qui change la donne").
    - Questions rhétoriques ("Pour combien de temps ?", "Mais à quel prix ?").
    - Titres avec qualificatif ("la semaine où la France a dit assez", "un signal alarmant").
-   Note 5 = ton purement descriptif, attributions par nom. Note 1 = éditorial assumé.
+   Note 5 = body purement descriptif, attributions par nom. Note 1 = éditorial assumé dans le body.
 
 3. **structuralCleanliness** : pas d'artefacts LLM. Pénalise si :
    - Mentions de numéros internes : "(article 3)", "[0]", "article numéro 5".
@@ -88,9 +99,18 @@ const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem 
    - Répétitions de paragraphes, formules robotiques ("En conclusion, en résumé").
    Note 5 = propre comme un article édité. Note 1 = artefacts visibles.
 
-4. **lengthFit** : longueur adaptée au format.
-   - BRIEF : 200-450 mots (note 5 si dans la fourchette, 3 si 150-200 ou 450-600, 1 si <100 ou >800).
-   - DOSSIER : 800-1200 mots (note 5 si dans la fourchette, 3 si 600-800 ou 1200-1500, 1 si <500 ou >1800).
+4. **lengthFit** : longueur adaptée au format (compte uniquement le body, pas le familyTakeaway).
+   - BRIEF (nouveau format) : 400-600 mots (note 5), 300-400 ou 600-750 mots (note 3), <250 ou >900 mots (note 1).
+   - DOSSIER : 800-1500 mots (note 5), 600-800 ou 1500-1800 mots (note 3), <500 ou >2000 mots (note 1).
+
+5. **structureFit** (BRIEF uniquement — pour DOSSIER, mets 4 par défaut) :
+   - Le body doit contenir EXACTEMENT 2 sections H2 marquées par "## " en début de ligne, plus un lede sans titre avant la première H2.
+   - Le body doit contenir au moins 2 citations directes en guillemets français « » avec attribution nominative ("a déclaré X" ou "selon Y").
+   - Note 5 = 2 H2 + ≥2 citations « » bien attribuées. Note 3 = 2 H2 mais une seule citation « », OU 2 citations sans 2 H2 distinctes. Note 1 = pas de H2 OU pas de citation directe.
+
+6. **familyTakeawayPresent** (BRIEF uniquement — pour DOSSIER, mets 4 par défaut) :
+   - Le champ familyTakeaway doit être présent (non-null), faire 60 à 120 mots, et donner un angle parental concret ancré dans les faits.
+   - Note 5 = présent, 60-120 mots, angle concret (que faire / surveiller / vérifier précisément). Note 3 = présent mais hors fourchette de mots OU angle un peu vague mais utilisable. Note 1 = absent (null) OU platitude pure ("ouvrez le dialogue", "soyez vigilants", "discutez en famille") OU contenu non-ancré dans les faits du body.
 
 **Sortie** — UNIQUEMENT du JSON sans markdown :
 {
@@ -98,10 +118,16 @@ const SYSTEM_PROMPT = `Tu es un évaluateur qualité pour les articles de Totem 
   "neutrality": 1-5,
   "structuralCleanliness": 1-5,
   "lengthFit": 1-5,
+  "structureFit": 1-5,
+  "familyTakeawayPresent": 1-5,
   "reason": "phrase courte expliquant la note la plus basse, ou 'OK' si tout est ≥4"
 }`
 
 function buildUserPrompt(input: JudgeInput): string {
+  const takeawayBlock =
+    input.format === "BRIEF"
+      ? `\n\nFamily takeaway :\n${input.familyTakeaway ?? "(absent — null)"}`
+      : ""
   return `Format : ${input.format}
 Catégorie : ${input.category}
 Sources citées : ${input.sourceNames.length > 0 ? input.sourceNames.join(", ") : "(aucune fournie)"}
@@ -111,7 +137,7 @@ Titre : ${input.title}
 Résumé : ${input.summary}
 
 Corps :
-${input.body}`
+${input.body}${takeawayBlock}`
 }
 
 interface ParsedScores {
@@ -119,6 +145,8 @@ interface ParsedScores {
   neutrality: number
   structuralCleanliness: number
   lengthFit: number
+  structureFit: number
+  familyTakeawayPresent: number
   reason: string
 }
 
@@ -138,6 +166,8 @@ function parseResponse(raw: string): ParsedScores | null {
       neutrality: clampScore(o.neutrality),
       structuralCleanliness: clampScore(o.structuralCleanliness),
       lengthFit: clampScore(o.lengthFit),
+      structureFit: clampScore(o.structureFit),
+      familyTakeawayPresent: clampScore(o.familyTakeawayPresent),
       reason: typeof o.reason === "string" ? o.reason.slice(0, 200) : "",
     }
   } catch {
@@ -176,7 +206,14 @@ async function callJudge(input: JudgeInput): Promise<string> {
 export async function judgeStory(input: JudgeInput): Promise<JudgeVerdict> {
   const failOpen: JudgeVerdict = {
     passes: true,
-    scores: { sourceFidelity: 3, neutrality: 3, structuralCleanliness: 3, lengthFit: 3 },
+    scores: {
+      sourceFidelity: 3,
+      neutrality: 3,
+      structuralCleanliness: 3,
+      lengthFit: 3,
+      structureFit: 3,
+      familyTakeawayPresent: 3,
+    },
     overall: 3,
     reason: "judge unavailable — fail-open",
     judged: false,
@@ -192,14 +229,24 @@ export async function judgeStory(input: JudgeInput): Promise<JudgeVerdict> {
       neutrality: parsed.neutrality,
       structuralCleanliness: parsed.structuralCleanliness,
       lengthFit: parsed.lengthFit,
+      structureFit: parsed.structureFit,
+      familyTakeawayPresent: parsed.familyTakeawayPresent,
     }
     const overall =
-      (scores.sourceFidelity + scores.neutrality + scores.structuralCleanliness + scores.lengthFit) / 4
+      (scores.sourceFidelity +
+        scores.neutrality +
+        scores.structuralCleanliness +
+        scores.lengthFit +
+        scores.structureFit +
+        scores.familyTakeawayPresent) /
+      6
     const minDim = Math.min(
       scores.sourceFidelity,
       scores.neutrality,
       scores.structuralCleanliness,
       scores.lengthFit,
+      scores.structureFit,
+      scores.familyTakeawayPresent,
     )
     const passes = overall >= MIN_OVERALL && minDim >= MIN_PER_DIMENSION
 

@@ -877,6 +877,13 @@ model NewsStory {
   // Null when no study citation is detected.
   research       Json?
 
+  // Totem's family-angle interpretation, rendered as a boxed aside at
+  // the end of the article — the "what this means for families" callout
+  // the journalistic body deliberately avoids. The body stays neutral;
+  // this field carries the parental framing.
+  // 60-120 words, plain text (no markdown). Null on legacy briefs.
+  familyTakeaway String?         @map("family_takeaway") @db.Text
+
   // Primary catalog subject — the media item the story is most clearly
   // about (set at persist time by the linkifier when a title in the
   // body matches a catalog row). Drives the "Voir la fiche complète

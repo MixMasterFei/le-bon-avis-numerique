@@ -242,9 +242,13 @@ export default async function ApercuDecouverteV3Page(props: {
     notableDates,
     deadlines,
   ] = await Promise.all([
-    // 12 most recent French briefs in the 4 main categories. TECH is
-    // excluded here so it doesn't double-render in both the main grid
-    // and the dedicated 'Tech & IA' section below.
+    // Top 12 French briefs in the 4 main categories, ordered by
+    // relevanceScore (which the synthesis prompt sets based on source
+    // clustering — multi-source events score 0.5+, single-source
+    // family-strong angles score 0.7+) then by recency. The hero
+    // pick downstream filters for sources.length >= 3 so the
+    // prominent slot is always multi-source. TECH excluded — it has
+    // its own 'Tech & IA' section below.
     prisma.newsStory.findMany({
       where: {
         status: "PUBLISHED",
@@ -252,7 +256,7 @@ export default async function ApercuDecouverteV3Page(props: {
         region: "FR",
         category: { in: ["PARENTHOOD", "FILM_TV", "GAMES", "READING"] },
       },
-      orderBy: { publishedAt: "desc" },
+      orderBy: [{ relevanceScore: "desc" }, { publishedAt: "desc" }],
       take: 12,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
@@ -346,7 +350,37 @@ export default async function ApercuDecouverteV3Page(props: {
     Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
   ])
 
-  const [frenchHero, ...frenchRest] = frenchRows
+  // Hero pick — prefer the first row with sources.length >= 3 so the
+  // prominent slot is always a multi-source story (Perplexity-style
+  // editorial signal: more sources = more newsworthy). Falls back to
+  // the highest-source-count row if none reach 3, then to the first
+  // row regardless. The query already orders by relevanceScore desc,
+  // so within the eligible-by-sources subset we get the strongest
+  // candidate too.
+  function sourceCount(r: StoryRow): number {
+    return Array.isArray(r.sources) ? r.sources.length : 0
+  }
+  const heroIdx = (() => {
+    if (frenchRows.length === 0) return -1
+    const multi = frenchRows.findIndex((r) => sourceCount(r) >= 3)
+    if (multi !== -1) return multi
+    // No 3+ source row — pick the one with the most sources, ties
+    // broken by the existing query order (relevanceScore desc).
+    let best = 0
+    let bestCount = sourceCount(frenchRows[0])
+    for (let i = 1; i < frenchRows.length; i++) {
+      const c = sourceCount(frenchRows[i])
+      if (c > bestCount) {
+        best = i
+        bestCount = c
+      }
+    }
+    return best
+  })()
+  const frenchHero = heroIdx >= 0 ? frenchRows[heroIdx] : undefined
+  const frenchRest = heroIdx >= 0
+    ? [...frenchRows.slice(0, heroIdx), ...frenchRows.slice(heroIdx + 1)]
+    : frenchRows
   const frenchTop = frenchRest.slice(0, 3)
   const olderBriefs = frenchRest.slice(3) // remainder
 

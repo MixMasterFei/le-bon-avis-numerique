@@ -1,7 +1,14 @@
 import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
-import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
-import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
+import { getAnthropic } from "@/lib/anthropic"
+import { getDeepSeek, SYNTHESIS_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
+
+// Sonnet model id used as the synthesis escape hatch (NEWS_PROVIDER=anthropic).
+// Stronger writing than Haiku at ~3x the cost — only worth it for the
+// user-visible briefs surface, not the cost-sensitive moderation paths
+// (moderation, research extraction, quality judge keep using their
+// own DEFAULT_MODEL imports).
+const SYNTHESIS_ANTHROPIC_MODEL = "claude-sonnet-4-6"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
 import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
@@ -69,6 +76,11 @@ interface SynthesizedStory {
   title: string
   summary: string
   body: string
+  // The "Ce que ça signifie pour les familles" boxed aside. Carries
+  // Totem's editorial voice — the body stays neutral. 60-120 words
+  // plain text. Null when the LLM didn't supply one (defensive only;
+  // the quality judge demotes any brief without it to PENDING_REVIEW).
+  familyTakeaway: string | null
   category: NewsCategory
   relevanceScore: number
   imageUrl: string
@@ -213,17 +225,29 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **EXIGÉ** : attribution nommée des affirmations fortes ("Selon Le Monde…", "Numerama rapporte…"), faits concrets que tu as réellement (titres, dates, lieux, chiffres, noms). Pour un événement, écrire 300 mots sobres est OK même avec un résumé bref ; pour un top 10 sans la liste, écarte.
 
-   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné.). Le brief produit doit faire **300-450 mots**, comme dans cet exemple (le contenu ci-dessous est ce que tu mettrais dans le champ "body" d'une histoire) :
+   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné.). Le brief produit doit faire **400-600 mots structurés en lede + deux sections H2**, comme dans cet exemple (le contenu ci-dessous est ce que tu mettrais dans le champ "body" d'une histoire ; le champ "familyTakeaway" est en plus, séparé) :
 
-   Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox la semaine du 25 avril. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2 : la Voie de l'eau, sorti fin 2022. Selon AlloCiné, le film conserve les acteurs principaux des volets précédents, dont Sam Worthington dans le rôle de Jake Sully et Zoe Saldana dans celui de Neytiri.
+   Body :
+
+   Avatar 3 sort dans les salles françaises le 19 décembre 2026, ont annoncé Disney et la 20th Century Fox la semaine du 25 avril. Le troisième volet de la saga de James Cameron prend place sur Pandora plusieurs années après les événements d'Avatar 2 : la Voie de l'eau, sorti fin 2022. Selon AlloCiné, le film conserve Sam Worthington dans le rôle de Jake Sully et Zoe Saldana dans celui de Neytiri.
+
+   ## Une date de Noël assumée par Disney
 
    La date du 19 décembre s'inscrit dans la fenêtre des sorties familiales pour les vacances de Noël, créneau exploité par chaque opus précédent de la saga. Variety rapporte que le scénario explore le peuple Ash, une nouvelle tribu Na'vi orientée sur le feu, après l'introduction du peuple Metkayina (peuple de l'eau) dans le précédent volet. Premiere indique que le tournage en motion-capture a duré près de quatre ans entre la Nouvelle-Zélande et les studios Manhattan Beach, en Californie.
 
-   La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, selon Variety, comme le précédent volet (3h12). Disney a précisé à AlloCiné que le film sera distribué simultanément en IMAX, 3D HFR (high frame rate) et version standard, mais la stratégie tarifaire pour les séances premium n'a pas encore été détaillée pour la France.
+   « Nous emmenons les spectateurs dans des territoires de Pandora qu'on n'a jamais vus », a déclaré James Cameron lors de la convention CinemaCon, selon Variety. La durée annoncée par les distributeurs reste à confirmer mais devrait dépasser trois heures, comme le précédent volet (3h12).
 
-   Aucun classement officiel français n'a été publié à ce jour. Les deux premiers volets de la saga étaient classés tous publics avec avertissement, mention liée à des scènes de bataille. Le CNC précisera son avis dans les semaines précédant la sortie. Une bande-annonce mondiale est attendue lors de la convention CinemaCon de Las Vegas, selon Premiere.
+   ## Une classification française encore en attente
 
-   Cet exemple (≈ 320 mots) est ACCEPTABLE même si le résumé fourni était court : il livre titre, date, casting, lieu de tournage, durée approximative, format de distribution, état du classement officiel — chaque fait étant attribué nommément à sa source. C'est l'écart attendu entre le résumé brut (limité) et le brief structuré que tu produis. **Vise toujours 300-450 mots** ; un brief de 200 mots sera rejeté par le contrôle qualité aval. **N'utilise PAS de double-quote ASCII " dans le body** — utilise les guillemets français « » pour les citations directes (cf. règle d'échappement JSON plus bas).
+   Disney a précisé à AlloCiné que le film sera distribué simultanément en IMAX, 3D HFR (high frame rate) et version standard, mais la stratégie tarifaire pour les séances premium n'a pas encore été détaillée pour la France. Aucun classement officiel français n'a été publié à ce jour.
+
+   Les deux premiers volets de la saga étaient classés tous publics avec avertissement, mention liée à des scènes de bataille. Le CNC précisera son avis dans les semaines précédant la sortie. « Nous attendons la décision finale de la commission », a indiqué un porte-parole de Disney France à Premiere. Une bande-annonce mondiale est attendue lors de la convention CinemaCon de Las Vegas.
+
+   FamilyTakeaway :
+
+   Pour les familles qui ont aimé les deux premiers Avatar, la sortie est calée sur les vacances de Noël comme prévu. Attention particulière sur le classement final du CNC : les volets précédents étaient « tous publics avec avertissement » pour les scènes de bataille, et un Avatar 3 plus dense pourrait passer à 12+. Les séances IMAX et 3D HFR ont des billets premium plus chers — point à anticiper pour un budget famille.
+
+   Cet exemple body fait ≈ 480 mots et le familyTakeaway ≈ 80 mots. Ce qui le rend acceptable : (1) lede de 80 mots qui livre qui/quoi/quand avec attribution dès la première mention forte, (2) deux sections H2 aux titres descriptifs choisis par toi, (3) deux citations directes attribuées nommément (Cameron via Variety, porte-parole Disney via Premiere), (4) un familyTakeaway concret (le classement à surveiller, le coût des séances IMAX) — pas une platitude type « ouvrez le dialogue ». **Vise toujours 400-600 mots dans body** (un brief sous 300 mots sera rejeté), **toujours exactement 2 sections H2** (titres générés par toi, descriptifs et factuels), **toujours au moins 2 citations directes en « »** quand les sources en fournissent, **toujours un familyTakeaway de 60-120 mots**. **N'utilise PAS de double-quote ASCII " dans le body ni le familyTakeaway** — utilise les guillemets français « » pour les citations directes (cf. règle d'échappement JSON plus bas).
 
 **2. Voix neutre, jamais éditoriale.**
    Tu rapportes ce que les sources disent ; tu n'as pas d'avis.
@@ -251,9 +275,10 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
    - Annonces de gadgets, célébrités, mondanités sans rapport avec les enfants.
    - **Test simple à appliquer à chaque candidat** : « Un parent qui consulte ce site pour savoir quoi montrer / lire / faire avec ses enfants — cette histoire l'aide-t-elle ? » Si la réponse est non, écarte, même si l'article est intéressant en soi.
 
-   **Ton (séparé du sujet)** :
-   - **NE COMMENCE PAS** par "Pour les parents qui…", "Les familles concernées…", "À retenir pour les enfants de X ans" — formules éditoriales redondantes. La pertinence se prouve par le sujet, pas par une formule d'ouverture.
-   - **NE TERMINE PAS** par une exhortation Totem ("Voici de quoi alimenter vos discussions à table"). Si tu veux clore avec une note ouverte, ce doit être soit une **question relayée d'une source** ("Plusieurs experts cités par Le Monde s'interrogent sur la pérennité du dispositif."), soit une **observation factuelle** ("Le ministère doit publier ses recommandations finales avant l'été."), jamais un commentaire Totem.
+   **Ton (séparé du sujet)** — règles pour le BODY uniquement, pas pour le familyTakeaway :
+   - **NE COMMENCE PAS** par "Pour les parents qui…", "Les familles concernées…", "À retenir pour les enfants de X ans" — formules éditoriales redondantes dans le body journalistique. La pertinence se prouve par le sujet, pas par une formule d'ouverture.
+   - **NE TERMINE PAS le body** par une exhortation Totem ("Voici de quoi alimenter vos discussions à table"). Le body se clôt soit sur une **question relayée d'une source** ("Plusieurs experts cités par Le Monde s'interrogent sur la pérennité du dispositif."), soit sur une **observation factuelle** ("Le ministère doit publier ses recommandations finales avant l'été."), jamais un commentaire Totem.
+   - **Le commentaire Totem va dans le champ familyTakeaway**, pas dans le body. C'est le seul endroit où ta voix éditoriale est autorisée. Voir la section FAMILY TAKEAWAY plus bas.
 
 ## CLUSTERING
 
@@ -319,16 +344,41 @@ JSON par histoire :
 
 - "title" : factuel et descriptif. "Sortie de X au cinéma le 21 octobre", pas "Le grand retour de X". Pas de qualificatif émotionnel.
 - "summary" : 1-2 phrases descriptives, < 200 caractères.
-- "body" : markdown, **300-450 mots**, 3 ou 4 paragraphes séparés par une ligne vide. Citations directes en « » bienvenues (cf. section précédente). Pour les histoires longues (≥ 400 mots), un sous-titre h3 ("### Titre court") au-dessus du para 3 ou 4 est autorisé pour aérer la lecture, mais pas obligatoire.
+- "body" : markdown, **400-600 mots**, structuré en **un lede + exactement deux sections H2** dont tu choisis les titres. Les titres H2 doivent être courts, descriptifs et factuels (pas éditoriaux) — ex. « Une date de Noël assumée par Disney », « Une classification française encore en attente », « Un dispositif déjà testé à Marseille ». **Pas de H3 dans le body.** Citations directes en « » obligatoires quand les sources les fournissent (minimum 2, idéalement une par section).
 
-   - **Para 1** (~80-100 mots) — Le QUOI / QUI / OÙ / QUAND, en mode neutre, avec attribution dès la première mention forte ("Selon Le Monde…", "Numerama rapporte que…"). Pas de hook éditorial.
-   - **Para 2** (~100-130 mots) — Les éléments concrets : les jeux nommés, les chiffres clés, les dates précises, les noms de personnes ou d'études. Chaque fait attribué nommément. Ne paraphrase pas la STRUCTURE de l'article ("le guide ne se contente pas de…") — livre les éléments directement. Si une déclaration figure dans la source, intègre-la en citation directe attribuée.
-   - **Para 3** (~80-120 mots) — Mise en perspective relayée depuis les sources : conséquences chiffrées, réactions citées (souvent l'endroit naturel d'une 2ᵉ citation directe), comparaisons que les sources elles-mêmes établissent. Pas de jugement Totem.
-   - **Para 4** (optionnel, ~50-80 mots) — Soit un détail pratique attribué (date, lieu, montant, recommandation officielle), soit une question ouverte relayée d'une source ("Plusieurs experts cités par Le Monde s'interrogent sur…"), soit une citation finale forte attribuée. Jamais une conclusion Totem.
+   - **Lede** (~50-80 mots, sans titre) — Le QUOI / QUI / OÙ / QUAND en deux ou trois phrases, avec attribution dès la première mention forte ("Selon Le Monde…", "Numerama rapporte que…"). Un chiffre concret ou un nom propre dans la première phrase si la matière le permet. Pas de hook éditorial.
+   - **## Section 1** (titre H2 généré par toi, ~180-240 mots) — Les faits. Les éléments concrets : titres nommés, chiffres, dates précises, personnes ou études citées. Chaque affirmation forte attribuée nommément. Au moins une citation directe en « » de cette section quand la source en fournit une, au format : « citation », a déclaré [nom], [fonction] (Source, [date]). Ne paraphrase pas la STRUCTURE de l'article — livre le contenu.
+   - **## Section 2** (titre H2 généré par toi, ~180-240 mots) — Le contexte, les réactions, ou ce qui est en jeu. Deuxième citation directe (ou attribution indirecte si les sources n'en fournissent pas). Quand deux publications divergent ou se complètent sur l'angle, croise-les nommément ("Selon Le Monde X, tandis que Numerama souligne Y"). Conclus sur une observation factuelle ou une question relayée d'une source — jamais sur un commentaire Totem.
+
+- "familyTakeaway" : **CHAMP NOUVEAU OBLIGATOIRE.** Voir la section FAMILY TAKEAWAY plus bas pour le format détaillé.
 - "category" : PARENTHOOD | FILM_TV | GAMES | READING | TECH. TECH = IA générative, contrôle parental, régulation des réseaux sociaux pour les jeunes, outils de temps d'écran, EdTech, annonces d'appareils touchant la vie famille (distinct de GAMES qui couvre l'industrie du jeu vidéo).
 - "relevanceScore" : 0 à 1, pertinence FAMILIALE (pas intérêt général).
 - "imageUrl" : URL exacte de l'IMG d'un article du cluster, conforme à la règle famille.
 - "sourceIndexes" : tableau des indexes des articles cités (entiers).
+
+## FAMILY TAKEAWAY — le champ "familyTakeaway"
+
+Le seul endroit où ta voix éditoriale est autorisée. Le body reste 100% journalistique et neutre ; ce champ est rendu côté UI dans une **boîte distincte** intitulée « Ce que ça signifie pour les familles », visuellement séparée du body, en bas de l'article.
+
+**Format :** texte plat, **60-120 mots**, 2 à 3 phrases. Pas de markdown, pas de titre, pas de liste à puces.
+
+**Contenu attendu :** un angle parental concret et utile, ancré dans les faits du body.
+- Que faire / regarder / surveiller pour leur foyer compte tenu de l'info ?
+- Quel point précis vérifier (classement, prix, âge minimum, contrôle parental) ?
+- Quelle conversation cette info permet d'ouvrir avec leurs enfants ?
+
+**À éviter absolument :**
+- Platitudes vagues : "ouvrez le dialogue", "soyez vigilants", "discutez en famille", "à utiliser comme prétexte" — vide.
+- Reformulation du body — la boîte n'est pas un résumé, c'est une mise en perspective parentale.
+- Phrases vides type "Cette information peut intéresser les parents" — tautologie.
+- Conseil non-ancré dans l'article ("limitez le temps d'écran" sur un article qui ne parle pas de temps d'écran).
+
+**Bons exemples :**
+- "Bonne occasion d'expliquer aux ados pourquoi les données de localisation sont sensibles, en partant du fait que Snapchat a été condamné. Pour les plus jeunes, l'angle est simple : pourquoi tous les amis ne doivent pas savoir où on est."
+- "Si vous prévoyez d'emmener un enfant de moins de 10 ans, attendez le classement final du CNC — les volets précédents étaient « tous publics avec avertissement » et le troisième pourrait passer à 12+. Les séances IMAX et 3D HFR ont des billets premium plus chers, à anticiper sur le budget famille."
+- "Pas une lecture à mettre entre les mains des moins de 14 ans malgré la couverture jeunesse : le rapport INSERM cité indique que les violences sexuelles dans les manga shounen ne sont pas signalées dans le PEGI papier. Vérifiez le label « manga seinen » avant achat."
+
+Si l'article ne se prête sincèrement à aucun angle parental concret (très rare — par définition le sujet a été retenu parce qu'il en a un), écris une takeaway courte qui explique POURQUOI les parents devraient noter cette info même sans action immédiate. Mais avant d'écrire un takeaway pauvre, **demande-toi si l'histoire devait vraiment être retenue**.
 
 Cite les sources par leur nom de publication ("Le Monde", "Numerama", "Pew Research"). N'utilise JAMAIS "[0]", "[2]", "(article 3)" — les crochets dans la liste ci-dessous sont à usage interne uniquement.
 
@@ -337,7 +387,9 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 ## CONTRAINTES DURES
 
 - Maximum 10 histoires, triées par pertinence décroissante.
-- Body 300-450 mots. Si l'article est de type LISTE/GUIDE et que tu n'as pas les éléments listés, écarte. Pour un événement, une étude ou une annonce, tu peux atteindre 300 mots en relayant ce que les sources disent (qui, quoi, quand, attribution, mise en perspective citée) — pas besoin de matière exhaustive.
+- Body **400-600 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 300 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
+- Au moins 2 citations directes en « » dans le body quand les sources en fournissent (idéalement une par section). Si AUCUNE source ne fournit de citation littérale, attribue indirectement et accepte que le brief n'ait pas de « » — n'invente jamais.
+- familyTakeaway 60-120 mots, plain text, ancré dans les faits — pas de platitudes.
 - Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.7. INTL single-source : ≥ 0.6.
 - Chaque imageUrl est l'IMG exacte d'un article cité (jamais inventer une URL).
 - Français uniquement.
@@ -346,7 +398,7 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 ## OUTPUT
 
 Réponds UNIQUEMENT avec ce JSON, sans markdown, sans texte avant ou après :
-{"stories": [{"title": "...", "summary": "...", "body": "...", "category": "PARENTHOOD|FILM_TV|GAMES|READING|TECH", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
+{"stories": [{"title": "...", "summary": "...", "body": "lede\\n\\n## Titre 1\\n\\nbody...\\n\\n## Titre 2\\n\\nbody...", "familyTakeaway": "60-120 mots plain text", "category": "PARENTHOOD|FILM_TV|GAMES|READING|TECH", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
 
 **RÈGLE D'ÉCHAPPEMENT JSON — CRITIQUE** : à l'intérieur des champs string ("title", "summary", "body"), n'utilise **JAMAIS** de double-quote ASCII " — utilise UNIQUEMENT les guillemets français « » pour les citations directes, et l'apostrophe typographique ' (ou ' droite). Une " non-échappée à l'intérieur d'un body casse le parseur JSON et toutes les histoires de la réponse sont perdues. Si tu hésites, remplace toute " par « ou » selon le contexte.
 ${alreadyPublished}${recentImagesNote}
@@ -368,6 +420,12 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
   const category = typeof r.category === "string" ? r.category : ""
   const imageUrl = typeof r.imageUrl === "string" ? r.imageUrl.trim() : ""
   const relevanceScore = typeof r.relevanceScore === "number" ? r.relevanceScore : 0
+  // Defensive length-clamp at 800 chars — protects against runaway
+  // takeaways that would blow up the box rendering. The quality judge
+  // separately enforces the 60-120 word target.
+  const familyTakeawayRaw =
+    typeof r.familyTakeaway === "string" ? r.familyTakeaway.trim() : ""
+  const familyTakeaway = familyTakeawayRaw ? familyTakeawayRaw.slice(0, 800) : null
 
   const rawIdx = Array.isArray(r.sourceIndexes)
     ? r.sourceIndexes
@@ -391,13 +449,12 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     return null
   }
 
-  // Body floor lowered from 200 → 150 words. The LLM is sometimes
-  // conservative on event-style briefs and the quality judge already
-  // rejects genuinely thin content via its lengthFit dimension. A
-  // 150-word floor still kills tweet-length output but doesn't punish
-  // a clean 180-word brief on a sparse topic.
+  // Body floor bumped 150 → 300 words to match the new format target
+  // (400-600 words across lede + 2 H2 sections). Anything shorter
+  // means the LLM didn't follow the structure (skipped a section
+  // or bailed early) and isn't worth publishing on the new format.
   const wordCount = body.split(/\s+/).filter(Boolean).length
-  if (wordCount < 150) {
+  if (wordCount < 300) {
     console.warn(`[news-discover] coerce: body too short (${wordCount}w) title="${title.slice(0, 60)}"`)
     return null
   }
@@ -425,6 +482,7 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     title,
     summary,
     body,
+    familyTakeaway,
     category: category as NewsCategory,
     relevanceScore: Math.max(0, Math.min(1, relevanceScore)),
     imageUrl,
@@ -602,23 +660,30 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     recentImageUrls,
   )
 
-  // Bumped from 8000 → 14000 because body length spec went from 120-180
-  // words to 300-450 words across up to 10 stories. Each story can now
-  // run ~600 tokens of body text alone.
+  // 14000 tokens covers up to 10 stories × ~1100 tokens each (lede +
+  // 2 H2 sections of ~500 words + familyTakeaway). Slight headroom
+  // over the previous 300-450 word target.
   const MAX_TOKENS = 14000
   let rawText = ""
   if (provider === "deepseek") {
+    // Synthesis uses V4-Pro (1.6T MoE) — materially stronger writing
+    // than the V4-Flash default used elsewhere in the codebase. Cost
+    // delta is negligible at our cron volume.
     const ds = getDeepSeek()
     const response = await ds.chat.completions.create({
-      model: DEFAULT_DEEPSEEK_MODEL,
+      model: SYNTHESIS_MODEL,
       max_tokens: MAX_TOKENS,
       messages: [{ role: "user", content: prompt }],
     })
     rawText = response.choices[0]?.message?.content ?? ""
   } else {
+    // Anthropic escape hatch — uses Sonnet 4.6 (not the Haiku default
+    // from anthropic.ts) because synthesis needs the writing quality.
+    // Other Anthropic-backed passes (moderation, research, judge)
+    // stay on Haiku via their own client setup.
     const anthropic = getAnthropic()
     const response = await anthropic.messages.create({
-      model: DEFAULT_MODEL,
+      model: SYNTHESIS_ANTHROPIC_MODEL,
       max_tokens: MAX_TOKENS,
       messages: [{ role: "user", content: prompt }],
     })
@@ -877,6 +942,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       title: s.title,
       summary: s.summary,
       body: s.body,
+      familyTakeaway: s.familyTakeaway,
       category: s.category,
       sources,
       imageUrl: s.imageUrl,
@@ -922,6 +988,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       title: s.title,
       summary: s.summary,
       body: s.body,
+      familyTakeaway: s.familyTakeaway,
       category: s.category,
       format: "BRIEF",
       sourceNames: sources.map((src) => src.name),

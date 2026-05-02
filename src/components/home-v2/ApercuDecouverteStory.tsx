@@ -3,7 +3,7 @@
 import { type ReactNode } from "react"
 import Link from "next/link"
 import ReactMarkdown from "react-markdown"
-import { ArrowLeft, ExternalLink, FlaskConical, Clock, ChevronRight } from "lucide-react"
+import { ArrowLeft, ExternalLink, FlaskConical, Clock, ChevronRight, MessagesSquare } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
@@ -44,6 +44,10 @@ export interface ApercuStoryDetail {
   imageLicenseUrl?: string | null
   publishedAt: Date | string
   sources: NewsSourceRef[]
+  /** "Ce que ça signifie pour les familles" boxed aside (60-120 words
+   *  plain text). Null on legacy briefs published before this field
+   *  shipped — in that case the box is hidden entirely. */
+  familyTakeaway?: string | null
   /** Optional "Ce que dit la recherche" sidebar block. */
   research?: StoryResearch | null
   /** Up to 3 catalog subjects mentioned in the body. Renders as
@@ -275,6 +279,36 @@ export function ApercuDecouverteStory({
               {story.body}
             </ReactMarkdown>
           </article>
+
+          {/* "Ce que ça signifie pour les familles" — Totem's editorial
+              voice lives in this dedicated box, NOT in the journalistic
+              body. Hidden entirely on legacy briefs (familyTakeaway null)
+              so old articles render unchanged. */}
+          {story.familyTakeaway && (
+            <aside
+              className="mt-10 rounded-2xl p-5 md:p-6"
+              style={{
+                background: p.bg2,
+                borderLeft: `4px solid ${p.accent}`,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <MessagesSquare className="w-4 h-4" style={{ color: p.accent }} />
+                <div
+                  className={`${serifClass} text-base md:text-lg font-medium`}
+                  style={{ color: p.ink, letterSpacing: "-0.01em" }}
+                >
+                  Ce que ça signifie pour les familles
+                </div>
+              </div>
+              <p
+                className="text-base leading-relaxed m-0"
+                style={{ color: p.ink }}
+              >
+                {story.familyTakeaway}
+              </p>
+            </aside>
+          )}
 
           {/* Mini fiches Totem Avisé — catalog subjects mentioned in
               the body, rendered as small cards instead of scattering
