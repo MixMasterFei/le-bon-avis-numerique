@@ -8,6 +8,7 @@ import { ApercuStreaming } from "./ApercuStreaming"
 import { ApercuAgeGrid } from "./ApercuAgeGrid"
 import { ApercuCollections } from "./ApercuCollections"
 import { NouveautesMangaRail } from "./NouveautesMangaRail"
+import { NouveautesGamesRail } from "./NouveautesGamesRail"
 import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -49,9 +50,17 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
           </div>
         </section>
 
+        {/* Recent console game releases — self-hiding below 3 items so
+            the homepage stays clean during sparse IGDB sync windows. */}
+        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <div className="container mx-auto px-4 md:px-8">
+            <NouveautesGamesRail serifClass={serifClass} />
+          </div>
+        </section>
+
         {/* Admin-only during soft launch. Self-hiding below 3 items. */}
         {isAdmin && (
-          <section className="py-10 md:py-14" style={{ background: p.bg }}>
+          <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
             <div className="container mx-auto px-4 md:px-8">
               <NouveautesMangaRail serifClass={serifClass} />
             </div>

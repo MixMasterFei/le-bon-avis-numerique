@@ -35,7 +35,12 @@ function parseInt2(raw: string | undefined, fallback: number): number {
 }
 
 function parseGameSort(raw: string | undefined): string {
-  return raw === "quality" || raw === "title" ? raw : "popularity"
+  // "newest" is an alias for "releaseDate" so both /jeux?sort=newest
+  // (matching the homepage "Voir tout" convention used elsewhere) and
+  // /jeux?sort=releaseDate (matching fetchGames' sortBy values) work.
+  if (raw === "quality" || raw === "title" || raw === "releaseDate") return raw
+  if (raw === "newest") return "releaseDate"
+  return "popularity"
 }
 
 export async function generateMetadata({
