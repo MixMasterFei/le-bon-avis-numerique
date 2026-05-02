@@ -90,10 +90,10 @@ export default async function ApercuDecouverteStoryPage(props: {
   try {
     session = await auth()
   } catch {
-    redirect(`/connexion?next=/apercudecouverte/${slug}`)
+    redirect(`/connexion?callbackUrl=/apercudecouverte/${slug}`)
   }
   if (!session?.user?.id) {
-    redirect(`/connexion?next=/apercudecouverte/${slug}`)
+    redirect(`/connexion?callbackUrl=/apercudecouverte/${slug}`)
   }
   const viewerId = session.user.id
 

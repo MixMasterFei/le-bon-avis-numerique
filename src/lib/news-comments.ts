@@ -16,7 +16,6 @@ export interface HydratedComment {
   user: {
     id: string
     name: string | null
-    email: string | null
     image: string | null
     avatarStyle: string | null
     avatarSeed: string | null
@@ -30,10 +29,12 @@ export interface HydratedComment {
 
 const commentInclude = {
   user: {
+    // Public-facing comments — never include email or any other PII
+    // that's not strictly required for rendering. The avatar fields
+    // already provide enough identity for the comment thread.
     select: {
       id: true,
       name: true,
-      email: true,
       image: true,
       avatarStyle: true,
       avatarSeed: true,
@@ -82,7 +83,6 @@ export function hydrateComment(c: CommentWithRelations, viewerId: string | null)
     user: {
       id: c.user.id,
       name: c.user.name,
-      email: c.user.email,
       image: c.user.image,
       avatarStyle: c.user.avatarStyle,
       avatarSeed: c.user.avatarSeed,

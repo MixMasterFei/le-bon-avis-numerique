@@ -7,7 +7,13 @@ import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 const PAGE_SIZE = 24
 
 function parseCategory(raw: string | null): NewsCategory | null {
-  if (raw === "PARENTHOOD" || raw === "FILM_TV" || raw === "GAMES" || raw === "READING") {
+  if (
+    raw === "PARENTHOOD" ||
+    raw === "FILM_TV" ||
+    raw === "GAMES" ||
+    raw === "READING" ||
+    raw === "TECH"
+  ) {
     return raw
   }
   return null
@@ -50,7 +56,15 @@ export async function GET(req: NextRequest) {
     const rawRegion = searchParams.get("region")
     const region = rawRegion === "FR" || rawRegion === "INTL" ? rawRegion : null
 
-    const where: Prisma.NewsStoryWhereInput = { status: "PUBLISHED" }
+    // storyType: "BRIEF" mirrors the constraint applied by the
+    // /apercudecouverte/actualites server-rendered page. Without it,
+    // "Charger plus" pagination would mix in DOSSIERs (long-reads),
+    // since cursor-based pagination is unaware of the page's render
+    // filter and DOSSIERs share the same publishedAt ordering.
+    const where: Prisma.NewsStoryWhereInput = {
+      status: "PUBLISHED",
+      storyType: "BRIEF",
+    }
     if (category) where.category = category
     if (region) where.region = region
 

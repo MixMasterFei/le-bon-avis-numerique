@@ -30,7 +30,14 @@ export const maxDuration = 60
 function isAuthorized(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization")
   if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  if (process.env.NODE_ENV === "development") return true
+  // Development bypass requires an explicit opt-in flag — see
+  // weekly-dossier for the rationale (tunnel-exposed `next dev`).
+  if (
+    process.env.NODE_ENV === "development" &&
+    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
+  ) {
+    return true
+  }
   return false
 }
 

@@ -18,6 +18,23 @@ import {
 } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
+/**
+ * Restrict the post-login redirect to internal paths only. Anyone can
+ * land on /connexion?callbackUrl=https://evil.com and be redirected
+ * after a successful sign-in (open redirect → phishing pivot). We
+ * accept only paths starting with a single "/", and reject:
+ *   - protocol-relative URLs ("//evil.com" → host-swapped)
+ *   - back-slash escape ("/\\evil.com" → some browsers normalize)
+ *   - absolute URLs ("https://…")
+ *   - "javascript:" / "data:" / any non-path string
+ * On rejection we fall back to /profil (the default landing).
+ */
+function safeCallback(raw: string | null): string {
+  if (!raw) return "/profil"
+  if (raw[0] !== "/" || raw[1] === "/" || raw[1] === "\\") return "/profil"
+  return raw
+}
+
 const OAUTH_ERRORS: Record<string, string> = {
   CredentialsSignin: "Email ou mot de passe incorrect",
   OAuthAccountNotLinked:
@@ -33,7 +50,13 @@ function ConnexionForm() {
   const serifClass = "font-serif"
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/profil"
+  // Accept the legacy `?next=` param too — older redirect call-sites
+  // (apercudecouverte-v3, /apercudecouverte/*) still emit it. Reading
+  // both keeps existing links working while we standardize on
+  // callbackUrl. Validation below covers either source.
+  const callbackUrl = safeCallback(
+    searchParams.get("callbackUrl") ?? searchParams.get("next"),
+  )
   const error = searchParams.get("error")
 
   const [email, setEmail] = useState("")

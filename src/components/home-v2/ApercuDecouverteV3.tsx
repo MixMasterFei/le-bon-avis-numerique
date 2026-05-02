@@ -70,6 +70,10 @@ export interface DecouverteV3Data {
   // upstream API failed; the card still renders the city header so
   // the user can switch cities via the picker.
   weather: WeatherSnapshot
+  // True when the user has already saved a weather city (any non-default
+  // pick). Drives whether the Météo widget surfaces the one-time
+  // geolocation consent prompt or stays quiet.
+  hasUserCity: boolean
   // Sidebar: air quality + pollen for the same saved city. Null when
   // the upstream Open-Meteo Air Quality API is unreachable.
   airQuality: AirQualitySnapshot | null
@@ -263,7 +267,7 @@ export function ApercuDecouverteV3({
                 >
                   Le foyer
                 </div>
-                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                <MeteoFamilleCard initial={data.weather} hasUserCity={data.hasUserCity} serifClass={serifClass} />
                 {data.airQuality && (
                   <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
                 )}
@@ -324,7 +328,7 @@ export function ApercuDecouverteV3({
                   extends with the page so all blocks are reachable
                   by normal page scroll, not a nested scroll. */}
               <div className="flex flex-col gap-4">
-                <MeteoFamilleCard initial={data.weather} serifClass={serifClass} />
+                <MeteoFamilleCard initial={data.weather} hasUserCity={data.hasUserCity} serifClass={serifClass} />
                 {data.airQuality && (
                   <AirQualiteCard snapshot={data.airQuality} serifClass={serifClass} />
                 )}

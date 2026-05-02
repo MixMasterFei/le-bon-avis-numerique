@@ -84,7 +84,7 @@ export function NewsCommentItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-sm font-semibold" style={{ color: p.ink }}>
-              {optimistic.user.name || optimistic.user.email?.split("@")[0] || "Membre"}
+              {optimistic.user.name || "Membre"}
             </span>
             <span className="text-xs" style={{ color: p.ink2 }}>
               {formatRelativeTimeFr(optimistic.createdAt)}

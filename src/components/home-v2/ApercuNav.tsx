@@ -41,7 +41,12 @@ export function ApercuNav() {
           Aperçus
         </span>
         {ROUTES.map((r) => {
-          const active = pathname === r.href
+          // Match exact path OR any sub-path (so /apercudecouverte/actualites
+          // and /apercudecouverte/[slug] light up the "Découverte" entry).
+          // The "+ '/'" boundary is what prevents /apercudecouverte from
+          // false-matching /apercudecouverte-v3 — the dash never starts a
+          // sub-path segment.
+          const active = pathname === r.href || pathname.startsWith(r.href + "/")
           return (
             <Link
               key={r.href}

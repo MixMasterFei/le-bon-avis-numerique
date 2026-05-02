@@ -1,10 +1,16 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { Sun, Cloud, CloudRain, Snowflake, Wind, Moon, MapPin, Pencil } from "lucide-react"
+import { useEffect, useState, useTransition } from "react"
+import { Sun, Cloud, CloudRain, Snowflake, Wind, Moon, MapPin, Pencil, Loader2, X } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import type { WeatherCondition, WeatherSnapshot } from "@/lib/weather"
 import { WeatherCityPicker } from "./WeatherCityPicker"
+
+// Local-storage key: marks the geolocation consent prompt as
+// dismissed (or already answered) so we never re-pester the user.
+// Survives device-level browser permission decisions — even if the
+// user revokes geolocation later, we don't re-prompt automatically.
+const GEO_PROMPT_DISMISSED_KEY = "apercu-meteo-geo-prompted"
 
 const ICON: Record<WeatherCondition, typeof Sun> = {
   sunny: Sun,
@@ -61,15 +67,42 @@ function formatSunset(iso: string | null): string | null {
  */
 export function MeteoFamilleCard({
   initial,
+  hasUserCity,
   serifClass,
 }: {
   initial: WeatherSnapshot
+  hasUserCity: boolean
   serifClass: string
 }) {
   const p = APERCU_PALETTE
   const [snapshot, setSnapshot] = useState<WeatherSnapshot>(initial)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [, startTransition] = useTransition()
+  // Geolocation consent prompt — only shown to users still on the
+  // Paris default. Hydrated from localStorage on mount so a returning
+  // user who already dismissed the prompt doesn't see it again.
+  const [showGeoPrompt, setShowGeoPrompt] = useState(false)
+  const [geoPromptLoading, setGeoPromptLoading] = useState(false)
+  const [geoPromptError, setGeoPromptError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (hasUserCity) return
+    try {
+      if (window.localStorage.getItem(GEO_PROMPT_DISMISSED_KEY)) return
+    } catch {
+      // Private mode / quota — fail open and show the prompt.
+    }
+    setShowGeoPrompt(true)
+  }, [hasUserCity])
+
+  const dismissGeoPrompt = () => {
+    setShowGeoPrompt(false)
+    try {
+      window.localStorage.setItem(GEO_PROMPT_DISMISSED_KEY, "1")
+    } catch {
+      // Ignore — same fail-open rationale as above.
+    }
+  }
 
   const onCityPicked = async (city: { name: string; lat: number; lon: number }) => {
     // Persist server-side so the same city syncs to other devices.
@@ -89,6 +122,46 @@ export function MeteoFamilleCard({
       }
     }
     setPickerOpen(false)
+  }
+
+  // Inline geolocation handler for the consent prompt. Mirrors the
+  // picker's flow but stays in-card so the user doesn't need to open
+  // the modal first. Reverse-geocode falls back to raw coords if the
+  // lookup fails — a snapshot at the right place beats no snapshot.
+  const acceptGeoPrompt = () => {
+    if (!("geolocation" in navigator)) {
+      setGeoPromptError("Géolocalisation indisponible sur ce navigateur.")
+      return
+    }
+    setGeoPromptError(null)
+    setGeoPromptLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords
+        try {
+          const res = await fetch(`/api/weather/geocode?lat=${latitude}&lon=${longitude}`)
+          const data = (await res.json()) as { city?: { name: string; lat: number; lon: number } | null }
+          const city = data.city
+            ? { name: data.city.name, lat: data.city.lat, lon: data.city.lon }
+            : { name: "Ma position", lat: latitude, lon: longitude }
+          await onCityPicked(city)
+          dismissGeoPrompt()
+        } catch {
+          setGeoPromptError("Impossible de récupérer la météo locale. Réessayez plus tard.")
+        } finally {
+          setGeoPromptLoading(false)
+        }
+      },
+      (err) => {
+        setGeoPromptLoading(false)
+        setGeoPromptError(
+          err.code === err.PERMISSION_DENIED
+            ? "Autorisation refusée. Vous pouvez choisir votre ville à la main avec « Modifier »."
+            : "Position indisponible. Réessayez plus tard ou choisissez votre ville.",
+        )
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60_000 },
+    )
   }
 
   const current = snapshot.current
@@ -122,6 +195,61 @@ export function MeteoFamilleCard({
             Modifier
           </button>
         </div>
+
+        {/* Geolocation consent prompt — one-time, only when the user
+            is still on the Paris default. Triggers the browser
+            permission prompt on click; never auto-fires the API. */}
+        {showGeoPrompt && (
+          <div
+            className="rounded-xl p-3 mb-3 relative"
+            style={{ background: p.bg, border: `1px solid ${p.line2}` }}
+          >
+            <button
+              type="button"
+              onClick={dismissGeoPrompt}
+              aria-label="Ignorer la demande de localisation"
+              className="absolute top-2 right-2 opacity-50 hover:opacity-100 transition-opacity"
+              style={{ color: p.ink2 }}
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <div className={`${serifClass} text-sm font-medium pr-6`} style={{ color: p.ink }}>
+              Météo locale
+            </div>
+            <div className="text-[12px] mt-0.5 mb-2" style={{ color: p.ink2 }}>
+              Autorisez la localisation pour afficher la météo de votre ville plutôt que celle de Paris.
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={acceptGeoPrompt}
+                disabled={geoPromptLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-opacity disabled:opacity-50"
+                style={{ background: p.accent2, color: "#FFFFFF" }}
+              >
+                {geoPromptLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <MapPin className="w-3.5 h-3.5" />
+                )}
+                Activer la localisation
+              </button>
+              <button
+                type="button"
+                onClick={dismissGeoPrompt}
+                className="text-[12px] font-medium opacity-70 hover:opacity-100 transition-opacity"
+                style={{ color: p.ink2 }}
+              >
+                Plus tard
+              </button>
+            </div>
+            {geoPromptError && (
+              <div className="text-[11px] mt-2" style={{ color: p.accent }}>
+                {geoPromptError}
+              </div>
+            )}
+          </div>
+        )}
 
         {current ? (
           <>

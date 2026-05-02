@@ -68,10 +68,10 @@ export default async function ApercuDecouverteActualitesPage(props: {
   try {
     session = await auth()
   } catch {
-    redirect("/connexion?next=/apercudecouverte/actualites")
+    redirect("/connexion?callbackUrl=/apercudecouverte/actualites")
   }
   if (!session?.user?.id) {
-    redirect("/connexion?next=/apercudecouverte/actualites")
+    redirect("/connexion?callbackUrl=/apercudecouverte/actualites")
   }
   // Refresh capability deliberately not surfaced on the user-facing
   // page (see canRefresh={false} below). News updates run via the

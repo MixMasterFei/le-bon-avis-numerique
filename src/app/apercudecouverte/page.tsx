@@ -25,10 +25,10 @@ export default async function ApercuDecouvertePage(props: {
   try {
     session = await auth()
   } catch {
-    redirect("/connexion?next=/apercudecouverte")
+    redirect("/connexion?callbackUrl=/apercudecouverte")
   }
   if (!session?.user?.id) {
-    redirect("/connexion?next=/apercudecouverte")
+    redirect("/connexion?callbackUrl=/apercudecouverte")
   }
 
   // Forward query params (font, cat) so deep links keep working.

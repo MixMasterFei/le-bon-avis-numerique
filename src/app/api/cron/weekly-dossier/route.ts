@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { runWeeklyDossier } from "@/lib/news-dossier"
 import { logCronRun } from "@/lib/cron-log"
+import { withCronLock } from "@/lib/cron-lock"
 
 // Long-read agent does one big LLM call (8K output tokens) plus
 // moderation + image mirror. 60s is borderline; 300s gives headroom.
 export const maxDuration = 300
+
+// Lease ≥ maxDuration with margin — see news-discover for rationale.
+const LOCK_LEASE_SECONDS = 600
 
 /**
  * Sunday 05:00 UTC — write the weekly "Dossier de la semaine".
@@ -18,7 +22,17 @@ export const maxDuration = 300
 function isAuthorized(req: NextRequest): boolean {
   const authHeader = req.headers.get("authorization")
   if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  if (process.env.NODE_ENV === "development") return true
+  // Development bypass requires an explicit opt-in flag. Without it,
+  // a `next dev` accidentally exposed over a tunnel / LAN can't be
+  // used to trigger expensive LLM + DB jobs anonymously. Set
+  // ALLOW_INSECURE_CRON_LOCAL=true in `.env.local` if you actually
+  // need to hit this endpoint without the Bearer token while iterating.
+  if (
+    process.env.NODE_ENV === "development" &&
+    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
+  ) {
+    return true
+  }
   return false
 }
 
@@ -34,7 +48,18 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const force = url.searchParams.get("force") === "true"
   try {
-    const stats = await runWeeklyDossier({ force })
+    const stats = await withCronLock("weekly-dossier", LOCK_LEASE_SECONDS, () =>
+      runWeeklyDossier({ force }),
+    )
+    if (stats === null) {
+      await logCronRun({
+        task: "weekly-dossier",
+        status: "partial",
+        summary: "Skipped — another run already in progress",
+        startTime: startedAt,
+      })
+      return NextResponse.json({ skipped: true, reason: "lock-held" })
+    }
     await logCronRun({
       task: "weekly-dossier",
       status: stats.result === "error" ? "error" : stats.result === "persisted" ? "success" : "partial",

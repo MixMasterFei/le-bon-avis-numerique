@@ -176,10 +176,10 @@ export default async function ApercuDecouverteV3Page(props: {
   try {
     session = await auth()
   } catch {
-    redirect("/connexion?next=/apercudecouverte-v3")
+    redirect("/connexion?callbackUrl=/apercudecouverte-v3")
   }
   if (!session?.user?.id) {
-    redirect("/connexion?next=/apercudecouverte-v3")
+    redirect("/connexion?callbackUrl=/apercudecouverte-v3")
   }
 
   const searchParams = await props.searchParams
@@ -200,16 +200,20 @@ export default async function ApercuDecouverteV3Page(props: {
   // than serially after the Promise.all completes.
   const userId = session.user.id
   // Resolve the saved city once, then fan out to weather + air quality.
+  // Also surfaces a hasUserCity flag so the client widget can decide
+  // whether to prompt for geolocation (only when the user is still on
+  // the Paris default — never re-prompt someone who already picked).
+  let hasUserCity = false
   const cityFlow = (async () => {
     const u = await prisma.user.findUnique({
       where: { id: userId },
       select: { weatherCityName: true, weatherCityLat: true, weatherCityLon: true },
     })
-    const city: WeatherCity =
-      u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null
-        ? { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon }
-        : DEFAULT_CITY
-    return city
+    if (u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null) {
+      hasUserCity = true
+      return { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon } satisfies WeatherCity
+    }
+    return DEFAULT_CITY
   })()
   const weatherFlow = cityFlow.then(async (city) => {
     const snapshot = await getWeatherForCity(city)
@@ -251,9 +255,21 @@ export default async function ApercuDecouverteV3Page(props: {
         imageUrl: true, category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("frenchRows", [] as StoryRow[])),
-    // 6 most recent international briefs (any category, including TECH).
+    // 6 most recent international briefs in PARENTHOOD only.
+    // Editorial choice (Xavier, May 2026): "Ce qu'on lit ailleurs" is
+    // for world news about kids, family policy, screen-time studies,
+    // education debates, society issues that touch families — NOT
+    // international entertainment industry news. GAMES, FILM_TV and
+    // TECH already get their own treatment elsewhere on the page, so
+    // mixing them in here just dilutes the section. Restricting to
+    // PARENTHOOD keeps the strand on-point.
     prisma.newsStory.findMany({
-      where: { status: "PUBLISHED", storyType: "BRIEF", region: "INTL" },
+      where: {
+        status: "PUBLISHED",
+        storyType: "BRIEF",
+        region: "INTL",
+        category: "PARENTHOOD",
+      },
       orderBy: { publishedAt: "desc" },
       take: 6,
       select: {
@@ -370,6 +386,7 @@ export default async function ApercuDecouverteV3Page(props: {
     holidayCalendar,
     anniversary,
     weather,
+    hasUserCity,
     airQuality,
     notableDates,
     deadlines,

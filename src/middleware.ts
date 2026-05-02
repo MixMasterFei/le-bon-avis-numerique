@@ -7,7 +7,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("X-Content-Type-Options", "nosniff")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
   response.headers.set("X-XSS-Protection", "1; mode=block")
-  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+  // geolocation=(self) — same-origin only. Required for the Météo
+  // widget's "Activer la localisation" prompt on /apercudecouverte-v3.
+  // camera and microphone stay fully denied (no feature uses them).
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)")
   response.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
   return response
 }
@@ -19,10 +22,20 @@ const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris"]
 const adminRoutes = ["/admin", "/api/admin"]
 // Note: /studio is NOT protected here — Sanity Studio has its own auth (Sanity accounts)
 
-// API routes with their rate limit types
+// API routes with their rate limit types.
+// Auth-bucket routes (5/min) cover anything an attacker can abuse for
+// email enumeration, token brute-forcing, or transactional-email spam:
+// signin (callback), signup (register), password reset request +
+// completion, email-verification resend, and email-verification token
+// confirmation. Any new auth endpoint should land here, not in the
+// generic 100/min "api" fallback.
 const rateLimitedRoutes: Record<string, string> = {
   "/api/auth/register": "auth",
   "/api/auth/callback": "auth",
+  "/api/auth/forgot-password": "auth",
+  "/api/auth/reset-password": "auth",
+  "/api/auth/resend-verification": "auth",
+  "/api/auth/verify-email": "auth",
   "/api/movies/search": "search",
   "/api/tv/search": "search",
   "/api/games/search": "search",
