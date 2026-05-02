@@ -440,9 +440,14 @@ export async function POST(request: NextRequest) {
         ],
       }
     } else if (onlyMissing) {
+      // Filter on isEnriched: false to match what the dashboard reports
+      // as "œuvres à enrichir". The previous filter (contentMetrics: null)
+      // missed items that had a partial metrics row from a failed run
+      // — they showed up on the dashboard counter but were invisible to
+      // the enrichment cron + manual triggers, leaving a stuck backlog.
       whereClause = {
         ...typeFilter,
-        contentMetrics: null,
+        isEnriched: false,
       }
     } else {
       whereClause = typeFilter
@@ -621,8 +626,12 @@ export async function GET() {
     where: { contentMetrics: { isNot: null } },
   })
 
+  // Backlog count = items the cron + manual triggers will actually
+  // pick up. Mirrors the POST onlyMissing filter (isEnriched: false)
+  // so the dashboard, the script preflight, and the actual processing
+  // all agree on what "needs enrichment" means.
   const withoutMetrics = await prisma.mediaItem.count({
-    where: { contentMetrics: null },
+    where: { isEnriched: false },
   })
 
   // Also count items missing age recommendation (even if they have empty metrics)
