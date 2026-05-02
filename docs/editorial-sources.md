@@ -127,6 +127,26 @@ Citable sources for Totem articles and for the *À propos* / methodology page. M
 
 ---
 
+## Politique d'images
+
+The Découverte news pipeline ([src/lib/news-image.ts](../src/lib/news-image.ts)) walks a 5-tier hierarchy when picking a lead image for each story. Every chosen image is mirrored into Supabase Storage, capped at ≤1200px on the long edge, displayed at thumbnail size on cards, and shown with a visible photo credit pill (the `imageCredit` field, rendered by [src/components/home-v2/ApercuPhotoCredit.tsx](../src/components/home-v2/ApercuPhotoCredit.tsx)).
+
+| Tier | Source | Tag | Risk posture |
+|---|---|---|---|
+| 1 | RSS image from a wire-service publisher (Reuters, AP, AFP, Getty, EPA, Belga, EFE, ANSA, DPA…) | `AGENCY` | Low — wire syndication is the publisher's business model. |
+| 2 | RSS `media:content` / `enclosure` from any other publisher | `PUBLISHER_RSS` | Low-medium — publisher chose to put the image in the feed, which is itself a syndication signal. |
+| 3 | Pexels search on the story's keyword set | `STOCK` | Lowest — Pexels license is permissive royalty-free with attribution. Credit pill links back to the photo source. |
+| 4 | Unsplash search (Pexels fallback) | `STOCK` | Lowest — same as Pexels, mandatory attribution preserved via `imageLicenseUrl`. |
+| 5 | OG `og:image` scraped from the article URL | `PUBLISHER_OG` | Higher — pulled from the article page, not a feed the publisher offered. Credit pill displays the source domain prominently. Used only when tiers 1–4 fail. |
+
+Fair-use posture: the Découverte feed is a brief news-reportage product (300-450 words per story, 7-day-decay rotation, sources always cited and linked). Images are used at thumbnail size to identify the story being summarized, not as standalone content. Every image displays a visible photo credit. Each card always links back to the original publisher.
+
+Takedown / attribution issues should be reported to **contact@totemavise.com** (subject: "Signalement image"). The footer of the news pages also exposes a "Signaler une image" `mailto:` link for one-click reporting.
+
+The provenance tier of every published story is stored in `news_stories.image_source_type` and is auditable via the admin dashboard. Rerunning `/api/admin/news/reprocess-images` (admin-only, `CRON_SECRET` gated) will stamp the tier on legacy rows that predate this hierarchy.
+
+---
+
 ## Research sources
 
 Primary references consulted during the April 2026 audit:

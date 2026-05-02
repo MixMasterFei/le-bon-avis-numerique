@@ -358,4 +358,6 @@ CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
 RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
 NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
+PEXELS_API_KEY                    # Stock photo fallback for news images (Tier 3 in news-image.ts). Free signup at pexels.com/api, 200 req/h.
+UNSPLASH_ACCESS_KEY               # Stock photo fallback for news images (Tier 4, Pexels backup). Free signup at unsplash.com/developers, 50 req/h.
 ```

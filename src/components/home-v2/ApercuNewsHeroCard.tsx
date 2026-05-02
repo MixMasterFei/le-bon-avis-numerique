@@ -6,6 +6,7 @@ import Image from "next/image"
 import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills } from "./ApercuNewsSourcePills"
+import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { NEWS_CATEGORY_LABEL } from "./apercuNewsLabels"
 import type { ApercuNewsCardData } from "./ApercuNewsCard"
 
@@ -71,6 +72,7 @@ export function ApercuNewsHeroCard({
           priority
           onError={() => setImageBroken(true)}
         />
+        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
     </Link>
   )

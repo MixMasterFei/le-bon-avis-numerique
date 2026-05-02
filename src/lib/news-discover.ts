@@ -14,7 +14,7 @@ import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMe
 const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, type RssLikeItem } from "@/lib/news-image"
+import { resolveImage, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { Prisma } from "@prisma/client"
@@ -55,6 +55,11 @@ interface HydratedItem {
   link: string
   summary: string
   imageUrl: string
+  // Provenance attached by resolveImage(). Carried through synthesis
+  // so the chosen image's tier follows it into the persisted NewsStory.
+  imageSourceType: ImageSourceType
+  imageCredit: string
+  imageLicenseUrl?: string
   publishedAt: Date
 }
 
@@ -66,6 +71,11 @@ interface SynthesizedStory {
   category: NewsCategory
   relevanceScore: number
   imageUrl: string
+  // Provenance for the image the LLM picked. Looked up in coerceStory
+  // by matching the chosen URL back to its HydratedItem.
+  imageSourceType: ImageSourceType
+  imageCredit: string
+  imageLicenseUrl?: string
   sourceIndexes: number[]
   // "FR" = synthesized from at least one French source. "INTL" = all
   // sources are international (Vu d'ailleurs tab). Computed at persist
@@ -396,6 +406,19 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
   // this is a defensive belt).
   const allIntl = sourceIndexes.length > 0 && sourceIndexes.every((i) => items[i]?.sourceRegion === "INTL")
 
+  // Look up the provenance of the chosen image. The LLM picks one of
+  // the supplied items' imageUrls verbatim; first match by URL gets
+  // its tier/credit/license carried into the synthesized story. If the
+  // LLM somehow returned a URL not in the input set (defensive belt
+  // against hallucinated URLs), fall back to PUBLISHER_RSS with the
+  // primary source's name as credit — better than dropping the story
+  // for a metadata-only mismatch.
+  const owner = items.find((it) => it.imageUrl === imageUrl)
+  const fallbackOwner = items[sourceIndexes[0]!]
+  const imageSourceType = owner?.imageSourceType ?? "PUBLISHER_RSS"
+  const imageCredit = owner?.imageCredit ?? fallbackOwner?.sourceName ?? "Source"
+  const imageLicenseUrl = owner?.imageLicenseUrl
+
   return {
     slug: slugify(title),
     title,
@@ -404,6 +427,9 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     category: category as NewsCategory,
     relevanceScore: Math.max(0, Math.min(1, relevanceScore)),
     imageUrl,
+    imageSourceType,
+    imageCredit,
+    imageLicenseUrl,
     sourceIndexes,
     region: allIntl ? "INTL" : "FR",
   }
@@ -447,8 +473,14 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const hydrated: HydratedItem[] = []
   let droppedNoImage = 0
   await parallelMap(pairs, 6, async ({ source, item }) => {
-    const imageUrl = await resolveImage(item as RssLikeItem)
-    if (!imageUrl) {
+    // Pass title + sourceName so resolveImage can build the credit
+    // text and (where keywords are needed) hit the stock-photo APIs.
+    const resolved = await resolveImage({
+      ...(item as RssLikeItem),
+      title: item.title,
+      sourceName: source.name,
+    })
+    if (!resolved) {
       droppedNoImage++
       return
     }
@@ -465,7 +497,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       title: item.title.trim(),
       link: item.link.trim(),
       summary: (item.contentSnippet ?? "").trim(),
-      imageUrl,
+      imageUrl: resolved.url,
+      imageSourceType: resolved.sourceType,
+      imageCredit: resolved.credit,
+      imageLicenseUrl: resolved.licenseUrl,
       publishedAt: new Date(iso),
     })
   })
@@ -830,6 +865,9 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       category: s.category,
       sources,
       imageUrl: s.imageUrl,
+      imageSourceType: s.imageSourceType,
+      imageCredit: s.imageCredit,
+      imageLicenseUrl: s.imageLicenseUrl ?? null,
       publishedAt,
       relevanceScore: s.relevanceScore,
       status: isAdultMatch ? ("PENDING_REVIEW" as const) : ("PUBLISHED" as const),

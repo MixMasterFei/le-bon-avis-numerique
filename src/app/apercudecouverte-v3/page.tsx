@@ -80,6 +80,8 @@ type StoryRow = {
   summary: string
   body: string
   imageUrl: string
+  imageCredit: string | null
+  imageLicenseUrl: string | null
   category: ApercuNewsCardData["category"]
   publishedAt: Date
   sources: Prisma.JsonValue
@@ -91,6 +93,8 @@ function rowToCard(row: StoryRow): ApercuNewsCardData {
     title: row.title,
     summary: row.summary,
     imageUrl: row.imageUrl,
+    imageCredit: row.imageCredit,
+    imageLicenseUrl: row.imageLicenseUrl,
     category: row.category,
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
@@ -252,7 +256,8 @@ export default async function ApercuDecouverteV3Page(props: {
       take: 12,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, category: true, publishedAt: true, sources: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("frenchRows", [] as StoryRow[])),
     // 6 most recent international briefs in PARENTHOOD only.
@@ -274,7 +279,8 @@ export default async function ApercuDecouverteV3Page(props: {
       take: 6,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, category: true, publishedAt: true, sources: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
     // 6 most recent TECH briefs (FR + INTL mixed). Renders as a
@@ -287,7 +293,8 @@ export default async function ApercuDecouverteV3Page(props: {
       take: 6,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, category: true, publishedAt: true, sources: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        category: true, publishedAt: true, sources: true,
       },
     }).catch(safe("techRows", [] as StoryRow[])),
     // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
@@ -304,7 +311,8 @@ export default async function ApercuDecouverteV3Page(props: {
       orderBy: { publishedAt: "desc" },
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, category: true, publishedAt: true, sources: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        category: true, publishedAt: true, sources: true,
       },
     }).catch(safe<StoryRow | null>("dossierRow", null)),
     // Latest story carrying a populated research sidebar.

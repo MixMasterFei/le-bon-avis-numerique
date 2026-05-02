@@ -50,6 +50,8 @@ function rowToStory(r: {
   title: string
   summary: string
   imageUrl: string
+  imageCredit: string | null
+  imageLicenseUrl: string | null
   category: NewsCategory
   publishedAt: Date
   sources: Prisma.JsonValue
@@ -59,6 +61,8 @@ function rowToStory(r: {
     title: r.title,
     summary: r.summary,
     imageUrl: r.imageUrl,
+    imageCredit: r.imageCredit,
+    imageLicenseUrl: r.imageLicenseUrl,
     category: r.category,
     publishedAt: r.publishedAt,
     sources: toSources(r.sources),
@@ -133,7 +137,8 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
       where: { status: "PUBLISHED", publishedAt: { gte: twoDays } },
       orderBy: [{ relevanceScore: "desc" }, { publishedAt: "desc" }],
       select: {
-        slug: true, title: true, summary: true, imageUrl: true,
+        slug: true, title: true, summary: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
         category: true, publishedAt: true, sources: true,
       },
     }),
@@ -143,7 +148,8 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
       orderBy: [{ publishedAt: "desc" }, { relevanceScore: "desc" }],
       take: 8, // grab a few extra; trim to 6 after excluding hero
       select: {
-        slug: true, title: true, summary: true, imageUrl: true,
+        slug: true, title: true, summary: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
         category: true, publishedAt: true, sources: true,
       },
     }),

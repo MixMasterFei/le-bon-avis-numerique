@@ -150,6 +150,8 @@ export default async function ApercuDecouverteStoryPage(props: {
     body: stripInternalRefs(row.body),
     category: row.category,
     imageUrl: row.imageUrl,
+    imageCredit: row.imageCredit,
+    imageLicenseUrl: row.imageLicenseUrl,
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
     research: toResearch((row as { research?: Prisma.JsonValue | null }).research ?? null),

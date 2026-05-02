@@ -638,6 +638,36 @@ const OPERATIONS: Array<{
     color: "red",
     statLabels: { updated: "archivés", skipped: "sains" },
   },
+  {
+    config: {
+      key: "newsReprocessImages",
+      endpoint: "/api/admin/news/reprocess-images",
+      method: "POST",
+      // No body — the endpoint paginates internally and bails at 50s.
+      // Chunked loop calls it until { done: true } is returned, so a
+      // large legacy backlog clears across multiple short invocations
+      // without touching Vercel's 60s serverless ceiling.
+      chunked: true,
+      delayMs: 1000,
+      accumKeys: ["scanned", "updated"],
+      extractProgress: (data) => ({
+        processed: data.updated || 0,
+        // We can compute total once on the first call: updated + remaining.
+        total: typeof data.remaining === "number" ? (data.updated || 0) + data.remaining : null,
+        updated: data.updated || 0,
+      }),
+      isDone: (data) => data.done === true,
+      // No cursor — the endpoint always picks up where it left off
+      // (filters on `imageSourceType IS NULL`).
+      getNextParams: () => new URLSearchParams(),
+      buildSummary: (stats) => `${stats.updated || 0} stories taguées`,
+    },
+    label: "Backfill provenance images",
+    description: "Stamper imageSourceType + imageCredit sur les news antérieures à la nouvelle hiérarchie",
+    icon: Newspaper,
+    color: "amber",
+    statLabels: { updated: "taguées" },
+  },
 ]
 
 // ── Component ──────────────────────────────────────────────

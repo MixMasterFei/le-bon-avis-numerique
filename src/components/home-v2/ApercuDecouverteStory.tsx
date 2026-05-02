@@ -8,6 +8,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
+import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
 
@@ -39,6 +40,8 @@ export interface ApercuStoryDetail {
   body: string
   category: NewsCategoryKey
   imageUrl: string
+  imageCredit?: string | null
+  imageLicenseUrl?: string | null
   publishedAt: Date | string
   sources: NewsSourceRef[]
   /** Optional "Ce que dit la recherche" sidebar block. */
@@ -126,6 +129,7 @@ export function ApercuDecouverteStory({
               sizes="(max-width: 768px) 100vw, 768px"
               priority
             />
+            <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
           </div>
 
           {story.research && (

@@ -370,6 +370,22 @@ export function ApercuDecouverteV3({
           {/* Newsletter — full width below the grid, after the user has
               scrolled the whole feed. */}
           <NewsletterCTA serifClass={serifClass} canSubscribe={data.canSubscribe} />
+
+          {/* Image takedown link. Discreet, below-the-fold — visible to
+              anyone who reads to the bottom but doesn't compete with the
+              newsletter CTA above. mailto for now; a dedicated form
+              route can replace it later. */}
+          <p
+            className="mt-8 text-center text-xs"
+            style={{ color: APERCU_PALETTE.ink2 }}
+          >
+            <a
+              href="mailto:contact@totemavise.com?subject=Signalement%20image"
+              className="underline underline-offset-2 hover:opacity-70"
+            >
+              Signaler une image
+            </a>
+          </p>
         </div>
       </section>
     </div>

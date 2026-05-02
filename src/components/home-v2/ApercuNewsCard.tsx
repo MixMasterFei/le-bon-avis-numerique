@@ -6,6 +6,7 @@ import Image from "next/image"
 import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
+import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
 
 export interface ApercuNewsCardData {
@@ -16,6 +17,10 @@ export interface ApercuNewsCardData {
   category: NewsCategoryKey
   publishedAt: Date | string
   sources: NewsSourceRef[]
+  // Photo credit overlay. Null on legacy rows until the
+  // /api/admin/news/reprocess-images backfill stamps them.
+  imageCredit?: string | null
+  imageLicenseUrl?: string | null
 }
 
 export function ApercuNewsCard({
@@ -55,6 +60,7 @@ export function ApercuNewsCard({
         >
           {NEWS_CATEGORY_LABEL[story.category]}
         </div>
+        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
         <h3

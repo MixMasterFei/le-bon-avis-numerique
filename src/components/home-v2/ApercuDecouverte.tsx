@@ -281,6 +281,13 @@ export function ApercuDecouverte({
             <Link href="/apercu" className="underline">
               Retour à l&apos;aperçu
             </Link>
+            {" · "}
+            <a
+              href="mailto:contact@totemavise.com?subject=Signalement%20image"
+              className="underline"
+            >
+              Signaler une image
+            </a>
           </div>
         </div>
       </section>
