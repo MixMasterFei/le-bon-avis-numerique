@@ -37,6 +37,12 @@ export interface MediaQueryFilters {
   // Games-specific
   consoleOnly?: boolean
   includeAll?: boolean
+  // Minimum IGDB rating count required (stored as `tmdbVoteCount` for
+  // games — see /api/admin/import/games/route.ts:53). Used by the
+  // homepage rail and the /jeux releaseDate sort to keep obscure
+  // sub-100-rating shovelware out of "recent releases" surfaces.
+  // Null/undefined = no filter (default browse stays inclusive).
+  minVoteCount?: number
   // Manga-specific: "shounen" | "shoujo" | "seinen" | "josei"
   demographic?: string
 }
@@ -491,6 +497,15 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
   // Platform filter
   if (filters.platforms && filters.platforms.length > 0) {
     where.platforms = { hasSome: filters.platforms }
+  }
+
+  // Popularity floor — IGDB rating count, stored as tmdbVoteCount.
+  // Keeps obscure indie shovelware out of recency-sorted surfaces
+  // (homepage rail + /jeux?sort=releaseDate). AAA pre-release titles
+  // accumulate hundreds of IGDB ratings well before launch so this
+  // doesn't suppress legitimate marquee releases.
+  if (typeof filters.minVoteCount === "number" && filters.minVoteCount > 0) {
+    where.tmdbVoteCount = { gte: filters.minVoteCount }
   }
 
   applySearchFilter(where, filters.search, false) // Games: title only

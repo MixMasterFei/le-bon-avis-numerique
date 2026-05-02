@@ -147,12 +147,19 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
     page,
     limit: PAGE_SIZE,
     minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
-    maxAge: effectiveMaxAge < DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    // <= (not <) — see films/page.tsx note: keeps the homepage "16+"
+    // age tile from being silently a no-op when maxAge equals the default cap.
+    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
     platforms: platforms.length > 0 ? platforms : undefined,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,
     sortBy: sortKey,
     requirePoster: true,
+    // Recency-sorted browse only surfaces games with enough IGDB
+    // signal to be considered mainstream — keeps obscure shovelware
+    // out of "Récents". Popularity / quality / A→Z sorts naturally
+    // sink unknowns to the bottom so they don't need this floor.
+    minVoteCount: sortKey === "releaseDate" ? 20 : undefined,
   })
 
   const items = result.items.map((m) => {

@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     featured: sp.get("featured") === "true",
     includeAll: sp.get("includeAll") === "true",
     consoleOnly: sp.get("consoleOnly") !== "false",
+    minVoteCount: parseIntOrUndef(sp.get("minVoteCount")),
   }
 
   try {

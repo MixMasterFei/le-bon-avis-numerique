@@ -39,7 +39,10 @@ export function NouveautesGamesRail({ serifClass }: { serifClass: string }) {
   useEffect(() => {
     // Pull a few extra in case the dedup/render rules drop some — we
     // only display 7 (one rail row at sm:grid-cols-7).
-    fetch("/api/db/games?sortBy=releaseDate&limit=10&requirePoster=true")
+    // minVoteCount=20 floor keeps obscure indie shovelware out — IGDB
+    // accumulates hundreds of ratings on AAA titles even pre-release,
+    // so this doesn't suppress legitimate marquee launches.
+    fetch("/api/db/games?sortBy=releaseDate&limit=10&requirePoster=true&minVoteCount=20")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (Array.isArray(data?.games)) setItems(data.games)
