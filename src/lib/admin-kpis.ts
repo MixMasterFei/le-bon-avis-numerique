@@ -74,6 +74,7 @@ function daysAgo(n: number): Date {
 // the dashboard's task-health strip even before its first run.
 const KNOWN_CRON_TASKS = [
   "import",
+  "import-games",   // Weekly Monday — IGDB recent + popular, popularity-floored
   "enrich",
   "enrich-deep",
   "quality",

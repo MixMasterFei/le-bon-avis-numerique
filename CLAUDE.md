@@ -193,7 +193,7 @@ Automated maintenance across 3 days/week. All jobs use `CRON_SECRET` Bearer auth
 
 | Day | Time (UTC) | Tasks |
 |---|---|---|
-| Monday | 3:00 AM | Import new movies/TV from TMDB |
+| Monday | 3:00 AM | Import new movies/TV from TMDB + new games from IGDB (`weekly-games-import`, popularity-floored) |
 | Daily | 4:00 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute |
 | Saturday | 5:00 AM | TMDB ratings backfill + Streaming platform updates + Similarity scores |
 

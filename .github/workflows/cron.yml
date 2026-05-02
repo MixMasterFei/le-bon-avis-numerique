@@ -74,6 +74,20 @@ jobs:
           fi
           echo "::endgroup::"
 
+      - name: Import games from IGDB
+        # Recent + popular console releases, defensively filtered to
+        # total_rating_count >= 20 so the homepage "Sortis récemment
+        # en jeux vidéo" rail and /jeux releaseDate browse stay free
+        # of obscure indie shovelware.
+        run: |
+          set +e
+          echo "::group::Weekly games import"
+          curl -sSfL --max-time 58 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/weekly-games-import" \
+            | jq '{stats, sources}' 2>/dev/null || true
+          echo "::endgroup::"
+
       - name: Import CNC ratings (50 films)
         run: |
           set +e

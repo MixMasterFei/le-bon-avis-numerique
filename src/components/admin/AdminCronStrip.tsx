@@ -12,6 +12,7 @@ interface AdminCronStripProps {
 // rendered at the end in its raw slug form — keeps the UI forward-compatible.
 const LABELS: Record<string, string> = {
   import: "Import hebdo",
+  "import-games": "Import jeux",
   enrich: "Enrichissement",
   "enrich-deep": "Enrichissement profond",
   quality: "Qualité",
@@ -22,6 +23,7 @@ const LABELS: Record<string, string> = {
 }
 const ORDER = [
   "import",
+  "import-games",
   "enrich",
   "enrich-deep",
   "quality",
@@ -53,7 +55,7 @@ function statusDot(task: CronTaskHealth, now: number): { color: string; icon: st
 
   // Stale threshold per task (rough — imports are weekly, enrich daily, etc.)
   const hours = (now - task.lastRun.getTime()) / 3600000
-  const weeklyTasks = new Set(["import", "backfill-ratings", "streaming", "similarity"])
+  const weeklyTasks = new Set(["import", "import-games", "backfill-ratings", "streaming", "similarity"])
   const staleThresholdHours = weeklyTasks.has(task.task) ? 8 * 24 : 36
 
   if (hours > staleThresholdHours) return { color: warn, icon: "⚠" }
