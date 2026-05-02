@@ -71,7 +71,12 @@ export default function EnrichPage() {
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [selectedType, setSelectedType] = useState<MediaType>(initialTypeFromQuery())
-  const [batchSize, setBatchSize] = useState(25)
+  // Default batch tuned for Vercel's 60s serverless ceiling: each
+  // gpt-5-mini analysis runs ~6-8s including the inter-item delay,
+  // so 5 items = ~35-45s with comfortable headroom. Was 25 — which
+  // reliably triggered 504 gateway timeouts on the manual button
+  // (auto-mode already used 5; only the one-shot path was broken).
+  const [batchSize, setBatchSize] = useState(5)
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -112,6 +117,20 @@ export default function EnrichPage() {
       }),
       signal,
     })
+
+    // Guarded JSON parse — Vercel returns text/html for 504s and other
+    // gateway errors, which would crash JSON.parse with the cryptic
+    // "Unexpected token 'A'..." message that hides the real cause.
+    const contentType = res.headers.get("content-type") ?? ""
+    if (!contentType.includes("application/json")) {
+      const text = await res.text().catch(() => "")
+      if (res.status === 504) {
+        throw new Error(
+          `Timeout (${res.status}) — réduisez la taille du lot ou utilisez le mode Auto. ${text.slice(0, 80)}`,
+        )
+      }
+      throw new Error(`Réponse non-JSON (${res.status}): ${text.slice(0, 120)}`)
+    }
 
     const data = await res.json()
 

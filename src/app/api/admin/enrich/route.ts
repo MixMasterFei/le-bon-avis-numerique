@@ -440,12 +440,28 @@ export async function POST(request: NextRequest) {
     result.processed = items.length
     result.details.push(`Found ${items.length} items to enrich`)
 
+    // Safety bail before Vercel's 60s gateway ceiling — gpt-5-mini
+    // calls vary 4-10s each. We stop accepting new items once we've
+    // burned 50s so the response always returns JSON instead of
+    // tipping into a 504/HTML body. Caller (auto-mode loop) just
+    // re-invokes to pick up the rest.
+    const TIME_BUDGET_MS = 50_000
+    let bailedOnTime = false
+
     for (const item of items) {
       try {
         // Skip if already has metrics and onlyMissing is true
         if (onlyMissing && !onlyLegacy && item.contentMetrics) {
           result.skipped++
           continue
+        }
+
+        if (Date.now() - startTime > TIME_BUDGET_MS) {
+          bailedOnTime = true
+          result.details.push(
+            `⏱ Time budget reached (${Math.round((Date.now() - startTime) / 1000)}s); stopping early. ${result.enriched} enriched, ${items.length - result.enriched - result.errors - result.skipped} remaining in this batch.`,
+          )
+          break
         }
 
         // Analyze with OpenAI
@@ -543,15 +559,16 @@ export async function POST(request: NextRequest) {
 
     await logCronRun({
       task: "enrich",
-      status: result.errors > 0 ? "partial" : "success",
-      summary: `${result.enriched} enrichis sur ${result.processed} (${type})`,
-      details: { ...result, type },
+      status: result.errors > 0 ? "partial" : bailedOnTime ? "partial" : "success",
+      summary: `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
+      details: { ...result, type, bailedOnTime },
       startTime,
     })
 
     return NextResponse.json({
       success: true,
       result,
+      bailedOnTime,
     })
   } catch (error) {
     console.error("Enrichment error:", error)
