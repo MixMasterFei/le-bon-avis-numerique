@@ -5,6 +5,7 @@ import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
 import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
+import { verifyCatalogSubjects } from "@/lib/news-subject-verify"
 
 // Stories whose primary catalog match has a recommended age at or
 // above this threshold get demoted to PENDING_REVIEW instead of
@@ -839,7 +840,21 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // Find catalog title mentions in the body. We don't modify the
     // body — related items render as mini-cards at the bottom of
     // the story page (cleaner reading flow, no inline link clutter).
-    const matchedIds = extractCatalogMatches(s.body, catalogIndex, 3)
+    //
+    // Two-pass: text-based scan produces *candidates*, then an LLM
+    // verifier confirms which (if any) are actually the article's
+    // subject. The text scan alone trips on titles that incidentally
+    // appear in the prose ("Lost" in "the children were lost"); the
+    // verifier filters those out by reading the article holistically.
+    // Verifier is fail-open — any error returns the candidates as-is.
+    const candidateIds = extractCatalogMatches(s.body, catalogIndex, 3)
+    const candidates = candidateIds
+      .map((id) => findInCatalog(catalogIndex, id))
+      .filter((m): m is LinkableMedia => !!m)
+      .map((m) => ({ id: m.id, title: m.title, type: m.type, year: m.releaseYear }))
+    const matchedIds = candidates.length > 0
+      ? await verifyCatalogSubjects({ title: s.title, summary: s.summary, body: s.body }, candidates)
+      : []
     const primaryMediaId = matchedIds[0] ?? null
 
     // Adult-content guard: if the primary catalog match is age 14+,

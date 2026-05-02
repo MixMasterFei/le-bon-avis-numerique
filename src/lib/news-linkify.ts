@@ -15,6 +15,12 @@ import { prisma } from "@/lib/prisma"
 export interface LinkableMedia {
   id: string
   title: string
+  // Type + year are surfaced to the LLM subject verifier
+  // (news-subject-verify.ts) so it can disambiguate same-titled
+  // works across formats and eras (e.g. "Avatar" — film 2009 vs.
+  // series 2024 vs. game).
+  type: string
+  releaseYear: number | null
   // Used downstream to gate adult-rated catalog matches into
   // PENDING_REVIEW instead of auto-publishing them on the family
   // news page (Kill Bill: The Whole Bloody Affair, Saw, etc).
@@ -39,7 +45,7 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
       { tmdbVoteCount: { sort: "desc", nulls: "last" } },
     ],
     take: 5000,
-    select: { id: true, title: true, expertAgeRec: true },
+    select: { id: true, title: true, type: true, releaseDate: true, expertAgeRec: true },
   })
   return rows
     .filter((r) => r.title.length >= 5)
@@ -52,6 +58,13 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
     // "L'Attachement" matches "l'attachement" (a regular noun in a
     // body about something else). Risk of mis-link too high.
     .filter((r) => !/^[LDMSTNCJ]['']/i.test(r.title))
+    .map((r) => ({
+      id: r.id,
+      title: r.title,
+      type: r.type,
+      releaseYear: r.releaseDate ? new Date(r.releaseDate).getFullYear() : null,
+      expertAgeRec: r.expertAgeRec,
+    }))
 }
 
 // Single-word titles that collide with common French/English words.
