@@ -35,18 +35,33 @@ SLEEP_SECS="${SLEEP_SECS:-3}"
 echo "Enriching from $SITE_URL  type=$TYPE  limit=$LIMIT"
 echo "Press Ctrl+C to stop. onlyMissing=true → resuming is safe."
 
-# Fetch the starting backlog so we can show real progress (47/1019, 4.6%)
-# instead of just "+5 enriched" per batch. GET is cheap and idempotent —
-# if it fails we just degrade gracefully to total_only mode.
-backlog_start=$(curl -sS --max-time 15 \
+# Fetch the starting backlog so we can show real progress (47/1019, 4.6%).
+# Capture status + body so we can detect auth failures clearly instead of
+# silently treating "401 {error: ...}" as "0 items remaining".
+preflight=$(curl -sS --max-time 15 -w "\n%{http_code}" \
   -H "Authorization: Bearer $CRON_SECRET" \
-  "$SITE_URL/api/admin/enrich" 2>/dev/null \
-  | jq -r '.enrichment.withoutMetrics // 0' 2>/dev/null || echo 0)
+  "$SITE_URL/api/admin/enrich" 2>/dev/null || echo $'\n000')
+preflight_status=$(echo "$preflight" | tail -1)
+preflight_body=$(echo "$preflight" | sed '$d')
+
+if [ "$preflight_status" = "401" ] || [ "$preflight_status" = "403" ]; then
+  echo "❌ Auth failed ($preflight_status). Your CRON_SECRET doesn't match Vercel's." >&2
+  echo "   Fix: run 'npx vercel env pull .env' to sync, or copy CRON_SECRET" >&2
+  echo "   from https://vercel.com/dashboard → project → Settings → Environment Variables." >&2
+  exit 1
+fi
+
+backlog_start=$(echo "$preflight_body" | jq -r '.enrichment.withoutMetrics // 0' 2>/dev/null || echo 0)
 
 if [ "$backlog_start" -gt 0 ]; then
   echo "Backlog: $backlog_start items to enrich."
+elif [ "$preflight_status" = "200" ]; then
+  echo "Backlog: 0 (everything's already enriched). Nothing to do."
+  exit 0
 else
-  echo "Could not fetch backlog count — progress will show running totals only."
+  echo "⚠ Could not fetch backlog count (HTTP $preflight_status):"
+  echo "  ${preflight_body:0:200}"
+  echo "  Continuing anyway — progress will show running totals only."
 fi
 echo ""
 
@@ -59,17 +74,31 @@ while true; do
   batch=$((batch + 1))
 
   # --max-time 320 leaves a small buffer over the server's 300s ceiling.
-  # If the server bails on its own (returns JSON with bailedOnTime), we
-  # respect that signal; if curl itself hits its own timeout, we treat it
-  # as a transient and keep looping.
-  out=$(curl -sS --max-time 320 -X POST \
+  # Capture HTTP status alongside body so we can detect auth/gateway
+  # failures instead of silently treating them as "0 items processed".
+  raw=$(curl -sS --max-time 320 -w "\n%{http_code}" -X POST \
     -H "Authorization: Bearer $CRON_SECRET" \
     -H "Content-Type: application/json" \
     -d "{\"type\":\"$TYPE\",\"limit\":$LIMIT,\"onlyMissing\":true}" \
-    "$SITE_URL/api/admin/enrich" || echo '{"error":"curl failed"}')
+    "$SITE_URL/api/admin/enrich" || echo $'\n000')
+  status=$(echo "$raw" | tail -1)
+  out=$(echo "$raw" | sed '$d')
 
-  # Defensive parse — server can return non-JSON if Vercel's gateway
-  # times out mid-stream. Default everything to 0 / false on parse fail.
+  # Auth or rate-limit failures shouldn't loop forever pretending to
+  # work. Abort cleanly so the user sees the cause.
+  if [ "$status" = "401" ] || [ "$status" = "403" ]; then
+    echo "❌ Auth failed mid-loop ($status). CRON_SECRET stopped working." >&2
+    exit 1
+  fi
+  if [ "$status" = "429" ]; then
+    echo "⚠ Rate-limited (429). Sleeping 60s and retrying..."
+    sleep 60
+    continue
+  fi
+
+  # Defensive parse — server can still return non-JSON if Vercel's
+  # gateway times out mid-stream. Default everything to 0 / false on
+  # parse fail; the err_msg / bad_status checks below catch the rest.
   enriched=$(echo "$out" | jq -r '.result.enriched // 0' 2>/dev/null || echo 0)
   errors=$(echo "$out" | jq -r '.result.errors // 0' 2>/dev/null || echo 0)
   processed=$(echo "$out" | jq -r '.result.processed // 0' 2>/dev/null || echo 0)
