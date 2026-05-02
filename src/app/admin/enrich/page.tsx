@@ -71,12 +71,11 @@ export default function EnrichPage() {
   const [loading, setLoading] = useState(true)
   const [enriching, setEnriching] = useState(false)
   const [selectedType, setSelectedType] = useState<MediaType>(initialTypeFromQuery())
-  // Default batch tuned for Vercel's 60s serverless ceiling. The
-  // server caps each gpt-5-mini call at 18s (AbortController) and
-  // bails the loop at 35s elapsed, so 3 items × 18s + delays fits
-  // safely with headroom for a final in-flight item to finish.
-  // Earlier defaults of 5 (and originally 25) blew the timeout.
-  const [batchSize, setBatchSize] = useState(3)
+  // Default batch sized against the server's 300s ceiling: per-item
+  // gpt-5-mini timeout is 35s and the loop bails at 270s elapsed,
+  // so 5 items × 35s + delays ≈ 178s with comfortable headroom even
+  // when manga analyses run long. Auto-mode uses the same value.
+  const [batchSize, setBatchSize] = useState(5)
   const [forceReenrich, setForceReenrich] = useState(false)
   const [result, setResult] = useState<EnrichmentResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -172,12 +171,11 @@ export default function EnrichPage() {
     let totalDone = 0
     let totalErrors = 0
 
-    // Auto mode uses 3-item batches to stay safely under Vercel's
-    // 60s function timeout. Server caps each gpt-5-mini call at 18s
-    // and bails the loop at 35s elapsed, so 3 items + delays fits
-    // with comfortable headroom even when individual analyses run
-    // long. (Was 5; bumped down after seeing FUNCTION_INVOCATION_TIMEOUT.)
-    const autoBatchSize = 3
+    // Auto mode batch sized against the server's 300s ceiling +
+    // 270s loop budget + 35s per-item timeout — 5 items × 35s ≈
+    // 178s worst case, fits with comfortable headroom. Bumped from 3
+    // after server maxDuration moved 60→300 (matching enrich-deep).
+    const autoBatchSize = 5
 
     while (!stopRequestedRef.current && !controller.signal.aborted) {
       try {
@@ -500,10 +498,10 @@ export default function EnrichPage() {
                 className="w-full p-2 border rounded-lg"
                 disabled={enriching}
               >
-                <option value={3}>3 contenus (~30s, recommandé)</option>
-                <option value={5}>5 contenus (~50s, peut bailler tôt)</option>
-                <option value={10}>10 contenus (server bailera à 35s)</option>
-                <option value={25}>25 contenus (server bailera à 35s)</option>
+                <option value={3}>3 contenus (~110s)</option>
+                <option value={5}>5 contenus (~180s, recommandé)</option>
+                <option value={10}>10 contenus (~260s, peut bailler)</option>
+                <option value={25}>25 contenus (server bailera à 270s)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Cout estime: ~{(batchSize * 0.0013).toFixed(3)}$ (gpt-5-mini)

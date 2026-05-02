@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import OpenAI from "openai"
 
-export const maxDuration = 60 // Allow up to 60s for OpenAI batch processing
+// Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
+// /import-cnc-ratings, /news-discover. We need it because gpt-5-mini
+// occasionally takes 25-35s on a single analysis (especially mangas
+// with the long manga rubric appended), and the previous 60s ceiling
+// only fit 1-2 items per batch before bailing on time.
+export const maxDuration = 300
 
 // Batch enrichment API - Enrich items that don't have content metrics
 // Uses OpenAI GPT-5 Mini to generate age ratings, content analysis, and v2 metadata
@@ -277,13 +282,14 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
 }`
 
   try {
-    // Per-call abort — gpt-5-mini occasionally takes 30-45s on a single
-    // analysis, which blows Vercel's 60s function ceiling after just one
-    // or two items. Capping each call at 18s lets the loop bail on slow
-    // items and move on, so the response always returns under budget.
-    // OpenAI SDK's default timeout is 10 minutes — way too long for us.
+    // Per-call abort — gpt-5-mini occasionally takes 25-35s on a
+    // single analysis (mangas in particular, with the long manga
+    // rubric appended). Capping each call at 35s lets a slow item
+    // finish without dragging neighbours into a timeout, and the
+    // outer 270s loop budget still fits 5+ items even at the worst
+    // per-call duration. OpenAI SDK default is 10 min — useless.
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 18_000)
+    const timer = setTimeout(() => controller.abort(), 35_000)
     let response
     try {
       response = await openai.chat.completions.create(
@@ -455,13 +461,14 @@ export async function POST(request: NextRequest) {
     result.processed = items.length
     result.details.push(`Found ${items.length} items to enrich`)
 
-    // Safety bail before Vercel's 60s gateway ceiling. With per-item
-    // 18s OpenAI timeout (see analyzeWithOpenAI), worst case for a
-    // single item is ~20s including post-processing + the inter-item
-    // delay. Bail at 35s leaves ~25s headroom — enough to finish a
-    // last in-flight item and still return JSON before the gateway
-    // 504s. Caller (auto-mode loop) re-invokes to pick up the rest.
-    const TIME_BUDGET_MS = 35_000
+    // Safety bail before Vercel's 300s function ceiling. With per-
+    // item 35s OpenAI timeout (see analyzeWithOpenAI), worst case for
+    // a single item is ~37s including post-processing + the inter-
+    // item delay. Bail at 270s leaves ~30s headroom for a final
+    // in-flight item to complete and the response to serialize back
+    // before the gateway kill. Caller (auto-mode loop) re-invokes to
+    // pick up the rest.
+    const TIME_BUDGET_MS = 270_000
     let bailedOnTime = false
 
     for (const item of items) {

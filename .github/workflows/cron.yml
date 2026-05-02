@@ -117,7 +117,7 @@ jobs:
           echo "::group::Enrich movies"
           for i in 1 2; do
             echo "Movie batch $i:"
-            curl -sSL --max-time 58 -X POST \
+            curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"type":"movie","limit":5}' \
@@ -132,7 +132,7 @@ jobs:
           echo "::group::Enrich TV"
           for i in 1 2; do
             echo "TV batch $i:"
-            curl -sSL --max-time 58 -X POST \
+            curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"type":"tv","limit":5}' \
@@ -147,7 +147,7 @@ jobs:
           echo "::group::Enrich games"
           for i in 1 2; do
             echo "Game batch $i:"
-            curl -sSL --max-time 58 -X POST \
+            curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"type":"game","limit":5}' \
@@ -162,7 +162,7 @@ jobs:
           echo "::group::Enrich mangas"
           for i in 1 2; do
             echo "Manga batch $i:"
-            curl -sSL --max-time 58 -X POST \
+            curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"type":"manga","limit":5}' \
