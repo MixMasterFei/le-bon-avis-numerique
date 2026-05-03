@@ -113,8 +113,14 @@ const MAX_ITEMS_PER_SOURCE = 5
 // often publish 2-3 family items/day) when we just take top-60-by-
 // recency. 50 FR + 25 INTL keeps the prompt under timeout while
 // reliably surfacing 'Vu d'ailleurs' material.
-const FR_BUDGET = 50
-const INTL_BUDGET = 25
+// Reduced from 50/25 to 30/15 (May 2026) so the synthesis pipeline
+// fits within Vercel's 300s function ceiling. The journalistic
+// rewrite + V4-Pro made each story ~2-3x slower to generate; with
+// the smaller hydrated pool the LLM call completes in ~120-180s
+// instead of timing out at 290s. Net: 4 daily runs × 5 stories =
+// up to 20 fresh briefs per day, plenty for the page rhythm.
+const FR_BUDGET = 30
+const INTL_BUDGET = 15
 
 function makeParser(): RssParser {
   return new Parser({
@@ -195,7 +201,7 @@ function buildPrompt(
 
   return `Tu es l'éditeur de Totem Avisé, un guide d'actualité pour les foyers français — parents, grands-parents, enseignants, mais aussi tous les adultes qui suivent les sujets famille / éducation / numérique sans forcément avoir d'enfants. Ton lecteur ouvre la page pour S'INFORMER vite — il veut le SUJET, pas un compte-rendu de quel article a publié quoi.
 
-**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 3 à 8 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 8 histoires faibles est pire que 3 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
+**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 3 à 5 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 5 histoires faibles est pire que 3 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
 
 Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
 
@@ -386,7 +392,7 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 
 ## CONTRAINTES DURES
 
-- Maximum 10 histoires, triées par pertinence décroissante.
+- Maximum 5 histoires, triées par pertinence décroissante.
 - Body **400-600 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 300 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
 - Au moins 2 citations directes en « » dans le body quand les sources en fournissent (idéalement une par section). Si AUCUNE source ne fournit de citation littérale, attribue indirectement et accepte que le brief n'ait pas de « » — n'invente jamais.
 - familyTakeaway 60-120 mots, plain text, ancré dans les faits — pas de platitudes.
