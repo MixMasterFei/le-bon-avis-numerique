@@ -19,11 +19,18 @@ param(
     [string]$SiteUrl = "https://totemavise.com"
 )
 
+# Make any error terminating + visible so the script can't exit silently.
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+Write-Host "[debug] script started, params loaded"
+
 $envFile = ".env"
 if (-not (Test-Path $envFile)) {
     Write-Error "$envFile not found. Run this from the repo root."
     exit 1
 }
+Write-Host "[debug] .env exists"
 
 # Parse CRON_SECRET out of .env (strips optional surrounding quotes).
 $cronLine = Get-Content $envFile | Where-Object { $_ -match '^CRON_SECRET=' }
@@ -36,16 +43,23 @@ if (-not $cron) {
     Write-Error "CRON_SECRET in .env is empty."
     exit 1
 }
+Write-Host "[debug] CRON_SECRET parsed, length=$($cron.Length)"
 
 $headers = @{ Authorization = "Bearer $cron" }
 
-# Preflight — get the starting backlog so we can show real progress.
+Write-Host "[debug] preflight starting against $SiteUrl/api/admin/enrich"
+
+# Preflight - get the starting backlog so we can show real progress.
 try {
     $preflight = Invoke-RestMethod -Uri "$SiteUrl/api/admin/enrich" -Headers $headers
+    Write-Host "[debug] preflight ok"
     $backlogStart = [int]$preflight.enrichment.withoutMetrics
+    Write-Host "[debug] backlogStart=$backlogStart"
 }
 catch {
-    if ($_.Exception.Response.StatusCode.value__ -eq 401) {
+    $statusCode = $null
+    if ($_.Exception.Response) { $statusCode = $_.Exception.Response.StatusCode.value__ }
+    if ($statusCode -eq 401) {
         Write-Error "Auth failed (401). CRON_SECRET in .env doesn't match Vercel."
         Write-Error "Fix: npx vercel env pull .env --environment=production"
     }
@@ -57,11 +71,11 @@ catch {
 
 Write-Host "Enriching from $SiteUrl  type=$Type  limit=$Limit"
 if ($backlogStart -eq 0) {
-    Write-Host "Backlog: 0 — everything is already enriched. Nothing to do."
+    Write-Host "Backlog: 0. Everything is already enriched. Nothing to do."
     exit 0
 }
 Write-Host "Backlog: $backlogStart items to enrich."
-Write-Host "Press Ctrl+C to stop. onlyMissing=true => resuming is safe."
+Write-Host "Press Ctrl+C to stop. onlyMissing=true means resuming is safe."
 Write-Host ""
 
 $batch = 0
