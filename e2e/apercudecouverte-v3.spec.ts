@@ -25,11 +25,11 @@ const TEST_EMAIL = process.env.E2E_TEST_USER_EMAIL
 const TEST_PASSWORD = process.env.E2E_TEST_USER_PASSWORD
 
 test.describe("Aperçu Découverte v3 — unauthenticated", () => {
-  test("redirects to /connexion with next= preserved", async ({ page }) => {
+  test("redirects to /connexion with callbackUrl preserved", async ({ page }) => {
     await page.goto("/apercudecouverte-v3")
-    // next= can arrive URL-encoded (%2F) or raw (/) depending on the
-    // browser-redirect path — accept either.
-    await expect(page).toHaveURL(/\/connexion\?next=(%2F|\/)apercudecouverte-v3/)
+    // The middleware uses NextAuth's `callbackUrl` query param, not
+    // `next=` (see src/middleware.ts). Accept URL-encoded or raw slash.
+    await expect(page).toHaveURL(/\/connexion\?callbackUrl=(%2F|\/)apercudecouverte-v3/)
   })
 })
 
