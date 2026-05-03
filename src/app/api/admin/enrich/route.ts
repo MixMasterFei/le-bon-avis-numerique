@@ -292,15 +292,27 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     const timer = setTimeout(() => controller.abort(), 35_000)
     let response
     try {
+      // gpt-5-mini is a reasoning model — internal reasoning tokens
+      // count against max_completion_tokens. With "medium" effort
+      // (the default on project keys), 1500 tokens get eaten by
+      // reasoning before any output is produced, so
+      // .choices[0].message.content comes back empty and our caller
+      // throws "No response from OpenAI". Setting "minimal" keeps
+      // reasoning under control; bumping the budget to 4000 gives
+      // the structured JSON output (~1k tokens) comfortable room.
+      // reasoning_effort isn't yet in the OpenAI SDK's typed params,
+      // so we add it via a typed base + extra-field cast.
+      const completionParams = {
+        model: "gpt-5-mini",
+        messages: [
+          { role: "system" as const, content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
+          { role: "user" as const, content: prompt },
+        ],
+        max_completion_tokens: 4000,
+        reasoning_effort: "minimal",
+      }
       response = await openai.chat.completions.create(
-        {
-          model: "gpt-5-mini",
-          messages: [
-            { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
-            { role: "user", content: prompt },
-          ],
-          max_completion_tokens: 1500,
-        },
+        completionParams as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
         { signal: controller.signal },
       )
     } finally {
