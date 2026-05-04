@@ -107,7 +107,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
                 className={`${serifClass} text-lg md:text-xl font-medium`}
                 style={{ letterSpacing: "-0.02em" }}
               >
-                Fraîchement ajoutés
+                Fraîchement ajoutés dans notre base de données
               </h3>
               <Link
                 href="/films?sort=newest"
