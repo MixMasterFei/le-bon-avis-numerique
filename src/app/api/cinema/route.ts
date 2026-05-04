@@ -119,7 +119,11 @@ export async function GET() {
       { movies },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+          // 30 min CDN cache (was 1h) — TMDB updates now_playing
+          // throughout the day as theatrical releases shift, and
+          // users perceive the homepage section as stale at the 1h
+          // mark. SWR window stays at 1h for graceful degradation.
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
         },
       }
     )
