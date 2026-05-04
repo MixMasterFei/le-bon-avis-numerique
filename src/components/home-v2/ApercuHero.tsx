@@ -136,7 +136,7 @@ export function ApercuHero({
             >
               Un foyer, des goûts, des recommandations sur-mesure.
               <br />
-              Créez le vôtre en 1 minute.
+              Créez votre compte en 1 minute.
             </p>
 
             <div className="mt-8 max-w-xl relative z-30">
