@@ -29,10 +29,12 @@ import {
   Users,
   Loader2,
   Smartphone,
+  Clock,
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { useRecentSearches } from "@/hooks/useRecentSearches"
 
 interface NavItem {
   name: string
@@ -106,10 +108,15 @@ export function SiteHeader() {
   }>>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  // Recents panel — shown on focus when query is empty/too-short.
+  // Same localStorage store as HeroSearch (single source of history),
+  // so a search typed in the hero shows up here too.
+  const [showSearchRecents, setShowSearchRecents] = useState(false)
   const [searchSelectedIndex, setSearchSelectedIndex] = useState(-1)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const searchTypeMenuRef = useRef<HTMLDivElement>(null)
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
+  const { entries: searchRecents, add: addSearchRecent, remove: removeSearchRecent, clear: clearSearchRecents } = useRecentSearches()
   const [userAvatar, setUserAvatar] = useState<{
     style?: string | null
     seed?: string | null
@@ -152,6 +159,7 @@ export function SiteHeader() {
       }
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false)
+        setShowSearchRecents(false)
       }
       if (searchTypeMenuRef.current && !searchTypeMenuRef.current.contains(event.target as Node)) {
         setShowSearchTypeMenu(false)
@@ -197,8 +205,18 @@ export function SiteHeader() {
 
   const goToSuggestion = (s: { id: string; title: string }) => {
     setShowSearchDropdown(false)
+    setShowSearchRecents(false)
     setSearchQuery(s.title)
+    addSearchRecent({ q: s.title, href: `/media/${s.id}`, title: s.title })
     router.push(`/media/${s.id}`)
+  }
+
+  const goToSearchRecent = (entry: { q: string; href?: string }) => {
+    setShowSearchDropdown(false)
+    setShowSearchRecents(false)
+    setSearchQuery(entry.q)
+    addSearchRecent({ q: entry.q, href: entry.href })
+    router.push(entry.href ?? `/recherche?q=${encodeURIComponent(entry.q)}`)
   }
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -254,9 +272,12 @@ export function SiteHeader() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/recherche?q=${encodeURIComponent(searchQuery)}`)
+    const q = searchQuery.trim()
+    if (q) {
+      addSearchRecent({ q })
+      router.push(`/recherche?q=${encodeURIComponent(q)}`)
       setSearchQuery("")
+      setShowSearchRecents(false)
     }
   }
 
@@ -498,12 +519,66 @@ export function SiteHeader() {
                       onFocus={() => {
                         if (searchSuggestions.length > 0 && searchQuery.trim().length >= 2) {
                           setShowSearchDropdown(true)
+                        } else if (searchQuery.trim().length < 2 && searchRecents.length > 0) {
+                          setShowSearchRecents(true)
                         }
                       }}
                       autoComplete="off"
                     />
                   </div>
                 </div>
+
+                {/* Recents — empty/short query + we have history.
+                    Same store as the homepage HeroSearch (single
+                    localStorage key). */}
+                {showSearchRecents && !showSearchDropdown && searchRecents.length > 0 && (
+                  <div
+                    className="absolute top-full left-0 right-0 mt-1 rounded-2xl shadow-xl z-[200] overflow-hidden"
+                    style={{ background: p.card, border: `1px solid ${p.line2}` }}
+                  >
+                    <div
+                      className="flex items-center justify-between px-3 py-2 border-b"
+                      style={{ borderColor: p.line }}
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
+                        Recherches récentes
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => clearSearchRecents()}
+                        className="text-[10px] hover:opacity-70 transition-opacity"
+                        style={{ color: p.ink2 }}
+                      >
+                        Effacer tout
+                      </button>
+                    </div>
+                    <ul className="py-1 max-h-72 overflow-y-auto">
+                      {searchRecents.map((entry) => (
+                        <li key={`${entry.q}:${entry.ts}`} className="group">
+                          <div className="w-full flex items-center transition-colors" style={{ color: p.ink }}>
+                            <button
+                              type="button"
+                              onClick={() => goToSearchRecent(entry)}
+                              className="flex-1 px-3 py-1.5 flex items-center gap-2.5 text-left text-sm hover:opacity-70"
+                            >
+                              <Clock className="h-3.5 w-3.5 flex-shrink-0" style={{ color: p.ink2 }} />
+                              <span className="truncate">{entry.q}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeSearchRecent(entry.q)}
+                              aria-label={`Retirer ${entry.q}`}
+                              className="px-2.5 py-1.5 transition-opacity opacity-0 group-hover:opacity-100 hover:opacity-100"
+                              style={{ color: p.ink2 }}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Autocomplete dropdown — IMDB-style row: poster
                     thumbnail, title, year, age badge. Sits OUTSIDE

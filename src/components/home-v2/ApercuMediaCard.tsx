@@ -52,9 +52,12 @@ export function ApercuMediaCard({
   const ageColors = ageBadgeColor(media.expertAgeRec)
 
   const titleClass =
-    size === "sm" ? "text-[13px] leading-tight" : "text-sm leading-snug"
+    size === "sm" ? "text-[12px] leading-tight" : "text-[13px] leading-snug"
 
-  const visibleGenres = (media.genres ?? []).slice(0, 3)
+  // Cap at 2 visible genres on small cards so the row stays single-line
+  // even with longer labels like "Action & Adventure". The 3rd tag was
+  // wrapping off-screen due to max-h clipping.
+  const visibleGenres = (media.genres ?? []).slice(0, size === "sm" ? 2 : 3)
 
   // Same blur rule used everywhere else on the site (15+ AND any
   // content metric >= 3). Eye-overlay reveals on click; tooltip
@@ -132,13 +135,13 @@ export function ApercuMediaCard({
           {media.title}
         </div>
         {visibleGenres.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1 overflow-hidden max-h-[22px]">
+          <div className="mt-1 flex flex-nowrap gap-0.5 overflow-hidden max-h-[18px]">
             {visibleGenres.map((g) => {
               const c = genreBadgeColor(g)
               return (
                 <span
                   key={g}
-                  className="px-1.5 py-0.5 rounded text-[10px] font-semibold leading-tight whitespace-nowrap"
+                  className="px-1 py-0.5 rounded text-[9px] font-semibold leading-tight whitespace-nowrap truncate"
                   style={{ background: c.bg, color: c.text }}
                 >
                   {g}

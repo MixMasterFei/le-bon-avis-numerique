@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingUp, ChevronDown } from "lucide-react"
+import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingUp, ChevronDown, Clock } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useRecentSearches } from "@/hooks/useRecentSearches"
 
 // Popular search suggestions shown below the search bar
 const popularSearches = [
@@ -67,23 +68,45 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  // Recents are shown when the input is focused but the query is too
+  // short to fire autocomplete (< 2 chars). Tracked separately from
+  // showDropdown so opening recents doesn't get reset by the debounced
+  // suggestions effect.
+  const [showRecents, setShowRecents] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const typeMenuRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>(null)
+  const { entries: recents, add: addRecent, remove: removeRecent, clear: clearRecents } = useRecentSearches()
 
   const submit = () => {
     const q = query.trim()
     if (!q) return
     setShowDropdown(false)
+    setShowRecents(false)
+    addRecent({ q })
     router.push(`/recherche?q=${encodeURIComponent(q)}`)
   }
 
   const goToMedia = (suggestion: Suggestion) => {
     setShowDropdown(false)
+    setShowRecents(false)
     setQuery(suggestion.title)
+    addRecent({
+      q: suggestion.title,
+      href: `/media/${suggestion.id}`,
+      title: suggestion.title,
+    })
     router.push(`/media/${suggestion.id}`)
+  }
+
+  const goToRecent = (entry: { q: string; href?: string }) => {
+    setShowDropdown(false)
+    setShowRecents(false)
+    setQuery(entry.q)
+    addRecent({ q: entry.q, href: entry.href })
+    router.push(entry.href ?? `/recherche?q=${encodeURIComponent(entry.q)}`)
   }
 
   // Fetch suggestions with debounce. Re-runs on type change too —
@@ -130,6 +153,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
+        setShowRecents(false)
       }
       if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) {
         setShowTypeMenu(false)
@@ -248,6 +272,10 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
             onFocus={() => {
               if (suggestions.length > 0 && query.trim().length >= 2) {
                 setShowDropdown(true)
+              } else if (query.trim().length < 2 && recents.length > 0) {
+                // Empty/too-short query + we have history → show recents
+                // so the user can re-open a recent search in one click.
+                setShowRecents(true)
               }
             }}
             autoComplete="off"
@@ -266,6 +294,50 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
           </Button>
         </div>
       </form>
+
+      {/* Recent searches — shown when input is focused and query is
+          empty/too-short. Hidden as soon as the autocomplete dropdown
+          would render (see showDropdown branch below). */}
+      {showRecents && !showDropdown && recents.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[200] overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Recherches récentes
+            </span>
+            <button
+              type="button"
+              onClick={() => clearRecents()}
+              className="text-[11px] text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Effacer tout
+            </button>
+          </div>
+          <ul className="py-1 max-h-80 overflow-y-auto">
+            {recents.map((entry) => (
+              <li key={`${entry.q}:${entry.ts}`} className="group">
+                <div className="w-full flex items-center hover:bg-gray-50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => goToRecent(entry)}
+                    className="flex-1 px-3 py-2 flex items-center gap-3 text-left"
+                  >
+                    <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-800 truncate">{entry.q}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeRecent(entry.q)}
+                    aria-label={`Retirer ${entry.q}`}
+                    className="px-3 py-2 text-gray-400 hover:text-gray-700 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Autocomplete dropdown — IMDB-inspired result row: poster
           thumbnail (with icon fallback), title, year, age badge,
