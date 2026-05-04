@@ -94,7 +94,7 @@ export function ApercuHero({
       style={{ background: p.bg, color: p.ink }}
     >
       <div className="container mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-10 md:pb-14">
-        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-start">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
           <div>
             <div
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs mb-7"

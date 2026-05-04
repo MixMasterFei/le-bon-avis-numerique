@@ -218,9 +218,9 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
             )}
           </div>
 
-          <Search className="absolute left-[5.5rem] sm:left-[6.5rem] h-5 w-5 text-gray-500 pointer-events-none hidden sm:block" />
+          <Search className="absolute left-[5.5rem] sm:left-[6rem] top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none hidden sm:block" />
           {loading && (
-            <Loader2 className="absolute right-14 sm:right-36 h-4 w-4 text-gray-500 animate-spin" />
+            <Loader2 className="absolute right-14 sm:right-36 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 animate-spin" />
           )}
           {query && !loading && (
             <button
@@ -232,7 +232,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
                 inputRef.current?.focus()
               }}
               aria-label="Effacer la recherche"
-              className="absolute right-14 sm:right-36 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-600 transition-colors"
+              className="absolute right-14 sm:right-36 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center text-gray-500 hover:text-gray-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -241,7 +241,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
             ref={inputRef}
             type="text"
             placeholder="Rechercher un film, une série, un jeu..."
-            className="w-full pl-3 sm:pl-12 pr-14 sm:pr-36 h-14 sm:h-16 text-base sm:text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-r-2xl"
+            className="w-full pl-3 sm:pl-16 pr-14 sm:pr-36 h-14 sm:h-16 text-base sm:text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-r-2xl"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -327,19 +327,20 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         </div>
       )}
 
-      {/* Popular searches — wrap on mobile so pills don't force
-          horizontal scroll. `whitespace-nowrap` kept on individual
-          pills so "Films pour enfants" doesn't split mid-phrase. */}
-      <div className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-        <span className="text-gray-600 text-xs sm:text-sm flex items-center gap-1.5 font-medium shrink-0">
-          <TrendingUp className="h-4 w-4" />
+      {/* Popular searches — single row on desktop, slightly smaller
+          pills so all 4 fit alongside the "Populaire:" label within
+          the search bar's max-w-xl width. Mobile keeps wrap as a
+          safety net for very narrow viewports. */}
+      <div className="mt-4 flex flex-wrap sm:flex-nowrap items-center justify-center gap-2">
+        <span className="text-gray-600 text-xs flex items-center gap-1.5 font-medium shrink-0">
+          <TrendingUp className="h-3.5 w-3.5" />
           Populaire:
         </span>
         {popularSearches.map((item) => (
           <Link
             key={item.href}
             href={item.href}
-            className="text-xs sm:text-sm bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm whitespace-nowrap"
+            className="text-xs bg-white/60 hover:bg-white/80 text-gray-700 hover:text-gray-900 px-2.5 py-1 rounded-full transition-all duration-300 border border-gray-200/50 hover:border-gray-300 font-medium backdrop-blur-sm whitespace-nowrap"
           >
             {item.label}
           </Link>

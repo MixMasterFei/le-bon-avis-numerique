@@ -423,77 +423,89 @@ export function SiteHeader() {
               onSubmit={handleSearch}
               className="hidden md:flex items-center max-w-md ml-4"
             >
-              <div
-                ref={searchContainerRef}
-                className="relative w-full flex items-stretch rounded-full overflow-hidden"
-                style={{ background: p.card, border: `1px solid ${p.line2}` }}
-              >
-                {/* IMDB-style type scoping — pre-filters
-                    /api/autocomplete so the dropdown only shows
-                    matching media. */}
-                <div ref={searchTypeMenuRef} className="relative flex-shrink-0 flex items-center pl-3 pr-2 border-r" style={{ borderColor: p.line }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowSearchTypeMenu((v) => !v)}
-                    className="flex items-center gap-1 text-xs font-medium hover:opacity-70 transition-opacity"
-                    style={{ color: p.ink2 }}
-                    aria-label="Filtrer par type"
-                  >
-                    {SEARCH_TYPE_FILTERS.find((t) => t.value === searchType)?.label ?? "Tout"}
-                    <ChevronDown className={`h-3 w-3 transition-transform ${showSearchTypeMenu ? "rotate-180" : ""}`} />
-                  </button>
-                  {showSearchTypeMenu && (
-                    <div
-                      className="absolute top-full left-0 mt-1 w-32 rounded-xl shadow-xl py-1 z-[210]"
-                      style={{ background: p.card, border: `1px solid ${p.line2}` }}
+              {/* Outer wrapper anchors the absolutely-positioned
+                  dropdowns. Cannot use overflow-hidden here — the
+                  type-filter menu and autocomplete dropdown both
+                  render below the row and would be clipped. The
+                  rounded-full chrome lives on the inner row. */}
+              <div ref={searchContainerRef} className="relative w-full">
+                <div
+                  className="flex items-stretch rounded-full"
+                  style={{ background: p.card, border: `1px solid ${p.line2}` }}
+                >
+                  {/* IMDB-style type scoping — pre-filters
+                      /api/autocomplete so the dropdown only shows
+                      matching media. */}
+                  <div ref={searchTypeMenuRef} className="relative flex-shrink-0 flex items-center pl-4 pr-3 border-r" style={{ borderColor: p.line }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowSearchTypeMenu((v) => !v)}
+                      className="flex items-center gap-1 text-xs font-medium hover:opacity-70 transition-opacity"
+                      style={{ color: p.ink2 }}
+                      aria-label="Filtrer par type"
                     >
-                      {SEARCH_TYPE_FILTERS.map((t) => (
-                        <button
-                          key={t.value}
-                          type="button"
-                          onClick={() => {
-                            setSearchType(t.value)
-                            setShowSearchTypeMenu(false)
-                          }}
-                          className="w-full text-left px-3 py-1.5 text-xs transition-colors hover:opacity-70"
-                          style={{
-                            color: p.ink,
-                            fontWeight: searchType === t.value ? 600 : 400,
-                          }}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                      {SEARCH_TYPE_FILTERS.find((t) => t.value === searchType)?.label ?? "Tout"}
+                      <ChevronDown className={`h-3 w-3 transition-transform ${showSearchTypeMenu ? "rotate-180" : ""}`} />
+                    </button>
+                    {showSearchTypeMenu && (
+                      <div
+                        className="absolute top-full left-0 mt-1 w-32 rounded-xl shadow-xl py-1 z-[210]"
+                        style={{ background: p.card, border: `1px solid ${p.line2}` }}
+                      >
+                        {SEARCH_TYPE_FILTERS.map((t) => (
+                          <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => {
+                              setSearchType(t.value)
+                              setShowSearchTypeMenu(false)
+                            }}
+                            className="w-full text-left px-3 py-1.5 text-xs transition-colors hover:opacity-70"
+                            style={{
+                              color: p.ink,
+                              fontWeight: searchType === t.value ? 600 : 400,
+                            }}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Inner wrapper for input + icons — keeps the search
+                      icon naturally positioned at left-3 of the input
+                      area, instead of doing absolute math against the
+                      whole row. */}
+                  <div className="relative flex-1 flex items-center">
+                    <Search
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
+                      style={{ color: p.ink2 }}
+                    />
+                    {searchLoading && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin opacity-60" />
+                    )}
+                    <input
+                      type="search"
+                      placeholder="Rechercher..."
+                      className="pl-10 pr-9 py-2 w-full text-sm focus:outline-none bg-transparent rounded-r-full"
+                      style={{ color: p.ink }}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      onFocus={() => {
+                        if (searchSuggestions.length > 0 && searchQuery.trim().length >= 2) {
+                          setShowSearchDropdown(true)
+                        }
+                      }}
+                      autoComplete="off"
+                    />
+                  </div>
                 </div>
 
-                <Search
-                  className="absolute left-[5.5rem] top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-                  style={{ color: p.ink2 }}
-                />
-                {searchLoading && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin opacity-60" />
-                )}
-                <input
-                  type="search"
-                  placeholder="Rechercher..."
-                  className="pl-9 pr-9 py-2 flex-1 text-sm focus:outline-none bg-transparent"
-                  style={{ color: p.ink }}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  onFocus={() => {
-                    if (searchSuggestions.length > 0 && searchQuery.trim().length >= 2) {
-                      setShowSearchDropdown(true)
-                    }
-                  }}
-                  autoComplete="off"
-                />
-
                 {/* Autocomplete dropdown — IMDB-style row: poster
-                    thumbnail, title, year, age badge. Same data shape
-                    as the homepage HeroSearch. */}
+                    thumbnail, title, year, age badge. Sits OUTSIDE
+                    the rounded-full row so it isn't clipped. */}
                 {showSearchDropdown && searchSuggestions.length > 0 && (
                   <div
                     className="absolute top-full left-0 right-0 mt-1 rounded-2xl shadow-xl z-[200] overflow-hidden"
