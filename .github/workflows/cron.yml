@@ -321,9 +321,14 @@ jobs:
       - name: Run news discovery
         run: |
           echo "::group::News Discover"
-          # 290s — slightly under the route's 300s ceiling. Accommodates
-          # synthesis + per-story moderation + research extraction.
-          response=$(curl -sSfL --max-time 290 -w "\n%{http_code}" \
+          # 320s — slightly OVER the route's 300s ceiling so curl waits
+          # long enough to receive Vercel's 504 response when the
+          # function actually times out (instead of bailing first and
+          # reporting a misleading "0 bytes" error). The route itself
+          # has a 180s synthesis-call timeout (AbortController) that
+          # protects against runaway DeepSeek calls and returns 200
+          # with "0 synthesized" cleanly when the LLM is slow.
+          response=$(curl -sSfL --max-time 320 -w "\n%{http_code}" \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE_URL/api/cron/news-discover")
           http_code=$(echo "$response" | tail -1)

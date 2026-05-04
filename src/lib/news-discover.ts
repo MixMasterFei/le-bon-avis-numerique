@@ -670,31 +670,61 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // 2 H2 sections of ~500 words + familyTakeaway). Slight headroom
   // over the previous 300-450 word target.
   const MAX_TOKENS = 14000
+
+  // Per-call timeout on the synthesis LLM call. Without this, a slow
+  // provider (DeepSeek occasionally takes 250s+ on V4-Pro under load)
+  // blocks the whole pipeline until Vercel kills the function at 300s
+  // — and the cron curl already gave up at 290s by then, reporting a
+  // failed run even though work was happening. 180s lets synthesis
+  // run long if needed, but reserves ~120s headroom for moderation +
+  // research + image mirroring + persistence. If we abort, the run
+  // returns "0 synthesized" cleanly (200 OK) and the next cron tick
+  // retries with fresh hydrated items.
+  const SYNTHESIS_TIMEOUT_MS = 180_000
+  const synthesisController = new AbortController()
+  const synthesisTimer = setTimeout(() => synthesisController.abort(), SYNTHESIS_TIMEOUT_MS)
+
   let rawText = ""
-  if (provider === "deepseek") {
-    // Synthesis uses V4-Pro (1.6T MoE) — materially stronger writing
-    // than the V4-Flash default used elsewhere in the codebase. Cost
-    // delta is negligible at our cron volume.
-    const ds = getDeepSeek()
-    const response = await ds.chat.completions.create({
-      model: SYNTHESIS_MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [{ role: "user", content: prompt }],
-    })
-    rawText = response.choices[0]?.message?.content ?? ""
-  } else {
-    // Anthropic escape hatch — uses Sonnet 4.6 (not the Haiku default
-    // from anthropic.ts) because synthesis needs the writing quality.
-    // Other Anthropic-backed passes (moderation, research, judge)
-    // stay on Haiku via their own client setup.
-    const anthropic = getAnthropic()
-    const response = await anthropic.messages.create({
-      model: SYNTHESIS_ANTHROPIC_MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [{ role: "user", content: prompt }],
-    })
-    const textBlock = response.content.find((c) => c.type === "text")
-    rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
+  try {
+    if (provider === "deepseek") {
+      // Synthesis uses V4-Pro (1.6T MoE) — materially stronger writing
+      // than the V4-Flash default used elsewhere in the codebase. Cost
+      // delta is negligible at our cron volume.
+      const ds = getDeepSeek()
+      const response = await ds.chat.completions.create(
+        {
+          model: SYNTHESIS_MODEL,
+          max_tokens: MAX_TOKENS,
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal: synthesisController.signal },
+      )
+      rawText = response.choices[0]?.message?.content ?? ""
+    } else {
+      // Anthropic escape hatch — uses Sonnet 4.6 (not the Haiku default
+      // from anthropic.ts) because synthesis needs the writing quality.
+      // Other Anthropic-backed passes (moderation, research, judge)
+      // stay on Haiku via their own client setup.
+      const anthropic = getAnthropic()
+      const response = await anthropic.messages.create(
+        {
+          model: SYNTHESIS_ANTHROPIC_MODEL,
+          max_tokens: MAX_TOKENS,
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal: synthesisController.signal },
+      )
+      const textBlock = response.content.find((c) => c.type === "text")
+      rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
+    }
+  } catch (err) {
+    const aborted = synthesisController.signal.aborted
+    console.warn(
+      `[news-discover] synthesis ${aborted ? "aborted on timeout" : "errored"} after ${Math.round((Date.now() - synthStart) / 1000)}s — returning 0 stories. ${err instanceof Error ? err.message : ""}`,
+    )
+    rawText = ""
+  } finally {
+    clearTimeout(synthesisTimer)
   }
 
   // Strip markdown code fences (```json … ```) before extracting the
