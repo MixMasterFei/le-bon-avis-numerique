@@ -186,14 +186,14 @@ SANITY_API_WRITE_TOKEN=xxx          # For publishing via API (not needed for pub
 ## Automation & Cron Jobs
 
 ### Vercel Cron (1 free job)
-- **Monday 3:00 AM UTC** — Weekly import (`/api/cron/weekly-import`)
+- **Daily 3:00 AM UTC** — Import (`/api/cron/weekly-import`) — name kept for backward compat, but runs daily now (was Monday-only). Daily cadence keeps the homepage "Fraîchement ajoutés" rail visibly dynamic instead of stuck for 6 days between Monday batches.
 
 ### GitHub Actions (`.github/workflows/cron.yml`)
-Automated maintenance across 3 days/week. All jobs use `CRON_SECRET` Bearer auth.
+Automated maintenance, all jobs use `CRON_SECRET` Bearer auth.
 
 | Day | Time (UTC) | Tasks |
 |---|---|---|
-| Monday | 3:00 AM | Import new movies/TV from TMDB + new games from IGDB (`weekly-games-import`, popularity-floored) |
+| Daily | 3:00 AM | Import new movies/TV from TMDB + new games from IGDB (`weekly-games-import`, popularity-floored). TMDB dedup keeps actual new items per run to ~10-20. |
 | Daily | 4:00 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute |
 | Saturday | 5:00 AM | TMDB ratings backfill + Streaming platform updates + Similarity scores |
 
