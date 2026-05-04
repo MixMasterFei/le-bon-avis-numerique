@@ -210,9 +210,12 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         </div>
       </form>
 
-      {/* Autocomplete dropdown - Bold styling */}
+      {/* Autocomplete dropdown — connected look (mt-1, no top
+          rounded corners on first visual line) and z-[200] so it
+          rides above any sibling section even on pages with their
+          own stacking contexts. */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[100] overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[200] overflow-hidden">
           <ul className="py-2 max-h-72 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film

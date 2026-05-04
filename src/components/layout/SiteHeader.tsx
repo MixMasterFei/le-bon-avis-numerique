@@ -26,6 +26,8 @@ import {
   Star,
   Bookmark,
   Users,
+  Loader2,
+  Smartphone,
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -85,6 +87,19 @@ export function SiteHeader() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  // Top-nav search autocomplete — same /api/autocomplete endpoint as
+  // the homepage HeroSearch, so users get dynamic suggestions instead
+  // of having to press Enter / click Rechercher to see anything.
+  const [searchSuggestions, setSearchSuggestions] = useState<Array<{
+    id: string
+    title: string
+    type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
+  }>>([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+  const [searchSelectedIndex, setSearchSelectedIndex] = useState(-1)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const [userAvatar, setUserAvatar] = useState<{
     style?: string | null
     seed?: string | null
@@ -125,10 +140,90 @@ export function SiteHeader() {
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setIsMoreMenuOpen(false)
       }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowSearchDropdown(false)
+      }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  // Debounced autocomplete fetch for the top-nav search.
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    if (searchQuery.trim().length < 2) {
+      setSearchSuggestions([])
+      setShowSearchDropdown(false)
+      return
+    }
+    setSearchLoading(true)
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchQuery.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          setSearchSuggestions(data.suggestions || [])
+          setShowSearchDropdown(true)
+          setSearchSelectedIndex(-1)
+        }
+      } catch {
+        // Network blip — silently degrade; user can still press Enter
+        // to navigate to /recherche?q=...
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 200)
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    }
+  }, [searchQuery])
+
+  const goToSuggestion = (s: { id: string; title: string }) => {
+    setShowSearchDropdown(false)
+    setSearchQuery(s.title)
+    router.push(`/media/${s.id}`)
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSearchDropdown || searchSuggestions.length === 0) return
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault()
+        setSearchSelectedIndex((prev) => (prev < searchSuggestions.length - 1 ? prev + 1 : prev))
+        break
+      case "ArrowUp":
+        e.preventDefault()
+        setSearchSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1))
+        break
+      case "Enter":
+        if (searchSelectedIndex >= 0 && searchSelectedIndex < searchSuggestions.length) {
+          e.preventDefault()
+          goToSuggestion(searchSuggestions[searchSelectedIndex])
+        }
+        break
+      case "Escape":
+        setShowSearchDropdown(false)
+        setSearchSelectedIndex(-1)
+        break
+    }
+  }
+
+  const SEARCH_TYPE_ICONS: Record<string, typeof Film> = {
+    MOVIE: Film,
+    TV: Tv,
+    GAME: Gamepad2,
+    BOOK: BookOpen,
+    APP: Smartphone,
+    MANGA: BookOpen,
+  }
+  const SEARCH_TYPE_LABELS: Record<string, string> = {
+    MOVIE: "Film",
+    TV: "Série",
+    GAME: "Jeu",
+    BOOK: "Livre",
+    APP: "App",
+    MANGA: "Manga",
+  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -303,15 +398,18 @@ export function SiteHeader() {
               onSubmit={handleSearch}
               className="hidden md:flex items-center max-w-sm ml-4"
             >
-              <div className="relative w-full">
+              <div ref={searchContainerRef} className="relative w-full">
                 <Search
                   className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4"
                   style={{ color: p.ink2 }}
                 />
+                {searchLoading && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin opacity-60" />
+                )}
                 <input
                   type="search"
                   placeholder="Rechercher un film, une série, un jeu..."
-                  className="pl-11 pr-4 py-2 w-full rounded-full text-sm focus:outline-none transition-colors"
+                  className="pl-11 pr-9 py-2 w-full rounded-full text-sm focus:outline-none transition-colors"
                   style={{
                     background: p.card,
                     border: `1px solid ${p.line2}`,
@@ -319,7 +417,54 @@ export function SiteHeader() {
                   }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  onFocus={() => {
+                    if (searchSuggestions.length > 0 && searchQuery.trim().length >= 2) {
+                      setShowSearchDropdown(true)
+                    }
+                  }}
+                  autoComplete="off"
                 />
+
+                {/* Autocomplete dropdown — same /api/autocomplete data
+                    as the homepage HeroSearch. mt-1 + z-[200] keeps it
+                    visually connected and above any below-the-nav
+                    stacking contexts. */}
+                {showSearchDropdown && searchSuggestions.length > 0 && (
+                  <div
+                    className="absolute top-full left-0 right-0 mt-1 rounded-2xl shadow-xl z-[200] overflow-hidden"
+                    style={{ background: p.card, border: `1px solid ${p.line2}` }}
+                  >
+                    <ul className="py-1 max-h-72 overflow-y-auto">
+                      {searchSuggestions.map((s, index) => {
+                        const Icon = SEARCH_TYPE_ICONS[s.type] || Film
+                        return (
+                          <li key={`${s.type}:${s.id}`}>
+                            <button
+                              type="button"
+                              className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm transition-colors"
+                              style={{
+                                color: p.ink,
+                                background: index === searchSelectedIndex ? p.bg2 : "transparent",
+                              }}
+                              onClick={() => goToSuggestion(s)}
+                              onMouseEnter={() => setSearchSelectedIndex(index)}
+                            >
+                              <Icon className="h-4 w-4 flex-shrink-0" style={{ color: p.ink2 }} />
+                              <span className="font-medium truncate flex-1">{s.title}</span>
+                              <span
+                                className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
+                                style={{ background: p.bg2, color: p.ink2 }}
+                              >
+                                {SEARCH_TYPE_LABELS[s.type]}
+                              </span>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             </form>
           </div>

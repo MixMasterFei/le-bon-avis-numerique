@@ -86,7 +86,11 @@ export function ApercuHero({
 
   return (
     <section
-      className="relative overflow-hidden"
+      // overflow-x-clip (not overflow-hidden) so the search autocomplete
+      // dropdown can extend vertically past the section's bottom edge.
+      // Horizontal clipping is preserved for the decorative card stack
+      // that bleeds slightly outside the right edge.
+      className="relative overflow-x-clip"
       style={{ background: p.bg, color: p.ink }}
     >
       <div className="container mx-auto px-4 md:px-8 pt-4 md:pt-6 pb-10 md:pb-14">
