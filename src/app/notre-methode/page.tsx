@@ -3,9 +3,16 @@ import Link from "next/link"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
-  title: "Notre méthode | Totem Avisé",
+  // Lengthened from "Notre méthode | Totem Avisé" (28 chars, below 30
+  // recommended) to clarify what the page covers in search results.
+  title: "Notre méthode d'évaluation des contenus | Totem Avisé",
+  // Lengthened from 96 to 144 chars (target 120+) so Google has more
+  // signal for the page topic in SERPs.
   description:
-    "Comment Totem Avisé évalue les contenus, attribue les badges et calcule la compatibilité familiale.",
+    "Comment Totem Avisé évalue les films, séries et jeux pour les familles : analyse en 7 critères, recommandations d'âge, compatibilité par foyer.",
+  // Override the root layout's canonical "/" so this page isn't
+  // merged with the homepage in Google's index.
+  alternates: { canonical: "/notre-methode" },
 }
 
 const sections = [

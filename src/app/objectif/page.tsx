@@ -3,9 +3,16 @@ import Link from "next/link"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
-  title: "Notre mission | Totem Avisé",
+  // Lengthened from "Notre mission | Totem Avisé" (27 chars) to give
+  // Google more topic signal in SERPs.
+  title: "Notre mission — guide média famille indépendant | Totem Avisé",
+  // Lengthened from ~90 chars to 154 (target 120+) to make the page
+  // intent clearer in search results.
   description:
-    "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer.",
+    "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer — recommandations indépendantes, sans publicité.",
+  // Override the root layout's canonical "/" so this page isn't
+  // merged with the homepage in Google's index.
+  alternates: { canonical: "/objectif" },
 }
 
 const pillars = [

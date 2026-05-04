@@ -59,8 +59,10 @@ export async function generateMetadata({
   )
 
   let title = "Jeux Vidéo — Avis PEGI et âges recommandés"
+  // Lengthened from 116 to 154 chars (target 120+) — gives Google
+  // more topic signal and matches the actual filter set on this page.
   let description =
-    "Jeux vidéo adaptés à chaque âge : analyses PEGI, microtransactions, contenu en ligne et recommandations parentales."
+    "Jeux vidéo adaptés à chaque âge : analyses PEGI, microtransactions, contenu en ligne, modes de jeu, plateformes (Switch, PlayStation, Xbox) et recommandations parentales."
 
   if (q) {
     title = `Recherche « ${q} » — Jeux vidéo pour la famille`

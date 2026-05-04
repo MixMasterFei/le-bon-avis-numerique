@@ -4,9 +4,14 @@ import { auth } from "@/lib/auth"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
-  title: "À propos | Totem Avisé",
+  // Lengthened from "À propos | Totem Avisé" (22 chars, well below 30
+  // recommended) to give Google more signal in search results.
+  title: "À propos de Totem Avisé — Guide média famille indépendant",
   description:
     "Totem Avisé aide les familles françaises à trouver les films, séries et jeux adaptés à chaque membre du foyer.",
+  // Override the root layout's canonical "/" so this page isn't
+  // merged with the homepage in Google's index.
+  alternates: { canonical: "/a-propos" },
 }
 
 const howItWorks = [
