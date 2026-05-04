@@ -134,8 +134,9 @@ export function ApercuHero({
               className="mt-6 md:mt-7 max-w-xl text-base md:text-lg leading-relaxed"
               style={{ color: p.ink2 }}
             >
-              On passe chaque film, série et jeu vidéo au crible. À vous de
-              choisir ce qui vous correspond.
+              Un foyer, des goûts, des recommandations sur-mesure.
+              <br />
+              Créez le vôtre en 1 minute.
             </p>
 
             <div className="mt-8 max-w-xl relative z-30">
