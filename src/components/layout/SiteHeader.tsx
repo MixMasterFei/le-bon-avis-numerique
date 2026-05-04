@@ -35,16 +35,25 @@ interface NavItem {
   name: string
   href: string
   icon: typeof Film
+  // When true, renders as a disabled pill with a "Bientôt" badge
+  // instead of a clickable link. Used for verticals being built but
+  // not yet ready to ship publicly.
+  comingSoon?: boolean
 }
 
 // Mangas intentionally omitted from the top nav during soft launch —
 // catalog quality is still being calibrated (non-French synopses,
 // partial coverage). Admins reach /mangas via direct URL or the admin
 // dashboard. Add back here when ready for public launch.
+//
+// Actualités is WIP — the news vertical (/apercudecouverte-v3) is
+// being polished. Drop the comingSoon flag and update href to the
+// public route once the cron is stable and quality is judged ready.
 const navigation: NavItem[] = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
+  { name: "Actualités", href: "/actualites", icon: Newspaper, comingSoon: true },
 ]
 
 const ageRanges = [
@@ -72,7 +81,6 @@ export function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
-  const [isAgeMenuOpen, setIsAgeMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [userAvatar, setUserAvatar] = useState<{
     style?: string | null
@@ -80,7 +88,6 @@ export function SiteHeader() {
     options?: Record<string, unknown> | null
   }>({})
   const moreMenuRef = useRef<HTMLDivElement>(null)
-  const ageMenuRef = useRef<HTMLDivElement>(null)
   const p = APERCU_PALETTE
 
   useEffect(() => {
@@ -114,9 +121,6 @@ export function SiteHeader() {
     function handleClickOutside(event: MouseEvent) {
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
         setIsMoreMenuOpen(false)
-      }
-      if (ageMenuRef.current && !ageMenuRef.current.contains(event.target as Node)) {
-        setIsAgeMenuOpen(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -182,53 +186,35 @@ export function SiteHeader() {
 
           <div className="hidden lg:flex flex-1 items-center justify-center">
             <nav className="flex items-center space-x-1">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
-                  style={navLinkStyle}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.name}
-                </Link>
-              ))}
-
-              <div ref={ageMenuRef} className="relative">
-                <button
-                  onClick={() => setIsAgeMenuOpen(!isAgeMenuOpen)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
-                  style={navLinkStyle}
-                >
-                  <Baby className="h-4 w-4" />
-                  Par âge
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${isAgeMenuOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {isAgeMenuOpen && (
+              {navigation.map((item) =>
+                item.comingSoon ? (
                   <div
-                    className="absolute left-0 mt-2 w-56 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
-                    style={dropdownPanelStyle}
+                    key={item.name}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full cursor-not-allowed opacity-60"
+                    style={navLinkStyle}
+                    title="Bientôt disponible"
                   >
-                    {ageRanges.map((range) => (
-                      <Link
-                        key={range.href}
-                        href={range.href}
-                        className="flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:opacity-100"
-                        style={{ color: p.ink }}
-                        onClick={() => setIsAgeMenuOpen(false)}
-                      >
-                        <span className="font-medium">{range.name}</span>
-                        <span className="text-xs" style={{ color: p.ink2 }}>
-                          {range.description}
-                        </span>
-                      </Link>
-                    ))}
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-1"
+                      style={{ background: p.bg2, color: p.ink2 }}
+                    >
+                      Bientôt
+                    </span>
                   </div>
-                )}
-              </div>
+                ) : (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
+                    style={navLinkStyle}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.name}
+                  </Link>
+                ),
+              )}
 
               <div ref={moreMenuRef} className="relative">
                 <button
@@ -278,6 +264,33 @@ export function SiteHeader() {
                         </Link>
                       )
                     )}
+
+                    {/* Par âge — demoted from a top-level dropdown to
+                        a sub-section of Plus. The 6 age routes still
+                        exist; this just keeps them discoverable
+                        without crowding the primary nav. */}
+                    <div className="border-t my-1" style={{ borderColor: p.line }} />
+                    <div
+                      className="px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider flex items-center gap-2"
+                      style={{ color: p.ink2 }}
+                    >
+                      <Baby className="h-3 w-3" />
+                      Par âge
+                    </div>
+                    {ageRanges.map((range) => (
+                      <Link
+                        key={range.href}
+                        href={range.href}
+                        className="flex items-center justify-between px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        style={{ color: p.ink }}
+                        onClick={() => setIsMoreMenuOpen(false)}
+                      >
+                        <span className="font-medium">{range.name}</span>
+                        <span className="text-xs" style={{ color: p.ink2 }}>
+                          {range.description}
+                        </span>
+                      </Link>
+                    ))}
                   </div>
                 )}
               </div>
@@ -516,43 +529,37 @@ export function SiteHeader() {
           style={{ background: p.bg, borderColor: p.line }}
         >
           <nav className="container mx-auto px-4 py-4 space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-opacity hover:opacity-70"
-                style={{ color: p.ink }}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.name}
-              </Link>
-            ))}
-
-            <div className="pt-2 mt-2 border-t" style={{ borderColor: p.line }}>
-              <p
-                className="px-4 py-2 text-xs font-medium uppercase tracking-wide"
-                style={{ color: p.ink2 }}
-              >
-                Par âge
-              </p>
-              <div className="grid grid-cols-2 gap-1 px-2">
-                {ageRanges.map((range) => (
-                  <Link
-                    key={range.href}
-                    href={range.href}
-                    className="flex flex-col px-3 py-2.5 rounded-lg transition-opacity hover:opacity-70"
-                    style={{ color: p.ink }}
-                    onClick={() => setIsMenuOpen(false)}
+            {navigation.map((item) =>
+              item.comingSoon ? (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between px-4 py-3 rounded-lg cursor-not-allowed opacity-60"
+                  style={{ color: p.ink }}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className="h-5 w-5" />
+                    {item.name}
+                  </div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded font-medium"
+                    style={{ background: p.bg2, color: p.ink2 }}
                   >
-                    <span className="text-sm font-medium">{range.name}</span>
-                    <span className="text-xs" style={{ color: p.ink2 }}>
-                      {range.description}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+                    Bientôt
+                  </span>
+                </div>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-opacity hover:opacity-70"
+                  style={{ color: p.ink }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              ),
+            )}
 
             <div className="pt-2 mt-2 border-t" style={{ borderColor: p.line }}>
               <p
@@ -592,6 +599,36 @@ export function SiteHeader() {
                   </Link>
                 )
               )}
+
+              {/* Par âge — nested inside Plus on mobile too, mirroring
+                  the desktop hierarchy. The 6 age routes still exist;
+                  this just keeps them discoverable without a dedicated
+                  top-nav slot. */}
+              <div className="mt-2 pt-2 border-t" style={{ borderColor: p.line }}>
+                <p
+                  className="px-4 py-2 text-xs font-medium uppercase tracking-wide flex items-center gap-2"
+                  style={{ color: p.ink2 }}
+                >
+                  <Baby className="h-3.5 w-3.5" />
+                  Par âge
+                </p>
+                <div className="grid grid-cols-2 gap-1 px-2">
+                  {ageRanges.map((range) => (
+                    <Link
+                      key={range.href}
+                      href={range.href}
+                      className="flex flex-col px-3 py-2.5 rounded-lg transition-opacity hover:opacity-70"
+                      style={{ color: p.ink }}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="text-sm font-medium">{range.name}</span>
+                      <span className="text-xs" style={{ color: p.ink2 }}>
+                        {range.description}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {session?.user ? (
