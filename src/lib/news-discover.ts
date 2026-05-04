@@ -290,9 +290,9 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
 Deux chemins pour créer une histoire :
 
-**A — Multi-sources (préféré).** Un événement précis couvert par ≥ 2 publications distinctes. Relevance ≥ 0.5.
+**A — Multi-sources (préféré).** Un événement précis couvert par ≥ 2 publications distinctes. Relevance ≥ 0.6.
 
-**B — Single-source.** Un article isolé avec angle famille fort (étude sérieuse, annonce institutionnelle, guide parental concret, recommandation experte). Relevance ≥ 0.7 obligatoire.
+**B — Single-source.** Un article isolé avec angle famille fort (étude sérieuse, annonce institutionnelle, guide parental concret, recommandation experte). Relevance ≥ 0.8 obligatoire — la barre est haute exprès : un seul article sans relais d'autres rédactions doit prouver une utilité parentale immédiate, pas juste un sujet « intéressant ».
 
 **Événement précis** = une sortie datée, une annonce officielle, une étude publiée, une décision institutionnelle, une polémique nommable, un guide pratique avec contenu concret.
 
@@ -308,7 +308,7 @@ Pour les histoires INTL :
 - Traduis intégralement en français.
 - Para 1 situe le pays ("Aux États-Unis…", "Au Royaume-Uni…", "En Allemagne…").
 - Para 3 fait le pont avec les familles françaises sans surinterpréter ("Selon les chercheurs cités, ce constat fait écho à…").
-- Single-source INTL : relevance ≥ 0.6 suffit.
+- Single-source INTL : relevance ≥ 0.7 suffit.
 
 ## À ÉCARTER
 
@@ -317,6 +317,7 @@ Pour les histoires INTL :
 - **Films / séries / jeux / livres pour public exclusivement adulte** (cf. Principe 3) : comédies adultes (Le Diable s'habille en Prada 2), drames intimistes, biopics d'adultes, thrillers, romance pour adultes, films d'auteur, jeux PEGI 16+/18+. Même non-violents, ces contenus ne servent pas un lecteur qui vient sur Totem pour son enfant.
 - Articles dont le titre + résumé ne donnent ni qui, ni quoi, ni quand.
 - Articles sans aucune image cluster respectant la règle famille.
+- **Curiosités sans angle parental actionnable** — éclipse / phénomène astronomique sans hook scolaire ou d'observation famille concret, revival d'un produit tech obscur (vieux jeu indé re-mis en ligne, navigateur de niche), lancement d'un produit single-vendor sans enjeu pour les foyers (nouveau modèle d'IA générique sans mode parental, mise à jour d'app sans impact sur les jeunes), faits divers « insolites » qui amusent mais n'aident aucun parent à décider quoi que ce soit. **Test : un parent qui a 5 minutes le matin avant l'école — il en fait quoi de cette info ?** Si la réponse honnête est « rien », écarte.
 - **Sorties / annonces de produits clairement adultes (16+/18+) sans angle parental** : films violents (Kill Bill, John Wick, Saw, Halloween, Hostel), franchises de combat sanglant (Mortal Kombat), RPG dark fantasy mature (Dawnwalker, Diablo, Elden Ring), thrillers d'horreur, livres sombres pour public averti, jeux PEGI 18 — l'annonce promotionnelle seule **ne convient pas**, même si elle est ÉVÉNEMENT (sortie datée, casting confirmé). EXCEPTION : si l'article aborde explicitement l'angle parental (« attention parents : ce jeu n'est pas adapté aux enfants malgré son aspect », « le PEGI 18 surprend les familles », « comment expliquer aux ados qu'ils ne peuvent pas y jouer ») alors c'est légitime. **Test rapide : si le titre du contenu (Kill Bill, Mortal Kombat, etc.) suggère violence / horreur / contenu mature à un parent français, écarte sauf angle parental explicite.**
 
 ## RÈGLE IMAGE (famille avec enfants)
@@ -348,8 +349,8 @@ Règles :
 
 JSON par histoire :
 
-- "title" : factuel et descriptif. "Sortie de X au cinéma le 21 octobre", pas "Le grand retour de X". Pas de qualificatif émotionnel.
-- "summary" : 1-2 phrases descriptives, < 200 caractères.
+- "title" : factuel et descriptif. "Sortie de X au cinéma le 21 octobre", pas "Le grand retour de X". Pas de qualificatif émotionnel. **Longueur ≤ 75 caractères** (l'UI tronque au-delà). **Les 45 premiers caractères doivent contenir le NOM PROPRE et l'enjeu famille** — un titre qui dit « New Mexico remporte une victoire historique contre Meta pour la… » est inutilisable car le mot crucial (« protection des mineurs ») est coupé. Mieux : « Meta condamné aux USA pour ses risques sur les ados » (52 chars, sujet + enjeu en clair).
+- "summary" : **1ère phrase = pourquoi ça concerne les familles, sans décodage requis.** 2ème phrase optionnelle = chiffre/fait clé. < 200 caractères au total. Un parent qui lit uniquement le summary doit comprendre l'enjeu pour son foyer en 5 secondes.
 - "body" : markdown, **400-600 mots**, structuré en **un lede + exactement deux sections H2** dont tu choisis les titres. Les titres H2 doivent être courts, descriptifs et factuels (pas éditoriaux) — ex. « Une date de Noël assumée par Disney », « Une classification française encore en attente », « Un dispositif déjà testé à Marseille ». **Pas de H3 dans le body.** Citations directes en « » obligatoires quand les sources les fournissent (minimum 2, idéalement une par section).
 
    - **Lede** (~50-80 mots, sans titre) — Le QUOI / QUI / OÙ / QUAND en deux ou trois phrases, avec attribution dès la première mention forte ("Selon Le Monde…", "Numerama rapporte que…"). Un chiffre concret ou un nom propre dans la première phrase si la matière le permet. Pas de hook éditorial.
@@ -396,7 +397,8 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 - Body **400-600 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 300 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
 - Au moins 2 citations directes en « » dans le body quand les sources en fournissent (idéalement une par section). Si AUCUNE source ne fournit de citation littérale, attribue indirectement et accepte que le brief n'ait pas de « » — n'invente jamais.
 - familyTakeaway 60-120 mots, plain text, ancré dans les faits — pas de platitudes.
-- Multi-sources : relevance ≥ 0.5. Single-source : relevance ≥ 0.7. INTL single-source : ≥ 0.6.
+- Multi-sources : relevance ≥ 0.6. Single-source : relevance ≥ 0.8. INTL single-source : ≥ 0.7.
+- Title ≤ 75 caractères, mot-clé famille dans les 45 premiers caractères (cf. règle "title" plus haut).
 - Chaque imageUrl est l'IMG exacte d'un article cité (jamais inventer une URL).
 - Français uniquement.
 - Si tu ne trouves que 0, 1 ou 2 histoires solides, renvoie celles-là.
@@ -795,13 +797,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     usedImages.add(story.imageUrl)
     // Two paths accepted:
-    //   A) multi-source (>=2 distinct publishers) + relevance >= 0.5
-    //   B) single-source + relevance >= 0.7 (strong family angle required)
+    //   A) multi-source (>=2 distinct publishers) + relevance >= 0.6
+    //   B) single-source + relevance >= 0.8 (strong family angle required)
     // Anything else is dropped — keeps weak single-outlet essays out while
     // still letting standout institutional studies or expert guides through.
+    // Thresholds raised in May 2026 to filter borderline curiosities (retro
+    // tech revivals, astronomy without classroom hook, single-vendor product
+    // launches without family stake) that were slipping through at 0.5/0.6.
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
     const isMultiSource = distinctNames.size >= 2
-    const minRelevance = isMultiSource ? 0.5 : 0.6
+    const minRelevance = isMultiSource ? 0.6 : 0.8
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       console.warn(

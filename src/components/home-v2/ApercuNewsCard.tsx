@@ -64,7 +64,7 @@ export function ApercuNewsCard({
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
         <h3
-          className={`${serifClass} text-lg leading-snug font-medium line-clamp-2`}
+          className={`${serifClass} text-lg leading-snug font-medium line-clamp-3`}
           style={{ color: p.ink, letterSpacing: "-0.01em" }}
         >
           {story.title}
