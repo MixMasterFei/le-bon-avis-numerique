@@ -142,31 +142,11 @@ export function ApercuHero({
               <HeroSearch submitClassName="!bg-[#1E1A15] !text-white hover:!bg-[#2B2620]" />
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="text-xs" style={{ color: p.ink2 }}>
-                Populaire :
-              </span>
-              {[
-                { label: "Animation", href: "/films/recherche?genres=Animation" },
-                { label: "Soirée famille", href: "/films?maxAge=10&maxViolence=2&maxSexual=1&maxLanguage=1" },
-                { label: "Ados", href: "/films?maxAge=15&maxViolence=3" },
-                { label: "Sans violence", href: "/films/recherche?maxViolence=1" },
-                { label: "Écologie", href: "/films/recherche?topics=Nature" },
-              ].map((t) => (
-                <Link
-                  key={t.label}
-                  href={t.href}
-                  className="px-3 py-1 rounded-full text-xs hover:opacity-80 transition-opacity"
-                  style={{
-                    background: p.bg2,
-                    border: `1px solid ${p.line}`,
-                    color: p.ink2,
-                  }}
-                >
-                  {t.label}
-                </Link>
-              ))}
-            </div>
+            {/* The "Populaire :" pill row that used to live here was a
+                duplicate of the row inside HeroSearch — same intent,
+                competing for attention, and rendered immediately
+                below the in-component pills. Removed for visual
+                clarity; HeroSearch's own pills are the single source. */}
 
           </div>
 

@@ -11,6 +11,7 @@ import { NouveautesMangaRail } from "./NouveautesMangaRail"
 import { NouveautesGamesRail } from "./NouveautesGamesRail"
 import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
+import { HomeSectionNav } from "./HomeSectionNav"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface HomepageApercuProps {
@@ -30,21 +31,32 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
       >
         <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
 
-        <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
+        {/* Section anchors below — each has id="..." matching
+            HomeSectionNav's chips, and scroll-mt-24 to offset the
+            sticky SiteHeader (~64-80px tall) so the section title
+            isn't hidden under the header on jump-scroll. */}
+
+        <section id="coups-de-coeur" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
+            {/* Quick-jump nav for the rest of the homepage — rendered
+                as the first thing in Coups de cœur so it doesn't
+                compete with the hero search above. */}
+            <HomeSectionNav />
             <ApercuExpertPicks serifClass={serifClass} />
           </div>
         </section>
 
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+        <section id="cinema" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">
             <ApercuNowInCinema serifClass={serifClass} />
           </div>
         </section>
 
-        <ApercuAgeGrid serifClass={serifClass} />
+        <div id="par-age" className="scroll-mt-24">
+          <ApercuAgeGrid serifClass={serifClass} />
+        </div>
 
-        <section className="py-10 md:py-14" style={{ background: p.bg2 }}>
+        <section id="streaming" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
             <ApercuStreaming serifClass={serifClass} />
           </div>
@@ -52,7 +64,7 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
 
         {/* Recent console game releases — self-hiding below 3 items so
             the homepage stays clean during sparse IGDB sync windows. */}
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+        <section id="jeux-recents" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">
             <NouveautesGamesRail serifClass={serifClass} />
           </div>
@@ -67,7 +79,7 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
           </section>
         )}
 
-        <section className="py-10 md:py-14" style={{ background: p.bg }}>
+        <section id="collections" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">
             <ApercuCollections serifClass={serifClass} />
           </div>
