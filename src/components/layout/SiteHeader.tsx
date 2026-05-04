@@ -90,15 +90,23 @@ export function SiteHeader() {
   // Top-nav search autocomplete — same /api/autocomplete endpoint as
   // the homepage HeroSearch, so users get dynamic suggestions instead
   // of having to press Enter / click Rechercher to see anything.
+  // IMDB-style: type filter on the left, poster + year + age badge
+  // per result, identical surface in nav and hero.
+  const [searchType, setSearchType] = useState<"ALL" | "MOVIE" | "TV" | "GAME" | "BOOK">("ALL")
+  const [showSearchTypeMenu, setShowSearchTypeMenu] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<Array<{
     id: string
     title: string
     type: "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
+    posterUrl: string | null
+    year: number | null
+    ageRec: number | null
   }>>([])
   const [searchLoading, setSearchLoading] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
   const [searchSelectedIndex, setSearchSelectedIndex] = useState(-1)
   const searchContainerRef = useRef<HTMLDivElement>(null)
+  const searchTypeMenuRef = useRef<HTMLDivElement>(null)
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const [userAvatar, setUserAvatar] = useState<{
     style?: string | null
@@ -143,12 +151,17 @@ export function SiteHeader() {
       if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
         setShowSearchDropdown(false)
       }
+      if (searchTypeMenuRef.current && !searchTypeMenuRef.current.contains(event.target as Node)) {
+        setShowSearchTypeMenu(false)
+      }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
-  // Debounced autocomplete fetch for the top-nav search.
+  // Debounced autocomplete fetch for the top-nav search. Re-runs on
+  // type change too — switching filter from "Tout" to "Films" should
+  // immediately re-query without waiting for the user to retype.
   useEffect(() => {
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
     if (searchQuery.trim().length < 2) {
@@ -159,7 +172,9 @@ export function SiteHeader() {
     setSearchLoading(true)
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(searchQuery.trim())}`)
+        const params = new URLSearchParams({ q: searchQuery.trim() })
+        if (searchType !== "ALL") params.set("type", searchType)
+        const res = await fetch(`/api/autocomplete?${params}`)
         if (res.ok) {
           const data = await res.json()
           setSearchSuggestions(data.suggestions || [])
@@ -176,7 +191,7 @@ export function SiteHeader() {
     return () => {
       if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
     }
-  }, [searchQuery])
+  }, [searchQuery, searchType])
 
   const goToSuggestion = (s: { id: string; title: string }) => {
     setShowSearchDropdown(false)
@@ -224,6 +239,16 @@ export function SiteHeader() {
     APP: "App",
     MANGA: "Manga",
   }
+  // IMDB-style type scoping options. "Tout" = no scoping (drops the
+  // ?type= param entirely). MANGA omitted intentionally — admin-only
+  // during soft launch, mirrors the API's exclusion.
+  const SEARCH_TYPE_FILTERS: { value: typeof searchType; label: string }[] = [
+    { value: "ALL", label: "Tout" },
+    { value: "MOVIE", label: "Films" },
+    { value: "TV", label: "Séries" },
+    { value: "GAME", label: "Jeux" },
+    { value: "BOOK", label: "Livres" },
+  ]
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -396,11 +421,55 @@ export function SiteHeader() {
 
             <form
               onSubmit={handleSearch}
-              className="hidden md:flex items-center max-w-sm ml-4"
+              className="hidden md:flex items-center max-w-md ml-4"
             >
-              <div ref={searchContainerRef} className="relative w-full">
+              <div
+                ref={searchContainerRef}
+                className="relative w-full flex items-stretch rounded-full overflow-hidden"
+                style={{ background: p.card, border: `1px solid ${p.line2}` }}
+              >
+                {/* IMDB-style type scoping — pre-filters
+                    /api/autocomplete so the dropdown only shows
+                    matching media. */}
+                <div ref={searchTypeMenuRef} className="relative flex-shrink-0 flex items-center pl-3 pr-2 border-r" style={{ borderColor: p.line }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSearchTypeMenu((v) => !v)}
+                    className="flex items-center gap-1 text-xs font-medium hover:opacity-70 transition-opacity"
+                    style={{ color: p.ink2 }}
+                    aria-label="Filtrer par type"
+                  >
+                    {SEARCH_TYPE_FILTERS.find((t) => t.value === searchType)?.label ?? "Tout"}
+                    <ChevronDown className={`h-3 w-3 transition-transform ${showSearchTypeMenu ? "rotate-180" : ""}`} />
+                  </button>
+                  {showSearchTypeMenu && (
+                    <div
+                      className="absolute top-full left-0 mt-1 w-32 rounded-xl shadow-xl py-1 z-[210]"
+                      style={{ background: p.card, border: `1px solid ${p.line2}` }}
+                    >
+                      {SEARCH_TYPE_FILTERS.map((t) => (
+                        <button
+                          key={t.value}
+                          type="button"
+                          onClick={() => {
+                            setSearchType(t.value)
+                            setShowSearchTypeMenu(false)
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-xs transition-colors hover:opacity-70"
+                          style={{
+                            color: p.ink,
+                            fontWeight: searchType === t.value ? 600 : 400,
+                          }}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <Search
-                  className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4"
+                  className="absolute left-[5.5rem] top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
                   style={{ color: p.ink2 }}
                 />
                 {searchLoading && (
@@ -408,13 +477,9 @@ export function SiteHeader() {
                 )}
                 <input
                   type="search"
-                  placeholder="Rechercher un film, une série, un jeu..."
-                  className="pl-11 pr-9 py-2 w-full rounded-full text-sm focus:outline-none transition-colors"
-                  style={{
-                    background: p.card,
-                    border: `1px solid ${p.line2}`,
-                    color: p.ink,
-                  }}
+                  placeholder="Rechercher..."
+                  className="pl-9 pr-9 py-2 flex-1 text-sm focus:outline-none bg-transparent"
+                  style={{ color: p.ink }}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -426,16 +491,15 @@ export function SiteHeader() {
                   autoComplete="off"
                 />
 
-                {/* Autocomplete dropdown — same /api/autocomplete data
-                    as the homepage HeroSearch. mt-1 + z-[200] keeps it
-                    visually connected and above any below-the-nav
-                    stacking contexts. */}
+                {/* Autocomplete dropdown — IMDB-style row: poster
+                    thumbnail, title, year, age badge. Same data shape
+                    as the homepage HeroSearch. */}
                 {showSearchDropdown && searchSuggestions.length > 0 && (
                   <div
                     className="absolute top-full left-0 right-0 mt-1 rounded-2xl shadow-xl z-[200] overflow-hidden"
                     style={{ background: p.card, border: `1px solid ${p.line2}` }}
                   >
-                    <ul className="py-1 max-h-72 overflow-y-auto">
+                    <ul className="py-1 max-h-96 overflow-y-auto">
                       {searchSuggestions.map((s, index) => {
                         const Icon = SEARCH_TYPE_ICONS[s.type] || Film
                         return (
@@ -450,14 +514,44 @@ export function SiteHeader() {
                               onClick={() => goToSuggestion(s)}
                               onMouseEnter={() => setSearchSelectedIndex(index)}
                             >
-                              <Icon className="h-4 w-4 flex-shrink-0" style={{ color: p.ink2 }} />
-                              <span className="font-medium truncate flex-1">{s.title}</span>
-                              <span
-                                className="text-[10px] px-2 py-0.5 rounded-full font-medium flex-shrink-0"
-                                style={{ background: p.bg2, color: p.ink2 }}
+                              {/* Poster thumb (32×48, 2:3) — fallback
+                                  to type icon when no poster exists. */}
+                              <div
+                                className="relative w-8 h-12 rounded overflow-hidden flex-shrink-0 flex items-center justify-center"
+                                style={{ background: p.placeholder }}
                               >
-                                {SEARCH_TYPE_LABELS[s.type]}
-                              </span>
+                                {s.posterUrl ? (
+                                  <Image
+                                    src={s.posterUrl}
+                                    alt={s.title}
+                                    fill
+                                    sizes="32px"
+                                    className="object-cover"
+                                  />
+                                ) : (
+                                  <Icon className="h-4 w-4 opacity-40" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{s.title}</div>
+                                <div className="text-[11px] flex items-center gap-1.5 mt-0.5" style={{ color: p.ink2 }}>
+                                  <span>{SEARCH_TYPE_LABELS[s.type]}</span>
+                                  {s.year && (
+                                    <>
+                                      <span style={{ color: p.line2 }}>·</span>
+                                      <span>{s.year}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              {s.ageRec !== null && (
+                                <span
+                                  className="text-[11px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                                  style={{ background: p.bg2, color: p.ink }}
+                                >
+                                  {s.ageRec}+
+                                </span>
+                              )}
                             </button>
                           </li>
                         )

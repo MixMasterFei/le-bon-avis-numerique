@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery } from "@/lib/security"
 
+// Optional ?type= filter — restricts results to a single MediaType.
+// Anything else (or absent) returns all eligible types.
+const ALLOWED_TYPES = new Set(["MOVIE", "TV", "GAME", "BOOK"])
+
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
   const rawQuery = sp.get("q")
+  const typeFilter = sp.get("type")?.toUpperCase()
+  const scopedType = typeFilter && ALLOWED_TYPES.has(typeFilter) ? typeFilter : null
 
   if (!rawQuery || rawQuery.trim().length < 2) {
     return NextResponse.json({ suggestions: [] })
@@ -19,12 +25,17 @@ export async function GET(request: NextRequest) {
     // Strip non-alphanumeric chars for fuzzy matching (e.g. "wall-e" matches "WALL·E")
     const normalizedQuery = query.replace(/[^a-zA-Z0-9\s]/g, "").toLowerCase()
 
-    // First: standard Prisma contains search
+    // First: standard Prisma contains search.
+    // Type filter takes precedence — when the user picked a single
+    // type from the search-box dropdown, MANGA exclusion still applies
+    // because the picker only exposes MOVIE/TV/GAME/BOOK.
+    const typeWhere = scopedType
+      ? { type: scopedType as "MOVIE" | "TV" | "GAME" | "BOOK" }
+      : { type: { not: "MANGA" as const } }
+
     const results = await prisma.mediaItem.findMany({
       where: {
-        // Manga is admin-only during soft launch — exclude from public
-        // search suggestions. Re-enable by removing this constraint.
-        type: { not: "MANGA" },
+        ...typeWhere,
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { originalTitle: { contains: query, mode: "insensitive" } },
@@ -45,21 +56,28 @@ export async function GET(request: NextRequest) {
     // Second: if few results, try normalized search via raw SQL
     // This catches cases like "wall-e" → "WALL·E" where special chars differ
     if (results.length < 4 && normalizedQuery.length >= 2) {
-      const fuzzyResults = await prisma.$queryRaw<Array<{
+      // Apply the same type scoping to the raw SQL fallback. Using
+      // string interpolation here is safe because scopedType is
+      // validated against ALLOWED_TYPES above (closed allowlist).
+      const typeClause = scopedType
+        ? `type = '${scopedType}'`
+        : `type != 'MANGA'`
+      const fuzzyResults = await prisma.$queryRawUnsafe<Array<{
         id: string
         title: string
         type: string
         poster_url: string | null
         release_date: Date | null
         expert_age_rec: number | null
-      }>>`
-        SELECT id, title, type, poster_url, release_date, expert_age_rec
-        FROM media_items
-        WHERE type != 'MANGA'
-          AND (LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
-            OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'})
-        LIMIT 8
-      `
+      }>>(
+        `SELECT id, title, type, poster_url, release_date, expert_age_rec
+         FROM media_items
+         WHERE ${typeClause}
+           AND (LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1
+             OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1)
+         LIMIT 8`,
+        '%' + normalizedQuery + '%',
+      )
 
       const existingIds = new Set(results.map(r => r.id))
       for (const row of fuzzyResults) {

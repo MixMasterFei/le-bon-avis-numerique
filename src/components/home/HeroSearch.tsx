@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingUp } from "lucide-react"
+import Image from "next/image"
+import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingUp, ChevronDown } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
@@ -40,6 +41,18 @@ const typeLabels: Record<string, string> = {
   APP: "App",
 }
 
+// Type filter ("Tout" = no scoping, others = single MediaType).
+// Mirrors IMDB's leftmost dropdown — pre-filters /api/autocomplete
+// so users can scope before they finish typing.
+type SearchType = "ALL" | "MOVIE" | "TV" | "GAME" | "BOOK"
+const typeFilters: { value: SearchType; label: string }[] = [
+  { value: "ALL", label: "Tout" },
+  { value: "MOVIE", label: "Films" },
+  { value: "TV", label: "Séries" },
+  { value: "GAME", label: "Jeux" },
+  { value: "BOOK", label: "Livres" },
+]
+
 interface HeroSearchProps {
   /** Override classes applied to the submit button. Used by the Apercu
    * hero to swap the default violet for the warm ink palette. */
@@ -49,12 +62,15 @@ interface HeroSearchProps {
 export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
   const router = useRouter()
   const [query, setQuery] = useState("")
+  const [searchType, setSearchType] = useState<SearchType>("ALL")
+  const [showTypeMenu, setShowTypeMenu] = useState(false)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const typeMenuRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>(null)
 
   const submit = () => {
@@ -70,7 +86,8 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
     router.push(`/media/${suggestion.id}`)
   }
 
-  // Fetch suggestions with debounce
+  // Fetch suggestions with debounce. Re-runs on type change too —
+  // switching filter from "Tout" to "Films" should re-query immediately.
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current)
@@ -85,7 +102,9 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
     setLoading(true)
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/autocomplete?q=${encodeURIComponent(query.trim())}`)
+        const params = new URLSearchParams({ q: query.trim() })
+        if (searchType !== "ALL") params.set("type", searchType)
+        const res = await fetch(`/api/autocomplete?${params}`)
         if (res.ok) {
           const data = await res.json()
           setSuggestions(data.suggestions || [])
@@ -104,13 +123,16 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         clearTimeout(debounceRef.current)
       }
     }
-  }, [query])
+  }, [query, searchType])
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShowDropdown(false)
+      }
+      if (typeMenuRef.current && !typeMenuRef.current.contains(e.target as Node)) {
+        setShowTypeMenu(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -161,7 +183,42 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         className="relative"
       >
         <div className="relative flex items-center bg-white rounded-2xl shadow-2xl shadow-black/20 ring-4 ring-white/10">
-          <Search className="absolute left-5 h-5 w-5 text-gray-500 pointer-events-none" />
+          {/* IMDB-style type filter — pre-filters /api/autocomplete
+              before the request so the dropdown only shows matching
+              media. "Tout" = no scoping. */}
+          <div ref={typeMenuRef} className="relative flex-shrink-0 self-stretch flex items-center pl-3 pr-2 sm:pl-4 sm:pr-3 border-r border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowTypeMenu((v) => !v)}
+              className="flex items-center gap-1 text-xs sm:text-sm text-gray-700 font-medium hover:text-gray-900 transition-colors py-1"
+              aria-label="Filtrer par type"
+            >
+              {typeFilters.find((t) => t.value === searchType)?.label ?? "Tout"}
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showTypeMenu ? "rotate-180" : ""}`} />
+            </button>
+            {showTypeMenu && (
+              <div className="absolute top-full left-0 mt-1 w-36 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-[210]">
+                {typeFilters.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => {
+                      setSearchType(t.value)
+                      setShowTypeMenu(false)
+                      inputRef.current?.focus()
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors hover:bg-gray-50 ${
+                      searchType === t.value ? "font-semibold text-gray-900" : "text-gray-700"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Search className="absolute left-[5.5rem] sm:left-[6.5rem] h-5 w-5 text-gray-500 pointer-events-none hidden sm:block" />
           {loading && (
             <Loader2 className="absolute right-14 sm:right-36 h-4 w-4 text-gray-500 animate-spin" />
           )}
@@ -184,7 +241,7 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
             ref={inputRef}
             type="text"
             placeholder="Rechercher un film, une série, un jeu..."
-            className="w-full pl-12 sm:pl-14 pr-14 sm:pr-36 h-14 sm:h-16 text-base sm:text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-2xl"
+            className="w-full pl-3 sm:pl-12 pr-14 sm:pr-36 h-14 sm:h-16 text-base sm:text-lg bg-transparent text-gray-900 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-r-2xl"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -210,30 +267,58 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
         </div>
       </form>
 
-      {/* Autocomplete dropdown — connected look (mt-1, no top
-          rounded corners on first visual line) and z-[200] so it
-          rides above any sibling section even on pages with their
-          own stacking contexts. */}
+      {/* Autocomplete dropdown — IMDB-inspired result row: poster
+          thumbnail (with icon fallback), title, year, age badge,
+          type pill. Connected look (mt-1) and z-[200] so it rides
+          above any sibling section's stacking context. */}
       {showDropdown && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-2xl border border-gray-200 z-[200] overflow-hidden">
-          <ul className="py-2 max-h-72 overflow-y-auto">
+          <ul className="py-1 max-h-96 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
               return (
                 <li key={`${suggestion.type}:${suggestion.id}`}>
                   <button
                     type="button"
-                    className={`w-full px-5 py-3 flex items-center gap-4 text-left hover:bg-gray-50 transition-all duration-200 ${
-                      index === selectedIndex ? "bg-gray-50 border-l-4 border-primary" : ""
+                    className={`w-full px-3 py-2 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors ${
+                      index === selectedIndex ? "bg-gray-50" : ""
                     }`}
                     onClick={() => goToMedia(suggestion)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <div className="p-2 rounded-xl bg-gray-100">
-                      <Icon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                    {/* Poster thumb (40×60, 2:3) — falls back to a
+                        type-icon tile when no poster is available
+                        (rare but happens for very recent imports). */}
+                    <div className="relative w-10 h-[60px] rounded-md overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                      {suggestion.posterUrl ? (
+                        <Image
+                          src={suggestion.posterUrl}
+                          alt={suggestion.title}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <Icon className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
-                    <span className="font-semibold text-gray-800 truncate flex-1">{suggestion.title}</span>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full font-medium flex-shrink-0">{typeLabels[suggestion.type]}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate text-sm">{suggestion.title}</div>
+                      <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                        <span>{typeLabels[suggestion.type]}</span>
+                        {suggestion.year && (
+                          <>
+                            <span className="text-gray-300">·</span>
+                            <span>{suggestion.year}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {suggestion.ageRec !== null && (
+                      <span className="text-xs font-bold text-gray-700 bg-amber-100 px-2 py-1 rounded-md flex-shrink-0">
+                        {suggestion.ageRec}+
+                      </span>
+                    )}
                   </button>
                 </li>
               )
