@@ -290,9 +290,9 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
 Deux chemins pour créer une histoire :
 
-**A — Multi-sources (préféré).** Un événement précis couvert par ≥ 2 publications distinctes. Relevance ≥ 0.6.
+**A — Multi-sources (préféré).** Un événement précis couvert par ≥ 2 publications distinctes. Relevance ≥ 0.55.
 
-**B — Single-source.** Un article isolé avec angle famille fort (étude sérieuse, annonce institutionnelle, guide parental concret, recommandation experte). Relevance ≥ 0.8 obligatoire — la barre est haute exprès : un seul article sans relais d'autres rédactions doit prouver une utilité parentale immédiate, pas juste un sujet « intéressant ».
+**B — Single-source.** Un article isolé avec angle famille fort (étude sérieuse, annonce institutionnelle, guide parental concret, recommandation experte). Relevance ≥ 0.7 obligatoire — un seul article sans relais d'autres rédactions doit prouver une utilité parentale immédiate, pas juste un sujet « intéressant ».
 
 **Événement précis** = une sortie datée, une annonce officielle, une étude publiée, une décision institutionnelle, une polémique nommable, un guide pratique avec contenu concret.
 
@@ -308,7 +308,7 @@ Pour les histoires INTL :
 - Traduis intégralement en français.
 - Para 1 situe le pays ("Aux États-Unis…", "Au Royaume-Uni…", "En Allemagne…").
 - Para 3 fait le pont avec les familles françaises sans surinterpréter ("Selon les chercheurs cités, ce constat fait écho à…").
-- Single-source INTL : relevance ≥ 0.7 suffit.
+- Single-source INTL : relevance ≥ 0.65 suffit.
 
 ## À ÉCARTER
 
@@ -397,7 +397,7 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 - Body **400-600 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 300 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
 - Au moins 2 citations directes en « » dans le body quand les sources en fournissent (idéalement une par section). Si AUCUNE source ne fournit de citation littérale, attribue indirectement et accepte que le brief n'ait pas de « » — n'invente jamais.
 - familyTakeaway 60-120 mots, plain text, ancré dans les faits — pas de platitudes.
-- Multi-sources : relevance ≥ 0.6. Single-source : relevance ≥ 0.8. INTL single-source : ≥ 0.7.
+- Multi-sources : relevance ≥ 0.55. Single-source : relevance ≥ 0.7. INTL single-source : ≥ 0.65.
 - Title ≤ 75 caractères, mot-clé famille dans les 45 premiers caractères (cf. règle "title" plus haut).
 - Chaque imageUrl est l'IMG exacte d'un article cité (jamais inventer une URL).
 - Français uniquement.
@@ -797,16 +797,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     usedImages.add(story.imageUrl)
     // Two paths accepted:
-    //   A) multi-source (>=2 distinct publishers) + relevance >= 0.6
-    //   B) single-source + relevance >= 0.8 (strong family angle required)
+    //   A) multi-source (>=2 distinct publishers) + relevance >= 0.55
+    //   B) single-source + relevance >= 0.7 (strong family angle required)
     // Anything else is dropped — keeps weak single-outlet essays out while
     // still letting standout institutional studies or expert guides through.
-    // Thresholds raised in May 2026 to filter borderline curiosities (retro
-    // tech revivals, astronomy without classroom hook, single-vendor product
-    // launches without family stake) that were slipping through at 0.5/0.6.
+    // Thresholds adjusted May 2026 — the 0.6/0.8 attempt rejected too many
+    // candidates and the page went stale. 0.55/0.7 is the new compromise:
+    // tighter than the original 0.5/0.6, but not so tight the LLM has
+    // nothing to synthesize on slow news days.
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
     const isMultiSource = distinctNames.size >= 2
-    const minRelevance = isMultiSource ? 0.6 : 0.8
+    const minRelevance = isMultiSource ? 0.55 : 0.7
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       console.warn(
