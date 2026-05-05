@@ -210,13 +210,19 @@ function CalendarGrid({
   const p = APERCU_PALETTE
   const dayIndex = useMemo(() => buildDayIndex(holidays), [holidays])
 
-  // Render the current month + next 2.
+  // Render the current month + next 2. Use UTC accessors so server
+  // (UTC) and client (local) compute the same {year, month} triples
+  // — local-time accessors caused React #418 hydration mismatches
+  // when one side was past midnight and the other still on the
+  // previous month.
   const months = useMemo(() => {
     const out: Array<{ year: number; month: number }> = []
     const now = new Date()
+    const baseYear = now.getUTCFullYear()
+    const baseMonth = now.getUTCMonth()
     for (let i = 0; i < 3; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-      out.push({ year: d.getFullYear(), month: d.getMonth() })
+      const d = new Date(Date.UTC(baseYear, baseMonth + i, 1))
+      out.push({ year: d.getUTCFullYear(), month: d.getUTCMonth() })
     }
     return out
   }, [])
@@ -264,15 +270,14 @@ function MonthGrid({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
-  // "Today" in Paris time, formatted as YYYY-MM-DD to match the keys
-  // we use in buildDayIndex. UTC-only would mark the wrong day during
-  // 00:00–02:00 Paris (when UTC is still on the previous date).
-  const todayISO = new Intl.DateTimeFormat("fr-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date())
+  // "Today" in UTC, formatted YYYY-MM-DD. Originally Europe/Paris
+  // for accuracy at the day boundary, but that caused React #418
+  // hydration mismatches when server and client were on opposite
+  // sides of midnight Paris. UTC is server/client-stable; the
+  // visual "today" highlight may be off by ±1 day for ~2 hours
+  // around midnight, which is acceptable vs the page crashing.
+  const now = new Date()
+  const todayISO = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`
   // ISO weekday: Mon=1 … Sun=7. JS Sunday=0, so shift.
   // Use UTC accessors so the weekday matches across server (UTC) and
   // client (Paris) — Date.UTC + getUTCDay is timezone-independent.
