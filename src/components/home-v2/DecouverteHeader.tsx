@@ -38,7 +38,11 @@ export function DecouverteHeader({
           </em>
         </h1>
         {lastSynthesisAt && (
-          <div className="text-xs mt-2" style={{ color: p.ink2 }}>
+          <div
+            className="text-xs mt-2"
+            style={{ color: p.ink2 }}
+            suppressHydrationWarning
+          >
             Mise à jour {formatRelativeTimeFr(lastSynthesisAt)}
           </div>
         )}

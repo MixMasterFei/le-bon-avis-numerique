@@ -74,7 +74,17 @@ export function ApercuNewsCard({
         </p>
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <ApercuNewsSourcePills sources={story.sources} compact />
-          <span className="text-[11px] whitespace-nowrap" style={{ color: p.ink2 }}>
+          {/* suppressHydrationWarning: formatRelativeTimeFr reads
+              Date.now() at render time. If the server renders "il y a
+              4 j" and the client hydrates a moment later still in the
+              same bucket, fine; if the bucket flips at the boundary
+              the texts diverge → React error #418. The text being a
+              second stale during hydration is invisible to users. */}
+          <span
+            className="text-[11px] whitespace-nowrap"
+            style={{ color: p.ink2 }}
+            suppressHydrationWarning
+          >
             {formatRelativeTimeFr(story.publishedAt)}
           </span>
         </div>

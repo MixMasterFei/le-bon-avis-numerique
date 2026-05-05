@@ -54,7 +54,14 @@ export function ApercuNewsHeroCard({
         </p>
         <div className="flex items-center justify-between gap-4 pt-1">
           <ApercuNewsSourcePills sources={story.sources} />
-          <span className="text-xs whitespace-nowrap" style={{ color: p.ink2 }}>
+          {/* suppressHydrationWarning — see ApercuNewsCard for the
+              full reasoning; relative-time labels can flip buckets
+              between server render and client hydration. */}
+          <span
+            className="text-xs whitespace-nowrap"
+            style={{ color: p.ink2 }}
+            suppressHydrationWarning
+          >
             {formatRelativeTimeFr(story.publishedAt)}
           </span>
         </div>
