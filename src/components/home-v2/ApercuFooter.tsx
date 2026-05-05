@@ -156,7 +156,7 @@ export function ApercuFooter({ serifClass }: { serifClass: string }) {
         style={{ borderColor: "rgba(244,239,228,0.08)" }}
       >
         <div className="container mx-auto px-4 md:px-8 py-5 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs" style={{ color: "rgba(244,239,228,0.50)" }}>
-          <p>© {new Date().getFullYear()} Totem Avisé</p>
+          <p suppressHydrationWarning>© {new Date().getFullYear()} Totem Avisé</p>
           <div className="flex items-center gap-4">
             <Link href="/mentions-legales" className="hover:opacity-100">
               Mentions légales
