@@ -8,6 +8,7 @@ import { CookieConsent } from "@/components/CookieConsent"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
+import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
 import { Analytics } from "@vercel/analytics/react"
 import { fraunces } from "@/components/home-v2/apercuFont"
 
@@ -153,6 +154,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <SessionProvider>
           <SettingsProvider>
+            <HydrationCatcher />
             <ScrollRestoration />
             <SiteHeader />
             <main className="flex-1">{children}</main>
