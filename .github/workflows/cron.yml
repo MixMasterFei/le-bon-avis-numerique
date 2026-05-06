@@ -331,19 +331,20 @@ jobs:
           echo "::group::News Discover"
           # 320s — slightly OVER the route's 300s ceiling so curl waits
           # long enough to receive Vercel's 504 response when the
-          # function actually times out (instead of bailing first and
-          # reporting a misleading "0 bytes" error). The route itself
-          # has a 180s synthesis-call timeout (AbortController) that
-          # protects against runaway DeepSeek calls and returns 200
-          # with "0 synthesized" cleanly when the LLM is slow.
-          response=$(curl -sSfL --max-time 320 -w "\n%{http_code}" \
+          # function actually times out. Route has its own per-call
+          # timeouts (synthesis 180s, others 20-30s) and returns the
+          # error reason in the response body even on 5xx, so we drop
+          # curl's --fail flag (-f) here and check $http_code manually.
+          # Otherwise curl exits before printing the body, hiding the
+          # actual error (we observed exit 22 with no diagnostic text).
+          response=$(curl -sSL --max-time 320 -w "\n%{http_code}" \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE_URL/api/cron/news-discover")
           http_code=$(echo "$response" | tail -1)
           body=$(echo "$response" | sed '$d')
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
-            echo "::error::News discover failed with HTTP $http_code"
+            echo "::error::News discover failed with HTTP $http_code (see response body above)"
             exit 1
           fi
           echo "::endgroup::"
