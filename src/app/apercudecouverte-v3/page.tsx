@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
+import { HydrationDebugBoundary } from "@/components/providers/HydrationDebugBoundary"
 import { getNextHoliday, getHolidayCalendar, holidayToSerializable, type CalendarHoliday } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
@@ -477,7 +478,9 @@ export default async function ApercuDecouverteV3Page(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      <ApercuDecouverteV3 data={data} serifClass={serifClass} />
+      <HydrationDebugBoundary>
+        <ApercuDecouverteV3 data={data} serifClass={serifClass} />
+      </HydrationDebugBoundary>
     </div>
   )
 }
