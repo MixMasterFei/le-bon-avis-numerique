@@ -9,6 +9,7 @@ import { ApercuNewsSourcePills } from "./ApercuNewsSourcePills"
 import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { NEWS_CATEGORY_LABEL } from "./apercuNewsLabels"
 import type { ApercuNewsCardData } from "./ApercuNewsCard"
+import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 export function ApercuNewsHeroCard({
   story,
@@ -21,10 +22,11 @@ export function ApercuNewsHeroCard({
   const [imageBroken, setImageBroken] = useState(false)
   // Hide the hero entirely on broken image — better empty than a giant
   // grey placeholder above the fold (matches ApercuNewsCard behavior).
-  if (imageBroken) return null
+  if (imageBroken || isBlockedHotlinkImageUrl(story.imageUrl)) return null
+  const href = `/apercudecouverte/${story.slug}`
+
   return (
-    <Link
-      href={`/apercudecouverte/${story.slug}`}
+    <article
       className="group grid md:grid-cols-[1fr_1.3fr] gap-0 rounded-3xl overflow-hidden transition-transform duration-200 hover:-translate-y-0.5"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
@@ -43,15 +45,17 @@ export function ApercuNewsHeroCard({
             {NEWS_CATEGORY_LABEL[story.category]}
           </span>
         </div>
-        <h2
-          className={`${serifClass} text-2xl md:text-3xl leading-[1.1] font-medium`}
-          style={{ color: p.ink, letterSpacing: "-0.02em" }}
-        >
-          {story.title}
-        </h2>
-        <p className="text-base leading-relaxed" style={{ color: p.ink2 }}>
-          {story.summary}
-        </p>
+        <Link href={href} className="block">
+          <h2
+            className={`${serifClass} text-2xl md:text-3xl leading-[1.1] font-medium`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
+          >
+            {story.title}
+          </h2>
+          <p className="mt-4 text-base leading-relaxed" style={{ color: p.ink2 }}>
+            {story.summary}
+          </p>
+        </Link>
         <div className="flex items-center justify-between gap-4 pt-1">
           <ApercuNewsSourcePills sources={story.sources} />
           {/* suppressHydrationWarning — see ApercuNewsCard for the
@@ -70,17 +74,19 @@ export function ApercuNewsHeroCard({
         className="order-1 md:order-2 relative aspect-[16/10] md:aspect-auto md:min-h-[320px]"
         style={{ background: p.placeholder }}
       >
-        <Image
-          src={story.imageUrl}
-          alt={story.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          sizes="(max-width: 768px) 100vw, 55vw"
-          priority
-          onError={() => setImageBroken(true)}
-        />
+        <Link href={href} aria-label={`Lire l'actualité : ${story.title}`} className="block absolute inset-0">
+          <Image
+            src={story.imageUrl}
+            alt={story.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            sizes="(max-width: 768px) 100vw, 55vw"
+            priority
+            onError={() => setImageBroken(true)}
+          />
+        </Link>
         <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
-    </Link>
+    </article>
   )
 }

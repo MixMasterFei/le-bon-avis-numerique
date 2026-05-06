@@ -8,6 +8,7 @@ import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
 import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
+import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 export interface ApercuNewsCardData {
   slug: string
@@ -37,23 +38,26 @@ export function ApercuNewsCard({
   // placeholder card looks worse than missing card. Server-side already
   // tries to drop image-less stories at synth time; this catches the
   // remainder (legacy rows with stale URLs, mirrored files that 404).
-  if (imageBroken) return null
+  if (imageBroken || isBlockedHotlinkImageUrl(story.imageUrl)) return null
+
+  const href = `/apercudecouverte/${story.slug}`
 
   return (
-    <Link
-      href={`/apercudecouverte/${story.slug}`}
+    <article
       className="group flex flex-col rounded-2xl overflow-hidden transition-transform duration-200 hover:-translate-y-0.5"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
       <div className="relative aspect-[16/9] overflow-hidden" style={{ background: p.placeholder }}>
-        <Image
-          src={story.imageUrl}
-          alt={story.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          sizes="(max-width: 768px) 100vw, 33vw"
-          onError={() => setImageBroken(true)}
-        />
+        <Link href={href} aria-label={`Lire l'actualité : ${story.title}`} className="block absolute inset-0">
+          <Image
+            src={story.imageUrl}
+            alt={story.title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            onError={() => setImageBroken(true)}
+          />
+        </Link>
         <div
           className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
           style={{ background: p.ink, color: p.bg }}
@@ -63,15 +67,17 @@ export function ApercuNewsCard({
         <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <h3
-          className={`${serifClass} text-lg leading-snug font-medium line-clamp-3`}
-          style={{ color: p.ink, letterSpacing: "-0.01em" }}
-        >
-          {story.title}
-        </h3>
-        <p className="text-sm leading-snug line-clamp-3" style={{ color: p.ink2 }}>
-          {story.summary}
-        </p>
+        <Link href={href} className="block">
+          <h3
+            className={`${serifClass} text-lg leading-snug font-medium line-clamp-3`}
+            style={{ color: p.ink, letterSpacing: "-0.01em" }}
+          >
+            {story.title}
+          </h3>
+          <p className="mt-2 text-sm leading-snug line-clamp-3" style={{ color: p.ink2 }}>
+            {story.summary}
+          </p>
+        </Link>
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <ApercuNewsSourcePills sources={story.sources} compact />
           {/* suppressHydrationWarning: formatRelativeTimeFr reads
@@ -89,6 +95,6 @@ export function ApercuNewsCard({
           </span>
         </div>
       </div>
-    </Link>
+    </article>
   )
 }

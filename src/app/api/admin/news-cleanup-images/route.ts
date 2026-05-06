@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 export const maxDuration = 60
 
@@ -25,6 +26,10 @@ interface CleanupResult {
 }
 
 async function isImageBroken(url: string): Promise<{ broken: boolean; reason?: string }> {
+  if (isBlockedHotlinkImageUrl(url)) {
+    return { broken: true, reason: "blocked hotlink host" }
+  }
+
   try {
     const res = await fetch(url, {
       method: "GET",

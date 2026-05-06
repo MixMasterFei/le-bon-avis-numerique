@@ -7,6 +7,7 @@ import { fraunces } from "@/components/home-v2/apercuFont"
 import { isFraunces, APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import { Prisma } from "@prisma/client"
+import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 export const dynamic = "force-dynamic"
 
@@ -107,8 +108,9 @@ export default async function HistoriqueV3Page(props: {
   })
 
   const hasMore = rows.length > PAGE_SIZE
-  const stories: ApercuNewsCardData[] = (hasMore ? rows.slice(0, PAGE_SIZE) : rows).map(
-    (r) => ({
+  const stories: ApercuNewsCardData[] = (hasMore ? rows.slice(0, PAGE_SIZE) : rows)
+    .filter((r) => !isBlockedHotlinkImageUrl(r.imageUrl))
+    .map((r) => ({
       slug: r.slug,
       title: r.title,
       summary: r.summary,
@@ -118,8 +120,7 @@ export default async function HistoriqueV3Page(props: {
       category: r.category,
       publishedAt: r.publishedAt,
       sources: toSources(r.sources),
-    }),
-  )
+    }))
 
   const useFraunces = isFraunces(searchParams?.font)
   const serifClass = useFraunces ? fraunces.className : "font-[var(--font-heading)]"

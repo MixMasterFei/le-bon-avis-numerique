@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio"
+import { imageHostFromUrl, isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 // Image resolution — simplified to 2 tiers (May 2026 redesign). The
 // previous 5-tier cascade (AGENCY → PUBLISHER_RSS → Pexels → Unsplash
@@ -68,15 +69,6 @@ const AGENCY_DOMAINS = [
   "dpa.com",
 ]
 
-function hostFromUrl(url: string | undefined): string | null {
-  if (!url) return null
-  try {
-    return new URL(url).hostname.toLowerCase()
-  } catch {
-    return null
-  }
-}
-
 function isAgencyDomain(host: string | null): boolean {
   if (!host) return false
   return AGENCY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))
@@ -134,14 +126,15 @@ export function extractFromRss(item: RssLikeItem): string | null {
  * back behind a feature flag with explicit quota tracking.
  */
 export function resolveImage(item: RssLikeItem): ResolvedImage | null {
-  const articleHost = hostFromUrl(item.link)
+  const articleHost = imageHostFromUrl(item.link)
   const rssImage = extractFromRss(item)
+  if (isBlockedHotlinkImageUrl(rssImage)) return null
 
   // Tier 1: AGENCY — RSS image AND the source publisher is an agency.
   // Either the article URL itself is on an agency domain (Reuters
   // syndication) or the embedded image URL is on an agency CDN.
   if (rssImage) {
-    const imageHost = hostFromUrl(rssImage)
+    const imageHost = imageHostFromUrl(rssImage)
     if (isAgencyDomain(articleHost) || isAgencyDomain(imageHost)) {
       return {
         url: rssImage,

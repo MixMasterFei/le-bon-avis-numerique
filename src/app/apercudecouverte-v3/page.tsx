@@ -17,6 +17,7 @@ import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma } from "@prisma/client"
+import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -397,6 +398,7 @@ export default async function ApercuDecouverteV3Page(props: {
   const seenImages = new Set<string>()
   const claim = <T extends { imageUrl?: string | null }>(card: T): T | null => {
     if (!card.imageUrl) return null
+    if (isBlockedHotlinkImageUrl(card.imageUrl)) return null
     if (seenImages.has(card.imageUrl)) return null
     seenImages.add(card.imageUrl)
     return card
