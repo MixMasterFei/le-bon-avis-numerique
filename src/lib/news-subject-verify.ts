@@ -1,5 +1,5 @@
 import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
-import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
+import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 
 // LLM verification pass for the catalog linkifier. The text-based
 // scan in news-linkify.ts produces *candidate* matches by looking
@@ -13,13 +13,13 @@ import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/
 // as examples, comparisons, or background ("comme dans Up", "depuis
 // Avatar (2009)") are filtered out.
 //
-// Provider selection mirrors news-discover.ts: DeepSeek when the
-// key is set (cheaper on cron volume), Claude Haiku otherwise.
-// Force with NEWS_PROVIDER=anthropic if DeepSeek is misbehaving.
+// Single-provider Claude Haiku 4.5 (May 2026 redesign).
 //
 // Failure mode: the verifier is fail-open. Any error / timeout /
 // malformed JSON returns the original candidate list unchanged so a
 // transient API blip can't silently strip valid related cards.
+
+const VERIFY_TIMEOUT_MS = 20_000
 
 export interface SubjectCandidate {
   id: string
@@ -67,31 +67,6 @@ ${candidateBlock}
 Lesquels (s'il y en a) sont le sujet réel de l'article ? Réponds en JSON : {"subjectIds": [...]}.`
 }
 
-async function callDeepSeek(prompt: string): Promise<string> {
-  const ds = getDeepSeek()
-  const res = await ds.chat.completions.create({
-    model: DEFAULT_DEEPSEEK_MODEL,
-    max_tokens: 200,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: prompt },
-    ],
-  })
-  return res.choices[0]?.message?.content ?? ""
-}
-
-async function callAnthropic(prompt: string): Promise<string> {
-  const anthropic = getAnthropic()
-  const res = await anthropic.messages.create({
-    model: DEFAULT_MODEL,
-    max_tokens: 200,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-  })
-  const block = res.content.find((c) => c.type === "text")
-  return block && "text" in block ? (block as { text: string }).text : ""
-}
-
 function parseSubjectIds(raw: string, candidates: SubjectCandidate[]): string[] {
   // Strip code fences just in case the model adds them despite the
   // "no markdown" instruction.
@@ -117,8 +92,8 @@ function parseSubjectIds(raw: string, candidates: SubjectCandidate[]): string[] 
  * original linkifier sorts by first-mention position so #1 is the
  * primary subject — we keep that ranking intact for the mini-cards).
  *
- * Fail-open: any error returns the input candidates unchanged. A
- * silently-empty result list is fine as long as it came from a clean
+ * Fail-open: any error/timeout returns the input candidates unchanged.
+ * A silently-empty result list is fine as long as it came from a clean
  * model response; transient failures must not strip valid links.
  */
 export async function verifyCatalogSubjects(
@@ -128,20 +103,28 @@ export async function verifyCatalogSubjects(
   if (candidates.length === 0) return []
 
   const prompt = buildPrompt(story, candidates)
-  const provider =
-    process.env.NEWS_PROVIDER === "anthropic"
-      ? "anthropic"
-      : isDeepSeekAvailable()
-        ? "deepseek"
-        : "anthropic"
+  const anthropic = getAnthropic()
+  const raw = await callClaudeWithTimeout(
+    async (signal) => {
+      const res = await anthropic.messages.create(
+        {
+          model: DEFAULT_MODEL,
+          max_tokens: 200,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal },
+      )
+      const block = res.content.find((c) => c.type === "text")
+      return block && "text" in block ? (block as { text: string }).text : ""
+    },
+    VERIFY_TIMEOUT_MS,
+    "subject-verify",
+  )
 
-  let raw: string
-  try {
-    raw = provider === "deepseek" ? await callDeepSeek(prompt) : await callAnthropic(prompt)
-  } catch (err) {
+  if (raw === null) {
     console.warn(
-      `[subject-verify] ${provider} call failed for "${story.title.slice(0, 60)}", keeping all ${candidates.length} candidates:`,
-      err,
+      `[subject-verify] timed out for "${story.title.slice(0, 60)}", keeping all ${candidates.length} candidates`,
     )
     return candidates.map((c) => c.id)
   }

@@ -1,27 +1,27 @@
 import * as cheerio from "cheerio"
-import { findStockPhoto, type StockImage } from "@/lib/stock-photo"
 
-// Image resolution — Perplexity-style hierarchy. Tiers are tried in
-// order; the first hit wins. We track which tier produced the chosen
-// image (`sourceType`) so the card can display a photo credit pill
-// and so we can audit the legal posture of the image pool over time.
+// Image resolution — simplified to 2 tiers (May 2026 redesign). The
+// previous 5-tier cascade (AGENCY → PUBLISHER_RSS → Pexels → Unsplash
+// → OG-scrape) silently dropped stories at every layer with no per-
+// tier visibility, and the stock-photo + OG-scrape paths were the
+// source of recurring fragility (quota exhaustion, sortiraparis-style
+// hotlink 403s, legally questionable scraping).
 //
-// Tier order (most-to-least defensible):
+// New tier order:
 //   1. AGENCY        — RSS image from a wire-service publisher (Reuters,
 //                      AP, AFP…). They produce these for syndication, so
 //                      reusing them with a credit is on solid ground.
 //   2. PUBLISHER_RSS — RSS media:content / enclosure from any other
 //                      publisher. They're putting it in the feed, which
 //                      is itself a syndication signal.
-//   3. STOCK         — Pexels or Unsplash search on the story keywords.
-//                      Royalty-free, must link back. Great fallback for
-//                      "abstract" stories (screen time, parenting policy)
-//                      where we don't need a specific event photo.
-//   4. PUBLISHER_OG  — Scraped from <meta og:image>. Highest legal risk
-//                      because we're pulling from the article page, not
-//                      a feed the publisher offered. Last resort, always
-//                      credited visibly with the source domain.
-//   5. null          — no image found, caller drops the story.
+//   3. null          — no image found, caller drops the story. The
+//                      droppedNoImage counter on DiscoverStats surfaces
+//                      this in cron logs so we can see which run is
+//                      starved by image-less feeds.
+//
+// The legacy STOCK and PUBLISHER_OG variants stay in ImageSourceType so
+// historical rows in news_stories don't fail to deserialize, but no new
+// image will be assigned those types until we re-introduce a tier.
 
 export type ImageSourceType = "AGENCY" | "STOCK" | "PUBLISHER_RSS" | "PUBLISHER_OG"
 
@@ -115,51 +115,25 @@ export function extractFromRss(item: RssLikeItem): string | null {
   return null
 }
 
-export async function extractFromOgTags(url: string, timeoutMs = 2000): Promise<string | null> {
-  try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { "user-agent": "Mozilla/5.0 (compatible; TotemAviseBot/1.0)" },
-    })
-    clearTimeout(timer)
-    if (!res.ok) return null
-
-    const html = await res.text()
-    const $ = cheerio.load(html)
-    const og =
-      $('meta[property="og:image"]').attr("content") ??
-      $('meta[name="og:image"]').attr("content") ??
-      $('meta[name="twitter:image"]').attr("content") ??
-      $('meta[property="twitter:image"]').attr("content")
-    return og ?? null
-  } catch {
-    return null
-  }
-}
-
-function stockImageToResolved(stock: StockImage): ResolvedImage {
-  return {
-    url: stock.url,
-    sourceType: "STOCK",
-    credit: stock.credit,
-    licenseUrl: stock.licenseUrl,
-  }
-}
-
 /**
- * Walks the 5-tier hierarchy and returns the first usable image with
- * provenance metadata. Returns null only when every tier has failed
- * (caller drops the story).
+ * Walks the (now 2-tier) hierarchy and returns the first usable image
+ * with provenance metadata. Returns null when neither AGENCY nor
+ * PUBLISHER_RSS yields a usable image — caller increments
+ * droppedNoImage and skips the item.
  *
  * The agency check examines the publisher of the RSS item's link
  * (article URL), not the image URL — most agency syndication republishes
  * from the wire under the publisher's CDN, but we can still tag those
  * cases as AGENCY when the agency is the source of record. Direct image
  * URLs hosted on agency CDNs are also tagged AGENCY.
+ *
+ * Stock photos (Pexels/Unsplash) and OG-tag scraping were removed in
+ * the May 2026 simplification — they were the source of cascading
+ * silent failures (quota exhaustion, hotlink 403s, legally fragile
+ * scraping). If we want a stock-photo fallback later we'll add it
+ * back behind a feature flag with explicit quota tracking.
  */
-export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | null> {
+export function resolveImage(item: RssLikeItem): ResolvedImage | null {
   const articleHost = hostFromUrl(item.link)
   const rssImage = extractFromRss(item)
 
@@ -185,26 +159,6 @@ export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | n
       url: rssImage,
       sourceType: "PUBLISHER_RSS",
       credit: item.sourceName ?? articleHost ?? "Source",
-    }
-  }
-
-  // Tier 3 + 4: STOCK — Pexels first, Unsplash fallback. Only attempted
-  // when we have a title to derive search keywords from.
-  if (item.title) {
-    const stock = await findStockPhoto(item.title)
-    if (stock) return stockImageToResolved(stock)
-  }
-
-  // Tier 5: PUBLISHER_OG — scrape the article page. Last resort, gets
-  // the most prominent visible credit on the card (the source domain).
-  if (item.link) {
-    const og = await extractFromOgTags(item.link)
-    if (og) {
-      return {
-        url: og,
-        sourceType: "PUBLISHER_OG",
-        credit: articleHost ?? "Source",
-      }
     }
   }
 

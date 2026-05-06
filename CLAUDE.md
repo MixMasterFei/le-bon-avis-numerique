@@ -358,6 +358,15 @@ CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
 RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
 NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
-PEXELS_API_KEY                    # Stock photo fallback for news images (Tier 3 in news-image.ts). Free signup at pexels.com/api, 200 req/h.
-UNSPLASH_ACCESS_KEY               # Stock photo fallback for news images (Tier 4, Pexels backup). Free signup at unsplash.com/developers, 50 req/h.
+PEXELS_API_KEY                    # DEPRECATED (May 2026). Stock-photo fallback removed from news-image.ts in the news-pipeline simplification. Safe to remove from Vercel env. Stock-image cache table left in place for now.
+UNSPLASH_ACCESS_KEY               # DEPRECATED (May 2026). Same as PEXELS_API_KEY — stock-photo tier removed.
 ```
+
+### Deprecated env vars (kept for reference, no longer read by code)
+
+After the May 2026 news-pipeline simplification, the following env vars
+are no longer used by the active code paths:
+
+- `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY` — stock-photo tier removed from `src/lib/news-image.ts`. The two-tier resolver now uses only AGENCY + PUBLISHER_RSS images.
+- `DEEPSEEK_API_KEY`, `NEWS_PROVIDER` — DeepSeek removed from synthesis, moderation, research, quality-judge, and catalog-verify paths. All news LLM calls now go through Claude Sonnet 4.6 (synthesis) / Haiku 4.5 (everything else). The `src/lib/deepseek.ts` client file is left in the repo as dormant code.
+- `OPENAI_API_KEY` for vision moderation — `gpt-5-mini` is no longer called from `news-moderate.ts`. The key may still be used by other features (catalog enrichment).

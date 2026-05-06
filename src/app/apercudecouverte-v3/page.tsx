@@ -422,6 +422,18 @@ export default async function ApercuDecouverteV3Page(props: {
   const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
   const techCards = techRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
 
+  // Freshness flag — true when the chosen hero is older than 36h.
+  // Surfaces a small banner on the page so a stale state (cron stuck,
+  // synthesis returning 0 stories) is visible to visitors instead of
+  // looking like a working page with old content. 36h is a deliberately
+  // generous window so a single missed cron tick doesn't trigger the
+  // banner (cron fires 4× daily — worst-case tick interval is 6h).
+  const STALE_THRESHOLD_MS = 36 * 60 * 60 * 1000
+  const isStale =
+    !!frenchHero &&
+    // eslint-disable-next-line react-hooks/purity -- server component, fresh per-request render is correct
+    Date.now() - new Date(frenchHero.publishedAt).getTime() > STALE_THRESHOLD_MS
+
   const data: DecouverteV3Data = {
     frenchHero: heroCard,
     frenchTop: topCards,
@@ -429,6 +441,7 @@ export default async function ApercuDecouverteV3Page(props: {
     techTop: techCards,
     dossier: dossierCard,
     olderBriefs: olderCards,
+    isStale,
     phrase: extractPhrase(frenchRows),
     research: researchRow
       ? (() => {

@@ -1,6 +1,8 @@
-import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { getAnthropic, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropic"
+import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 import type { NewsCategory } from "@prisma/client"
+
+const JUDGE_TIMEOUT_MS = 20_000
 
 /**
  * Pre-publish quality gate for news stories. Runs after moderation
@@ -175,32 +177,27 @@ function parseResponse(raw: string): ParsedScores | null {
   }
 }
 
-async function callJudge(input: JudgeInput): Promise<string> {
+async function callJudge(input: JudgeInput): Promise<string | null> {
   const prompt = buildUserPrompt(input)
   const MAX_TOKENS = 250
-
-  if (isDeepSeekAvailable()) {
-    const ds = getDeepSeek()
-    const r = await ds.chat.completions.create({
-      model: DEFAULT_DEEPSEEK_MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: prompt },
-      ],
-    })
-    return r.choices[0]?.message?.content ?? ""
-  }
-
   const anthropic = getAnthropic()
-  const r = await anthropic.messages.create({
-    model: DEFAULT_ANTHROPIC_MODEL,
-    max_tokens: MAX_TOKENS,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-  })
-  const block = r.content.find((c) => c.type === "text")
-  return block && "text" in block ? (block as { text: string }).text : ""
+  return callClaudeWithTimeout(
+    async (signal) => {
+      const r = await anthropic.messages.create(
+        {
+          model: DEFAULT_ANTHROPIC_MODEL,
+          max_tokens: MAX_TOKENS,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal },
+      )
+      const block = r.content.find((c) => c.type === "text")
+      return block && "text" in block ? (block as { text: string }).text : ""
+    },
+    JUDGE_TIMEOUT_MS,
+    "judge-story",
+  )
 }
 
 export async function judgeStory(input: JudgeInput): Promise<JudgeVerdict> {
@@ -221,6 +218,7 @@ export async function judgeStory(input: JudgeInput): Promise<JudgeVerdict> {
 
   try {
     const raw = await callJudge(input)
+    if (raw === null) return { ...failOpen, reason: "judge timed out — fail-open" }
     const parsed = parseResponse(raw)
     if (!parsed) return { ...failOpen, reason: "judge response unparseable — fail-open" }
 

@@ -1,5 +1,5 @@
-import { getDeepSeek, DEFAULT_DEEPSEEK_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 import { getAnthropic, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from "@/lib/anthropic"
+import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 
 /**
  * "Ce que dit la recherche" sidebar.
@@ -12,8 +12,10 @@ import { getAnthropic, DEFAULT_MODEL as DEFAULT_ANTHROPIC_MODEL } from "@/lib/an
  * stand next to the article, not duplicate it. If no study is cited,
  * returns null and the article renders without a sidebar.
  *
- * Cost: ~$0.0002/story on DeepSeek (~$0.10-0.20/month at our volume).
+ * Single-provider Claude Haiku 4.5 (May 2026 redesign).
  */
+
+const RESEARCH_TIMEOUT_MS = 20_000
 
 export interface ResearchSidebar {
   studyTitle: string         // Original study/report title
@@ -53,29 +55,26 @@ interface ExtractInput {
   body: string
 }
 
-async function callExtractor(input: ExtractInput): Promise<string> {
+async function callExtractor(input: ExtractInput): Promise<string | null> {
   const userPrompt = `Titre : ${input.title}\n\nCorps :\n${input.body}\n\nQu'est-ce que dit la recherche citée ?`
-  if (isDeepSeekAvailable()) {
-    const ds = getDeepSeek()
-    const r = await ds.chat.completions.create({
-      model: DEFAULT_DEEPSEEK_MODEL,
-      max_tokens: 600,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-    })
-    return r.choices[0]?.message?.content ?? ""
-  }
   const anthropic = getAnthropic()
-  const r = await anthropic.messages.create({
-    model: DEFAULT_ANTHROPIC_MODEL,
-    max_tokens: 600,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  })
-  const block = r.content.find((c) => c.type === "text")
-  return block && "text" in block ? (block as { text: string }).text : ""
+  return callClaudeWithTimeout(
+    async (signal) => {
+      const r = await anthropic.messages.create(
+        {
+          model: DEFAULT_ANTHROPIC_MODEL,
+          max_tokens: 600,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: "user", content: userPrompt }],
+        },
+        { signal },
+      )
+      const block = r.content.find((c) => c.type === "text")
+      return block && "text" in block ? (block as { text: string }).text : ""
+    },
+    RESEARCH_TIMEOUT_MS,
+    "extract-research",
+  )
 }
 
 function parseResearch(raw: string): ResearchSidebar | null {
@@ -130,10 +129,7 @@ export async function extractResearch(input: ExtractInput): Promise<ResearchSide
   const markers = ["étude", "rapport", "sondage", "enquête", "recherche", "publié", "chercheurs", "selon"]
   if (!markers.some((m) => text.includes(m))) return null
 
-  try {
-    const raw = await callExtractor(input)
-    return parseResearch(raw)
-  } catch {
-    return null
-  }
+  const raw = await callExtractor(input)
+  if (raw === null) return null
+  return parseResearch(raw)
 }

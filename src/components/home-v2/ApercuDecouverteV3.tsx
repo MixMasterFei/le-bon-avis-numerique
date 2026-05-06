@@ -88,6 +88,12 @@ export interface DecouverteV3Data {
   // NEWSLETTER_PUBLIC=true. Controls whether the bottom-of-page CTA
   // shows a working form or the "en bêta privée" stub.
   canSubscribe: boolean
+  // Set when the chosen hero brief is older than 36h. Drives a small
+  // banner above the news grid so visitors know the synthesis is
+  // catching up, instead of seeing a polished page with stale content
+  // and assuming this is just how the site looks. Optional for
+  // back-compat with callers that don't pass it (defaults to false).
+  isStale?: boolean
 }
 
 /**
@@ -133,6 +139,28 @@ export function ApercuDecouverteV3({
               </em>
             </h1>
           </div>
+
+          {/* Stale-content banner — only shown when the most recent
+              hero brief is older than 36h. Tells visitors the synthesis
+              is catching up so they don't mistake stale content for
+              "the site is just like this". Hidden as soon as a fresh
+              cron run lands new stories. */}
+          {data.isStale && (
+            <div
+              className="mb-5 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
+              style={{
+                background: p.bg2,
+                border: `1px solid ${p.line2}`,
+                color: p.ink2,
+              }}
+            >
+              <span aria-hidden>⏳</span>
+              <span>
+                Synthèse du jour en cours — voici les actualités les plus
+                récentes en attendant.
+              </span>
+            </div>
+          )}
 
           {/* 2-column layout: main feed + sticky sidebar.
               Mobile collapses to single column with sidebar inlined

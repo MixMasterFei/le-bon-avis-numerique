@@ -1,13 +1,18 @@
 import Parser from "rss-parser"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic } from "@/lib/anthropic"
-import { getDeepSeek, SYNTHESIS_MODEL, isDeepSeekAvailable } from "@/lib/deepseek"
 
-// Sonnet model id used as the synthesis escape hatch (NEWS_PROVIDER=anthropic).
-// Stronger writing than Haiku at ~3x the cost — only worth it for the
-// user-visible briefs surface, not the cost-sensitive moderation paths
-// (moderation, research extraction, quality judge keep using their
-// own DEFAULT_MODEL imports).
+// Sonnet model id for synthesis. Stronger writing than Haiku at ~3x
+// the cost — only worth it for the user-visible briefs surface, not
+// the cost-sensitive support paths (moderation, research extraction,
+// quality judge use Haiku via their DEFAULT_MODEL imports).
+//
+// Single-provider Claude across the pipeline (May 2026 redesign): the
+// previous DeepSeek+OpenAI+Claude triple cascade was the source of
+// recurring silent failures. Removing it eliminates two providers
+// from the active path and unifies billing, rate-limits, and timeout
+// behavior. DeepSeek/OpenAI clients still exist in the codebase but
+// are no longer called.
 const SYNTHESIS_ANTHROPIC_MODEL = "claude-sonnet-4-6"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
@@ -646,22 +651,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
   }
 
-  // 5. Cluster + synthesize in one model call.
+  // 5. Cluster + synthesize in one Claude Sonnet 4.6 call.
   //
-  // Provider selection:
-  //   - DeepSeek when DEEPSEEK_API_KEY is set (default — much cheaper
-  //     for high-volume cron jobs). V4-Flash returns plenty for
-  //     news clustering/summarization.
-  //   - Anthropic Claude Haiku as fallback when DeepSeek isn't
-  //     configured, or when NEWS_PROVIDER=anthropic is set explicitly.
-  // Set NEWS_PROVIDER=anthropic to force Claude even with both keys.
+  // Single-provider Claude (May 2026 redesign). The previous
+  // DeepSeek+OpenAI+Claude triple cascade silently failed in too many
+  // ways. Sonnet 4.6 is more expensive than DeepSeek but the cost
+  // delta at 4 runs/day × ~30 stories is negligible (single-digit
+  // dollars per month) and reliability matters more.
   const synthStart = Date.now()
-  const provider =
-    process.env.NEWS_PROVIDER === "anthropic"
-      ? "anthropic"
-      : isDeepSeekAvailable()
-        ? "deepseek"
-        : "anthropic"
+  const provider = "anthropic" as const
   const prompt = buildPrompt(
     unique,
     existingStories.map((s) => s.title),
@@ -673,52 +671,29 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // over the previous 300-450 word target.
   const MAX_TOKENS = 14000
 
-  // Per-call timeout on the synthesis LLM call. Without this, a slow
-  // provider (DeepSeek occasionally takes 250s+ on V4-Pro under load)
-  // blocks the whole pipeline until Vercel kills the function at 300s
-  // — and the cron curl already gave up at 290s by then, reporting a
-  // failed run even though work was happening. 180s lets synthesis
-  // run long if needed, but reserves ~120s headroom for moderation +
-  // research + image mirroring + persistence. If we abort, the run
-  // returns "0 synthesized" cleanly (200 OK) and the next cron tick
-  // retries with fresh hydrated items.
+  // Per-call timeout on the synthesis LLM call. Anthropic typically
+  // returns in 30-90s for our prompt size; 180s leaves slack for
+  // tail-latency events without exhausting the 300s function ceiling.
+  // If we abort, the run returns "0 synthesized" cleanly (200 OK) —
+  // but the route now treats that as `error` status if we collected
+  // items, so the GH Actions job goes red instead of silently green.
   const SYNTHESIS_TIMEOUT_MS = 180_000
   const synthesisController = new AbortController()
   const synthesisTimer = setTimeout(() => synthesisController.abort(), SYNTHESIS_TIMEOUT_MS)
 
   let rawText = ""
   try {
-    if (provider === "deepseek") {
-      // Synthesis uses V4-Pro (1.6T MoE) — materially stronger writing
-      // than the V4-Flash default used elsewhere in the codebase. Cost
-      // delta is negligible at our cron volume.
-      const ds = getDeepSeek()
-      const response = await ds.chat.completions.create(
-        {
-          model: SYNTHESIS_MODEL,
-          max_tokens: MAX_TOKENS,
-          messages: [{ role: "user", content: prompt }],
-        },
-        { signal: synthesisController.signal },
-      )
-      rawText = response.choices[0]?.message?.content ?? ""
-    } else {
-      // Anthropic escape hatch — uses Sonnet 4.6 (not the Haiku default
-      // from anthropic.ts) because synthesis needs the writing quality.
-      // Other Anthropic-backed passes (moderation, research, judge)
-      // stay on Haiku via their own client setup.
-      const anthropic = getAnthropic()
-      const response = await anthropic.messages.create(
-        {
-          model: SYNTHESIS_ANTHROPIC_MODEL,
-          max_tokens: MAX_TOKENS,
-          messages: [{ role: "user", content: prompt }],
-        },
-        { signal: synthesisController.signal },
-      )
-      const textBlock = response.content.find((c) => c.type === "text")
-      rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
-    }
+    const anthropic = getAnthropic()
+    const response = await anthropic.messages.create(
+      {
+        model: SYNTHESIS_ANTHROPIC_MODEL,
+        max_tokens: MAX_TOKENS,
+        messages: [{ role: "user", content: prompt }],
+      },
+      { signal: synthesisController.signal },
+    )
+    const textBlock = response.content.find((c) => c.type === "text")
+    rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
   } catch (err) {
     const aborted = synthesisController.signal.aborted
     console.warn(
