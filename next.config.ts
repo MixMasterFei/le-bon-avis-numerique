@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // Enable production source maps temporarily — needed to debug the
+  // React #418 hydration crash on /apercudecouverte-v3 (the minified
+  // stack trace just shows React internals like rK/io/sc with no
+  // component name). Revert this once the culprit is fixed; adds
+  // ~50KB to the bundle but no runtime perf cost.
+  productionBrowserSourceMaps: true,
   experimental: {
     scrollRestoration: true,
   },
