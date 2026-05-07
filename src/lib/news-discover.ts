@@ -118,14 +118,12 @@ const MAX_ITEMS_PER_SOURCE = 5
 // often publish 2-3 family items/day) when we just take top-60-by-
 // recency. 50 FR + 25 INTL keeps the prompt under timeout while
 // reliably surfacing 'Vu d'ailleurs' material.
-// Reduced from 50/25 to 30/15 (May 2026) so the synthesis pipeline
-// fits within Vercel's 300s function ceiling. The journalistic
-// rewrite + V4-Pro made each story ~2-3x slower to generate; with
-// the smaller hydrated pool the LLM call completes in ~120-180s
-// instead of timing out at 290s. Net: 4 daily runs × 5 stories =
-// up to 20 fresh briefs per day, plenty for the page rhythm.
-const FR_BUDGET = 30
-const INTL_BUDGET = 15
+// Reduced again in May 2026 after Sonnet routinely hit the 180s
+// synthesis timeout with 45 inputs and 400-600 word briefs. The cron
+// runs four times daily, so a smaller but dependable batch is better
+// than a richer prompt that regularly produces 0 stories.
+const FR_BUDGET = 18
+const INTL_BUDGET = 8
 
 function makeParser(): RssParser {
   return new Parser({
@@ -206,7 +204,7 @@ function buildPrompt(
 
   return `Tu es l'éditeur de Totem Avisé, un guide d'actualité pour les foyers français — parents, grands-parents, enseignants, mais aussi tous les adultes qui suivent les sujets famille / éducation / numérique sans forcément avoir d'enfants. Ton lecteur ouvre la page pour S'INFORMER vite — il veut le SUJET, pas un compte-rendu de quel article a publié quoi.
 
-**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 3 à 5 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 5 histoires faibles est pire que 3 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
+**ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 2 à 3 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 3 histoires faibles est pire que 2 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
 
 Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
 
@@ -236,7 +234,7 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    **EXIGÉ** : attribution nommée des affirmations fortes ("Selon Le Monde…", "Numerama rapporte…"), faits concrets que tu as réellement (titres, dates, lieux, chiffres, noms). Pour un événement, écrire 300 mots sobres est OK même avec un résumé bref ; pour un top 10 sans la liste, écarte.
 
-   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné.). Le brief produit doit faire **400-600 mots structurés en lede + deux sections H2**, comme dans cet exemple (le contenu ci-dessous est ce que tu mettrais dans le champ "body" d'une histoire ; le champ "familyTakeaway" est en plus, séparé) :
+   **EXEMPLE D'HISTOIRE ÉVÉNEMENT ACCEPTABLE** (résumé source minimal : Sortie de Avatar 3 le 19 décembre 2026 dans les salles françaises, distribution Disney/Fox. Réalisateur James Cameron. Confirmé par Variety et AlloCiné.). Le brief produit doit faire **300-450 mots structurés en lede + deux sections H2**, comme dans cet exemple (le contenu ci-dessous est ce que tu mettrais dans le champ "body" d'une histoire ; le champ "familyTakeaway" est en plus, séparé) :
 
    Body :
 
@@ -258,7 +256,7 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
 
    Pour les familles qui ont aimé les deux premiers Avatar, la sortie est calée sur les vacances de Noël comme prévu. Attention particulière sur le classement final du CNC : les volets précédents étaient « tous publics avec avertissement » pour les scènes de bataille, et un Avatar 3 plus dense pourrait passer à 12+. Les séances IMAX et 3D HFR ont des billets premium plus chers — point à anticiper pour un budget famille.
 
-   Cet exemple body fait ≈ 480 mots et le familyTakeaway ≈ 80 mots. Ce qui le rend acceptable : (1) lede de 80 mots qui livre qui/quoi/quand avec attribution dès la première mention forte, (2) deux sections H2 aux titres descriptifs choisis par toi, (3) deux citations directes attribuées nommément (Cameron via Variety, porte-parole Disney via Premiere), (4) un familyTakeaway concret (le classement à surveiller, le coût des séances IMAX) — pas une platitude type « ouvrez le dialogue ». **Vise toujours 400-600 mots dans body** (un brief sous 300 mots sera rejeté), **toujours exactement 2 sections H2** (titres générés par toi, descriptifs et factuels), **toujours au moins 2 citations directes en « »** quand les sources en fournissent, **toujours un familyTakeaway de 60-120 mots**. **N'utilise PAS de double-quote ASCII " dans le body ni le familyTakeaway** — utilise les guillemets français « » pour les citations directes (cf. règle d'échappement JSON plus bas).
+   Cet exemple body fait ≈ 480 mots et le familyTakeaway ≈ 80 mots. Ce qui le rend acceptable : (1) lede de 80 mots qui livre qui/quoi/quand avec attribution dès la première mention forte, (2) deux sections H2 aux titres descriptifs choisis par toi, (3) deux citations directes attribuées nommément (Cameron via Variety, porte-parole Disney via Premiere), (4) un familyTakeaway concret (le classement à surveiller, le coût des séances IMAX) — pas une platitude type « ouvrez le dialogue ». **Vise toujours 300-450 mots dans body** (un brief sous 220 mots sera rejeté), **toujours exactement 2 sections H2** (titres générés par toi, descriptifs et factuels), **toujours au moins 2 citations directes en « »** quand les sources en fournissent, **toujours un familyTakeaway de 60-120 mots**. **N'utilise PAS de double-quote ASCII " dans le body ni le familyTakeaway** — utilise les guillemets français « » pour les citations directes (cf. règle d'échappement JSON plus bas).
 
 **2. Voix neutre, jamais éditoriale.**
    Tu rapportes ce que les sources disent ; tu n'as pas d'avis.
@@ -356,11 +354,11 @@ JSON par histoire :
 
 - "title" : factuel et descriptif. "Sortie de X au cinéma le 21 octobre", pas "Le grand retour de X". Pas de qualificatif émotionnel. **Longueur ≤ 75 caractères** (l'UI tronque au-delà). **Les 45 premiers caractères doivent contenir le NOM PROPRE et l'enjeu famille** — un titre qui dit « New Mexico remporte une victoire historique contre Meta pour la… » est inutilisable car le mot crucial (« protection des mineurs ») est coupé. Mieux : « Meta condamné aux USA pour ses risques sur les ados » (52 chars, sujet + enjeu en clair).
 - "summary" : **1ère phrase = pourquoi ça concerne les familles, sans décodage requis.** 2ème phrase optionnelle = chiffre/fait clé. < 200 caractères au total. Un parent qui lit uniquement le summary doit comprendre l'enjeu pour son foyer en 5 secondes.
-- "body" : markdown, **400-600 mots**, structuré en **un lede + exactement deux sections H2** dont tu choisis les titres. Les titres H2 doivent être courts, descriptifs et factuels (pas éditoriaux) — ex. « Une date de Noël assumée par Disney », « Une classification française encore en attente », « Un dispositif déjà testé à Marseille ». **Pas de H3 dans le body.** Citations directes en « » obligatoires quand les sources les fournissent (minimum 2, idéalement une par section).
+- "body" : markdown, **300-450 mots**, structuré en **un lede + exactement deux sections H2** dont tu choisis les titres. Les titres H2 doivent être courts, descriptifs et factuels (pas éditoriaux) — ex. « Une date de Noël assumée par Disney », « Une classification française encore en attente », « Un dispositif déjà testé à Marseille ». **Pas de H3 dans le body.** Citations directes en « » obligatoires quand les sources les fournissent (minimum 2, idéalement une par section).
 
    - **Lede** (~50-80 mots, sans titre) — Le QUOI / QUI / OÙ / QUAND en deux ou trois phrases, avec attribution dès la première mention forte ("Selon Le Monde…", "Numerama rapporte que…"). Un chiffre concret ou un nom propre dans la première phrase si la matière le permet. Pas de hook éditorial.
-   - **## Section 1** (titre H2 généré par toi, ~180-240 mots) — Les faits. Les éléments concrets : titres nommés, chiffres, dates précises, personnes ou études citées. Chaque affirmation forte attribuée nommément. Au moins une citation directe en « » de cette section quand la source en fournit une, au format : « citation », a déclaré [nom], [fonction] (Source, [date]). Ne paraphrase pas la STRUCTURE de l'article — livre le contenu.
-   - **## Section 2** (titre H2 généré par toi, ~180-240 mots) — Le contexte, les réactions, ou ce qui est en jeu. Deuxième citation directe (ou attribution indirecte si les sources n'en fournissent pas). Quand deux publications divergent ou se complètent sur l'angle, croise-les nommément ("Selon Le Monde X, tandis que Numerama souligne Y"). Conclus sur une observation factuelle ou une question relayée d'une source — jamais sur un commentaire Totem.
+   - **## Section 1** (titre H2 généré par toi, ~120-170 mots) — Les faits. Les éléments concrets : titres nommés, chiffres, dates précises, personnes ou études citées. Chaque affirmation forte attribuée nommément. Au moins une citation directe en « » de cette section quand la source en fournit une, au format : « citation », a déclaré [nom], [fonction] (Source, [date]). Ne paraphrase pas la STRUCTURE de l'article — livre le contenu.
+   - **## Section 2** (titre H2 généré par toi, ~120-170 mots) — Le contexte, les réactions, ou ce qui est en jeu. Deuxième citation directe (ou attribution indirecte si les sources n'en fournissent pas). Quand deux publications divergent ou se complètent sur l'angle, croise-les nommément ("Selon Le Monde X, tandis que Numerama souligne Y"). Conclus sur une observation factuelle ou une question relayée d'une source — jamais sur un commentaire Totem.
 
 - "familyTakeaway" : **CHAMP NOUVEAU OBLIGATOIRE.** Voir la section FAMILY TAKEAWAY plus bas pour le format détaillé.
 - "category" : PARENTHOOD | FILM_TV | GAMES | READING | TECH. TECH = IA générative, contrôle parental, régulation des réseaux sociaux pour les jeunes, outils de temps d'écran, EdTech, annonces d'appareils touchant la vie famille (distinct de GAMES qui couvre l'industrie du jeu vidéo).
@@ -398,8 +396,8 @@ N'invente AUCUN fait absent des articles fournis. **N'invente AUCUNE citation di
 
 ## CONTRAINTES DURES
 
-- Maximum 5 histoires, triées par pertinence décroissante.
-- Body **400-600 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 300 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
+- Maximum 3 histoires, triées par pertinence décroissante.
+- Body **300-450 mots, exactement 2 sections H2** (lede + ## Section 1 + ## Section 2). Sous 220 mots ou sans les 2 H2 → rejet automatique au contrôle qualité aval.
 - Au moins 2 citations directes en « » dans le body quand les sources en fournissent (idéalement une par section). Si AUCUNE source ne fournit de citation littérale, attribue indirectement et accepte que le brief n'ait pas de « » — n'invente jamais.
 - familyTakeaway 60-120 mots, plain text, ancré dans les faits — pas de platitudes.
 - Multi-sources : relevance ≥ 0.55. Single-source : relevance ≥ 0.7. INTL single-source : ≥ 0.65.
@@ -462,12 +460,11 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     return null
   }
 
-  // Body floor bumped 150 → 300 words to match the new format target
-  // (400-600 words across lede + 2 H2 sections). Anything shorter
-  // means the LLM didn't follow the structure (skipped a section
-  // or bailed early) and isn't worth publishing on the new format.
+  // Body floor matches the compact brief target used to keep the cron
+  // under the synthesis timeout. Anything shorter means the LLM didn't
+  // follow the structure (skipped a section or bailed early).
   const wordCount = body.split(/\s+/).filter(Boolean).length
-  if (wordCount < 300) {
+  if (wordCount < 220) {
     console.warn(`[news-discover] coerce: body too short (${wordCount}w) title="${title.slice(0, 60)}"`)
     return null
   }
@@ -666,10 +663,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     recentImageUrls,
   )
 
-  // 14000 tokens covers up to 10 stories × ~1100 tokens each (lede +
-  // 2 H2 sections of ~500 words + familyTakeaway). Slight headroom
-  // over the previous 300-450 word target.
-  const MAX_TOKENS = 14000
+  // Keep the response budget aligned with the compact 2-3 story target.
+  // The previous 14k output cap encouraged long generations that often
+  // reached our 180s abort window before returning any JSON.
+  const MAX_TOKENS = 7000
 
   // Per-call timeout on the synthesis LLM call. Anthropic typically
   // returns in 30-90s for our prompt size; 180s leaves slack for
