@@ -678,6 +678,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // The previous 14k output cap encouraged long generations that often
   // reached our 180s abort window before returning any JSON.
   const MAX_TOKENS = 7000
+  const JSON_PREFILL = '{"stories":'
 
   // Per-call timeout on the synthesis LLM call. Anthropic typically
   // returns in 30-90s for our prompt size; 180s leaves slack for
@@ -696,12 +697,25 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       {
         model: SYNTHESIS_ANTHROPIC_MODEL,
         max_tokens: MAX_TOKENS,
-        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        system:
+          "You are a strict JSON API. Return only valid JSON, with no analysis, no explanation, no markdown, and no text before or after the JSON.",
+        messages: [
+          { role: "user", content: prompt },
+          // Assistant prefill prevents the model from spending the
+          // response budget on visible chain-of-thought before JSON.
+          { role: "assistant", content: JSON_PREFILL },
+        ],
       },
       { signal: synthesisController.signal },
     )
-    const textBlock = response.content.find((c) => c.type === "text")
-    rawText = textBlock && "text" in textBlock ? (textBlock as { text: string }).text : ""
+    const continuation = response.content
+      .filter((c) => c.type === "text" && "text" in c)
+      .map((c) => (c as { text: string }).text)
+      .join("")
+    rawText = continuation.trimStart().startsWith("{")
+      ? continuation
+      : `${JSON_PREFILL}${continuation}`
   } catch (err) {
     const aborted = synthesisController.signal.aborted
     console.warn(
