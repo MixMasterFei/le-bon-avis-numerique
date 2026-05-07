@@ -58,6 +58,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   // each broad-tech feed to family-relevant items via the editorial
   // line. Distinct from GAMES (video game industry / releases).
   { name: "Numerama Tech",                   url: "https://www.numerama.com/tech/feed/",                                    category: "TECH",       trustTier: 1 },
+  { name: "CLEMI",                            url: "https://www.clemi.fr/rss.xml",                                           category: "TECH",       trustTier: 1 },
   { name: "Frandroid",                       url: "https://www.frandroid.com/feed",                                         category: "TECH",       trustTier: 2 },
   { name: "Le Monde Pixels",                 url: "https://www.lemonde.fr/pixels/rss_full.xml",                             category: "TECH",       trustTier: 1 },
   { name: "01net",                           url: "https://www.01net.com/actualites/feed/",                                 category: "TECH",       trustTier: 2 },
@@ -68,6 +69,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   // READING — children's literature is thin in our base; expanding to
   // give the page a real reading-news anchor
   { name: "1jour1actu",                      url: "https://feeds.feedburner.com/1jour1actu/BwmM3ey8dPF",                    category: "READING",    trustTier: 1 },
+  { name: "L'école des loisirs",             url: "https://www.ecoledesloisirs.fr/rss.xml",                                 category: "READING",    trustTier: 1 },
   { name: "IDBOOX Livres enfants",           url: "https://www.idboox.com/livres-enfants/feed/",                            category: "READING",    trustTier: 3 },
   { name: "Ricochet — Littérature jeunesse", url: "https://www.ricochet-jeunes.org/rss.xml",                                category: "READING",    trustTier: 1 },
   { name: "Babelio Jeunesse",                url: "https://www.babelio.com/rss/genre/15.xml",                               category: "READING",    trustTier: 2 },

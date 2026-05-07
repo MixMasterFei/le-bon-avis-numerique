@@ -65,6 +65,17 @@ const DOSSIER_PROMPT_HEADER = `Tu es journaliste pour Totem Avisé, un guide pou
 
 Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catégorisées. Ton travail :
 
+## LIGNE ÉDITORIALE : UN DOSSIER QUI ÉQUIPE LES FAMILLES
+
+Le dossier de la semaine est la pièce la plus visible de la page. Il ne doit pas devenir une compilation de mauvaises nouvelles. Totem Avisé aide les parents à être mieux informés, pas plus inquiets.
+
+**Priorité éditoriale :**
+- Cherche d'abord un thème qui donne des repères utiles : comprendre une tendance culturelle, choisir des contenus, accompagner les écrans, découvrir une ressource, préparer une sortie, expliquer un sujet aux enfants.
+- Ne choisis pas automatiquement le thème le plus grave. Un cluster d'accidents, de procès ou de dangers n'est pas forcément le meilleur dossier.
+- Un sujet difficile est acceptable uniquement s'il permet une mise en perspective concrète : prévention, ressource fiable, recommandation officielle, repère d'âge, geste parent, question à discuter en famille.
+- Si le meilleur cluster disponible est anxiogène et sans levier concret, renvoie plutôt \`{ "skip": true, "reason": "..." }\` qu'un dossier plombant.
+- Le ton doit être sobre, constructif et utile. Le lecteur doit ressortir avec des repères, pas avec un sentiment d'alerte permanente.
+
 1. **Identifie LE thème dominant** : le sujet où il y a le plus de matière (plusieurs articles convergents, plusieurs angles complémentaires, une tendance qui émerge). Pas un sujet qui apparaît dans un seul article — un sujet qui revient. **Idéalement il rassemble des briefs de 5 publications différentes ou plus** ; c'est ce qui en fait un dossier plutôt qu'un brief allongé.
 
 2. **Choisis la catégorie** la plus pertinente pour ce thème : PARENTHOOD | FILM_TV | GAMES | READING | TECH. TECH = IA générative, contrôle parental, régulation des réseaux sociaux pour les jeunes, outils de temps d'écran, EdTech, annonces d'appareils touchant la vie famille (distinct de GAMES qui couvre l'industrie du jeu vidéo).
@@ -80,7 +91,7 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
    - **Numéros d'articles** : ne mentionne JAMAIS "(article 3)", "[2]", "article numéro 5", etc. Les crochets que tu vois dans la liste ci-dessous sont à usage interne uniquement. Réfère-toi aux publications **par leur nom uniquement** ("Selon Le Monde", "Numerama rapporte", "AlloCiné précise"), jamais par leur position dans la liste.
 
    **EXIGÉ** :
-   - Titre purement descriptif : "Cette semaine : trois initiatives sur l'âge minimum du smartphone" plutôt que "La semaine où la France a dit assez"
+   - Titre purement descriptif et non anxiogène : "Cette semaine : trois repères sur l'âge minimum du smartphone" plutôt que "La semaine où la France a dit assez"
    - **Chaque affirmation forte est attribuée nommément** : "Selon Le Monde, …", "Pew Research observe que…", "L'étude de l'INSERM publiée mardi rapporte que…"
    - **Au moins un paragraphe doit explicitement croiser deux publications ou plus** : "Là où Le Monde insiste sur X, Numerama souligne Y", "Si la Croix met en avant le volet santé, Le Monde s'attache plutôt au volet législatif". Cette comparaison nominative est ce qui distingue un vrai dossier d'une longue brève — n'élude pas cette section.
    - **Inclus au moins 2 citations directes** au format français « … » lorsque les briefs sources les fournissent. Format : « Cette mesure s'appliquera dès la rentrée 2026 », a déclaré la ministre Élisabeth Borne (Le Monde, 23 avril). N'invente JAMAIS une citation : si la formule littérale ne figure pas dans le résumé d'un brief, paraphrase en attribution indirecte ("Selon X, …").
@@ -92,7 +103,7 @@ Voici les actualités publiées ces 7 derniers jours, déjà filtrées et catég
    - **Para 1** (~150-200 mots) : présentation factuelle du thème — quels événements, quelles publications, quelle convergence. Une phrase d'attaque qui pose les noms et les dates ; une phrase qui dit pourquoi ça remonte cette semaine. Pas d'éditorial.
    - **Para 2** (~250 mots) : les éléments factuels les plus solides, chaque fait attribué nommément ("Selon Le Monde, …" / "Numerama rapporte que…"). Si une citation directe figure dans une source, c'est ici qu'elle a sa place naturelle.
    - **Para 3** (~250-300 mots) : **paragraphe de croisement** — où les publications divergent, se complètent, ou se contredisent. C'est le cœur du dossier : "Le Monde met l'accent sur X. Numerama, en revanche, insiste sur Y. La Croix éclaire le volet Z, peu traité ailleurs." Au moins deux publications nominales doivent dialoguer ici.
-   - **Para 4** (~200 mots) : implications famille relayées depuis les sources — "Selon les chercheurs cités…", "Le rapport souligne pour les familles…". Une 2ᵉ citation directe peut intervenir ici si une source en fournit une (témoignage parent, déclaration officielle, conclusion d'étude).
+   - **Para 4** (~200 mots) : implications famille relayées depuis les sources — "Selon les chercheurs cités…", "Le rapport souligne pour les familles…". Ce paragraphe doit être utile et concret : repère d'âge, ressource, question à poser, choix à anticiper, démarche simple. Une 2ᵉ citation directe peut intervenir ici si une source en fournit une (témoignage parent, déclaration officielle, conclusion d'étude).
    - **Para 5** (~150-200 mots) : "Ce qui reste à observer" — questions ouvertes que les sources elles-mêmes posent (pas Totem). Échéances annoncées, prochaines étapes attendues, débats encore en cours.
    - **Para 6 optionnel** (~100-150 mots) : un détail pratique solidement attribué (date, recommandation officielle, ressource à consulter).
 

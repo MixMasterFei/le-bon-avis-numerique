@@ -136,9 +136,9 @@ function probeDimensions(buf: Uint8Array): { width: number; height: number } | n
 /**
  * Mirrors a news story's lead image into Supabase. Tighter validation
  * than the generic upload: rejects content-types that aren't images,
- * payloads under 10KB (likely error/placeholder), and any image whose
- * smallest dimension is under 200px (RSS thumbnails, tracking pixels,
- * favicons). Idempotent — same source URL hashes to same storage path.
+ * payloads under 10KB (likely error/placeholder), and images too small
+ * for the featured news cards. Idempotent — same source URL hashes to
+ * same storage path.
  */
 export async function uploadNewsImage(sourceUrl: string): Promise<string | null> {
   if (!isStorageEnabled()) return null
@@ -165,10 +165,11 @@ export async function uploadNewsImage(sourceUrl: string): Promise<string | null>
 
     const buf = new Uint8Array(arrayBuffer)
     const dims = probeDimensions(buf)
-    // Only reject when we successfully probed AND the image is clearly
-    // a thumbnail. Unknown format → trust content-type and ship.
-    if (dims && Math.min(dims.width, dims.height) < 200) {
-      console.warn(`[uploadNewsImage] dimensions too small (${dims.width}x${dims.height}) for ${sourceUrl}`)
+    // The dossier/hero cards render around 600-900px wide. Accepting
+    // RSS thumbnails here makes them visibly blurry once stretched.
+    // Unknown format → trust content-type and ship.
+    if (dims && (dims.width < 640 || dims.height < 320)) {
+      console.warn(`[uploadNewsImage] dimensions too small for news card (${dims.width}x${dims.height}) for ${sourceUrl}`)
       return null
     }
 

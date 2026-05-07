@@ -206,6 +206,16 @@ function buildPrompt(
 
 **ATTENDU EN SORTIE : sur les ${items.length} articles fournis, retiens 2 à 3 histoires.** La page ne peut pas vivre sans contenu — un retour à 0 ou 1 histoire signifie que tu es trop strict sur les ÉVÉNEMENTS (annonces, sorties, études, décisions). Mais à l'inverse, retenir 3 histoires faibles est pire que 2 fortes : la qualité prime sur la quantité. **Si tu hésites pour une histoire, écarte-la** — surtout pour les LISTE/GUIDE sans éléments nommés et les contenus mature/adulte sans angle parental.
 
+## LIGNE ÉDITORIALE TOTALE : DES PARENTS AVISÉS, PAS ANXIEUX
+
+Totem Avisé n'est pas un fil d'alertes. La page doit aider les familles à comprendre, choisir, découvrir et agir — pas leur donner l'impression que tout va mal. **Privilégie les sujets qui donnent du pouvoir d'agir** : une ressource fiable, une sortie culturelle, un contenu jeunesse à repérer, une décision qui change concrètement le quotidien, un conseil vérifiable, une conversation utile à ouvrir avec un enfant.
+
+**Équilibre attendu dans les 2-3 histoires :**
+- Si une histoire est grave ou anxiogène (accident, justice, danger, harcèlement, santé, sécurité), elle doit apporter un levier concret : prévention, ressource, recommandation officielle, outil parent, repère d'âge, démarche à suivre. Sinon, écarte.
+- Quand les sources le permettent, retiens au moins une histoire **culturelle, pratique ou constructive** : film jeunesse, livre enfant, jeu familial, exposition, ressource éducative, guide de parentalité numérique, initiative utile.
+- Évite de publier plusieurs histoires anxiogènes dans le même run. Si plusieurs sujets graves sont disponibles, choisis le plus utile pour les familles et équilibre avec un sujet plus respirable.
+- Ne dramatise jamais un sujet pour le rendre important. Un parent avisé a besoin de repères sobres, pas d'un sentiment d'urgence permanent.
+
 Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
 
 ## TROIS PRINCIPES (par ordre de priorité)
@@ -268,12 +278,13 @@ Voici ${items.length} articles publiés ces 48 dernières heures, chacun avec un
    Totem Avisé est un guide pour aider les familles françaises à choisir des contenus adaptés à leurs enfants — équivalent français de Common Sense Media. Chaque histoire doit avoir un **lien clair avec ce périmètre** :
 
    **À RETENIR — sujets pertinents** :
-   - Films, séries, jeux, livres **destinés aux familles ou aux jeunes** (animation, films d'aventure tous publics, jeux PEGI 3-12, séries pour enfants/ados, romans jeunesse).
+   - Films, séries, jeux, livres **destinés aux familles ou aux jeunes** (animation, films d'aventure tous publics, jeux PEGI 3-12, séries pour enfants/ados, romans jeunesse), y compris les sorties, sélections, festivals, prix et ressources qui aident à choisir.
    - Films/séries **regardés en famille** (Avatar, Disney/Pixar, Stranger Things, blockbusters grand public — même si ados/adultes les regardent aussi).
    - **Études et institutions** sur la jeunesse : santé des enfants, écrans, sommeil, alimentation, harcèlement scolaire, INSERM, Santé publique France, Pew Research.
    - **Décisions éducatives ou réglementaires** : école, collège, lycée, ministère de l'Éducation, recommandations parentales officielles.
    - **Parentalité numérique** : contrôle parental, réseaux sociaux & jeunes, temps d'écran.
    - **Sorties culturelles famille** : expos enfants, festivals, événements pour familles.
+   - **Ressources constructives pour parents avisés** : éducation aux médias, choix de livres/films/jeux, outils de parentalité numérique, guides pratiques, activités à faire avec les enfants, initiatives qui donnent des repères sans dramatiser.
    - **Industrie famille** : Disney, Pixar, Nintendo, Netflix Kids, livres jeunesse, plates-formes éducatives.
    - **Tech & IA pour les familles** (catégorie TECH) : ChatGPT/IA générative dans la vie famille (comment l'expliquer aux enfants, l'utiliser ensemble, l'encadrer), régulation des réseaux sociaux pour les jeunes, outils de contrôle parental, EdTech, annonces d'appareils touchant la vie famille (smartphones jeunesse, liseuses enfants), études sur l'usage du numérique chez les jeunes. **Cherche activement l'angle famille dans les actus tech** — un lancement d'un nouveau modèle d'IA n'est en soi pas pertinent ; en revanche "5 façons d'utiliser ChatGPT avec ses enfants" ou "l'IA dans les devoirs scolaires : ce que disent les profs" l'est.
 
