@@ -678,7 +678,6 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // The previous 14k output cap encouraged long generations that often
   // reached our 180s abort window before returning any JSON.
   const MAX_TOKENS = 7000
-  const JSON_PREFILL = '{"stories":'
 
   // Per-call timeout on the synthesis LLM call. Anthropic typically
   // returns in 30-90s for our prompt size; 180s leaves slack for
@@ -691,6 +690,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const synthesisTimer = setTimeout(() => synthesisController.abort(), SYNTHESIS_TIMEOUT_MS)
 
   let rawText = ""
+  let rawStories: unknown[] = []
   try {
     const anthropic = getAnthropic()
     const response = await anthropic.messages.create(
@@ -699,23 +699,45 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
         max_tokens: MAX_TOKENS,
         temperature: 0.2,
         system:
-          "You are a strict JSON API. Return only valid JSON, with no analysis, no explanation, no markdown, and no text before or after the JSON.",
-        messages: [
-          { role: "user", content: prompt },
-          // Assistant prefill prevents the model from spending the
-          // response budget on visible chain-of-thought before JSON.
-          { role: "assistant", content: JSON_PREFILL },
+          "You are a strict extraction API. Do not explain your reasoning. Use the provided tool exactly once with the selected stories.",
+        tools: [
+          {
+            name: "emit_news_stories",
+            description: "Return the synthesized Totem Avisé news stories.",
+            input_schema: {
+              type: "object",
+              properties: {
+                stories: {
+                  type: "array",
+                  maxItems: 3,
+                  items: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
+                },
+              },
+              required: ["stories"],
+              additionalProperties: false,
+            },
+          },
         ],
+        tool_choice: { type: "tool", name: "emit_news_stories" },
+        messages: [{ role: "user", content: prompt }],
       },
       { signal: synthesisController.signal },
     )
+    const toolBlock = response.content.find(
+      (c) => c.type === "tool_use" && "name" in c && c.name === "emit_news_stories",
+    )
+    if (toolBlock && "input" in toolBlock) {
+      const candidate = (toolBlock.input as { stories?: unknown }).stories
+      if (Array.isArray(candidate)) rawStories = candidate
+    }
     const continuation = response.content
       .filter((c) => c.type === "text" && "text" in c)
       .map((c) => (c as { text: string }).text)
       .join("")
-    rawText = continuation.trimStart().startsWith("{")
-      ? continuation
-      : `${JSON_PREFILL}${continuation}`
+    rawText = continuation
   } catch (err) {
     const aborted = synthesisController.signal.aborted
     console.warn(
@@ -733,8 +755,9 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // list so the cron returns "0 synthesized" rather than a 500.
   const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "")
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-  let rawStories: unknown[] = []
-  if (!jsonMatch) {
+  if (rawStories.length > 0) {
+    // Tool-use path succeeded; no text JSON parsing needed.
+  } else if (!jsonMatch) {
     console.warn(`[news-discover] ${provider} did not return JSON. head=${rawText.slice(0, 200)}`)
   } else {
     try {
