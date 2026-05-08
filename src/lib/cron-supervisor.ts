@@ -300,7 +300,7 @@ export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): 
   const recentLogs: RecentLog[] = logs.map((log) => ({
     task: log.task,
     status: log.status as CronStatus,
-    summary: log.summary,
+    summary: log.summary ?? "",
     createdAt: log.createdAt,
   }))
 
