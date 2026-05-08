@@ -113,6 +113,24 @@ export default function GuidesPage() {
             Des guides pratiques pour accompagner vos enfants dans leur
             consommation médiatique, à chaque âge.
           </p>
+          <div
+            className="mt-6 rounded-2xl p-4 text-left"
+            style={{ background: p.card, border: `1px solid ${p.line}` }}
+          >
+            <p
+              className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+              style={{ color: p.accent }}
+            >
+              Réponse rapide
+            </p>
+            <p className="text-sm md:text-base leading-relaxed" style={{ color: p.ink2 }}>
+              Pour accompagner un enfant face aux écrans, commencez par l&apos;âge,
+              puis regardez le contexte : durée, type de contenu, violence,
+              interactions en ligne, achats intégrés et sensibilité de l&apos;enfant.
+              Les guides ci-dessous donnent des repères pratiques sans remplacer
+              votre décision de parent.
+            </p>
+          </div>
         </div>
       </section>
 

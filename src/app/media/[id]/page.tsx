@@ -274,6 +274,39 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   }
 }
 
+function buildQuickAnswer(media: DatabaseMediaItem) {
+  const typeLabel = mediaTypeLabels[media.type]?.toLowerCase() || "contenu"
+  const age = media.expertAgeRec && media.expertAgeRec > 0
+    ? `à partir de ${media.expertAgeRec} ans`
+    : "avec un âge à confirmer"
+  const sensitivePoints: string[] = []
+
+  if (media.contentMetrics.violence >= 3) sensitivePoints.push("violence")
+  if (media.contentMetrics.sexNudity >= 3) sensitivePoints.push("sexe ou nudité")
+  if (media.contentMetrics.language >= 3) sensitivePoints.push("langage")
+  if (media.contentMetrics.substanceUse >= 3) sensitivePoints.push("substances")
+  if (media.contentMetrics.consumerism >= 3) sensitivePoints.push("consumérisme")
+
+  const positivePoints: string[] = []
+  if (media.contentMetrics.positiveMessages >= 4) positivePoints.push("messages positifs")
+  if (media.contentMetrics.roleModels >= 4) positivePoints.push("modèles positifs")
+
+  const sensitiveText = sensitivePoints.length > 0
+    ? `Points à vérifier : ${sensitivePoints.join(", ")}.`
+    : "Aucun signal sensible majeur ne ressort dans les dimensions principales."
+  const positiveText = positivePoints.length > 0
+    ? `Points favorables : ${positivePoints.join(", ")}.`
+    : "Les apports positifs sont à lire dans l'analyse détaillée."
+
+  return {
+    question: `${media.title} est-il adapté aux enfants ?`,
+    answer: `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText} ${positiveText}`,
+    age,
+    sensitiveText,
+    positiveText,
+  }
+}
+
 // Build JSON-LD structured data for a media item
 function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
   const baseUrl = "https://totemavise.com"
@@ -583,6 +616,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, id)
+  const quickAnswer = buildQuickAnswer(media)
 
   return (
     <div className="min-h-screen bg-background">
@@ -673,6 +707,30 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 originalTitle={media.originalTitle || null}
                 reviews={media.reviews}
               />
+
+              <div
+                className="mb-5 rounded-2xl p-4"
+                style={{
+                  background: "var(--color-warm-card)",
+                  border: "1px solid var(--color-warm-line)",
+                }}
+              >
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+                  style={{ color: "var(--color-warm-accent)" }}
+                >
+                  Réponse rapide
+                </p>
+                <h2
+                  className="font-serif text-lg font-medium mb-2"
+                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
+                >
+                  {quickAnswer.question}
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
+                  {quickAnswer.answer}
+                </p>
+              </div>
 
               {/* Platforms for games */}
               {media.type === "GAME" && media.platforms.length > 0 && (

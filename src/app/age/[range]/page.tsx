@@ -250,6 +250,32 @@ export default async function AgePage({
               {ageRange.description}
             </p>
 
+            <div
+              className="mt-6 max-w-3xl rounded-2xl p-4"
+              style={{ background: p.card, border: `1px solid ${p.line}` }}
+            >
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+                style={{ color: p.accent }}
+              >
+                Réponse rapide
+              </p>
+              <h2
+                className={`${serifClass} text-lg md:text-xl font-medium mb-2`}
+                style={{ color: p.ink, letterSpacing: "-0.02em" }}
+              >
+                Quels contenus choisir pour les {ageRange.label} ?
+              </h2>
+              <p className="text-sm md:text-base leading-relaxed" style={{ color: p.ink2 }}>
+                Pour les {ageRange.label}, privilégiez des contenus dont l&apos;âge
+                recommandé reste dans cette tranche et vérifiez les signaux
+                sensibles comme la violence, la peur, le langage ou les thèmes
+                adultes. Les cartes ci-dessous combinent âge recommandé,
+                qualité des données et repères de contenu pour aider les parents
+                à décider plus vite.
+              </p>
+            </div>
+
             <div className="flex flex-wrap gap-2 mt-6">
               {Object.entries(ageRanges).map(([key, value]) => {
                 const active = key === range
