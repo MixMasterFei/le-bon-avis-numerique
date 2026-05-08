@@ -269,6 +269,11 @@ export async function sendCronFailureAlert(params: {
   summary: string
   details?: Record<string, unknown>
 }) {
+  if (process.env.CRON_ALERT_MODE === "digest") {
+    console.warn(`[cron-alert] suppressed immediate alert for ${params.task}: ${params.summary}`)
+    return
+  }
+
   const alertEmail = process.env.CRON_ALERT_EMAIL || "masterfei@gmail.com"
 
   // Swallow send errors — alerting must never itself break the cron.
@@ -305,6 +310,46 @@ export async function sendCronFailureAlert(params: {
   } catch (err) {
     console.error("Failed to send cron alert email:", err)
   }
+}
+
+export async function sendCronSupervisorDigest(params: {
+  to?: string
+  subject: string
+  report: string
+}) {
+  const to = params.to || process.env.CRON_ALERT_EMAIL || "masterfei@gmail.com"
+  const safeReport = escapeHtml(params.report)
+
+  const { data, error } = await getResend().emails.send({
+    from: `${APP_NAME} <${FROM_EMAIL}>`,
+    to,
+    subject: params.subject,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${escapeHtml(params.subject)}</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.5; color: #1e293b; max-width: 760px; margin: 0 auto; padding: 24px; background: #f8fafc;">
+          <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px;">
+            <h1 style="margin-top: 0; color: #1e293b; font-size: 22px;">Superviseur Totem Avisé</h1>
+            <p style="color: #64748b; margin-bottom: 20px;">Synthèse des automatisations et remédiations tentées.</p>
+            <pre style="white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; font-size: 13px; line-height: 1.55; background: #f1f5f9; border-radius: 12px; padding: 16px; overflow-x: auto;">${safeReport}</pre>
+          </div>
+        </body>
+      </html>
+    `,
+    text: params.report,
+  })
+
+  if (error) {
+    console.error("Error sending cron supervisor digest:", error)
+    throw new Error("Failed to send cron supervisor digest")
+  }
+
+  return data
 }
 
 function escapeHtml(value: string): string {
