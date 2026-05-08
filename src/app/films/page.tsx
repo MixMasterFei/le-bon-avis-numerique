@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
+import { isCinemaSort } from "@/lib/cinema-policy"
 
 export const revalidate = 300
 
@@ -35,7 +36,9 @@ function parseInt2(raw: string | undefined, fallback: number): number {
 }
 
 function parseSort(raw: string | undefined): string {
-  return raw === "quality" || raw === "title" ? raw : "releaseDate"
+  if (raw === "quality" || raw === "title") return raw
+  if (isCinemaSort(raw)) return "cinema"
+  return "releaseDate"
 }
 
 export async function generateMetadata({
@@ -45,6 +48,7 @@ export async function generateMetadata({
   const maxAge = get(params, "maxAge") ? parseInt(get(params, "maxAge")!) : undefined
   const page = get(params, "page") ? parseInt(get(params, "page")!) : 1
   const q = get(params, "q")
+  const isCinema = isCinemaSort(get(params, "sort")) || isCinemaSort(get(params, "sortBy"))
   const hasFilters = !!(
     get(params, "topics") ||
     get(params, "platforms") ||
@@ -57,7 +61,11 @@ export async function generateMetadata({
   let description =
     "Les meilleurs films pour votre famille : analyses détaillées, violence, langage, messages positifs. Recommandations d'âge par des experts."
 
-  if (q) {
+  if (isCinema) {
+    title = "Films à l'affiche en France — Repères d'âge"
+    description =
+      "Les films importants actuellement en salle en France, avec les repères Totem Avisé pour savoir lesquels conviennent à votre famille."
+  } else if (q) {
     title = `Recherche « ${q} » — Films pour la famille`
   } else if (maxAge && maxAge <= 7) {
     title = "Films pour les enfants — Avis et âges recommandés"
@@ -97,6 +105,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
   const sortKey = parseSort(get(params, "sort") || get(params, "sortBy"))
+  const isCinema = sortKey === "cinema"
   const memberIds = parseList(get(params, "members"))
   const platforms = parseList(get(params, "platforms"))
   const topics = parseList(get(params, "topics"))
@@ -153,16 +162,17 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const result = await fetchMovies({
     page,
     limit: PAGE_SIZE,
-    minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+    minAge: isCinema ? undefined : effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
     // <= (not <) so maxAge=18 from the homepage "16+" age tile is
     // treated as a real filter (expertAgeRec ≤ 18 AND NOT NULL),
     // not silently dropped. Without this, the 16+ tile routes to
     // the same page as the default browse with no visible filter.
-    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    maxAge: isCinema ? undefined : effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
     platforms: platforms.length > 0 ? platforms : undefined,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,
-    sortBy: sortKey !== "releaseDate" ? sortKey : undefined,
+    sortBy: sortKey !== "releaseDate" && sortKey !== "cinema" ? sortKey : undefined,
+    nowPlaying: isCinema,
     requirePoster: true,
     language: "fr,en",
     maxViolence,
@@ -271,7 +281,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         }))}
         initialFilters={{
           search,
-          sort: sortKey,
+          sort: isCinema ? "releaseDate" : sortKey,
           minAge: effectiveMinAge,
           maxAge: effectiveMaxAge,
           platforms,

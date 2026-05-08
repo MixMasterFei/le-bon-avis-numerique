@@ -17,6 +17,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import type { MediaType } from "@/lib/types"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { getCompletionPercent } from "@/lib/profile-completion"
 
 const SAGE = "#5C8A5C"
 
@@ -93,17 +94,23 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
   )
   const sensitivityInfo = SENSITIVITY_LABELS[avgSensitivity] ?? SENSITIVITY_LABELS[2]
 
-  const completionPercent = [
-    member.birthYear !== null ? 10 : 0,
-    (member.avatarStyle != null || member.avatarEmoji !== "👧") ? 5 : 0,
-    (member.favoriteGenres?.length ?? 0) > 0 ? 25 : 0,
-    [member.sensitivityViolence, member.sensitivityScary, member.sensitivitySexual, member.sensitivityLanguage, member.sensitivitySubstances]
-      .some((v, i) => v !== [2, 2, 3, 2, 2][i]) ? 15 : 0,
-    (member.avoidTopics?.length ?? 0) > 0 ? 5 : 0,
-    member._count.reactions >= 3 ? 15 : 0,
-    member._count.reactions >= 5 ? 10 : 0,
-    (member.interests?.length ?? 0) > 0 ? 15 : 0,
-  ].reduce((a, b) => a + b, 0)
+  const completionPercent = getCompletionPercent(
+    {
+      birthYear: member.birthYear,
+      avatarEmoji: member.avatarEmoji,
+      avatarStyle: member.avatarStyle,
+      useCustomSettings: member.useCustomSettings ?? false,
+      favoriteGenres: member.favoriteGenres ?? [],
+      sensitivityViolence: member.sensitivityViolence ?? 2,
+      sensitivityScary: member.sensitivityScary ?? 2,
+      sensitivitySexual: member.sensitivitySexual ?? 3,
+      sensitivityLanguage: member.sensitivityLanguage ?? 2,
+      sensitivitySubstances: member.sensitivitySubstances ?? 2,
+      avoidTopics: member.avoidTopics ?? [],
+      interests: member.interests ?? [],
+    },
+    member._count.reactions,
+  )
 
   const ringColor: "green" | "amber" | "red" =
     completionPercent >= 80 ? "green" : completionPercent >= 50 ? "amber" : "red"
@@ -288,7 +295,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
                   {topRec.title}
                 </p>
                 <p className="text-[10px]" style={{ color: SAGE }}>
-                  {topRec.matchScore}% compatible
+                  Indice {topRec.matchScore}%
                 </p>
               </div>
             </Link>

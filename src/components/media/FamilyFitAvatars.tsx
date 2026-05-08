@@ -11,6 +11,8 @@ interface MemberFit {
   avatarSeed?: string | null
   avatarOptions?: Record<string, unknown> | null
   score: number
+  reason?: string
+  hasPreferences?: boolean
 }
 
 interface FamilyFitAvatarsProps {
@@ -48,29 +50,34 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
 
   return (
     <div className={cn("flex items-start", gapClass, className)}>
-      {members.map((member) => (
-        <div
-          key={member.id}
-          className="flex flex-col items-center"
-          title={`${member.name} — ${member.score}% compatible`}
-        >
-          <MemberAvatar
-            avatarStyle={member.avatarStyle ?? null}
-            avatarSeed={member.avatarSeed ?? null}
-            avatarOptions={member.avatarOptions ?? null}
-            avatarEmoji={member.emoji ?? null}
-            name={member.name}
-            size={size}
-            ring={null}
-            className="shadow-sm ring-1 ring-gray-200"
-          />
-          {!compact && members.length <= 4 && (
-            <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">
-              {member.name}
-            </span>
-          )}
-        </div>
-      ))}
+      {members.map((member) => {
+        const basis = member.hasPreferences === false ? "estimation surtout basée sur l'âge" : "indice d'adéquation"
+        const detail = member.reason ? ` · ${member.reason}` : ""
+
+        return (
+          <div
+            key={member.id}
+            className="flex flex-col items-center"
+            title={`${member.name} — ${basis} : ${member.score}%${detail}`}
+          >
+            <MemberAvatar
+              avatarStyle={member.avatarStyle ?? null}
+              avatarSeed={member.avatarSeed ?? null}
+              avatarOptions={member.avatarOptions ?? null}
+              avatarEmoji={member.emoji ?? null}
+              name={member.name}
+              size={size}
+              ring={null}
+              className="shadow-sm ring-1 ring-gray-200"
+            />
+            {!compact && members.length <= 4 && (
+              <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">
+                {member.name}
+              </span>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

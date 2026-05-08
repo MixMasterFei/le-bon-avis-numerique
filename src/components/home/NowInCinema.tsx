@@ -105,10 +105,10 @@ export function NowInCinema({ showLoginHint = false }: { showLoginHint?: boolean
           </div>
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-gray-900">
-              En ce moment au cinéma
+              À l&apos;affiche au cinéma en France
             </h2>
             <p className="text-gray-600 text-sm">
-              Les films actuellement en salle, avec nos recommandations par âge
+              Les sorties importantes en salle, avec nos repères d&apos;âge et d&apos;attention
             </p>
             {showLoginHint && (
               <Link href="/connexion" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-0.5">

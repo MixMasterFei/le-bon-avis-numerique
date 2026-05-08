@@ -272,7 +272,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
         ) : (
           <>
             <Users className="h-5 w-5" style={{ color: p.accent }} />
-            Adapté à ma famille ?
+            Repères pour ma famille
           </>
         )}
       </h3>
@@ -360,7 +360,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
                   style={{ color: p.accent }}
                 >
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
-                  Faire le quiz pour des recommandations personnalisées
+                  Faire le quiz pour affiner cet indice
                 </Link>
               )}
             </div>

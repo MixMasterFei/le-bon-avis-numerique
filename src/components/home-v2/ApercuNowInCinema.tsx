@@ -56,8 +56,8 @@ export function ApercuNowInCinema({ serifClass }: { serifClass: string }) {
     <div>
       <ApercuSectionHeading
         eyebrow="En ce moment"
-        title="Au"
-        titleAccent="cinéma"
+        title="À l'affiche"
+        titleAccent="au cinéma"
         titleTail=" en France"
         action={{ label: "Voir tout", href: "/films?sort=cinema" }}
         serifClass={serifClass}

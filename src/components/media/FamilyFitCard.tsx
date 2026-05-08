@@ -236,7 +236,7 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
           ) : (
             <>
               <Users className="h-5 w-5 text-indigo-600" />
-              Adapté à ma famille ?
+              Repères pour ma famille
             </>
           )}
         </CardTitle>
@@ -303,7 +303,7 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
                   className="text-xs text-indigo-500 pl-8 flex items-center gap-1 hover:text-indigo-700 transition-colors"
                 >
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
-                  Faire le quiz pour des recommandations personnalisées
+                  Faire le quiz pour affiner cet indice
                 </Link>
               )}
             </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getNowPlayingMovies, getImageUrl, ImageSize } from "@/lib/tmdb"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
+import { CINEMA_TMDB_PAGES } from "@/lib/cinema-policy"
 
 /**
  * GET /api/cinema
@@ -13,13 +14,21 @@ import { withPrismaRetry } from "@/lib/prisma-retry"
  */
 export async function GET() {
   try {
-    // Fetch the first page of now_playing from TMDB (region=FR)
-    const tmdbResult = await getNowPlayingMovies(1)
-    const tmdbMovies = tmdbResult.results || []
+    // Fetch several now_playing pages from TMDB (region=FR). Page 1 is
+    // popularity-heavy and can miss family releases that are still
+    // important for parents checking what is currently in theaters.
+    const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
+    const tmdbMovies = tmdbPages.flatMap((page) => page.results || [])
 
     // Filter to European languages only (exclude Japanese anime, Korean, Chinese, etc.)
     const europeanLanguages = new Set(["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"])
-    const filteredMovies = tmdbMovies.filter((m) => europeanLanguages.has(m.original_language))
+    const seenTmdbIds = new Set<number>()
+    const filteredMovies = tmdbMovies.filter((m) => {
+      if (!europeanLanguages.has(m.original_language)) return false
+      if (seenTmdbIds.has(m.id)) return false
+      seenTmdbIds.add(m.id)
+      return true
+    })
 
     if (filteredMovies.length === 0) {
       return NextResponse.json({ movies: [] })

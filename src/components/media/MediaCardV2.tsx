@@ -189,7 +189,7 @@ export function MediaCardV2({
                   "bg-opacity-90"
                 )}>
                   <span className={cn("w-1.5 h-1.5 rounded-full", fitDot(familyFit.score))} />
-                  {familyFit.score}% {familyFit.emoji}
+                  Indice {familyFit.score}% {familyFit.emoji}
                 </div>
               </div>
             )}
@@ -256,7 +256,7 @@ export function MediaCardV2({
                 "bg-opacity-90"
               )}>
                 <span className={cn("w-2 h-2 rounded-full animate-pulse", fitDot(familyFit.score))} />
-                {familyFit.score}% {familyFit.memberName}
+                Indice {familyFit.score}% {familyFit.memberName}
               </div>
             </div>
           )}

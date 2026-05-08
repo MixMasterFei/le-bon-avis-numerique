@@ -33,6 +33,53 @@ import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { Prisma } from "@prisma/client"
 import type { NewsCategory } from "@prisma/client"
 
+const EMIT_NEWS_STORIES_TOOL = {
+  name: "emit_news_stories",
+  description: "Return the synthesized Totem Avisé news stories.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      stories: {
+        type: "array" as const,
+        maxItems: 3,
+        items: {
+          type: "object" as const,
+          additionalProperties: false,
+          properties: {
+            title: { type: "string" as const, minLength: 20, maxLength: 90 },
+            summary: { type: "string" as const, minLength: 80, maxLength: 260 },
+            body: { type: "string" as const, minLength: 1200, maxLength: 4500 },
+            familyTakeaway: { type: "string" as const, minLength: 250, maxLength: 900 },
+            category: {
+              type: "string" as const,
+              enum: ["PARENTHOOD", "FILM_TV", "GAMES", "READING", "TECH"],
+            },
+            relevanceScore: { type: "number" as const, minimum: 0, maximum: 1 },
+            imageUrl: { type: "string" as const, minLength: 10 },
+            sourceIndexes: {
+              type: "array" as const,
+              minItems: 1,
+              items: { type: "integer" as const, minimum: 0 },
+            },
+          },
+          required: [
+            "title",
+            "summary",
+            "body",
+            "familyTakeaway",
+            "category",
+            "relevanceScore",
+            "imageUrl",
+            "sourceIndexes",
+          ],
+        },
+      },
+    },
+    required: ["stories"],
+    additionalProperties: false,
+  },
+}
+
 // ── Title-fingerprint dedup ───────────────────────────────────────────
 // Catches paraphrased duplicates that the URL-overlap check misses
 // (Claude rewriting the same event with different wording on different
@@ -700,27 +747,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
         temperature: 0.2,
         system:
           "You are a strict extraction API. Do not explain your reasoning. Use the provided tool exactly once with the selected stories.",
-        tools: [
-          {
-            name: "emit_news_stories",
-            description: "Return the synthesized Totem Avisé news stories.",
-            input_schema: {
-              type: "object",
-              properties: {
-                stories: {
-                  type: "array",
-                  maxItems: 3,
-                  items: {
-                    type: "object",
-                    additionalProperties: true,
-                  },
-                },
-              },
-              required: ["stories"],
-              additionalProperties: false,
-            },
-          },
-        ],
+        tools: [EMIT_NEWS_STORIES_TOOL],
         tool_choice: { type: "tool", name: "emit_news_stories" },
         messages: [{ role: "user", content: prompt }],
       },
@@ -816,9 +843,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       continue
     }
     usedImages.add(story.imageUrl)
-    // Two paths accepted:
+    // Three paths accepted, matching the synthesis prompt:
     //   A) multi-source (>=2 distinct publishers) + relevance >= 0.55
-    //   B) single-source + relevance >= 0.7 (strong family angle required)
+    //   B) single-source INTL + relevance >= 0.65
+    //   C) single-source FR + relevance >= 0.7 (strong family angle required)
     // Anything else is dropped — keeps weak single-outlet essays out while
     // still letting standout institutional studies or expert guides through.
     // Thresholds adjusted May 2026 — the 0.6/0.8 attempt rejected too many
@@ -827,11 +855,12 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // nothing to synthesize on slow news days.
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
     const isMultiSource = distinctNames.size >= 2
-    const minRelevance = isMultiSource ? 0.55 : 0.7
+    const isIntlOnly = story.sourceIndexes.every((i) => unique[i].sourceRegion === "INTL")
+    const minRelevance = isMultiSource ? 0.55 : isIntlOnly ? 0.65 : 0.7
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       console.warn(
-        `[news-discover] dropped low-relevance: "${story.title.slice(0, 80)}" score=${story.relevanceScore} ${isMultiSource ? "multi" : "single"}`,
+        `[news-discover] dropped low-relevance: "${story.title.slice(0, 80)}" score=${story.relevanceScore} min=${minRelevance} ${isMultiSource ? "multi" : isIntlOnly ? "intl-single" : "single"}`,
       )
       continue
     }

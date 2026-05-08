@@ -23,9 +23,6 @@ on:
     - cron: "17 0,6,12,18 * * *"
     # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
     - cron: "0 5 * * 6"
-    # Sunday 4:00 AM UTC — Weekly manga refresh (AniList updated series
-    # → refresh chapter/volume counts + latestVolumeDate for the rail)
-    - cron: "0 4 * * 0"
     # Tuesday + Friday 5:00 AM UTC — Twice-weekly dossier ("Dossier de
     # la semaine") synthesizes a deeper long-read from the past 7 days
     # of briefs. Tuesday catches weekend + Monday news for early-week
@@ -47,7 +44,6 @@ on:
           - streaming
           - similarity
           - news-discover
-          - weekly-manga
           - weekly-dossier
 
 env:
@@ -157,21 +153,6 @@ jobs:
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
               -d '{"type":"game","limit":5}' \
-              "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
-          done
-          echo "::endgroup::"
-
-      - name: Enrich mangas (2 batches of 5)
-        if: >-
-          github.event.inputs.task != 'quality'
-        run: |
-          echo "::group::Enrich mangas"
-          for i in 1 2; do
-            echo "Manga batch $i:"
-            curl -sSL --max-time 290 -X POST \
-              -H "Authorization: Bearer $CRON_SECRET" \
-              -H "Content-Type: application/json" \
-              -d '{"type":"manga","limit":5}' \
               "$SITE_URL/api/admin/enrich" | jq . 2>/dev/null || true
           done
           echo "::endgroup::"
@@ -345,31 +326,6 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::News discover failed with HTTP $http_code (see response body above)"
-            exit 1
-          fi
-          echo "::endgroup::"
-
-  # ── Sunday: Weekly manga refresh (AniList) ────────────────────────
-  sunday-manga:
-    name: Weekly Manga Refresh
-    runs-on: ubuntu-latest
-    environment: Production
-    if: >-
-      github.event.schedule == '0 4 * * 0' ||
-      github.event.inputs.task == 'weekly-manga' ||
-      github.event.inputs.task == 'all'
-    steps:
-      - name: Refresh manga series from AniList
-        run: |
-          echo "::group::Weekly manga refresh"
-          response=$(curl -sSfL --max-time 58 -w "\n%{http_code}" \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "$SITE_URL/api/cron/weekly-manga")
-          http_code=$(echo "$response" | tail -1)
-          body=$(echo "$response" | sed '$d')
-          echo "$body" | jq . 2>/dev/null || echo "$body"
-          if [ "$http_code" -ge 400 ]; then
-            echo "::error::Weekly manga failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"
