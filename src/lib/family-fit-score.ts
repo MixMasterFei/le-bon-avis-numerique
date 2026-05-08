@@ -345,7 +345,7 @@ export function applyFitGuardrails(input: {
   if (!input.hasRichProfile) {
     score = Math.min(score, 74)
     level = capLevel(levelFromScore(score), "good")
-    if (!reasonOverride) reasonOverride = "Basé surtout sur l'âge"
+    if (!reasonOverride) reasonOverride = "Âge"
   }
 
   return { score, level, reasonOverride, ageWarning, ageUnknown }

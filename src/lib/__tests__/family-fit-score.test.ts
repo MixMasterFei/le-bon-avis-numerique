@@ -30,7 +30,7 @@ describe("family fit guardrails", () => {
 
     expect(result.score).toBe(74)
     expect(result.level).toBe("good")
-    expect(result.reasonOverride).toBe("Basé surtout sur l'âge")
+    expect(result.reasonOverride).toBe("Âge")
   })
 
   it("treats missing expert age as a cautious estimate for minors", () => {

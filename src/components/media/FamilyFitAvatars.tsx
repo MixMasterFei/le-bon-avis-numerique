@@ -51,14 +51,21 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
   return (
     <div className={cn("flex items-start", gapClass, className)}>
       {members.map((member) => {
-        const basis = member.hasPreferences === false ? "estimation surtout basée sur l'âge" : "indice d'adéquation"
-        const detail = member.reason ? ` · ${member.reason}` : ""
+        const shortReason = member.reason
+          ? member.reason
+              .replace("Basé surtout sur l'âge", "âge")
+              .replace("Basé uniquement sur l'âge", "âge")
+              .replace("Recommandé à partir de", "dès")
+          : member.hasPreferences === false
+            ? "âge"
+            : ""
+        const title = `${member.name} : ${member.score}%${shortReason ? ` · ${shortReason}` : ""}`
 
         return (
           <div
             key={member.id}
             className="flex flex-col items-center"
-            title={`${member.name} — ${basis} : ${member.score}%${detail}`}
+            title={title}
           >
             <MemberAvatar
               avatarStyle={member.avatarStyle ?? null}

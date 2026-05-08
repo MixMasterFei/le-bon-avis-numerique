@@ -306,7 +306,7 @@ export async function GET(
         } else if (ageScore <= 0.5 && memberAge != null && media.expertAgeRec != null && memberAge > media.expertAgeRec) {
           reason = "Peut sembler un peu jeune pour son âge"
         } else {
-          reason = "Basé uniquement sur l'âge"
+          reason = "Âge"
         }
 
         // For adults: add mature content info even without score penalty
