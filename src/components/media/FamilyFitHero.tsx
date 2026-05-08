@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, X as XIcon, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
+import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
 import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
 const SAGE = "#5C8A5C"
 const AMBER = "#C08A3E"
@@ -51,33 +52,27 @@ interface FamilyFitHeroProps {
 // Level configuration (dark-theme variants)
 // ---------------------------------------------------------------------------
 
-const LEVEL_CONFIG: Record<
-  FamilyFitMember["level"],
+const BAND_CONFIG: Record<
+  FamilyFitBand,
   { label: string; pillBg: string; pillText: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  excellent: {
-    label: "Excellent",
+  veryAdapted: {
+    label: FAMILY_FIT_LABELS.veryAdapted,
     pillBg: "rgba(92, 138, 92, 0.14)",
     pillText: SAGE,
     icon: Check,
   },
-  good: {
-    label: "Bon",
-    pillBg: "rgba(92, 138, 92, 0.10)",
-    pillText: SAGE,
+  goodChoice: {
+    label: FAMILY_FIT_LABELS.goodChoice,
+    pillBg: "rgba(62, 126, 156, 0.12)",
+    pillText: "#3E7E9C",
     icon: Check,
   },
-  moderate: {
-    label: "Modéré",
+  check: {
+    label: FAMILY_FIT_LABELS.check,
     pillBg: "rgba(192, 138, 62, 0.14)",
     pillText: AMBER,
     icon: AlertTriangle,
-  },
-  poor: {
-    label: "Attention",
-    pillBg: "rgba(209, 106, 74, 0.14)",
-    pillText: "#D16A4A",
-    icon: XIcon,
   },
 }
 
@@ -289,7 +284,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
       </div>
       <div className="space-y-3">
         {members.map((member) => {
-          const config = LEVEL_CONFIG[member.level]
+          const config = BAND_CONFIG[familyFitBandFromLevel(member.level)]
           const Icon = config.icon
 
           return (

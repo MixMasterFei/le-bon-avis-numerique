@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId } from "@/lib/media-route"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { familyFitBandFromScore, familyFitLabelFromScore, type FamilyFitBand } from "@/lib/family-fit-display"
 
 interface FamilyMember {
   id: string
@@ -41,6 +42,18 @@ interface MediaRecommendation {
     matchScore: number
     matchPercentage: number
   }>
+}
+
+const FIT_BADGE_CLASSES: Record<FamilyFitBand, string> = {
+  veryAdapted: "bg-green-100 text-green-700",
+  goodChoice: "bg-sky-100 text-sky-700",
+  check: "bg-amber-100 text-amber-700",
+}
+
+const FIT_TEXT_CLASSES: Record<FamilyFitBand, string> = {
+  veryAdapted: "text-green-600",
+  goodChoice: "text-sky-600",
+  check: "text-amber-600",
 }
 
 export function FamilyMovieNight() {
@@ -238,14 +251,10 @@ export function FamilyMovieNight() {
                         <div
                           className={cn(
                             "text-xs font-bold px-2 py-0.5 rounded-full",
-                            media.familyMatchPercentage >= 70
-                              ? "bg-green-100 text-green-700"
-                              : media.familyMatchPercentage >= 50
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-gray-100 text-gray-600"
+                            FIT_BADGE_CLASSES[familyFitBandFromScore(media.familyMatchPercentage)]
                           )}
                         >
-                          {media.familyMatchPercentage}% match
+                          {familyFitLabelFromScore(media.familyMatchPercentage)}
                         </div>
                       </div>
 
@@ -255,7 +264,7 @@ export function FamilyMovieNight() {
                           <div
                             key={match.name}
                             className="flex items-center gap-1 text-xs"
-                            title={`${match.name}: ${match.matchPercentage}%`}
+                            title={`${match.name} : ${familyFitLabelFromScore(match.matchPercentage)}`}
                           >
                             <MemberAvatar
                               avatarStyle={match.avatarStyle ?? null}
@@ -268,14 +277,10 @@ export function FamilyMovieNight() {
                             <span
                               className={cn(
                                 "font-medium",
-                                match.matchPercentage >= 70
-                                  ? "text-green-600"
-                                  : match.matchPercentage >= 50
-                                  ? "text-amber-600"
-                                  : "text-gray-500"
+                                FIT_TEXT_CLASSES[familyFitBandFromScore(match.matchPercentage)]
                               )}
                             >
-                              {match.matchPercentage}%
+                              {familyFitLabelFromScore(match.matchPercentage)}
                             </span>
                           </div>
                         ))}

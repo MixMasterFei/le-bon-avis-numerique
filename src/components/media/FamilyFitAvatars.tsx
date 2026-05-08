@@ -2,6 +2,8 @@
 
 import { cn } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import type { FitLevel } from "@/lib/family-fit-score"
 
 interface MemberFit {
   id: string
@@ -11,6 +13,7 @@ interface MemberFit {
   avatarSeed?: string | null
   avatarOptions?: Record<string, unknown> | null
   score: number
+  level?: FitLevel
   reason?: string
   hasPreferences?: boolean
 }
@@ -19,6 +22,12 @@ interface FamilyFitAvatarsProps {
   members: MemberFit[]
   compact?: boolean
   className?: string
+}
+
+const AVATAR_RING_CLASSES: Record<FamilyFitBand, string> = {
+  veryAdapted: "ring-emerald-300 bg-emerald-50",
+  goodChoice: "ring-sky-300 bg-sky-50",
+  check: "ring-amber-300 bg-amber-50",
 }
 
 /**
@@ -51,6 +60,7 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
   return (
     <div className={cn("flex items-start", gapClass, className)}>
       {members.map((member) => {
+        const band = member.level ? familyFitBandFromLevel(member.level) : "goodChoice"
         const shortReason = member.reason
           ? member.reason
               .replace("Basé surtout sur l'âge", "âge")
@@ -59,7 +69,7 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
           : member.hasPreferences === false
             ? "âge"
             : ""
-        const title = `${member.name} : ${member.score}%${shortReason ? ` · ${shortReason}` : ""}`
+        const title = `${member.name} : ${FAMILY_FIT_LABELS[band]}${shortReason ? ` · ${shortReason}` : ""}`
 
         return (
           <div
@@ -75,7 +85,7 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
               name={member.name}
               size={size}
               ring={null}
-              className="shadow-sm ring-1 ring-gray-200"
+              className={cn("shadow-sm ring-1", AVATAR_RING_CLASSES[band])}
             />
             {!compact && members.length <= 4 && (
               <span className="text-[9px] text-gray-500 mt-0.5 leading-none truncate max-w-[3rem] text-center">

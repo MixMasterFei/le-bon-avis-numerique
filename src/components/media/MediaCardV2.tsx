@@ -8,6 +8,7 @@ import { AgeBadge } from "./AgeBadge"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId } from "@/lib/media-route"
 import { useSettings } from "@/contexts/SettingsContext"
+import { familyFitBandFromScore, familyFitLabelFromScore, type FamilyFitBand } from "@/lib/family-fit-display"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -60,17 +61,23 @@ export interface MediaCardV2Props {
 // ---------------------------------------------------------------------------
 
 function fitColor(score: number): string {
-  if (score >= 75) return "bg-emerald-500"
-  if (score >= 60) return "bg-amber-500"
-  if (score >= 35) return "bg-orange-500"
-  return "bg-red-500"
+  const bandColors: Record<FamilyFitBand, string> = {
+    veryAdapted: "bg-emerald-500",
+    goodChoice: "bg-sky-500",
+    check: "bg-amber-500",
+  }
+
+  return bandColors[familyFitBandFromScore(score)]
 }
 
 function fitDot(score: number): string {
-  if (score >= 75) return "bg-emerald-400"
-  if (score >= 60) return "bg-amber-400"
-  if (score >= 35) return "bg-orange-400"
-  return "bg-red-400"
+  const bandDots: Record<FamilyFitBand, string> = {
+    veryAdapted: "bg-emerald-200",
+    goodChoice: "bg-sky-200",
+    check: "bg-amber-200",
+  }
+
+  return bandDots[familyFitBandFromScore(score)]
 }
 
 // Map tone tags to concise display labels with emoji
@@ -189,7 +196,7 @@ export function MediaCardV2({
                   "bg-opacity-90"
                 )}>
                   <span className={cn("w-1.5 h-1.5 rounded-full", fitDot(familyFit.score))} />
-                  Indice {familyFit.score}% {familyFit.emoji}
+                  {familyFitLabelFromScore(familyFit.score)} {familyFit.emoji}
                 </div>
               </div>
             )}
@@ -256,7 +263,7 @@ export function MediaCardV2({
                 "bg-opacity-90"
               )}>
                 <span className={cn("w-2 h-2 rounded-full animate-pulse", fitDot(familyFit.score))} />
-                Indice {familyFit.score}% {familyFit.memberName}
+                {familyFitLabelFromScore(familyFit.score)} · {familyFit.memberName}
               </div>
             </div>
           )}

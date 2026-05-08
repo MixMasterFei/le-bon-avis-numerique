@@ -18,6 +18,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import type { MediaType } from "@/lib/types"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { getCompletionPercent } from "@/lib/profile-completion"
+import { familyFitLabelFromScore } from "@/lib/family-fit-display"
 
 const SAGE = "#5C8A5C"
 
@@ -295,7 +296,7 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
                   {topRec.title}
                 </p>
                 <p className="text-[10px]" style={{ color: SAGE }}>
-                  Indice {topRec.matchScore}%
+                  {familyFitLabelFromScore(topRec.matchScore)}
                 </p>
               </div>
             </Link>
