@@ -28,6 +28,9 @@ on:
     # of briefs. Tuesday catches weekend + Monday news for early-week
     # reading; Friday gathers the week's themes for weekend reading.
     - cron: "0 5 * * 2,5"
+    # Monday 6:00 AM UTC — editorial agent email with family-content
+    # priorities (manual validation before publication).
+    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       task:
@@ -45,6 +48,7 @@ on:
           - similarity
           - news-discover
           - weekly-dossier
+          - family-content-agent
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -326,6 +330,32 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::News discover failed with HTTP $http_code (see response body above)"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Monday 06:00 UTC: family content editorial agent ─────────────
+  family-content-agent:
+    name: Family Content Agent
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '0 6 * * 1' ||
+      github.event.inputs.task == 'family-content-agent' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Send weekly family content priorities
+        run: |
+          echo "::group::Family content agent"
+          response=$(curl -sSfL --max-time 130 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/family-content-agent")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq . 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Family content agent failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"
