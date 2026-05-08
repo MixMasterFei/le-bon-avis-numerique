@@ -22,7 +22,9 @@ type Candidate = {
   reviewCount: number
   metricsCompleteness: number
   priorityScore: number
+  category: "family-mainstream" | "watchlist-sensitive" | "seo-aeo"
   reasons: string[]
+  cautions: string[]
 }
 
 export type FamilyContentAgentResult = {
@@ -32,6 +34,24 @@ export type FamilyContentAgentResult = {
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
+const FAMILY_GENRES = new Set(["animation", "famille", "family", "aventure", "comédie", "fantastique"])
+const FAMILY_TOPICS = new Set([
+  "disney",
+  "pixar",
+  "dreamworks",
+  "illumination",
+  "studio ghibli",
+  "lego",
+  "minecraft",
+  "nintendo",
+  "star wars",
+  "super-héros",
+  "animaux",
+  "amitié",
+  "magie",
+  "aventure",
+])
+const SENSITIVE_GENRES = new Set(["thriller", "horreur", "horror", "crime", "épouvante", "drame", "romance"])
 
 function daysBetween(a: Date, b: Date): number {
   return Math.round((a.getTime() - b.getTime()) / 86_400_000)
@@ -54,17 +74,49 @@ function scoreCandidate(item: {
     pacing: string | null
   } | null
   _count: { reviews: number }
-}): { score: number; reasons: string[]; metricsCompleteness: number } {
+}): {
+  score: number
+  reasons: string[]
+  cautions: string[]
+  metricsCompleteness: number
+  category: Candidate["category"]
+} {
   const now = new Date()
   let score = 0
   const reasons: string[] = []
+  const cautions: string[] = []
+  const lowerGenres = item.genres.map((genre) => genre.toLowerCase())
+  const lowerTopics = item.topics.map((topic) => topic.toLowerCase())
+  const familySignals =
+    lowerGenres.filter((genre) => FAMILY_GENRES.has(genre)).length +
+    lowerTopics.filter((topic) => FAMILY_TOPICS.has(topic)).length
+  const sensitiveSignals = lowerGenres.filter((genre) => SENSITIVE_GENRES.has(genre)).length
+  const age = item.expertAgeRec
+  const isFamilyAge = age != null && age <= 13
+  const isTeenOrAdult = age == null || age >= 15
 
   if (item.releaseDate) {
     const delta = daysBetween(item.releaseDate, now)
-    if (delta >= -21 && delta <= 45) {
+    if (delta >= 0 && delta <= 35) {
       score += 35
-      reasons.push(delta >= 0 ? "sortie à venir" : "sortie récente")
+      reasons.push("sortie à venir")
+    } else if (delta >= -14 && delta < 0) {
+      score += 20
+      reasons.push("sortie récente")
     }
+  }
+
+  if (familySignals >= 2) {
+    score += 30
+    reasons.push("fort potentiel famille")
+  } else if (familySignals === 1) {
+    score += 16
+    reasons.push("signal famille")
+  }
+
+  if (isFamilyAge) {
+    score += 18
+    reasons.push(`âge famille (${age}+)`)
   }
 
   const voteCount = item.tmdbVoteCount ?? 0
@@ -76,12 +128,28 @@ function scoreCandidate(item: {
     reasons.push("popularité correcte")
   }
 
+  if (sensitiveSignals > 0 && isTeenOrAdult) {
+    score -= 24
+    cautions.push("contenu plutôt ado/adulte à surveiller")
+  } else if (sensitiveSignals > 0) {
+    score -= 10
+    cautions.push("signal sensible à vérifier")
+  }
+
+  if (age != null && age >= 16) {
+    score -= 18
+    cautions.push("16+ peu prioritaire pour acquisition famille")
+  } else if (age != null && age >= 15) {
+    score -= 10
+    cautions.push("15+ à traiter en surveillance plutôt qu'en priorité")
+  }
+
   if (item.expertAgeRec == null) {
-    score += 18
+    score += 10
     reasons.push("âge recommandé manquant")
   }
   if (!item.isEnriched || !item.contentMetrics) {
-    score += 18
+    score += 12
     reasons.push("fiche à enrichir")
   }
   if (item.dataQualityScore < 65) {
@@ -101,7 +169,7 @@ function scoreCandidate(item: {
     reasons.push("points parents incomplets")
   }
   if (item._count.reviews === 0) {
-    score += 4
+    score += familySignals > 0 ? 4 : 0
     reasons.push("aucun avis parent")
   }
 
@@ -112,7 +180,14 @@ function scoreCandidate(item: {
     (item.topics.length >= 3 ? 15 : 0) +
     ((item.contentMetrics?.whatParentsNeedToKnow.length ?? 0) >= 3 ? 20 : 0)
 
-  return { score, reasons, metricsCompleteness }
+  const category: Candidate["category"] =
+    familySignals > 0 && isFamilyAge
+      ? "family-mainstream"
+      : sensitiveSignals > 0 || (age != null && age >= 15)
+        ? "watchlist-sensitive"
+        : "seo-aeo"
+
+  return { score, reasons, cautions, metricsCompleteness, category }
 }
 
 async function getCandidates(): Promise<Candidate[]> {
@@ -173,12 +248,21 @@ async function getCandidates(): Promise<Candidate[]> {
         reviewCount: item._count.reviews,
         metricsCompleteness: scored.metricsCompleteness,
         priorityScore: scored.score,
+        category: scored.category,
         reasons: scored.reasons,
+        cautions: scored.cautions,
       }
     })
-    .filter((candidate) => candidate.priorityScore >= 18)
-    .sort((a, b) => b.priorityScore - a.priorityScore)
-    .slice(0, 18)
+    .filter((candidate) => candidate.priorityScore >= 12)
+    .sort((a, b) => {
+      const categoryRank: Record<Candidate["category"], number> = {
+        "family-mainstream": 0,
+        "seo-aeo": 1,
+        "watchlist-sensitive": 2,
+      }
+      return categoryRank[a.category] - categoryRank[b.category] || b.priorityScore - a.priorityScore
+    })
+    .slice(0, 24)
 }
 
 function buildFallbackReport(candidates: Candidate[]): string {
@@ -195,8 +279,10 @@ function buildFallbackReport(candidates: Candidate[]): string {
       `- URL : ${candidate.url}`,
       `- Type : ${candidate.type}`,
       `- Priorité : ${candidate.priorityScore}`,
+      `- Catégorie : ${candidate.category}`,
       `- Complétude : ${candidate.metricsCompleteness}/100`,
       `- Raisons : ${candidate.reasons.join(", ") || "signal éditorial"}`,
+      candidate.cautions.length > 0 ? `- Vigilance : ${candidate.cautions.join(", ")}` : "",
       `- Action : vérifier la fiche, puis préparer un post “à partir de quel âge ?”`,
       "",
     )
@@ -222,7 +308,9 @@ async function buildClaudeReport(candidates: Candidate[]): Promise<string | null
     avisParents: candidate.reviewCount,
     completude: candidate.metricsCompleteness,
     priorite: candidate.priorityScore,
+    categorie: candidate.category,
     raisons: candidate.reasons,
+    vigilances: candidate.cautions,
     synopsis: candidate.synopsisFr?.slice(0, 420) ?? null,
   }))
 
@@ -234,16 +322,26 @@ async function buildClaudeReport(candidates: Candidate[]): Promise<string | null
           max_tokens: 2600,
           temperature: 0.2,
           system:
-            "Tu es l'agent éditorial de Totem Avisé. Tu aides un fondateur à prioriser les fiches média à vérifier et à promouvoir auprès de parents français. Tu dois être concret, prudent, orienté SEO/AEO et ne jamais proposer de publier automatiquement.",
+            "Tu es l'agent éditorial de Totem Avisé. Tu aides un fondateur à prioriser les fiches média à vérifier et à promouvoir auprès de parents français. Tu privilégies les contenus vraiment utiles aux familles françaises, pas seulement les sorties adultes populaires. Tu dois être concret, prudent, orienté SEO/AEO et ne jamais proposer de publier automatiquement.",
           messages: [
             {
               role: "user",
-              content: `Voici les fiches candidates extraites de la base. Sélectionne les 5 meilleures priorités de la semaine, puis propose des requêtes SEO long-tail et des posts courts à valider.
+              content: `Voici les fiches candidates extraites de la base. Produis un rapport hebdomadaire en 3 sections.
+
+Sections obligatoires :
+1. Priorités familles grand public : 3 à 5 contenus maximum, plutôt 3-13 ans, animation/famille/aventure/jeux connus/franchises famille. Ce sont les contenus à promouvoir en premier.
+2. Contenus à surveiller : thrillers, horreur, crime, drame adulte, 15+/16+. Ils peuvent être importants mais ne doivent pas dominer la newsletter.
+3. Opportunités SEO/AEO : requêtes simples et naturelles à cibler.
 
 Contraintes :
 - Réponds en français.
 - Format markdown lisible par email.
-- Pour chaque priorité : pourquoi maintenant, état de la fiche, action recommandée, requête SEO cible, angle social.
+- Pour chaque contenu : pourquoi maintenant, état de la fiche, action recommandée, requête SEO cible, angle social.
+- N'invente jamais une plateforme, une date, un âge ou un niveau de violence absent du JSON.
+- Si une fiche est déjà complète (complétude >= 90 ou qualité >= 85), l'action doit être "diffuser / vérifier indexation / demander avis", pas "enrichir".
+- Les requêtes SEO doivent être courtes et naturelles, par exemple "[titre] à partir de quel âge", "[titre] avis parents", "[titre] enfant".
+- Évite les emojis et hashtags dans les posts proposés. Donne un ton parent, sobre et utile.
+- Ne recommande pas "solliciter des avis parents spécialisés" sauf si l'action est réaliste et précise.
 - Termine par une checklist de 5 actions maximum pour Xavier.
 - Ne recommande pas de publication automatique sans validation humaine.
 
