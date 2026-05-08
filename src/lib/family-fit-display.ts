@@ -16,7 +16,7 @@ export function familyFitBandFromLevel(level: FitLevel): FamilyFitBand {
 
 export function familyFitBandFromScore(score: number): FamilyFitBand {
   if (score >= 75) return "veryAdapted"
-  if (score >= 60) return "goodChoice"
+  if (score >= 66) return "goodChoice"
   return "check"
 }
 

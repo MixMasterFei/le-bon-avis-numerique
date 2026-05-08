@@ -80,7 +80,7 @@ const sections = [
     list: [
       { label: "Éducatif", desc: "Le contenu a un fort potentiel éducatif (score de 5/5 en valeur éducative)." },
       { label: "Modèles+", desc: "Le contenu met en avant des modèles positifs (score de 5/5)." },
-      { label: "Âge (ex : 8+)", desc: "Âge minimum recommandé par nos experts." },
+      { label: "Âge (ex : 8+)", desc: "Âge minimum recommandé par l'analyse Totem Avisé, puis calibré par les retours des parents." },
       { label: "Classif. officielle", desc: "La classification CNC/CSA quand elle est disponible." },
     ],
   },
@@ -89,7 +89,7 @@ const sections = [
     icon: Users,
     title: "Adapté à ma famille",
     content: [
-      "Quand vous créez un profil famille, Totem Avisé calcule un score de compatibilité pour chaque membre. Ce score croise plusieurs facteurs :",
+      "Quand vous créez un profil famille, Totem Avisé calcule un repère de compatibilité pour chaque membre. Le calcul reste interne : côté parent, on affiche des niveaux simples comme « Très adapté », « Bon choix » ou « À vérifier ». Ce repère croise plusieurs facteurs :",
     ],
     list: [
       { label: "Âge", desc: "L'âge du membre par rapport à la recommandation d'âge du contenu. C'est le facteur qui pèse le plus." },
@@ -101,7 +101,7 @@ const sections = [
       { label: "Contenu positif", desc: "Correspondance avec les préférences en messages positifs, modèles inspirants et contenu éducatif." },
       { label: "Sujets à éviter", desc: "On vérifie que le contenu ne contient pas de sujets que le membre souhaite éviter." },
     ],
-    after: "Les avatars des membres compatibles apparaissent directement sur les cartes, pour voir d'un coup d'œil à qui chaque contenu convient.",
+    after: "Les avatars des membres concernés apparaissent directement sur les cartes, avec une couleur de repère, pour voir d'un coup d'œil à qui le contenu semble convenir ou mérite une vérification.",
   },
   {
     id: "warning",
@@ -111,7 +111,7 @@ const sections = [
       "Le badge « Attention famille » signale les contenus qui méritent une vigilance particulière pour les foyers avec enfants. Il se déclenche dans deux cas :",
     ],
     list: [
-      { label: "Détection automatique", desc: "Le contenu est recommandé à partir de 15 ans ET contient des éléments de genre (horreur, crime, thriller), de violence élevée, ou une ambiance sombre et intense." },
+      { label: "Détection automatique", desc: "Le contenu présente des signaux sensibles pour un foyer avec enfants : genre horreur/crime/thriller, violence ou sexualité élevée, ambiance sombre ou intense, ou combinaison âge recommandé + métriques sensibles." },
       { label: "Signalement communautaire*", desc: "Au moins 10 parents ont signalé ce contenu comme sensible pour les familles. L'astérisque (*) distingue ce signalement du signal automatique." },
     ],
     after: "Ce badge ne veut pas dire que le contenu est « mauvais ». Il indique qu'il vaut mieux y jeter un œil avant de le regarder en famille.",
