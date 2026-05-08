@@ -124,7 +124,7 @@ function Shell({
 function Skeleton({ serifClass }: { serifClass: string }) {
   const p = APERCU_PALETTE
   return (
-    <Shell eyebrow="Analyse foyer" title="Adapté à" titleAccent="ma famille ?" serifClass={serifClass}>
+    <Shell eyebrow="Analyse famille" title="Adapté à" titleAccent="ma famille ?" serifClass={serifClass}>
       <div className="space-y-3">
         {[1, 2].map((i) => (
           <div key={i} className="flex items-center justify-between">
@@ -185,13 +185,13 @@ export function ApercuFamilyFit({
   if (data?.status === "not_logged_in") {
     return (
       <Shell
-        eyebrow="Analyse foyer"
+        eyebrow="Analyse famille"
         title="Adapté à"
-        titleAccent="votre foyer ?"
+        titleAccent="votre famille ?"
         serifClass={serifClass}
       >
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
-          Créez un profil foyer pour voir si ce contenu convient à chaque
+          Créez un profil famille pour voir si ce contenu convient à chaque
           membre. Gratuit, deux minutes.
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -201,7 +201,7 @@ export function ApercuFamilyFit({
             style={{ background: p.accent, color: "#fff" }}
           >
             <UserPlus className="h-4 w-4" />
-            Créer mon foyer
+            Créer ma famille
           </Link>
           <Link
             href="/connexion"
@@ -223,13 +223,13 @@ export function ApercuFamilyFit({
   if (data?.status === "no_family") {
     return (
       <Shell
-        eyebrow="Analyse foyer"
+        eyebrow="Analyse famille"
         title="Qui est"
-        titleAccent="dans votre foyer ?"
+        titleAccent="dans votre famille ?"
         serifClass={serifClass}
       >
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
-          Ajoutez les membres de votre foyer pour voir l’analyse adaptée à
+          Ajoutez les membres de votre famille pour voir l’analyse adaptée à
           chaque âge et sensibilité.
         </p>
         <Link
@@ -253,9 +253,9 @@ export function ApercuFamilyFit({
 
   return (
     <Shell
-      eyebrow={isFamilyWarning ? "Attention famille" : "Analyse foyer"}
-      title={isFamilyWarning ? "Vigilance" : "Adapté à"}
-      titleAccent={isFamilyWarning ? "recommandée" : "chaque membre"}
+      eyebrow={isFamilyWarning ? "Attention famille" : "Analyse famille"}
+      title={isFamilyWarning ? "Attention" : "Adapté à"}
+      titleAccent={isFamilyWarning ? "famille" : "chaque membre"}
       serifClass={serifClass}
     >
       {isFamilyWarning && (
@@ -314,6 +314,11 @@ export function ApercuFamilyFit({
                     "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold flex-shrink-0"
                   )}
                   style={{ background: config.pillBg, color: config.pillText }}
+                  title={
+                    member.hasPreferences === false
+                      ? "Repère limité : faites le quiz famille pour affiner cette recommandation."
+                      : undefined
+                  }
                 >
                   <Icon className="h-3 w-3" />
                   {config.label}

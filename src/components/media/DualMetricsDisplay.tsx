@@ -19,12 +19,14 @@ interface ContentMetrics {
   substanceUse: number
   positiveMessages: number
   roleModels: number
+  educationalValue?: number
 }
 
 interface DualMetricsDisplayProps {
   mediaId: string
   mediaTitle: string
   expertMetrics?: ContentMetrics | null
+  topics?: string[]
 }
 
 interface CommunityData {
@@ -74,6 +76,32 @@ const METRIC_LABELS: Record<
     example: "0 = Pas de modèle positif. 5 = Personnages exemplaires et inspirants.",
     isPositive: true,
   },
+  educationalValue: {
+    label: "Éducatif",
+    description: "Estime le potentiel éducatif du contenu : connaissances, découverte, culture, réflexion ou apprentissage.",
+    example: "0 = Pas d'apport éducatif clair. 5 = Dimension éducative centrale.",
+    isPositive: true,
+  },
+}
+
+function deriveEducationalValue(metrics: ContentMetrics, topics: string[] = []): number {
+  const lowerTopics = topics.map((topic) => topic.toLowerCase())
+  if (lowerTopics.some((topic) => topic.includes("éducatif") || topic.includes("educatif") || topic.includes("documentaire"))) {
+    return 5
+  }
+  if (lowerTopics.some((topic) => topic.includes("science") || topic.includes("histoire") || topic.includes("culture"))) {
+    return 4
+  }
+
+  return Math.max(0, Math.min(5, Math.round((metrics.positiveMessages + metrics.roleModels) / 3)))
+}
+
+function withEducationalValue(metrics: ContentMetrics | null, topics: string[] = []): ContentMetrics | null {
+  if (!metrics) return null
+  return {
+    ...metrics,
+    educationalValue: metrics.educationalValue ?? deriveEducationalValue(metrics, topics),
+  }
 }
 
 function MetricBar({
@@ -213,6 +241,7 @@ export function DualMetricsDisplay({
   mediaId,
   mediaTitle,
   expertMetrics,
+  topics = [],
 }: DualMetricsDisplayProps) {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
@@ -262,8 +291,8 @@ export function DualMetricsDisplay({
               <TooltipContent className="max-w-xs">
                 <p>
                   Échelle de 0 à 5. Pour violence, sexe, langage, etc. :
-                  0 = absent, 5 = très présent. Pour messages positifs et
-                  modèles : 5 = excellent.
+                  0 = absent, 5 = très présent. Pour les dimensions positives,
+                  5 = très fort.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -271,7 +300,7 @@ export function DualMetricsDisplay({
         </div>
         <MethodBadge
           anchor="metriques-contenu"
-          description="Les 7 métriques (violence, sexe, langage, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Elles sont recalibrées par les évaluations des foyers inscrits."
+          description="Les 8 dimensions (violence, sexe, langage, valeur éducative, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Les dimensions évaluables sont recalibrées par les familles inscrites."
         />
       </div>
       <div className="space-y-4">
@@ -279,7 +308,7 @@ export function DualMetricsDisplay({
           <MetricsColumn
             title="Totem Avisé"
             icon={Award}
-            metrics={expertMetrics || null}
+            metrics={withEducationalValue(expertMetrics || null, topics)}
           />
 
           {loading ? (
@@ -295,7 +324,7 @@ export function DualMetricsDisplay({
             <MetricsColumn
               title="Communauté"
               icon={Users}
-              metrics={communityData?.averages || null}
+              metrics={withEducationalValue(communityData?.averages || null, topics)}
               count={communityData?.count}
             />
           )}

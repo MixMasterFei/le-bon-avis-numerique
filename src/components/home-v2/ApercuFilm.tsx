@@ -243,7 +243,7 @@ export function ApercuFilm({
                 <ApercuSection
                   eyebrow="Réactions"
                   title="Pour"
-                  titleAccent="votre foyer"
+                  titleAccent="votre famille"
                   tight
                   serifClass={serifClass}
                 >
@@ -259,7 +259,7 @@ export function ApercuFilm({
 
                 {media.contentMetrics && (
                   <ApercuSection
-                    eyebrow="Les 7 critères"
+                    eyebrow="Les 8 dimensions"
                     title="Analyse"
                     titleAccent="en détail"
                     tight
@@ -271,6 +271,7 @@ export function ApercuFilm({
                           mediaId={media.id}
                           mediaTitle={media.title}
                           expertMetrics={media.contentMetrics}
+                          topics={media.topics}
                         />
                       </div>
                     </WarmCard>

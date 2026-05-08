@@ -4,7 +4,7 @@ import Link from "next/link"
 
 export const metadata = {
   title: "Comment ça marche | Totem Avisé",
-  description: "Comment Totem Avisé analyse chaque contenu sur 7 critères pour recommander les films, séries et jeux adaptés à votre famille.",
+  description: "Comment Totem Avisé analyse chaque contenu sur 8 dimensions pour recommander les films, séries et jeux adaptés à votre famille.",
   // Override the root layout's canonical "/" so this page isn't
   // merged with the homepage in Google's index.
   alternates: { canonical: "/nos-valeurs" },
@@ -126,6 +126,22 @@ const positiveMetrics = [
       { level: 5, label: "Modèles exceptionnels", example: "Personnages profondément inspirants" },
     ],
   },
+  {
+    id: "educationalValue",
+    name: "Valeur éducative",
+    icon: Award,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-50",
+    description: "Évalue le potentiel d'apprentissage, de découverte culturelle ou de réflexion du contenu.",
+    scale: [
+      { level: 0, label: "Aucun apport clair", example: "Divertissement pur sans intention éducative" },
+      { level: 1, label: "Apport léger", example: "Quelques éléments de découverte en arrière-plan" },
+      { level: 2, label: "Apport occasionnel", example: "Thèmes de société ou culture abordés simplement" },
+      { level: 3, label: "Valeur éducative nette", example: "Le contenu aide à comprendre un sujet ou une époque" },
+      { level: 4, label: "Très instructif", example: "Apprentissages fréquents, bien intégrés au récit" },
+      { level: 5, label: "Central et enrichissant", example: "La découverte ou l'apprentissage est au cœur de l'œuvre" },
+    ],
+  },
 ]
 
 export default function NosValeursPage() {
@@ -152,13 +168,13 @@ export default function NosValeursPage() {
           <div className="space-y-4 text-gray-600">
             <p>
               <strong>Totem Avisé</strong> est fait pour les familles.
-              On analyse chaque contenu sur 7 critères pour aller au-delà d&apos;un simple âge minimum.
+              On analyse chaque contenu sur 8 dimensions pour aller au-delà d&apos;un simple âge minimum.
               Violence, langage, messages positifs, modèles inspirants : on regarde tout.
             </p>
             <p>
               Quand vous créez votre profil famille, on croise ces données avec l&apos;âge,
               les sensibilités et les goûts de chaque membre.
-              Résultat : des suggestions qui collent vraiment à votre foyer.
+              Résultat : des repères plus utiles pour choisir selon votre famille.
             </p>
             <p>
               Les retours des familles améliorent nos suggestions au fil du temps.
@@ -369,8 +385,8 @@ export default function NosValeursPage() {
               Comment fonctionnent vos recommandations ?
             </h3>
             <p className="text-gray-600 text-sm">
-              Chaque contenu est analysé sur 7 critères (violence, langage, messages positifs, substances, contenu sexuel, consumérisme, modèles positifs).
-              On croise ces données avec le profil de votre famille pour trouver ce qui colle.
+              Chaque contenu est analysé sur 8 dimensions (violence, langage, messages positifs, substances, contenu sexuel, consumérisme, modèles positifs, valeur éducative).
+              On croise ces données avec le profil de votre famille pour proposer des repères plus utiles.
               Les retours des parents affinent les suggestions au fil du temps.
             </p>
           </div>

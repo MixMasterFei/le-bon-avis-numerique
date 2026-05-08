@@ -102,8 +102,8 @@ export function SiteFooter() {
               className="text-sm leading-relaxed max-w-xs"
               style={{ color: dim }}
             >
-              Le guide indépendant pour chaque foyer. Sans algorithme, sans
-              publicité.
+              Le guide indépendant pour chaque famille. Sans recommandation
+              opaque.
             </p>
             <div className="flex items-center gap-3 mt-4">
               {SOCIAL_LINKS.map((s) => (

@@ -9,7 +9,7 @@ export const metadata = {
   // Lengthened from ~90 chars to 154 (target 120+) to make the page
   // intent clearer in search results.
   description:
-    "Aider chaque famille à trouver les films, séries et jeux qui conviennent vraiment à chaque membre du foyer — recommandations indépendantes, sans publicité.",
+    "Aider chaque famille à trouver des repères utiles pour choisir les films, séries et jeux qui conviennent à chacun — recommandations indépendantes.",
   // Override the root layout's canonical "/" so this page isn't
   // merged with the homepage in Google's index.
   alternates: { canonical: "/objectif" },
@@ -43,7 +43,7 @@ const pillars = [
 ]
 
 const differences = [
-  "On analyse 7 aspects du contenu, pas juste un âge minimum",
+  "On analyse 8 dimensions du contenu, pas juste un âge minimum",
   "On repère les messages positifs et les modèles inspirants",
   "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur…)",
   "Films, séries, jeux vidéo, livres : tout au même endroit",

@@ -176,12 +176,12 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
             className={`${serifClass} text-base font-medium`}
             style={{ color: p.ink, letterSpacing: "-0.02em" }}
           >
-            Adapté à votre foyer ?
+            Adapté à votre famille ?
           </h3>
         </div>
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
           Créez un profil famille pour découvrir si ce contenu convient à
-          chaque membre de votre foyer.
+          chaque membre de votre famille.
         </p>
         <div className="flex flex-col gap-2">
           <Link
@@ -227,11 +227,11 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
             className={`${serifClass} text-base font-medium`}
             style={{ color: p.ink, letterSpacing: "-0.02em" }}
           >
-            Adapté à votre foyer ?
+            Adapté à votre famille ?
           </h3>
         </div>
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
-          Ajoutez les membres de votre foyer pour voir si ce contenu leur
+          Ajoutez les membres de votre famille pour voir si ce contenu leur
           convient.
         </p>
         <Link
@@ -325,6 +325,11 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
                     background: config.pillBg,
                     color: config.pillText,
                   }}
+                  title={
+                    member.hasPreferences === false
+                      ? "Repère limité : faites le quiz famille pour affiner cette recommandation."
+                      : undefined
+                  }
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {config.label}

@@ -144,14 +144,14 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
               <Users className="h-5 w-5" />
             </div>
             <CardTitle className="text-lg">
-              Ce contenu convient-il à votre foyer ?
+              Ce contenu convient-il à votre famille ?
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
             Créez un profil famille pour découvrir si ce contenu est adapté à
-            chaque membre de votre foyer. C&apos;est gratuit et prend 2 minutes.
+            chaque membre de votre famille. C&apos;est gratuit et prend 2 minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Link
@@ -187,13 +187,13 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
               <Users className="h-5 w-5" />
             </div>
             <CardTitle className="text-lg">
-              Adapté à votre foyer ?
+              Adapté à votre famille ?
             </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="pt-4 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
-            Ajoutez les membres de votre foyer pour voir si ce contenu leur convient.
+            Ajoutez les membres de votre famille pour voir si ce contenu leur convient.
           </p>
           <Link
             href="/profil"
@@ -274,6 +274,11 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
                     config.pillBg,
                     config.pillText
                   )}
+                  title={
+                    member.hasPreferences === false
+                      ? "Repère limité : faites le quiz famille pour affiner cette recommandation."
+                      : undefined
+                  }
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {config.label}

@@ -11,6 +11,7 @@ interface ContentMetrics {
   substanceUse: number
   positiveMessages: number
   roleModels: number
+  educationalValue?: number
 }
 
 interface ContentGridProps {
@@ -18,6 +19,19 @@ interface ContentGridProps {
   showLabels?: boolean
   compact?: boolean
   className?: string
+  topics?: string[]
+}
+
+function deriveEducationalValue(metrics: ContentMetrics, topics: string[] = []): number {
+  const lowerTopics = topics.map((topic) => topic.toLowerCase())
+  if (lowerTopics.some((topic) => topic.includes("éducatif") || topic.includes("educatif") || topic.includes("documentaire"))) {
+    return 5
+  }
+  if (lowerTopics.some((topic) => topic.includes("science") || topic.includes("histoire") || topic.includes("culture"))) {
+    return 4
+  }
+
+  return Math.max(0, Math.min(5, Math.round((metrics.positiveMessages + metrics.roleModels) / 3)))
 }
 
 export function ContentGrid({
@@ -25,7 +39,9 @@ export function ContentGrid({
   showLabels = true,
   compact = false,
   className,
+  topics = [],
 }: ContentGridProps) {
+  const educationalValue = metrics.educationalValue ?? deriveEducationalValue(metrics, topics)
   const metricEntries = [
     { key: "violence", value: metrics.violence, isNegative: true },
     { key: "sexNudity", value: metrics.sexNudity, isNegative: true },
@@ -34,6 +50,7 @@ export function ContentGrid({
     { key: "substanceUse", value: metrics.substanceUse, isNegative: true },
     { key: "positiveMessages", value: metrics.positiveMessages, isNegative: false },
     { key: "roleModels", value: metrics.roleModels, isNegative: false },
+    { key: "educationalValue", value: educationalValue, isNegative: false },
   ]
 
   const getIndicatorColor = (value: number, isNegative: boolean) => {

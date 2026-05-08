@@ -143,14 +143,14 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                 style={{ color: p.ink2 }}
               >
                 Créez votre compte en moins d&apos;une minute pour personnaliser
-                Totem Avisé selon votre foyer.
+                Totem Avisé selon votre famille.
               </p>
 
               <ul className="mt-8 space-y-4 max-w-md">
                 {[
-                  { stat: "9 600 œuvres", body: "analysées sur 7 critères familiaux" },
-                  { stat: "Recommandations", body: "adaptées à chaque membre du foyer" },
-                  { stat: "Indépendant", body: "pensé pour les familles, pas pour un algorithme" },
+                  { stat: "9 600 œuvres", body: "analysées sur 8 dimensions familiales" },
+                  { stat: "Recommandations", body: "adaptées à chaque membre de la famille" },
+                  { stat: "Indépendant", body: "sans recommandation opaque" },
                 ].map((it, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <span
@@ -495,7 +495,7 @@ function SuccessScreen({
           >
             <li>Vérifiez votre boîte mail (et le dossier indésirables)</li>
             <li>Cliquez sur le lien de confirmation</li>
-            <li>Connectez-vous et créez votre foyer</li>
+            <li>Connectez-vous et créez votre famille</li>
           </ol>
         </div>
         <Link

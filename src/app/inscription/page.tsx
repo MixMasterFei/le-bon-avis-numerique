@@ -4,7 +4,7 @@ import { ApercuInscription } from "@/components/home-v2/ApercuInscription"
 export const metadata: Metadata = {
   title: "Inscription",
   description:
-    "Rejoignez les familles qui choisissent leurs films, séries et jeux en confiance. Inscription gratuite, sans publicité.",
+    "Rejoignez les familles qui choisissent leurs films, séries et jeux en confiance. Inscription gratuite, sans recommandation opaque.",
 }
 
 export default function InscriptionPage() {

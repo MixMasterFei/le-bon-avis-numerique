@@ -102,7 +102,7 @@ export function TestimonialsSection() {
               </div>
             </div>
             <p className="text-gray-600 italic">
-              &quot;Enfin un site qui m&apos;aide à choisir des films adaptés ! Les recommandations par âge sont très précises.&quot;
+              &quot;Enfin un site qui m&apos;aide à choisir des films avec plus de recul. Les repères par âge me donnent une vraie base de discussion.&quot;
             </p>
           </div>
 

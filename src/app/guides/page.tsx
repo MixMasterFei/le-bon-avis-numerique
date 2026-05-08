@@ -34,7 +34,7 @@ const guides = [
     content: [
       { age: "CSA (Films & TV)", rec: "Tous publics, -10, -12, -16, -18", detail: "Le Conseil Supérieur de l'Audiovisuel attribue ces classifications basées sur le contenu violent, sexuel ou choquant. Mais elles ne détaillent pas les raisons." },
       { age: "PEGI (Jeux vidéo)", rec: "PEGI 3, 7, 12, 16, 18", detail: "Le système européen de classification des jeux. Les pictogrammes (violence, peur, langage...) complètent l'âge mais restent généraux." },
-      { age: "Notre approche", rec: "7 critères détaillés", detail: "Nous allons plus loin : violence, sexe/nudité, langage, consommérisme, substances, mais aussi messages positifs et modèles. Chaque famille peut évaluer selon ses propres valeurs." },
+      { age: "Notre approche", rec: "8 dimensions détaillées", detail: "Nous allons plus loin : violence, sexe/nudité, langage, consommérisme, substances, mais aussi messages positifs, modèles et valeur éducative. Chaque famille peut évaluer selon ses propres valeurs." },
     ],
   },
   {

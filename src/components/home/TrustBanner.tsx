@@ -13,7 +13,7 @@ const trustPoints = [
   {
     icon: Heart,
     title: "Personnalisé",
-    description: "Des suggestions adaptées à chaque membre de votre foyer",
+    description: "Des suggestions adaptées à chaque membre de votre famille",
   },
   {
     icon: Users,
@@ -37,11 +37,11 @@ export function TrustBanner() {
             <span className="text-sm font-medium">Totem Avisé</span>
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Trouvez le contenu parfait pour chaque membre de votre foyer
+            Trouvez des contenus adaptés à chaque membre de votre famille
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Totem Avisé vous recommande les films, séries et jeux qui correspondent
-            vraiment à votre famille — en tenant compte de l&apos;âge, des goûts et
+            Totem Avisé vous aide à choisir les films, séries et jeux qui correspondent
+            à votre famille — en tenant compte de l&apos;âge, des goûts et
             des sensibilités de chacun.
           </p>
         </div>

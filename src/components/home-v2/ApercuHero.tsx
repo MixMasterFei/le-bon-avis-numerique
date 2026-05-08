@@ -125,7 +125,7 @@ export function ApercuHero({
               <br />
               pour{" "}
               <span className="italic" style={{ color: p.accent2 }}>
-                votre foyer
+                votre famille
               </span>
               .
             </h1>
@@ -134,7 +134,7 @@ export function ApercuHero({
               className="mt-6 md:mt-7 max-w-xl text-base md:text-lg leading-relaxed"
               style={{ color: p.ink2 }}
             >
-              Un foyer, des goûts, des recommandations sur-mesure.
+              Une famille, des goûts, des repères sur-mesure.
               <br />
               Créez votre compte en 1 minute.
             </p>

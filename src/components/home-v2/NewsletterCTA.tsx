@@ -92,7 +92,7 @@ export function NewsletterCTA({
           <em className="italic">chaque semaine</em>
         </h2>
         <p className="text-sm md:text-base mb-6 max-w-md mx-auto" style={{ opacity: 0.8 }}>
-          Les actualités qui comptent pour les familles, condensées en quelques minutes de lecture. Gratuit et sans publicité.
+          Les actualités qui comptent pour les familles, condensées en quelques minutes de lecture. Gratuit et sans recommandation opaque.
         </p>
         {!canSubscribe ? (
           <div

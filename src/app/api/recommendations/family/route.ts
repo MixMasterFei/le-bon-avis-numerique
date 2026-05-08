@@ -22,6 +22,7 @@ import {
 } from "@/lib/family-fit-score"
 
 // --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
+const MIN_MEMBER_FIT_SCORE = 66
 
 // GET /api/recommendations/family?memberIds=id1,id2,id3
 // Get recommendations for multiple family members (movie night mode)
@@ -217,10 +218,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         ageFilter = {
-          OR: [
-            { expertAgeRec: null },
-            { expertAgeRec: { lte: youngestAge + 1 } },
-          ],
+          expertAgeRec: { lte: youngestAge },
         }
       }
     }
@@ -423,6 +421,8 @@ export async function GET(request: NextRequest) {
           totalMatchScore += finalPercentage
         }
 
+        const memberScores = Object.values(memberMatches).map((match) => match.matchPercentage)
+        const minMemberScore = memberScores.length > 0 ? Math.min(...memberScores) : 0
         const familyMatchPercentage = membersWithPreferences > 0
           ? Math.round(totalMatchScore / membersWithPreferences)
           : 50
@@ -439,8 +439,10 @@ export async function GET(request: NextRequest) {
           synopsisFr: media.synopsisFr,
           memberMatches,
           familyMatchPercentage,
+          minMemberScore,
         }
       })
+      .filter((media) => media.minMemberScore >= MIN_MEMBER_FIT_SCORE)
 
     // Sort by family match percentage
     scoredRecommendations.sort((a, b) => b.familyMatchPercentage - a.familyMatchPercentage)

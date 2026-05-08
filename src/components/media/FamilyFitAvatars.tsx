@@ -2,7 +2,12 @@
 
 import { cn } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
-import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import {
+  FAMILY_FIT_LABELS,
+  familyFitBandFromLevel,
+  familyFitBandFromScore,
+  type FamilyFitBand,
+} from "@/lib/family-fit-display"
 import type { FitLevel } from "@/lib/family-fit-score"
 
 interface MemberFit {
@@ -60,7 +65,9 @@ export function FamilyFitAvatars({ members, compact = false, className }: Family
   return (
     <div className={cn("flex items-start", gapClass, className)}>
       {members.map((member) => {
-        const band = member.level ? familyFitBandFromLevel(member.level) : "goodChoice"
+        const band = member.level
+          ? familyFitBandFromLevel(member.level)
+          : familyFitBandFromScore(member.score)
         const shortReason = member.reason
           ? member.reason
               .replace("Basé surtout sur l'âge", "âge")

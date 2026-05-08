@@ -55,7 +55,7 @@ export async function generateMetadata({
 
   let title = "Mangas — Trouvez le bon manga pour votre ado"
   let description =
-    "Les meilleurs mangas pour la famille : âge recommandé, violence, thèmes, tome par tome. Shounen, shoujo, seinen, josei — indépendant et sans publicité."
+    "Les meilleurs mangas pour la famille : âge recommandé, violence, thèmes, tome par tome. Shounen, shoujo, seinen, josei — indépendant et sans recommandation opaque."
 
   if (demographic) {
     const label = demographic[0].toUpperCase() + demographic.slice(1)

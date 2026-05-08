@@ -14,6 +14,7 @@ export const contentMetricLabels: Record<string, string> = {
   substanceUse: "Alcool & Drogues",
   positiveMessages: "Messages Positifs",
   roleModels: "Modèles de Rôle",
+  educationalValue: "Valeur éducative",
 }
 
 // Get color based on metric value (0-5 scale)

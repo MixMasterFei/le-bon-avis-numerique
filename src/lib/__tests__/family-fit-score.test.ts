@@ -22,7 +22,7 @@ describe("family fit guardrails", () => {
     expect(result.ageWarning).toBe(true)
   })
 
-  it("caps incomplete profiles below excellent", () => {
+  it("keeps incomplete profiles in the review band", () => {
     const result = applyFitGuardrails({
       score: 100,
       memberAge: 10,
@@ -30,9 +30,9 @@ describe("family fit guardrails", () => {
       hasRichProfile: false,
     })
 
-    expect(result.score).toBe(74)
-    expect(result.level).toBe("good")
-    expect(result.reasonOverride).toBe("Âge")
+    expect(result.score).toBe(65)
+    expect(result.level).toBe("moderate")
+    expect(result.reasonOverride).toBe("À affiner avec le quiz famille")
   })
 
   it("treats missing expert age as a cautious estimate for minors", () => {
@@ -88,7 +88,17 @@ describe("family fit guardrails", () => {
 
     expect(result.score).toBe(65)
     expect(result.level).toBe("moderate")
-    expect(result.reasonOverride).toBe("Thèmes plutôt adultes à vérifier")
+    expect(result.reasonOverride).toBe("À affiner avec le quiz famille")
+  })
+
+  it("does not treat family animation as youth appeal when adult genres are present", () => {
+    const hasYouthAppeal = hasYouthAppealSignal({
+      mediaGenres: ["Animation", "Drame"],
+      mediaTopics: [],
+      memberAge: 12,
+    })
+
+    expect(hasYouthAppeal).toBe(false)
   })
 })
 

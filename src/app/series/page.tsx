@@ -57,7 +57,7 @@ export async function generateMetadata({
   // Lengthened from 109 to 142 chars (target 120+) — Google penalises
   // sub-120 descriptions because they're too thin to give SERP context.
   let description =
-    "Les meilleures séries TV pour votre famille : analyses de contenu sur 7 critères, recommandations d'âge, avis de parents et filtres par plateforme de streaming."
+    "Les meilleures séries TV pour votre famille : analyses de contenu sur 8 dimensions, recommandations d'âge, avis de parents et filtres par plateforme de streaming."
 
   if (q) {
     title = `Recherche « ${q} » — Séries TV pour la famille`

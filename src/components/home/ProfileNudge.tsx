@@ -62,7 +62,7 @@ export function ProfileNudge() {
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-gray-900 mb-1">
-            Complétez le profil de votre foyer
+            Complétez le profil de votre famille
           </h3>
           <div className="flex items-center gap-2 mb-2">
             <MemberAvatar

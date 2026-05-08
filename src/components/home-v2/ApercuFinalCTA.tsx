@@ -36,7 +36,7 @@ export function ApercuFinalCTA({
           </h2>
           <p className="mt-4 text-sm md:text-base max-w-xl mx-auto" style={{ opacity: 0.75 }}>
             {isLoggedIn
-              ? "Des recommandations adaptées à votre foyer, mises à jour chaque semaine."
+              ? "Des recommandations adaptées à votre famille, mises à jour chaque semaine."
               : "Gratuit et indépendant. Des analyses honnêtes, pensées pour les familles."}
           </p>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
@@ -67,7 +67,7 @@ export function ApercuFinalCTA({
                   className="px-7 py-3 rounded-full text-sm font-semibold transition-transform hover:scale-[1.02]"
                   style={{ background: "#1E1A15", color: "#F5F1E9" }}
                 >
-                  Créer mon foyer gratuitement
+                  Créer ma famille gratuitement
                 </Link>
                 <Link
                   href="/recherche"

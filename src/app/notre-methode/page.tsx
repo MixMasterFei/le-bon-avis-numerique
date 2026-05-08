@@ -9,7 +9,7 @@ export const metadata = {
   // Lengthened from 96 to 144 chars (target 120+) so Google has more
   // signal for the page topic in SERPs.
   description:
-    "Comment Totem Avisé évalue les films, séries et jeux pour les familles : analyse en 7 critères, recommandations d'âge, compatibilité par foyer.",
+    "Comment Totem Avisé évalue les films, séries et jeux pour les familles : analyse en 8 dimensions, recommandations d'âge, compatibilité familiale.",
   // Override the root layout's canonical "/" so this page isn't
   // merged with the homepage in Google's index.
   alternates: { canonical: "/notre-methode" },
@@ -21,13 +21,13 @@ const sections = [
     icon: Sparkles,
     title: "Comment on analyse — en toute honnêteté",
     content: [
-      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 7 critères.",
+      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 8 dimensions.",
       "Cette estimation n'est pas un verdict d'expert. C'est un point de départ, qui s'affine avec le temps grâce aux votes et réactions des foyers inscrits. Quand au moins 5 parents ont voté et que 70 % sont d'accord, un badge de consensus apparaît — vos retours remplacent progressivement l'analyse automatisée.",
-      "On ne dit pas « algorithme » pour faire joli. On dit « en calibrage » parce que c'est ce qui se passe : vous aidez à régler le cadran, pas à valider un résultat figé.",
+      "On ne promet pas une recommandation magique. On dit « en calibrage » parce que c'est ce qui se passe : vous aidez à régler le cadran, pas à valider un résultat figé.",
     ],
     list: [
       { label: "Recommandation d'âge", desc: "Estimée automatiquement à partir du synopsis + classifications officielles. Ajustée par vos votes « j'approuve / je conteste »." },
-      { label: "Métriques de contenu", desc: "Les 7 scores (violence, sexe, langage, substances, messages positifs, modèles positifs, valeur éducative) sont estimés automatiquement puis recalibrés par les évaluations de la communauté." },
+      { label: "Métriques de contenu", desc: "Les 8 dimensions (violence, sexe, langage, substances, consumérisme, messages positifs, modèles positifs, valeur éducative) sont estimées automatiquement. Les scores évaluables par les parents sont ensuite recalibrés par la communauté." },
       { label: "Points clés pour les parents", desc: "Extraits automatiquement du contenu analysé. Indicatifs — à recouper avec la fiche complète et les avis." },
       { label: "Thèmes détectés", desc: "Les tags thématiques sont détectés automatiquement. Ils peuvent être affinés par les signalements de la communauté." },
     ],
@@ -48,8 +48,8 @@ const sections = [
     icon: BookOpen,
     title: "Les métriques de contenu (0–5)",
     content: [
-      "Chaque contenu est noté sur 7 critères, une échelle de 0 à 5. Violence, sexe et nudité, langage, substances, consumérisme pour le « négatif » ; messages positifs, modèles positifs, valeur éducative pour le « positif ».",
-      "Comme les recommandations d'âge, ces scores démarrent en analyse automatisée puis sont recalibrés par les foyers qui évaluent eux-mêmes le contenu. Vous pouvez proposer vos propres scores depuis la fiche via « Évaluer ce contenu » — quand assez de parents contribuent, les scores communautaires remplacent progressivement les estimations initiales.",
+      "Chaque contenu est noté sur 8 dimensions, une échelle de 0 à 5. Violence, sexe et nudité, langage, substances, consumérisme pour les éléments sensibles ; messages positifs, modèles positifs et valeur éducative pour les apports positifs.",
+      "Comme les recommandations d'âge, ces scores démarrent en analyse automatisée. Les dimensions évaluables par les parents sont ensuite recalibrées par les familles qui notent elles-mêmes le contenu. Vous pouvez proposer vos propres scores depuis la fiche via « Évaluer ce contenu » — quand assez de parents contribuent, les scores communautaires remplacent progressivement les estimations initiales.",
     ],
   },
   {
@@ -139,7 +139,7 @@ const sections = [
     list: [
       { label: "Bases de données internationales", desc: "Informations générales (synopsis, genres, dates, équipes techniques) issues de bases collaboratives." },
       { label: "CNC / data.gouv.fr", desc: "Classifications officielles des films en France, importées depuis les données publiques du CNC." },
-      { label: "Analyse de contenu", desc: "Évaluation des 7 critères par notre système d'analyse, affinée par les retours de la communauté." },
+      { label: "Analyse de contenu", desc: "Évaluation des 8 dimensions par notre système d'analyse, affinée par les retours de la communauté." },
       { label: "Communauté", desc: "Avis, votes d'âge et signalements des parents utilisateurs." },
     ],
     after: "Nos recommandations sont indépendantes. On n'est affilié à aucun studio, distributeur ou plateforme de streaming.",

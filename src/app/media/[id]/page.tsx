@@ -998,6 +998,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 mediaId={dbId}
                 mediaTitle={media.title}
                 expertMetrics={media.contentMetrics}
+                topics={media.topics}
               />
             )}
 
@@ -1008,7 +1009,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   <CardTitle className="text-lg">Analyse du contenu</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ContentGrid metrics={media.contentMetrics} />
+                  <ContentGrid metrics={media.contentMetrics} topics={media.topics} />
                 </CardContent>
               </Card>
             )}

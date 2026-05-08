@@ -8,7 +8,7 @@ export const metadata = {
   // recommended) to give Google more signal in search results.
   title: "À propos de Totem Avisé — Guide média famille indépendant",
   description:
-    "Totem Avisé aide les familles françaises à trouver les films, séries et jeux adaptés à chaque membre du foyer.",
+    "Totem Avisé aide les familles françaises à trouver les films, séries et jeux adaptés à chaque membre de la famille.",
   // Override the root layout's canonical "/" so this page isn't
   // merged with the homepage in Google's index.
   alternates: { canonical: "/a-propos" },
@@ -26,7 +26,7 @@ const howItWorks = [
     step: "2",
     title: "On analyse, vous choisissez",
     description:
-      "Chaque contenu est passé au crible sur 7 critères (violence, langage, messages positifs…) et croisé avec le profil de votre famille.",
+      "Chaque contenu est passé au crible sur 8 dimensions (violence, langage, messages positifs, valeur éducative…) et croisé avec le profil de votre famille.",
     icon: Sparkles,
   },
   {
@@ -114,8 +114,8 @@ export default async function AProposPage() {
               </p>
               <p>
                 Totem Avisé est né de ce constat. On analyse chaque film,
-                série et jeu sur 7 critères, on croise ça avec le profil de
-                votre famille, et on vous dit ce qui colle vraiment. Pas de
+                série et jeu sur 8 dimensions, on croise ça avec le profil de
+                votre famille, et on vous donne des repères utiles pour décider. Pas de
                 pub, pas de partenariat avec des studios. Juste des
                 recommandations honnêtes pour les familles.
               </p>

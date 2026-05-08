@@ -64,7 +64,7 @@ export default function LivresPage() {
             </h1>
             <p className="mt-3 text-sm md:text-base max-w-2xl" style={{ color: p.ink2 }}>
               Des suggestions de lecture pour tous les âges. Bientôt complétées
-              par notre analyse sur 7 critères.
+              par notre analyse sur 8 dimensions.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-2">

@@ -38,10 +38,10 @@ export function HomepageCTA({ variant }: HomepageCTAProps) {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-900 mb-1">
-              Personnalisez pour votre foyer
+              Personnalisez pour votre famille
             </h3>
             <p className="text-sm text-gray-600 mb-3">
-              Créez un profil famille pour voir quels contenus conviennent à chaque membre de votre foyer.
+              Créez un profil famille pour voir quels contenus conviennent à chaque membre.
             </p>
             <Link href="/inscription">
               <Button size="sm" className="bg-violet-600 hover:bg-violet-700">
@@ -72,7 +72,7 @@ export function HomepageCTA({ variant }: HomepageCTAProps) {
             Recevez des recommandations sur mesure
           </h3>
           <p className="text-sm text-gray-600 mb-3">
-            Renseignez l&apos;âge et les sensibilités de votre foyer, et découvrez les contenus faits pour vous.
+            Renseignez l&apos;âge et les sensibilités de votre famille, et découvrez des repères adaptés.
           </p>
           <div className="flex items-center gap-3">
             <Link href="/inscription">

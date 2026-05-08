@@ -181,8 +181,7 @@ export function computeSensitivityScore(
   let total = 0
   let count = 0
   for (const [metricValue, tolerance] of pairs) {
-    const effectiveTolerance = tolerance === 0 ? 2 : tolerance
-    const threshold = 4 - effectiveTolerance
+    const threshold = tolerance === 0 ? 1 : 4 - tolerance
     const over = Math.max(0, metricValue - threshold)
     total += Math.max(0, 1 - over * 0.25)
     count++
@@ -307,10 +306,10 @@ export function hasYouthAppealSignal(input: {
   if (lowerTopics.some((topic) => FAMILY_VIP_BRAND_TOPICS_LOWER.has(topic))) return true
 
   const lowerGenres = input.mediaGenres.map((genre) => genre.toLowerCase())
-  if (lowerGenres.some((genre) => FAMILY_APPEAL_GENRES.has(genre))) return true
+  const adultGenreCount = lowerGenres.filter((genre) => ADULT_LEANING_GENRES.has(genre)).length
+  if (lowerGenres.some((genre) => FAMILY_APPEAL_GENRES.has(genre)) && adultGenreCount === 0) return true
 
   const hasTeenGenre = lowerGenres.some((genre) => TEEN_APPEAL_GENRES.has(genre))
-  const adultGenreCount = lowerGenres.filter((genre) => ADULT_LEANING_GENRES.has(genre)).length
   return input.memberAge != null && input.memberAge >= 13 && hasTeenGenre && adultGenreCount < 2
 }
 
@@ -407,9 +406,9 @@ export function applyFitGuardrails(input: {
   }
 
   if (!input.hasRichProfile) {
-    score = Math.min(score, 74)
-    level = capLevel(levelFromScore(score), "good")
-    if (!reasonOverride) reasonOverride = "Âge"
+    score = Math.min(score, 65)
+    level = capLevel(levelFromScore(score), "moderate")
+    if (!reasonOverride) reasonOverride = "À affiner avec le quiz famille"
   }
 
   if (input.memberAge != null && input.memberAge < 18 && input.adultLeaning && !input.hasYouthAppeal) {
