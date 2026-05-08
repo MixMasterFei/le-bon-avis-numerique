@@ -17,6 +17,8 @@ import {
   computeWeightedFitScore,
   DEFAULT_FIT_METRICS,
   hasRichProfile,
+  hasYouthAppealSignal,
+  isAdultLeaningContentForMinor,
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
@@ -129,6 +131,9 @@ export async function POST(request: NextRequest) {
         )
 
         let rawScore: number
+        let genreScore: number | undefined
+        let interestsScore: number | undefined
+        let positiveScore: number | undefined
         if (!hasPreferences) {
           // Age-only scoring for members without quiz
           rawScore = clampScore(ageScore * maturePenalty.multiplier * 100)
@@ -137,19 +142,19 @@ export async function POST(request: NextRequest) {
             { violence: metrics.violence, sexNudity: metrics.sexNudity, language: metrics.language, substanceUse: metrics.substanceUse },
             { sensitivityViolence: member.sensitivityViolence, sensitivitySexual: member.sensitivitySexual, sensitivityLanguage: member.sensitivityLanguage, sensitivitySubstances: member.sensitivitySubstances }
           )
-          const genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
+          genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
           const avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
           const toneScore = computeToneScore(
             (metrics.toneTags ?? []) as string[],
             (metrics.pacing ?? null) as string | null,
             memberAge, member.sensitivityScary
           )
-          const interestsScore = computeInterestsScore(
+          interestsScore = computeInterestsScore(
             media.topics,
             (metrics.emotionalThemes ?? []) as string[],
             member.interests
           )
-          const positiveScore = computePositiveContentScore(
+          positiveScore = computePositiveContentScore(
             { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
             { preferPositiveMessages: member.preferPositiveMessages, preferRoleModels: member.preferRoleModels, preferEducational: member.preferEducational },
             media.topics
@@ -169,11 +174,28 @@ export async function POST(request: NextRequest) {
           )
         }
 
+        const hasYouthAppeal = hasYouthAppealSignal({
+          mediaGenres: media.genres,
+          mediaTopics: media.topics,
+          memberAge,
+          genreScore,
+          interestsScore,
+          positiveScore,
+        })
+        const adultLeaning = isAdultLeaningContentForMinor({
+          mediaGenres: media.genres,
+          expertAgeRec: media.expertAgeRec,
+          memberAge,
+          hasYouthAppeal,
+        })
+
         const guarded = applyFitGuardrails({
           score: rawScore,
           memberAge,
           expertAgeRec: media.expertAgeRec,
           hasRichProfile: hasPreferences,
+          hasYouthAppeal,
+          adultLeaning,
         })
 
         // Hard age gate: never show a child on content rated 2+ years above their age

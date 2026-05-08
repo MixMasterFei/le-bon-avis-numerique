@@ -74,6 +74,28 @@ export const DARK_TONES = new Set([
 export const MATURE_GENRES = new Set(["horreur", "horror", "épouvante", "thriller", "crime"])
 export const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
 export const CONCERNING_TONES = new Set(["Effrayant et angoissant", "Sombre et tendu", "Action intense"])
+const FAMILY_APPEAL_GENRES = new Set(["animation", "famille", "familial", "family"])
+const TEEN_APPEAL_GENRES = new Set([
+  "action",
+  "aventure",
+  "adventure",
+  "fantastique",
+  "fantasy",
+  "science-fiction",
+  "sci-fi",
+  "super-héros",
+  "superhero",
+])
+const ADULT_LEANING_GENRES = new Set([
+  "drame",
+  "drama",
+  "romance",
+  "thriller",
+  "crime",
+  "horreur",
+  "horror",
+  "épouvante",
+])
 
 export function clampScore(score: number): number {
   return Math.round(Math.max(0, Math.min(100, score)))
@@ -265,6 +287,46 @@ export function computeToneScore(toneTags: string[], pacing: string | null, memb
   return Math.max(0, Math.min(1, score))
 }
 
+export function hasYouthAppealSignal(input: {
+  mediaGenres: string[]
+  mediaTopics: string[]
+  memberAge: number | null
+  genreScore?: number
+  interestsScore?: number
+  affinityScore?: number
+  positiveScore?: number
+}): boolean {
+  if (input.memberAge != null && input.memberAge >= 18) return true
+
+  if ((input.affinityScore ?? 0) >= 0.4) return true
+  if ((input.genreScore ?? 0) >= 0.7) return true
+  if ((input.interestsScore ?? 0) >= 0.8) return true
+  if ((input.positiveScore ?? 0) >= 0.8) return true
+
+  const lowerTopics = input.mediaTopics.map((topic) => topic.toLowerCase())
+  if (lowerTopics.some((topic) => FAMILY_VIP_BRAND_TOPICS_LOWER.has(topic))) return true
+
+  const lowerGenres = input.mediaGenres.map((genre) => genre.toLowerCase())
+  if (lowerGenres.some((genre) => FAMILY_APPEAL_GENRES.has(genre))) return true
+
+  const hasTeenGenre = lowerGenres.some((genre) => TEEN_APPEAL_GENRES.has(genre))
+  const adultGenreCount = lowerGenres.filter((genre) => ADULT_LEANING_GENRES.has(genre)).length
+  return input.memberAge != null && input.memberAge >= 13 && hasTeenGenre && adultGenreCount < 2
+}
+
+export function isAdultLeaningContentForMinor(input: {
+  mediaGenres: string[]
+  expertAgeRec: number | null
+  memberAge: number | null
+  hasYouthAppeal: boolean
+}): boolean {
+  if (input.memberAge == null || input.memberAge >= 18 || input.hasYouthAppeal) return false
+
+  const lowerGenres = input.mediaGenres.map((genre) => genre.toLowerCase())
+  const adultGenreCount = lowerGenres.filter((genre) => ADULT_LEANING_GENRES.has(genre)).length
+  return adultGenreCount >= 2 || (input.expertAgeRec != null && input.expertAgeRec >= 13 && adultGenreCount >= 1)
+}
+
 export function computeMatureContentPenalty(
   mediaGenres: string[],
   metrics: Pick<FitMetrics, "violence" | "sexNudity">,
@@ -324,6 +386,8 @@ export function applyFitGuardrails(input: {
   memberAge: number | null
   expertAgeRec: number | null
   hasRichProfile: boolean
+  hasYouthAppeal?: boolean
+  adultLeaning?: boolean
 }): FitGuardrailResult {
   let score = clampScore(input.score)
   let level = levelFromScore(score)
@@ -346,6 +410,14 @@ export function applyFitGuardrails(input: {
     score = Math.min(score, 74)
     level = capLevel(levelFromScore(score), "good")
     if (!reasonOverride) reasonOverride = "Âge"
+  }
+
+  if (input.memberAge != null && input.memberAge < 18 && input.adultLeaning && !input.hasYouthAppeal) {
+    score = Math.min(score, 65)
+    level = capLevel(levelFromScore(score), "moderate")
+    if (!reasonOverride || reasonOverride === "Âge") {
+      reasonOverride = "Thèmes plutôt adultes à vérifier"
+    }
   }
 
   return { score, level, reasonOverride, ageWarning, ageUnknown }

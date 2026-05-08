@@ -18,6 +18,8 @@ import {
   DEFAULT_FIT_METRICS,
   GENTLE_TONES,
   hasRichProfile,
+  hasYouthAppealSignal,
+  isAdultLeaningContentForMinor,
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
@@ -285,12 +287,25 @@ export async function GET(
           media.expertAgeRec,
           memberAge
         )
+        const hasYouthAppeal = hasYouthAppealSignal({
+          mediaGenres: media.genres,
+          mediaTopics: media.topics,
+          memberAge,
+        })
+        const adultLeaning = isAdultLeaningContentForMinor({
+          mediaGenres: media.genres,
+          expertAgeRec: media.expertAgeRec,
+          memberAge,
+          hasYouthAppeal,
+        })
 
         const guardrails = applyFitGuardrails({
           score: clampScore(ageScore * maturePenalty.multiplier * 100),
           memberAge,
           expertAgeRec: media.expertAgeRec,
           hasRichProfile: false,
+          hasYouthAppeal,
+          adultLeaning,
         })
 
         let reason: string
@@ -362,6 +377,21 @@ export async function GET(
         { preferPositiveMessages: member.preferPositiveMessages, preferRoleModels: member.preferRoleModels, preferEducational: member.preferEducational },
         media.topics
       )
+      const hasYouthAppeal = hasYouthAppealSignal({
+        mediaGenres: media.genres,
+        mediaTopics: media.topics,
+        memberAge,
+        genreScore,
+        interestsScore,
+        affinityScore,
+        positiveScore,
+      })
+      const adultLeaning = isAdultLeaningContentForMinor({
+        mediaGenres: media.genres,
+        expertAgeRec: media.expertAgeRec,
+        memberAge,
+        hasYouthAppeal,
+      })
 
       // Apply mature content penalty for horror/violent content
       const maturePenalty = computeMatureContentPenalty(
@@ -387,6 +417,8 @@ export async function GET(
         memberAge,
         expertAgeRec: media.expertAgeRec,
         hasRichProfile: hasPreferences,
+        hasYouthAppeal,
+        adultLeaning,
       })
       let reason = buildReason(
         ageScore,

@@ -3,6 +3,8 @@ import {
   applyFitGuardrails,
   computeMatureContentPenalty,
   hasRichProfile,
+  hasYouthAppealSignal,
+  isAdultLeaningContentForMinor,
 } from "../family-fit-score"
 
 describe("family fit guardrails", () => {
@@ -61,6 +63,32 @@ describe("family fit guardrails", () => {
   it("requires explicit custom preferences for a rich profile", () => {
     expect(hasRichProfile({ useCustomSettings: true, favoriteGenres: ["Animation"] })).toBe(true)
     expect(hasRichProfile({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(false)
+  })
+
+  it("keeps adult-leaning teen content in review without a youth appeal signal", () => {
+    const hasYouthAppeal = hasYouthAppealSignal({
+      mediaGenres: ["Romance", "Comédie", "Drame"],
+      mediaTopics: [],
+      memberAge: 15,
+    })
+
+    const result = applyFitGuardrails({
+      score: 100,
+      memberAge: 15,
+      expertAgeRec: 13,
+      hasRichProfile: false,
+      hasYouthAppeal,
+      adultLeaning: isAdultLeaningContentForMinor({
+        mediaGenres: ["Romance", "Comédie", "Drame"],
+        expertAgeRec: 13,
+        memberAge: 15,
+        hasYouthAppeal,
+      }),
+    })
+
+    expect(result.score).toBe(65)
+    expect(result.level).toBe("moderate")
+    expect(result.reasonOverride).toBe("Thèmes plutôt adultes à vérifier")
   })
 })
 

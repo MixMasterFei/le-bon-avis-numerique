@@ -17,6 +17,8 @@ import {
   DEFAULT_GENRES_BY_AGE,
   getAgeGroup,
   hasRichProfile,
+  hasYouthAppealSignal,
+  isAdultLeaningContentForMinor,
 } from "@/lib/family-fit-score"
 
 // --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
@@ -305,11 +307,24 @@ export async function GET(request: NextRequest) {
 
           if (!prefs.hasPreferences) {
             // No quiz: use age-based scoring instead of hardcoded 50%
+            const hasYouthAppeal = hasYouthAppealSignal({
+              mediaGenres: media.genres,
+              mediaTopics: media.topics,
+              memberAge: prefs.age,
+            })
+            const adultLeaning = isAdultLeaningContentForMinor({
+              mediaGenres: media.genres,
+              expertAgeRec: media.expertAgeRec,
+              memberAge: prefs.age,
+              hasYouthAppeal,
+            })
             const guarded = applyFitGuardrails({
               score: clampScore(ageScore * maturePenalty.multiplier * 100),
               memberAge: prefs.age,
               expertAgeRec: media.expertAgeRec,
               hasRichProfile: false,
+              hasYouthAppeal,
+              adultLeaning,
             })
             memberMatches[member.id] = {
               name: member.name,
@@ -360,6 +375,20 @@ export async function GET(request: NextRequest) {
                 prefs.sensitivity.scary
               )
             : 0.5
+          const hasYouthAppeal = hasYouthAppealSignal({
+            mediaGenres: media.genres,
+            mediaTopics: media.topics,
+            memberAge: prefs.age,
+            genreScore,
+            interestsScore,
+            positiveScore,
+          })
+          const adultLeaning = isAdultLeaningContentForMinor({
+            mediaGenres: media.genres,
+            expertAgeRec: media.expertAgeRec,
+            memberAge: prefs.age,
+            hasYouthAppeal,
+          })
 
           const finalPercentage = applyFitGuardrails({
             score: clampScore(
@@ -377,6 +406,8 @@ export async function GET(request: NextRequest) {
             memberAge: prefs.age,
             expertAgeRec: media.expertAgeRec,
             hasRichProfile: hasRichProfile(member),
+            hasYouthAppeal,
+            adultLeaning,
           }).score
 
           memberMatches[member.id] = {
