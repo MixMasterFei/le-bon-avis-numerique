@@ -2,6 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Scale, Building2, Server, FileText, Shield, AlertTriangle, Mail } from "lucide-react"
 import Link from "next/link"
 
+export const metadata = {
+  title: "Mentions légales — Totem Avisé",
+  description:
+    "Mentions légales de Totem Avisé : éditeur, hébergement, responsabilité et informations de contact.",
+  alternates: { canonical: "/mentions-legales" },
+}
+
 export default function MentionsLegalesPage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">

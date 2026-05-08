@@ -28,6 +28,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/objectif`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/nos-valeurs`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/mentions-legales`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${baseUrl}/confidentialite`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
+    { url: `${baseUrl}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
     // Age range pages
     { url: `${baseUrl}/age/2-4`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/age/5-7`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
@@ -74,7 +77,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }))
-    // Add the blog listing page (lastModified = newest published post)
+    // Add the blog listing page only when there is published content.
+    // An empty editorial hub is a weak landing page for both visitors and SEO.
     if (posts.length > 0) {
       const latestPostDate = new Date(
         posts.reduce((max, p) => (p.publishedAt > max ? p.publishedAt : max), posts[0].publishedAt)

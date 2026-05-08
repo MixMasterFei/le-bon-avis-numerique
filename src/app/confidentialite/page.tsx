@@ -2,6 +2,13 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Mail, FileText, ExternalLink } from "lucide-react"
 
+export const metadata = {
+  title: "Politique de confidentialité — Totem Avisé",
+  description:
+    "Politique de confidentialité de Totem Avisé : données collectées, finalités, conservation, droits RGPD et contact.",
+  alternates: { canonical: "/confidentialite" },
+}
+
 export default function ConfidentialitePage() {
   const lastUpdate = "29 decembre 2024"
 

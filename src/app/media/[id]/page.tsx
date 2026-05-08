@@ -216,7 +216,14 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   const { id: rawId } = parseMediaRouteId(id)
 
   const media = await fetchFromDatabase(rawId)
-  if (!media) return {}
+  if (!media) {
+    return {
+      title: "Média familial — avis par âge",
+      description:
+        "Découvrez les repères Totem Avisé pour choisir des films, séries, jeux et livres adaptés à votre famille.",
+      alternates: { canonical: `/media/${id}` },
+    }
+  }
 
   const ageStr = media.expertAgeRec && media.expertAgeRec > 0
     ? ` — Dès ${media.expertAgeRec} ans`

@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   title: "Blog — Conseils et actualités pour les familles",
   description: "Articles sur le temps d'écran, les films, les jeux vidéo et la parentalité numérique. Conseils pratiques pour accompagner vos enfants dans le monde des médias.",
   alternates: { canonical: "/blog" },
+  robots: { index: false, follow: true },
   openGraph: {
     title: "Blog | Totem Avisé",
     description: "Articles et conseils pour les familles sur les médias et le numérique.",

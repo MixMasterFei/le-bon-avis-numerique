@@ -6,6 +6,7 @@ export const metadata = {
   title: "Bandes Dessinées | Totem Avisé",
   description:
     "Évaluations de bandes dessinées et comics pour enfants et adolescents",
+  robots: { index: false, follow: true },
 }
 
 export default function BDPage() {

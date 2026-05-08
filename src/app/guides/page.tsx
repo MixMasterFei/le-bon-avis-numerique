@@ -6,6 +6,15 @@ export const metadata = {
   title: "Nos guides — Accompagner vos enfants face aux écrans",
   description:
     "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
+  alternates: { canonical: "/guides" },
+  openGraph: {
+    title: "Nos guides — Accompagner vos enfants face aux écrans",
+    description:
+      "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
+    type: "website",
+    locale: "fr_FR",
+    siteName: "Totem Avisé",
+  },
 }
 
 const guides = [
@@ -71,41 +80,15 @@ const guides = [
   },
 ]
 
-function buildFaqJsonLd() {
-  const questions = guides
-    .filter((g) => g.available && g.content.length > 0)
-    .flatMap((guide) =>
-      guide.content.map((item) => ({
-        "@type": "Question" as const,
-        name: `${item.age} : ${item.rec}`,
-        acceptedAnswer: {
-          "@type": "Answer" as const,
-          text: item.detail,
-        },
-      }))
-    )
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: questions,
-  }
-}
-
 export default function GuidesPage() {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
-  const faqJsonLd = buildFaqJsonLd()
 
   return (
     <div
       className="flex flex-col flex-1"
       style={{ background: p.bg, color: p.ink }}
     >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
-
       <section
         className="py-16 md:py-20"
         style={{ background: p.bg, borderBottom: `1px solid ${p.line}` }}

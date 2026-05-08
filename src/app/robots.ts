@@ -8,7 +8,21 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/profil/", "/mes-avis/", "/ma-liste/", "/mes-favoris/", "/apercu", "/apercufilm", "/apercufilmslist", "/apercufoyer", "/apercudecouverte"],
+        disallow: [
+          "/admin/",
+          "/api/",
+          "/profil/",
+          "/chez-vous",
+          "/mes-avis/",
+          "/ma-liste/",
+          "/mes-favoris/",
+          "/studio/",
+          "/apercu",
+          "/apercufilm",
+          "/apercufilmslist",
+          "/apercufoyer",
+          "/apercudecouverte",
+        ],
       },
       {
         userAgent: "GPTBot",
