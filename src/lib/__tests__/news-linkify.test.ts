@@ -5,9 +5,17 @@ function media(id: string, title: string): LinkableMedia {
   return {
     id,
     title,
+    originalTitle: null,
     type: "MOVIE",
     releaseYear: null,
     expertAgeRec: null,
+  }
+}
+
+function mediaWithOriginal(id: string, title: string, originalTitle: string): LinkableMedia {
+  return {
+    ...media(id, title),
+    originalTitle,
   }
 }
 
@@ -57,11 +65,11 @@ describe("extractCatalogMatches", () => {
 
   it("adds Middle-earth franchise candidates for the Lord of the Rings anniversary story", () => {
     const catalog = [
-      media("fellowship", "Le Seigneur des Anneaux : La Communauté de l'Anneau"),
-      media("two-towers", "Le Seigneur des Anneaux : Les Deux Tours"),
-      media("return-king", "Le Seigneur des Anneaux : Le Retour du roi"),
-      media("hobbit", "Le Hobbit : Un voyage inattendu"),
-      media("rings-power", "Le Seigneur des Anneaux : Les Anneaux de Pouvoir"),
+      mediaWithOriginal("fellowship", "The Lord of the Rings: The Fellowship of the Ring", "Le Seigneur des Anneaux : La Communauté de l'Anneau"),
+      mediaWithOriginal("two-towers", "The Lord of the Rings: The Two Towers", "Le Seigneur des Anneaux : Les Deux Tours"),
+      mediaWithOriginal("return-king", "The Lord of the Rings: The Return of the King", "Le Seigneur des Anneaux : Le Retour du roi"),
+      mediaWithOriginal("hobbit", "The Hobbit: An Unexpected Journey", "Le Hobbit : Un voyage inattendu"),
+      mediaWithOriginal("rings-power", "The Lord of the Rings: The Rings of Power", "Le Seigneur des Anneaux : Les Anneaux de Pouvoir"),
       media("unrelated", "Elles"),
     ]
 
@@ -75,11 +83,17 @@ describe("extractCatalogMatches", () => {
       8,
       [
         "Le Seigneur des Anneaux",
+        "The Lord of the Rings",
         "La Communauté de l'Anneau",
+        "The Fellowship of the Ring",
         "Les Deux Tours",
+        "The Two Towers",
         "Le Retour du roi",
+        "The Return of the King",
         "Le Hobbit",
+        "The Hobbit",
         "Les Anneaux de Pouvoir",
+        "The Rings of Power",
       ],
     )
 

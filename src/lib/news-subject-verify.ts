@@ -46,11 +46,11 @@ Media means: film, TV series, video game, book, manga, comic, or a named franchi
 
 Return:
 - isMediaNews: true only if the article's main topic is a specific work, release, anniversary, adaptation, franchise, sequel, remake, platform arrival, creator/casting news, controversy, awards, or availability around a media title/license.
-- subjectTerms: search terms to find matching catalog entries. Include the exact work title, the franchise/license name, and closely related work titles that a family catalog may contain. Do NOT include generic terms like "film", "jeu", "Nintendo", "Netflix", "Prime Video", "écrans", "ados", "parents".
+- subjectTerms: search terms to find matching catalog entries. Include the exact work title, the franchise/license name, closely related work titles that a family catalog may contain, and likely original/international titles when the article uses a French title. Do NOT include generic terms like "film", "jeu", "Nintendo", "Netflix", "Prime Video", "écrans", "ados", "parents".
 
 Examples:
 - Article: "Star Fox revient sur Switch 2, 29 ans après la N64" -> {"isMediaNews":true,"subjectTerms":["Star Fox"]}
-- Article: "Le film Le Seigneur des Anneaux : La Communauté de l'Anneau a 25 ans" -> {"isMediaNews":true,"subjectTerms":["Le Seigneur des Anneaux","La Communauté de l'Anneau","Les Deux Tours","Le Retour du roi","Le Hobbit","Les Anneaux de Pouvoir"]}
+- Article: "Le film Le Seigneur des Anneaux : La Communauté de l'Anneau a 25 ans" -> {"isMediaNews":true,"subjectTerms":["Le Seigneur des Anneaux","The Lord of the Rings","La Communauté de l'Anneau","The Fellowship of the Ring","Les Deux Tours","The Two Towers","Le Retour du roi","The Return of the King","Le Hobbit","The Hobbit","Les Anneaux de Pouvoir","The Rings of Power"]}
 - Article about teens, screens, online risks, school, science, or parenting in general -> {"isMediaNews":false,"subjectTerms":[]}
 
 Return ONLY a JSON object: {"isMediaNews": boolean, "subjectTerms": ["..."]}. No prose, no markdown, no code fences.`

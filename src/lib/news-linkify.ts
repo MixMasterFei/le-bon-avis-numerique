@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma"
 export interface LinkableMedia {
   id: string
   title: string
+  originalTitle: string | null
   // Type + year are surfaced to the LLM subject verifier so it can
   // disambiguate same-titled works across formats and eras.
   type: string
@@ -39,7 +40,7 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
       { tmdbVoteCount: { sort: "desc", nulls: "last" } },
     ],
     take: 5000,
-    select: { id: true, title: true, type: true, releaseDate: true, expertAgeRec: true },
+    select: { id: true, title: true, originalTitle: true, type: true, releaseDate: true, expertAgeRec: true },
   })
 
   return rows
@@ -47,6 +48,7 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
     .map((r) => ({
       id: r.id,
       title: r.title,
+      originalTitle: r.originalTitle,
       type: r.type,
       releaseYear: r.releaseDate ? new Date(r.releaseDate).getFullYear() : null,
       expertAgeRec: r.expertAgeRec,
@@ -133,8 +135,7 @@ function uniqueNormalizedTerms(terms: string[]): string[] {
 }
 
 function titleMatchesSubjectTerm(media: LinkableMedia, term: string): boolean {
-  const title = normalizeText(media.title)
-  return title.includes(term)
+  return mediaSearchTitles(media).some((title) => title.includes(term))
 }
 
 function isShadowedByLongerTitle(item: LinkableMedia, matches: Array<{ id: string }>, catalog: LinkableMedia[]): boolean {
@@ -142,9 +143,16 @@ function isShadowedByLongerTitle(item: LinkableMedia, matches: Array<{ id: strin
   return matches.some((match) => {
     const matched = catalog.find((candidate) => candidate.id === match.id)
     if (!matched) return false
-    const matchedTitle = normalizeText(matched.title)
-    return matchedTitle.length > title.length && matchedTitle.includes(title)
+    return mediaSearchTitles(matched).some((matchedTitle) =>
+      matchedTitle.length > title.length && matchedTitle.includes(title),
+    )
   })
+}
+
+function mediaSearchTitles(media: LinkableMedia): string[] {
+  return [media.title, media.originalTitle ?? ""]
+    .map((title) => normalizeText(title).replace(/\s+/g, " ").trim())
+    .filter((title, index, all) => title.length > 0 && all.indexOf(title) === index)
 }
 
 /**
@@ -181,7 +189,9 @@ export function extractCatalogMatchesFromStory(
     if (matches.some((m) => m.id === item.id)) continue
     if (isSingleWordTitle(item.title) && isShadowedByLongerTitle(item, matches, catalog)) continue
 
-    const exact = text.match(new RegExp(`\\b${escapeRegex(item.title)}\\b`, "i"))
+    const exact = mediaSearchTitles(item)
+      .map((title) => text.match(new RegExp(`\\b${escapeRegex(title)}\\b`, "i")))
+      .find((match) => match?.index !== undefined)
     if (exact?.index !== undefined && shouldKeepExactMatch(story, item, exact[0])) {
       const start = exact.index
       const end = start + exact[0].length
