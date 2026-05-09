@@ -246,6 +246,20 @@ html {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
+/* Totem chat bubble — gentle attention pulse on idle */
+@keyframes totem-pulse {
+  0%, 100% {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15), 0 0 0 0 rgba(var(--color-accent-rgb, 220, 80, 60), 0.35);
+  }
+  50% {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), 0 0 0 12px rgba(var(--color-accent-rgb, 220, 80, 60), 0);
+  }
+}
+
+.animate-totem-pulse {
+  animation: totem-pulse 2.4s ease-in-out infinite;
+}
+
 /* Staggered animation delays */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }

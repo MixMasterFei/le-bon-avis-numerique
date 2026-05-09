@@ -358,6 +358,7 @@ CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
 RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
 NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
+TOTEM_PUBLIC                      # Set to "true" to expose the Totem Assistant chatbot to all visitors. Default: admin-only alpha (dock + homepage CTA + /api/totem/chat all gated by ADMIN role). Mirrors NEWSLETTER_PUBLIC.
 PEXELS_API_KEY                    # DEPRECATED (May 2026). Stock-photo fallback removed from news-image.ts in the news-pipeline simplification. Safe to remove from Vercel env. Stock-image cache table left in place for now.
 UNSPLASH_ACCESS_KEY               # DEPRECATED (May 2026). Same as PEXELS_API_KEY — stock-photo tier removed.
 ```

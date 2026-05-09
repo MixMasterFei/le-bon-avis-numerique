@@ -5,6 +5,7 @@ import "./globals.css"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { SiteFooter } from "@/components/layout/SiteFooter"
 import { CookieConsent } from "@/components/CookieConsent"
+import { TotemDock } from "@/components/totem/TotemDock"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
@@ -75,11 +76,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Gate the Totem Assistant dock — admin-only during alpha, opens
+  // to everyone when TOTEM_PUBLIC=true. Mirrors NEWSLETTER_PUBLIC.
+  const { auth } = await import("@/lib/auth")
+  const { canUseTotem } = await import("@/lib/totem/access")
+  const session = await auth()
+  const totemEnabled = canUseTotem({
+    isAuthenticated: !!session?.user,
+    role: session?.user?.role ?? null,
+  })
   return (
     <html
       lang="fr"
@@ -162,6 +172,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <CookieConsent />
+            {totemEnabled && <TotemDock />}
           </SettingsProvider>
         </SessionProvider>
         <Analytics />

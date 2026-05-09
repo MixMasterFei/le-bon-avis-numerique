@@ -13,14 +13,16 @@ import { ApercuPulse } from "./ApercuPulse"
 import { ApercuFinalCTA } from "./ApercuFinalCTA"
 import { HomeSectionNav } from "./HomeSectionNav"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { TotemHeroEntry } from "@/components/totem/TotemHeroEntry"
 
 interface HomepageApercuProps {
   isLoggedIn: boolean
   serifClass: string
   isAdmin?: boolean
+  totemEnabled?: boolean
 }
 
-export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: HomepageApercuProps) {
+export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false, totemEnabled = false }: HomepageApercuProps) {
   const p = APERCU_PALETTE
 
   return (
@@ -30,6 +32,12 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
         style={{ background: p.bg, color: p.ink }}
       >
         <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
+
+        {totemEnabled && (
+          <section style={{ background: p.bg }}>
+            <TotemHeroEntry serifClass={serifClass} />
+          </section>
+        )}
 
         {/* Section anchors below — each has id="..." matching
             HomeSectionNav's chips, and scroll-mt-24 to offset the

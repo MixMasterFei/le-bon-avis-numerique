@@ -17,6 +17,8 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.76",
+    "@ai-sdk/react": "^3.0.179",
     "@anthropic-ai/sdk": "^0.90.0",
     "@auth/prisma-adapter": "^2.11.1",
     "@dicebear/collection": "^9.3.2",
@@ -40,6 +42,7 @@
     "@sentry/nextjs": "^10.42.0",
     "@supabase/supabase-js": "^2.97.0",
     "@vercel/analytics": "^1.6.1",
+    "ai": "^6.0.177",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "class-variance-authority": "^0.7.1",

@@ -1,0 +1,145 @@
+"use client"
+
+import ReactMarkdown from "react-markdown"
+import type { UIMessage } from "ai"
+import { cn } from "@/lib/utils"
+import { TotemMediaCard, type TotemCitedMedia } from "./TotemMediaCard"
+import { TotemActionCard } from "./TotemActionCard"
+
+export interface TotemMessageProps {
+  message: UIMessage
+  onAcceptNavigation: (toolCallId: string, path: string) => void
+  onDeclineNavigation: (toolCallId: string) => void
+}
+
+interface ToolPart {
+  type: string
+  toolCallId?: string
+  state?: string
+  input?: unknown
+  output?: unknown
+  errorText?: string
+}
+
+interface SearchMediaResult {
+  results?: TotemCitedMedia[]
+}
+
+interface MediaDetailsResult {
+  found?: boolean
+  id?: string
+  title?: string
+  type?: string
+  year?: number | null
+  posterUrl?: string | null
+  recommendedAge?: number | null
+  communityAge?: number | null
+  genres?: string[]
+}
+
+export function TotemMessage({ message, onAcceptNavigation, onDeclineNavigation }: TotemMessageProps) {
+  const isUser = message.role === "user"
+  const parts = message.parts ?? []
+
+  return (
+    <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "flex max-w-[88%] flex-col gap-2 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed",
+          isUser
+            ? "bg-[var(--color-accent)] text-white shadow-sm"
+            : "bg-[var(--color-card)] shadow-sm ring-1 ring-[var(--color-line)]",
+        )}
+        style={!isUser ? { color: "var(--color-ink)" } : undefined}
+      >
+        {parts.map((part, idx) => {
+          if (part.type === "text") {
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  "prose prose-sm max-w-none",
+                  isUser ? "prose-invert" : "prose-neutral",
+                  "prose-p:my-1.5 prose-em:italic prose-strong:font-semibold prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5",
+                )}
+              >
+                <ReactMarkdown>{part.text}</ReactMarkdown>
+              </div>
+            )
+          }
+
+          // Tool calls — only show output for searchMedia / getMediaDetails
+          if (typeof part.type === "string" && part.type.startsWith("tool-")) {
+            const tp = part as ToolPart
+            const toolName = tp.type.slice("tool-".length)
+
+            if (toolName === "proposeNavigation") {
+              const input = tp.input as { path?: string; label?: string; reason?: string } | undefined
+              const output = tp.output as { accepted?: boolean } | undefined
+              if (!input?.path || !input?.label || !input?.reason) return null
+              return (
+                <TotemActionCard
+                  key={idx}
+                  toolCallId={tp.toolCallId ?? ""}
+                  path={input.path}
+                  label={input.label}
+                  reason={input.reason}
+                  resolved={output?.accepted != null ? { accepted: !!output.accepted } : undefined}
+                  onAccept={onAcceptNavigation}
+                  onDecline={onDeclineNavigation}
+                />
+              )
+            }
+
+            if (toolName === "searchMedia" && tp.state === "output-available") {
+              const out = tp.output as SearchMediaResult | undefined
+              const results = out?.results ?? []
+              if (results.length === 0) return null
+              return (
+                <div key={idx} className="flex flex-wrap gap-2 pt-1">
+                  {results.slice(0, 4).map((r) => (
+                    <TotemMediaCard key={r.id} media={r} />
+                  ))}
+                </div>
+              )
+            }
+
+            if (toolName === "getMediaDetails" && tp.state === "output-available") {
+              const out = tp.output as MediaDetailsResult | undefined
+              if (!out?.found || !out.id || !out.title) return null
+              return (
+                <div key={idx} className="pt-1">
+                  <TotemMediaCard
+                    media={{
+                      id: out.id,
+                      title: out.title,
+                      type: out.type ?? "MOVIE",
+                      year: out.year ?? null,
+                      posterUrl: out.posterUrl ?? null,
+                      recommendedAge: out.recommendedAge ?? null,
+                      communityAge: out.communityAge ?? null,
+                      genres: out.genres ?? [],
+                      shortPitch: null,
+                    }}
+                  />
+                </div>
+              )
+            }
+
+            // Other tool calls: show a discreet "consulting" hint while in flight
+            if (tp.state === "input-streaming" || tp.state === "input-available") {
+              return (
+                <div key={idx} className="text-xs italic text-muted-foreground">
+                  Totem consulte les fiches…
+                </div>
+              )
+            }
+            return null
+          }
+
+          return null
+        })}
+      </div>
+    </div>
+  )
+}
