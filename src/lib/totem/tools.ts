@@ -339,6 +339,11 @@ export function buildTotemTools(ctx: TotemToolContext) {
             if (typeof age === "number") {
               movies = movies.filter((m) => m.expertAgeRec == null || m.expertAgeRec <= age)
             }
+            // Honour the age cap in the canonical "see all" URL so the
+            // user lands on a pre-filtered films page, not the raw
+            // cinema list.
+            const seeAllUrl =
+              typeof age === "number" ? `/films?sort=cinema&maxAge=${age}` : "/films?sort=cinema"
             return {
               rail,
               status: "ok",
@@ -353,8 +358,11 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 genres: m.genres.slice(0, 3),
                 inCatalog: m.inDatabase,
               })),
-              seeAllUrl: "/films?sort=cinema",
-              seeAllLabel: "En ce moment au cinéma",
+              seeAllUrl,
+              seeAllLabel:
+                typeof age === "number"
+                  ? `En ce moment au cinéma (jusqu'à ${age} ans)`
+                  : "En ce moment au cinéma",
             }
           } catch (err) {
             console.error("[totem] getDiscoveryRail(cinema) failed", err)
