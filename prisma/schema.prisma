@@ -884,16 +884,15 @@ model NewsStory {
   // 60-120 words, plain text (no markdown). Null on legacy briefs.
   familyTakeaway String?         @map("family_takeaway") @db.Text
 
-  // Primary catalog subject — the media item the story is most clearly
-  // about (set at persist time by the linkifier when a title in the
-  // body matches a catalog row). Drives the "Voir la fiche complète
-  // sur Totem Avisé" CTA at the bottom of the story page. Null when
-  // no catalog match was found (most news, parenting articles, etc).
+  // Primary catalog subject — set by the systemic news-media pipeline:
+  // LLM identifies whether the story is about a media title/license,
+  // catalog search finds matching rows, LLM verifies the candidates.
+  // Null when no verified catalog match was found.
   relatedMediaId String?         @map("related_media_id")
   // Full ordered list of catalog matches (first match = primary).
   // Replaces the inline-linking approach: bodies stay clean, the
   // related items render as mini-cards at the bottom of the page.
-  // Up to 3 are displayed; we store more in case rendering rules change.
+  // Several can be displayed when a story is about a saga/franchise.
   relatedMediaIds String[]       @default([]) @map("related_media_ids")
 
   comments NewsComment[]

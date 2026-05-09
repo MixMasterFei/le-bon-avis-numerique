@@ -28,7 +28,7 @@ export class HydrationDebugBoundary extends React.Component<
     this.state = { caught: null }
   }
 
-  static getDerivedStateFromError(_err: Error): null {
+  static getDerivedStateFromError(): null {
     // Don't replace UI on first error — let React try to recover via
     // hydration regen. We only want to RECORD the stack, not block
     // the page.

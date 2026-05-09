@@ -293,11 +293,37 @@ jobs:
           github.event.inputs.task != 'streaming'
         run: |
           echo "::group::Similarity"
-          curl -sSL -X POST \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            -H "Content-Type: application/json" \
-            -d '{"limit":100}' \
-            "$SITE_URL/api/admin/similarity/compute" | jq . 2>/dev/null || true
+          offset=0
+          failures=0
+          for batch in $(seq 1 20); do
+            response=$(curl -sSL --max-time 55 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d "{\"mode\":\"full\",\"limit\":10,\"offset\":$offset}" \
+              "$SITE_URL/api/admin/similarity/compute" 2>/dev/null)
+            if [ -z "$response" ]; then
+              failures=$((failures + 1))
+              echo "Similarity batch $batch: empty response (failure $failures/3)"
+              if [ $failures -ge 3 ]; then
+                break
+              fi
+              continue
+            fi
+            failures=0
+            echo "$response" | jq . 2>/dev/null || echo "$response"
+            done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo "false")
+            if [ "$done_flag" = "true" ]; then
+              echo "Similarity computation complete"
+              break
+            fi
+            next_offset=$(echo "$response" | jq -r '.nextOffset // empty' 2>/dev/null || echo "")
+            if [ -z "$next_offset" ] || [ "$next_offset" = "null" ] || [ "$next_offset" -le "$offset" ]; then
+              echo "Similarity stopped: no forward nextOffset"
+              break
+            fi
+            offset=$next_offset
+            sleep 1
+          done
           echo "::endgroup::"
 
   # ── Daily: News discovery (admin-only synthesized news feed) ──────
@@ -390,13 +416,13 @@ jobs:
           fi
           echo "::endgroup::"
 
-  # ── Sunday 05:00 UTC: Weekly dossier (long-read synthesis) ────────
-  sunday-dossier:
+  # ── Tuesday + Friday 05:00 UTC: Weekly dossier (long-read synthesis) ────────
+  weekly-dossier:
     name: Weekly Dossier
     runs-on: ubuntu-latest
     environment: Production
     if: >-
-      github.event.schedule == '0 5 * * 0' ||
+      github.event.schedule == '0 5 * * 2,5' ||
       github.event.inputs.task == 'weekly-dossier' ||
       github.event.inputs.task == 'all'
     steps:

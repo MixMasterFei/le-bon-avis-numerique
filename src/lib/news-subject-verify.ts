@@ -7,7 +7,7 @@ import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 // the title is the article's actual subject or just a passing
 // mention. This verifier asks the model:
 //
-//   "Of these candidates, which is the article *fundamentally about*?"
+//   "Of these candidates, which are the article's real media subjects?"
 //
 // and returns only the subset that the model confirms. Mentions used
 // as examples, comparisons, or background ("comme dans Up", "depuis
@@ -15,11 +15,12 @@ import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 //
 // Single-provider Claude Haiku 4.5 (May 2026 redesign).
 //
-// Failure mode: the verifier is fail-open. Any error / timeout /
-// malformed JSON returns the original candidate list unchanged so a
-// transient API blip can't silently strip valid related cards.
+// Failure mode: the verifier is fail-closed. A missing related card is
+// much less damaging than a wrong one, because these cards imply that
+// the article is actually about a catalog title.
 
 const VERIFY_TIMEOUT_MS = 20_000
+const IDENTIFY_TIMEOUT_MS = 20_000
 
 export interface SubjectCandidate {
   id: string
@@ -34,12 +35,40 @@ interface StoryContext {
   body: string
 }
 
-const SYSTEM_PROMPT = `You verify whether catalog items are the actual subject of a French family-news article.
+export interface MediaSubjectTerms {
+  isMediaNews: boolean
+  subjectTerms: string[]
+}
 
-Given an article and a list of candidate catalog items (films, séries, jeux vidéo, livres), return ONLY the items that the article is FUNDAMENTALLY ABOUT — meaning the article reports on an event or development concerning that specific work (release, review, news about its creators, controversy, sequel, anniversary, awards…).
+const IDENTIFY_SYSTEM_PROMPT = `You decide whether a French family-news article is about one or more specific media works or media franchises.
+
+Media means: film, TV series, video game, book, manga, comic, or a named franchise/license in those domains.
+
+Return:
+- isMediaNews: true only if the article's main topic is a specific work, release, anniversary, adaptation, franchise, sequel, remake, platform arrival, creator/casting news, controversy, awards, or availability around a media title/license.
+- subjectTerms: search terms to find matching catalog entries. Include the exact work title, the franchise/license name, and closely related work titles that a family catalog may contain. Do NOT include generic terms like "film", "jeu", "Nintendo", "Netflix", "Prime Video", "écrans", "ados", "parents".
+
+Examples:
+- Article: "Star Fox revient sur Switch 2, 29 ans après la N64" -> {"isMediaNews":true,"subjectTerms":["Star Fox"]}
+- Article: "Le film Le Seigneur des Anneaux : La Communauté de l'Anneau a 25 ans" -> {"isMediaNews":true,"subjectTerms":["Le Seigneur des Anneaux","La Communauté de l'Anneau","Les Deux Tours","Le Retour du roi","Le Hobbit","Les Anneaux de Pouvoir"]}
+- Article about teens, screens, online risks, school, science, or parenting in general -> {"isMediaNews":false,"subjectTerms":[]}
+
+Return ONLY a JSON object: {"isMediaNews": boolean, "subjectTerms": ["..."]}. No prose, no markdown, no code fences.`
+
+const SYSTEM_PROMPT = `You verify whether catalog items are real media subjects of a French family-news article.
+
+Given an article and a list of candidate catalog items (films, séries, jeux vidéo, livres), return ONLY items that are real media subjects of the article.
+
+ACCEPT:
+  - the specific work the article is fundamentally about
+  - other works in the same saga/franchise when the article explicitly discusses that broader saga/franchise. Do not require every related work's exact title to appear in the article if the candidate clearly belongs to the saga being discussed.
+  - IMPORTANT example: an anniversary article about "Le Seigneur des Anneaux : La Communauté de l'Anneau" should keep the three Lord of the Rings films, The Hobbit works, and the Amazon Prime series "Les Anneaux de Pouvoir" when those candidates are provided, because they are part of the same Tolkien / Middle-earth franchise context.
+  - a candidate with an ambiguous title like "Elle" ONLY if the article clearly says it is about the film/series/game/book with that title
+
+Be strict: if the article is mainly about parenting, schools, screen time, online safety, science, regulation, or another broad topic, return an empty array even if a candidate title appears as a normal word in the body.
 
 REJECT items that:
-  - are mentioned only as examples, comparisons, or background ("comme dans X", "à la manière de Y", "depuis le succès de Z")
+  - are mentioned only as casual examples, comparisons, or background in an article about another topic ("comme dans X", "à la manière de Y", "depuis le succès de Z")
   - share their title with a common word that happens to appear in the body
   - are referenced via a different work (e.g. "le réalisateur de X" — X is not the subject)
   - appear once with no contextual depth, in an article whose topic is clearly different
@@ -64,7 +93,67 @@ ${story.body}
 CANDIDATS DU CATALOGUE
 ${candidateBlock}
 
-Lesquels (s'il y en a) sont le sujet réel de l'article ? Réponds en JSON : {"subjectIds": [...]}.`
+Lesquels (s'il y en a) sont de vrais sujets média de l'article ? Réponds en JSON : {"subjectIds": [...]}.`
+}
+
+function buildIdentifyPrompt(story: StoryContext): string {
+  return `ARTICLE
+Titre : ${story.title}
+Résumé : ${story.summary}
+
+Corps :
+${story.body}
+
+Cette news est-elle principalement à propos d'un film, d'une série TV, d'un jeu vidéo, d'un livre/manga/BD ou d'une licence média précise ? Si oui, quels termes faut-il chercher dans le catalogue Totem Avisé ?`
+}
+
+function parseMediaSubjectTerms(raw: string): MediaSubjectTerms {
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "")
+  const match = cleaned.match(/\{[\s\S]*\}/)
+  if (!match) return { isMediaNews: false, subjectTerms: [] }
+  try {
+    const parsed = JSON.parse(match[0]) as { isMediaNews?: unknown; subjectTerms?: unknown }
+    const isMediaNews = parsed.isMediaNews === true
+    const subjectTerms = Array.isArray(parsed.subjectTerms)
+      ? parsed.subjectTerms
+          .filter((term): term is string => typeof term === "string")
+          .map((term) => term.trim())
+          .filter((term) => term.length >= 3)
+          .slice(0, 12)
+      : []
+    return { isMediaNews, subjectTerms: isMediaNews ? subjectTerms : [] }
+  } catch {
+    return { isMediaNews: false, subjectTerms: [] }
+  }
+}
+
+export async function identifyMediaSubjectTerms(story: StoryContext): Promise<MediaSubjectTerms> {
+  const prompt = buildIdentifyPrompt(story)
+  const anthropic = getAnthropic()
+  const raw = await callClaudeWithTimeout(
+    async (signal) => {
+      const res = await anthropic.messages.create(
+        {
+          model: DEFAULT_MODEL,
+          max_tokens: 300,
+          system: IDENTIFY_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal },
+      )
+      const block = res.content.find((c) => c.type === "text")
+      return block && "text" in block ? (block as { text: string }).text : ""
+    },
+    IDENTIFY_TIMEOUT_MS,
+    "media-subject-identify",
+  )
+
+  if (raw === null) {
+    console.warn(`[media-subject-identify] timed out for "${story.title.slice(0, 60)}"`)
+    return { isMediaNews: false, subjectTerms: [] }
+  }
+
+  return parseMediaSubjectTerms(raw)
 }
 
 function parseSubjectIds(raw: string, candidates: SubjectCandidate[]): string[] {
@@ -92,9 +181,8 @@ function parseSubjectIds(raw: string, candidates: SubjectCandidate[]): string[] 
  * original linkifier sorts by first-mention position so #1 is the
  * primary subject — we keep that ranking intact for the mini-cards).
  *
- * Fail-open: any error/timeout returns the input candidates unchanged.
- * A silently-empty result list is fine as long as it came from a clean
- * model response; transient failures must not strip valid links.
+ * Fail-closed: any error/timeout returns no subjects. A silently-empty
+ * result list is fine; false positives are worse than missing cards.
  */
 export async function verifyCatalogSubjects(
   story: StoryContext,
@@ -124,9 +212,9 @@ export async function verifyCatalogSubjects(
 
   if (raw === null) {
     console.warn(
-      `[subject-verify] timed out for "${story.title.slice(0, 60)}", keeping all ${candidates.length} candidates`,
+      `[subject-verify] timed out for "${story.title.slice(0, 60)}", dropping ${candidates.length} candidates`,
     )
-    return candidates.map((c) => c.id)
+    return []
   }
 
   const confirmed = parseSubjectIds(raw, candidates)

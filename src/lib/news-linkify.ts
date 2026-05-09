@@ -1,42 +1,36 @@
 import { prisma } from "@/lib/prisma"
 
 /**
- * Auto-link catalog titles in news bodies. Brings traffic from the
- * news feed back to the catalog: when a brief mentions "Final
- * Fantasy VII Rebirth" and we have that game in our DB, the title
- * becomes a clickable link to /media/<id>.
+ * Candidate generation for catalog links in news stories.
  *
- * Conservative matching: word-boundary, case-insensitive, only the
- * first occurrence per title gets linked (to avoid a sea of blue),
- * and only matches that are at least 4 chars + don't look like
- * common words ("It", "Up" — too generic, would mis-match).
+ * This module intentionally does not decide whether a match is valid.
+ * It only turns LLM-extracted title/license terms into plausible
+ * catalog candidates. The verifier in news-subject-verify.ts then
+ * decides whether the article is genuinely about those works.
  */
 
 export interface LinkableMedia {
   id: string
   title: string
-  // Type + year are surfaced to the LLM subject verifier
-  // (news-subject-verify.ts) so it can disambiguate same-titled
-  // works across formats and eras (e.g. "Avatar" — film 2009 vs.
-  // series 2024 vs. game).
+  // Type + year are surfaced to the LLM subject verifier so it can
+  // disambiguate same-titled works across formats and eras.
   type: string
   releaseYear: number | null
   // Used downstream to gate adult-rated catalog matches into
-  // PENDING_REVIEW instead of auto-publishing them on the family
-  // news page (Kill Bill: The Whole Bloody Affair, Saw, etc).
+  // PENDING_REVIEW instead of auto-publishing them on the family page.
   expertAgeRec: number | null
 }
 
+interface StoryText {
+  title: string
+  summary?: string | null
+  body: string
+}
+
 /**
- * Pre-load a working set of catalog titles for the linkifier. Pulls
- * the rows likely to be mentioned in news (popularity-ranked when
- * the signal exists; otherwise a broad fetch capped at 5,000). Run
- * once at the start of a synthesis batch and reused for every
- * story in that batch.
+ * Pre-load a working set of catalog titles for the linkifier.
  */
 export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
-  // tmdbVoteCount is a popularity proxy. Order by it so the most
-  // newsworthy catalog items are favored if we hit the limit.
   const rows = await prisma.mediaItem.findMany({
     where: {
       title: { not: "" },
@@ -47,17 +41,9 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
     take: 5000,
     select: { id: true, title: true, type: true, releaseDate: true, expertAgeRec: true },
   })
+
   return rows
     .filter((r) => r.title.length >= 5)
-    // Drop titles that are common French/English words. These produce
-    // false-positive links ("From", "Elle", "Up", "It", "On", "Lui",
-    // "L'Attachement" — the body's "elle/from/l'attachement" gets
-    // spuriously linked to unrelated catalog entries).
-    .filter((r) => !COMMON_WORD_TITLES.has(r.title.toLowerCase()))
-    // Drop titles that are a single common French article + a word —
-    // "L'Attachement" matches "l'attachement" (a regular noun in a
-    // body about something else). Risk of mis-link too high.
-    .filter((r) => !/^[LDMSTNCJ]['']/i.test(r.title))
     .map((r) => ({
       id: r.id,
       title: r.title,
@@ -68,32 +54,26 @@ export async function loadCatalogIndex(): Promise<LinkableMedia[]> {
 }
 
 // Single-word titles that collide with common French/English words.
-// Lowercased for case-insensitive comparison. List is intentionally
-// conservative — when in doubt, exclude the catalog title (better a
-// missed link than a wrong one). Add to this list as new mis-links
-// surface in review.
+// They are not removed from the catalog: they just require media
+// context before becoming candidates.
 const COMMON_WORD_TITLES = new Set<string>([
-  // English common words (often catalog titles too)
   "from", "with", "into", "over", "down", "back", "home", "love",
   "life", "time", "year", "good", "best", "first", "last",
   "after", "again", "alone", "alive", "dead", "lost", "found",
-  // French common words
-  "elle", "lui", "toi", "moi", "nous", "vous", "leur", "leurs",
-  "tout", "tous", "rien", "tout", "alors", "ainsi", "donc",
-  "encore", "même", "très", "plus", "moins", "aussi", "comme",
-  "voici", "voilà", "ici", "là-bas", "celui", "celle", "cela",
-  "depuis", "pendant", "avant", "après", "selon", "dans", "sans",
+  "elle", "elles", "il", "ils", "lui", "toi", "moi", "nous", "vous", "leur", "leurs",
+  "tout", "tous", "rien", "alors", "ainsi", "donc", "encore", "meme", "tres",
+  "plus", "moins", "aussi", "comme", "voici", "voila", "ici", "celui", "celle",
+  "cela", "depuis", "pendant", "avant", "apres", "selon", "dans", "sans",
   "pour", "avec", "par", "sur", "sous", "vers", "chez",
-  // Brand-style single words that overlap with common English/French words
+  "phenomene", "ressource", "guide", "carte", "classe", "famille", "familles",
+  "enfant", "enfants", "parent", "parents",
   "up", "it", "on", "you", "her", "him", "us", "we",
   "le", "la", "les", "un", "une", "des", "du", "de",
 ])
 
-/**
- * Convenience: lookup by id in a catalog index. Used after linkify
- * to inspect the primary subject's age recommendation and decide
- * whether to demote the story to PENDING_REVIEW.
- */
+const MEDIA_CONTEXT_RE =
+  /\b(film|films|cin[ée]ma|long-m[ée]trage|s[ée]rie|s[ée]ries|saison|[ée]pisode|prime video|amazon|netflix|disney\+|jeu|jeux|jeu vid[ée]o|sortie|bande-annonce|casting|acteur|actrice|r[ée]alisateur|r[ée]alisatrice|adaptation|trilogie|saga|franchise|suite|spin-?off|remake|reboot|anniversaire|festival|box-office|streaming|plateforme|livre|roman|manga|bd)\b/i
+
 export function findInCatalog(catalog: LinkableMedia[], id: string): LinkableMedia | undefined {
   return catalog.find((c) => c.id === id)
 }
@@ -102,54 +82,127 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
+function normalizeText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+}
+
+function isSingleWordTitle(title: string): boolean {
+  return !/[\s:;,.!?()[\]{}|/\\]/.test(title.trim())
+}
+
+function startsLowercase(text: string): boolean {
+  const first = text.trim().charAt(0)
+  return first !== "" && first === first.toLocaleLowerCase("fr-FR") && first !== first.toLocaleUpperCase("fr-FR")
+}
+
+function isAmbiguousSingleWordTitle(title: string): boolean {
+  return isSingleWordTitle(title) && COMMON_WORD_TITLES.has(normalizeText(title))
+}
+
+function storyText(story: StoryText): string {
+  return `${story.title}\n${story.summary ?? ""}\n${story.body}`
+}
+
+function hasMediaContext(story: StoryText): boolean {
+  return MEDIA_CONTEXT_RE.test(storyText(story))
+}
+
+function shouldKeepExactMatch(story: StoryText, item: LinkableMedia, matchedText: string): boolean {
+  if (!isAmbiguousSingleWordTitle(item.title)) return true
+  if (!hasMediaContext(story)) return false
+
+  // In a media article, keep "Elle" / "Up" / similar if the mention is
+  // capitalized as a title. Lowercase prose ("elles", "up", "phenomene")
+  // still stays out and lets the verifier avoid unnecessary work.
+  return !startsLowercase(matchedText)
+}
+
+function uniqueNormalizedTerms(terms: string[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of terms) {
+    const term = normalizeText(raw).replace(/\s+/g, " ").trim()
+    if (term.length < 3 || seen.has(term) || COMMON_WORD_TITLES.has(term)) continue
+    seen.add(term)
+    result.push(term)
+  }
+  return result
+}
+
+function titleMatchesSubjectTerm(media: LinkableMedia, term: string): boolean {
+  const title = normalizeText(media.title)
+  return title.includes(term)
+}
+
+function isShadowedByLongerTitle(item: LinkableMedia, matches: Array<{ id: string }>, catalog: LinkableMedia[]): boolean {
+  const title = normalizeText(item.title)
+  return matches.some((match) => {
+    const matched = catalog.find((candidate) => candidate.id === match.id)
+    if (!matched) return false
+    const matchedTitle = normalizeText(matched.title)
+    return matchedTitle.length > title.length && matchedTitle.includes(title)
+  })
+}
+
 /**
- * Scan the body for catalog title mentions and return the matched
- * catalog ids, in order of first occurrence, deduped. Body is NOT
- * modified — Xavier's editorial preference is to keep prose clean
- * and surface related catalog items as mini-cards at the bottom of
- * the story page rather than peppering inline links.
- *
- * Sort titles by length DESC so longer titles win over shorter ones
- * that contain them ("Final Fantasy VII Rebirth" before "Final
- * Fantasy"). Returns up to `limit` ids (caller renders 3 cards).
+ * Backward-compatible body-only scanner. Prefer
+ * extractCatalogMatchesFromStory when title/summary are available.
  */
 export function extractCatalogMatches(
   body: string,
   catalog: LinkableMedia[],
   limit = 3,
 ): string[] {
-  if (!body || catalog.length === 0) return []
+  return extractCatalogMatchesFromStory({ title: "", body }, catalog, limit)
+}
 
-  // Sort longest titles first so the long-title-takes-priority rule
-  // works: ("Final Fantasy VII Rebirth" recorded before "Final
-  // Fantasy" so the same body span isn't double-counted).
+/**
+ * Returns candidate catalog ids in rough relevance order:
+ * exact title mentions first, then catalog titles matching the generic
+ * subject terms extracted by the LLM.
+ */
+export function extractCatalogMatchesFromStory(
+  story: StoryText,
+  catalog: LinkableMedia[],
+  limit = 6,
+  subjectTerms: string[] = [],
+): string[] {
+  const text = storyText(story)
+  if (!text.trim() || catalog.length === 0) return []
+
+  const normalizedSubjectTerms = hasMediaContext(story) ? uniqueNormalizedTerms(subjectTerms) : []
   const sorted = [...catalog].sort((a, b) => b.title.length - a.title.length)
-
-  const matchedIds: string[] = []
-  const claimedRanges: Array<{ start: number; end: number }> = []
+  const matches: Array<{ id: string; start: number; end: number; score: number }> = []
 
   for (const item of sorted) {
-    if (matchedIds.length >= limit) break
-    if (matchedIds.includes(item.id)) continue
-    const re = new RegExp(`\\b${escapeRegex(item.title)}\\b`, "i")
-    const match = body.match(re)
-    if (!match || match.index === undefined) continue
-    const start = match.index
-    const end = start + match[0].length
-    // Skip when a longer title already claimed this span (avoids
-    // counting "Final Fantasy" once "Final Fantasy VII Rebirth" hit).
-    if (claimedRanges.some((r) => start < r.end && end > r.start)) continue
-    claimedRanges.push({ start, end })
-    matchedIds.push(item.id)
+    if (matches.some((m) => m.id === item.id)) continue
+    if (isSingleWordTitle(item.title) && isShadowedByLongerTitle(item, matches, catalog)) continue
+
+    const exact = text.match(new RegExp(`\\b${escapeRegex(item.title)}\\b`, "i"))
+    if (exact?.index !== undefined && shouldKeepExactMatch(story, item, exact[0])) {
+      const start = exact.index
+      const end = start + exact[0].length
+      if (matches.some((r) => start < r.end && end > r.start)) continue
+      matches.push({ id: item.id, start, end, score: start })
+      continue
+    }
+
+    const subjectTermIndex = normalizedSubjectTerms.findIndex((term) => titleMatchesSubjectTerm(item, term))
+    if (subjectTermIndex >= 0) {
+      matches.push({
+        id: item.id,
+        start: Number.MAX_SAFE_INTEGER,
+        end: Number.MAX_SAFE_INTEGER,
+        score: 1_000_000 + subjectTermIndex,
+      })
+    }
   }
 
-  // Re-order results by their position in the body so the FIRST
-  // mention determines the primary subject (mini-card #1).
-  matchedIds.sort((a, b) => {
-    const aRange = claimedRanges[matchedIds.indexOf(a)]
-    const bRange = claimedRanges[matchedIds.indexOf(b)]
-    return (aRange?.start ?? 0) - (bRange?.start ?? 0)
-  })
-
-  return matchedIds
+  return matches
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit)
+    .map((m) => m.id)
 }

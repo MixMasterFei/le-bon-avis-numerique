@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
-import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
-import { verifyCatalogSubjects } from "@/lib/news-subject-verify"
+import { loadCatalogIndex, extractCatalogMatchesFromStory, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
+import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-subject-verify"
 
-// Backfill — re-runs the catalog-subject pipeline on already-published
-// stories whose `relatedMediaIds` were stamped by the pre-verifier
-// linkifier (text-only scan, no LLM check). Strips off candidates
-// that aren't actually the article's subject so the related-items
-// mini-cards on the story page stop showing unrelated movies/series/
-// games.
+// Backfill — re-runs the systemic catalog-subject pipeline on already
+// published stories: LLM identifies whether the story is media-related
+// and which title/license terms to search, deterministic catalog search
+// creates candidates, then LLM verifies the final related-items list.
 //
 // Same shape as /api/admin/news/reprocess-images: cursor-paginated
 // internally, 50s safety bail, returns { done } so the Operations
@@ -18,8 +16,8 @@ import { verifyCatalogSubjects } from "@/lib/news-subject-verify"
 //
 // Idempotent — re-running on a story whose subjects already pass
 // verification is a no-op (same input → same LLM verdict, modulo
-// model nondeterminism). We re-run the WHOLE pipeline (extract +
-// verify) rather than just verify the existing relatedMediaIds,
+  // model nondeterminism). We re-run the WHOLE pipeline (identify +
+  // extract + verify) rather than just verify the existing relatedMediaIds,
 // because the existing list may have been truncated to 3 by the
 // pre-verifier linkifier and dropping false positives could leave
 // room for valid candidates that were squeezed out.
@@ -68,7 +66,16 @@ export async function POST(req: NextRequest) {
 
       for (const row of rows) {
         scanned++
-        const candidateIds = extractCatalogMatches(row.body, catalogIndex, 3)
+        const storyForCatalog = { title: row.title, summary: row.summary, body: row.body }
+        const mediaSubject = await identifyMediaSubjectTerms(storyForCatalog)
+        const candidateIds = mediaSubject.isMediaNews
+          ? extractCatalogMatchesFromStory(
+              storyForCatalog,
+              catalogIndex,
+              8,
+              mediaSubject.subjectTerms,
+            )
+          : []
         const candidates = candidateIds
           .map((id) => findInCatalog(catalogIndex, id))
           .filter((m): m is LinkableMedia => !!m)

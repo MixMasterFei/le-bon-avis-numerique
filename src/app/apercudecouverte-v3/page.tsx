@@ -24,6 +24,8 @@ export const dynamic = "force-dynamic"
 // every render is per-request anyway. Cron writes news to the DB, the
 // page reads it on each visit (auth-gated, low traffic).
 
+const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
+
 interface SearchParams {
   font?: string
 }
@@ -480,9 +482,13 @@ export default async function ApercuDecouverteV3Page(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      <HydrationDebugBoundary>
+      {hydrationDebugEnabled ? (
+        <HydrationDebugBoundary>
+          <ApercuDecouverteV3 data={data} serifClass={serifClass} />
+        </HydrationDebugBoundary>
+      ) : (
         <ApercuDecouverteV3 data={data} serifClass={serifClass} />
-      </HydrationDebugBoundary>
+      )}
     </div>
   )
 }

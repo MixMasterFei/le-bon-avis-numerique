@@ -5,7 +5,8 @@ import { slugify } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { moderateStory } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
-import { loadCatalogIndex, extractCatalogMatches } from "@/lib/news-linkify"
+import { loadCatalogIndex, extractCatalogMatchesFromStory } from "@/lib/news-linkify"
+import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-subject-verify"
 import type { NewsCategory, Prisma } from "@prisma/client"
 
 /**
@@ -392,7 +393,23 @@ export async function runWeeklyDossier(opts: { force?: boolean } = {}): Promise<
   let matchedIds: string[] = []
   try {
     const catalogIndex = await loadCatalogIndex()
-    matchedIds = extractCatalogMatches(parsed.body, catalogIndex, 3)
+    const storyForCatalog = { title: parsed.title, summary: parsed.summary, body: parsed.body }
+    const mediaSubject = await identifyMediaSubjectTerms(storyForCatalog)
+    const candidateIds = mediaSubject.isMediaNews
+      ? extractCatalogMatchesFromStory(
+          storyForCatalog,
+          catalogIndex,
+          8,
+          mediaSubject.subjectTerms,
+        )
+      : []
+    const candidates = candidateIds
+      .map((id) => catalogIndex.find((m) => m.id === id))
+      .filter((m): m is NonNullable<typeof m> => !!m)
+      .map((m) => ({ id: m.id, title: m.title, type: m.type, year: m.releaseYear }))
+    matchedIds = candidates.length > 0
+      ? await verifyCatalogSubjects(storyForCatalog, candidates)
+      : []
   } catch (err) {
     console.warn("[news-dossier] catalog match failed:", err)
   }

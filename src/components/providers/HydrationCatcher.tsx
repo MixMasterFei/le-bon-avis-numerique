@@ -32,7 +32,6 @@ export function HydrationCatcher() {
       const msg = event.message ?? String(event.error ?? "")
       // Only surface React errors — let other window errors pass through.
       if (msg.includes("Minified React error") || msg.includes("Hydration") || msg.includes("hydrat")) {
-        // eslint-disable-next-line no-console
         console.error(
           "%c[HYDRATION CATCHER — window.error]",
           "background:#ff0000;color:#fff;padding:4px 8px;font-weight:bold;font-size:14px",

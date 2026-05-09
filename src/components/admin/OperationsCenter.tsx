@@ -676,8 +676,8 @@ const OPERATIONS: Array<{
       key: "newsReverifyRelated",
       endpoint: "/api/admin/news/reverify-related",
       method: "POST",
-      // Re-runs the catalog-subject linkifier + LLM verifier on every
-      // PUBLISHED story to strip false-positive related-items cards.
+      // Re-runs the systemic catalog-subject pipeline on every
+      // PUBLISHED story: LLM identify -> catalog search -> LLM verify.
       // Cursor-passing because we touch ALL stories (no IS NULL filter
       // to make resume natural).
       chunked: true,
@@ -700,7 +700,7 @@ const OPERATIONS: Array<{
         `${stats.updated || 0} mises à jour (${stats.cleared || 0} vidées, ${stats.unchanged || 0} inchangées)`,
     },
     label: "Re-vérifier liens catalogue",
-    description: "Filtrer via LLM les faux positifs dans les mini-cartes de fin d'article (Lost / Up / Friends mal liés)",
+    description: "Identifier via LLM les vraies news média puis lier seulement les fiches catalogue pertinentes",
     icon: Newspaper,
     color: "amber",
     statLabels: { updated: "corrigées", skipped: "inchangées" },

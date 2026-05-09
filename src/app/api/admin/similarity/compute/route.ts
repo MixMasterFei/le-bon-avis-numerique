@@ -153,15 +153,24 @@ export async function POST(request: Request) {
     const nextOffset = offset + limit
     const done = nextOffset >= totalItems || mediaItems.length < limit
 
-    if (done) {
-      await logCronRun({
-        task: "similarity",
-        status: "success",
-        summary: `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`,
-        details: { processed, created, updated },
-        startTime,
-      })
-    }
+    await logCronRun({
+      task: "similarity",
+      status: done ? "success" : "partial",
+      summary: done
+        ? `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`
+        : `Batch similarity offset=${offset} next=${nextOffset}/${totalItems} (${processed} paires)`,
+      details: {
+        processed,
+        created,
+        updated,
+        offset,
+        limit,
+        nextOffset: done ? null : nextOffset,
+        total: totalItems,
+        done,
+      },
+      startTime,
+    })
 
     return NextResponse.json({
       success: true,

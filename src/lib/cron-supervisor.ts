@@ -13,6 +13,7 @@ type RecentLog = {
 type ExpectedTask = {
   task: string
   staleAfterHours: number
+  allowRepeatedPartial?: boolean
   remediation?: Remediation
 }
 
@@ -122,11 +123,12 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "similarity",
     staleAfterHours: 192,
+    allowRepeatedPartial: true,
     remediation: {
       label: "Relance similarité batch réduit",
       method: "POST",
       path: "/api/admin/similarity/compute",
-      body: { mode: "full", limit: 3, offset: 0 },
+      body: { mode: "full", limit: 10, offset: 0 },
     },
   },
 ]
@@ -186,7 +188,7 @@ function detectIssues(logs: RecentLog[]): Issue[] {
     }
 
     const recentPartials = taskLogs.slice(0, 3).filter((log) => log.status === "partial").length
-    if (recentPartials >= 2) {
+    if (recentPartials >= 2 && !expected.allowRepeatedPartial) {
       issues.push({
         task: expected.task,
         status: "repeated-partial",

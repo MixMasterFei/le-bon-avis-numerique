@@ -35,6 +35,8 @@ const edunline = localFont({
   display: "swap",
 })
 
+const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://totemavise.com"),
   title: {
@@ -154,7 +156,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
         <SessionProvider>
           <SettingsProvider>
-            <HydrationCatcher />
+            {hydrationDebugEnabled ? <HydrationCatcher /> : null}
             <ScrollRestoration />
             <SiteHeader />
             <main className="flex-1">{children}</main>

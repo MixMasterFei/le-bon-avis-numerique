@@ -16,8 +16,8 @@ import { getAnthropic } from "@/lib/anthropic"
 const SYNTHESIS_ANTHROPIC_MODEL = "claude-sonnet-4-6"
 import { moderateStory, type Audience } from "@/lib/news-moderate"
 import { judgeStory } from "@/lib/news-quality-judge"
-import { loadCatalogIndex, extractCatalogMatches, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
-import { verifyCatalogSubjects } from "@/lib/news-subject-verify"
+import { loadCatalogIndex, extractCatalogMatchesFromStory, findInCatalog, type LinkableMedia } from "@/lib/news-linkify"
+import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-subject-verify"
 
 // Stories whose primary catalog match has a recommended age at or
 // above this threshold get demoted to PENDING_REVIEW instead of
@@ -993,17 +993,22 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       }
     }
 
-    // Find catalog title mentions in the body. We don't modify the
-    // body — related items render as mini-cards at the bottom of
-    // the story page (cleaner reading flow, no inline link clutter).
-    //
-    // Two-pass: text-based scan produces *candidates*, then an LLM
-    // verifier confirms which (if any) are actually the article's
-    // subject. The text scan alone trips on titles that incidentally
-    // appear in the prose ("Lost" in "the children were lost"); the
-    // verifier filters those out by reading the article holistically.
-    // Verifier is fail-open — any error returns the candidates as-is.
-    const candidateIds = extractCatalogMatches(s.body, catalogIndex, 3)
+    // Systemic catalog linking, no human per-story check:
+    // 1) LLM decides whether the story is actually about media and
+    //    extracts title/license search terms.
+    // 2) deterministic catalog search turns those terms into candidates.
+    // 3) LLM verifies the candidates. Fail-closed: better no card than
+    //    a false "à découvrir" recommendation.
+    const storyForCatalog = { title: s.title, summary: s.summary, body: s.body }
+    const mediaSubject = await identifyMediaSubjectTerms(storyForCatalog)
+    const candidateIds = mediaSubject.isMediaNews
+      ? extractCatalogMatchesFromStory(
+          storyForCatalog,
+          catalogIndex,
+          8,
+          mediaSubject.subjectTerms,
+        )
+      : []
     const candidates = candidateIds
       .map((id) => findInCatalog(catalogIndex, id))
       .filter((m): m is LinkableMedia => !!m)

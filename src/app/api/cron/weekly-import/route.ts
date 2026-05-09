@@ -395,15 +395,17 @@ export async function GET(req: NextRequest) {
     const posterRefresh = await validateAndRefreshPosters(30)
 
     const totalImported = Object.values(results).reduce((sum, s) => sum + s.imported, 0)
+    const totalErrors =
+      Object.values(results).reduce((sum, s) => sum + s.errors, 0) + posterRefresh.errors
     const duration = Math.round((Date.now() - startTime) / 1000)
 
     console.log(`[cron] Weekly import complete: ${totalImported} new items in ${duration}s`)
 
     await logCronRun({
       task: "import",
-      status: totalImported > 0 ? "success" : "partial",
+      status: totalErrors > 0 ? "partial" : "success",
       summary: `${totalImported} nouveaux contenus importes en ${duration}s`,
-      details: results,
+      details: { results, posterRefresh, totalErrors },
       startTime,
     })
 
