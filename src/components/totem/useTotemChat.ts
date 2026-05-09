@@ -6,6 +6,21 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { isPathAllowed } from "@/lib/totem/nav-allowlist"
 
+interface PersistedMessage {
+  id: string
+  role: string
+  content: string
+  createdAt: string
+}
+
+function persistedToUIMessages(messages: PersistedMessage[]): UIMessage[] {
+  return messages.map((m) => ({
+    id: m.id,
+    role: (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
+    parts: [{ type: "text" as const, text: m.content }],
+  }))
+}
+
 const CONVERSATION_KEY = "totem.conversationId.v1"
 
 function readStoredConversationId(): string | undefined {
@@ -133,15 +148,48 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     setRateLimit(null)
   }, [chat])
 
+  const [loading, setLoading] = useState(false)
+
+  const loadConversation = useCallback(
+    async (conversationId: string) => {
+      setLoading(true)
+      setRateLimit(null)
+      try {
+        const res = await fetch(`/api/totem/conversations/${encodeURIComponent(conversationId)}`, {
+          credentials: "same-origin",
+          cache: "no-store",
+        })
+        if (!res.ok) {
+          console.error("[totem] loadConversation failed", res.status)
+          return false
+        }
+        const data = (await res.json()) as { id: string; messages: PersistedMessage[] }
+        conversationIdRef.current = data.id
+        writeStoredConversationId(data.id)
+        chat.setMessages(persistedToUIMessages(data.messages))
+        return true
+      } catch (err) {
+        console.error("[totem] loadConversation error", err)
+        return false
+      } finally {
+        setLoading(false)
+      }
+    },
+    [chat],
+  )
+
   return {
     messages: chat.messages,
     status: chat.status,
     error: chat.error,
     rateLimit,
+    loading,
+    activeConversationId: conversationIdRef.current,
     sendUserMessage,
     acceptNavigation,
     declineNavigation,
     resetConversation,
+    loadConversation,
     stop: chat.stop,
   }
 }

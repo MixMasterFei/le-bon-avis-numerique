@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
-import { Send, Loader2, X } from "lucide-react"
+import { Send, Loader2, X, ChevronLeft, History, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTotemChat } from "./useTotemChat"
 import { TotemMessage } from "./TotemMessage"
@@ -12,6 +12,7 @@ import { TotemEmpty } from "./TotemEmpty"
 import { TotemError } from "./TotemError"
 import { TotemRateLimit } from "./TotemRateLimit"
 import { TotemAlphaBadge } from "./TotemAlphaBadge"
+import { TotemHistoryPanel } from "./TotemHistoryPanel"
 
 const ALPHA_HINT_KEY = "totem.alphaHintDismissed.v1"
 const MAX_INPUT_CHARS = 1500
@@ -28,6 +29,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
 
   const [draft, setDraft] = useState("")
   const [showAlphaHint, setShowAlphaHint] = useState(false)
+  const [view, setView] = useState<"chat" | "history">("chat")
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
@@ -36,9 +38,13 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     status,
     error,
     rateLimit,
+    loading,
+    activeConversationId,
     sendUserMessage,
     acceptNavigation,
     declineNavigation,
+    resetConversation,
+    loadConversation,
   } = useTotemChat({ sourcePage: pathname })
 
   useEffect(() => {
@@ -127,30 +133,76 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
 
           {/* Header */}
           <div
-            className="flex items-start justify-between border-b px-4 py-3"
+            className="flex items-center justify-between border-b px-4 py-3"
             style={{ borderColor: "var(--color-line)" }}
           >
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-lg font-medium"
-                  style={{ fontFamily: "var(--font-fraunces)", letterSpacing: "-0.01em" }}
+            <div className="flex min-w-0 items-center gap-3">
+              {view === "history" && (
+                <button
+                  type="button"
+                  onClick={() => setView("chat")}
+                  className="rounded-md p-1.5 transition hover:bg-black/5"
+                  style={{ color: "var(--color-ink2)" }}
+                  aria-label="Retour à la conversation"
                 >
-                  Totem
-                </span>
-                <TotemAlphaBadge variant="full" />
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+              )}
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-lg font-medium"
+                    style={{ fontFamily: "var(--font-fraunces)", letterSpacing: "-0.01em" }}
+                  >
+                    {view === "history" ? "Historique" : "Totem"}
+                  </span>
+                  {view === "chat" && <TotemAlphaBadge variant="full" />}
+                </div>
+                {view === "chat" && (
+                  <p className="text-[11px]" style={{ color: "var(--color-ink2)" }}>
+                    Le guide indépendant des familles.
+                  </p>
+                )}
               </div>
-              <p className="text-[11px]" style={{ color: "var(--color-ink2)" }}>
-                Le guide indépendant des familles.
-              </p>
             </div>
-            <DialogPrimitive.Close
-              className="rounded-md p-1.5 transition hover:bg-black/5"
-              style={{ color: "var(--color-ink2)" }}
-              aria-label="Fermer"
-            >
-              <X className="h-4 w-4" />
-            </DialogPrimitive.Close>
+            <div className="flex items-center gap-1">
+              {isAuthenticated && view === "chat" && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetConversation()
+                      setDraft("")
+                      setTimeout(() => inputRef.current?.focus(), 50)
+                    }}
+                    className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium transition hover:bg-black/5"
+                    style={{ color: "var(--color-ink)" }}
+                    aria-label="Nouvelle conversation"
+                    title="Nouvelle conversation"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Nouvelle</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setView("history")}
+                    className="rounded-md p-1.5 transition hover:bg-black/5"
+                    style={{ color: "var(--color-ink2)" }}
+                    aria-label="Historique"
+                    title="Historique"
+                  >
+                    <History className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              <DialogPrimitive.Close
+                className="rounded-md p-1.5 transition hover:bg-black/5"
+                style={{ color: "var(--color-ink2)" }}
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4" />
+              </DialogPrimitive.Close>
+            </div>
           </div>
 
           {/* Alpha hint banner — first open only */}
@@ -168,15 +220,31 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
             </div>
           )}
 
-          {/* Conversation */}
-          <div ref={scrollerRef} className="flex-1 overflow-y-auto px-3 py-3">
-            {messages.length === 0 ? (
-              <TotemEmpty
-                sourcePage={pathname}
-                isAuthenticated={isAuthenticated}
-                onPickPrompt={handlePickPrompt}
+          {/* Conversation OR history */}
+          <div ref={scrollerRef} className="flex-1 overflow-y-auto">
+            {view === "history" ? (
+              <TotemHistoryPanel
+                activeConversationId={activeConversationId}
+                onPick={async (id) => {
+                  const ok = await loadConversation(id)
+                  if (ok) setView("chat")
+                }}
+                onClose={() => setView("chat")}
               />
+            ) : loading ? (
+              <div className="flex items-center gap-2 px-4 py-6 text-sm" style={{ color: "var(--color-ink2)" }}>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Chargement de la conversation…
+              </div>
             ) : (
+              <div className="px-3 py-3">
+                {messages.length === 0 ? (
+                  <TotemEmpty
+                    sourcePage={pathname}
+                    isAuthenticated={isAuthenticated}
+                    onPickPrompt={handlePickPrompt}
+                  />
+                ) : (
               <div className="space-y-3">
                 {messages.map((m) => (
                   <TotemMessage
@@ -204,11 +272,14 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                     isAuthenticated={isAuthenticated}
                   />
                 )}
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* Composer */}
+          {/* Composer — hidden in history view */}
+          {view === "chat" && (
           <form
             onSubmit={handleSubmit}
             className="border-t px-3 py-3"
@@ -253,6 +324,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
               </div>
             )}
           </form>
+          )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
