@@ -74,6 +74,12 @@ const BAND_CONFIG: Record<
     pillText: AMBER,
     icon: AlertTriangle,
   },
+  notYet: {
+    label: FAMILY_FIT_LABELS.notYet,
+    pillBg: "rgba(209, 106, 74, 0.14)",
+    pillText: "#D16A4A",
+    icon: ShieldAlert,
+  },
 }
 
 // ---------------------------------------------------------------------------

@@ -48,12 +48,14 @@ const FIT_BADGE_CLASSES: Record<FamilyFitBand, string> = {
   veryAdapted: "bg-green-100 text-green-700",
   goodChoice: "bg-sky-100 text-sky-700",
   check: "bg-amber-100 text-amber-700",
+  notYet: "bg-rose-100 text-rose-700",
 }
 
 const FIT_TEXT_CLASSES: Record<FamilyFitBand, string> = {
   veryAdapted: "text-green-600",
   goodChoice: "text-sky-600",
   check: "text-amber-600",
+  notYet: "text-rose-600",
 }
 
 export function FamilyMovieNight() {

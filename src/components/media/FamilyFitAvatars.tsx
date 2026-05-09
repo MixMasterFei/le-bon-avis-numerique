@@ -33,6 +33,7 @@ const AVATAR_RING_CLASSES: Record<FamilyFitBand, string> = {
   veryAdapted: "ring-emerald-300 bg-emerald-50",
   goodChoice: "ring-sky-300 bg-sky-50",
   check: "ring-amber-300 bg-amber-50",
+  notYet: "ring-rose-300 bg-rose-50",
 }
 
 /**

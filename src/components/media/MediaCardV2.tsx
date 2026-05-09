@@ -65,6 +65,7 @@ function fitColor(score: number): string {
     veryAdapted: "bg-emerald-500",
     goodChoice: "bg-sky-500",
     check: "bg-amber-500",
+    notYet: "bg-rose-500",
   }
 
   return bandColors[familyFitBandFromScore(score)]
@@ -75,6 +76,7 @@ function fitDot(score: number): string {
     veryAdapted: "bg-emerald-200",
     goodChoice: "bg-sky-200",
     check: "bg-amber-200",
+    notYet: "bg-rose-200",
   }
 
   return bandDots[familyFitBandFromScore(score)]

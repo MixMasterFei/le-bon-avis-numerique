@@ -71,6 +71,13 @@ const BAND_CONFIG: Record<
     pillText: "#8A5A1E",
     icon: AlertTriangle,
   },
+  notYet: {
+    label: FAMILY_FIT_LABELS.notYet,
+    dot: "#D16A4A",
+    pillBg: "rgba(209,106,74,0.14)",
+    pillText: "#9A3F29",
+    icon: ShieldAlert,
+  },
 }
 
 function Shell({

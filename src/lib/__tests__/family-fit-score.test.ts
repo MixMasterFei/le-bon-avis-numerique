@@ -22,6 +22,19 @@ describe("family fit guardrails", () => {
     expect(result.ageWarning).toBe(true)
   })
 
+  it("marks media as too early when the age gap is clear", () => {
+    const result = applyFitGuardrails({
+      score: 100,
+      memberAge: 13,
+      expertAgeRec: 16,
+      hasRichProfile: true,
+    })
+
+    expect(result.score).toBe(30)
+    expect(result.level).toBe("poor")
+    expect(result.ageWarning).toBe(true)
+  })
+
   it("keeps incomplete profiles in the review band", () => {
     const result = applyFitGuardrails({
       score: 100,

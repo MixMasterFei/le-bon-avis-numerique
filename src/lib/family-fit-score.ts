@@ -397,8 +397,15 @@ export function applyFitGuardrails(input: {
   if (input.expertAgeRec != null && input.memberAge != null && input.expertAgeRec > input.memberAge) {
     ageWarning = true
     reasonOverride = `Recommandé à partir de ${input.expertAgeRec} ans`
-    score = Math.min(score, input.expertAgeRec >= input.memberAge + 2 ? 45 : 65)
-    level = capLevel(levelFromScore(score), "moderate")
+    const ageGap = input.expertAgeRec - input.memberAge
+    if (ageGap >= 2) {
+      reasonOverride = `Trop tÃ´t : recommandÃ© Ã  partir de ${input.expertAgeRec} ans`
+      score = Math.min(score, 30)
+      level = "poor"
+    } else {
+      score = Math.min(score, 65)
+      level = capLevel(levelFromScore(score), "moderate")
+    }
   } else if (ageUnknown && input.memberAge != null && input.memberAge < 18) {
     reasonOverride = "Âge expert à confirmer"
     score = Math.min(score, 65)

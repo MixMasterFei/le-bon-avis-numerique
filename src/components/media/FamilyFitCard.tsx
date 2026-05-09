@@ -70,6 +70,12 @@ const BAND_CONFIG: Record<
     pillText: "text-amber-700",
     icon: AlertTriangle,
   },
+  notYet: {
+    label: FAMILY_FIT_LABELS.notYet,
+    pillBg: "bg-rose-100",
+    pillText: "text-rose-700",
+    icon: ShieldAlert,
+  },
 }
 
 // ---------------------------------------------------------------------------
