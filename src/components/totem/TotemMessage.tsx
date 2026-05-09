@@ -5,11 +5,23 @@ import type { UIMessage } from "ai"
 import { cn } from "@/lib/utils"
 import { TotemMediaCard, type TotemCitedMedia } from "./TotemMediaCard"
 import { TotemActionCard } from "./TotemActionCard"
+import { TotemWatchlistCard } from "./TotemWatchlistCard"
+import { TotemReactionCard } from "./TotemReactionCard"
+import { TotemFeedbackButtons } from "./TotemFeedbackButtons"
 
 export interface TotemMessageProps {
   message: UIMessage
   onAcceptNavigation: (toolCallId: string, path: string) => void
   onDeclineNavigation: (toolCallId: string) => void
+  onAcceptWatchlist: (toolCallId: string, mediaId: string) => void | Promise<void>
+  onDeclineWatchlist: (toolCallId: string) => void
+  onAcceptReaction: (
+    toolCallId: string,
+    input: { mediaId: string; familyMemberId: string; reaction: string },
+  ) => void | Promise<void>
+  onDeclineReaction: (toolCallId: string) => void
+  onSendFeedback?: (messageId: string, rating: "UP" | "DOWN", reason?: string) => Promise<void>
+  isStreaming?: boolean
 }
 
 interface ToolPart {
@@ -37,9 +49,20 @@ interface MediaDetailsResult {
   genres?: string[]
 }
 
-export function TotemMessage({ message, onAcceptNavigation, onDeclineNavigation }: TotemMessageProps) {
+export function TotemMessage({
+  message,
+  onAcceptNavigation,
+  onDeclineNavigation,
+  onAcceptWatchlist,
+  onDeclineWatchlist,
+  onAcceptReaction,
+  onDeclineReaction,
+  onSendFeedback,
+  isStreaming = false,
+}: TotemMessageProps) {
   const isUser = message.role === "user"
   const parts = message.parts ?? []
+  const showFeedback = !isUser && !isStreaming && !!onSendFeedback && parts.some((p) => p.type === "text")
 
   return (
     <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
@@ -87,6 +110,67 @@ export function TotemMessage({ message, onAcceptNavigation, onDeclineNavigation 
                   resolved={output?.accepted != null ? { accepted: !!output.accepted } : undefined}
                   onAccept={onAcceptNavigation}
                   onDecline={onDeclineNavigation}
+                />
+              )
+            }
+
+            if (toolName === "proposeAddToWatchlist") {
+              const input = tp.input as { mediaId?: string; mediaTitle?: string } | undefined
+              const output = tp.output as
+                | { accepted?: boolean; alreadyPresent?: boolean; reason?: string }
+                | undefined
+              if (!input?.mediaId || !input?.mediaTitle) return null
+              return (
+                <TotemWatchlistCard
+                  key={idx}
+                  toolCallId={tp.toolCallId ?? ""}
+                  mediaId={input.mediaId}
+                  mediaTitle={input.mediaTitle}
+                  resolved={
+                    output?.accepted != null
+                      ? { accepted: !!output.accepted, alreadyPresent: output.alreadyPresent, reason: output.reason }
+                      : undefined
+                  }
+                  onAccept={onAcceptWatchlist}
+                  onDecline={onDeclineWatchlist}
+                />
+              )
+            }
+
+            if (toolName === "proposeReaction") {
+              const input = tp.input as
+                | {
+                    mediaId?: string
+                    mediaTitle?: string
+                    familyMemberId?: string
+                    familyMemberName?: string
+                    reaction?: string
+                  }
+                | undefined
+              const output = tp.output as { accepted?: boolean; reason?: string } | undefined
+              if (
+                !input?.mediaId ||
+                !input?.mediaTitle ||
+                !input?.familyMemberId ||
+                !input?.familyMemberName ||
+                !input?.reaction
+              ) return null
+              return (
+                <TotemReactionCard
+                  key={idx}
+                  toolCallId={tp.toolCallId ?? ""}
+                  mediaId={input.mediaId}
+                  mediaTitle={input.mediaTitle}
+                  familyMemberId={input.familyMemberId}
+                  familyMemberName={input.familyMemberName}
+                  reaction={input.reaction}
+                  resolved={
+                    output?.accepted != null
+                      ? { accepted: !!output.accepted, reason: output.reason }
+                      : undefined
+                  }
+                  onAccept={onAcceptReaction}
+                  onDecline={onDeclineReaction}
                 />
               )
             }
@@ -139,6 +223,13 @@ export function TotemMessage({ message, onAcceptNavigation, onDeclineNavigation 
 
           return null
         })}
+        {showFeedback && (
+          <TotemFeedbackButtons
+            onSubmit={async (rating, reason) => {
+              await onSendFeedback!(message.id, rating, reason)
+            }}
+          />
+        )}
       </div>
     </div>
   )

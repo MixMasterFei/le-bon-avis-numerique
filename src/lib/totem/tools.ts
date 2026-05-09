@@ -3,6 +3,8 @@ import { z } from "zod"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { isPathAllowed } from "@/lib/totem/nav-allowlist"
+import { searchPublishedBlogPosts } from "@/lib/totem/sanity-search"
+import { getMemberAge } from "@/lib/age-utils"
 
 export interface TotemToolContext {
   origin: string
@@ -257,6 +259,224 @@ export function buildTotemTools(ctx: TotemToolContext) {
           return { status: "error" }
         }
       },
+    }),
+
+    /**
+     * Search the parental blog (Sanity-backed). Use for *parenting topics*
+     * — screen time, gaming guidelines, helping a child cope with scary
+     * content. Not for searching media titles (use searchMedia instead).
+     */
+    searchBlog: tool({
+      description:
+        "Recherche dans le blog Totem Avisé (parentalité numérique : temps d'écran, jeux, séries, accompagnement). Pour des conseils thématiques aux parents — pas pour chercher un titre du catalogue.",
+      inputSchema: z.object({
+        q: z.string().min(1).describe("Requête textuelle (mots-clés du sujet, ex: 'temps d'écran ado')."),
+        limit: z.number().int().min(1).max(5).default(3),
+      }),
+      execute: async ({ q, limit }) => {
+        const posts = await searchPublishedBlogPosts(q, limit)
+        return {
+          posts: posts.map((p) => ({
+            slug: p.slug,
+            url: `/blog/${p.slug}`,
+            title: p.title,
+            excerpt: trimText(p.excerpt, 200),
+            category: p.category,
+            publishedAt: p.publishedAt,
+          })),
+        }
+      },
+    }),
+
+    /**
+     * Search Totem's news stories (NewsStory). Match strategy: title +
+     * summary first; fall back to body only when zero matches AND query
+     * has length >= 4 (avoids body-LIKE flood on short queries).
+     */
+    searchNews: tool({
+      description:
+        "Recherche dans les actualités Totem Avisé (sorties cinéma, polémiques, nouveautés streaming). Renvoie au maximum 5 articles publiés.",
+      inputSchema: z.object({
+        q: z.string().optional().describe("Requête textuelle (mots-clés)."),
+        category: z.string().optional().describe("Filtre par catégorie d'actualité."),
+        limit: z.number().int().min(1).max(5).default(3),
+      }),
+      execute: async ({ q, category, limit }) => {
+        const baseWhere: Prisma.NewsStoryWhereInput = { status: "PUBLISHED" }
+        if (category) baseWhere.category = category as Prisma.NewsStoryWhereInput["category"]
+
+        const trimmedQ = q?.trim() ?? ""
+
+        async function runMatch(matchOnBody: boolean) {
+          if (trimmedQ.length === 0) {
+            return prisma.newsStory.findMany({
+              where: baseWhere,
+              orderBy: { publishedAt: "desc" },
+              take: limit ?? 3,
+              select: {
+                slug: true,
+                title: true,
+                summary: true,
+                category: true,
+                publishedAt: true,
+                relatedMediaIds: true,
+              },
+            })
+          }
+
+          const fields: Prisma.NewsStoryWhereInput[] = [
+            { title: { contains: trimmedQ, mode: "insensitive" } },
+            { summary: { contains: trimmedQ, mode: "insensitive" } },
+          ]
+          if (matchOnBody) {
+            fields.push({ body: { contains: trimmedQ, mode: "insensitive" } })
+          }
+
+          return prisma.newsStory.findMany({
+            where: { ...baseWhere, OR: fields },
+            orderBy: { publishedAt: "desc" },
+            take: limit ?? 3,
+            select: {
+              slug: true,
+              title: true,
+              summary: true,
+              category: true,
+              publishedAt: true,
+              relatedMediaIds: true,
+            },
+          })
+        }
+
+        let stories = await runMatch(false)
+        // Fallback: only widen to body when the cheap query came up dry
+        // AND the query string is long enough to keep noise low.
+        if (stories.length === 0 && trimmedQ.length >= 4) {
+          stories = await runMatch(true)
+        }
+
+        return {
+          stories: stories.map((s) => ({
+            slug: s.slug,
+            // News routing lives at /apercudecouverte/[slug] — never
+            // /news/* or /actualites/*. Format the path here so the
+            // model copies the right URL into proposeNavigation.
+            url: `/apercudecouverte/${s.slug}`,
+            title: s.title,
+            summary: trimText(s.summary, 240),
+            category: s.category,
+            publishedAt: s.publishedAt,
+            citedMediaIds: s.relatedMediaIds.slice(0, 5),
+          })),
+        }
+      },
+    }),
+
+    /**
+     * Richer family snapshot for logged-in users. Allows Totem to look
+     * up details on demand (instead of bloating every system prompt).
+     * Output capped at ~2 KB — last 5 reactions per member, top 5
+     * favourite genres, max 3 avoid topics. Auth-only.
+     */
+    getUserFamilyContext: tool({
+      description:
+        "Détails complets sur les membres du foyer connecté : prénoms, âges, sensibilités, genres préférés, sujets à éviter, et 5 dernières réactions par membre (films/séries vus, aimés, etc.). Disponible UNIQUEMENT pour un utilisateur connecté.",
+      inputSchema: z.object({}).describe("Pas de paramètre — renvoie le foyer du compte connecté."),
+      execute: async () => {
+        if (!ctx.userId) {
+          return {
+            status: "not_logged_in",
+            hint: "Pas de compte connecté — propose-lui d'en créer un si pertinent.",
+          }
+        }
+
+        const members = await prisma.familyMember.findMany({
+          where: { userId: ctx.userId },
+          take: 10,
+          include: {
+            reactions: {
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              include: {
+                media: { select: { title: true, type: true } },
+              },
+            },
+          },
+        })
+
+        if (members.length === 0) {
+          return { status: "no_family", hint: "Le compte est connecté mais aucun membre famille n'est créé." }
+        }
+
+        return {
+          status: "ok",
+          members: members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            age: getMemberAge(m.birthYear, m.birthMonth),
+            avatarEmoji: m.avatarEmoji,
+            favoriteGenres: m.favoriteGenres.slice(0, 5),
+            dislikedGenres: m.dislikedGenres.slice(0, 3),
+            avoidTopics: m.avoidTopics.slice(0, 3),
+            interests: m.interests.slice(0, 5),
+            sensitivities: {
+              violence: m.sensitivityViolence,
+              scary: m.sensitivityScary,
+              sexual: m.sensitivitySexual,
+              language: m.sensitivityLanguage,
+              substances: m.sensitivitySubstances,
+            },
+            useCustomSettings: m.useCustomSettings,
+            recentReactions: m.reactions.map((r) => ({
+              mediaTitle: r.media.title,
+              mediaType: r.media.type,
+              reaction: r.reaction,
+              at: r.createdAt.toISOString(),
+            })),
+          })),
+        }
+      },
+    }),
+
+    /**
+     * Client-resolved: propose adding a media to the user's watchlist.
+     * The existing endpoint TOGGLES, so the client must check current
+     * state first to avoid silently removing.
+     */
+    proposeAddToWatchlist: tool({
+      description:
+        "Propose à l'utilisateur d'ajouter un titre à sa liste 'à voir plus tard'. L'utilisateur voit un bouton de confirmation. Disponible uniquement pour un utilisateur connecté.",
+      inputSchema: z.object({
+        mediaId: z.string(),
+        mediaTitle: z.string().describe("Titre exact tel qu'il apparaît dans le catalogue."),
+      }),
+      // No execute — resolved client-side.
+    }),
+
+    /**
+     * Client-resolved: propose recording a reaction (loved/liked/etc) for
+     * a specific family member. Totem must use a real familyMemberId
+     * obtained via getUserFamilyContext — never invent one.
+     */
+    proposeReaction: tool({
+      description:
+        "Propose d'enregistrer une réaction (LOVED, LIKED, WATCHED, OK, SCARED, BORED, TOO_YOUNG, TOO_OLD) d'un membre du foyer pour un titre. À utiliser quand le parent décrit explicitement l'expérience d'un enfant ('Léa a adoré'). N'invente JAMAIS un familyMemberId — utilise un id réel renvoyé par getUserFamilyContext.",
+      inputSchema: z.object({
+        mediaId: z.string(),
+        mediaTitle: z.string(),
+        familyMemberId: z.string().describe("Id réel d'un membre, obtenu via getUserFamilyContext."),
+        familyMemberName: z.string().describe("Prénom du membre, pour l'affichage utilisateur."),
+        reaction: z.enum([
+          "LOVED",
+          "LIKED",
+          "WATCHED",
+          "OK",
+          "SCARED",
+          "BORED",
+          "TOO_YOUNG",
+          "TOO_OLD",
+        ]),
+      }),
+      // No execute — resolved client-side.
     }),
 
     /**

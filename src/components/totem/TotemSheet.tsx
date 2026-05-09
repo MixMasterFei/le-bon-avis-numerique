@@ -43,8 +43,13 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     sendUserMessage,
     acceptNavigation,
     declineNavigation,
+    acceptWatchlist,
+    declineWatchlist,
+    acceptReaction,
+    declineReaction,
     resetConversation,
     loadConversation,
+    sendFeedback,
   } = useTotemChat({ sourcePage: pathname })
 
   useEffect(() => {
@@ -246,17 +251,26 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                   />
                 ) : (
               <div className="space-y-3">
-                {messages.map((m) => (
-                  <TotemMessage
-                    key={m.id}
-                    message={m}
-                    onAcceptNavigation={(toolCallId, path) => {
-                      acceptNavigation(toolCallId, path)
-                      onOpenChange(false)
-                    }}
-                    onDeclineNavigation={declineNavigation}
-                  />
-                ))}
+                {messages.map((m, idx) => {
+                  const isLast = idx === messages.length - 1
+                  return (
+                    <TotemMessage
+                      key={m.id}
+                      message={m}
+                      onAcceptNavigation={(toolCallId, path) => {
+                        acceptNavigation(toolCallId, path)
+                        onOpenChange(false)
+                      }}
+                      onDeclineNavigation={declineNavigation}
+                      onAcceptWatchlist={acceptWatchlist}
+                      onDeclineWatchlist={declineWatchlist}
+                      onAcceptReaction={acceptReaction}
+                      onDeclineReaction={declineReaction}
+                      onSendFeedback={sendFeedback}
+                      isStreaming={isLast && isStreaming}
+                    />
+                  )
+                })}
                 {isStreaming && (
                   <div className="flex items-center gap-2 px-3 py-1 text-xs text-neutral-500">
                     <Loader2 className="h-3 w-3 animate-spin" />

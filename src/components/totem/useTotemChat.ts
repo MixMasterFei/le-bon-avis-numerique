@@ -93,11 +93,15 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
   const chat = useChat({
     transport,
     onToolCall: async ({ toolCall }) => {
-      // proposeNavigation is the only client-resolved tool in Phase 1.
-      // Returning here would auto-resolve; instead we leave it pending so
-      // the UI can render <TotemActionCard> with explicit buttons.
-      if (toolCall.toolName === "proposeNavigation") {
-        return // surface to UI; user clicks confirm/decline
+      // Client-resolved tools surface to the UI without auto-resolving;
+      // the user clicks confirm/decline and the resolver above provides
+      // the tool result.
+      if (
+        toolCall.toolName === "proposeNavigation" ||
+        toolCall.toolName === "proposeAddToWatchlist" ||
+        toolCall.toolName === "proposeReaction"
+      ) {
+        return
       }
     },
     onError: (err) => {
@@ -134,6 +138,122 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     (toolCallId: string) => {
       void chat.addToolResult({
         tool: "proposeNavigation",
+        toolCallId,
+        output: { accepted: false, reason: "user_declined" },
+      })
+    },
+    [chat],
+  )
+
+  const acceptWatchlist = useCallback(
+    async (toolCallId: string, mediaId: string) => {
+      try {
+        // Step 1: check current state — endpoint is a TOGGLE, so we
+        // skip POSTing if the title is already in the watchlist.
+        const checkRes = await fetch(`/api/user/watchlist?mediaId=${encodeURIComponent(mediaId)}`, {
+          credentials: "same-origin",
+          cache: "no-store",
+        })
+        if (checkRes.ok) {
+          const { inWatchlist } = (await checkRes.json()) as { inWatchlist?: boolean }
+          if (inWatchlist) {
+            void chat.addToolResult({
+              tool: "proposeAddToWatchlist",
+              toolCallId,
+              output: { accepted: true, alreadyPresent: true },
+            })
+            return
+          }
+        }
+        // Step 2: not present — POST to add.
+        const res = await fetch("/api/user/watchlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ mediaId }),
+        })
+        if (!res.ok) {
+          void chat.addToolResult({
+            tool: "proposeAddToWatchlist",
+            toolCallId,
+            output: { accepted: false, reason: "request_failed" },
+          })
+          return
+        }
+        const { inWatchlist } = (await res.json()) as { inWatchlist?: boolean }
+        void chat.addToolResult({
+          tool: "proposeAddToWatchlist",
+          toolCallId,
+          output: { accepted: !!inWatchlist, alreadyPresent: false },
+        })
+      } catch (err) {
+        console.error("[totem] acceptWatchlist failed", err)
+        void chat.addToolResult({
+          tool: "proposeAddToWatchlist",
+          toolCallId,
+          output: { accepted: false, reason: "request_error" },
+        })
+      }
+    },
+    [chat],
+  )
+
+  const declineWatchlist = useCallback(
+    (toolCallId: string) => {
+      void chat.addToolResult({
+        tool: "proposeAddToWatchlist",
+        toolCallId,
+        output: { accepted: false, reason: "user_declined" },
+      })
+    },
+    [chat],
+  )
+
+  const acceptReaction = useCallback(
+    async (
+      toolCallId: string,
+      input: { mediaId: string; familyMemberId: string; reaction: string },
+    ) => {
+      try {
+        const res = await fetch("/api/user/reaction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            mediaId: input.mediaId,
+            familyMemberId: input.familyMemberId,
+            reaction: input.reaction,
+          }),
+        })
+        if (!res.ok) {
+          void chat.addToolResult({
+            tool: "proposeReaction",
+            toolCallId,
+            output: { accepted: false, reason: `status_${res.status}` },
+          })
+          return
+        }
+        void chat.addToolResult({
+          tool: "proposeReaction",
+          toolCallId,
+          output: { accepted: true },
+        })
+      } catch (err) {
+        console.error("[totem] acceptReaction failed", err)
+        void chat.addToolResult({
+          tool: "proposeReaction",
+          toolCallId,
+          output: { accepted: false, reason: "request_error" },
+        })
+      }
+    },
+    [chat],
+  )
+
+  const declineReaction = useCallback(
+    (toolCallId: string) => {
+      void chat.addToolResult({
+        tool: "proposeReaction",
         toolCallId,
         output: { accepted: false, reason: "user_declined" },
       })
@@ -178,6 +298,25 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     [chat],
   )
 
+  const sendFeedback = useCallback(
+    async (messageId: string, rating: "UP" | "DOWN", reason?: string) => {
+      try {
+        const res = await fetch("/api/totem/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ messageId, rating, reason }),
+        })
+        if (!res.ok) {
+          console.error("[totem] feedback failed", res.status)
+        }
+      } catch (err) {
+        console.error("[totem] feedback error", err)
+      }
+    },
+    [],
+  )
+
   return {
     messages: chat.messages,
     status: chat.status,
@@ -188,8 +327,13 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     sendUserMessage,
     acceptNavigation,
     declineNavigation,
+    acceptWatchlist,
+    declineWatchlist,
+    acceptReaction,
+    declineReaction,
     resetConversation,
     loadConversation,
+    sendFeedback,
     stop: chat.stop,
   }
 }

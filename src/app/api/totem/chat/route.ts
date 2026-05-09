@@ -4,11 +4,11 @@ import { anthropic } from "@ai-sdk/anthropic"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
-import { DEFAULT_MODEL } from "@/lib/anthropic"
 import { buildSystemPrompt, type FamilyMemberSnapshot } from "@/lib/totem/system-prompt"
 import { buildTotemTools } from "@/lib/totem/tools"
 import { checkTotemRateLimit, getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { canUseTotem } from "@/lib/totem/access"
+import { pickModel } from "@/lib/totem/model-router"
 import {
   countTurnsInConversation,
   getOrCreateConversation,
@@ -161,8 +161,21 @@ export async function POST(req: NextRequest) {
   const cookieHeader = req.headers.get("cookie")
   const tools = buildTotemTools({ origin, cookieHeader, userId })
 
+  // Decide whether to escalate to Sonnet for this turn.
+  // Count tool parts in the most recent assistant message in the
+  // incoming UIMessage list (cheap; no extra DB call).
+  const lastAssistant = [...body.messages].reverse().find((m) => m.role === "assistant")
+  const lastTurnToolCount = lastAssistant
+    ? (lastAssistant.parts ?? []).filter((p) => typeof p.type === "string" && p.type.startsWith("tool-")).length
+    : 0
+  const decision = pickModel({
+    turnCount: turnsSoFar + 1,
+    lastTurnToolCount,
+    userText,
+  })
+  const modelUsed = decision.model
+
   const startedAt = Date.now()
-  const modelUsed = DEFAULT_MODEL
 
   const result = streamText({
     model: anthropic(modelUsed),

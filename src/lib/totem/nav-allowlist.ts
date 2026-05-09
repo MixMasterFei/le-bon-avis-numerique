@@ -13,7 +13,9 @@ const ALLOWED_PATTERNS: RegExp[] = [
   /^\/livres(\/.*)?(\?.*)?$/,
   /^\/recherche(\?.*)?$/,
   /^\/blog(\/.*)?$/,
-  /^\/news(\/.*)?$/,
+  // News stories live under /apercudecouverte (not /news or /actualites).
+  // Examples: /apercudecouverte/<slug>, /apercudecouverte/actualites
+  /^\/apercudecouverte(\/.*)?(\?.*)?$/,
   /^\/media\/[A-Za-z0-9_-]+(\?.*)?$/,
 ]
 
