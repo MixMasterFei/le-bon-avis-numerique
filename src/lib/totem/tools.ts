@@ -26,16 +26,22 @@ export function buildTotemTools(ctx: TotemToolContext) {
      */
     searchMedia: tool({
       description:
-        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Utilise pour trouver un titre par nom ou par filtre (âge, genre).",
+        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Utilise pour trouver un titre par nom ou par filtre (âge, genre). IMPORTANT : quand l'utilisateur dit 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest' (sinon les vieux opus populaires d'une saga remontent en tête et tu rates le vrai dernier).",
       inputSchema: z.object({
         q: z.string().optional().describe("Requête textuelle (titre partiel)."),
         type: z.enum(MEDIA_TYPES).optional().describe("Type de média à filtrer."),
         minAge: z.number().int().min(0).max(18).optional(),
         maxAge: z.number().int().min(0).max(18).optional(),
         genre: z.string().optional().describe("Un genre exact (ex: 'Comédie', 'Animation')."),
+        sort: z
+          .enum(["popular", "newest"])
+          .optional()
+          .describe(
+            "Ordre de tri. 'popular' (défaut quand q est fourni) trie par notoriété TMDB. 'newest' trie par date de sortie décroissante — à utiliser pour 'le dernier X', 'le plus récent', 'la dernière sortie'.",
+          ),
         limit: z.number().int().min(1).max(10).default(5),
       }),
-      execute: async ({ q, type, minAge, maxAge, genre, limit }) => {
+      execute: async ({ q, type, minAge, maxAge, genre, sort, limit }) => {
         const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
         if (type) where.type = type
         if (minAge != null || maxAge != null) {
@@ -52,11 +58,21 @@ export function buildTotemTools(ctx: TotemToolContext) {
           ]
         }
 
+        let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
+        if (sort === "newest") {
+          orderBy = [
+            { releaseDate: { sort: "desc", nulls: "last" } },
+            { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+          ]
+        } else if (q) {
+          orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+        } else {
+          orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+        }
+
         const items = await prisma.mediaItem.findMany({
           where,
-          orderBy: q
-            ? [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
-            : [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }],
+          orderBy,
           take: limit ?? 5,
           select: {
             id: true,
