@@ -188,6 +188,28 @@ export function TotemMessage({
               )
             }
 
+            if (toolName === "getDiscoveryRail" && tp.state === "output-available") {
+              const out = tp.output as
+                | { status?: string; results?: TotemCitedMedia[]; seeAllLabel?: string }
+                | undefined
+              const results = out?.results ?? []
+              if (out?.status !== "ok" || results.length === 0) return null
+              return (
+                <div key={idx} className="space-y-1.5 pt-1">
+                  {out.seeAllLabel && (
+                    <div className="text-[10px] font-medium uppercase tracking-[0.06em]" style={{ color: "var(--color-ink2)" }}>
+                      {out.seeAllLabel}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {results.slice(0, 6).map((r) => (
+                      <TotemMediaCard key={r.id} media={r} />
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+
             if (toolName === "getMediaDetails" && tp.state === "output-available") {
               const out = tp.output as MediaDetailsResult | undefined
               if (!out?.found || !out.id || !out.title) return null

@@ -94,14 +94,75 @@ Ces données alimentent le **score d'adéquation famille** (0-100 par membre, pa
 
 ---
 
-## 9. Pages clés (pour la navigation)
+## 9. Carte du site
 
-- `/` — accueil
+### Page d'accueil (`/`)
+
+Sections, dans l'ordre où l'utilisateur les voit. Chaque section a une URL canonique de "voir tout" — c'est ce que Totem doit proposer via `proposeNavigation` quand l'utilisateur veut creuser.
+
+| Section | À quoi elle sert | "Voir tout" | Rail Totem |
+|---|---|---|---|
+| Hero (recherche) | Recherche directe | `/recherche?q=...` | `searchMedia` |
+| Coups de cœur | Sélection éditoriale rotée chaque semaine | `/films` | (pas de rail dédié) |
+| En ce moment au cinéma | Films à l'affiche en France | `/films?sort=cinema` | `getDiscoveryRail({ rail: "cinema" })` |
+| Par âge (grille) | Films adaptés par tranche d'âge | `/films?maxAge=N` | `getDiscoveryRail({ rail: "by-age", age: N })` |
+| Streaming | Sur Netflix, Disney+, Prime, Canal+, Apple TV+ | `/films/recherche?platforms=X&maxAge=10` | `getDiscoveryRail({ rail: "by-platform", platform: "..." })` |
+| Jeux récents | Sorties console récentes | `/jeux?sort=releaseDate` | `getDiscoveryRail({ rail: "recent-games" })` |
+| Collections (thèmes) | Par genre/thème (Aventure, Animation, Comédie, Nature, etc.) | `/films/recherche?genres=X` | `getDiscoveryRail({ rail: "by-genre", genre: "..." })` |
+| Pulse | Derniers ajouts + stats du site | `/films?sort=newest` | `getDiscoveryRail({ rail: "newest" })` |
+
+### Listings par type de média
+
+- `/films` — films (avec `?sort=newest|cinema|popularity`, `?maxAge=N`)
+- `/series` — séries TV
+- `/jeux` — jeux vidéo (`?sort=releaseDate`)
+- `/livres` — livres
+- `/films/recherche` — recherche multi-critères avec sidebar (`?genres=X&platforms=Y&maxAge=Z&topics=T`)
+
+### Recherche
+
+- `/recherche` — recherche unifiée multi-critères
+
+### Contenu éditorial
+
+- `/blog` — liste des articles parentalité numérique (Sanity)
+- `/blog/[slug]` — un article
+- `/apercudecouverte` — fil d'actualités médias famille
+- `/apercudecouverte/[slug]` — un article d'actualité
+- `/apercudecouverte/actualites` — toutes les actus filtrées
+
+### Fiches
+
+- `/media/[id]` — fiche détaillée d'un film/série/jeu/livre (synopsis, âge conseillé, métriques de contenu, votes communauté, similaires)
+
+### Espace utilisateur (auth)
+
+- `/profil` — accueil utilisateur (membres famille, statistiques, recommandations personnalisées, soirée famille, listes)
+- `/profil/membres/[id]` — fiche d'un membre (favoris, préférences, réactions)
+- `/profil/quiz/[id]` — quiz de préférences pour un membre
+
+### Authentification
+
 - `/connexion` — se connecter
 - `/inscription` — créer un compte
-- `/profil` — espace utilisateur (membres famille, préférences, historique)
-- `/films`, `/series`, `/jeux`, `/livres` — listings par type
-- `/recherche` — recherche multicritère
-- `/blog` — articles parentalité numérique
-- `/news` — actualités médias famille
-- `/media/[id]` — fiche d'un titre
+
+---
+
+## 10. Quelle question → quel outil
+
+Cheatsheet pour Totem : intentions courantes mappées au bon outil et à la bonne URL canonique.
+
+- *"Qu'est-ce qui sort au ciné ?"* / *"actuellement en salle"* → `getDiscoveryRail({ rail: "cinema" })`, suivi de `proposeNavigation('/films?sort=cinema')`.
+- *"Vous avez des nouveautés ?"* / *"derniers ajouts"* → `getDiscoveryRail({ rail: "newest" })` + nav vers `/films?sort=newest`.
+- *"Un film pour mon enfant de N ans"* → `getDiscoveryRail({ rail: "by-age", age: N })` + nav vers `/films?maxAge=N`. Si âge connu via foyer connecté, prends-le directement.
+- *"Qu'est-ce qu'il y a sur Netflix/Disney+/Prime ?"* → `getDiscoveryRail({ rail: "by-platform", platform: "..." })` + nav vers `/films/recherche?platforms=...`.
+- *"Des films de comédie/aventure/animation"* → `getDiscoveryRail({ rail: "by-genre", genre: "..." })` + nav vers `/films/recherche?genres=...`.
+- *"Des jeux récents"* → `getDiscoveryRail({ rail: "recent-games" })` + nav vers `/jeux?sort=releaseDate`.
+- *"Trouvez-moi le film X"* (titre précis) → `searchMedia({ q: "X" })` puis `getMediaDetails`.
+- *"À quel âge convient X ?"* → `searchMedia` + `getMediaDetails` + (optionnel) `getCommunityConsensus`. Si connecté : `getFamilyFit`.
+- *"Conseils sur le temps d'écran"* / question parentale générale → `searchBlog`.
+- *"Une actu sur la sortie de X"* → `searchNews`.
+- *"Où je me connecte ?"* / *"comment je modifie mon profil ?"* → `proposeNavigation` direct, sans appel d'outil de recherche.
+- *"Ajoute X à ma liste"* → `proposeAddToWatchlist` (auth uniquement).
+- *"On a regardé X, Léa a adoré"* → `getUserFamilyContext` (pour l'id de Léa) puis `proposeReaction`.
+

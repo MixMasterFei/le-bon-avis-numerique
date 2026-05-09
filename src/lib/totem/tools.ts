@@ -262,6 +262,177 @@ export function buildTotemTools(ctx: TotemToolContext) {
     }),
 
     /**
+     * Curated discovery rails — same content the homepage surfaces, in
+     * compact form, with the canonical "voir tout" URL the model can
+     * pass straight to proposeNavigation.
+     *
+     * One unified tool so the model picks the rail by user intent
+     * instead of guessing filter combinations:
+     *   - cinema:        live TMDB now_playing (FR) → /films?sort=cinema
+     *   - newest:        derniers ajouts au catalogue → /films?sort=newest
+     *   - by-age:        films adaptés à un âge donné → /films?maxAge=N
+     *   - by-platform:   sur une plateforme de streaming → /films/recherche?platforms=X
+     *   - by-genre:      films d'un genre donné → /films/recherche?genres=X
+     *   - recent-games:  jeux vidéo récents → /jeux?sort=releaseDate
+     */
+    getDiscoveryRail: tool({
+      description:
+        "Récupère une sélection curatée du site (mêmes rails que la page d'accueil) avec l'URL canonique de la page complète. Utilise pour répondre à des intentions de découverte plutôt qu'à une recherche par titre. Choisis le rail en fonction de l'utilisateur : 'cinema' pour 'au ciné/en salle', 'newest' pour 'nouveautés/derniers ajouts', 'by-age' pour 'pour un enfant de N ans', 'by-platform' pour 'sur Netflix/Disney+', 'by-genre' pour 'films de comédie/aventure', 'recent-games' pour 'des jeux récents'. Termine en proposant proposeNavigation vers le seeAllUrl renvoyé.",
+      inputSchema: z.object({
+        rail: z.enum(["cinema", "newest", "by-age", "by-platform", "by-genre", "recent-games"]),
+        age: z
+          .number()
+          .int()
+          .min(0)
+          .max(18)
+          .optional()
+          .describe("Âge maximum (REQUIS pour rail='by-age', optionnel filtre pour les autres)."),
+        platform: z
+          .string()
+          .optional()
+          .describe("Nom de plateforme (REQUIS pour rail='by-platform'). Ex: 'Netflix', 'Disney+', 'Prime Video', 'Canal+', 'Apple TV+'."),
+        genre: z
+          .string()
+          .optional()
+          .describe("Genre exact (REQUIS pour rail='by-genre'). Ex: 'Aventure', 'Animation', 'Comédie', 'Fantastique', 'Drame'."),
+        limit: z.number().int().min(1).max(10).default(6),
+      }),
+      execute: async ({ rail, age, platform, genre, limit }) => {
+        const cap = limit ?? 6
+
+        // ---- cinema: live TMDB ----------------------------------
+        if (rail === "cinema") {
+          try {
+            const headers: HeadersInit = {}
+            if (ctx.cookieHeader) headers.cookie = ctx.cookieHeader
+            const res = await fetch(`${ctx.origin}/api/cinema`, { headers, cache: "no-store" })
+            if (!res.ok) return { rail, status: "error", code: res.status, results: [] }
+            const data = (await res.json()) as {
+              movies?: Array<{
+                id: string
+                title: string
+                posterUrl: string | null
+                releaseDate: string
+                expertAgeRec: number | null
+                communityAgeRec: number | null
+                genres: string[]
+                inDatabase: boolean
+              }>
+            }
+            let movies = data.movies ?? []
+            if (typeof age === "number") {
+              movies = movies.filter((m) => m.expertAgeRec == null || m.expertAgeRec <= age)
+            }
+            return {
+              rail,
+              status: "ok",
+              results: movies.slice(0, cap).map((m) => ({
+                id: m.id,
+                title: m.title,
+                type: "MOVIE",
+                year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
+                posterUrl: m.posterUrl,
+                recommendedAge: m.expertAgeRec,
+                communityAge: m.communityAgeRec,
+                genres: m.genres.slice(0, 3),
+                inCatalog: m.inDatabase,
+              })),
+              seeAllUrl: "/films?sort=cinema",
+              seeAllLabel: "En ce moment au cinéma",
+            }
+          } catch (err) {
+            console.error("[totem] getDiscoveryRail(cinema) failed", err)
+            return { rail, status: "error", results: [] }
+          }
+        }
+
+        // ---- catalog rails (Prisma) ----------------------------
+        const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
+        let orderBy: Prisma.MediaItemOrderByWithRelationInput[] = [
+          { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+        ]
+        let seeAllUrl = "/films"
+        let seeAllLabel = "Le catalogue"
+
+        if (rail === "newest") {
+          orderBy = [{ createdAt: "desc" }]
+          seeAllUrl = "/films?sort=newest"
+          seeAllLabel = "Derniers ajouts"
+        } else if (rail === "by-age") {
+          if (typeof age !== "number") {
+            return { rail, status: "missing_param", error: "age is required for by-age" }
+          }
+          where.expertAgeRec = { lte: age, gte: 0 }
+          orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+          seeAllUrl = `/films?maxAge=${age}`
+          seeAllLabel = `Films adaptés jusqu'à ${age} ans`
+        } else if (rail === "by-platform") {
+          if (!platform || platform.trim().length === 0) {
+            return { rail, status: "missing_param", error: "platform is required for by-platform" }
+          }
+          where.platforms = { has: platform }
+          where.type = { in: ["MOVIE", "TV"] }
+          orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+          seeAllUrl = `/films/recherche?platforms=${encodeURIComponent(platform)}&maxAge=10`
+          seeAllLabel = `Sur ${platform}`
+        } else if (rail === "by-genre") {
+          if (!genre || genre.trim().length === 0) {
+            return { rail, status: "missing_param", error: "genre is required for by-genre" }
+          }
+          where.genres = { has: genre }
+          orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+          seeAllUrl = `/films/recherche?genres=${encodeURIComponent(genre)}`
+          seeAllLabel = `Films ${genre.toLowerCase()}`
+        } else if (rail === "recent-games") {
+          where.type = "GAME"
+          orderBy = [{ releaseDate: { sort: "desc", nulls: "last" } }]
+          seeAllUrl = "/jeux?sort=releaseDate"
+          seeAllLabel = "Jeux récents"
+        }
+
+        // Optional age cap on rails that aren't by-age (e.g. "des films
+        // de comédie pour mes 7 ans" → rail=by-genre, age=7).
+        if (rail !== "by-age" && typeof age === "number") {
+          where.expertAgeRec = { lte: age, gte: 0 }
+          seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${age}` : `?maxAge=${age}`
+        }
+
+        const items = await prisma.mediaItem.findMany({
+          where,
+          orderBy,
+          take: cap,
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            posterUrl: true,
+            releaseDate: true,
+            expertAgeRec: true,
+            communityAgeRec: true,
+            genres: true,
+          },
+        })
+
+        return {
+          rail,
+          status: "ok",
+          results: items.map((m) => ({
+            id: m.id,
+            title: m.title,
+            type: m.type,
+            year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
+            posterUrl: m.posterUrl,
+            recommendedAge: m.expertAgeRec,
+            communityAge: m.communityAgeRec,
+            genres: m.genres.slice(0, 3),
+          })),
+          seeAllUrl,
+          seeAllLabel,
+        }
+      },
+    }),
+
+    /**
      * Search the parental blog (Sanity-backed). Use for *parenting topics*
      * — screen time, gaming guidelines, helping a child cope with scary
      * content. Not for searching media titles (use searchMedia instead).
