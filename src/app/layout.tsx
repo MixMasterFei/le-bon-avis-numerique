@@ -4,15 +4,8 @@ import localFont from "next/font/local"
 import "./globals.css"
 import { SiteHeader } from "@/components/layout/SiteHeader"
 import { SiteFooter } from "@/components/layout/SiteFooter"
-import dynamic from "next/dynamic"
 import { CookieConsent } from "@/components/CookieConsent"
-
-// Client-only: avoids SSR'ing the chat dock (uses localStorage,
-// sessionStorage, window events, Radix Dialog portal).
-const TotemDock = dynamic(
-  () => import("@/components/totem/TotemDock").then((m) => ({ default: m.TotemDock })),
-  { ssr: false },
-)
+import { TotemDockClient } from "@/components/totem/TotemDockClient"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
@@ -179,7 +172,7 @@ export default async function RootLayout({
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <CookieConsent />
-            {totemEnabled && <TotemDock />}
+            {totemEnabled && <TotemDockClient />}
           </SettingsProvider>
         </SessionProvider>
         <Analytics />
