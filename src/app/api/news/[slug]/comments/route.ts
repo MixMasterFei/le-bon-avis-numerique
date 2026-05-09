@@ -6,6 +6,7 @@ import {
   hydrateComment,
   validateBody,
 } from "@/lib/news-comments"
+import { notifyNewsCommentParticipants } from "@/lib/notifications"
 
 interface RouteContext {
   params: Promise<{ slug: string }>
@@ -76,6 +77,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         },
         reactions: { select: { userId: true, type: true } },
       },
+    })
+
+    notifyNewsCommentParticipants({
+      storyId,
+      actorUserId: session.user.id,
+      actorName: session.user.name,
+    }).catch((error) => {
+      console.error("Error notifying news comment participants:", error)
     })
 
     return NextResponse.json({ comment: hydrateComment(created, session.user.id) }, { status: 201 })

@@ -1,67 +1,84 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
-// Note: In a real application, you would store these preferences in the database
-// For now, we'll just simulate a successful save
+function parseLimit(request: NextRequest) {
+  const raw = Number(request.nextUrl.searchParams.get("limit") ?? "20")
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 1), 50) : 20
+}
 
-export async function PATCH(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non autorise" }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { newsletter, recommendations, comments } = body
+    const limit = parseLimit(request)
+    const [items, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          type: true,
+          priority: true,
+          title: true,
+          body: true,
+          href: true,
+          metadata: true,
+          readAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.notification.count({
+        where: { userId: session.user.id, readAt: null },
+      }),
+    ])
 
-    // In a real app, save to database:
-    // await prisma.userPreferences.upsert({
-    //   where: { userId: session.user.id },
-    //   update: { newsletter, recommendations, comments },
-    //   create: { userId: session.user.id, newsletter, recommendations, comments },
-    // })
-
-    console.log("Notification preferences updated:", {
-      userId: session.user.id,
-      newsletter,
-      recommendations,
-      comments,
-    })
-
-    return NextResponse.json({
-      success: true,
-      preferences: { newsletter, recommendations, comments },
-    })
+    return NextResponse.json({ items, unreadCount })
   } catch (error) {
-    console.error("Notifications update error:", error)
-    return NextResponse.json(
-      { error: "Erreur lors de la mise a jour" },
-      { status: 500 }
-    )
+    console.error("Get notifications error:", error)
+    return NextResponse.json({ error: "Erreur" }, { status: 500 })
   }
 }
 
-export async function GET() {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non autorise" }, { status: 401 })
     }
 
-    // In a real app, fetch from database
-    // For now, return default preferences
-    return NextResponse.json({
-      preferences: {
-        newsletter: true,
-        recommendations: true,
-        comments: false,
-      },
+    const payload = await request.json().catch(() => null)
+    const action = typeof payload?.action === "string" ? payload.action : ""
+
+    if (action === "mark-read") {
+      const id = typeof payload?.id === "string" ? payload.id : ""
+      if (!id) {
+        return NextResponse.json({ error: "id requis" }, { status: 400 })
+      }
+      await prisma.notification.updateMany({
+        where: { id, userId: session.user.id, readAt: null },
+        data: { readAt: new Date() },
+      })
+    } else if (action === "mark-all-read") {
+      await prisma.notification.updateMany({
+        where: { userId: session.user.id, readAt: null },
+        data: { readAt: new Date() },
+      })
+    } else {
+      return NextResponse.json({ error: "Action invalide" }, { status: 400 })
+    }
+
+    const unreadCount = await prisma.notification.count({
+      where: { userId: session.user.id, readAt: null },
     })
+
+    return NextResponse.json({ success: true, unreadCount })
   } catch (error) {
-    console.error("Notifications fetch error:", error)
-    return NextResponse.json(
-      { error: "Erreur lors de la recuperation" },
-      { status: 500 }
-    )
+    console.error("Update notifications error:", error)
+    return NextResponse.json({ error: "Erreur" }, { status: 500 })
   }
 }

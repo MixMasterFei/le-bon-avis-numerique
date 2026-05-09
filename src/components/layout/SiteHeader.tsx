@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
+import { NotificationBell } from "@/components/layout/NotificationBell"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { useRecentSearches } from "@/hooks/useRecentSearches"
 
@@ -660,7 +661,9 @@ export function SiteHeader() {
                 style={{ background: p.placeholder }}
               />
             ) : session?.user ? (
-              <div className="relative">
+              <>
+                <NotificationBell />
+                <div className="relative">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 px-2 sm:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
@@ -757,7 +760,8 @@ export function SiteHeader() {
                     </div>
                   </>
                 )}
-              </div>
+                </div>
+              </>
             ) : (
               <>
                 <Link

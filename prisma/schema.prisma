@@ -55,6 +55,7 @@ model User {
   newsCommentReports    NewsCommentReport[]
   newsStoryReactions    NewsStoryReaction[]
   newsSavedStories      NewsSavedStory[]
+  notifications         Notification[]
 
   @@map("users")
 }
@@ -1022,4 +1023,24 @@ model NewsSavedStory {
   @@index([newsStoryId])
   @@index([userId, createdAt])
   @@map("news_saved_stories")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  type      String
+  priority  String    @default("NORMAL")
+  title     String
+  body      String?   @db.Text
+  href      String?
+  metadata  Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([type])
+  @@map("notifications")
 }

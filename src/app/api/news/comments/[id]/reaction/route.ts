@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hydrateComment, REACTION_TYPES } from "@/lib/news-comments"
+import { notifyNewsCommentReaction } from "@/lib/notifications"
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -47,6 +48,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     } else {
       await prisma.newsCommentReaction.create({
         data: { commentId, userId, type },
+      })
+      notifyNewsCommentReaction({
+        commentId,
+        actorUserId: userId,
+        reactionType: type,
+      }).catch((error) => {
+        console.error("Error notifying news comment reaction:", error)
       })
     }
 

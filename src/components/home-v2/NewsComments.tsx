@@ -21,7 +21,7 @@ export async function NewsComments({
   const comments = await fetchComments(storyId, viewerId)
 
   return (
-    <section className="mt-12">
+    <section id="commentaires" className="mt-12 scroll-mt-24">
       <div className="flex items-baseline justify-between mb-4">
         <h2
           className={`${serifClass} text-2xl font-medium`}
