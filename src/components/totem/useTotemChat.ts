@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
@@ -59,6 +59,17 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
   const conversationIdRef = useRef<string | undefined>(readStoredConversationId())
   const [rateLimit, setRateLimit] = useState<{ retryAfterSec: number } | null>(null)
 
+  // Source page is read at REQUEST time, not memoization time. Without
+  // this, navigating from / to /media/... while the sheet is mounted
+  // left the transport's body callback bound to the original "/" path
+  // (useChat doesn't accept transport instance swaps gracefully). Now
+  // we keep the transport stable and pull the latest pathname every
+  // time the body() runs.
+  const sourcePageRef = useRef<string | null>(opts.sourcePage ?? null)
+  useEffect(() => {
+    sourcePageRef.current = opts.sourcePage ?? null
+  }, [opts.sourcePage])
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport<UIMessage>({
@@ -66,7 +77,9 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
         credentials: "same-origin",
         body: () => ({
           conversationId: conversationIdRef.current,
-          sourcePage: opts.sourcePage ?? (typeof window !== "undefined" ? window.location.pathname : null),
+          sourcePage:
+            sourcePageRef.current ??
+            (typeof window !== "undefined" ? window.location.pathname : null),
         }),
         fetch: async (input, init) => {
           const res = await fetch(input, init)
@@ -87,7 +100,7 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
           return res
         },
       }),
-    [opts.sourcePage],
+    [],
   )
 
   const chat = useChat({
