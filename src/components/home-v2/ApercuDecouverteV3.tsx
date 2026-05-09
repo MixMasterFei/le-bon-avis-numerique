@@ -31,9 +31,9 @@ import type { CatalogAnniversary } from "@/lib/catalog-anniversary"
 import type { WeatherSnapshot } from "@/lib/weather"
 
 export interface DecouverteV3Data {
-  // Latest French story (rendered as the page hero).
+  // Curated French lead story (rendered as the page hero).
   frenchHero: ApercuNewsCardData | null
-  // Next 3 most recent French briefs (3-up grid below the hero).
+  // Next 3 parent-priority French briefs (3-up grid below the hero).
   frenchTop: ApercuNewsCardData[]
   // Tech & IA strand — dedicated 3-up grid between French briefs
   // and the dossier. Mixes FR + INTL TECH-category briefs (since

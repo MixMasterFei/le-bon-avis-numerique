@@ -88,6 +88,7 @@ type StoryRow = {
   imageLicenseUrl: string | null
   category: ApercuNewsCardData["category"]
   publishedAt: Date
+  relevanceScore: number
   sources: Prisma.JsonValue
 }
 
@@ -103,6 +104,133 @@ function rowToCard(row: StoryRow): ApercuNewsCardData {
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
   }
+}
+
+function normalizedPublisherName(name: string): string {
+  const lower = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+
+  if (lower.startsWith("numerama")) return "numerama"
+  if (lower.startsWith("allocine")) return "allocine"
+  if (lower.startsWith("20 minutes")) return "20-minutes"
+  if (lower.startsWith("franceinfo")) return "franceinfo"
+  if (lower.startsWith("la croix")) return "la-croix"
+  if (lower.startsWith("le monde")) return "le-monde"
+  if (lower.startsWith("telerama")) return "telerama"
+  if (lower.startsWith("bbc")) return "bbc"
+
+  return lower.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+}
+
+function sourceCount(r: StoryRow): number {
+  if (!Array.isArray(r.sources)) return 0
+  const publishers = new Set<string>()
+  for (const source of r.sources) {
+    if (typeof source !== "object" || source === null) continue
+    const name = (source as { name?: unknown }).name
+    if (typeof name === "string" && name.trim()) {
+      publishers.add(normalizedPublisherName(name))
+    }
+  }
+  return publishers.size
+}
+
+function hoursSincePublished(row: StoryRow): number {
+  return Math.max(0, (Date.now() - new Date(row.publishedAt).getTime()) / (60 * 60 * 1000))
+}
+
+function compareByFreshness(rows: StoryRow[]) {
+  return (a: StoryRow, b: StoryRow) => {
+    const freshnessDelta = new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    if (freshnessDelta !== 0) return freshnessDelta
+
+    // Tie-break only: if two stories share the same timestamp, use the
+    // family relevance and independent-source signal without letting
+    // them override freshness.
+    const relevanceDelta = b.relevanceScore - a.relevanceScore
+    if (Math.abs(relevanceDelta) > 0.001) return relevanceDelta
+
+    const sourceDelta = sourceCount(b) - sourceCount(a)
+    if (sourceDelta !== 0) return sourceDelta
+
+    return rows.findIndex((row) => row.id === a.id) - rows.findIndex((row) => row.id === b.id)
+  }
+}
+
+function isExceptionalGameLead(row: StoryRow): boolean {
+  if (row.category !== "GAMES") return true
+
+  // Games can lead only when the signal is unusually strong for parents:
+  // high family relevance plus genuinely independent coverage. This
+  // keeps standard product/licence announcements from dominating the
+  // first screen while still allowing a major family-safety or budget
+  // story to surface.
+  return row.relevanceScore >= 0.9 && sourceCount(row) >= 2
+}
+
+const LEAD_FRESHNESS_HOURS = 72
+
+function splitFreshLeadRows(rows: StoryRow[]): { fresh: StoryRow[]; fallback: StoryRow[] } {
+  const fresh: StoryRow[] = []
+  const fallback: StoryRow[] = []
+
+  for (const row of rows) {
+    if (hoursSincePublished(row) <= LEAD_FRESHNESS_HOURS) fresh.push(row)
+    else fallback.push(row)
+  }
+
+  return { fresh, fallback }
+}
+
+function pickFrenchHero(rows: StoryRow[]): StoryRow | undefined {
+  if (rows.length === 0) return undefined
+
+  const compare = compareByFreshness(rows)
+  const { fresh } = splitFreshLeadRows(rows)
+  const pool = fresh.length > 0 ? fresh : rows
+  const parentFirst = pool.filter(isExceptionalGameLead)
+  return [...(parentFirst.length > 0 ? parentFirst : pool)].sort(compare)[0]
+}
+
+function canUseInTopBriefs(row: StoryRow, hero: StoryRow | undefined, picked: StoryRow[]): boolean {
+  if (row.category !== "GAMES") return true
+
+  const gamesAlreadyVisible =
+    (hero?.category === "GAMES" ? 1 : 0) +
+    picked.filter((s) => s.category === "GAMES").length
+
+  return gamesAlreadyVisible < 1 || isExceptionalGameLead(row)
+}
+
+function pickTopRows(rows: StoryRow[], hero: StoryRow | undefined, target: number): StoryRow[] {
+  const { fresh, fallback } = splitFreshLeadRows(rows)
+  const picked: StoryRow[] = []
+  const deferredFresh: StoryRow[] = []
+
+  for (const row of fresh.sort(compareByFreshness(rows))) {
+    if (picked.length >= target) break
+    if (canUseInTopBriefs(row, hero, picked)) {
+      picked.push(row)
+    } else {
+      deferredFresh.push(row)
+    }
+  }
+
+  // Freshness is the top priority: never pull an older fallback story
+  // above a fresh story just to satisfy the games diversity guardrail.
+  for (const row of deferredFresh) {
+    if (picked.length >= target) break
+    picked.push(row)
+  }
+
+  for (const row of fallback.sort(compareByFreshness(rows))) {
+    if (picked.length >= target) break
+    if (canUseInTopBriefs(row, hero, picked)) picked.push(row)
+  }
+
+  return picked.sort(compareByFreshness(rows))
 }
 
 /**
@@ -266,7 +394,7 @@ export default async function ApercuDecouverteV3Page(props: {
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
-        category: true, publishedAt: true, sources: true,
+        category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe("frenchRows", [] as StoryRow[])),
     // 6 most recent international briefs in PARENTHOOD only.
@@ -289,7 +417,7 @@ export default async function ApercuDecouverteV3Page(props: {
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
-        category: true, publishedAt: true, sources: true,
+        category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
     // 6 most recent TECH briefs (FR + INTL mixed). Renders as a
@@ -303,7 +431,7 @@ export default async function ApercuDecouverteV3Page(props: {
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
-        category: true, publishedAt: true, sources: true,
+        category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe("techRows", [] as StoryRow[])),
     // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
@@ -321,7 +449,7 @@ export default async function ApercuDecouverteV3Page(props: {
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
-        category: true, publishedAt: true, sources: true,
+        category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe<StoryRow | null>("dossierRow", null)),
     // Latest story carrying a populated research sidebar.
@@ -355,40 +483,13 @@ export default async function ApercuDecouverteV3Page(props: {
     Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
   ])
 
-  // Hero pick — prefer the first row with sources.length >= 3 so the
-  // prominent slot is always a multi-source story (Perplexity-style
-  // editorial signal: more sources = more newsworthy). Falls back to
-  // the highest-source-count row if none reach 3, then to the first
-  // row regardless. The query already orders by relevanceScore desc,
-  // so within the eligible-by-sources subset we get the strongest
-  // candidate too.
-  function sourceCount(r: StoryRow): number {
-    return Array.isArray(r.sources) ? r.sources.length : 0
-  }
-  const heroIdx = (() => {
-    if (frenchRows.length === 0) return -1
-    const multi = frenchRows.findIndex((r) => sourceCount(r) >= 3)
-    if (multi !== -1) return multi
-    // No 3+ source row — pick the one with the most sources, ties
-    // broken by the existing query order (relevanceScore desc).
-    let best = 0
-    let bestCount = sourceCount(frenchRows[0])
-    for (let i = 1; i < frenchRows.length; i++) {
-      const c = sourceCount(frenchRows[i])
-      if (c > bestCount) {
-        best = i
-        bestCount = c
-      }
-    }
-    return best
-  })()
-  const frenchHero = heroIdx >= 0 ? frenchRows[heroIdx] : undefined
-  // After hero removal, the rest is in chronological order (the query
-  // is publishedAt DESC). The "top 3" + "older briefs" split happens
-  // below, after image-dedup, so the visible top grid is always full
-  // even when collisions remove a card.
-  const frenchRest = heroIdx >= 0
-    ? [...frenchRows.slice(0, heroIdx), ...frenchRows.slice(heroIdx + 1)]
+  // Hero pick — freshness first, with a parent-first guardrail. The
+  // newest suitable story leads, but standard game/product/licence
+  // announcements cannot set the tone of the whole page unless their
+  // family signal is exceptional.
+  const frenchHero = pickFrenchHero(frenchRows)
+  const frenchRest = frenchHero
+    ? frenchRows.filter((row) => row.id !== frenchHero.id)
     : frenchRows
 
   // Page-level image dedup: dossier wins (it's the editorial centerpiece),
@@ -417,11 +518,19 @@ export default async function ApercuDecouverteV3Page(props: {
   const TOP_TARGET = 3
   const topCards: ApercuNewsCardData[] = []
   const olderCards: ApercuNewsCardData[] = []
-  for (const row of frenchRest) {
+  const topPickedIds = new Set<string>()
+  for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET)) {
     const card = claim(rowToCard(row))
     if (!card) continue
-    if (topCards.length < TOP_TARGET) topCards.push(card)
-    else olderCards.push(card)
+    topCards.push(card)
+    topPickedIds.add(row.id)
+  }
+
+  for (const row of frenchRest) {
+    if (topPickedIds.has(row.id)) continue
+    const card = claim(rowToCard(row))
+    if (!card) continue
+    olderCards.push(card)
   }
 
   const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
