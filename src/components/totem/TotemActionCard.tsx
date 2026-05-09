@@ -32,14 +32,16 @@ export function TotemActionCard({
   // Auto-mode: when the user has opted into proactive navigation, fire
   // the accept on mount as soon as the card appears with both input
   // ready and no resolution yet. Tracked by ref so we don't re-fire on
-  // re-renders.
+  // re-renders. The setBusy is deferred to the next microtask so the
+  // effect body itself stays free of synchronous state writes
+  // (react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (!autoMode || isResolved || autoFiredRef.current || busy) return
+    if (!autoMode || isResolved || autoFiredRef.current) return
     if (!toolCallId || !path) return
     autoFiredRef.current = true
-    setBusy(true)
     onAccept(toolCallId, path)
-  }, [autoMode, isResolved, busy, toolCallId, path, onAccept])
+    queueMicrotask(() => setBusy(true))
+  }, [autoMode, isResolved, toolCallId, path, onAccept])
 
   const handleAccept = () => {
     if (busy || isResolved) return

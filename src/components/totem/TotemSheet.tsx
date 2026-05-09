@@ -29,9 +29,18 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
   const pathname = usePathname()
 
   const [draft, setDraft] = useState("")
-  const [showAlphaHint, setShowAlphaHint] = useState(false)
+  // Read once from localStorage at mount (lazy init — avoids
+  // setState-in-effect lint and works because TotemDock is loaded
+  // with ssr:false so the component never renders server-side).
+  const [showAlphaHint, setShowAlphaHint] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    return !window.localStorage.getItem(ALPHA_HINT_KEY)
+  })
   const [view, setView] = useState<"chat" | "history">("chat")
-  const [autoMode, setAutoMode] = useState(false)
+  const [autoMode, setAutoMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    return window.localStorage.getItem(AUTO_MODE_KEY) === "1"
+  })
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
@@ -53,16 +62,6 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     loadConversation,
     sendFeedback,
   } = useTotemChat({ sourcePage: pathname })
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    if (!window.localStorage.getItem(ALPHA_HINT_KEY)) {
-      setShowAlphaHint(true)
-    }
-    if (window.localStorage.getItem(AUTO_MODE_KEY) === "1") {
-      setAutoMode(true)
-    }
-  }, [])
 
   const toggleAutoMode = () => {
     setAutoMode((prev) => {

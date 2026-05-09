@@ -10,13 +10,10 @@ import { TotemAlphaBadge } from "./TotemAlphaBadge"
 const HIDDEN_PATH_PREFIXES = ["/admin", "/studio", "/onboarding", "/connexion", "/inscription"]
 
 export function TotemDock() {
+  // Mounted via next/dynamic with ssr:false in layout.tsx, so this
+  // component never runs on the server — no need for a mounted guard.
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   useEffect(() => {
     const handler = () => setOpen(true)
@@ -24,7 +21,6 @@ export function TotemDock() {
     return () => window.removeEventListener("totem:open", handler)
   }, [])
 
-  if (!mounted) return null
   if (HIDDEN_PATH_PREFIXES.some((p) => pathname?.startsWith(p))) return null
 
   return (
