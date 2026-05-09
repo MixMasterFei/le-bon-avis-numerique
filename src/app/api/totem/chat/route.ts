@@ -9,6 +9,7 @@ import { buildTotemTools } from "@/lib/totem/tools"
 import { checkTotemRateLimit, getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { canUseTotem } from "@/lib/totem/access"
 import { pickModel } from "@/lib/totem/model-router"
+import { parseMediaRouteId } from "@/lib/media-route"
 import {
   countTurnsInConversation,
   getOrCreateConversation,
@@ -100,6 +101,56 @@ export async function POST(req: NextRequest) {
     setSessionCookie = true
   }
 
+  // Page context — when the user is on a media detail page, resolve
+  // the title so Totem understands "ce film" / "celui-là" without
+  // having to ask. Cheap: one Prisma call, only on /media/[id].
+  let pageContext: {
+    type: "media"
+    id: string
+    title: string
+    mediaType: string
+    expertAgeRec: number | null
+    year: number | null
+  } | null = null
+  if (typeof body.sourcePage === "string" && body.sourcePage.startsWith("/media/")) {
+    const rawSegment = body.sourcePage.replace(/^\/media\//, "").split(/[?#]/)[0]
+    if (rawSegment.length > 0 && rawSegment.length < 200) {
+      // Route format is `<type>:<id>` (e.g. movie:abc-123). Fall back to
+      // the raw segment if the colon is missing.
+      const { id: parsedId } = parseMediaRouteId(rawSegment)
+      const candidates = [parsedId, rawSegment].filter(
+        (s, i, arr) => s && s.length > 0 && arr.indexOf(s) === i,
+      )
+      try {
+        for (const candidate of candidates) {
+          const m = await prisma.mediaItem.findUnique({
+            where: { id: candidate },
+            select: {
+              id: true,
+              title: true,
+              type: true,
+              expertAgeRec: true,
+              releaseDate: true,
+            },
+          })
+          if (m) {
+            pageContext = {
+              type: "media",
+              id: m.id,
+              title: m.title,
+              mediaType: m.type,
+              expertAgeRec: m.expertAgeRec,
+              year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
+            }
+            break
+          }
+        }
+      } catch {
+        /* ignore — page context is enrichment, not required */
+      }
+    }
+  }
+
   // Family snapshot for logged-in users (for richer system prompt context)
   let familyContext: FamilyMemberSnapshot[] | undefined
   if (userId) {
@@ -152,6 +203,7 @@ export async function POST(req: NextRequest) {
     familyContext,
     currentDate: new Date().toISOString().slice(0, 10),
     sourcePage: body.sourcePage ?? null,
+    pageContext,
     conversationTurnCount: turnsSoFar + 1,
     personalizationNudgeAllowed,
   })

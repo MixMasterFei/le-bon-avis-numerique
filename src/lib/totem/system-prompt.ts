@@ -30,11 +30,21 @@ export interface FamilyMemberSnapshot {
   avoidTopics?: string[]
 }
 
+export interface PageContextSnapshot {
+  type: "media"
+  id: string
+  title: string
+  mediaType: string
+  expertAgeRec: number | null
+  year: number | null
+}
+
 export interface BuildSystemPromptParams {
   userIsAnonymous: boolean
   familyContext?: FamilyMemberSnapshot[]
   currentDate: string
   sourcePage?: string | null
+  pageContext?: PageContextSnapshot | null
   conversationTurnCount: number
   personalizationNudgeAllowed: boolean
 }
@@ -94,6 +104,11 @@ Règles strictes sur les actions :
       }).join("\n")}`
     : ""
 
+  const pageBlock = params.pageContext
+    ? `Page actuelle : fiche du ${params.pageContext.mediaType.toLowerCase()} **"${params.pageContext.title}"**${params.pageContext.year ? ` (${params.pageContext.year})` : ""} — id catalogue : \`${params.pageContext.id}\`${params.pageContext.expertAgeRec != null ? `, âge conseillé ${params.pageContext.expertAgeRec} ans` : ""}.
+Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans préciser, il fait référence à ce titre. Utilise directement \`getMediaDetails\` ou \`getFamilyFit\` avec l'id ci-dessus — pas besoin d'appeler \`searchMedia\` d'abord.`
+    : ""
+
   const dynamicTail = `# Contexte dynamique
 
 - Date du jour : ${params.currentDate}
@@ -101,7 +116,7 @@ Règles strictes sur les actions :
 - Nombre de tours échangés : ${params.conversationTurnCount}
 - Utilisateur connecté : ${params.userIsAnonymous ? "NON (anonyme)" : "OUI"}
 - Invitation à se connecter autorisée ce tour : ${params.personalizationNudgeAllowed ? "oui (à glisser en demi-phrase si pertinent)" : "non"}
-${familyBlock ? `\n${familyBlock}` : ""}`
+${pageBlock ? `\n${pageBlock}\n` : ""}${familyBlock ? `\n${familyBlock}` : ""}`
 
   return { staticHead, dynamicTail }
 }

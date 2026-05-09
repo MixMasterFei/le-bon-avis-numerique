@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ArrowRight, Check, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +10,7 @@ export interface TotemActionCardProps {
   label: string
   reason: string
   resolved?: { accepted: boolean }
+  autoMode?: boolean
   onAccept: (toolCallId: string, path: string) => void
   onDecline: (toolCallId: string) => void
 }
@@ -20,11 +21,25 @@ export function TotemActionCard({
   label,
   reason,
   resolved,
+  autoMode = false,
   onAccept,
   onDecline,
 }: TotemActionCardProps) {
   const [busy, setBusy] = useState(false)
   const isResolved = !!resolved
+  const autoFiredRef = useRef(false)
+
+  // Auto-mode: when the user has opted into proactive navigation, fire
+  // the accept on mount as soon as the card appears with both input
+  // ready and no resolution yet. Tracked by ref so we don't re-fire on
+  // re-renders.
+  useEffect(() => {
+    if (!autoMode || isResolved || autoFiredRef.current || busy) return
+    if (!toolCallId || !path) return
+    autoFiredRef.current = true
+    setBusy(true)
+    onAccept(toolCallId, path)
+  }, [autoMode, isResolved, busy, toolCallId, path, onAccept])
 
   const handleAccept = () => {
     if (busy || isResolved) return

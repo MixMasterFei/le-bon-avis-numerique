@@ -262,6 +262,10 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
   )
 
   const resetConversation = useCallback(() => {
+    // Abort any in-flight stream BEFORE clearing state — otherwise the
+    // streaming response keeps appending to the (now-empty) message
+    // array and the new chat appears to "fuse" with the previous one.
+    void chat.stop()
     conversationIdRef.current = undefined
     writeStoredConversationId(undefined)
     chat.setMessages([])
@@ -272,6 +276,8 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
+      // Abort any in-flight stream from the previous conversation.
+      void chat.stop()
       setLoading(true)
       setRateLimit(null)
       try {

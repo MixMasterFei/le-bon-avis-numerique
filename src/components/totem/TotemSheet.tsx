@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
-import { Send, Loader2, X, ChevronLeft, History, Plus } from "lucide-react"
+import { Send, Loader2, X, ChevronLeft, History, Plus, Zap, ZapOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTotemChat } from "./useTotemChat"
 import { TotemMessage } from "./TotemMessage"
@@ -15,6 +15,7 @@ import { TotemAlphaBadge } from "./TotemAlphaBadge"
 import { TotemHistoryPanel } from "./TotemHistoryPanel"
 
 const ALPHA_HINT_KEY = "totem.alphaHintDismissed.v1"
+const AUTO_MODE_KEY = "totem.autoMode.v1"
 const MAX_INPUT_CHARS = 1500
 
 export interface TotemSheetProps {
@@ -30,6 +31,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
   const [draft, setDraft] = useState("")
   const [showAlphaHint, setShowAlphaHint] = useState(false)
   const [view, setView] = useState<"chat" | "history">("chat")
+  const [autoMode, setAutoMode] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
 
@@ -57,7 +59,21 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     if (!window.localStorage.getItem(ALPHA_HINT_KEY)) {
       setShowAlphaHint(true)
     }
+    if (window.localStorage.getItem(AUTO_MODE_KEY) === "1") {
+      setAutoMode(true)
+    }
   }, [])
+
+  const toggleAutoMode = () => {
+    setAutoMode((prev) => {
+      const next = !prev
+      if (typeof window !== "undefined") {
+        if (next) window.localStorage.setItem(AUTO_MODE_KEY, "1")
+        else window.localStorage.removeItem(AUTO_MODE_KEY)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (open) {
@@ -234,6 +250,13 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                   const ok = await loadConversation(id)
                   if (ok) setView("chat")
                 }}
+                onDeleted={(id) => {
+                  // If the user deleted the conversation they're
+                  // currently in, drop back to a fresh chat.
+                  if (id === activeConversationId) {
+                    resetConversation()
+                  }
+                }}
                 onClose={() => setView("chat")}
               />
             ) : loading ? (
@@ -267,6 +290,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                       onAcceptReaction={acceptReaction}
                       onDeclineReaction={declineReaction}
                       onSendFeedback={sendFeedback}
+                      autoMode={autoMode}
                       isStreaming={isLast && isStreaming}
                     />
                   )
@@ -291,6 +315,38 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
               </div>
             )}
           </div>
+
+          {/* Auto-mode toggle — visible in chat view, sits just above composer */}
+          {view === "chat" && (
+            <div
+              className="flex items-center justify-between border-t px-3 py-2 text-[11px]"
+              style={{ borderColor: "var(--color-line)", background: "var(--color-bg2)", color: "var(--color-ink2)" }}
+            >
+              <button
+                type="button"
+                onClick={toggleAutoMode}
+                aria-pressed={autoMode}
+                title={
+                  autoMode
+                    ? "Mode auto activé : Totem peut vous emmener directement vers une page sans demander."
+                    : "Mode auto désactivé : Totem demande toujours avant de naviguer."
+                }
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 transition",
+                  autoMode
+                    ? "bg-[var(--color-accent)]/15 text-[var(--color-accent)]"
+                    : "hover:bg-black/5",
+                )}
+              >
+                {autoMode ? <Zap className="h-3 w-3" /> : <ZapOff className="h-3 w-3" />}
+                <span className="font-medium">Mode auto</span>
+                <span className="opacity-70">{autoMode ? "activé" : "désactivé"}</span>
+              </button>
+              <span className="hidden sm:inline italic opacity-70">
+                {autoMode ? "Totem agit sans demander." : "Totem demande avant chaque action."}
+              </span>
+            </div>
+          )}
 
           {/* Composer — hidden in history view */}
           {view === "chat" && (

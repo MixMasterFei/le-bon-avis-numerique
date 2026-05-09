@@ -21,6 +21,7 @@ export interface TotemMessageProps {
   ) => void | Promise<void>
   onDeclineReaction: (toolCallId: string) => void
   onSendFeedback?: (messageId: string, rating: "UP" | "DOWN", reason?: string) => Promise<void>
+  autoMode?: boolean
   isStreaming?: boolean
 }
 
@@ -58,6 +59,7 @@ export function TotemMessage({
   onAcceptReaction,
   onDeclineReaction,
   onSendFeedback,
+  autoMode = false,
   isStreaming = false,
 }: TotemMessageProps) {
   const isUser = message.role === "user"
@@ -108,6 +110,7 @@ export function TotemMessage({
                   label={input.label}
                   reason={input.reason}
                   resolved={output?.accepted != null ? { accepted: !!output.accepted } : undefined}
+                  autoMode={autoMode}
                   onAccept={onAcceptNavigation}
                   onDecline={onDeclineNavigation}
                 />
