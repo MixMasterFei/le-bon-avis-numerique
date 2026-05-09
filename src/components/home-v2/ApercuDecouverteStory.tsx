@@ -9,6 +9,7 @@ import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
 import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
+import { NewsStoryActions } from "./NewsStoryActions"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
 
@@ -55,6 +56,51 @@ export interface ApercuStoryDetail {
   relatedMediaList?: RelatedMediaCard[]
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function safeMarkdownUrl(url: string): string {
+  return url.replace(/\)/g, "%29")
+}
+
+function linkSourceNamesInMarkdown(body: string, sources: NewsSourceRef[]): string {
+  if (!body || sources.length === 0) return body
+
+  const uniqueSources = Array.from(
+    new Map(
+      sources
+        .filter((source) => source.name.trim().length >= 3 && source.url.trim().length > 0)
+        .map((source) => [source.name.toLocaleLowerCase("fr-FR"), source]),
+    ).values(),
+  ).sort((a, b) => b.name.length - a.name.length)
+
+  if (uniqueSources.length === 0) return body
+
+  const linked = new Set<string>()
+  return body
+    .split(/(\[[^\]]+\]\([^)]+\))/g)
+    .map((segment) => {
+      if (/^\[[^\]]+\]\([^)]+\)$/.test(segment)) return segment
+
+      let next = segment
+      for (const source of uniqueSources) {
+        const key = source.name.toLocaleLowerCase("fr-FR")
+        if (linked.has(key)) continue
+
+        const re = new RegExp(`(^|[^\\p{L}\\p{N}_])(${escapeRegex(source.name)})(?=$|[^\\p{L}\\p{N}_])`, "u")
+        next = next.replace(re, (match, prefix: string, label: string) => {
+          linked.add(key)
+          return `${prefix}**[${label}](${safeMarkdownUrl(source.url)})**`
+        })
+
+        if (linked.has(key)) continue
+      }
+      return next
+    })
+    .join("")
+}
+
 function formatAbsolute(value: Date | string): string {
   const d = typeof value === "string" ? new Date(value) : value
   return d.toLocaleDateString("fr-FR", {
@@ -76,6 +122,7 @@ export function ApercuDecouverteStory({
   commentsSlot?: ReactNode
 }) {
   const p = APERCU_PALETTE
+  const renderedBody = linkSourceNamesInMarkdown(story.body, story.sources)
   return (
     <div
       className="flex flex-col min-h-screen overflow-x-hidden"
@@ -119,6 +166,14 @@ export function ApercuDecouverteStory({
 
           <div className="mb-8">
             <ApercuNewsSourcePills sources={story.sources} />
+          </div>
+
+          <div className="mb-8">
+            <NewsStoryActions
+              slug={story.slug}
+              title={story.title}
+              summary={story.summary}
+            />
           </div>
 
           <div
@@ -276,7 +331,7 @@ export function ApercuDecouverteStory({
                 ),
               }}
             >
-              {story.body}
+              {renderedBody}
             </ReactMarkdown>
           </article>
 

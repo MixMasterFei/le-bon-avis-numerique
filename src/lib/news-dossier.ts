@@ -101,6 +101,12 @@ Le dossier de la semaine est la pièce la plus visible de la page. Il ne doit pa
 
 4. **Écris le dossier** en 5-6 paragraphes, **1000 à 1500 mots**. Tu peux insérer des sous-titres H3 ("### Titre court") au-dessus de paragraphes-pivot pour aérer la lecture (par exemple au-dessus du paragraphe de croisement multi-sources et du paragraphe d'implications famille). Ce n'est pas obligatoire mais ça donne du rythme à un long-read.
 
+   Markdown autorisé, mais sobre :
+   - Mets les titres d'œuvres en *italique* : *Star Fox 64*, *Le Seigneur des Anneaux*.
+   - Mets en **gras** seulement les repères vraiment utiles : dates, âges, montants, décisions officielles, seuils, noms de dispositifs. Maximum 6 à 10 passages en gras sur tout le dossier.
+   - N'ajoute pas d'URL dans le body : l'interface lie automatiquement les noms de sources cités ("Le Monde", "Numerama", etc.) vers les articles d'origine.
+   - Pas de listes si le texte se lit naturellement en paragraphes.
+
    - **Para 1** (~150-200 mots) : présentation factuelle du thème — quels événements, quelles publications, quelle convergence. Une phrase d'attaque qui pose les noms et les dates ; une phrase qui dit pourquoi ça remonte cette semaine. Pas d'éditorial.
    - **Para 2** (~250 mots) : les éléments factuels les plus solides, chaque fait attribué nommément ("Selon Le Monde, …" / "Numerama rapporte que…"). Si une citation directe figure dans une source, c'est ici qu'elle a sa place naturelle.
    - **Para 3** (~250-300 mots) : **paragraphe de croisement** — où les publications divergent, se complètent, ou se contredisent. C'est le cœur du dossier : "Le Monde met l'accent sur X. Numerama, en revanche, insiste sur Y. La Croix éclaire le volet Z, peu traité ailleurs." Au moins deux publications nominales doivent dialoguer ici.

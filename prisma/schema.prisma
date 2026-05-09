@@ -53,6 +53,8 @@ model User {
   newsComments          NewsComment[]
   newsCommentReactions  NewsCommentReaction[]
   newsCommentReports    NewsCommentReport[]
+  newsStoryReactions    NewsStoryReaction[]
+  newsSavedStories      NewsSavedStory[]
 
   @@map("users")
 }
@@ -896,6 +898,8 @@ model NewsStory {
   relatedMediaIds String[]       @default([]) @map("related_media_ids")
 
   comments NewsComment[]
+  storyReactions NewsStoryReaction[]
+  savedBy NewsSavedStory[]
 
   @@index([publishedAt])
   @@index([category, status])
@@ -984,4 +988,38 @@ model NewsCommentReport {
   @@unique([commentId, userId])
   @@index([status])
   @@map("news_comment_reports")
+}
+
+model NewsStoryReaction {
+  id          String   @id @default(uuid())
+  newsStoryId String   @map("news_story_id")
+  userId      String   @map("user_id")
+  type        String   // "LIKE" | "DISLIKE"
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  newsStory NewsStory @relation(fields: [newsStoryId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([newsStoryId, userId])
+  @@index([newsStoryId])
+  @@index([userId])
+  @@map("news_story_reactions")
+}
+
+model NewsSavedStory {
+  id          String    @id @default(uuid())
+  newsStoryId String    @map("news_story_id")
+  userId      String    @map("user_id")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  newsStory NewsStory @relation(fields: [newsStoryId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([newsStoryId, userId])
+  @@index([newsStoryId])
+  @@index([userId, createdAt])
+  @@map("news_saved_stories")
 }
