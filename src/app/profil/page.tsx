@@ -1,7 +1,7 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Loader2, Check, Plus, Sparkles, Film, ListOrdered } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -91,10 +91,33 @@ export default function ProfilPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
 
-  // Discovery tab state (bottom of page)
+  // Discovery tab state (bottom of page). The default is
+  // "recommendations" but the URL `?tab=lists|movienight|recommendations`
+  // can pre-select another, so direct links from the header dropdown
+  // (e.g. "À lire plus tard") land on the right tab without an extra
+  // click.
+  const searchParams = useSearchParams()
+  const initialTab: "recommendations" | "movienight" | "lists" = (() => {
+    const t = searchParams?.get("tab")
+    if (t === "lists" || t === "movienight" || t === "recommendations") return t
+    return "recommendations"
+  })()
   const [discoveryTab, setDiscoveryTab] = useState<
     "recommendations" | "movienight" | "lists"
-  >("recommendations")
+  >(initialTab)
+
+  // When user lands with ?tab=… (e.g. clicked "À lire plus tard" in
+  // the header dropdown), scroll the discovery section into view so
+  // they actually see what they came for instead of the family hero.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (!searchParams?.get("tab")) return
+    const el = document.getElementById("discovery")
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" })
+    // Run once on mount with whatever ?tab is set; tab changes after
+    // mount are user clicks and don't need scroll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Member edit/add state
   const [memberDialogOpen, setMemberDialogOpen] = useState(false)
@@ -574,7 +597,7 @@ export default function ProfilPage() {
       {/* ================================================================ */}
       {/* ZONE C: Discovery Tabs                                            */}
       {/* ================================================================ */}
-      <section>
+      <section id="discovery" className="scroll-mt-20">
         <div className="flex gap-2 mb-4 flex-wrap">
           {[
             { key: "recommendations" as const, label: "Recommandations", short: "Recos", icon: Sparkles },

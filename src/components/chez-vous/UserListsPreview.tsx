@@ -26,7 +26,7 @@ interface SavedNewsItem {
     title: string
     summary: string
     category: string
-    imageUrl: string
+    imageUrl: string | null
     publishedAt: string
   }
 }
@@ -65,6 +65,8 @@ function mapSavedNewsItems(value: unknown): SavedNewsItem[] {
   return value.flatMap((item) => {
     if (!isRecord(item) || !isRecord(item.story)) return []
     const story = item.story
+    // imageUrl can be null on legacy rows; we now handle that in the
+    // card render. Other fields are required for a usable list entry.
     if (
       typeof item.id !== "string" ||
       typeof story.id !== "string" ||
@@ -72,7 +74,6 @@ function mapSavedNewsItems(value: unknown): SavedNewsItem[] {
       typeof story.title !== "string" ||
       typeof story.summary !== "string" ||
       typeof story.category !== "string" ||
-      typeof story.imageUrl !== "string" ||
       typeof story.publishedAt !== "string"
     ) {
       return []
@@ -87,7 +88,7 @@ function mapSavedNewsItems(value: unknown): SavedNewsItem[] {
         title: story.title,
         summary: story.summary,
         category: story.category,
-        imageUrl: story.imageUrl,
+        imageUrl: typeof story.imageUrl === "string" ? story.imageUrl : null,
         publishedAt: story.publishedAt,
       },
     }]
@@ -239,13 +240,19 @@ function SavedNewsCard({
                 className="group flex gap-3 rounded-xl border border-gray-100 p-3 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors"
               >
                 <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                  <Image
-                    src={item.story.imageUrl}
-                    alt={item.story.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    sizes="96px"
-                  />
+                  {item.story.imageUrl ? (
+                    <Image
+                      src={item.story.imageUrl}
+                      alt={item.story.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      sizes="96px"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Newspaper className="h-5 w-5 text-gray-300" />
+                    </div>
+                  )}
                 </div>
                 <div className="min-w-0">
                   <div className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900">

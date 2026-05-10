@@ -726,6 +726,15 @@ export function SiteHeader() {
                         Ma liste
                       </Link>
                       <Link
+                        href="/profil?tab=lists#discovery"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:opacity-70"
+                        style={{ color: p.ink }}
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Newspaper className="h-4 w-4" />
+                        À lire plus tard
+                      </Link>
+                      <Link
                         href="/profil"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:opacity-70"
                         style={{ color: p.ink }}
@@ -995,6 +1004,15 @@ export function SiteHeader() {
                 >
                   <Bookmark className="h-5 w-5" />
                   Ma liste
+                </Link>
+                <Link
+                  href="/profil?tab=lists#discovery"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg transition-opacity hover:opacity-70"
+                  style={{ color: p.ink }}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Newspaper className="h-5 w-5" />
+                  À lire plus tard
                 </Link>
                 <Link
                   href="/profil"
