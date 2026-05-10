@@ -238,7 +238,7 @@ export function TotemMessage({
             // Other tool calls: show a discreet "consulting" hint while in flight
             if (tp.state === "input-streaming" || tp.state === "input-available") {
               return (
-                <div key={idx} className="text-xs italic text-muted-foreground">
+                <div key={idx} className="text-xs italic" style={{ color: "var(--color-ink2)" }}>
                   Totem consulte les fiches…
                 </div>
               )

@@ -175,10 +175,13 @@ export function TotemHistoryPanel({ activeConversationId, onPick, onDeleted }: T
                 }}
                 aria-label="Supprimer cette conversation"
                 title="Supprimer"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 opacity-0 transition hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 focus:opacity-100"
+                // On touch devices :hover doesn't fire reliably, so show
+                // the trash at reduced opacity by default on mobile and
+                // boost to 100% on hover/focus on desktop.
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-2 opacity-60 transition hover:bg-red-50 hover:text-red-600 hover:opacity-100 focus:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                 style={{ color: "var(--color-ink2)" }}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </button>
             )}
           </li>

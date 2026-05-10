@@ -295,7 +295,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                   )
                 })}
                 {isStreaming && (
-                  <div className="flex items-center gap-2 px-3 py-1 text-xs text-neutral-500">
+                  <div className="flex items-center gap-2 px-3 py-1 text-xs" style={{ color: "var(--color-ink2)" }}>
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Totem rédige…
                   </div>
@@ -363,20 +363,29 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                 placeholder="Posez votre question…"
                 disabled={isStreaming || !!rateLimit}
                 rows={1}
+                // text-base on mobile (16px) avoids the iOS zoom-on-focus
+                // jump; sm:text-sm shrinks back to 14px on tablets/desktop.
+                // Colours come from brand vars so dark mode reads.
                 className={cn(
-                  "min-h-[40px] flex-1 resize-none rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm",
-                  "focus:border-[var(--color-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]",
-                  "disabled:bg-neutral-50 disabled:text-neutral-400",
+                  "min-h-[44px] flex-1 resize-none rounded-lg px-3 py-2 text-base sm:text-sm",
+                  "focus:outline-none focus:ring-1",
+                  "disabled:opacity-60",
+                  "placeholder:text-[color:var(--color-ink2)]",
                 )}
+                style={{
+                  background: "var(--color-bg)",
+                  color: "var(--color-ink)",
+                  border: "1px solid var(--color-line)",
+                }}
                 maxLength={MAX_INPUT_CHARS}
               />
               <button
                 type="submit"
                 disabled={!draft.trim() || isStreaming || !!rateLimit}
                 className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-lg",
+                  "inline-flex h-11 w-11 sm:h-10 sm:w-10 flex-shrink-0 items-center justify-center rounded-lg",
                   "bg-[var(--color-accent)] text-white shadow-sm transition",
-                  "hover:bg-[var(--color-accent)]/90 disabled:bg-neutral-300",
+                  "hover:bg-[var(--color-accent)]/90 disabled:opacity-50",
                 )}
                 aria-label="Envoyer"
               >
@@ -388,7 +397,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
               </button>
             </div>
             {draft.length > 1200 && (
-              <div className="mt-1 text-[10px] text-neutral-400">
+              <div className="mt-1 text-[10px]" style={{ color: "var(--color-ink2)" }}>
                 {draft.length} / {MAX_INPUT_CHARS}
               </div>
             )}
