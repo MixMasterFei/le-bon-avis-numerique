@@ -59,127 +59,197 @@ function toCard(row: DBRow): ApercuCardMedia {
   }
 }
 
-// Filter to popular providers + reasonable quality so the hero doesn't
-// surface obscure rows.
-async function fetchTonight(): Promise<HeroData> {
-  const cinema = await fetchCinemaSlice(2)
-  const streaming = await withPrismaRetry(() =>
+// Family-mode age caps. Conservative on purpose — this rail is rendered
+// before any family-context personalization, so the assumption is "kids
+// in the room". Adult-only content NEVER appears here.
+const FAMILY_AGE_CAP = 12
+
+// Streaming fallback when the new-on-streaming query returns nothing
+// (e.g. availableFrom not yet backfilled on most rows). Returns
+// recently added titles that have at least one streaming provider, age-
+// capped, sorted by createdAt so the rail still feels fresh.
+async function fetchStreamingFallback(ageCap: number, take: number): Promise<DBRow[]> {
+  return withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where: {
         type: { in: ["MOVIE", "TV"] },
         posterUrl: { not: null, startsWith: "http" },
-        platforms: { hasSome: POPULAR_PROVIDERS },
-        expertAgeRec: { not: null, lte: 14 },
+        platforms: { isEmpty: false },
+        expertAgeRec: { not: null, lte: ageCap },
         tmdbVoteCount: { gte: 200 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
-      orderBy: [{ tmdbVoteCount: "desc" }],
-      take: 3,
+      orderBy: [{ createdAt: "desc" }],
+      take,
       select: baseSelect,
     }),
   )
-
-  return {
-    cards: [...cinema, ...streaming.map(toCard)].slice(0, 4),
-    links: [
-      { label: "Tout ce qui est en salle", href: "/films?sort=cinema" },
-      { label: "Plus de streaming", href: "/films/recherche" },
-    ],
-  }
 }
 
-async function fetchWeekend(): Promise<HeroData> {
-  const cinema = await fetchCinemaSlice(3)
-  const newOnStreaming = await withPrismaRetry(() =>
-    prisma.streamingAvailability.findMany({
+// Family-friendly TV series for "tonight" / "weekend" — bingeable
+// episodes paired with a film hero.
+async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
+  return withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
       where: {
-        country: "FR",
-        provider: { in: POPULAR_PROVIDERS },
-        availableFrom: { not: null },
-        media: {
-          type: { in: ["MOVIE", "TV"] },
-          posterUrl: { not: null, startsWith: "http" },
-          expertAgeRec: { not: null, lte: 14 },
-          tmdbVoteCount: { gte: 200 },
-        },
+        type: "TV",
+        posterUrl: { not: null, startsWith: "http" },
+        expertAgeRec: { not: null, lte: ageCap },
+        tmdbVoteCount: { gte: 300 },
+        NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
-      orderBy: { availableFrom: "desc" },
-      take: 4,
-      include: { media: { select: baseSelect } },
+      orderBy: [{ tmdbVoteCount: "desc" }],
+      take,
+      select: baseSelect,
     }),
   )
-  const streamingCards = newOnStreaming
-    .map((row) => row.media)
-    .filter((m): m is DBRow => m !== null)
-    .map(toCard)
-    // Dedupe by media id since a single title can have several rows.
-    .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
-    .slice(0, 2)
-
-  return {
-    cards: [...cinema, ...streamingCards].slice(0, 5),
-    links: [
-      { label: "Toute la programmation cinéma", href: "/films?sort=cinema" },
-      { label: "Nouveau sur le streaming", href: "/films/recherche" },
-    ],
-  }
 }
 
-async function fetchHolidays(): Promise<HeroData> {
-  // Marathons (TV with high vote count) + family-fit films.
-  const [series, films] = await Promise.all([
-    withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where: {
-          type: "TV",
-          posterUrl: { not: null, startsWith: "http" },
-          expertAgeRec: { not: null, lte: 14 },
-          tmdbVoteCount: { gte: 500 },
-          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
-        },
-        orderBy: [{ tmdbVoteCount: "desc" }],
-        take: 2,
-        select: baseSelect,
-      }),
-    ),
+// Games for the rail — recent and family-friendly. Different release-
+// date threshold (looser) since the games catalogue is smaller.
+async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> {
+  return withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
+      where: {
+        type: "GAME",
+        posterUrl: { not: null, startsWith: "http" },
+        expertAgeRec: { not: null, lte: ageCap },
+      },
+      orderBy: [{ releaseDate: { sort: "desc", nulls: "last" } }],
+      take,
+      select: baseSelect,
+    }),
+  )
+}
+
+async function fetchTonight(ageCap: number): Promise<HeroData> {
+  // Mix: 1 cinema + 1 streaming film + 2 streaming series. Tonight is
+  // movie/episode-coded, not game-coded. 4 cards, type-diverse.
+  const [cinema, streamingFilms, series] = await Promise.all([
+    fetchCinemaSlice(1, ageCap),
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
           type: "MOVIE",
           posterUrl: { not: null, startsWith: "http" },
-          expertAgeRec: { not: null, lte: 12 },
+          platforms: { hasSome: POPULAR_PROVIDERS },
+          expertAgeRec: { not: null, lte: ageCap },
+          tmdbVoteCount: { gte: 200 },
+          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
+        },
+        orderBy: [{ tmdbVoteCount: "desc" }],
+        take: 1,
+        select: baseSelect,
+      }),
+    ),
+    fetchFamilyTV(ageCap, 2),
+  ])
+
+  return {
+    cards: dedupeAndCap(
+      [...cinema, ...streamingFilms.map(toCard), ...series.map(toCard)],
+      4,
+    ),
+    links: [
+      { label: "Au cinéma", href: `/films?sort=cinema&maxAge=${ageCap}` },
+      { label: "Streaming films", href: `/films/recherche?maxAge=${ageCap}` },
+      { label: "Séries", href: `/series?maxAge=${ageCap}` },
+    ],
+  }
+}
+
+async function fetchWeekend(ageCap: number): Promise<HeroData> {
+  // Mix: 2 cinema + 1 series + 1 game = 4 cards. Weekends bring out
+  // longer formats (series binge, gaming session).
+  const [cinema, series, games] = await Promise.all([
+    fetchCinemaSlice(2, ageCap),
+    fetchFamilyTV(ageCap, 1),
+    fetchFamilyGames(ageCap, 1),
+  ])
+
+  // Streaming fallback if either series or games came back empty.
+  let extras: ApercuCardMedia[] = []
+  if (series.length === 0 || games.length === 0) {
+    const fallback = await fetchStreamingFallback(ageCap, 2)
+    extras = fallback.map(toCard)
+  }
+
+  return {
+    cards: dedupeAndCap(
+      [...cinema, ...series.map(toCard), ...games.map(toCard), ...extras],
+      4,
+    ),
+    links: [
+      { label: "Au cinéma", href: `/films?sort=cinema&maxAge=${ageCap}` },
+      { label: "Séries", href: `/series?maxAge=${ageCap}` },
+      { label: "Jeux", href: `/jeux?maxAge=${ageCap}` },
+    ],
+  }
+}
+
+function dedupeAndCap(cards: ApercuCardMedia[], cap: number): ApercuCardMedia[] {
+  const seen = new Set<string>()
+  const out: ApercuCardMedia[] = []
+  for (const c of cards) {
+    if (seen.has(c.id)) continue
+    seen.add(c.id)
+    out.push(c)
+    if (out.length >= cap) break
+  }
+  return out
+}
+
+async function fetchHolidays(ageCap: number): Promise<HeroData> {
+  // Holidays = time-rich. Mix all four pillars: 1 series marathon, 1
+  // film, 1 game, 1 cinema for a one-stop "what to do" rail.
+  const [series, films, games, cinema] = await Promise.all([
+    fetchFamilyTV(ageCap, 1),
+    withPrismaRetry(() =>
+      prisma.mediaItem.findMany({
+        where: {
+          type: "MOVIE",
+          posterUrl: { not: null, startsWith: "http" },
+          expertAgeRec: { not: null, lte: ageCap },
           dataQualityScore: { gte: 70 },
           tmdbVoteCount: { gte: 500 },
           NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
         },
         orderBy: [{ tmdbVoteCount: "desc" }],
-        take: 2,
+        take: 1,
         select: baseSelect,
       }),
     ),
+    fetchFamilyGames(ageCap, 1),
+    fetchCinemaSlice(1, ageCap),
   ])
 
   return {
-    cards: [...series.map(toCard), ...films.map(toCard)],
+    cards: dedupeAndCap(
+      [...series.map(toCard), ...films.map(toCard), ...games.map(toCard), ...cinema],
+      4,
+    ),
     links: [
-      { label: "Plus de séries", href: "/series" },
-      { label: "Films pour les enfants", href: "/films?maxAge=12" },
+      { label: "Séries", href: `/series?maxAge=${ageCap}` },
+      { label: "Films", href: `/films?maxAge=${ageCap}` },
+      { label: "Jeux", href: `/jeux?maxAge=${ageCap}` },
     ],
   }
 }
 
-async function fetchDefault(): Promise<HeroData> {
-  // Day-seeded mix of editorial + new arrivals + cinema.
+async function fetchDefault(ageCap: number): Promise<HeroData> {
+  // Day-seeded mix of editorial + new arrivals + cinema across all
+  // media types so the "default" state still feels varied.
   const seed = getDaySeed()
   const [pool, newest] = await Promise.all([
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: {
-          type: { in: ["MOVIE", "TV"] },
+          type: { in: ["MOVIE", "TV", "GAME"] },
           posterUrl: { not: null, startsWith: "http" },
           dataQualityScore: { gte: 70 },
-          expertAgeRec: { not: null, lte: 12 },
+          expertAgeRec: { not: null, lte: ageCap },
           tmdbVoteCount: { gte: 500 },
+          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
         },
         take: 60,
         select: baseSelect,
@@ -190,7 +260,8 @@ async function fetchDefault(): Promise<HeroData> {
         where: {
           type: { in: ["MOVIE", "TV", "GAME"] },
           posterUrl: { not: null, startsWith: "http" },
-          expertAgeRec: { not: null, lte: 14 },
+          expertAgeRec: { not: null, lte: ageCap },
+          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
         },
         orderBy: { createdAt: "desc" },
         take: 4,
@@ -202,10 +273,10 @@ async function fetchDefault(): Promise<HeroData> {
   const shuffled = seededShuffle(pool, seed).slice(0, 3).map(toCard)
   const fresh = newest.slice(0, 1).map(toCard)
   return {
-    cards: [...shuffled, ...fresh].slice(0, 4),
+    cards: dedupeAndCap([...shuffled, ...fresh], 4),
     links: [
-      { label: "Parcourir le catalogue", href: "/films" },
-      { label: "Derniers ajouts", href: "/films?sort=newest" },
+      { label: "Parcourir le catalogue", href: `/films?maxAge=${ageCap}` },
+      { label: "Derniers ajouts", href: `/films?sort=newest&maxAge=${ageCap}` },
     ],
   }
 }
@@ -241,14 +312,14 @@ async function fetchCinemaSlice(limit: number, ageCap?: number): Promise<ApercuC
 }
 
 const getHeroData = unstable_cache(
-  async (state: HomepageState, dayKey: string): Promise<HeroData> => {
+  async (state: HomepageState, dayKey: string, ageCap: number): Promise<HeroData> => {
     void dayKey // included in the cache key so the day rotation invalidates
-    if (state === "tonight") return fetchTonight()
-    if (state === "weekend") return fetchWeekend()
-    if (state === "holidays") return fetchHolidays()
-    return fetchDefault()
+    if (state === "tonight") return fetchTonight(ageCap)
+    if (state === "weekend") return fetchWeekend(ageCap)
+    if (state === "holidays") return fetchHolidays(ageCap)
+    return fetchDefault(ageCap)
   },
-  ["homepage-hero-rail-v1"],
+  ["homepage-hero-rail-v2"],
   { revalidate: 600 },
 )
 
@@ -262,9 +333,19 @@ async function resolveContext(): Promise<HomepageTimeContext> {
   return resolveHomepageTimeContext(new Date(), holidays)
 }
 
-export async function ApercuTimeAwareHero({ serifClass }: { serifClass: string }) {
+export async function ApercuTimeAwareHero({
+  serifClass,
+  maxAgeCap,
+}: {
+  serifClass: string
+  /** When the user is logged in with family members, the youngest-of-
+   *  the-oldest cap the rail should respect. Otherwise FAMILY_AGE_CAP
+   *  (12) is used as a generic safe default. */
+  maxAgeCap?: number | null
+}) {
   const ctx = await resolveContext()
-  const data = await getHeroData(ctx.state, ctx.parisIsoDay)
+  const ageCap = typeof maxAgeCap === "number" && maxAgeCap > 0 ? maxAgeCap : FAMILY_AGE_CAP
+  const data = await getHeroData(ctx.state, ctx.parisIsoDay, ageCap)
   const p = APERCU_PALETTE
 
   if (data.cards.length === 0) return null
