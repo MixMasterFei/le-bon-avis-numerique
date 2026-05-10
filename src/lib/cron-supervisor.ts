@@ -245,6 +245,63 @@ async function runRemediation(issue: Issue): Promise<ActionResult> {
   }
 }
 
+function actionForAgent(issue: Issue, action?: ActionResult): string {
+  if (issue.task === "import") {
+    return "Analyser pourquoi l'import reste en partial et verifier si c'est un partial acceptable ou un vrai blocage catalogue."
+  }
+
+  if (issue.task === "weekly-dossier") {
+    return action?.ok
+      ? "Surveiller le prochain run weekly-dossier et corriger la cause si le statut reste partial malgre la relance OK."
+      : "Diagnostiquer weekly-dossier : lire les logs de generation, verifier sources, timeout et persistance."
+  }
+
+  if (issue.task === "similarity") {
+    return action?.ok
+      ? "Verifier que la similarite progresse par batch et ajuster le seuil de detection si le statut missing est attendu entre deux batchs."
+      : "Diagnostiquer la similarite : verifier offset, total, erreurs Prisma/API et reprise de batch."
+  }
+
+  if (issue.status === "missing" || issue.status === "stale") {
+    return `Verifier pourquoi ${issue.task} ne produit plus de cron_logs recents.`
+  }
+
+  if (issue.status === "repeated-partial") {
+    return `Lire les derniers logs ${issue.task} et determiner si le partial est normal ou a corriger.`
+  }
+
+  return `Diagnostiquer ${issue.task} : ${issue.summary}`
+}
+
+function actionForHuman(issues: Issue[], actions: ActionResult[]): string[] {
+  const failedActions = actions.filter((action) => !action.ok)
+  const unresolved = issues.filter((issue) => !actions.some((action) => action.task === issue.task && action.ok))
+
+  if (issues.length === 0) {
+    return ["Rien a faire. Le superviseur n'a detecte aucune anomalie."]
+  }
+
+  if (failedActions.length > 0) {
+    return [
+      "Verifier /admin/operations si un impact est visible sur le site.",
+      "Transmettre ce mail a Codex avec la demande : \"traite les actions agent du superviseur\".",
+      ...failedActions.map((action) => `Relance automatique KO pour ${action.task} (${action.httpStatus ?? "n/a"}).`),
+    ]
+  }
+
+  if (unresolved.length > 0) {
+    return [
+      "Pas de manipulation urgente si le site semble normal.",
+      "Transmettre ce mail a Codex si l'anomalie revient demain ou si une section du site semble bloquee.",
+    ]
+  }
+
+  return [
+    "Aucune action manuelle immediate.",
+    "Verifier seulement que le prochain mail superviseur revient au vert ou que les memes anomalies ne persistent pas.",
+  ]
+}
+
 function buildReport(issues: Issue[], actions: ActionResult[]): string {
   const lines: string[] = [
     "# Superviseur Totem Avisé",
@@ -255,8 +312,30 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
 
   if (issues.length === 0) {
     lines.push("Tout est OK. Aucune anomalie détectée sur les tâches surveillées.")
+    lines.push("")
+    lines.push("## Action pour toi")
+    lines.push("- Rien a faire.")
+    lines.push("")
+    lines.push("## Action pour l'agent")
+    lines.push("- Rien a traiter.")
     return lines.join("\n")
   }
+
+  const failedActions = actions.filter((action) => !action.ok)
+  const unresolved = issues.filter((issue) => !actions.some((action) => action.task === issue.task && action.ok))
+  const decision =
+    failedActions.length > 0
+      ? "Intervention agent recommandee : au moins une remediation automatique a echoue."
+      : unresolved.length > 0
+        ? "A surveiller : certaines anomalies n'ont pas de remediation automatique OK."
+        : "Remediation automatique OK : surveiller le prochain run."
+
+  lines.push("## Lecture rapide", "")
+  lines.push(`- Verdict : ${decision}`)
+  lines.push(`- Anomalies : ${issues.length}`)
+  lines.push(`- Remediations OK : ${actions.filter((action) => action.ok).length}/${actions.length}`)
+  lines.push(`- Action humaine urgente : ${failedActions.length > 0 ? "oui" : "non"}`)
+  lines.push("")
 
   lines.push(`## Anomalies détectées (${issues.length})`, "")
   for (const issue of issues) {
@@ -280,12 +359,19 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
     }
   }
 
-  const unresolved = issues.filter((issue) => !actions.some((action) => action.task === issue.task && action.ok))
-  lines.push("", "## Action humaine")
-  if (unresolved.length === 0) {
-    lines.push("Aucune action requise pour le moment.")
+  lines.push("", "## Action pour toi")
+  for (const item of actionForHuman(issues, actions)) {
+    lines.push(`- ${item}`)
+  }
+
+  lines.push("", "## Action pour l'agent")
+  if (unresolved.length === 0 && failedActions.length === 0) {
+    lines.push("- Rien a corriger immediatement. Recontrole demain si la meme anomalie revient.")
   } else {
-    lines.push("À vérifier :", ...unresolved.map((issue) => `- ${issue.task} : ${issue.summary}`))
+    for (const issue of unresolved) {
+      const action = actions.find((candidate) => candidate.task === issue.task)
+      lines.push(`- ${issue.task} : ${actionForAgent(issue, action)}`)
+    }
   }
 
   return lines.filter(Boolean).join("\n")

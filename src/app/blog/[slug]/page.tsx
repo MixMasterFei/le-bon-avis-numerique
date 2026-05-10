@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Calendar, ArrowLeft, User } from "lucide-react"
+import { ArrowLeft, BookOpen, Calendar, Clock, MessagesSquare, User } from "lucide-react"
 import { PortableText, type PortableTextBlock } from "@portabletext/react"
 import { Badge } from "@/components/ui/badge"
 import { sanityClient } from "@/sanity/client"
@@ -19,6 +19,24 @@ const CATEGORY_LABELS: Record<string, string> = {
   "parentalite-numerique": "Parentalité numérique",
   "guides-pratiques": "Guides pratiques",
   "actualites": "Actualités",
+}
+
+function getPlainText(blocks: PortableTextBlock[]) {
+  return blocks
+    .flatMap((block) => {
+      if (!("children" in block) || !Array.isArray(block.children)) return []
+      return block.children.map((child) =>
+        child && typeof child === "object" && "text" in child && typeof child.text === "string"
+          ? child.text
+          : ""
+      )
+    })
+    .join(" ")
+}
+
+function getReadingMinutes(blocks: PortableTextBlock[]) {
+  const words = getPlainText(blocks).trim().split(/\s+/).filter(Boolean).length
+  return Math.max(1, Math.ceil(words / 200))
 }
 
 const POST_QUERY = `*[_type == "post" && slug.current == $slug && defined(publishedAt) && publishedAt <= now()][0] {
@@ -121,6 +139,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   })
 
   const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
+  const readingMinutes = getReadingMinutes(post.body || [])
 
   const articleSection = CATEGORY_LABELS[post.category] || post.category
   const postUrl = `https://totemavise.com/blog/${post.slug}`
@@ -158,7 +177,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
-    <article className="min-h-screen">
+    <article className="min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -183,25 +202,35 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto max-w-3xl px-4 py-8 md:py-12">
         {/* Breadcrumbs */}
-        <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
-          <Link href="/" className="hover:text-primary">Accueil</Link>
+        <nav className="mb-8 flex items-center gap-2 text-sm" style={{ color: "var(--color-ink2)" }}>
+          <Link href="/" className="transition-opacity hover:opacity-70">Accueil</Link>
           <span>/</span>
-          <Link href="/blog" className="hover:text-primary">Blog</Link>
+          <Link href="/blog" className="transition-opacity hover:opacity-70">Blog</Link>
           <span>/</span>
-          <span className="text-gray-700 truncate">{post.title}</span>
+          <span className="truncate" style={{ color: "var(--color-ink)" }}>{post.title}</span>
         </nav>
 
         {/* Header */}
         <header className="mb-8">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-0 mb-3">
+          <Badge
+            variant="secondary"
+            className="mb-4 border-0 text-xs font-semibold uppercase tracking-wider"
+            style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
+          >
             {CATEGORY_LABELS[post.category] || post.category}
           </Badge>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+          <h1
+            className="font-serif mb-5 text-3xl font-medium leading-[1.05] md:text-5xl"
+            style={{ color: "var(--color-ink)" }}
+          >
             {post.title}
           </h1>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <p className="mb-5 text-lg leading-relaxed md:text-xl" style={{ color: "var(--color-ink2)" }}>
+            {post.excerpt}
+          </p>
+          <div className="flex flex-wrap items-center gap-4 text-sm" style={{ color: "var(--color-ink2)" }}>
             <span className="flex items-center gap-1.5">
               <User className="h-4 w-4" />
               {post.author}
@@ -210,19 +239,80 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Calendar className="h-4 w-4" />
               {date}
             </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              {readingMinutes} min de lecture
+            </span>
           </div>
         </header>
 
+        <aside
+          className="mb-9 rounded-2xl p-5 md:p-6"
+          style={{
+            background: "var(--color-bg2)",
+            borderLeft: "4px solid var(--color-accent)",
+          }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <MessagesSquare className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
+            <div className="font-serif text-base font-medium md:text-lg" style={{ color: "var(--color-ink)" }}>
+              A retenir pour les parents
+            </div>
+          </div>
+          <p className="m-0 text-base leading-relaxed" style={{ color: "var(--color-ink)" }}>
+            {post.excerpt}
+          </p>
+        </aside>
+
         {/* Body */}
-        <div className="prose-totem">
+        <div className="max-w-none">
           <PortableText value={post.body} components={portableTextComponents} />
         </div>
 
+        <aside
+          className="mt-12 rounded-2xl p-5 md:p-6"
+          style={{ background: "var(--color-bg2)", border: "1px solid var(--color-line)" }}
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <BookOpen className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
+            <div className="font-serif text-lg font-medium" style={{ color: "var(--color-ink)" }}>
+              Continuer avec Totem Avisé
+            </div>
+          </div>
+          <p className="mb-4 text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+            Comparez les films, séries et jeux selon l&apos;âge, la sensibilité et le contexte de votre famille.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/films"
+              className="rounded-full px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-75"
+              style={{ background: "var(--color-card)", color: "var(--color-ink)" }}
+            >
+              Explorer les films
+            </Link>
+            <Link
+              href="/jeux"
+              className="rounded-full px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-75"
+              style={{ background: "var(--color-card)", color: "var(--color-ink)" }}
+            >
+              Voir les jeux
+            </Link>
+            <Link
+              href="/guides"
+              className="rounded-full px-3 py-1.5 text-sm font-medium transition-opacity hover:opacity-75"
+              style={{ background: "var(--color-card)", color: "var(--color-ink)" }}
+            >
+              Lire les guides
+            </Link>
+          </div>
+        </aside>
+
         {/* Back link */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
+        <div className="mt-12 border-t pt-8" style={{ borderColor: "var(--color-line)" }}>
           <Link
             href="/blog"
-            className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
+            className="inline-flex items-center gap-2 font-medium transition-opacity hover:opacity-70"
+            style={{ color: "var(--color-accent)" }}
           >
             <ArrowLeft className="h-4 w-4" />
             Retour au blog
@@ -232,7 +322,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         {/* Related posts */}
         {relatedPosts.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Articles similaires</h2>
+            <h2 className="font-serif text-2xl font-medium mb-6" style={{ color: "var(--color-ink)" }}>
+              Articles similaires
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {relatedPosts.map((related) => (
                 <BlogCard key={related.slug} post={related} />

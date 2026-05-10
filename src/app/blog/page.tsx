@@ -69,7 +69,8 @@ export default async function BlogPage() {
     : null
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <main className="min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}>
+      <div className="container mx-auto px-4 py-12 md:py-16">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
@@ -81,11 +82,11 @@ export default async function BlogPage() {
         />
       )}
       <div className="text-center mb-12">
-        <div className="inline-flex p-4 bg-orange-100 rounded-full mb-6">
-          <Newspaper className="h-8 w-8 text-orange-600" />
+        <div className="inline-flex p-4 rounded-full mb-6" style={{ background: "var(--color-bg2)" }}>
+          <Newspaper className="h-8 w-8" style={{ color: "var(--color-accent)" }} />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Notre blog</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <h1 className="font-serif text-4xl md:text-5xl font-medium leading-[1.05] mb-4" style={{ color: "var(--color-ink)" }}>Notre blog</h1>
+        <p className="max-w-2xl mx-auto text-lg leading-relaxed" style={{ color: "var(--color-ink2)" }}>
           Articles, conseils et actualités sur le temps d&apos;écran, les films, les jeux vidéo et la parentalité numérique.
         </p>
       </div>
@@ -97,12 +98,13 @@ export default async function BlogPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 text-gray-500">
+        <div className="text-center py-16" style={{ color: "var(--color-ink2)" }}>
           <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p className="text-lg font-medium">Aucun article pour le moment</p>
           <p className="text-sm">Nos premiers articles arrivent bientôt !</p>
         </div>
       )}
-    </div>
+      </div>
+    </main>
   )
 }
