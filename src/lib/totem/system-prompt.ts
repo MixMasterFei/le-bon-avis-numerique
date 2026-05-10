@@ -30,14 +30,23 @@ export interface FamilyMemberSnapshot {
   avoidTopics?: string[]
 }
 
-export interface PageContextSnapshot {
-  type: "media"
-  id: string
-  title: string
-  mediaType: string
-  expertAgeRec: number | null
-  year: number | null
-}
+export type PageContextSnapshot =
+  | {
+      type: "media"
+      id: string
+      title: string
+      mediaType: string
+      expertAgeRec: number | null
+      year: number | null
+    }
+  | {
+      type: "news"
+      slug: string
+      title: string
+      category: string | null
+      summary: string
+      publishedAt: string | null
+    }
 
 export interface BuildSystemPromptParams {
   userIsAnonymous: boolean
@@ -92,6 +101,10 @@ Règles strictes sur la description de contenu :
 - **Tu ne décris JAMAIS le contenu d'un titre (violence, gore, scènes choquantes, thèmes sensibles, langage, sexualité) sans avoir appelé \`getMediaDetails\` sur ce titre.** Les rails (\`getDiscoveryRail\`, \`searchMedia\`) renvoient seulement titre + âge + genres — pas les détails de contenu. Décrire de la violence ou des scènes "à partir de ta mémoire" est une hallucination dangereuse pour un guide familial. Exemple typique : un titre comme *Mortal Kombat* est listé avec son âge ; sans \`getMediaDetails\`, tu n'as PAS le droit de dire "bagarre stylisée" ou "sans gore" — tu pourrais te tromper du tout au tout.
 - Quand tu listes plusieurs titres venant d'un rail (3-6 résultats), tu te limites à : *titre, année, âge conseillé, genres*. Pour le 1-2 titres que tu recommandes vraiment, tu peux appeler \`getMediaDetails\` et là, et seulement là, citer ce que disent ses métriques.
 
+Règles sur les pages d'actualités :
+- Si la \`Page d'arrivée\` commence par \`/apercudecouverte\` (page d'index ou \`/apercudecouverte/actualites\`) ET l'utilisateur mentionne un sujet d'article (*"l'article sur la désinformation"*, *"le papier sur les écrans"*) sans donner le titre exact, **appelle \`searchNews\` avec un mot-clé du sujet AVANT de demander une clarification**. Ne dis pas *"je n'ai pas le titre"* — cherche d'abord.
+- Si la \`Page d'arrivée\` est \`/apercudecouverte/<slug>\` précis, le titre et le résumé interne sont injectés ci-dessus dans la section "Page actuelle". Réponds directement.
+
 Règles strictes sur les requêtes "famille" :
 - Quand l'utilisateur demande pour "la famille", "mes enfants", "tous les trois" sans préciser un âge, **tu prends l'âge du membre le plus jeune** comme contrainte (le foyer est dans le contexte dynamique). Tu passes cet âge dans \`age=N\` au rail (ex: cinema + age=10 si le plus jeune a 10 ans), pour que le \`seeAllUrl\` retourné cap automatiquement la page complète.
 - Si \`getFamilyFit\` est disponible (utilisateur connecté avec foyer), tu peux l'appeler sur 2-3 titres pertinents pour valider — mais pas sur 6 d'un coup.
@@ -117,10 +130,17 @@ Règles strictes sur les requêtes "famille" :
       }).join("\n")}`
     : ""
 
-  const pageBlock = params.pageContext
-    ? `Page actuelle : fiche du ${params.pageContext.mediaType.toLowerCase()} **"${params.pageContext.title}"**${params.pageContext.year ? ` (${params.pageContext.year})` : ""} — id catalogue : \`${params.pageContext.id}\`${params.pageContext.expertAgeRec != null ? `, âge conseillé ${params.pageContext.expertAgeRec} ans` : ""}.
+  let pageBlock = ""
+  if (params.pageContext?.type === "media") {
+    const mc = params.pageContext
+    pageBlock = `Page actuelle : fiche du ${mc.mediaType.toLowerCase()} **"${mc.title}"**${mc.year ? ` (${mc.year})` : ""} — id catalogue : \`${mc.id}\`${mc.expertAgeRec != null ? `, âge conseillé ${mc.expertAgeRec} ans` : ""}.
 Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans préciser, il fait référence à ce titre. Utilise directement \`getMediaDetails\` ou \`getFamilyFit\` avec l'id ci-dessus — pas besoin d'appeler \`searchMedia\` d'abord.`
-    : ""
+  } else if (params.pageContext?.type === "news") {
+    const nc = params.pageContext
+    pageBlock = `Page actuelle : article actualité **"${nc.title}"**${nc.category ? ` (catégorie : ${nc.category})` : ""}${nc.publishedAt ? `, publié le ${nc.publishedAt.slice(0, 10)}` : ""}.
+Résumé interne (à reformuler en tes propres mots, jamais à recopier verbatim) : ${nc.summary}
+Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait référence à cet article. Tu peux répondre directement sans appeler \`searchNews\`. URL canonique : \`/apercudecouverte/${nc.slug}\`.`
+  }
 
   const dynamicTail = `# Contexte dynamique
 

@@ -101,18 +101,73 @@ export async function POST(req: NextRequest) {
     setSessionCookie = true
   }
 
-  // Page context — when the user is on a media detail page, resolve
-  // the title so Totem understands "ce film" / "celui-là" without
-  // having to ask. Cheap: one Prisma call, only on /media/[id].
-  let pageContext: {
-    type: "media"
-    id: string
-    title: string
-    mediaType: string
-    expertAgeRec: number | null
-    year: number | null
-  } | null = null
-  if (typeof body.sourcePage === "string" && body.sourcePage.startsWith("/media/")) {
+  // Page context — when the user is on a media detail page or a news
+  // article page, resolve the title/topic so Totem understands "cet
+  // article" / "ce film" / "celui-là" without having to ask. Cheap:
+  // one Prisma call, only when the path matches.
+  let pageContext:
+    | {
+        type: "media"
+        id: string
+        title: string
+        mediaType: string
+        expertAgeRec: number | null
+        year: number | null
+      }
+    | {
+        type: "news"
+        slug: string
+        title: string
+        category: string | null
+        summary: string
+        publishedAt: string | null
+      }
+    | null = null
+
+  // News article page: /apercudecouverte/[slug]
+  // Special-case the index/list views (/apercudecouverte and
+  // /apercudecouverte/actualites) where there's no specific article in
+  // view — we don't try to resolve a single story for those.
+  if (
+    typeof body.sourcePage === "string" &&
+    body.sourcePage.startsWith("/apercudecouverte/") &&
+    !body.sourcePage.startsWith("/apercudecouverte/actualites")
+  ) {
+    const rawSlug = body.sourcePage.replace(/^\/apercudecouverte\//, "").split(/[?#]/)[0]
+    if (rawSlug.length > 0 && rawSlug.length < 200) {
+      try {
+        const n = await prisma.newsStory.findUnique({
+          where: { slug: rawSlug },
+          select: {
+            slug: true,
+            title: true,
+            category: true,
+            summary: true,
+            publishedAt: true,
+            status: true,
+          },
+        })
+        if (n && n.status === "PUBLISHED") {
+          pageContext = {
+            type: "news",
+            slug: n.slug,
+            title: n.title,
+            category: n.category,
+            summary: n.summary,
+            publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null,
+          }
+        }
+      } catch {
+        /* ignore — page context is enrichment, not required */
+      }
+    }
+  }
+
+  if (
+    pageContext == null &&
+    typeof body.sourcePage === "string" &&
+    body.sourcePage.startsWith("/media/")
+  ) {
     const rawSegment = body.sourcePage.replace(/^\/media\//, "").split(/[?#]/)[0]
     if (rawSegment.length > 0 && rawSegment.length < 200) {
       // Route format is `<type>:<id>` (e.g. movie:abc-123). Fall back to
