@@ -331,20 +331,20 @@ export function SiteHeader() {
             </div>
           </Link>
 
-          <div className="hidden lg:flex flex-1 items-center justify-center">
-            <nav className="flex items-center space-x-1">
+          <div className="hidden lg:flex flex-1 items-center justify-center min-w-0">
+            <nav className="flex items-center space-x-0.5 xl:space-x-1">
               {navigation.map((item) =>
                 item.comingSoon ? (
                   <div
                     key={item.name}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full cursor-not-allowed opacity-60"
+                    className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full cursor-not-allowed opacity-60 whitespace-nowrap"
                     style={navLinkStyle}
                     title="Bientôt disponible"
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                     {item.name}
                     <span
-                      className="text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-1"
+                      className="hidden xl:inline text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-1"
                       style={{ background: p.bg2, color: p.ink2 }}
                     >
                       Bientôt
@@ -354,10 +354,10 @@ export function SiteHeader() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
+                    className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
                     style={navLinkStyle}
                   >
-                    <item.icon className="h-4 w-4" />
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
                     {item.name}
                   </Link>
                 ),
@@ -366,7 +366,7 @@ export function SiteHeader() {
               <div ref={moreMenuRef} className="relative">
                 <button
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
+                  className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
                   style={navLinkStyle}
                 >
                   Plus
@@ -445,7 +445,7 @@ export function SiteHeader() {
 
             <form
               onSubmit={handleSearch}
-              className="hidden md:flex items-center max-w-md ml-4"
+              className="hidden md:flex items-center w-full max-w-[180px] lg:max-w-[220px] xl:max-w-md ml-2 xl:ml-4 min-w-0"
             >
               {/* Outer wrapper anchors the absolutely-positioned
                   dropdowns. Cannot use overflow-hidden here — the
@@ -657,7 +657,7 @@ export function SiteHeader() {
             <ThemeToggle className="hidden sm:inline-flex" />
             {status === "loading" ? (
               <div
-                className="h-8 w-8 sm:w-20 animate-pulse rounded-full"
+                className="h-8 w-8 xl:w-20 animate-pulse rounded-full"
                 style={{ background: p.placeholder }}
               />
             ) : session?.user ? (
@@ -682,7 +682,7 @@ export function SiteHeader() {
                       size={32}
                     />
                   </span>
-                  <span className="hidden sm:inline">
+                  <span className="hidden xl:inline whitespace-nowrap">
                     {session.user.name || session.user.email?.split("@")[0]}
                   </span>
                 </button>
