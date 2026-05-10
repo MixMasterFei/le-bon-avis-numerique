@@ -127,9 +127,10 @@ Sections, dans l'ordre où l'utilisateur les voit. Chaque section a une URL cano
 
 - `/blog` — liste des articles parentalité numérique (Sanity)
 - `/blog/[slug]` — un article
-- `/apercudecouverte` — fil d'actualités médias famille
-- `/apercudecouverte/[slug]` — un article d'actualité
-- `/apercudecouverte/actualites` — toutes les actus filtrées
+- `/apercudecouverte-v3` — **fil d'actualités principal (canonique pour la landing du feed)**. À utiliser quand on veut emmener l'utilisateur "voir toutes les actus" / "le feed d'actualités".
+- `/apercudecouverte/[slug]` — fiche d'un article d'actualité (V3 n'a pas de route `[slug]`, donc on reste sur la route historique pour les articles individuels)
+- `/apercudecouverte/actualites` — vue filtrée historique des actus
+- `/apercudecouverte` — ancienne landing du feed (encore valide mais préférer `-v3`)
 
 ### Fiches
 

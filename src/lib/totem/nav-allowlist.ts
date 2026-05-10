@@ -16,6 +16,10 @@ const ALLOWED_PATTERNS: RegExp[] = [
   // News stories live under /apercudecouverte (not /news or /actualites).
   // Examples: /apercudecouverte/<slug>, /apercudecouverte/actualites
   /^\/apercudecouverte(\/.*)?(\?.*)?$/,
+  // V3 of the news/discovery hub — the canonical landing for the
+  // whole news feed. Individual articles still live at the legacy
+  // /apercudecouverte/<slug> path because V3 has no [slug] route.
+  /^\/apercudecouverte-v3(\/.*)?(\?.*)?$/,
   /^\/media\/[A-Za-z0-9_-]+(\?.*)?$/,
 ]
 
