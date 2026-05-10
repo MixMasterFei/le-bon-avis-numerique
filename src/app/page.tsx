@@ -8,11 +8,12 @@ import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
  * Picks the age cap the time-aware hero should respect.
  *
  * Rule (per product): if the logged-in user has family members,
- * use the OLDEST minor's age — that lets the eldest co-watch with
- * younger siblings while preventing fully-adult content from
- * surfacing in a "family" rail. Adult members (18+) don't relax
- * the cap. No family or no minors → null (caller falls back to a
- * generic safe default).
+ * use the YOUNGEST minor's age. The "en famille" framing means
+ * "everyone in the room can watch together", so the smallest
+ * viewer defines the ceiling. Older siblings discover content
+ * elsewhere on the site, not in this co-viewing rail. Adult
+ * members (18+) are ignored. No family or no minors → null
+ * (caller falls back to FAMILY_AGE_CAP).
  */
 async function resolveFamilyAgeCap(userId: string): Promise<number | null> {
   try {
@@ -25,7 +26,7 @@ async function resolveFamilyAgeCap(userId: string): Promise<number | null> {
       .map((m) => getMemberAge(m.birthYear, m.birthMonth))
       .filter((a): a is number => typeof a === "number" && a >= 0 && a < 18)
     if (ages.length === 0) return null
-    return Math.max(...ages)
+    return Math.min(...ages)
   } catch {
     return null
   }

@@ -59,9 +59,10 @@ function toCard(row: DBRow): ApercuCardMedia {
   }
 }
 
-// Family-mode age caps. Conservative on purpose — this rail is rendered
-// before any family-context personalization, so the assumption is "kids
-// in the room". Adult-only content NEVER appears here.
+// Hard ceiling for the "en famille" rail. Even with no family context
+// — and even if the family has only teenagers — the rail never shows
+// content above this age, since the framing is co-viewing. Older
+// siblings discover more mature content elsewhere on the site.
 const FAMILY_AGE_CAP = 12
 
 // Streaming fallback when the new-on-streaming query returns nothing
@@ -319,7 +320,7 @@ const getHeroData = unstable_cache(
     if (state === "holidays") return fetchHolidays(ageCap)
     return fetchDefault(ageCap)
   },
-  ["homepage-hero-rail-v2"],
+  ["homepage-hero-rail-v3"],
   { revalidate: 600 },
 )
 
@@ -338,13 +339,19 @@ export async function ApercuTimeAwareHero({
   maxAgeCap,
 }: {
   serifClass: string
-  /** When the user is logged in with family members, the youngest-of-
-   *  the-oldest cap the rail should respect. Otherwise FAMILY_AGE_CAP
-   *  (12) is used as a generic safe default. */
+  /** Optional youngest-minor age from the logged-in user's family.
+   *  The rail enforces TWO ceilings simultaneously:
+   *   - FAMILY_AGE_CAP (12) — hard cap that never relaxes.
+   *   - youngest minor age — further tightens for families whose
+   *     smallest viewer is younger than 12.
+   *  Effective cap = min(FAMILY_AGE_CAP, maxAgeCap ?? FAMILY_AGE_CAP).
+   */
   maxAgeCap?: number | null
 }) {
   const ctx = await resolveContext()
-  const ageCap = typeof maxAgeCap === "number" && maxAgeCap > 0 ? maxAgeCap : FAMILY_AGE_CAP
+  const familyCap =
+    typeof maxAgeCap === "number" && maxAgeCap > 0 ? maxAgeCap : FAMILY_AGE_CAP
+  const ageCap = Math.min(FAMILY_AGE_CAP, familyCap)
   const data = await getHeroData(ctx.state, ctx.parisIsoDay, ageCap)
   const p = APERCU_PALETTE
 
