@@ -18,9 +18,16 @@ interface HomepageApercuProps {
   isLoggedIn: boolean
   serifClass: string
   isAdmin?: boolean
+  /**
+   * Server-rendered slot inserted just below the hero search and above
+   * Coups de Cœur. Used by `page.tsx` to mount the time-aware rail
+   * (which is an async server component and can't be imported here
+   * since this file is "use client").
+   */
+  topSlot?: React.ReactNode
 }
 
-export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: HomepageApercuProps) {
+export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false, topSlot }: HomepageApercuProps) {
   const p = APERCU_PALETTE
 
   return (
@@ -30,6 +37,8 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false }: Home
         style={{ background: p.bg, color: p.ink }}
       >
         <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
+
+        {topSlot}
 
         {/* Section anchors below — each has id="..." matching
             HomeSectionNav's chips, and scroll-mt-24 to offset the

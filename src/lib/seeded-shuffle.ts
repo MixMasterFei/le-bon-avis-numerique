@@ -37,3 +37,22 @@ export function getWeekSeed(): number {
   const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
   return d.getUTCFullYear() * 100 + weekNum
 }
+
+/**
+ * Returns a seed that changes every day at midnight Paris time.
+ * Format: YYYYMMDD as a number (e.g. 20260509). Use for the homepage's
+ * "Sélection du jour" rail so the shuffle re-orders every morning.
+ */
+export function getDaySeed(now: Date = new Date()): number {
+  // Use Intl to get the Paris-local Y/M/D so the seed flips at the
+  // right moment for French visitors regardless of server timezone.
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+  // en-CA produces "YYYY-MM-DD" which we strip dashes from.
+  const iso = fmt.format(now) // "2026-05-09"
+  return Number(iso.replace(/-/g, ""))
+}
