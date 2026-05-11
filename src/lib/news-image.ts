@@ -1,5 +1,9 @@
 import * as cheerio from "cheerio"
-import { imageHostFromUrl, isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
+import {
+  imageHostFromUrl,
+  isBlockedHotlinkImageUrl,
+  isLowQualityImagePublisher,
+} from "@/lib/news-image-policy"
 
 // Image resolution — simplified to 2 tiers (May 2026 redesign). The
 // previous 5-tier cascade (AGENCY → PUBLISHER_RSS → Pexels → Unsplash
@@ -126,6 +130,11 @@ export function extractFromRss(item: RssLikeItem): string | null {
  * back behind a feature flag with explicit quota tracking.
  */
 export function resolveImage(item: RssLikeItem): ResolvedImage | null {
+  // Publisher-level curation: some sources ship generic mascot art
+  // that looks out of place in the news grid. Returning null drops
+  // the story entirely via the caller's "no image → skip" rule.
+  if (isLowQualityImagePublisher(item.sourceName)) return null
+
   const articleHost = imageHostFromUrl(item.link)
   const rssImage = extractFromRss(item)
   if (isBlockedHotlinkImageUrl(rssImage)) return null
