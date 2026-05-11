@@ -62,15 +62,29 @@ export async function GET() {
           // Manga is admin-only during soft launch — exclude from the
           // public "Fraîchement ajoutés" rail so visitors don't see it.
           type: { not: "MANGA" },
+          // Hard family-safe cap for the public homepage rail. Mature
+          // titles (horror posters with disturbing imagery, 16+/18+
+          // ratings) appear elsewhere in the catalogue but never in
+          // the visitor's first impression. ALSO exclude horror/
+          // thriller/erotica genres outright — some have a low
+          // expertAgeRec but the poster art alone is jarring.
+          expertAgeRec: { not: null, lte: 12 },
+          NOT: {
+            genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
+          },
         },
+        // Slightly larger pool — we filter the result down to 5
+        // post-fetch in case Prisma's NOT-hasSome misses an
+        // edge-case genre tag.
         orderBy: { createdAt: "desc" },
-        take: 5,
+        take: 10,
         select: {
           id: true,
           type: true,
           title: true,
           posterUrl: true,
           createdAt: true,
+          expertAgeRec: true,
         },
       }),
       prisma.mediaReaction.groupBy({
@@ -90,8 +104,18 @@ export async function GET() {
     const buzzMediaIds = weeklyReactionsGrouped.map((r) => r.mediaId)
     const buzzMediaItems = buzzMediaIds.length
       ? await prisma.mediaItem.findMany({
-          // Same MANGA exclusion as latestAdditions above (admin-only soft launch).
-          where: { id: { in: buzzMediaIds }, posterUrl: { not: null }, type: { not: "MANGA" } },
+          where: {
+            id: { in: buzzMediaIds },
+            posterUrl: { not: null },
+            // Same MANGA exclusion as latestAdditions above (admin-only soft launch).
+            type: { not: "MANGA" },
+            // Same family-safe cap as latestAdditions: nothing above
+            // 12+ on the homepage, no horror/thriller/erotica.
+            expertAgeRec: { not: null, lte: 12 },
+            NOT: {
+              genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
+            },
+          },
           select: { id: true, type: true, title: true, posterUrl: true },
         })
       : []
@@ -121,7 +145,10 @@ export async function GET() {
         reviews,
       },
       lastImportAt: lastImport?.createdAt.toISOString() ?? null,
-      latestAdditions: latestAdditions.map((m) => ({
+      // Cap to 5 after the family-safe filter (we fetched 10 to keep
+      // the result stable when individual rows are excluded by the
+      // genre/age guards).
+      latestAdditions: latestAdditions.slice(0, 5).map((m) => ({
         id: m.id,
         type: m.type,
         title: m.title,

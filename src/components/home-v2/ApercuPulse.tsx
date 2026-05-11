@@ -110,7 +110,7 @@ export function ApercuPulse({ serifClass }: { serifClass: string }) {
                 Fraîchement ajoutés dans notre base de données
               </h3>
               <Link
-                href="/films?sort=newest"
+                href="/films?sort=newest&maxAge=12"
                 className="text-sm hover:opacity-70"
                 style={{ color: p.ink2 }}
               >
