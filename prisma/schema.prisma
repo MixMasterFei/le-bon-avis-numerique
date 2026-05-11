@@ -888,6 +888,19 @@ model NewsStory {
   // 60-120 words, plain text (no markdown). Null on legacy briefs.
   familyTakeaway String?         @map("family_takeaway") @db.Text
 
+  // Editorial supervision tags — set after synthesis by a lightweight
+  // Haiku classifier (src/lib/news-editorial-judge.ts). Used by the
+  // feed-level balancer to avoid stacking heavy stories at the top of
+  // /apercudecouverte-v3.
+  //   editorialTone: "positive" | "neutral" | "concerning" | "grave"
+  //   topicCluster:  short kebab-case tag like "teen-suicide",
+  //                  "screen-time", "sport", "cinema-release", …
+  // Both nullable for backward compat with rows synthesized before
+  // the editorial pass shipped. The balancer treats null tone as
+  // "neutral" and null cluster as "_unclustered".
+  editorialTone  String?         @map("editorial_tone")
+  topicCluster   String?         @map("topic_cluster")
+
   // Primary catalog subject — set by the systemic news-media pipeline:
   // LLM identifies whether the story is about a media title/license,
   // catalog search finds matching rows, LLM verifies the candidates.

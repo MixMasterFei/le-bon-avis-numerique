@@ -18,6 +18,7 @@ import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
+import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -90,6 +91,10 @@ type StoryRow = {
   publishedAt: Date
   relevanceScore: number
   sources: Prisma.JsonValue
+  /** Set by news-editorial-judge after synthesis; nullable on legacy
+   *  rows. Read by the balancer to avoid stacking heavy stories. */
+  editorialTone?: string | null
+  topicCluster?: string | null
 }
 
 function rowToCard(row: StoryRow): ApercuNewsCardData {
@@ -395,6 +400,12 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
+        // Editorial supervision tags — fed into balanceNewsForFeed
+        // below so the hero is never a grave story and we never stack
+        // two stories from the same topicCluster (e.g. two teen-suicide
+        // pieces side-by-side, the original failure mode that started
+        // this work).
+        editorialTone: true, topicCluster: true,
       },
     }).catch(safe("frenchRows", [] as StoryRow[])),
     // 6 most recent international briefs in PARENTHOOD only.
@@ -418,6 +429,7 @@ export default async function ApercuDecouverteV3Page(props: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
+        editorialTone: true, topicCluster: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
     // 6 most recent TECH briefs (FR + INTL mixed). Renders as a
@@ -483,14 +495,23 @@ export default async function ApercuDecouverteV3Page(props: {
     Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
   ])
 
+  // Editorial supervision pass — invisible to the reader. Rebalances
+  // the top 6 of the recency-sorted feed so the hero is never a
+  // "grave" story and no two consecutive cards share the same
+  // topicCluster (e.g. two teen-suicide pieces side-by-side, the
+  // failure mode that started this work). The tail of the feed is
+  // untouched. Falls back to identity for rows that pre-date the
+  // editorial-judge backfill (null tone → treated as neutral).
+  const balancedFrenchRows = balanceNewsForFeed(frenchRows, 6)
+
   // Hero pick — freshness first, with a parent-first guardrail. The
   // newest suitable story leads, but standard game/product/licence
   // announcements cannot set the tone of the whole page unless their
   // family signal is exceptional.
-  const frenchHero = pickFrenchHero(frenchRows)
+  const frenchHero = pickFrenchHero(balancedFrenchRows)
   const frenchRest = frenchHero
-    ? frenchRows.filter((row) => row.id !== frenchHero.id)
-    : frenchRows
+    ? balancedFrenchRows.filter((row) => row.id !== frenchHero.id)
+    : balancedFrenchRows
 
   // Page-level image dedup: dossier wins (it's the editorial centerpiece),
   // then hero, then top briefs, then INTL, then older. Any later card

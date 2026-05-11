@@ -28,6 +28,7 @@ const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
 import { Prisma } from "@prisma/client"
@@ -1039,6 +1040,19 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       )
     }
 
+    // Editorial supervision — Haiku call, ~3-8s, fail-open to neutral.
+    // Runs before persist so the row is tagged from creation onwards
+    // and the V3 balancer has signal from day 0. judgeEditorial returns
+    // null on LLM failure; the live pipeline coalesces to neutral so
+    // the story still ships with a sensible default.
+    const editorial =
+      (await judgeEditorial({
+        title: s.title,
+        summary: s.summary,
+        body: s.body,
+        category: s.category,
+      })) ?? DEFAULT_EDITORIAL_VERDICT
+
     const data = {
       title: s.title,
       summary: s.summary,
@@ -1058,6 +1072,8 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       research: s.research ? (s.research as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
       relatedMediaId: primaryMediaId,
       relatedMediaIds: matchedIds,
+      editorialTone: editorial.tone,
+      topicCluster: editorial.cluster,
     }
 
     if (matchedExistingId) {
