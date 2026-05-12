@@ -14,7 +14,13 @@
  * Throughput: ~4-6 rows/sec serial, faster with parallel batches.
  */
 import { config } from "dotenv"
-config()
+// Load .env.local first (where `vercel env pull` writes) so it
+// takes precedence — Next.js follows the same precedence at runtime.
+// Then fall back to .env for any missing keys. `override: true` so a
+// stale shell-env var (e.g. a previously-exported empty ANTHROPIC_API_KEY)
+// doesn't block the pulled value.
+config({ path: ".env.local", override: true })
+config({ override: false })
 
 import { PrismaClient } from "@prisma/client"
 import { judgeEditorial } from "../src/lib/news-editorial-judge"
