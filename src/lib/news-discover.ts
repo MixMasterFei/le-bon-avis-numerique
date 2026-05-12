@@ -27,7 +27,7 @@ import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-sub
 const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { resolveImage, isImageLargeEnough, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
 import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
@@ -619,6 +619,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     }
     const iso = item.isoDate ?? item.pubDate
     if (!iso || !item.link || !item.title) {
+      droppedNoImage++
+      return
+    }
+    // Dimension gate: probe the resolved image header and reject anything
+    // smaller than ~500×280. Stops thumbnails / avatars (e.g. the small
+    // Café Pédagogique portrait that rendered visibly upscaled inside
+    // the 16:9 hero container) from becoming the article image. Fails
+    // open on probe errors so a transient network blip doesn't drop
+    // a legit story.
+    if (!(await isImageLargeEnough(resolved.url))) {
       droppedNoImage++
       return
     }

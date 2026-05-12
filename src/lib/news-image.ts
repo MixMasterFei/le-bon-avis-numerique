@@ -192,3 +192,127 @@ export async function isImageReachable(url: string, timeoutMs = 3500): Promise<b
     return false
   }
 }
+
+// Minimum acceptable dimensions for a hero image. A 16:9 card rendered
+// at ~720px on desktop needs at least ~500px of source width to avoid
+// the visibly-upscaled portrait-stretched-to-landscape look that Xavier
+// flagged on the Café Pédagogique brief. Anything smaller is a
+// thumbnail / avatar, not an editorial image.
+export const MIN_IMAGE_WIDTH = 500
+export const MIN_IMAGE_HEIGHT = 280
+
+/**
+ * Parses JPEG / PNG / WebP headers from the first chunk of an image and
+ * returns its intrinsic dimensions. Format coverage is intentionally
+ * narrow — those three account for ~all publisher RSS imagery. Returns
+ * null when the format isn't recognized (caller fails open, since "no
+ * dimensions" is not the same as "small image").
+ */
+function parseImageDimensions(buf: Uint8Array): { width: number; height: number } | null {
+  // PNG IHDR (chunks start after the 8-byte signature; IHDR length is fixed)
+  if (
+    buf.length >= 24 &&
+    buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47
+  ) {
+    const width = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19]
+    const height = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23]
+    return { width, height }
+  }
+  // JPEG: walk markers until a SOF segment is found
+  if (buf.length >= 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2
+    while (i < buf.length - 9) {
+      while (i < buf.length && buf[i] === 0xff) i++
+      if (i >= buf.length) break
+      const marker = buf[i]
+      i++
+      if (marker === 0xd8 || marker === 0xd9 || marker === 0x01) continue
+      if (marker >= 0xd0 && marker <= 0xd7) continue
+      if (i + 1 >= buf.length) break
+      const segLen = (buf[i] << 8) | buf[i + 1]
+      const isSof =
+        (marker >= 0xc0 && marker <= 0xc3) ||
+        (marker >= 0xc5 && marker <= 0xc7) ||
+        (marker >= 0xc9 && marker <= 0xcb) ||
+        (marker >= 0xcd && marker <= 0xcf)
+      if (isSof) {
+        if (i + 6 >= buf.length) return null
+        const height = (buf[i + 3] << 8) | buf[i + 4]
+        const width = (buf[i + 5] << 8) | buf[i + 6]
+        return { width, height }
+      }
+      i += segLen
+    }
+  }
+  // WebP: RIFF .... WEBP (VP8 / VP8L / VP8X)
+  if (
+    buf.length >= 30 &&
+    buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+    buf[8] === 0x57 && buf[9] === 0x45 && buf[10] === 0x42 && buf[11] === 0x50
+  ) {
+    const fourcc = String.fromCharCode(buf[12], buf[13], buf[14], buf[15])
+    if (fourcc === "VP8 ") {
+      const width = ((buf[27] << 8) | buf[26]) & 0x3fff
+      const height = ((buf[29] << 8) | buf[28]) & 0x3fff
+      return { width, height }
+    }
+    if (fourcc === "VP8L") {
+      const width = 1 + (((buf[22] & 0x3f) << 8) | buf[21])
+      const height =
+        1 + (((buf[25] & 0xf) << 10) | (buf[24] << 2) | ((buf[23] & 0xc0) >> 6))
+      return { width, height }
+    }
+    if (fourcc === "VP8X") {
+      const width = 1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16))
+      const height = 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16))
+      return { width, height }
+    }
+  }
+  return null
+}
+
+/**
+ * Fetches the first 64 KB of an image and reads its intrinsic dimensions
+ * from the file header. Returns null on any failure — caller decides
+ * whether unknown dimensions are acceptable. Fast enough to call inline
+ * during RSS ingestion (Range GET, ~5 KB JPEG header parse).
+ */
+export async function probeImageDimensions(
+  url: string,
+  timeoutMs = 3500,
+): Promise<{ width: number; height: number } | null> {
+  try {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    const res = await fetch(url, {
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; TotemAviseBot/1.0)",
+        Range: "bytes=0-65535",
+      },
+      signal: controller.signal,
+      redirect: "follow",
+    })
+    clearTimeout(timer)
+    if (!res.ok && res.status !== 206) return null
+    const ct = (res.headers.get("content-type") ?? "").toLowerCase()
+    if (ct && !ct.startsWith("image/")) return null
+    const buf = new Uint8Array(await res.arrayBuffer())
+    return parseImageDimensions(buf)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Validates that a resolved image is large enough to render as a hero
+ * without visible upscaling. Returns true when the image meets
+ * MIN_IMAGE_WIDTH / MIN_IMAGE_HEIGHT, or when probing failed entirely
+ * (fail-open: a transient probe failure shouldn't drop a story whose
+ * image might be fine). Returns false only when we can prove the image
+ * is too small.
+ */
+export async function isImageLargeEnough(url: string): Promise<boolean> {
+  const dims = await probeImageDimensions(url)
+  if (!dims) return true
+  return dims.width >= MIN_IMAGE_WIDTH && dims.height >= MIN_IMAGE_HEIGHT
+}

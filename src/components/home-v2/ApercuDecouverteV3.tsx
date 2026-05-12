@@ -119,55 +119,68 @@ export function ApercuDecouverteV3({
       <ApercuPreviewBanner />
       <ApercuNav />
 
-      <section className="py-8 md:py-12">
+      <section className="py-6 md:py-8">
         <div className="container mx-auto px-4 md:px-8">
-          {/* Page header */}
-          <div className="mb-6">
-            <div
-              className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
-              style={{ color: p.accent }}
-            >
-              Découverte · Aperçu v3
-            </div>
-            <h1
-              className={`${serifClass} text-2xl md:text-4xl font-medium leading-[1.05] max-w-2xl`}
-              style={{ color: p.ink, letterSpacing: "-0.02em" }}
-            >
-              L&apos;actualité qui compte{" "}
-              <em className="italic" style={{ color: p.accent }}>
-                pour les familles
-              </em>
-            </h1>
-          </div>
-
-          {/* Stale-content banner — only shown when the most recent
-              hero brief is older than 36h. Tells visitors the synthesis
-              is catching up so they don't mistake stale content for
-              "the site is just like this". Hidden as soon as a fresh
-              cron run lands new stories. */}
-          {data.isStale && (
-            <div
-              className="mb-5 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
-              style={{
-                background: p.bg2,
-                border: `1px solid ${p.line2}`,
-                color: p.ink2,
-              }}
-            >
-              <span aria-hidden>⏳</span>
-              <span>
-                Synthèse du jour en cours — voici les actualités les plus
-                récentes en attendant.
-              </span>
-            </div>
-          )}
-
           {/* 2-column layout: main feed + sticky sidebar.
               Mobile collapses to single column with sidebar inlined
-              between the FR briefs and the INTL section. */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-12">
+              between the FR briefs and the INTL section.
+              Page header lives INSIDE the main column so the sidebar
+              top-aligns with the eyebrow rather than leaving an empty
+              rectangle to the right of the headline. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-12 items-start">
             {/* ─────── MAIN FEED ─────── */}
-            <main className="min-w-0 flex flex-col gap-5">
+            {/* Main column is rendered at 80% of natural size per Xavier's
+                editorial pass — at full size the cards crowded the cream
+                background and felt closer to a regional daily than a
+                premium curation product. `zoom: 0.8` shrinks text,
+                images and gaps proportionally without touching the
+                sidebar widgets, which Xavier wanted kept at full size
+                so glanceable data (weather, air quality, deadlines)
+                stays readable at arm's length. `zoom` is supported in
+                all current evergreen browsers (Chromium, Safari,
+                Firefox ≥ 126). */}
+            <main
+              className="min-w-0 flex flex-col gap-5"
+              style={{ zoom: 0.8 }}
+            >
+              {/* Page header */}
+              <div className="mb-1">
+                <div
+                  className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
+                  style={{ color: p.accent }}
+                >
+                  Découverte · Aperçu v3
+                </div>
+                <h1
+                  className={`${serifClass} text-2xl md:text-4xl font-medium leading-[1.05] max-w-2xl text-balance`}
+                  style={{ color: p.ink, letterSpacing: "-0.02em" }}
+                >
+                  L&apos;actualité qui compte{" "}
+                  <em className="italic" style={{ color: p.accent }}>
+                    pour les familles
+                  </em>
+                </h1>
+              </div>
+
+              {/* Stale-content banner — only shown when the most recent
+                  hero brief is older than 36h. */}
+              {data.isStale && (
+                <div
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
+                  style={{
+                    background: p.bg2,
+                    border: `1px solid ${p.line2}`,
+                    color: p.ink2,
+                  }}
+                >
+                  <span aria-hidden>⏳</span>
+                  <span>
+                    Synthèse du jour en cours — voici les actualités les plus
+                    récentes en attendant.
+                  </span>
+                </div>
+              )}
+
               {/* French hero */}
               {data.frenchHero && (
                 <ApercuNewsHeroCard story={data.frenchHero} serifClass={serifClass} />

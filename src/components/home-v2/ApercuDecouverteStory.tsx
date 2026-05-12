@@ -64,6 +64,18 @@ function safeMarkdownUrl(url: string): string {
   return url.replace(/\)/g, "%29")
 }
 
+// French typography: glues high-punctuation (`:` `;` `!` `?` `»`) to the
+// preceding word with a non-breaking space, and ties the opening `«` to
+// the word that follows. Prevents the orphan-`»` line breaks that made
+// the article page look unkempt (e.g. headlines ending with `destructeurs
+// »` where the closing guillemet wrapped to its own line).
+function applyFrenchTypography(text: string): string {
+  if (!text) return text
+  return text
+    .replace(/ ([:;!?»])/g, "\u00A0$1")
+    .replace(/« /g, "«\u00A0")
+}
+
 function linkSourceNamesInMarkdown(body: string, sources: NewsSourceRef[]): string {
   if (!body || sources.length === 0) return body
 
@@ -122,7 +134,11 @@ export function ApercuDecouverteStory({
   commentsSlot?: ReactNode
 }) {
   const p = APERCU_PALETTE
-  const renderedBody = linkSourceNamesInMarkdown(story.body, story.sources)
+  const renderedBody = applyFrenchTypography(
+    linkSourceNamesInMarkdown(story.body, story.sources),
+  )
+  const renderedTitle = applyFrenchTypography(story.title)
+  const renderedSummary = applyFrenchTypography(story.summary)
   return (
     <div
       className="flex flex-col min-h-screen overflow-x-hidden"
@@ -155,13 +171,16 @@ export function ApercuDecouverteStory({
           </div>
 
           <h1
-            className={`${serifClass} text-3xl md:text-5xl leading-[1.05] font-medium mb-4`}
+            className={`${serifClass} text-[26px] md:text-[40px] leading-[1.1] font-medium mb-4 text-balance`}
             style={{ color: p.ink, letterSpacing: "-0.02em" }}
           >
-            {story.title}
+            {renderedTitle}
           </h1>
-          <p className="text-lg leading-relaxed mb-6" style={{ color: p.ink2 }}>
-            {story.summary}
+          <p
+            className="text-base md:text-[17px] leading-relaxed mb-6 text-balance"
+            style={{ color: p.ink2 }}
+          >
+            {renderedSummary}
           </p>
 
           <div className="mb-8">
@@ -270,7 +289,7 @@ export function ApercuDecouverteStory({
               components={{
                 p: ({ children }) => (
                   <p
-                    className="mb-7 last:mb-0 leading-[1.7] text-[17px] md:text-[18px]"
+                    className="mb-6 last:mb-0 leading-[1.7] text-[15px] md:text-[16px]"
                     style={{ color: p.ink }}
                   >
                     {children}
@@ -278,7 +297,7 @@ export function ApercuDecouverteStory({
                 ),
                 h2: ({ children }) => (
                   <h2
-                    className={`${serifClass} mt-10 mb-4 text-2xl md:text-3xl font-medium leading-tight`}
+                    className={`${serifClass} mt-10 mb-3 text-xl md:text-[26px] font-medium leading-[1.2] text-balance`}
                     style={{ color: p.ink, letterSpacing: "-0.02em" }}
                   >
                     {children}
@@ -286,7 +305,7 @@ export function ApercuDecouverteStory({
                 ),
                 h3: ({ children }) => (
                   <h3
-                    className={`${serifClass} mt-8 mb-3 text-xl md:text-2xl font-medium leading-tight`}
+                    className={`${serifClass} mt-7 mb-2 text-lg md:text-xl font-medium leading-[1.25] text-balance`}
                     style={{ color: p.ink, letterSpacing: "-0.01em" }}
                   >
                     {children}
@@ -312,18 +331,18 @@ export function ApercuDecouverteStory({
                   </a>
                 ),
                 ul: ({ children }) => (
-                  <ul className="mb-7 space-y-2 list-disc pl-6 text-[17px] md:text-[18px] leading-[1.7]">
+                  <ul className="mb-6 space-y-1.5 list-disc pl-6 text-[15px] md:text-[16px] leading-[1.7]">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="mb-7 space-y-2 list-decimal pl-6 text-[17px] md:text-[18px] leading-[1.7]">
+                  <ol className="mb-6 space-y-1.5 list-decimal pl-6 text-[15px] md:text-[16px] leading-[1.7]">
                     {children}
                   </ol>
                 ),
                 blockquote: ({ children }) => (
                   <blockquote
-                    className={`${serifClass} my-7 pl-5 italic text-lg md:text-xl leading-snug`}
+                    className={`${serifClass} my-6 pl-5 italic text-base md:text-lg leading-snug text-balance`}
                     style={{ borderLeft: `3px solid ${p.accent}`, color: p.ink2 }}
                   >
                     {children}
