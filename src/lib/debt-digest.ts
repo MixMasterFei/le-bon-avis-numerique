@@ -95,7 +95,24 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
         OR: [{ lastVerifiedAt: null }, { lastVerifiedAt: { lt: ninetyDaysAgo } }],
       },
     }),
-    prisma.mediaItem.count({ where: { isEnriched: true, topics: { isEmpty: true }, type: SCOPED_NOT } }).catch(() => 0),
+    // "Enriched but no topics" — but only count age <14 (or unrated)
+    // titles. A 14+/16+/18 film legitimately gets no topic tags: the
+    // enrichment vocabulary (VALID_TOPICS in api/admin/enrich) is the
+    // kid/family one — "Animation, Famille, Éducatif, Magie, Dinosaures,
+    // École…" — so a violent thriller or erotic drama's tags all get
+    // filtered to []. That's the *correct* state for a family guide,
+    // not debt. The ~120 mature titles TMDB's popular feed dragged in
+    // would otherwise nag here forever.
+    prisma.mediaItem
+      .count({
+        where: {
+          isEnriched: true,
+          topics: { isEmpty: true },
+          type: SCOPED_NOT,
+          OR: [{ expertAgeRec: null }, { expertAgeRec: { lt: 14 } }],
+        },
+      })
+      .catch(() => 0),
   ])
 
   // Unenriched, MANGA excluded — recompute from the per-type breakdown.
@@ -157,7 +174,7 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Films/séries sans âge conseillé : ${missingAgeRecVideo}`)
   L.push(`- Score de complétude < 30 : ${lowQuality}`)
   L.push(`- Non revérifiées depuis > 90 jours : ${staleVerified}`)
-  L.push(`- Enrichies mais sans topics : ${noTopics}`)
+  L.push(`- Enrichies mais sans topics (jeunesse, hors titres 14+) : ${noTopics}`)
   L.push("")
 
   L.push("## File éditoriale", "")
@@ -193,8 +210,8 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   if (lowQuality > 200) {
     agentTodo.push(`Investiguer les ${lowQuality} fiches qualité < 30 : import incomplet ? enrichissement raté ? source à exclure ?`)
   }
-  if (noTopics > 100) {
-    agentTodo.push(`Vérifier pourquoi ${noTopics} fiches enrichies n'ont aucun topic (bug d'enrichissement ?).`)
+  if (noTopics > 20) {
+    agentTodo.push(`Vérifier pourquoi ${noTopics} fiches jeunesse enrichies n'ont aucun topic (re-enrichissement à lancer ? vocabulaire trop étroit ?).`)
   }
   if (agentTodo.length === 0) agentTodo.push("Rien à corriger côté code cette semaine.")
   for (const t of agentTodo) L.push(`- ${t}`)
