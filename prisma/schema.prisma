@@ -831,6 +831,7 @@ enum ImageSourceType {
   STOCK          // Pexels or Unsplash — royalty-free, must link back
   PUBLISHER_RSS  // From RSS media:content / enclosure (publisher-syndicated)
   PUBLISHER_OG   // Scraped from <meta og:image> — highest legal risk, last resort
+  FALLBACK       // Generated branded "zen card" (/api/news/fallback-card) — used when the article carries no usable photo, or only a thumbnail too small to render as a hero
 }
 
 model NewsStory {

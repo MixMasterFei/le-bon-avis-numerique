@@ -27,7 +27,8 @@ import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-sub
 const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, isImageLargeEnough, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { resolveImage, isImageLargeEnough, fallbackCard, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { isLowQualityImagePublisher } from "@/lib/news-image-policy"
 import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
 import { slugify, faviconFor } from "@/lib/news-slug"
 import { uploadNewsImage, isStorageEnabled } from "@/lib/supabase-storage"
@@ -571,13 +572,15 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
 export interface DiscoverStats {
   sourcesFetched: number
   itemsCollected: number
-  itemsDroppedNoImage: number
+  itemsDroppedNoImage: number       // Hard-requirement drops (no date/link/title) + low-quality-image publishers
+  itemsFellBackToCard: number       // Items kept but assigned the branded category fallback card (no usable photo)
   storiesSynthesized: number
   storiesDroppedInvalid: number
   storiesDroppedUnsuitable: number  // Pass-2 moderation rejects
   storiesDroppedImageReused: number // Cross-story image dedup
   storiesDroppedImageUnreachable: number
   storiesPersisted: number
+  storiesUsingFallbackCard: number  // Of the persisted stories, how many ended up on a fallback card
   storiesUpdated: number
   archivedCount: number
   durationMs: number
@@ -601,36 +604,42 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const pairs = fetchBatches.flat()
   const fetchRssMs = Date.now() - fetchStart
 
-  // 2. Resolve image per item (drops anything without one)
+  // 2. Resolve image per item. Items with no usable photo are no longer
+  //    dropped — they're kept and assigned the branded category fallback
+  //    card. Only a missing hard requirement (date/link/title) or a
+  //    flagged low-quality-image publisher still drops the item.
   const imageStart = Date.now()
   const hydrated: HydratedItem[] = []
   let droppedNoImage = 0
+  let fellBackToCard = 0
   await parallelMap(pairs, 6, async ({ source, item }) => {
-    // Pass title + sourceName so resolveImage can build the credit
-    // text and (where keywords are needed) hit the stock-photo APIs.
-    const resolved = await resolveImage({
-      ...(item as RssLikeItem),
-      title: item.title,
-      sourceName: source.name,
-    })
-    if (!resolved) {
-      droppedNoImage++
-      return
-    }
     const iso = item.isoDate ?? item.pubDate
     if (!iso || !item.link || !item.title) {
       droppedNoImage++
       return
     }
-    // Dimension gate: probe the resolved image header and reject anything
-    // smaller than ~500×280. Stops thumbnails / avatars (e.g. the small
-    // Café Pédagogique portrait that rendered visibly upscaled inside
-    // the 16:9 hero container) from becoming the article image. Fails
-    // open on probe errors so a transient network blip doesn't drop
-    // a legit story.
-    if (!(await isImageLargeEnough(resolved.url))) {
+    // Sources flagged as low-quality-image publishers ship generic
+    // mascot art that looks off in the grid (e.g. Geek Junior). The
+    // editorial call there was "skip the article", not "swap the
+    // image" — so keep dropping them rather than giving them a card.
+    if (isLowQualityImagePublisher(source.name)) {
       droppedNoImage++
       return
+    }
+    // Pass title + sourceName so resolveImage can build the credit text.
+    let resolved = await resolveImage({
+      ...(item as RssLikeItem),
+      title: item.title,
+      sourceName: source.name,
+    })
+    // No publisher image, a blocked-hotlink image, or only a thumbnail
+    // too small to render as a 16:9 hero → use the branded category
+    // card. (The dimension gate stops the visibly-upscaled portrait
+    // look Xavier flagged on the old Café Pédagogique brief; fails open
+    // on probe errors so a transient blip doesn't force a fallback.)
+    if (!resolved || !(await isImageLargeEnough(resolved.url))) {
+      resolved = fallbackCard(source.category)
+      fellBackToCard++
     }
     hydrated.push({
       sourceName: source.name,
@@ -669,12 +678,14 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       sourcesFetched: NEWS_SOURCES.length,
       itemsCollected: 0,
       itemsDroppedNoImage: droppedNoImage,
+      itemsFellBackToCard: fellBackToCard,
       storiesSynthesized: 0,
       storiesDroppedInvalid: 0,
       storiesDroppedUnsuitable: 0,
       storiesDroppedImageReused: 0,
       storiesDroppedImageUnreachable: 0,
       storiesPersisted: 0,
+      storiesUsingFallbackCard: 0,
       storiesUpdated: 0,
       archivedCount: 0,
       durationMs: Date.now() - started,
@@ -693,14 +704,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //    time by source-URL overlap, even if Claude paraphrases the title.
   const existingStories = await prisma.newsStory.findMany({
     where: { status: "PUBLISHED", publishedAt: { gte: since } },
-    select: { id: true, slug: true, title: true, sources: true, imageUrl: true },
+    select: { id: true, slug: true, title: true, sources: true, imageUrl: true, imageSourceType: true },
   })
 
   // Cross-story image dedup: collect every imageUrl already in the
   // 72h window so the synthesizer can avoid picking the same one for
   // a new story (Greystones bug — same kids-on-phones photo reused
-  // across two unrelated stories on the same theme).
+  // across two unrelated stories on the same theme). FALLBACK cards are
+  // excluded — the same category card SHOULD be reusable across
+  // image-less stories, so we don't want the prompt avoiding it.
   const recentImageUrls = existingStories
+    .filter((s) => s.imageSourceType !== "FALLBACK")
     .map((s) => s.imageUrl)
     .filter((u): u is string => typeof u === "string" && u.length > 0)
 
@@ -854,11 +868,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // Cross-story image dedup: skip if this image is already in use by
     // a previously-published story or by an earlier story in this run.
     // The prompt asks the model to avoid this; this is the belt.
-    if (usedImages.has(story.imageUrl)) {
-      droppedImageReused++
-      continue
+    // FALLBACK cards are exempt — the same category card is meant to be
+    // shared across image-less stories, not deduped away (which would
+    // re-introduce the "0 stories" drop this whole change fixes).
+    if (story.imageSourceType !== "FALLBACK") {
+      if (usedImages.has(story.imageUrl)) {
+        droppedImageReused++
+        continue
+      }
+      usedImages.add(story.imageUrl)
     }
-    usedImages.add(story.imageUrl)
     // Three paths accepted, matching the synthesis prompt:
     //   A) multi-source (>=2 distinct publishers) + relevance >= 0.55
     //   B) single-source INTL + relevance >= 0.65
@@ -1151,12 +1170,14 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     sourcesFetched: NEWS_SOURCES.length,
     itemsCollected: unique.length,
     itemsDroppedNoImage: droppedNoImage,
+    itemsFellBackToCard: fellBackToCard,
     storiesSynthesized: rawStories.length,
     storiesDroppedInvalid: droppedInvalid,
     storiesDroppedUnsuitable: droppedUnsuitable,
     storiesDroppedImageReused: droppedImageReused,
     storiesDroppedImageUnreachable: droppedImageUnreachable,
     storiesPersisted: persisted,
+    storiesUsingFallbackCard: liveStories.filter((s) => s.imageSourceType === "FALLBACK").length,
     storiesUpdated: updated,
     archivedCount: archived.count,
     durationMs: Date.now() - started,

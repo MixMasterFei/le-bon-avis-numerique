@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
           : "error"
 
     // Surface the dropped-counter mix in the summary so the admin
-    // dashboard table tells you WHY a run produced 0 stories without
+    // dashboard table tells you WHY a run produced few/0 stories without
     // having to expand the details JSON.
     const dropMix =
       stats.itemsDroppedNoImage +
@@ -65,11 +65,18 @@ export async function GET(req: NextRequest) {
       0
         ? ` · drops: noImg=${stats.itemsDroppedNoImage} invalid=${stats.storiesDroppedInvalid} unsuit=${stats.storiesDroppedUnsuitable} imgReused=${stats.storiesDroppedImageReused} imgUnreach=${stats.storiesDroppedImageUnreachable}`
         : ""
+    // How much of the run leaned on the branded fallback card — a high
+    // ratio means the feeds were image-starved that cycle, not that
+    // anything broke.
+    const cardMix =
+      stats.storiesUsingFallbackCard > 0
+        ? ` · cartes: ${stats.storiesUsingFallbackCard}/${stats.storiesPersisted} (items repli=${stats.itemsFellBackToCard})`
+        : ""
 
     await logCronRun({
       task: "news-discover",
       status,
-      summary: `${stats.storiesPersisted} histoires synthétisées à partir de ${stats.itemsCollected} articles${dropMix}`,
+      summary: `${stats.storiesPersisted} histoires synthétisées à partir de ${stats.itemsCollected} articles${cardMix}${dropMix}`,
       details: stats as unknown as Record<string, unknown>,
       startTime,
     })

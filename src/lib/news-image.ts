@@ -19,22 +19,58 @@ import {
 //   2. PUBLISHER_RSS — RSS media:content / enclosure from any other
 //                      publisher. They're putting it in the feed, which
 //                      is itself a syndication signal.
-//   3. null          — no image found, caller drops the story. The
-//                      droppedNoImage counter on DiscoverStats surfaces
-//                      this in cron logs so we can see which run is
-//                      starved by image-less feeds.
+//   3. FALLBACK      — generated branded "zen card" (see fallbackCard()).
+//                      Used when an article has no usable photo, or only
+//                      a thumbnail too small for a hero. Previously these
+//                      items were dropped outright (the source of the
+//                      "0 stories produced" runs); now they ship with a
+//                      calm category card instead.
+//   4. null          — only when the item is missing a hard requirement
+//                      (no date / link / title). Caller drops it.
 //
 // The legacy STOCK and PUBLISHER_OG variants stay in ImageSourceType so
 // historical rows in news_stories don't fail to deserialize, but no new
-// image will be assigned those types until we re-introduce a tier.
+// image will be assigned those types.
 
-export type ImageSourceType = "AGENCY" | "STOCK" | "PUBLISHER_RSS" | "PUBLISHER_OG"
+export type ImageSourceType = "AGENCY" | "STOCK" | "PUBLISHER_RSS" | "PUBLISHER_OG" | "FALLBACK"
 
 export interface ResolvedImage {
   url: string
   sourceType: ImageSourceType
   credit: string             // human-readable, used in the card overlay
   licenseUrl?: string        // STOCK only — back-link required by Pexels/Unsplash
+}
+
+// Origin the generated fallback card is served from. Absolute so the
+// moderation vision model and the Supabase mirror guard can resolve it,
+// and so it's still valid when stored in news_stories. Mirrors the
+// SITE_URL fallback chain used by cron-supervisor.ts.
+const APP_ORIGIN =
+  process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || "https://totemavise.com"
+
+const FALLBACK_CARD_PATH = "/api/news/fallback-card"
+
+/**
+ * Branded "zen card" fallback image for a news story. `category` is a
+ * NewsCategory enum value (PARENTHOOD | FILM_TV | GAMES | READING | TECH);
+ * anything else gets a generic "Actualités" card. The card is rendered by
+ * the /api/news/fallback-card route and is family-safe by construction —
+ * so, unlike a real photo, it never needs the dimension gate or pass-2
+ * moderation, and it's exempt from the cross-story image-dedup (the same
+ * card SHOULD be reusable across image-less stories).
+ */
+export function fallbackCard(category: string | null | undefined): ResolvedImage {
+  const cat = typeof category === "string" ? category : ""
+  return {
+    url: `${APP_ORIGIN}${FALLBACK_CARD_PATH}?cat=${encodeURIComponent(cat)}`,
+    sourceType: "FALLBACK",
+    credit: "",
+  }
+}
+
+/** True when an image URL points at our own generated fallback card. */
+export function isFallbackCardUrl(url: string | null | undefined): boolean {
+  return typeof url === "string" && url.includes(FALLBACK_CARD_PATH)
 }
 
 export interface RssLikeItem {

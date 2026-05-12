@@ -141,6 +141,11 @@ function probeDimensions(buf: Uint8Array): { width: number; height: number } | n
  * same storage path.
  */
 export async function uploadNewsImage(sourceUrl: string): Promise<string | null> {
+  // Our own generated fallback card (/api/news/fallback-card) is already
+  // served from this app and is permanent — re-uploading it to Supabase
+  // would just create one identical copy per story. Keep the route URL.
+  if (sourceUrl.includes("/api/news/fallback-card")) return sourceUrl
+
   if (!isStorageEnabled()) return null
   const supabase = getSupabaseAdmin()
   if (!supabase) return null
