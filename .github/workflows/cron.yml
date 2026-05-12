@@ -34,6 +34,11 @@ on:
     # Daily 7:00 AM UTC — supervisor checks cron health and tries
     # limited safe remediations before sending one digest if needed.
     - cron: "0 7 * * *"
+    # Wednesday 6:13 AM UTC — weekly tech/data-debt digest. Off-the-hour
+    # (:13) to dodge GitHub's top-of-hour runner congestion, same as
+    # news-discover. Mid-week so it's not competing with the Mon/Sat
+    # batches and lands while there's a working day to act on it.
+    - cron: "13 6 * * 3"
   workflow_dispatch:
     inputs:
       task:
@@ -53,6 +58,7 @@ on:
           - weekly-dossier
           - family-content-agent
           - supervisor
+          - debt-digest
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -226,6 +232,11 @@ jobs:
     name: Ratings, Streaming & Similarity
     runs-on: ubuntu-latest
     environment: Production
+    # Similarity now runs 50-item batches against a 300s function
+    # ceiling, looped up to 20×, so this job can legitimately run close
+    # to an hour. Cap well above that but below GitHub's 6h default so
+    # a wedged runner can't sit in the queue all day.
+    timeout-minutes: 150
     if: >-
       github.event.schedule == '0 5 * * 6' ||
       github.event.inputs.task == 'backfill-ratings' ||
@@ -240,7 +251,9 @@ jobs:
         run: |
           set +e
           echo "::group::Backfill ratings"
-          for i in $(seq 1 20); do
+          # 50 items/batch; loop enough times to drain the current
+          # backlog (~1400 items) in a single Saturday run.
+          for i in $(seq 1 35); do
             response=$(curl -sSL --max-time 55 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               "$SITE_URL/api/admin/backfill-ratings" 2>/dev/null)
@@ -293,13 +306,19 @@ jobs:
           github.event.inputs.task != 'streaming'
         run: |
           echo "::group::Similarity"
+          # 50 items/batch against the route's 300s ceiling; --max-time
+          # 290 lets curl actually wait for the function instead of
+          # bailing at 55s (which previously made every batch after the
+          # first "fail" and the catalog never drained past ~10 items).
+          # 20 iterations = up to ~1000 freshest items/run; older rows
+          # get refreshed when they're next touched (orderBy updatedAt).
           offset=0
           failures=0
           for batch in $(seq 1 20); do
-            response=$(curl -sSL --max-time 55 -X POST \
+            response=$(curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d "{\"mode\":\"full\",\"limit\":10,\"offset\":$offset}" \
+              -d "{\"mode\":\"full\",\"limit\":50,\"offset\":$offset}" \
               "$SITE_URL/api/admin/similarity/compute" 2>/dev/null)
             if [ -z "$response" ]; then
               failures=$((failures + 1))
@@ -438,6 +457,32 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Weekly dossier failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Wednesday 06:13 UTC: weekly tech/data-debt digest ────────────
+  debt-digest:
+    name: Debt Digest
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '13 6 * * 3' ||
+      github.event.inputs.task == 'debt-digest' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Compile and email the debt digest
+        run: |
+          echo "::group::Debt digest"
+          response=$(curl -sSfL --max-time 90 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/debt-digest")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq . 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Debt digest failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"

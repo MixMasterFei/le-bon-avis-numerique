@@ -45,26 +45,30 @@ export async function POST(req: NextRequest) {
 
   for (const item of items) {
     try {
-      let rating: number | null = null
-      let voteCount: number | null = null
+      // `vote_average` is legitimately 0 for titles TMDB has no votes
+      // for. We MUST still persist that 0 — otherwise tmdbRating stays
+      // NULL, the item is re-selected on the next run, and (because the
+      // query is ordered by dataQualityScore DESC) the backfill loops
+      // forever on the same top-N items, never draining the queue.
+      // Use `?? 0` so a present-but-zero value is stored, not skipped.
+      let rating = 0
+      let voteCount = 0
 
       if (item.type === "MOVIE") {
         const details = await getMovieDetails(item.tmdbId!)
-        rating = details.vote_average || null
-        voteCount = details.vote_count || null
+        rating = details.vote_average ?? 0
+        voteCount = details.vote_count ?? 0
       } else if (item.type === "TV") {
         const details = await getTVDetails(item.tmdbId!)
-        rating = details.vote_average || null
-        voteCount = details.vote_count || null
+        rating = details.vote_average ?? 0
+        voteCount = details.vote_count ?? 0
       }
 
-      if (rating !== null) {
-        await prisma.mediaItem.update({
-          where: { id: item.id },
-          data: { tmdbRating: rating, tmdbVoteCount: voteCount },
-        })
-        updated++
-      }
+      await prisma.mediaItem.update({
+        where: { id: item.id },
+        data: { tmdbRating: rating, tmdbVoteCount: voteCount },
+      })
+      updated++
 
       await new Promise((resolve) => setTimeout(resolve, 150))
     } catch {

@@ -395,17 +395,27 @@ export async function GET(req: NextRequest) {
     const posterRefresh = await validateAndRefreshPosters(30)
 
     const totalImported = Object.values(results).reduce((sum, s) => sum + s.imported, 0)
+    const totalExamined = Object.values(results).reduce((sum, s) => sum + s.total, 0)
     const totalErrors =
       Object.values(results).reduce((sum, s) => sum + s.errors, 0) + posterRefresh.errors
     const duration = Math.round((Date.now() - startTime) / 1000)
 
     console.log(`[cron] Weekly import complete: ${totalImported} new items in ${duration}s`)
 
+    // A handful of per-item TMDB hiccups (a show whose detail endpoint
+    // 500s, a flaky poster fetch) are normal background noise on a run
+    // that examines ~140 titles — they should NOT make the whole job
+    // "partial" and trip the supervisor's repeated-partial alarm every
+    // single day. Only downgrade to "partial" when errors are a real
+    // share of the work (>5% of examined items, or ≥8 absolute).
+    const errorRate = totalExamined > 0 ? totalErrors / totalExamined : 0
+    const isPartial = totalErrors >= 8 || errorRate > 0.05
+
     await logCronRun({
       task: "import",
-      status: totalErrors > 0 ? "partial" : "success",
-      summary: `${totalImported} nouveaux contenus importes en ${duration}s`,
-      details: { results, posterRefresh, totalErrors },
+      status: isPartial ? "partial" : "success",
+      summary: `${totalImported} nouveaux contenus importes en ${duration}s${totalErrors > 0 ? ` (${totalErrors} erreurs ignorées)` : ""}`,
+      details: { results, posterRefresh, totalErrors, totalExamined },
       startTime,
     })
 

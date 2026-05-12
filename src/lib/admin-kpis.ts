@@ -74,7 +74,7 @@ function daysAgo(n: number): Date {
 // the dashboard's task-health strip even before its first run.
 const KNOWN_CRON_TASKS = [
   "import",
-  "import-games",   // Weekly Monday — IGDB recent + popular, popularity-floored
+  "import-games",   // Daily — IGDB recent + popular, popularity-floored
   "enrich",
   "enrich-deep",
   "quality",
@@ -82,6 +82,11 @@ const KNOWN_CRON_TASKS = [
   "streaming",
   "similarity",
   "news-discover",
+  "weekly-dossier",         // Tue + Fri — long-read synthesis
+  "family-content-agent",   // Monday — editorial priorities email
+  "debt-digest",            // Wednesday — tech/data-debt weekly digest
+  "cron-supervisor",        // Daily — health check + remediation digest
+  "heartbeat",              // Daily — Vercel-Cron watchdog for the GH Actions pipeline
 ]
 
 export async function fetchAdminKpis(): Promise<AdminKpis> {

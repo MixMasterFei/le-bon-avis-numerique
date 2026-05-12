@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { SimilaritySource, MediaType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
 
-export const maxDuration = 60
+// Was 60s — at that ceiling a full-mode batch of even 10 items got
+// killed mid-run, so the Saturday loop only ever cleared the first
+// batch (~10 of 7700+ items) before subsequent calls timed out. With
+// Fluid Compute the function ceiling is 300s; use it so a batch of
+// 40-50 items completes comfortably and the catalog actually drains.
+export const maxDuration = 300
 
 /**
  * Compute media similarities based on:
@@ -23,8 +28,8 @@ export async function POST(request: Request) {
     const url = new URL(request.url)
     const mode = url.searchParams.get("mode") || body.mode || "full"
     // Full mode needs smaller batches (each item compared against many candidates)
-    const defaultLimit = mode === "full" ? 5 : 20
-    const limit = Math.min(body.limit || defaultLimit, mode === "full" ? 10 : 50)
+    const defaultLimit = mode === "full" ? 30 : 20
+    const limit = Math.min(body.limit || defaultLimit, mode === "full" ? 50 : 50)
     const offset = parseInt(url.searchParams.get("offset") || "0") || body.offset || 0
     const minScore = body.minScore || 0.2
 

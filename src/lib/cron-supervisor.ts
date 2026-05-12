@@ -95,6 +95,12 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "weekly-dossier",
     staleAfterHours: 96,
+    // A dossier run can legitimately log "partial" when it skips
+    // (a recent dossier already exists) or has too few briefs to work
+    // with — that second case is already surfaced by news-discover's
+    // own flags, so don't double-alert here. Genuine failures still
+    // show up as "error" status or as "stale" past 96h.
+    allowRepeatedPartial: true,
     remediation: {
       label: "Relance dossier hebdomadaire",
       method: "GET",
@@ -108,6 +114,37 @@ const EXPECTED_TASKS: ExpectedTask[] = [
       label: "Relance agent éditorial famille",
       method: "GET",
       path: "/api/cron/family-content-agent",
+    },
+  },
+  {
+    task: "backfill-ratings",
+    staleAfterHours: 240,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance backfill notes TMDB",
+      method: "POST",
+      path: "/api/admin/backfill-ratings",
+    },
+  },
+  {
+    // Vercel-Cron watchdog. No remediation: if this is stale, Vercel
+    // Cron itself isn't firing — that needs a human, not a re-poke
+    // (re-running the check would just paper over the gap). A "partial"
+    // means one daily canary was missing, which is often transient.
+    task: "heartbeat",
+    staleAfterHours: 50,
+    allowRepeatedPartial: true,
+  },
+  {
+    // Weekly tech/data-debt digest (Wednesday). Skipping a week is not
+    // an emergency; a real failure shows up as "error" or "stale".
+    task: "debt-digest",
+    staleAfterHours: 200,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance digest de dette",
+      method: "GET",
+      path: "/api/cron/debt-digest",
     },
   },
   {

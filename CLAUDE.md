@@ -185,23 +185,28 @@ SANITY_API_WRITE_TOKEN=xxx          # For publishing via API (not needed for pub
 
 ## Automation & Cron Jobs
 
-### Vercel Cron (1 free job)
-- **Daily 3:00 AM UTC** — Import (`/api/cron/weekly-import`) — name kept for backward compat, but runs daily now (was Monday-only). Daily cadence keeps the homepage "Fraîchement ajoutés" rail visibly dynamic instead of stuck for 6 days between Monday batches.
+### Vercel Cron (1 free job) — `vercel.json`
+- **Daily 8:00 AM UTC — Heartbeat** (`/api/cron/heartbeat`). Watchdog for the GitHub-Actions pipeline below. Runs on Vercel's own infra so it survives a total GH-Actions outage (the daily supervisor can't — it *is* a GH-Actions job). Checks whether the daily "canary" jobs (`cron-supervisor`, `enrich`, `import`, `news-discover`) have logged a run in the last 30h; if none have, it logs `status:"error"` which fires the failure email. This is the only free Vercel cron slot — don't add a second.
 
 ### GitHub Actions (`.github/workflows/cron.yml`)
 Automated maintenance, all jobs use `CRON_SECRET` Bearer auth.
 
-| Day | Time (UTC) | Tasks |
-|---|---|---|
-| Daily | 3:00 AM | Import new movies/TV from TMDB + new games from IGDB (`weekly-games-import`, popularity-floored). TMDB dedup keeps actual new items per run to ~10-20. |
-| Daily | 4:00 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute |
-| Saturday | 5:00 AM | TMDB ratings backfill + Streaming platform updates + Similarity scores |
+| When (UTC) | Tasks |
+|---|---|
+| Daily 3:00 AM | Import new movies/TV from TMDB (`weekly-import`) + new games from IGDB (`weekly-games-import`, popularity-floored) + CNC ratings import. TMDB dedup keeps actual new items per run to ~10-20. |
+| Daily 4:00 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute (all items) |
+| 4×/day (:17 past 00/06/12/18) | News discovery (`news-discover`) — synthesized news briefs |
+| Saturday 5:00 AM | TMDB ratings backfill (loops until drained) + Streaming platform updates + Similarity scores (full mode, 50/batch ×20) |
+| Tue + Fri 5:00 AM | Weekly dossier (`weekly-dossier`) — long-read synthesis |
+| Monday 6:00 AM | Family content editorial agent (`family-content-agent`) — priorities email |
+| **Wed 6:13 AM** | **Debt digest (`debt-digest`)** — weekly tech/data-debt email: cron health, catalog gaps (unenriched / no poster / no age rec / low quality / no topics, manga excluded), editorial queue. Read-only. |
+| Daily 7:00 AM | Cron supervisor (`supervisor`) — health check + limited safe auto-remediation + digest email when anomalies |
 
 **Total enrichment:** ~210 items/week via OpenAI GPT-4o-mini (~$0.35-0.90/week)
 
-**Manual trigger:** Actions tab > "Scheduled Maintenance" > Run workflow (select specific task)
+**Manual trigger:** Actions tab > "Scheduled Maintenance" > Run workflow (select specific task — includes `debt-digest`)
 
-**Activity monitoring:** All cron runs are logged to the `cron_logs` table and visible in the admin dashboard under "Jobs automatiques".
+**Activity monitoring & feedback loop:** Every cron logs to the `cron_logs` table (`logCronRun`), visible in the admin dashboard at `/admin/operations` ("Jobs automatiques"). On `status:"error"` an immediate failure email is sent (`sendCronFailureAlert`, suppressible via `CRON_ALERT_MODE=digest`). The daily **supervisor** (`src/lib/cron-supervisor.ts`) detects missing/stale/error/repeated-partial tasks against `EXPECTED_TASKS`, attempts up to 3 safe remediations (`CRON_SUPERVISOR_REMEDIATE=false` to disable), and emails one digest. The weekly **debt digest** (`src/lib/debt-digest.ts`) covers the slower-moving data/content debt the supervisor doesn't. `scripts/check-cron-health.ts` dumps recent `cron_logs` from the CLI (`npx tsx scripts/check-cron-health.ts [task]`). When adding a new cron: register it in `cron.yml`, in `EXPECTED_TASKS` (cron-supervisor.ts), in `KNOWN_CRON_TASKS` (admin-kpis.ts), and — if it has a weekly+ cadence worth surfacing — in `CRON_STALE_HOURS` (debt-digest.ts).
 
 ### Required GitHub Secrets (environment: Production)
 - `SITE_URL` — Vercel production URL (e.g. `https://your-app.vercel.app`)
