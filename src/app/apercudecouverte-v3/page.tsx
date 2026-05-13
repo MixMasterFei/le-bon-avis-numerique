@@ -18,6 +18,7 @@ import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
+import { isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 
 export const dynamic = "force-dynamic"
@@ -523,6 +524,13 @@ export default async function ApercuDecouverteV3Page(props: {
   const claim = <T extends { imageUrl?: string | null }>(card: T): T | null => {
     if (!card.imageUrl) return null
     if (isBlockedHotlinkImageUrl(card.imageUrl)) return null
+    // Branded category fallback cards (/api/news/fallback-card?cat=…)
+    // are shared by design — multiple image-less stories in the same
+    // category use the same URL — so they're exempt from cross-story
+    // dedup. Without this exemption, the second PARENTHOOD fallback
+    // on the page would be silently dropped, leaving an empty slot
+    // in the 3-up grid.
+    if (isFallbackCardUrl(card.imageUrl)) return card
     if (seenImages.has(card.imageUrl)) return null
     seenImages.add(card.imageUrl)
     return card
@@ -536,11 +544,17 @@ export default async function ApercuDecouverteV3Page(props: {
   // grid is always full as long as enough French briefs exist after
   // dedup — no more visible empty slots when an image collides with
   // the hero or dossier.
+  //
+  // We over-pick from pickTopRows (TOP_TARGET + 6) so that if claim()
+  // rejects a candidate (image collision with hero/dossier, hotlink
+  // block), the loop has fresh fallbacks ready instead of just
+  // skipping the slot.
   const TOP_TARGET = 3
   const topCards: ApercuNewsCardData[] = []
   const olderCards: ApercuNewsCardData[] = []
   const topPickedIds = new Set<string>()
-  for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET)) {
+  for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
+    if (topCards.length >= TOP_TARGET) break
     const card = claim(rowToCard(row))
     if (!card) continue
     topCards.push(card)
