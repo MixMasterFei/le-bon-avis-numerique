@@ -33,11 +33,18 @@ export function ApercuNowInCinema({ serifClass }: { serifClass: string }) {
                   language?: number | null
                   substanceUse?: number | null
                 } | null
+                cinemaReleaseBucket?: string
               }) => ({
                 id: m.id,
                 type: "MOVIE" as const,
                 title: m.title,
                 posterUrl: m.posterUrl,
+                cornerLabel:
+                  m.cinemaReleaseBucket === "reissue"
+                    ? "Reprise"
+                    : m.cinemaReleaseBucket === "upcoming"
+                      ? "Avant-prem."
+                      : null,
                 expertAgeRec: m.expertAgeRec ?? null,
                 genres: m.genres ?? [],
                 contentMetrics: m.contentMetrics ?? null,

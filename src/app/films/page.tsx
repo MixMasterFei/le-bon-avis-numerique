@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { isCinemaSort } from "@/lib/cinema-policy"
+import { getCinemaMovies } from "@/lib/cinema"
 
 export const revalidate = 300
 
@@ -159,20 +160,20 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const maxSubstance = parseMetric("maxSubstance")
   const maxConsumerism = parseMetric("maxConsumerism")
 
-  const result = await fetchMovies({
+  const result = isCinema ? null : await fetchMovies({
     page,
     limit: PAGE_SIZE,
-    minAge: isCinema ? undefined : effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+    minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
     // <= (not <) so maxAge=18 from the homepage "16+" age tile is
     // treated as a real filter (expertAgeRec ≤ 18 AND NOT NULL),
     // not silently dropped. Without this, the 16+ tile routes to
     // the same page as the default browse with no visible filter.
-    maxAge: isCinema ? undefined : effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
     platforms: platforms.length > 0 ? platforms : undefined,
     topics: topics.length > 0 ? topics : undefined,
     search: search || undefined,
     sortBy: sortKey !== "releaseDate" && sortKey !== "cinema" ? sortKey : undefined,
-    nowPlaying: isCinema,
+    nowPlaying: false,
     requirePoster: true,
     language: "fr,en",
     maxViolence,
@@ -182,7 +183,45 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     maxConsumerism,
   })
 
-  const items = result.items.map((m) => {
+  const cinemaMovies = isCinema
+    ? await getCinemaMovies({
+        minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+        maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+      })
+    : []
+
+  const filteredCinemaMovies = isCinema
+    ? cinemaMovies.filter((movie) => {
+        if (search) {
+          const q = search.toLocaleLowerCase("fr-FR")
+          const title = movie.title.toLocaleLowerCase("fr-FR")
+          const originalTitle = movie.originalTitle.toLocaleLowerCase("fr-FR")
+          if (!title.includes(q) && !originalTitle.includes(q)) return false
+        }
+        if (topics.length > 0) {
+          const labels = [...movie.genres, ...movie.topics]
+          if (!topics.some((topic) => labels.includes(topic))) return false
+        }
+        if (platforms.length > 0) {
+          if (!platforms.some((platform) => movie.platforms.includes(platform))) return false
+        }
+        return true
+      })
+    : []
+
+  const cinemaPageItems = filteredCinemaMovies.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  )
+  const sourceItems = isCinema ? cinemaPageItems : result!.items
+  const totalItems = isCinema ? filteredCinemaMovies.length : result!.pagination.total
+  const totalPages = isCinema
+    ? Math.max(1, Math.ceil(filteredCinemaMovies.length / PAGE_SIZE))
+    : result!.pagination.totalPages
+
+  const items = sourceItems.map((m) => {
+    const cinemaReleaseBucket =
+      "cinemaReleaseBucket" in m ? m.cinemaReleaseBucket : undefined
     const cm = m.contentMetrics as
       | {
           violence?: number | null
@@ -196,6 +235,12 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
       type: m.type as "MOVIE" | "TV" | "GAME",
       title: m.title,
       posterUrl: m.posterUrl ?? null,
+      cornerLabel:
+        cinemaReleaseBucket === "reissue"
+          ? "Reprise"
+          : cinemaReleaseBucket === "upcoming"
+            ? "Avant-prem."
+            : null,
       expertAgeRec: m.expertAgeRec,
       genres: m.genres,
       releaseDate: m.releaseDate,
@@ -236,13 +281,13 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     ],
   }
 
-  const itemListLd = result.items.length
+  const itemListLd = sourceItems.length
     ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: "Films pour la famille",
-        numberOfItems: result.pagination.total,
-        itemListElement: result.items.slice(0, 20).map((item, idx) => ({
+        numberOfItems: totalItems,
+        itemListElement: sourceItems.slice(0, 20).map((item, idx) => ({
           "@type": "ListItem",
           position: (page - 1) * PAGE_SIZE + idx + 1,
           url: `${baseUrl}/media/${encodeURIComponent(item.id)}`,
@@ -265,9 +310,9 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
       )}
       <ApercuFilmsList
         items={items}
-        total={result.pagination.total}
+        total={totalItems}
         page={page}
-        totalPages={result.pagination.totalPages}
+        totalPages={totalPages}
         serifClass="font-serif"
         familyMembers={familyMembers.map((m) => ({
           id: m.id,
@@ -281,7 +326,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         }))}
         initialFilters={{
           search,
-          sort: isCinema ? "releaseDate" : sortKey,
+          sort: isCinema ? "cinema" : sortKey,
           minAge: effectiveMinAge,
           maxAge: effectiveMaxAge,
           platforms,

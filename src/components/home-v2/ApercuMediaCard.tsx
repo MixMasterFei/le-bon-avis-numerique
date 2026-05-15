@@ -17,6 +17,7 @@ export interface ApercuCardMedia {
   type: "MOVIE" | "TV" | "GAME"
   title: string
   posterUrl: string | null
+  cornerLabel?: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
   contentMetrics?: {
@@ -124,6 +125,18 @@ export function ApercuMediaCard({
             }}
           >
             {ageLabel}
+          </div>
+        )}
+        {media.cornerLabel && (
+          <div
+            className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-tight z-20"
+            style={{
+              background: "rgba(248, 244, 235, 0.92)",
+              color: p.ink,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+            }}
+          >
+            {media.cornerLabel}
           </div>
         )}
       </div>
