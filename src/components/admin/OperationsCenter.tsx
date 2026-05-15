@@ -397,14 +397,25 @@ const OPERATIONS: Array<{
       key: "fixGameCovers",
       endpoint: "/api/admin/fix-game-covers",
       method: "POST",
-      chunked: false,
+      body: { limit: 100 },
+      chunked: true,
+      accumKeys: ["processed", "updated", "skipped", "errors"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
-        total: data.processed || 0,
+        total: data.total || data.processed || 0,
         updated: data.updated || 0,
+        skipped: data.skipped || 0,
+        errors: data.errors || 0,
       }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        if (data.total) params.set("total", String(data.total))
+        return params
+      },
       buildSummary: (stats) =>
-        `${stats.updated || 0} covers mises a jour en 720p`,
+        `${stats.updated || 0} covers mises a jour en 720p${stats.errors ? `, ${stats.errors} erreurs` : ""}`,
     },
     label: "Fix covers jeux",
     description: "Upgrader les covers IGDB en haute resolution (720p)",

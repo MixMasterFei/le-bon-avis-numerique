@@ -97,6 +97,19 @@ function saveLastResult(key: string, result: OperationResult) {
 
 // ── Hook ───────────────────────────────────────────────────
 
+async function readOperationResponse(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text()
+  if (!text) return {}
+  try {
+    return JSON.parse(text) as Record<string, unknown>
+  } catch {
+    const preview = text.slice(0, 180).replace(/\s+/g, " ").trim()
+    throw new Error(
+      `API returned ${res.status} ${res.statusText || "non-JSON response"}: ${preview || "empty response"}`,
+    )
+  }
+}
+
 export function useOperation(config: OperationConfig): UseOperationReturn {
   const [status, setStatus] = useState<OperationStatus>("idle")
   const [progress, setProgress] = useState<OperationProgress>({
@@ -169,10 +182,10 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
           }
 
           const res = await fetch(url, fetchOptions)
-          const data = await res.json()
+          const data = await readOperationResponse(res)
 
           if (!res.ok || data.success === false) {
-            throw new Error(data.error || `API error: ${res.status}`)
+            throw new Error(typeof data.error === "string" ? data.error : `API error: ${res.status}`)
           }
 
           totalChunks++
@@ -242,10 +255,10 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
         }
 
         const res = await fetch(config.endpoint, fetchOptions)
-        const data = await res.json()
+        const data = await readOperationResponse(res)
 
         if (!res.ok || data.success === false) {
-          throw new Error(data.error || `API error: ${res.status}`)
+          throw new Error(typeof data.error === "string" ? data.error : `API error: ${res.status}`)
         }
 
         totalChunks = 1
