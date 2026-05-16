@@ -960,7 +960,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       liveStories.push({ ...s, imageUrl: mirroredUrl })
       return
     }
-    const fallback = fallbackCard(s.category, s.title)
+    const fallback = fallbackCard(s.category)
     console.warn(
       `[news-discover] image mirror failed; using fallback card for "${s.title.slice(0, 80)}"`,
     )
