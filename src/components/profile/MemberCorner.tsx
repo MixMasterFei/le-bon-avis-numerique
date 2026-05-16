@@ -22,6 +22,7 @@ import {
   BarChart3,
   Tag,
   AlertTriangle,
+  Bookmark,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/input"
 import { CompletionMeter } from "./CompletionMeter"
 import { InterestsEditor } from "./InterestsEditor"
 import { MediaSearchAdd } from "./MediaSearchAdd"
+import { QuizAnchorPicker, type AnchorEntry } from "./QuizAnchorPicker"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -44,6 +46,7 @@ import { cn, formatAgeFromBirthYear } from "@/lib/utils"
 interface Reaction {
   id: string
   reaction: string
+  source: "organic" | "quiz_anchor"
   note: string | null
   createdAt: string
   media: {
@@ -294,6 +297,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           {
             id: `temp-${Date.now()}`,
             reaction: "LOVED",
+            source: "organic",
             note: null,
             createdAt: new Date().toISOString(),
             media: {
@@ -326,15 +330,87 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
     }
   }
 
+  // Syncs local state with QuizAnchorPicker output. The picker calls the
+  // /api/user/reaction endpoint itself; we just need to reflect adds/removals
+  // in the in-memory member.reactions list so the rest of the UI updates.
+  const handleAnchorChange = (
+    reactionType: "LOVED" | "NOT_FOR_ME",
+    newPicks: AnchorEntry[],
+  ) => {
+    setMember((prev) => {
+      if (!prev) return prev
+      const newIds = new Set(newPicks.map((p) => p.id))
+      // Keep everything that isn't this exact (reaction × source=quiz_anchor)
+      // pairing, then re-append the new picks.
+      const kept = prev.reactions.filter(
+        (r) => !(r.source === "quiz_anchor" && r.reaction === reactionType),
+      )
+      const fresh: Reaction[] = newPicks
+        .filter((p) => {
+          // If it already existed before (we just kept it under a different
+          // sentiment), skip — defensive though should not happen since the
+          // picker enforces no-overlap via alreadyTaken.
+          return !kept.some((k) => k.media.id === p.id)
+        })
+        .map((p) => ({
+          id: `anchor-${reactionType}-${p.id}`,
+          reaction: reactionType,
+          source: "quiz_anchor",
+          note: null,
+          createdAt: new Date().toISOString(),
+          media: {
+            id: p.id,
+            title: p.title,
+            posterUrl: p.posterUrl,
+            type: p.type,
+            expertAgeRec: null,
+            genres: [],
+          },
+        }))
+      // Combine: kept reactions, plus re-resolved picks for this reaction type,
+      // ensuring we don't drop existing ones the user didn't touch.
+      const existingPicksOfType = prev.reactions.filter(
+        (r) => r.source === "quiz_anchor" && r.reaction === reactionType && newIds.has(r.media.id),
+      )
+      const trulyFresh = fresh.filter(
+        (f) => !existingPicksOfType.some((e) => e.media.id === f.media.id),
+      )
+      return {
+        ...prev,
+        reactions: [...kept, ...existingPicksOfType, ...trulyFresh],
+      }
+    })
+  }
+
   // ---------- Derived data ----------
 
   const existingMediaIds = new Set(member.reactions.map((r) => r.media.id))
-  const lovedCount = member.reactions.filter((r) => r.reaction === "LOVED").length
+  // Watch-history view excludes quiz anchors so the Favorites tab reflects
+  // real interactions, not declarations from the quiz.
+  const organicReactions = member.reactions.filter((r) => r.source !== "quiz_anchor")
+  const anchorReactions = member.reactions.filter((r) => r.source === "quiz_anchor")
+  const lovedAnchorEntries = anchorReactions
+    .filter((r) => r.reaction === "LOVED")
+    .map((r) => ({
+      id: r.media.id,
+      title: r.media.title,
+      posterUrl: r.media.posterUrl,
+      type: r.media.type,
+    }))
+  const dislikedAnchorEntries = anchorReactions
+    .filter((r) => r.reaction === "NOT_FOR_ME")
+    .map((r) => ({
+      id: r.media.id,
+      title: r.media.title,
+      posterUrl: r.media.posterUrl,
+      type: r.media.type,
+    }))
+  const lovedCount = organicReactions.filter((r) => r.reaction === "LOVED").length
   const filteredReactions = typeFilter === "all"
-    ? member.reactions
-    : member.reactions.filter((r) => r.media.type === typeFilter)
+    ? organicReactions
+    : organicReactions.filter((r) => r.media.type === typeFilter)
 
-  const uniqueTypes = [...new Set(member.reactions.map((r) => r.media.type))]
+  const uniqueTypes = [...new Set(organicReactions.map((r) => r.media.type))]
 
   // ---------- Render ----------
 
@@ -448,7 +524,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           {/* Completion meter */}
           <Card>
             <CardContent className="p-5">
-              <CompletionMeter member={member} reactionCount={member.reactions.length} />
+              <CompletionMeter member={member} reactionCount={organicReactions.length} />
             </CardContent>
           </Card>
 
@@ -457,7 +533,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <Card>
               <CardContent className="p-4 text-center">
                 <BarChart3 className="h-5 w-5 mx-auto text-gray-400 mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{member.reactions.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{organicReactions.length}</p>
                 <p className="text-xs text-gray-500">Réactions</p>
               </CardContent>
             </Card>
@@ -511,14 +587,15 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             </CardContent>
           </Card>
 
-          {/* Recent activity */}
-          {member.reactions.length > 0 && (
+          {/* Recent activity — organic reactions only (quiz anchors are
+              declarations, not watch events). */}
+          {organicReactions.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Activité récente</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {member.reactions.slice(0, 5).map((reaction) => {
+                {organicReactions.slice(0, 5).map((reaction) => {
                   const config = REACTION_LABELS[reaction.reaction]
                   const Icon = config?.icon || Meh
                   const routeId = toMediaRouteId(reaction.media.type as MediaType, reaction.media.id)
@@ -565,7 +642,57 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
         {/* TAB: Favorites                                                    */}
         {/* ================================================================ */}
         <TabsContent value="favorites" className="space-y-4 mt-4">
-          {/* Search */}
+          {/* Titres repères — quiz anchors. Always-editable, persists across
+              the quiz and the corner. */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bookmark className="h-4 w-4 text-violet-500" />
+                Ses titres repères
+              </CardTitle>
+              <p className="text-xs text-gray-500 mt-1">
+                Quelques titres adorés (et à éviter) pour affiner les recommandations.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5">
+                  <Heart className="h-3 w-3 text-rose-500" />
+                  Adore
+                </h4>
+                <QuizAnchorPicker
+                  memberId={memberId}
+                  memberName={member.name}
+                  sentiment="love"
+                  picks={lovedAnchorEntries}
+                  alreadyTaken={new Set([
+                    ...lovedAnchorEntries.map((e) => e.id),
+                    ...dislikedAnchorEntries.map((e) => e.id),
+                  ])}
+                  onChange={(newPicks) => handleAnchorChange("LOVED", newPicks)}
+                />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5">
+                  <X className="h-3 w-3 text-slate-500" />
+                  À éviter
+                </h4>
+                <QuizAnchorPicker
+                  memberId={memberId}
+                  memberName={member.name}
+                  sentiment="dislike"
+                  picks={dislikedAnchorEntries}
+                  alreadyTaken={new Set([
+                    ...lovedAnchorEntries.map((e) => e.id),
+                    ...dislikedAnchorEntries.map((e) => e.id),
+                  ])}
+                  onChange={(newPicks) => handleAnchorChange("NOT_FOR_ME", newPicks)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Watch history search (organic reactions) */}
           <MediaSearchAdd
             memberId={memberId}
             memberName={member.name}
@@ -585,10 +712,10 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 )}
               >
-                Tous ({member.reactions.length})
+                Tous ({organicReactions.length})
               </button>
               {uniqueTypes.map((type) => {
-                const count = member.reactions.filter((r) => r.media.type === type).length
+                const count = organicReactions.filter((r) => r.media.type === type).length
                 return (
                   <button
                     key={type}

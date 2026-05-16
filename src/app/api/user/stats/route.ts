@@ -26,7 +26,8 @@ export async function GET() {
       prisma.familyMember.count({ where: { userId } }),
       prisma.mediaReaction.count({
         where: {
-          familyMember: { userId }
+          familyMember: { userId },
+          source: "organic", // engagement metric, quiz anchors excluded
         }
       }),
       prisma.user.findUnique({

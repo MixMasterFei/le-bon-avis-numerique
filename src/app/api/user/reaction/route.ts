@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { familyMemberId, mediaId, reaction, note } = body
+    const { familyMemberId, mediaId, reaction, note, source } = body
 
     if (!familyMemberId || !mediaId || !reaction) {
       return NextResponse.json(
@@ -87,11 +87,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Média non trouvé" }, { status: 404 })
     }
 
-    // Valid reaction types
-    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD"]
+    // Valid reaction types. NOT_FOR_ME is intent (used by quiz anchors); the
+    // other values are organic post-watch reactions.
+    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD", "NOT_FOR_ME"]
     if (!validReactions.includes(reaction)) {
       return NextResponse.json({ error: "Réaction invalide" }, { status: 400 })
     }
+
+    // Source defaults to organic; the quiz anchor picker sends "quiz_anchor".
+    const reactionSource: "organic" | "quiz_anchor" =
+      source === "quiz_anchor" ? "quiz_anchor" : "organic"
 
     // Upsert the reaction
     const mediaReaction = await prisma.mediaReaction.upsert({
@@ -106,10 +111,12 @@ export async function POST(request: NextRequest) {
         mediaId,
         reaction,
         note: note || null,
+        source: reactionSource,
       },
       update: {
         reaction,
         note: note || null,
+        source: reactionSource,
       },
     })
 

@@ -39,6 +39,9 @@ export async function GET(
         avoidTopics: true,
         interests: true,
         useCustomSettings: true,
+        preferredTones: true,
+        quizVersion: true,
+        quizCompletedAt: true,
       },
     })
 
@@ -132,6 +135,9 @@ export async function PUT(
       preferEducational,
       avoidTopics,
       useCustomSettings,
+      preferredTones,
+      quizVersion,
+      quizCompletedAt,
     } = body
 
     // Validate sensitivity values (0-3)
@@ -180,6 +186,15 @@ export async function PUT(
         }),
         ...(useCustomSettings !== undefined && {
           useCustomSettings: Boolean(useCustomSettings),
+        }),
+        ...(preferredTones !== undefined && {
+          preferredTones: Array.isArray(preferredTones) ? preferredTones : [],
+        }),
+        ...(typeof quizVersion === "number" && Number.isInteger(quizVersion) && quizVersion >= 0 && {
+          quizVersion,
+        }),
+        ...(quizCompletedAt !== undefined && {
+          quizCompletedAt: quizCompletedAt ? new Date(quizCompletedAt) : null,
         }),
       },
     })

@@ -373,6 +373,21 @@ model FamilyMember {
   // Use custom settings or inherit from account defaults
   useCustomSettings Boolean @default(false) @map("use_custom_settings")
 
+  // Quiz v1 (Phase 1) — preferred tone tags (e.g. "doux", "drôle"),
+  // populated by step 7 of the new 8-step quiz. Maps to media.toneTags
+  // for the per-member preference vector.
+  preferredTones String[] @default([]) @map("preferred_tones")
+
+  // Quiz versioning so we can iterate without forcing migrations on
+  // existing members. Old quiz = 0, new 8-step quiz = 1, etc.
+  quizVersion       Int       @default(0)  @map("quiz_version")
+  quizCompletedAt   DateTime? @map("quiz_completed_at")
+
+  // Phase 2 — behavioral vector cache. JSONB so the shape can evolve
+  // without further migrations. See src/lib/preference-vector/.
+  lastVectorUpdateAt DateTime? @map("last_vector_update_at")
+  memberVector       Json?     @map("member_vector")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -393,16 +408,23 @@ enum ReactionType {
   BORED      // S'est ennuyé
   TOO_YOUNG  // Trop jeune pour comprendre
   TOO_OLD    // Trop vieux (pas intéressé)
+  NOT_FOR_ME // Pas pour moi — intent dislike, distinct from BORED (post-watch)
+}
+
+enum ReactionSource {
+  organic     // Recorded after a real interaction with the media
+  quiz_anchor // Declared during the preference quiz / Member Corner picker
 }
 
 model MediaReaction {
-  id             String       @id @default(uuid())
-  familyMemberId String       @map("family_member_id")
-  mediaId        String       @map("media_id")
+  id             String         @id @default(uuid())
+  familyMemberId String         @map("family_member_id")
+  mediaId        String         @map("media_id")
   reaction       ReactionType
-  note           String?      @db.Text
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  source         ReactionSource @default(organic)
+  note           String?        @db.Text
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
 
   familyMember FamilyMember @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
   media        MediaItem    @relation(fields: [mediaId], references: [id], onDelete: Cascade)

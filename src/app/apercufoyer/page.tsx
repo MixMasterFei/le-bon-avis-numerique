@@ -52,7 +52,8 @@ export default async function ApercuFoyerPage(props: {
       },
     }),
     prisma.mediaReaction.count({
-      where: { familyMember: { userId: user.id } },
+      // Engagement metric — quiz anchors don't count, only organic post-watch reactions.
+      where: { familyMember: { userId: user.id }, source: "organic" },
     }),
   ])
 

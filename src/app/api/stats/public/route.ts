@@ -51,7 +51,9 @@ export async function GET() {
       prisma.mediaItem.count({ where: { type: "TV" } }),
       prisma.mediaItem.count({ where: { type: "GAME" } }),
       prisma.familyMember.count(),
-      prisma.mediaReaction.count(),
+      // Public "users have reacted N times" stat — organic only so quiz anchors
+      // (intent, not engagement) don't inflate the marketing number.
+      prisma.mediaReaction.count({ where: { source: "organic" } }),
       prisma.ageVote.count(),
       prisma.review.count(),
       prisma.mediaItem.findMany({
@@ -89,7 +91,7 @@ export async function GET() {
       }),
       prisma.mediaReaction.groupBy({
         by: ["mediaId"],
-        where: { createdAt: { gte: sevenDaysAgo } },
+        where: { createdAt: { gte: sevenDaysAgo }, source: "organic" }, // popular this week, organic only
         _count: { mediaId: true },
         orderBy: { _count: { mediaId: "desc" } },
         take: 5,

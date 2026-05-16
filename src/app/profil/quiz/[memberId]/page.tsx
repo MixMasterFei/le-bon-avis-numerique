@@ -5,13 +5,15 @@ import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { ArrowLeft, Loader2 } from "lucide-react"
-import { ApercuQuiz } from "@/components/home-v2/ApercuQuiz"
+import { PreferenceQuiz } from "@/components/profile/PreferenceQuiz"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface MemberInfo {
   id: string
   name: string
   avatarEmoji: string
+  birthYear: number | null
+  birthMonth: number | null
 }
 
 export default function QuizPage() {
@@ -47,6 +49,8 @@ export default function QuizPage() {
           id: data.familyMember.id,
           name: data.familyMember.name,
           avatarEmoji: data.familyMember.avatarEmoji,
+          birthYear: data.familyMember.birthYear ?? null,
+          birthMonth: data.familyMember.birthMonth ?? null,
         })
       } catch {
         setError("Erreur de connexion")
@@ -107,11 +111,15 @@ export default function QuizPage() {
           Retour à {member.name}
         </Link>
       </div>
-      <ApercuQuiz
-        serifClass="font-serif"
-        memberId={member.id}
-        memberName={member.name}
-      />
+      <div className="container mx-auto px-4 py-6">
+        <PreferenceQuiz
+          memberId={member.id}
+          memberName={member.name}
+          memberEmoji={member.avatarEmoji}
+          birthYear={member.birthYear}
+          birthMonth={member.birthMonth}
+        />
+      </div>
     </div>
   )
 }

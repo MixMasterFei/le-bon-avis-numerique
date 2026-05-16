@@ -169,17 +169,18 @@ export async function fetchDiscoverDigest(): Promise<DiscoverDigest> {
       take: 6,
       select: mediaCardSelect,
     }),
-    // Top loved — group MediaReaction by mediaId, last 7d
+    // Top loved — group MediaReaction by mediaId, last 7d.
+    // Engagement signal: organic only (quiz anchors don't reflect this week's actual watching).
     prisma.mediaReaction.groupBy({
       by: ["mediaId"],
-      where: { reaction: "LOVED", createdAt: { gte: week } },
+      where: { reaction: "LOVED", createdAt: { gte: week }, source: "organic" },
       _count: { _all: true },
       orderBy: { _count: { mediaId: "desc" } },
       // Grab a larger pool than needed so the TMDB-quality filter
       // below can drop niche items and still leave 4 strong picks.
       take: 16,
     }).catch(() => []),
-    prisma.mediaReaction.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
+    prisma.mediaReaction.count({ where: { createdAt: { gte: week }, source: "organic" } }).catch(() => 0),
     prisma.review.count({ where: { createdAt: { gte: week } } }).catch(() => 0),
     prisma.user.count({ where: { createdAt: { gte: week } } }),
     prisma.newsStory.findFirst({

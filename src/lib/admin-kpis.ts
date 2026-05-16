@@ -152,12 +152,15 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
       _count: { _all: true },
     }),
 
-    prisma.mediaReaction.count({ where: { createdAt: { gte: week } } }),
-    prisma.mediaReaction.count({ where: { createdAt: { gte: prevWeekStart, lt: week } } }),
+    // Admin engagement KPIs — organic only (quiz anchors are declared intent,
+    // not actual reactions to content). Without the filter, a heavy quiz week
+    // would inflate the engagement chart.
+    prisma.mediaReaction.count({ where: { createdAt: { gte: week }, source: "organic" } }),
+    prisma.mediaReaction.count({ where: { createdAt: { gte: prevWeekStart, lt: week }, source: "organic" } }),
     prisma.mediaReaction.groupBy({
       by: ["reaction"],
       _count: { _all: true },
-      where: { createdAt: { gte: week } },
+      where: { createdAt: { gte: week }, source: "organic" },
     }),
 
     prisma.review.count({ where: { createdAt: { gte: week } } }),
