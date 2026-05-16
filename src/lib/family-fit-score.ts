@@ -186,7 +186,11 @@ export function computeSensitivityScore(
   let total = 0
   let count = 0
   for (const [metricValue, tolerance] of pairs) {
-    const threshold = tolerance === 0 ? 1 : 4 - tolerance
+    // tolerance 0 = "Pas du tout gêné(e)" / "don't care" — skip the pair entirely.
+    // Matches the smart filter's pattern in scoring.ts and avoids the prior bug
+    // where 0 was inverted into the strictest threshold.
+    if (tolerance === 0) continue
+    const threshold = 4 - tolerance
     const over = Math.max(0, metricValue - threshold)
     total += Math.max(0, 1 - over * 0.25)
     count++
@@ -340,15 +344,30 @@ export function isAdultLeaningContentForMinor(input: {
 // mismatches only — caution cases get "À vérifier" instead.
 export type MatureContentSeverity = "block" | "caution" | null
 
+export interface MatureContentMemberSensitivity {
+  violence?: number
+  sexual?: number
+  // scary / language / substances stay on the sensitivity score; the mature
+  // penalty axis is currently violence + sexual + structural mature genre.
+}
+
 export function computeMatureContentPenalty(
   mediaGenres: string[],
   metrics: Pick<FitMetrics, "violence" | "sexNudity">,
   expertAgeRec: number | null,
   memberAge: number | null,
+  memberSensitivity?: MatureContentMemberSensitivity,
 ): { multiplier: number; reason: string | null; severity: MatureContentSeverity } {
   const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(g.toLowerCase()))
-  const hasHighViolence = metrics.violence >= 4
-  const hasHighSexual = metrics.sexNudity >= 4
+
+  // High content metrics only trigger when the member did not explicitly opt
+  // in via the quiz. Default (sensitivity unknown) keeps the previous
+  // conservative behavior: a missing tolerance is treated as "the parent has
+  // not relaxed this axis", so the penalty still fires for violence:4+.
+  const violenceTolerance = memberSensitivity?.violence ?? 2
+  const sexualTolerance = memberSensitivity?.sexual ?? 2
+  const hasHighViolence = metrics.violence >= 4 && violenceTolerance > 0
+  const hasHighSexual = metrics.sexNudity >= 4 && sexualTolerance > 0
   const isMatureContent = hasMatureGenre || hasHighViolence || hasHighSexual
 
   if (!isMatureContent) return { multiplier: 1.0, reason: null, severity: null }

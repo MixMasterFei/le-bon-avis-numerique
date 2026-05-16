@@ -22,6 +22,14 @@ import {
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
+import {
+  ageVerdictFromAges,
+  legacyLevelFromPillars,
+  PREFERENCE_PILLAR_LABELS,
+  type AgeVerdict,
+  type PreferenceVerdict,
+  type PreferencePillar,
+} from "@/lib/family-fit-display"
 
 // ---------------------------------------------------------------------------
 // Batch Family Fit API
@@ -38,9 +46,13 @@ interface MemberFit {
   avatarStyle: string | null
   avatarSeed: string | null
   avatarOptions: Record<string, unknown> | null
+  // legacy single-score fields (derived from pillars)
   score: number
   level: FitLevel
   reason?: string
+  // two-axis pillars (Phase 0.2)
+  ageVerdict: AgeVerdict
+  preferenceVerdict: PreferenceVerdict
   hasPreferences?: boolean
 }
 
@@ -127,7 +139,11 @@ export async function POST(request: NextRequest) {
           media.genres,
           { violence: metrics.violence, sexNudity: metrics.sexNudity },
           media.expertAgeRec,
-          memberAge
+          memberAge,
+          {
+            violence: member.sensitivityViolence,
+            sexual: member.sensitivitySexual,
+          },
         )
 
         let rawScore: number
@@ -208,6 +224,20 @@ export async function POST(request: NextRequest) {
 
         // Only include members with decent fit (>= 60)
         if (guarded.score >= 60 && !guarded.ageWarning) {
+          const ageVerdict = ageVerdictFromAges(memberAge, media.expertAgeRec)
+          const prefReasons: string[] = []
+          if (maturePenalty.reason) {
+            prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
+          }
+          let prefPillar: PreferencePillar = hasPreferences ? "good" : "noProfile"
+          if (maturePenalty.severity === "block") prefPillar = "avoid"
+          else if (maturePenalty.severity === "caution") prefPillar = "check"
+          else if (hasPreferences && guarded.score >= 80) prefPillar = "love"
+          const preferenceVerdict: PreferenceVerdict = {
+            pillar: prefPillar,
+            label: PREFERENCE_PILLAR_LABELS[prefPillar],
+            reasons: prefReasons,
+          }
           fittingMembers.push({
             id: member.id,
             name: member.name,
@@ -216,8 +246,10 @@ export async function POST(request: NextRequest) {
             avatarSeed: member.avatarSeed,
             avatarOptions: member.avatarOptions as Record<string, unknown> | null,
             score: guarded.score,
-            level: guarded.level,
+            level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
             reason: guarded.reasonOverride ?? maturePenalty.reason ?? undefined,
+            ageVerdict,
+            preferenceVerdict,
             hasPreferences,
           })
         }

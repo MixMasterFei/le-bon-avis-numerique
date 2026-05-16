@@ -288,6 +288,10 @@ export async function GET(request: NextRequest) {
             },
             media.expertAgeRec,
             prefs.age,
+            {
+              violence: prefs.sensitivity.violence,
+              sexual: prefs.sensitivity.sexual,
+            },
           )
 
           if (!prefs.hasPreferences) {

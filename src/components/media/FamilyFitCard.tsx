@@ -2,11 +2,16 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
+import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert, Calendar, Heart } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
-import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import {
+  type AgeVerdict,
+  type AgePillar,
+  type PreferenceVerdict,
+  type PreferencePillar,
+} from "@/lib/family-fit-display"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +35,8 @@ interface FamilyFitMember {
   score: number
   level: "excellent" | "good" | "moderate" | "poor"
   reason: string
+  ageVerdict?: AgeVerdict
+  preferenceVerdict?: PreferenceVerdict
   hasPreferences?: boolean
   affinity?: AffinityInfo
 }
@@ -48,34 +55,29 @@ interface FamilyFitCardProps {
 // Level configuration
 // ---------------------------------------------------------------------------
 
-const BAND_CONFIG: Record<
-  FamilyFitBand,
-  { label: string; pillBg: string; pillText: string; icon: React.ComponentType<{ className?: string }> }
+// Pillar UI configuration. Each pillar gets its own color + icon so users can
+// distinguish AGE (chronological) from PRÉFÉRENCES (taste / tolerance) at a glance.
+
+const AGE_PILLAR_CONFIG: Record<
+  AgePillar,
+  { pillBg: string; pillText: string; icon: React.ComponentType<{ className?: string }> }
 > = {
-  veryAdapted: {
-    label: FAMILY_FIT_LABELS.veryAdapted,
-    pillBg: "bg-emerald-100",
-    pillText: "text-emerald-700",
-    icon: Check,
-  },
-  goodChoice: {
-    label: FAMILY_FIT_LABELS.goodChoice,
-    pillBg: "bg-sky-100",
-    pillText: "text-sky-700",
-    icon: Check,
-  },
-  check: {
-    label: FAMILY_FIT_LABELS.check,
-    pillBg: "bg-amber-100",
-    pillText: "text-amber-700",
-    icon: AlertTriangle,
-  },
-  notYet: {
-    label: FAMILY_FIT_LABELS.notYet,
-    pillBg: "bg-rose-100",
-    pillText: "text-rose-700",
-    icon: ShieldAlert,
-  },
+  ok:         { pillBg: "bg-emerald-100", pillText: "text-emerald-700", icon: Check },
+  borderline: { pillBg: "bg-amber-100",   pillText: "text-amber-700",   icon: AlertTriangle },
+  tooEarly:   { pillBg: "bg-rose-100",    pillText: "text-rose-700",    icon: ShieldAlert },
+  tooLate:    { pillBg: "bg-slate-100",   pillText: "text-slate-600",   icon: AlertTriangle },
+  unknown:    { pillBg: "bg-slate-100",   pillText: "text-slate-600",   icon: AlertTriangle },
+}
+
+const PREFERENCE_PILLAR_CONFIG: Record<
+  PreferencePillar,
+  { pillBg: string; pillText: string; icon: React.ComponentType<{ className?: string }> }
+> = {
+  love:      { pillBg: "bg-emerald-100", pillText: "text-emerald-700", icon: Heart },
+  good:      { pillBg: "bg-sky-100",     pillText: "text-sky-700",     icon: Check },
+  check:     { pillBg: "bg-amber-100",   pillText: "text-amber-700",   icon: AlertTriangle },
+  avoid:     { pillBg: "bg-rose-100",    pillText: "text-rose-700",    icon: ShieldAlert },
+  noProfile: { pillBg: "bg-slate-100",   pillText: "text-slate-600",   icon: Sparkles },
 }
 
 // ---------------------------------------------------------------------------
@@ -247,52 +249,81 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
           </p>
         )}
       </CardHeader>
-      <CardContent className="pt-4 space-y-3">
+      <CardContent className="pt-4 space-y-4">
         {members.map((member) => {
-          const config = BAND_CONFIG[familyFitBandFromLevel(member.level)]
-          const Icon = config.icon
+          const ageCfg = AGE_PILLAR_CONFIG[member.ageVerdict?.pillar ?? "unknown"]
+          const prefCfg = PREFERENCE_PILLAR_CONFIG[member.preferenceVerdict?.pillar ?? "noProfile"]
+          const AgeIcon = ageCfg.icon
+          const PrefIcon = prefCfg.icon
+          const ageLabel = member.ageVerdict?.label ?? "Âge"
+          const prefLabel = member.preferenceVerdict?.label ?? "Profil à compléter"
+          const ageDetail = member.ageVerdict?.detail
+          const prefReasons = member.preferenceVerdict?.reasons ?? []
 
           return (
-            <div key={member.id} className="space-y-1">
-              {/* Top row: avatar + name + age  |  score pill */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <MemberAvatar
-                    avatarStyle={member.avatarStyle ?? null}
-                    avatarSeed={member.avatarSeed ?? null}
-                    avatarOptions={member.avatarOptions ?? null}
-                    avatarEmoji={member.avatarEmoji ?? null}
-                    name={member.name}
-                    size={24}
-                  />
-                  <span className="font-semibold text-sm truncate">{member.name}</span>
-                  {member.age != null && (
-                    <span className="text-xs text-gray-400 flex-shrink-0">
-                      {member.age} ans
-                    </span>
+            <div key={member.id} className="space-y-2">
+              {/* Top row: avatar + name + age */}
+              <div className="flex items-center gap-2 min-w-0">
+                <MemberAvatar
+                  avatarStyle={member.avatarStyle ?? null}
+                  avatarSeed={member.avatarSeed ?? null}
+                  avatarOptions={member.avatarOptions ?? null}
+                  avatarEmoji={member.avatarEmoji ?? null}
+                  name={member.name}
+                  size={24}
+                />
+                <span className="font-semibold text-sm truncate">{member.name}</span>
+                {member.age != null && (
+                  <span className="text-xs text-gray-400 flex-shrink-0">
+                    {member.age} ans
+                  </span>
+                )}
+              </div>
+
+              {/* Two pillars side by side */}
+              <div className="grid grid-cols-2 gap-2 pl-8">
+                {/* AGE pillar */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium w-fit",
+                      ageCfg.pillBg,
+                      ageCfg.pillText,
+                    )}
+                  >
+                    <Calendar className="h-3 w-3" />
+                    <AgeIcon className="h-3.5 w-3.5" />
+                    {ageLabel}
+                  </span>
+                  {ageDetail && (
+                    <p className="text-[11px] text-gray-500">{ageDetail}</p>
                   )}
                 </div>
 
-                {/* Score pill */}
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0",
-                    config.pillBg,
-                    config.pillText
+                {/* PRÉFÉRENCES pillar */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium w-fit",
+                      prefCfg.pillBg,
+                      prefCfg.pillText,
+                    )}
+                    title={
+                      member.hasPreferences === false
+                        ? "Repère limité : faites le quiz famille pour affiner cette recommandation."
+                        : undefined
+                    }
+                  >
+                    <PrefIcon className="h-3.5 w-3.5" />
+                    {prefLabel}
+                  </span>
+                  {prefReasons.length > 0 && (
+                    <p className="text-[11px] text-gray-500 leading-tight">
+                      {prefReasons.slice(0, 2).join(" · ")}
+                    </p>
                   )}
-                  title={
-                    member.hasPreferences === false
-                      ? "Repère limité : faites le quiz famille pour affiner cette recommandation."
-                      : undefined
-                  }
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {config.label}
-                </span>
+                </div>
               </div>
-
-              {/* Reason */}
-              <p className="text-xs text-gray-500 pl-8">{member.reason}</p>
 
               {/* Affinity insight */}
               {member.affinity?.affinityReason && (

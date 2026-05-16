@@ -23,6 +23,14 @@ import {
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
+import {
+  ageVerdictFromAges,
+  legacyLevelFromPillars,
+  PREFERENCE_PILLAR_LABELS,
+  type AgeVerdict,
+  type PreferenceVerdict,
+  type PreferencePillar,
+} from "@/lib/family-fit-display"
 
 // ---------------------------------------------------------------------------
 // Family Fit API
@@ -44,11 +52,49 @@ interface FamilyFitMember {
   avatarSeed: string | null
   avatarOptions: Record<string, unknown> | null
   age: number | null
+  // legacy single-score fields — kept for backward compat with consumers that
+  // still read member.level / member.score. Derived from the two pillars below.
   score: number
   level: FitLevel
   reason: string
+  // Two-axis verdict (Phase 0.2). Renderers should prefer these over the
+  // legacy single label — the legacy fields will be removed in a later pass.
+  ageVerdict: AgeVerdict
+  preferenceVerdict: PreferenceVerdict
   hasPreferences: boolean
   affinity: AffinityInfo
+}
+
+// Derives the preference pillar from the existing scoring outputs. The age
+// dimension is handled by `ageVerdictFromAges` directly — this function only
+// looks at non-age signals.
+function preferencePillarFromSignals(input: {
+  hasPreferences: boolean
+  guardrailScore: number
+  guardrailLevel: FitLevel
+  maturePenaltySeverity: "block" | "caution" | null
+  genreScore: number | null  // null when not computed (no-quiz path)
+  avoidScore: number | null
+  affinityScore: number
+}): PreferencePillar {
+  // Hard gates first
+  if (input.avoidScore === 0) return "avoid"
+  if (input.genreScore === 0) return "avoid"
+  if (input.maturePenaltySeverity === "block") return "avoid"
+  if (!input.hasPreferences) return "noProfile"
+  // Cautions
+  if (input.maturePenaltySeverity === "caution") return "check"
+  if (input.guardrailLevel === "moderate" || input.guardrailScore < 66) return "check"
+  // Positive
+  if (input.affinityScore >= 0.5 || input.guardrailScore >= 80) return "love"
+  return "good"
+}
+
+function preferenceVerdictFromPillar(
+  pillar: PreferencePillar,
+  reasons: string[],
+): PreferenceVerdict {
+  return { pillar, label: PREFERENCE_PILLAR_LABELS[pillar], reasons }
 }
 
 function buildReason(
@@ -285,7 +331,11 @@ export async function GET(
           media.genres,
           { violence: metrics.violence, sexNudity: metrics.sexNudity },
           media.expertAgeRec,
-          memberAge
+          memberAge,
+          {
+            violence: member.sensitivityViolence,
+            sexual: member.sensitivitySexual,
+          },
         )
         const hasYouthAppeal = hasYouthAppealSignal({
           mediaGenres: media.genres,
@@ -330,6 +380,21 @@ export async function GET(
           reason = reason + ", " + maturePenalty.reason
         }
 
+        const ageVerdict = ageVerdictFromAges(memberAge, media.expertAgeRec)
+        const prefReasons: string[] = []
+        if (maturePenalty.reason) {
+          prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
+        }
+        const prefPillar = preferencePillarFromSignals({
+          hasPreferences: false,
+          guardrailScore: guardrails.score,
+          guardrailLevel: guardrails.level,
+          maturePenaltySeverity: maturePenalty.severity,
+          genreScore: null,
+          avoidScore: null,
+          affinityScore,
+        })
+        const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
         return {
           id: member.id,
           name: member.name,
@@ -339,8 +404,10 @@ export async function GET(
           avatarOptions: member.avatarOptions as Record<string, unknown> | null,
           age: memberAge,
           score: guardrails.score,
-          level: guardrails.level,
+          level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
           reason,
+          ageVerdict,
+          preferenceVerdict,
           hasPreferences,
           affinity,
         }
@@ -399,7 +466,11 @@ export async function GET(
         media.genres,
         { violence: metrics.violence, sexNudity: metrics.sexNudity },
         media.expertAgeRec,
-        memberAge
+        memberAge,
+        {
+          violence: member.sensitivityViolence,
+          sexual: member.sensitivitySexual,
+        },
       )
       const score = clampScore(
         computeWeightedFitScore({
@@ -445,6 +516,29 @@ export async function GET(
         reason = reason + ", " + maturePenalty.reason
       }
 
+      const ageVerdict = ageVerdictFromAges(memberAge, media.expertAgeRec)
+      const prefReasons: string[] = []
+      if (genreScore === 0) {
+        const dislikedHit = member.dislikedGenres.filter((g) => media.genres.includes(g))
+        if (dislikedHit.length > 0) prefReasons.push(`Genre non appr\u00e9ci\u00e9: ${dislikedHit.join(", ")}`)
+      }
+      if (avoidScore === 0) prefReasons.push("Sujet à éviter")
+      if (maturePenalty.reason) {
+        prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
+      }
+      if (genreScore >= 0.7) prefReasons.push("Correspond à ses genres préférés")
+      if (interestsScore >= 0.8) prefReasons.push("Correspond à ses centres d'intérêt")
+      if (affinity.hasConnection && affinity.affinityReason) prefReasons.push(affinity.affinityReason)
+      const prefPillar = preferencePillarFromSignals({
+        hasPreferences: true,
+        guardrailScore: guardrails.score,
+        guardrailLevel: guardrails.level,
+        maturePenaltySeverity: maturePenalty.severity,
+        genreScore,
+        avoidScore,
+        affinityScore,
+      })
+      const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
       return {
         id: member.id,
         name: member.name,
@@ -454,8 +548,10 @@ export async function GET(
         avatarOptions: member.avatarOptions as Record<string, unknown> | null,
         age: memberAge,
         score: guardrails.score,
-        level: guardrails.level,
+        level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
         reason,
+        ageVerdict,
+        preferenceVerdict,
         hasPreferences,
         affinity,
       }

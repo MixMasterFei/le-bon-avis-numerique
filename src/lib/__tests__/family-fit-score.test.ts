@@ -318,9 +318,9 @@ describe("computeSensitivityScore", () => {
         sensitivitySubstances: 0,
       },
     )
-    // violence=4 with tolerance=3 (threshold=1) → 4 over by 3 → 1 - 0.75 = 0.25 for that pair
-    // others all contribute 1.0 → average = (0.25 + 1 + 1 + 1) / 4 = 0.8125
-    expect(score).toBeLessThan(0.85)
+    // Phase 0.1(a): tolerance 0 now skips the pair entirely. Only violence
+    // contributes — sensitivity=3 / threshold=1 / metric=4 → 1 - 0.75 = 0.25.
+    expect(score).toBeCloseTo(0.25, 2)
   })
 
   it("returns 1 when every metric is well within tolerance", () => {
@@ -334,6 +334,125 @@ describe("computeSensitivityScore", () => {
       },
     )
     expect(score).toBe(1)
+  })
+
+  it("returns 1 when every axis is 'don't care' (Phase 0.1a)", () => {
+    // Tolerance 0 means the parent explicitly opted in. The pair is skipped;
+    // when ALL pairs are skipped, the function returns 1 (no penalty).
+    const score = computeSensitivityScore(
+      { violence: 4, sexNudity: 4, language: 4, substanceUse: 4 },
+      {
+        sensitivityViolence: 0,
+        sensitivitySexual: 0,
+        sensitivityLanguage: 0,
+        sensitivitySubstances: 0,
+      },
+    )
+    expect(score).toBe(1)
+  })
+
+  it("Erwan-on-Avengers: tolerant teen yields a clean sensitivity score even with violence:4", () => {
+    // Erwan said sensitivityViolence=0. Only the language axis contributes (sensitivity=2,
+    // threshold=2, metric=2 → score 1). Others skipped (tolerance 0) or perfect.
+    const score = computeSensitivityScore(
+      { violence: 4, sexNudity: 1, language: 2, substanceUse: 1 },
+      {
+        sensitivityViolence: 0,
+        sensitivitySexual: 0,
+        sensitivityLanguage: 2,
+        sensitivitySubstances: 2,
+      },
+    )
+    expect(score).toBeGreaterThan(0.9)
+  })
+})
+
+describe("computeMatureContentPenalty — Phase 0.1(b): respects member sensitivity", () => {
+  it("skips violence:4 penalty when member said 'ok with violence'", () => {
+    // Erwan (14) on Avengers (10+, violence:4) with sensitivityViolence:0
+    const penalty = computeMatureContentPenalty(
+      ["Action", "Aventure"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      14,
+      { violence: 0, sexual: 2 },
+    )
+    expect(penalty.severity).toBeNull()
+    expect(penalty.multiplier).toBe(1)
+    expect(penalty.reason).toBeNull()
+  })
+
+  it("still penalizes violence:4 when member sensitivity is default (>0)", () => {
+    // Member who hasn't opted in — penalty fires as before
+    const penalty = computeMatureContentPenalty(
+      ["Action"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      14,
+      { violence: 2, sexual: 2 },
+    )
+    expect(penalty.severity).toBe("caution")
+  })
+
+  it("skips sex penalty when member said 'ok with intimate scenes'", () => {
+    const penalty = computeMatureContentPenalty(
+      ["Drame"],
+      { violence: 1, sexNudity: 4 },
+      14,
+      16,
+      { violence: 2, sexual: 0 },
+    )
+    expect(penalty.severity).toBeNull()
+  })
+
+  it("structural mature genres still fire regardless of slider state", () => {
+    // Horror/Thriller genre is a structural signal — opt-in for those flows
+    // through dislikedGenres removal + sensitivityScary, not through this slider.
+    const penalty = computeMatureContentPenalty(
+      ["Horreur"],
+      { violence: 1, sexNudity: 0 },
+      14,
+      14,
+      { violence: 0, sexual: 0 },
+    )
+    expect(penalty.severity).toBe("caution")
+  })
+
+  it("defaults to conservative (penalty fires) when memberSensitivity is omitted", () => {
+    const penalty = computeMatureContentPenalty(
+      ["Action"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      14,
+    )
+    expect(penalty.severity).toBe("caution")
+  })
+
+  it("matrix: tolerance 0..3 × violence 0..5 (12 cells, the ones that matter)", () => {
+    const cases = [
+      // tolerance 0 = ok with violence → no severity at any violence level
+      { tolerance: 0, violence: 0, expectSeverity: null },
+      { tolerance: 0, violence: 4, expectSeverity: null },
+      { tolerance: 0, violence: 5, expectSeverity: null },
+      // tolerance 1 = a little — penalty fires only on >= 4
+      { tolerance: 1, violence: 3, expectSeverity: null },
+      { tolerance: 1, violence: 4, expectSeverity: "caution" as const },
+      // tolerance 2 = moderate, default — penalty fires only on >= 4
+      { tolerance: 2, violence: 4, expectSeverity: "caution" as const },
+      // tolerance 3 = strict — penalty fires on >= 4 (no extra threshold here,
+      // that's what computeSensitivityScore handles)
+      { tolerance: 3, violence: 4, expectSeverity: "caution" as const },
+    ]
+    for (const c of cases) {
+      const penalty = computeMatureContentPenalty(
+        ["Action"],
+        { violence: c.violence, sexNudity: 0 },
+        10,
+        14,
+        { violence: c.tolerance, sexual: 2 },
+      )
+      expect(penalty.severity).toBe(c.expectSeverity)
+    }
   })
 })
 
