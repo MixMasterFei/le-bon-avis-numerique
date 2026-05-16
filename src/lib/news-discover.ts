@@ -944,22 +944,33 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //    but 403 to the actual browser GET. By downloading and re-
   //    serving from our own storage, we sidestep that entirely. As a
   //    bonus: stories survive even if the source CDN goes down.
-  //    If the upload fails (origin returns <1KB blob, network error,
-  //    Supabase disabled in dev), we drop the story.
+  //    If the upload fails (origin returns a tiny placeholder, network
+  //    error, CDN block), keep the editorial story alive on the branded
+  //    fallback card instead of turning a valid brief into a 0-story run.
   const mirrored = await Promise.all(
     moderatedStories.map((s) =>
       isStorageEnabled() ? uploadNewsImage(s.imageUrl) : Promise.resolve(s.imageUrl),
     ),
   )
-  let droppedImageUnreachable = 0
+  const droppedImageUnreachable = 0
   const liveStories: SynthesizedStory[] = []
   moderatedStories.forEach((s, i) => {
     const mirroredUrl = mirrored[i]
     if (mirroredUrl) {
       liveStories.push({ ...s, imageUrl: mirroredUrl })
-    } else {
-      droppedImageUnreachable++
+      return
     }
+    const fallback = fallbackCard(s.category, s.title)
+    console.warn(
+      `[news-discover] image mirror failed; using fallback card for "${s.title.slice(0, 80)}"`,
+    )
+    liveStories.push({
+      ...s,
+      imageUrl: fallback.url,
+      imageSourceType: fallback.sourceType,
+      imageCredit: fallback.credit,
+      imageLicenseUrl: fallback.licenseUrl,
+    })
   })
 
   const synthesizeMs = Date.now() - synthStart

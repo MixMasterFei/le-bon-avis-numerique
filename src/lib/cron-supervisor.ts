@@ -48,7 +48,7 @@ export type CronSupervisorResult = {
 }
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || "https://totemavise.com"
-const MAX_REMEDIATIONS = 3
+const MAX_REMEDIATIONS = 4
 
 const EXPECTED_TASKS: ExpectedTask[] = [
   { task: "import", staleAfterHours: 36 },
