@@ -38,6 +38,9 @@ jobs:
       NEXTAUTH_URL: http://localhost:3000
       TMDB_API_KEY: ci-placeholder
       NODE_ENV: test
+      # Tells playwright.config.ts to skip its auto-spawned dev server — we
+      # boot `npm start` ourselves below so the build is exercised.
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
