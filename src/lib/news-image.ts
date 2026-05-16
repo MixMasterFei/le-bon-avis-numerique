@@ -4,33 +4,14 @@ import {
   isBlockedHotlinkImageUrl,
   isLowQualityImagePublisher,
 } from "@/lib/news-image-policy"
+import { findContextualStockPhoto } from "@/lib/stock-photo"
 
-// Image resolution — simplified to 2 tiers (May 2026 redesign). The
-// previous 5-tier cascade (AGENCY → PUBLISHER_RSS → Pexels → Unsplash
-// → OG-scrape) silently dropped stories at every layer with no per-
-// tier visibility, and the stock-photo + OG-scrape paths were the
-// source of recurring fragility (quota exhaustion, sortiraparis-style
-// hotlink 403s, legally questionable scraping).
-//
-// New tier order:
-//   1. AGENCY        — RSS image from a wire-service publisher (Reuters,
-//                      AP, AFP…). They produce these for syndication, so
-//                      reusing them with a credit is on solid ground.
-//   2. PUBLISHER_RSS — RSS media:content / enclosure from any other
-//                      publisher. They're putting it in the feed, which
-//                      is itself a syndication signal.
-//   3. FALLBACK      — generated branded "zen card" (see fallbackCard()).
-//                      Used when an article has no usable photo, or only
-//                      a thumbnail too small for a hero. Previously these
-//                      items were dropped outright (the source of the
-//                      "0 stories produced" runs); now they ship with a
-//                      calm category card instead.
-//   4. null          — only when the item is missing a hard requirement
-//                      (no date / link / title). Caller drops it.
-//
-// The legacy STOCK and PUBLISHER_OG variants stay in ImageSourceType so
-// historical rows in news_stories don't fail to deserialize, but no new
-// image will be assigned those types.
+// Image resolution — Perplexity-inspired, but conservative. We keep the
+// persisted Prisma enum values stable (AGENCY/STOCK/PUBLISHER_RSS/
+// FALLBACK) while the resolver applies a stricter logical hierarchy:
+// official/agency RSS, allowlisted institutional RSS, contextual stock,
+// then a generated editorial fallback. Generic publisher RSS is no
+// longer the default path because attribution alone is not a license.
 
 export type ImageSourceType = "AGENCY" | "STOCK" | "PUBLISHER_RSS" | "PUBLISHER_OG" | "FALLBACK"
 
@@ -39,6 +20,7 @@ export interface ResolvedImage {
   sourceType: ImageSourceType
   credit: string             // human-readable, used in the card overlay
   licenseUrl?: string        // STOCK only — back-link required by Pexels/Unsplash
+  auditLabel?: string
 }
 
 // Origin the generated fallback card is served from. Absolute so the
@@ -59,12 +41,14 @@ const FALLBACK_CARD_PATH = "/api/news/fallback-card"
  * moderation, and it's exempt from the cross-story image-dedup (the same
  * card SHOULD be reusable across image-less stories).
  */
-export function fallbackCard(category: string | null | undefined): ResolvedImage {
+export function fallbackCard(category: string | null | undefined, seed?: string | null): ResolvedImage {
   const cat = typeof category === "string" ? category : ""
+  const stableSeed = typeof seed === "string" && seed.trim() ? seed.trim() : cat
   return {
-    url: `${APP_ORIGIN}${FALLBACK_CARD_PATH}?cat=${encodeURIComponent(cat)}`,
+    url: `${APP_ORIGIN}${FALLBACK_CARD_PATH}?cat=${encodeURIComponent(cat)}&seed=${encodeURIComponent(stableSeed)}`,
     sourceType: "FALLBACK",
-    credit: "",
+    credit: "Totem Avise",
+    auditLabel: "EDITORIAL_FALLBACK",
   }
 }
 
@@ -85,7 +69,9 @@ export interface RssLikeItem {
   // and the credit-text builder. Both are already known by news-discover
   // when it constructs the RssLikeItem.
   title?: string
+  summary?: string
   sourceName?: string        // e.g. "Reuters" — used for the AGENCY/RSS credit string
+  category?: string
 }
 
 // Wire-service / agency domains. RSS images from these get tagged as
@@ -109,9 +95,38 @@ const AGENCY_DOMAINS = [
   "dpa.com",
 ]
 
+const OFFICIAL_PRESS_DOMAINS = [
+  "about.netflix.com",
+  "media.netflix.com",
+  "press.aboutamazon.com",
+  "aboutamazon.com",
+  "blog.google",
+  "openai.com",
+  "nintendo.com",
+  "news.xbox.com",
+  "playstation.com",
+  "lego.com",
+]
+
+const SAFE_RSS_SOURCE_NAMES = new Set<string>([
+  "CLEMI",
+  "Fondation pour l'Enfance",
+  "INSERM Actualites",
+  "INSERM Actualités",
+  "Sante publique France",
+  "Santé publique France",
+  "PedaGoJeux",
+  "PédaGoJeux",
+])
+
 function isAgencyDomain(host: string | null): boolean {
   if (!host) return false
   return AGENCY_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))
+}
+
+function isOfficialPressDomain(host: string | null): boolean {
+  if (!host) return false
+  return OFFICIAL_PRESS_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))
 }
 
 function pickMediaUrl(field: unknown): string | null {
@@ -165,7 +180,7 @@ export function extractFromRss(item: RssLikeItem): string | null {
  * scraping). If we want a stock-photo fallback later we'll add it
  * back behind a feature flag with explicit quota tracking.
  */
-export function resolveImage(item: RssLikeItem): ResolvedImage | null {
+export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | null> {
   // Publisher-level curation: some sources ship generic mascot art
   // that looks out of place in the news grid. Returning null drops
   // the story entirely via the caller's "no image → skip" rule.
@@ -174,6 +189,18 @@ export function resolveImage(item: RssLikeItem): ResolvedImage | null {
   const articleHost = imageHostFromUrl(item.link)
   const rssImage = extractFromRss(item)
   if (isBlockedHotlinkImageUrl(rssImage)) return null
+
+  if (rssImage) {
+    const imageHost = imageHostFromUrl(rssImage)
+    if (isOfficialPressDomain(articleHost) || isOfficialPressDomain(imageHost)) {
+      return {
+        url: rssImage,
+        sourceType: "AGENCY",
+        credit: `${item.sourceName ?? articleHost ?? imageHost ?? "Source officielle"} (asset officiel)`,
+        auditLabel: "OFFICIAL_PRESS",
+      }
+    }
+  }
 
   // Tier 1: AGENCY — RSS image AND the source publisher is an agency.
   // Either the article URL itself is on an agency domain (Reuters
@@ -185,18 +212,34 @@ export function resolveImage(item: RssLikeItem): ResolvedImage | null {
         url: rssImage,
         sourceType: "AGENCY",
         credit: item.sourceName ?? articleHost ?? imageHost ?? "Agence",
+        auditLabel: "AGENCY_LICENSED",
       }
     }
   }
 
-  // Tier 2: PUBLISHER_RSS — RSS image from any non-agency publisher.
-  // Publisher chose to put it in the feed, which is the strongest
-  // syndication signal short of being an agency.
-  if (rssImage) {
+  if (rssImage && item.sourceName && SAFE_RSS_SOURCE_NAMES.has(item.sourceName)) {
     return {
       url: rssImage,
       sourceType: "PUBLISHER_RSS",
       credit: item.sourceName ?? articleHost ?? "Source",
+      auditLabel: "PUBLISHER_RSS_ALLOWLIST",
+    }
+  }
+
+  if (item.title) {
+    const stock = await findContextualStockPhoto({
+      title: item.title,
+      summary: item.summary,
+      category: item.category,
+    })
+    if (stock) {
+      return {
+        url: stock.url,
+        sourceType: "STOCK",
+        credit: stock.credit,
+        licenseUrl: stock.licenseUrl,
+        auditLabel: `STOCK_CONTEXTUAL:${stock.concept.label}`,
+      }
     }
   }
 

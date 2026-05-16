@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { conceptKeywords, deriveNewsImageConcept, type NewsImageConcept } from "@/lib/news-image-concepts"
 
 // Stock photo lookup: Pexels primary, Unsplash fallback. Both are
 // royalty-free under "do whatever you want with attribution back to
@@ -20,6 +21,8 @@ export interface StockImage {
   credit: string       // "Marc Dupont / Pexels"
   licenseUrl: string   // back-link to source page (required by both APIs)
   provider: "pexels" | "unsplash"
+  query?: string
+  conceptLabel?: string
 }
 
 const STOCK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
@@ -121,8 +124,9 @@ async function writeCache(image: StockImage, keywords: string[]): Promise<void> 
 }
 
 interface PexelsPhoto {
-  src?: { large2x?: string; large?: string; original?: string }
+  src?: { landscape?: string; large2x?: string; large?: string; original?: string }
   photographer?: string
+  photographer_url?: string
   url?: string
 }
 
@@ -154,7 +158,7 @@ export async function searchPexels(keywords: string[]): Promise<StockImage | nul
     if (!photo?.src) return null
 
     const image: StockImage = {
-      url: photo.src.large2x ?? photo.src.large ?? photo.src.original ?? "",
+      url: photo.src.landscape ?? photo.src.large2x ?? photo.src.large ?? photo.src.original ?? "",
       credit: `${photo.photographer ?? "Photographer"} / Pexels`,
       licenseUrl: photo.url ?? "https://www.pexels.com/",
       provider: "pexels",
@@ -180,6 +184,11 @@ interface UnsplashResponse {
 
 export async function searchUnsplash(keywords: string[]): Promise<StockImage | null> {
   const apiKey = process.env.UNSPLASH_ACCESS_KEY
+  // Unsplash API terms require hotlinking the returned photo.urls.*
+  // assets and explicit attribution links. The news pipeline currently
+  // mirrors non-fallback images into Supabase, so keep Unsplash behind
+  // an opt-in until that path has provider-aware storage behavior.
+  if (process.env.UNSPLASH_ENABLE_NEWS_IMAGES !== "1") return null
   if (!apiKey || keywords.length === 0) return null
 
   const cached = await readCache("unsplash", keywords)
@@ -231,4 +240,22 @@ export async function findStockPhoto(title: string): Promise<StockImage | null> 
   const keywords = extractKeywords(title, 3)
   if (keywords.length === 0) return null
   return (await searchPexels(keywords)) ?? (await searchUnsplash(keywords))
+}
+
+export async function findContextualStockPhoto(input: {
+  title: string
+  summary?: string | null
+  category?: string | null
+}): Promise<(StockImage & { concept: NewsImageConcept }) | null> {
+  const concept = deriveNewsImageConcept(input)
+  const keywords = conceptKeywords(concept)
+  if (keywords.length === 0) return null
+  const image = (await searchPexels(keywords)) ?? (await searchUnsplash(keywords))
+  if (!image) return null
+  return {
+    ...image,
+    query: concept.query,
+    conceptLabel: concept.label,
+    concept,
+  }
 }

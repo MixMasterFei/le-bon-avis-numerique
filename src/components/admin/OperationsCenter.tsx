@@ -684,6 +684,29 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "newsImagesAudit",
+      endpoint: "/api/admin/news/images-audit",
+      method: "POST",
+      body: { limit: 240 },
+      chunked: false,
+      accumKeys: ["processed", "updated", "skipped"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.total || null,
+        updated: data.publisherRssAvoidedEstimate || 0,
+        skipped: data.skipped || 0,
+      }),
+      buildSummary: (stats) =>
+        `${stats.processed || 0} auditees, ${stats.updated || 0} RSS risquees a eviter`,
+    },
+    label: "Audit images news",
+    description: "Mesurer stock/fallback/press et simuler les RSS editeur evitees",
+    icon: Search,
+    color: "blue",
+    statLabels: { updated: "RSS evitees", skipped: "fallbacks" },
+  },
+  {
+    config: {
       key: "newsReverifyRelated",
       endpoint: "/api/admin/news/reverify-related",
       method: "POST",
@@ -733,7 +756,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",

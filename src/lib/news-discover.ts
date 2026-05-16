@@ -630,7 +630,9 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     let resolved = await resolveImage({
       ...(item as RssLikeItem),
       title: item.title,
+      summary: item.contentSnippet,
       sourceName: source.name,
+      category: source.category,
     })
     // No publisher image, a blocked-hotlink image, or only a thumbnail
     // too small to render as a 16:9 hero → use the branded category
@@ -638,7 +640,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // look Xavier flagged on the old Café Pédagogique brief; fails open
     // on probe errors so a transient blip doesn't force a fallback.)
     if (!resolved || !(await isImageLargeEnough(resolved.url))) {
-      resolved = fallbackCard(source.category)
+      resolved = fallbackCard(source.category, item.title)
       fellBackToCard++
     }
     hydrated.push({
@@ -960,7 +962,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       liveStories.push({ ...s, imageUrl: mirroredUrl })
       return
     }
-    const fallback = fallbackCard(s.category)
+    const fallback = fallbackCard(s.category, s.title)
     console.warn(
       `[news-discover] image mirror failed; using fallback card for "${s.title.slice(0, 80)}"`,
     )
