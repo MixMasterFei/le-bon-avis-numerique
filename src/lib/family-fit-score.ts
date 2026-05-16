@@ -125,6 +125,11 @@ export function getAgeGroup(age: number | null): keyof typeof DEFAULT_GENRES_BY_
   return "adult"
 }
 
+// Raw age score. The display layer in `applyFitGuardrails` enforces additional
+// caps when `expertAgeRec > memberAge` (≤ 65 + "moderate" for any positive gap;
+// ≤ 30 + "poor" for gap ≥ 2). Do not duplicate those caps here — the smart
+// filter applies its own strict-mode penalty separately, and stacking penalties
+// here would create double counting.
 export function computeAgeScore(
   expertAgeRec: number | null,
   memberAge: number | null,
@@ -196,18 +201,20 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
   const normalise = (s: string) => s.toLowerCase().trim()
   const mediaSet = new Set(mediaGenres.map(normalise))
 
-  let score = 0.5
-  if (favoriteGenres.length > 0) {
-    const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
-    score = Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
-  }
-
+  // Hard-zero when any disliked genre matches. The quiz UI presents this as a
+  // categorical "do not want" choice — a soft penalty here let horror leak
+  // through favorite-genre boosts.
   if (dislikedGenres.length > 0) {
     const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g))).length
-    score = Math.max(0, score - dislikedMatches * 0.3)
+    if (dislikedMatches > 0) return 0
   }
 
-  return score
+  if (favoriteGenres.length > 0) {
+    const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
+    return Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
+  }
+
+  return 0.5
 }
 
 export function computeInterestsScore(mediaTopics: string[], emotionalThemes: string[], memberInterests: string[]): number {

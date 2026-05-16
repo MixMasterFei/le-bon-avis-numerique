@@ -112,10 +112,13 @@ export async function GET(request: NextRequest) {
       .map(([genre]) => genre)
 
     // Build age filter - strict: only recommend content appropriate for child's age
-    // Do NOT include items with null age rating - they haven't been reviewed
-    const ageFilter = childAge !== null ? {
-      expertAgeRec: { lte: childAge }, // Strict: must have age rating AND be <= child's age
-    } : {}
+    // Do NOT include items with null age rating - they haven't been reviewed.
+    // When the member has no birth year we fall back to a conservative ceiling
+    // (12+) instead of an empty filter — otherwise a half-completed profile
+    // could surface adult-rated recommendations.
+    const ageFilter = childAge !== null
+      ? { expertAgeRec: { lte: childAge } }
+      : { expertAgeRec: { lte: 12 } }
 
     // Step 1: Try to find similar media from MediaSimilarity table
     const lovedMediaIds = new Set(positiveReactions.map(r => r.mediaId))

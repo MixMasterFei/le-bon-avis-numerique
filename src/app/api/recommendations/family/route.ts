@@ -20,6 +20,7 @@ import {
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
 } from "@/lib/family-fit-score"
+import { buildFamilyRecsFilters } from "./filters"
 
 // --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
 const MIN_MEMBER_FIT_SCORE = 66
@@ -203,25 +204,21 @@ export async function GET(request: NextRequest) {
       for (const id of prefs.mediaIds) allSeenMediaIds.add(id)
     }
 
-    // Build age filter
-    // When all members are adults (16+), set a floor to avoid toddler/young-child content
-    const allAdults = youngestAge !== null && youngestAge >= 16
-    let ageFilter = {}
-    if (youngestAge !== null) {
-      if (allAdults) {
-        // Adults: skip very young content, include unrated + teen/adult content
-        ageFilter = {
-          OR: [
-            { expertAgeRec: null },
-            { expertAgeRec: { gte: 8 } },
-          ],
-        }
-      } else {
-        ageFilter = {
-          expertAgeRec: { lte: youngestAge },
-        }
-      }
+    // Collect all disliked genres and avoided topics up-front so we can push
+    // the exclusion into the SQL where-clause (avoids wasting the take=40
+    // popularity budget on items we'd throw away post-fetch).
+    const allDislikedGenres: string[] = []
+    const allAvoidTopics: string[] = []
+    for (const prefs of Object.values(memberPreferences)) {
+      allDislikedGenres.push(...prefs.dislikedGenres)
+      allAvoidTopics.push(...prefs.avoidTopics)
     }
+
+    const { ageFilter, exclusionFilter } = buildFamilyRecsFilters({
+      youngestAge,
+      dislikedGenres: allDislikedGenres,
+      avoidTopics: allAvoidTopics,
+    })
 
     // Build query — if no shared genres, fall back to age-appropriate well-rated media
     // Random skip to vary results on refresh (skip 0-60 of top results)
@@ -244,6 +241,7 @@ export async function GET(request: NextRequest) {
         // Minimum popularity to avoid obscure niche content
         tmdbVoteCount: { gte: 100 },
         ...ageFilter,
+        ...exclusionFilter,
       },
       include: {
         contentMetrics: true,
@@ -258,20 +256,9 @@ export async function GET(request: NextRequest) {
       take: 40, // Fetch more to allow scoring & filtering
     })
 
-    // Collect all disliked genres and avoided topics
-    const allDislikedGenres = new Set<string>()
-    const allAvoidTopics = new Set<string>()
-    for (const prefs of Object.values(memberPreferences)) {
-      for (const genre of prefs.dislikedGenres) allDislikedGenres.add(genre)
-      for (const topic of prefs.avoidTopics) allAvoidTopics.add(topic)
-    }
-
-    // Score each recommendation — same weighted formula as batch-family-fit
+    // Disliked / avoid filtering is already pushed into the SQL where-clause
+    // above. Score each recommendation — same weighted formula as batch-family-fit
     const scoredRecommendations = recommendations
-      .filter((media) => {
-        const allGenresAndTopics = [...media.genres, ...media.topics]
-        return !allGenresAndTopics.some(g => allDislikedGenres.has(g) || allAvoidTopics.has(g))
-      })
       .map((media) => {
         const metrics = media.contentMetrics
 
