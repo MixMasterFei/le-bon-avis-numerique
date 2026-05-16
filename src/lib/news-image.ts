@@ -31,6 +31,7 @@ const APP_ORIGIN =
   process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || "https://totemavise.com"
 
 const FALLBACK_CARD_PATH = "/api/news/fallback-card"
+const CONTEXTUAL_STOCK_ENABLED = process.env.NEWS_CONTEXTUAL_STOCK_IMAGES === "true"
 
 /**
  * Branded "zen card" fallback image for a news story. `category` is a
@@ -226,7 +227,7 @@ export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | n
     }
   }
 
-  if (item.title) {
+  if (CONTEXTUAL_STOCK_ENABLED && item.title) {
     const stock = await findContextualStockPhoto({
       title: item.title,
       summary: item.summary,

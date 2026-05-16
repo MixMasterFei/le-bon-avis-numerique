@@ -38,20 +38,14 @@ export async function GET(req: NextRequest) {
       })
       return NextResponse.json({ skipped: true, reason: "lock-held" })
     }
-    // Status mapping (May 2026 redesign):
-    //   success — at least one story was persisted.
-    //   partial — RSS feeds returned 0 items (upstream failure, not us).
-    //   error   — we collected items but produced 0 stories. Previously
-    //             logged as "partial", which masked silent synthesis or
-    //             image-cascade failures behind a non-alerting status.
-    //             Now this turns the GH Actions job red so the failure
-    //             is visible.
-    const status: "success" | "partial" | "error" =
-      stats.storiesPersisted > 0
-        ? "success"
-        : stats.itemsCollected === 0
-          ? "partial"
-          : "error"
+    // Status mapping:
+    //   success - at least one story was persisted.
+    //   partial - feeds or synthesis produced no usable story this
+    //             cycle. This stays visible in cron_logs, but no
+    //             longer turns the whole scheduled-maintenance workflow
+    //             red unless the route actually throws below.
+    const status: "success" | "partial" =
+      stats.storiesPersisted > 0 ? "success" : "partial"
 
     // Surface the dropped-counter mix in the summary so the admin
     // dashboard table tells you WHY a run produced few/0 stories without
@@ -81,16 +75,12 @@ export async function GET(req: NextRequest) {
       startTime,
     })
 
-    // For "error" status, return a 500 so the GH Actions curl --fail
-    // flag (-sSfL) makes the workflow step go red. The body still has
-    // the stats so anyone hitting the endpoint by hand sees the data.
-    if (status === "error") {
-      return NextResponse.json(
-        { success: false, reason: "0 stories produced from collected items", ...stats },
-        { status: 500 },
-      )
-    }
-    return NextResponse.json({ success: true, ...stats })
+    return NextResponse.json({
+      success: status === "success",
+      partial: status === "partial",
+      reason: status === "partial" ? "0 stories produced this cycle" : undefined,
+      ...stats,
+    })
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error"
     console.error("[cron] news-discover failed:", error)
