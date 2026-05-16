@@ -62,7 +62,8 @@ function calculateMemberScore(
     genres: string[]
     topics: string[]
     emotionalThemes: string[]
-  }
+  },
+  strictMode: boolean = false
 ): { score: number; concerns: string[] } {
   let score = 100
   const concerns: string[] = []
@@ -79,6 +80,10 @@ function calculateMemberScore(
     } else if (ageDiff > 1) {
       // Content is 1-3 years too mature
       score -= 20
+      concerns.push(`Un peu mature pour ${memberAge} ans`)
+    } else if (strictMode && ageDiff > 0) {
+      // In strict mode, even one year above member age is penalised
+      score -= 15
       concerns.push(`Un peu mature pour ${memberAge} ans`)
     } else if (ageDiff < -5) {
       // Content might be too young
@@ -301,6 +306,21 @@ export async function POST(request: NextRequest) {
       whereClause.genres = { hasSome: genres }
     }
 
+    // In strict mode, hard-exclude any genre that any selected member dislikes.
+    // The quiz writes "Horreur"/"Thriller" to dislikedGenres, and parents expect
+    // those to be filtered out — not just score-penalised.
+    if (strictMode) {
+      const blockedGenres = Array.from(
+        new Set(memberPreferences.flatMap(m => m.dislikedGenres))
+      )
+      if (blockedGenres.length > 0) {
+        whereClause.NOT = [
+          ...(whereClause.NOT || []),
+          { genres: { hasSome: blockedGenres } },
+        ]
+      }
+    }
+
     if (platforms.length > 0) {
       whereClause.platforms = { hasSome: platforms }
     }
@@ -373,7 +393,7 @@ export async function POST(request: NextRequest) {
           genres: media.genres,
           topics: media.topics,
           emotionalThemes: (metrics.emotionalThemes ?? []) as string[],
-        })
+        }, strictMode)
 
         return {
           memberId: member.id,
