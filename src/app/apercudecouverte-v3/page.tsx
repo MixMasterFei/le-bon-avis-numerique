@@ -177,6 +177,8 @@ function isExceptionalGameLead(row: StoryRow): boolean {
 }
 
 const LEAD_FRESHNESS_HOURS = 72
+const SECTION_CARD_TARGET = 6
+const SECTION_BACKFILL_POOL = 24
 
 function splitFreshLeadRows(rows: StoryRow[]): { fresh: StoryRow[]; fallback: StoryRow[] } {
   const fresh: StoryRow[] = []
@@ -425,7 +427,7 @@ export default async function ApercuDecouverteV3Page(props: {
         category: "PARENTHOOD",
       },
       orderBy: { publishedAt: "desc" },
-      take: 6,
+      take: SECTION_BACKFILL_POOL,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
@@ -440,7 +442,7 @@ export default async function ApercuDecouverteV3Page(props: {
     prisma.newsStory.findMany({
       where: { status: "PUBLISHED", storyType: "BRIEF", category: "TECH" },
       orderBy: { publishedAt: "desc" },
-      take: 6,
+      take: SECTION_BACKFILL_POOL,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
         imageUrl: true, imageCredit: true, imageLicenseUrl: true,
@@ -535,6 +537,20 @@ export default async function ApercuDecouverteV3Page(props: {
     seenImages.add(card.imageUrl)
     return card
   }
+
+  const claimSectionRows = (
+    rows: StoryRow[],
+    target = SECTION_CARD_TARGET,
+  ): ApercuNewsCardData[] => {
+    const cards: ApercuNewsCardData[] = []
+    for (const row of rows) {
+      if (cards.length >= target) break
+      const card = claim(rowToCard(row))
+      if (card) cards.push(card)
+    }
+    return cards
+  }
+
   const dossierCard = dossierRow ? claim(rowToCard(dossierRow)) : null
   const heroCard = frenchHero ? claim(rowToCard(frenchHero)) : null
 
@@ -568,8 +584,8 @@ export default async function ApercuDecouverteV3Page(props: {
     olderCards.push(card)
   }
 
-  const intlCards = intlRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
-  const techCards = techRows.map(rowToCard).map(claim).filter((c): c is NonNullable<typeof c> => c !== null)
+  const intlCards = claimSectionRows(intlRows)
+  const techCards = claimSectionRows(techRows)
 
   // Freshness flag — true when the chosen hero is older than 36h.
   // Surfaces a small banner on the page so a stale state (cron stuck,
