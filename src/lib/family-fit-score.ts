@@ -333,31 +333,66 @@ export function isAdultLeaningContentForMinor(input: {
   return adultGenreCount >= 2 || (input.expertAgeRec != null && input.expertAgeRec >= 13 && adultGenreCount >= 1)
 }
 
+// `severity` lets callers distinguish a hard block (member is below the
+// recommended age and the content is mature) from a soft caution (member is at
+// or above the recommended age, but content has mature signals worth flagging).
+// The display layer uses this to keep the "Trop tôt" badge for genuine age
+// mismatches only — caution cases get "À vérifier" instead.
+export type MatureContentSeverity = "block" | "caution" | null
+
 export function computeMatureContentPenalty(
   mediaGenres: string[],
   metrics: Pick<FitMetrics, "violence" | "sexNudity">,
   expertAgeRec: number | null,
   memberAge: number | null,
-): { multiplier: number; reason: string | null } {
+): { multiplier: number; reason: string | null; severity: MatureContentSeverity } {
   const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(g.toLowerCase()))
   const hasHighViolence = metrics.violence >= 4
   const hasHighSexual = metrics.sexNudity >= 4
   const isMatureContent = hasMatureGenre || hasHighViolence || hasHighSexual
 
-  if (!isMatureContent) return { multiplier: 1.0, reason: null }
+  if (!isMatureContent) return { multiplier: 1.0, reason: null, severity: null }
 
   const isMinor = memberAge != null && memberAge < 18
   const isChild = memberAge != null && memberAge < 13
+  const isAgeAppropriate =
+    expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
 
-  if (isChild) return { multiplier: 0.25, reason: "contenu mature inadapté aux enfants" }
-
-  if (isMinor) {
-    const isAgeAppropriate = expertAgeRec != null && memberAge != null && memberAge >= expertAgeRec
-    if (isAgeAppropriate) return { multiplier: 0.45, reason: "contenu mature, vigilance conseillée" }
-    return { multiplier: 0.25, reason: "contenu mature inadapté à son âge" }
+  if (isChild) {
+    if (isAgeAppropriate) {
+      return {
+        multiplier: 0.45,
+        reason: "contenu mature, vigilance conseillée",
+        severity: "caution",
+      }
+    }
+    return {
+      multiplier: 0.25,
+      reason: "contenu mature inadapté aux enfants",
+      severity: "block",
+    }
   }
 
-  return { multiplier: 1.0, reason: hasMatureGenre ? "contenu mature" : null }
+  if (isMinor) {
+    if (isAgeAppropriate) {
+      return {
+        multiplier: 0.55,
+        reason: "contenu mature, vigilance conseillée",
+        severity: "caution",
+      }
+    }
+    return {
+      multiplier: 0.25,
+      reason: "contenu mature inadapté à son âge",
+      severity: "block",
+    }
+  }
+
+  return {
+    multiplier: 1.0,
+    reason: hasMatureGenre ? "contenu mature" : null,
+    severity: null,
+  }
 }
 
 export function isFamilyWarningContent(
@@ -394,6 +429,12 @@ export function applyFitGuardrails(input: {
   hasRichProfile: boolean
   hasYouthAppeal?: boolean
   adultLeaning?: boolean
+  // When true, the score is being dragged down by a mature-content caution
+  // (member is age-appropriate, but content has mature signals). We floor the
+  // score at 36 + cap the level at "moderate" so the display lands on
+  // "À vérifier" instead of "Trop tôt" — the badge stays semantically aligned
+  // with the reason text.
+  matureCaution?: boolean
 }): FitGuardrailResult {
   let score = clampScore(input.score)
   let level = levelFromScore(score)
@@ -431,6 +472,17 @@ export function applyFitGuardrails(input: {
     if (!reasonOverride || reasonOverride === "Âge") {
       reasonOverride = "Thèmes plutôt adultes à vérifier"
     }
+  }
+
+  // Mature-content caution: floor the score so a vigilance flag (member is at
+  // or above the recommended age, but content is mature) lands in the
+  // "À vérifier" band, not the "Trop tôt" band. Skipped when an actual age
+  // warning already fired — the age warning is the stronger signal.
+  if (input.matureCaution && !ageWarning) {
+    if (score < 36) score = 36
+    level = capLevel(level, "moderate")
+    // Promote level out of "poor" if needed
+    if (level === "poor") level = "moderate"
   }
 
   return { score, level, reasonOverride, ageWarning, ageUnknown }

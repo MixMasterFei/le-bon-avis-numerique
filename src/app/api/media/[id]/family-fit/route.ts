@@ -306,6 +306,7 @@ export async function GET(
           hasRichProfile: false,
           hasYouthAppeal,
           adultLeaning,
+          matureCaution: maturePenalty.severity === "caution",
         })
 
         let reason: string
@@ -419,6 +420,7 @@ export async function GET(
         hasRichProfile: hasPreferences,
         hasYouthAppeal,
         adultLeaning,
+        matureCaution: maturePenalty.severity === "caution",
       })
       let reason = buildReason(
         ageScore,

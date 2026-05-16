@@ -64,7 +64,7 @@ describe("family fit guardrails", () => {
     expect(result.reasonOverride).toBe("Âge expert à confirmer")
   })
 
-  it("applies mature-content penalties for children", () => {
+  it("blocks mature content for a child below the recommended age", () => {
     const penalty = computeMatureContentPenalty(
       ["Thriller"],
       { violence: 1, sexNudity: 0 },
@@ -74,6 +74,60 @@ describe("family fit guardrails", () => {
 
     expect(penalty.multiplier).toBe(0.25)
     expect(penalty.reason).toBe("contenu mature inadapté aux enfants")
+    expect(penalty.severity).toBe("block")
+  })
+
+  it("flags caution (not block) when a child is at the recommended age", () => {
+    // Eliott (10) on a 10+ movie with violence: high (e.g. Avengers). The
+    // movie is at his recommended age, so the badge should say "vigilance",
+    // not "inadapté".
+    const penalty = computeMatureContentPenalty(
+      ["Action", "Aventure"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      10,
+    )
+
+    expect(penalty.severity).toBe("caution")
+    expect(penalty.reason).toContain("vigilance")
+  })
+
+  it("flags caution for a teen above the recommended age", () => {
+    // Erwan (15) on a 10+ movie with violence: high. His age is fine — only
+    // the mature content is the concern.
+    const penalty = computeMatureContentPenalty(
+      ["Action"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      15,
+    )
+
+    expect(penalty.severity).toBe("caution")
+    expect(penalty.multiplier).toBeGreaterThan(0.5)
+  })
+
+  it("returns null severity for adults", () => {
+    const penalty = computeMatureContentPenalty(
+      ["Action"],
+      { violence: 4, sexNudity: 0 },
+      10,
+      40,
+    )
+
+    expect(penalty.severity).toBeNull()
+    expect(penalty.multiplier).toBe(1)
+  })
+
+  it("returns null severity when content is not mature", () => {
+    const penalty = computeMatureContentPenalty(
+      ["Animation"],
+      { violence: 1, sexNudity: 0 },
+      6,
+      8,
+    )
+
+    expect(penalty.severity).toBeNull()
+    expect(penalty.multiplier).toBe(1)
   })
 
   it("requires explicit custom preferences for a rich profile", () => {
@@ -179,6 +233,48 @@ describe("applyFitGuardrails boundary cases", () => {
     })
     expect(result.score).toBe(30)
     expect(result.level).toBe("poor")
+  })
+
+  it("floors a mature-content caution at 36 + moderate (no 'Trop tôt' badge)", () => {
+    // The Avengers scenario: Erwan (15) on a 10+ movie, base score after the
+    // mature-content multiplier (0.55) would land around 33 — which used to
+    // render "Trop tôt". With matureCaution we floor at 36 → "À vérifier".
+    const result = applyFitGuardrails({
+      score: 33,
+      memberAge: 15,
+      expertAgeRec: 10,
+      hasRichProfile: true,
+      matureCaution: true,
+    })
+    expect(result.score).toBeGreaterThanOrEqual(36)
+    expect(result.level).toBe("moderate")
+    expect(result.ageWarning).toBe(false)
+  })
+
+  it("matureCaution does not override a real age warning", () => {
+    // A 9-year-old on a 13+ movie with mature content: the age warning is the
+    // stronger signal and must win, even if matureCaution is also true.
+    const result = applyFitGuardrails({
+      score: 100,
+      memberAge: 9,
+      expertAgeRec: 13,
+      hasRichProfile: true,
+      matureCaution: true,
+    })
+    expect(result.ageWarning).toBe(true)
+    expect(result.score).toBeLessThanOrEqual(30)
+    expect(result.level).toBe("poor")
+  })
+
+  it("matureCaution leaves a healthy score alone", () => {
+    const result = applyFitGuardrails({
+      score: 80,
+      memberAge: 15,
+      expertAgeRec: 10,
+      hasRichProfile: true,
+      matureCaution: true,
+    })
+    expect(result.score).toBe(80)
   })
 })
 

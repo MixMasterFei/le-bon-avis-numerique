@@ -196,6 +196,7 @@ export async function POST(request: NextRequest) {
           hasRichProfile: hasPreferences,
           hasYouthAppeal,
           adultLeaning,
+          matureCaution: maturePenalty.severity === "caution",
         })
 
         // Hard age gate: never show a child on content rated 2+ years above their age
