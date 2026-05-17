@@ -16,9 +16,9 @@ import { isFraunces } from "@/components/home-v2/apercuTheme"
 import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
-import { Prisma } from "@prisma/client"
+import { Prisma, type ImageSourceType } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
-import { isFallbackCardUrl } from "@/lib/news-image"
+import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 
 export const dynamic = "force-dynamic"
@@ -31,6 +31,8 @@ const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
 interface SearchParams {
   font?: string
 }
+
+type NewsImagePolicy = "asStored" | "safeFallback"
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   if (!Array.isArray(raw)) return []
@@ -88,6 +90,7 @@ type StoryRow = {
   imageUrl: string
   imageCredit: string | null
   imageLicenseUrl: string | null
+  imageSourceType: ImageSourceType | null
   category: ApercuNewsCardData["category"]
   publishedAt: Date
   relevanceScore: number
@@ -98,14 +101,34 @@ type StoryRow = {
   topicCluster?: string | null
 }
 
-function rowToCard(row: StoryRow): ApercuNewsCardData {
+function isSafeStoredImage(row: StoryRow): boolean {
+  return (
+    row.imageSourceType === "STOCK" ||
+    row.imageSourceType === "AGENCY" ||
+    row.imageSourceType === "FALLBACK" ||
+    isFallbackCardUrl(row.imageUrl)
+  )
+}
+
+export default async function ApercuDecouverteV3Page(props: {
+  searchParams?: Promise<SearchParams>
+}) {
+  return renderApercuDecouvertePage(props)
+}
+
+function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): ApercuNewsCardData {
+  const safeFallback =
+    imagePolicy === "safeFallback" && !isSafeStoredImage(row)
+      ? fallbackCard(row.category, row.title)
+      : null
+
   return {
     slug: row.slug,
     title: row.title,
     summary: row.summary,
-    imageUrl: row.imageUrl,
-    imageCredit: row.imageCredit,
-    imageLicenseUrl: row.imageLicenseUrl,
+    imageUrl: safeFallback?.url ?? row.imageUrl,
+    imageCredit: safeFallback?.credit ?? row.imageCredit,
+    imageLicenseUrl: safeFallback?.licenseUrl ?? row.imageLicenseUrl,
     category: row.category,
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
@@ -313,17 +336,19 @@ const CURATED_ETUDES: EtudeRef[] = [
   },
 ]
 
-export default async function ApercuDecouverteV3Page(props: {
+export async function renderApercuDecouvertePage(props: {
   searchParams?: Promise<SearchParams>
-}) {
+}, options: { imagePolicy?: NewsImagePolicy; callbackUrl?: string } = {}) {
+  const callbackUrl = options.callbackUrl ?? "/apercudecouverte-v3"
+  const imagePolicy = options.imagePolicy ?? "asStored"
   let session
   try {
     session = await auth()
   } catch {
-    redirect("/connexion?callbackUrl=/apercudecouverte-v3")
+    redirect(`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`)
   }
   if (!session?.user?.id) {
-    redirect("/connexion?callbackUrl=/apercudecouverte-v3")
+    redirect(`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`)
   }
 
   const searchParams = await props.searchParams
@@ -401,7 +426,7 @@ export default async function ApercuDecouverteV3Page(props: {
       take: 18,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
         // Editorial supervision tags — fed into balanceNewsForFeed
         // below so the hero is never a grave story and we never stack
@@ -430,7 +455,7 @@ export default async function ApercuDecouverteV3Page(props: {
       take: SECTION_BACKFILL_POOL,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
         editorialTone: true, topicCluster: true,
       },
@@ -445,7 +470,7 @@ export default async function ApercuDecouverteV3Page(props: {
       take: SECTION_BACKFILL_POOL,
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe("techRows", [] as StoryRow[])),
@@ -463,7 +488,7 @@ export default async function ApercuDecouverteV3Page(props: {
       orderBy: { publishedAt: "desc" },
       select: {
         id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true,
+        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
         category: true, publishedAt: true, relevanceScore: true, sources: true,
       },
     }).catch(safe<StoryRow | null>("dossierRow", null)),
@@ -545,14 +570,14 @@ export default async function ApercuDecouverteV3Page(props: {
     const cards: ApercuNewsCardData[] = []
     for (const row of rows) {
       if (cards.length >= target) break
-      const card = claim(rowToCard(row))
+      const card = claim(rowToCard(row, imagePolicy))
       if (card) cards.push(card)
     }
     return cards
   }
 
-  const dossierCard = dossierRow ? claim(rowToCard(dossierRow)) : null
-  const heroCard = frenchHero ? claim(rowToCard(frenchHero)) : null
+  const dossierCard = dossierRow ? claim(rowToCard(dossierRow, imagePolicy)) : null
+  const heroCard = frenchHero ? claim(rowToCard(frenchHero, imagePolicy)) : null
 
   // Backfill loop: walk frenchRest in chronological order, accumulate
   // up to 3 surviving (post-dedup) cards into topCards, then push the
@@ -571,7 +596,7 @@ export default async function ApercuDecouverteV3Page(props: {
   const topPickedIds = new Set<string>()
   for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
     if (topCards.length >= TOP_TARGET) break
-    const card = claim(rowToCard(row))
+    const card = claim(rowToCard(row, imagePolicy))
     if (!card) continue
     topCards.push(card)
     topPickedIds.add(row.id)
@@ -579,7 +604,7 @@ export default async function ApercuDecouverteV3Page(props: {
 
   for (const row of frenchRest) {
     if (topPickedIds.has(row.id)) continue
-    const card = claim(rowToCard(row))
+    const card = claim(rowToCard(row, imagePolicy))
     if (!card) continue
     olderCards.push(card)
   }
