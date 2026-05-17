@@ -30,6 +30,23 @@ const ALIASES: Record<string, string> = {
   "science fiction": "science-fiction",
   "sci-fi": "science-fiction",
   "scifi": "science-fiction",
+  // Game-native genres. IGDB writes English ("Strategy", "Simulator",
+  // "Platform"); the quiz lets parents pick the French names. Aliases
+  // collapse both into the same canonical key so a "Stratégie" pick
+  // actually boosts strategy games.
+  "strategy": "strategie",
+  "real time strategy (rts)": "strategie",
+  "turn-based strategy (tbs)": "strategie",
+  "simulator": "simulation",
+  "platform": "plateforme",
+  "racing": "course",
+  "role-playing (rpg)": "rpg",
+  "jeu de role": "rpg",
+  "puzzle": "puzzle",
+  "sport": "sport",
+  "fighting": "combat",
+  "shooter": "tir",
+  "hack and slash/beat 'em up": "combat",
   // Common topic dupes
   "education": "educatif",
   "educational": "educatif",

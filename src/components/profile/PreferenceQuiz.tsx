@@ -12,6 +12,7 @@ import {
   Heart,
   Sparkles,
   Bookmark,
+  Gamepad2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,10 +29,28 @@ import { cn } from "@/lib/utils"
 // source: "quiz_anchor".
 // ---------------------------------------------------------------------------
 
+// Universal media-genre picker — covers films, TV, and games. The
+// game-native entries at the end (Plateforme, Stratégie, etc.) match
+// English IGDB tags via vocabulary.ts's FR↔EN alias map so ticking
+// "Stratégie" actually boosts strategy games in the catalog.
 const GENRES = [
   "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
   "Famille", "Action", "Documentaire", "Musical", "Drame",
   "Romance", "Thriller", "Horreur",
+  // Game-native genres
+  "Plateforme", "Stratégie", "Simulation", "RPG", "Sport", "Course", "Puzzle",
+]
+
+// Gameplay-style options. Stored as-is into the existing preferredTones
+// String[] column (no schema migration). Not yet wired into the scoring
+// formula — captured now so the data is ready when the game-enrichment
+// surfaces multiplayer/coop tags on MediaItem.topics. Documented so the
+// next contributor sees the deferred wiring.
+const GAMEPLAY_STYLES: { value: string; label: string; emoji: string }[] = [
+  { value: "Jeu solo", label: "Solo", emoji: "🎮" },
+  { value: "Jeu coop", label: "En coop", emoji: "🤝" },
+  { value: "Jeu en famille", label: "En famille (canapé)", emoji: "🛋️" },
+  { value: "Jeu compétitif", label: "Compétitif en ligne", emoji: "🏆" },
 ]
 
 const POSITIVE_TONES: { value: string; label: string }[] = [
@@ -87,6 +106,7 @@ type StepId =
   | "sensitivity-language"
   | "sensitivity-sexual"
   | "positive-tones"
+  | "gameplay-style"
   | "anchor-titles"
 
 interface StepDef {
@@ -103,6 +123,7 @@ const ALL_STEPS: StepDef[] = [
   { id: "sensitivity-language", section: "Tolérance", sectionIcon: <Shield className="h-5 w-5" /> },
   { id: "sensitivity-sexual", section: "Tolérance", sectionIcon: <Shield className="h-5 w-5" /> },
   { id: "positive-tones", section: "Ce qui compte", sectionIcon: <Heart className="h-5 w-5" /> },
+  { id: "gameplay-style", section: "Côté jeux", sectionIcon: <Gamepad2 className="h-5 w-5" /> },
   { id: "anchor-titles", section: "Titres repères", sectionIcon: <Bookmark className="h-5 w-5" /> },
 ]
 
@@ -146,6 +167,11 @@ function copyForStep(step: StepId, mode: Mode, name: string): { title: string; s
           title: `Qu'attend ${name} le plus souvent d'un film ou d'une série ?`,
           subtitle: "Plusieurs réponses possibles",
         }
+      case "gameplay-style":
+        return {
+          title: `Comment ${name} aime-t-il jouer ?`,
+          subtitle: `Plusieurs réponses possibles — laissez vide si ${name} ne joue pas`,
+        }
       case "anchor-titles":
         return {
           title: `Quels titres définissent ${name} ?`,
@@ -172,6 +198,11 @@ function copyForStep(step: StepId, mode: Mode, name: string): { title: string; s
       return {
         title: "Qu'attendez-vous le plus souvent d'un film ou d'une série ?",
         subtitle: "Plusieurs réponses possibles",
+      }
+    case "gameplay-style":
+      return {
+        title: "Comment aimez-vous jouer ?",
+        subtitle: "Plusieurs réponses possibles — laissez vide si vous ne jouez pas",
       }
     case "anchor-titles":
       return {
@@ -489,6 +520,27 @@ export function PreferenceQuiz({
             </div>
           )}
 
+          {step.id === "gameplay-style" && (
+            <div className="flex flex-wrap gap-2">
+              {GAMEPLAY_STYLES.map((style) => (
+                <button
+                  key={style.value}
+                  onClick={() => toggleTone(style.value)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-sm font-medium transition-all border-2 flex items-center gap-1.5",
+                    answers.preferredTones.includes(style.value)
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-primary/50",
+                  )}
+                >
+                  <span aria-hidden>{style.emoji}</span>
+                  {answers.preferredTones.includes(style.value) && "✓ "}
+                  {style.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {step.id === "anchor-titles" && (
             <div className="space-y-6">
               <div>
@@ -538,7 +590,7 @@ export function PreferenceQuiz({
 
         {currentStep < totalSteps - 1 ? (
           <Button onClick={goNext} className="gap-1">
-            {step.id === "anchor-titles" ? "Passer" : "Suivant"}
+            Suivant
             <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
@@ -546,6 +598,30 @@ export function PreferenceQuiz({
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Terminer
           </Button>
+        )}
+      </div>
+
+      {/* Global skip — visible on every step. Skipping means "leave the
+          default / no opinion" rather than answering. For the last step we
+          let the user finish without filling anchors. */}
+      <div className="flex justify-center">
+        {currentStep < totalSteps - 1 ? (
+          <button
+            type="button"
+            onClick={goNext}
+            className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2"
+          >
+            Passer cette étape
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2 disabled:opacity-50"
+          >
+            Terminer sans ajouter de titres
+          </button>
         )}
       </div>
     </div>

@@ -199,6 +199,25 @@ describe("computeGenreScore disliked-genre handling", () => {
     expect(score).toBeGreaterThan(0)
     expect(score).toBeLessThan(0.5)
   })
+
+  it("matches FR quiz picks against EN IGDB catalog tags via the alias map", () => {
+    // The quiz writes French ("Stratégie", "Simulation"); IGDB writes
+    // English ("Strategy", "Simulator"). Vocabulary normalization collapses
+    // both into the same canonical key so ticking "Stratégie" actually
+    // boosts strategy games. Without this the game-genre additions in the
+    // quiz would be cosmetic only.
+    expect(computeGenreScore(["Strategy"], ["Stratégie"], [])).toBe(1)
+    expect(computeGenreScore(["Simulator"], ["Simulation"], [])).toBe(1)
+    expect(computeGenreScore(["Platform"], ["Plateforme"], [])).toBe(1)
+    expect(computeGenreScore(["Role-playing (RPG)"], ["RPG"], [])).toBe(1)
+    expect(computeGenreScore(["Racing"], ["Course"], [])).toBe(1)
+  })
+
+  it("respects FR dislikes against EN catalog tags too", () => {
+    // Symmetric to the favorites path — disliking "Stratégie" must still
+    // hard-zero a "Strategy" game.
+    expect(computeGenreScore(["Strategy"], [], ["Stratégie"])).toBe(0)
+  })
 })
 
 describe("computeAgeScore raw score (display caps live in applyFitGuardrails)", () => {

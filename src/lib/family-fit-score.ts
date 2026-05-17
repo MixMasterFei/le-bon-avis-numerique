@@ -1,4 +1,5 @@
 import { FAMILY_VIP_BRAND_TOPICS_LOWER } from "@/lib/family-vip-brands"
+import { normalizeTag } from "@/lib/preference-vector/vocabulary"
 
 export type FitLevel = "excellent" | "good" | "moderate" | "poor"
 
@@ -226,7 +227,10 @@ export function computeSensitivityScore(
 export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[], dislikedGenres: string[] = []): number {
   if (favoriteGenres.length === 0 && dislikedGenres.length === 0) return 0.5
 
-  const normalise = (s: string) => s.toLowerCase().trim()
+  // Use vocabulary normalization (lowercase + accent-fold + FR/EN alias) so a
+  // quiz pick like "Stratégie" matches the IGDB catalog's English "Strategy".
+  // Plain lowercase used to silently fail across languages.
+  const normalise = (s: string) => normalizeTag(s)
   const mediaSet = new Set(mediaGenres.map(normalise))
 
   // Hard-zero ONLY when an explicit dislike matches. The quiz UI presents this
