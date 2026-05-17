@@ -5,6 +5,7 @@ import {
   computeGenreScore,
   computeMatureContentPenalty,
   computeSensitivityScore,
+  computeWeightedFitScore,
   hasRichProfile,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
@@ -453,6 +454,72 @@ describe("computeMatureContentPenalty — Phase 0.1(b): respects member sensitiv
       )
       expect(penalty.severity).toBe(c.expectSeverity)
     }
+  })
+})
+
+describe("computeWeightedFitScore — Phase 2.2 hard gates + personalizedScore", () => {
+  const PERFECT_NON_GENRE = {
+    ageScore: 1,
+    sensitivityScore: 1,
+    interestsScore: 1,
+    affinityScore: 1,
+    toneScore: 1,
+    positiveScore: 1,
+    avoidScore: 1,
+  }
+
+  it("hard-gates a dislikedGenre match (genreScore=0) regardless of other strengths", () => {
+    const score = computeWeightedFitScore({
+      ...PERFECT_NON_GENRE,
+      genreScore: 0,
+      personalizedScore: 1, // cosine wants to rescue — must not
+    })
+    expect(score).toBeLessThanOrEqual(15)
+  })
+
+  it("hard-gates an avoid-topic match (avoidScore=0) regardless of cosine", () => {
+    const score = computeWeightedFitScore({
+      ...PERFECT_NON_GENRE,
+      genreScore: 1,
+      avoidScore: 0,
+      personalizedScore: 1,
+    })
+    expect(score).toBeLessThanOrEqual(15)
+  })
+
+  it("includes the cosine term with ~10% weight when no hard gate fires", () => {
+    const high = computeWeightedFitScore({
+      ageScore: 0.7,
+      sensitivityScore: 0.7,
+      genreScore: 0.7,
+      interestsScore: 0.7,
+      affinityScore: 0.7,
+      toneScore: 0.7,
+      positiveScore: 0.7,
+      avoidScore: 0.7,
+      personalizedScore: 1.0,
+    })
+    const low = computeWeightedFitScore({
+      ageScore: 0.7,
+      sensitivityScore: 0.7,
+      genreScore: 0.7,
+      interestsScore: 0.7,
+      affinityScore: 0.7,
+      toneScore: 0.7,
+      positiveScore: 0.7,
+      avoidScore: 0.7,
+      personalizedScore: 0.0,
+    })
+    // The cosine term swings the score by ~10 points (10% weight × 100 scale).
+    expect(high - low).toBeGreaterThan(7)
+    expect(high - low).toBeLessThan(13)
+  })
+
+  it("defaults personalizedScore to neutral 0.5 when omitted (no regression vs old callers)", () => {
+    const baseline = { ...PERFECT_NON_GENRE, genreScore: 1 }
+    const omitted = computeWeightedFitScore(baseline)
+    const explicit = computeWeightedFitScore({ ...baseline, personalizedScore: 0.5 })
+    expect(omitted).toBe(explicit)
   })
 })
 

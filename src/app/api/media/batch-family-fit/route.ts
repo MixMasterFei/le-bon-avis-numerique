@@ -30,6 +30,12 @@ import {
   type PreferenceVerdict,
   type PreferencePillar,
 } from "@/lib/family-fit-display"
+import {
+  personalizedScore as computePersonalizedScore,
+  effectiveSensitivityVector,
+  EMPTY_VECTOR,
+  type MemberVector,
+} from "@/lib/preference-vector"
 
 // ---------------------------------------------------------------------------
 // Batch Family Fit API
@@ -132,17 +138,32 @@ export async function POST(request: NextRequest) {
         const memberAge = getMemberAge(member.birthYear, member.birthMonth)
         const hasPreferences = hasRichProfile(member)
 
+        // Phase 2: persisted behavioral vector (cold-start = neutral).
+        const memberVector = (member.memberVector as unknown as MemberVector | null) ?? EMPTY_VECTOR
+        const effSens = effectiveSensitivityVector(
+          {
+            violence: member.sensitivityViolence,
+            sexual: member.sensitivitySexual,
+            language: member.sensitivityLanguage,
+            substances: member.sensitivitySubstances,
+          },
+          memberVector.observedTolerances,
+        )
+
         const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating, media.genres, media.topics)
 
-        // Mature content penalty applies regardless of quiz completion
+        // Mature content penalty applies regardless of quiz completion. Reads
+        // the effective sensitivity so a member who LOVED several violent
+        // titles stops getting flagged when their behavior already confirmed
+        // their tolerance.
         const maturePenalty = computeMatureContentPenalty(
           media.genres,
           { violence: metrics.violence, sexNudity: metrics.sexNudity },
           media.expertAgeRec,
           memberAge,
           {
-            violence: member.sensitivityViolence,
-            sexual: member.sensitivitySexual,
+            violence: effSens.violence,
+            sexual: effSens.sexual,
           },
         )
 
@@ -176,6 +197,11 @@ export async function POST(request: NextRequest) {
             media.topics
           )
 
+          const personalized = computePersonalizedScore(memberVector, {
+            genres: media.genres,
+            topics: media.topics,
+            toneTags: (metrics.toneTags ?? []) as string[],
+          })
           rawScore = clampScore(
             computeWeightedFitScore({
               ageScore,
@@ -186,6 +212,7 @@ export async function POST(request: NextRequest) {
               toneScore,
               positiveScore,
               avoidScore,
+              personalizedScore: personalized,
             }) * maturePenalty.multiplier
           )
         }

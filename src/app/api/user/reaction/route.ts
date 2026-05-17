@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { recomputeMemberVectorSafe } from "@/lib/preference-vector/recompute"
 
 // GET /api/user/reaction?mediaId=xxx - Get reactions for a media item by user's family
 export async function GET(request: NextRequest) {
@@ -120,6 +121,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Phase 2: refresh the behavioral preference vector. Safe variant —
+    // errors here must not fail the reaction write itself.
+    await recomputeMemberVectorSafe(familyMemberId)
+
     return NextResponse.json({ reaction: mediaReaction })
   } catch (error) {
     console.error("Error saving reaction:", error)
@@ -161,6 +166,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.mediaReaction.deleteMany({
       where: { familyMemberId, mediaId },
     })
+
+    // Phase 2: a removed reaction can also shift the vector.
+    await recomputeMemberVectorSafe(familyMemberId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

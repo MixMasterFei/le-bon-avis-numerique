@@ -28,7 +28,31 @@ export interface FitPreferenceScores {
   toneScore: number
   positiveScore: number
   avoidScore: number
+  // Phase 2 — cosine similarity of the media vector vs. the member's
+  // behavioral preference vector. Optional so old callers that haven't
+  // wired it yet keep working (neutral 0.5 = no impact on rank).
+  personalizedScore?: number
 }
+
+// Phase 2 weights for the weighted fit score. Exported so the
+// Member Corner transparency panel can render "X% contribution from
+// behavioral profile" if we ever want that, and so tests can pin them.
+// Tuning rationale:
+//   • age + sensitivity stay the dominant signals (mature gates live there).
+//   • personalized starts at 10% — enough to differentiate two members with
+//     similar quiz answers but different histories, but not so much that it
+//     can rescue a disliked-genre title (the hard gate runs first below).
+export const FIT_WEIGHTS = {
+  ageScore: 0.28,
+  sensitivityScore: 0.22,
+  genreScore: 0.10,
+  interestsScore: 0.08,
+  affinityScore: 0.08,
+  toneScore: 0.05,
+  positiveScore: 0.04,
+  avoidScore: 0.05,
+  personalizedScore: 0.10,
+} as const
 
 export interface FitGuardrailResult {
   score: number
@@ -428,15 +452,31 @@ export function isFamilyWarningContent(
 }
 
 export function computeWeightedFitScore(scores: FitPreferenceScores): number {
+  // Hard gates take precedence — cosine similarity must NOT rescue a title
+  // that the member has explicitly opted out of. Order of operations:
+  //   1. dislikedGenres match → genreScore is 0 (set upstream by
+  //      computeGenreScore as of `486da46`); we short-circuit to a clamped
+  //      low score so the title displays as Avoid in the preference pillar.
+  //   2. avoidTopics match → avoidScore is 0; same short-circuit.
+  //   3. Otherwise, normal weighted sum including the optional cosine term.
+  if (scores.genreScore === 0 || scores.avoidScore === 0) {
+    // Floor at 10 — well below the "À vérifier" band so the badge stays Avoid,
+    // and the legacy level mapping lands on "poor".
+    return clampScore(10)
+  }
+
+  const personalized = scores.personalizedScore ?? 0.5
+
   return clampScore(
-    (scores.ageScore * 0.30 +
-      scores.sensitivityScore * 0.25 +
-      scores.genreScore * 0.10 +
-      scores.interestsScore * 0.10 +
-      scores.affinityScore * 0.10 +
-      scores.toneScore * 0.05 +
-      scores.positiveScore * 0.05 +
-      scores.avoidScore * 0.05) *
+    (scores.ageScore * FIT_WEIGHTS.ageScore +
+      scores.sensitivityScore * FIT_WEIGHTS.sensitivityScore +
+      scores.genreScore * FIT_WEIGHTS.genreScore +
+      scores.interestsScore * FIT_WEIGHTS.interestsScore +
+      scores.affinityScore * FIT_WEIGHTS.affinityScore +
+      scores.toneScore * FIT_WEIGHTS.toneScore +
+      scores.positiveScore * FIT_WEIGHTS.positiveScore +
+      scores.avoidScore * FIT_WEIGHTS.avoidScore +
+      personalized * FIT_WEIGHTS.personalizedScore) *
       100,
   )
 }

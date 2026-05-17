@@ -33,6 +33,11 @@ import { CompletionMeter } from "./CompletionMeter"
 import { InterestsEditor } from "./InterestsEditor"
 import { MediaSearchAdd } from "./MediaSearchAdd"
 import { QuizAnchorPicker, type AnchorEntry } from "./QuizAnchorPicker"
+import {
+  topInferredPreferences,
+  effectiveSensitivity,
+  type MemberVector,
+} from "@/lib/preference-vector"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -81,6 +86,7 @@ interface MemberData {
   avoidTopics: string[]
   useCustomSettings: boolean
   reactions: Reaction[]
+  memberVector?: MemberVector | null
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +194,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           avoidTopics: prefs?.avoidTopics ?? [],
           useCustomSettings: prefs?.useCustomSettings ?? false,
           reactions: fm.reactions ?? [],
+          memberVector: (fm.memberVector as MemberVector | null) ?? null,
         })
       } catch {
         setError("Erreur de connexion")
@@ -587,6 +594,21 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             </CardContent>
           </Card>
 
+          {/* Phase 2 transparency — only renders once the member has enough
+              evidence for the vector to mean anything. */}
+          {member.memberVector && member.memberVector.evidenceCount >= 3 && (
+            <BehavioralProfilePanel
+              memberName={member.name}
+              vector={member.memberVector}
+              statedSensitivity={{
+                violence: member.sensitivityViolence,
+                sexual: member.sensitivitySexual,
+                language: member.sensitivityLanguage,
+                substances: member.sensitivitySubstances,
+              }}
+            />
+          )}
+
           {/* Recent activity — organic reactions only (quiz anchors are
               declarations, not watch events). */}
           {organicReactions.length > 0 && (
@@ -980,5 +1002,120 @@ function PreferenceRow({ label, value }: { label: string; value: number }) {
         <span className="text-xs text-gray-500 w-28 text-right">{PREFERENCE_LABELS[value]}</span>
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// BehavioralProfilePanel — Phase 2.4
+//
+// Surfaces the member's inferred preferences + tolerance learnings from the
+// preference vector. Only renders once evidence ≥ 3 LOVED/LIKED reactions
+// so the panel never lies with thin data.
+// ---------------------------------------------------------------------------
+
+const AXIS_LABELS: Record<"genre" | "topic" | "tone", string> = {
+  genre: "Genre",
+  topic: "Sujet",
+  tone: "Ambiance",
+}
+
+const SENSITIVITY_AXIS_LABELS: Record<string, string> = {
+  violence: "Violence",
+  sexual: "Scènes intimes",
+  language: "Langage cru",
+  substances: "Substances",
+}
+
+function BehavioralProfilePanel({
+  memberName,
+  vector,
+  statedSensitivity,
+}: {
+  memberName: string
+  vector: MemberVector
+  statedSensitivity: {
+    violence: number
+    sexual: number
+    language: number
+    substances: number
+  }
+}) {
+  const top = topInferredPreferences(vector, 3)
+
+  // Diff stated vs effective sensitivity on each axis — show only meaningful
+  // changes (at least one step), one row per axis where it diverges.
+  const tolDiff: { axis: string; stated: number; effective: number }[] = []
+  const pairs = [
+    ["violence", statedSensitivity.violence, vector.observedTolerances.violence] as const,
+    ["sexual", statedSensitivity.sexual, vector.observedTolerances.sexNudity] as const,
+    ["language", statedSensitivity.language, vector.observedTolerances.language] as const,
+    ["substances", statedSensitivity.substances, vector.observedTolerances.substanceUse] as const,
+  ]
+  for (const [axis, stated, observed] of pairs) {
+    const eff = effectiveSensitivity(stated, observed)
+    if (eff !== stated) {
+      tolDiff.push({ axis, stated, effective: eff })
+    }
+  }
+
+  if (top.length === 0 && tolDiff.length === 0) return null
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-violet-500" />
+          Comment {memberName} a évolué
+        </CardTitle>
+        <p className="text-xs text-gray-500 mt-1">
+          Profil affiné par {vector.evidenceCount} réaction{vector.evidenceCount > 1 ? "s" : ""} marquante{vector.evidenceCount > 1 ? "s" : ""}.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {top.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+              Préférences apprises
+            </h4>
+            <ul className="space-y-1.5">
+              {top.map((pref) => (
+                <li key={`${pref.axis}-${pref.key}`} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-400 w-14 flex-shrink-0">
+                      {AXIS_LABELS[pref.axis]}
+                    </span>
+                    <span className="text-sm text-gray-800 truncate capitalize">{pref.key}</span>
+                  </div>
+                  <span className="text-xs text-violet-600 font-medium flex-shrink-0">
+                    +{pref.weight.toFixed(1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {tolDiff.length > 0 && (
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+              Tolérances ajustées
+            </h4>
+            <ul className="space-y-1.5">
+              {tolDiff.map((d) => (
+                <li key={d.axis} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-gray-700">{SENSITIVITY_AXIS_LABELS[d.axis] ?? d.axis}</span>
+                  <span className="text-xs text-gray-500">
+                    Annoncé <span className="font-medium">{d.stated}</span> → effectif <span className="font-medium text-emerald-600">{d.effective}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-[11px] text-gray-400 italic mt-2">
+              Les réactions de {memberName} ont assoupli ces seuils d&apos;une étape — toujours dans la limite de ce que vous avez déclaré.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
