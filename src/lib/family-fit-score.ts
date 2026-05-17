@@ -229,9 +229,13 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
   const normalise = (s: string) => s.toLowerCase().trim()
   const mediaSet = new Set(mediaGenres.map(normalise))
 
-  // Hard-zero when any disliked genre matches. The quiz UI presents this as a
-  // categorical "do not want" choice — a soft penalty here let horror leak
-  // through favorite-genre boosts.
+  // Hard-zero ONLY when an explicit dislike matches. The quiz UI presents this
+  // as a categorical "do not want" choice — a soft penalty here let horror
+  // leak through favorite-genre boosts. The exact `0` value is also the
+  // sentinel that `computeWeightedFitScore` and the preference-pillar logic
+  // read as "hard reject"; reserving it strictly for dislikes is what keeps
+  // the avatar pill ("avoid") from firing on genres that simply weren't
+  // ticked as favorites (e.g. Simulator on a kid who picked Animation).
   if (dislikedGenres.length > 0) {
     const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g))).length
     if (dislikedMatches > 0) return 0
@@ -239,6 +243,13 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
 
   if (favoriteGenres.length > 0) {
     const matching = favoriteGenres.filter((g) => mediaSet.has(normalise(g))).length
+    if (matching === 0) {
+      // No favorite-genre overlap is an *absent* positive signal, not a
+      // categorical reject. Return a neutral-low value so the weighted-fit
+      // sum reflects the missing match without short-circuiting the title
+      // out of the member's avatar pills.
+      return 0.35
+    }
     return Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
   }
 

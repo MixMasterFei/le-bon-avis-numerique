@@ -189,6 +189,16 @@ describe("computeGenreScore disliked-genre handling", () => {
   it("returns the neutral 0.5 when there are no preferences", () => {
     expect(computeGenreScore(["Animation"], [], [])).toBe(0.5)
   })
+
+  it("returns a non-zero floor when favorites are set but none overlap", () => {
+    // Regression: Tomodachi (Simulator) on a kid whose favorites are
+    // Animation/Action/Comédie used to return 0, which then collided with the
+    // explicit-dislike sentinel and dropped them from avatar pills. The
+    // missing positive signal must NOT trigger the hard-reject path.
+    const score = computeGenreScore(["Simulator"], ["Animation", "Action", "Comédie"], ["Horreur"])
+    expect(score).toBeGreaterThan(0)
+    expect(score).toBeLessThan(0.5)
+  })
 })
 
 describe("computeAgeScore raw score (display caps live in applyFitGuardrails)", () => {
