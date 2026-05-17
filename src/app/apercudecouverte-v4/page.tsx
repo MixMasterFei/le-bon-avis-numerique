@@ -5,7 +5,7 @@ interface SearchParams {
 }
 
 // V4 is intentionally a visual A/B variant of V3: same component tree,
-// same layout, but media cards use the strict legal-safe image policy.
+// same layout, but fallback media cards try contextual legal stock first.
 export const dynamic = "force-dynamic"
 
 export default async function ApercuDecouverteV4Page(props: {
@@ -13,6 +13,6 @@ export default async function ApercuDecouverteV4Page(props: {
 }) {
   return renderApercuDecouvertePage(props, {
     callbackUrl: "/apercudecouverte-v4",
-    imagePolicy: "safeFallback",
+    imagePolicy: "stockThenFallback",
   })
 }

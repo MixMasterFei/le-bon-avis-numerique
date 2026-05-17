@@ -20,6 +20,7 @@ import { Prisma, type ImageSourceType } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
+import { findContextualStockPhoto } from "@/lib/stock-photo"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -32,7 +33,7 @@ interface SearchParams {
   font?: string
 }
 
-type NewsImagePolicy = "asStored" | "safeFallback"
+type NewsImagePolicy = "asStored" | "safeFallback" | "stockThenFallback"
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   if (!Array.isArray(raw)) return []
@@ -117,9 +118,39 @@ export default async function ApercuDecouverteV3Page(props: {
   return renderApercuDecouvertePage(props)
 }
 
-function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): ApercuNewsCardData {
+function shouldTryStockImage(row: StoryRow, imagePolicy: NewsImagePolicy): boolean {
+  return (
+    imagePolicy === "stockThenFallback" &&
+    (row.imageSourceType === "FALLBACK" ||
+      isFallbackCardUrl(row.imageUrl) ||
+      !isSafeStoredImage(row))
+  )
+}
+
+async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): Promise<ApercuNewsCardData> {
+  if (shouldTryStockImage(row, imagePolicy)) {
+    const stock = await findContextualStockPhoto({
+      title: row.title,
+      summary: row.summary,
+      category: row.category,
+    })
+    if (stock) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: stock.url,
+        imageCredit: stock.credit,
+        imageLicenseUrl: stock.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+  }
+
   const safeFallback =
-    imagePolicy === "safeFallback" && !isSafeStoredImage(row)
+    imagePolicy !== "asStored" && !isSafeStoredImage(row)
       ? fallbackCard(row.category, row.title)
       : null
 
@@ -564,21 +595,21 @@ export async function renderApercuDecouvertePage(props: {
     return card
   }
 
-  const claimSectionRows = (
+  const claimSectionRows = async (
     rows: StoryRow[],
     target = SECTION_CARD_TARGET,
-  ): ApercuNewsCardData[] => {
+  ): Promise<ApercuNewsCardData[]> => {
     const cards: ApercuNewsCardData[] = []
     for (const row of rows) {
       if (cards.length >= target) break
-      const card = claim(rowToCard(row, imagePolicy))
+      const card = claim(await rowToCard(row, imagePolicy))
       if (card) cards.push(card)
     }
     return cards
   }
 
-  const dossierCard = dossierRow ? claim(rowToCard(dossierRow, imagePolicy)) : null
-  const heroCard = frenchHero ? claim(rowToCard(frenchHero, imagePolicy)) : null
+  const dossierCard = dossierRow ? claim(await rowToCard(dossierRow, imagePolicy)) : null
+  const heroCard = frenchHero ? claim(await rowToCard(frenchHero, imagePolicy)) : null
 
   // Backfill loop: walk frenchRest in chronological order, accumulate
   // up to 3 surviving (post-dedup) cards into topCards, then push the
@@ -597,7 +628,7 @@ export async function renderApercuDecouvertePage(props: {
   const topPickedIds = new Set<string>()
   for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
     if (topCards.length >= TOP_TARGET) break
-    const card = claim(rowToCard(row, imagePolicy))
+    const card = claim(await rowToCard(row, imagePolicy))
     if (!card) continue
     topCards.push(card)
     topPickedIds.add(row.id)
@@ -605,13 +636,13 @@ export async function renderApercuDecouvertePage(props: {
 
   for (const row of frenchRest) {
     if (topPickedIds.has(row.id)) continue
-    const card = claim(rowToCard(row, imagePolicy))
+    const card = claim(await rowToCard(row, imagePolicy))
     if (!card) continue
     olderCards.push(card)
   }
 
-  const intlCards = claimSectionRows(intlRows)
-  const techCards = claimSectionRows(techRows)
+  const intlCards = await claimSectionRows(intlRows)
+  const techCards = await claimSectionRows(techRows)
 
   // Freshness flag — true when the chosen hero is older than 36h.
   // Surfaces a small banner on the page so a stale state (cron stuck,
