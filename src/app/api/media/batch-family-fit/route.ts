@@ -76,9 +76,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({})
     }
 
-    // Fetch family members
+    // Fetch family members. createdAt:asc matches the canonical order used
+    // on the profile page + other listings, so the pills under each card
+    // always appear in the same left-to-right sequence (e.g. always Erwan,
+    // Mathis, Eliott). Without this, the per-media score sort shuffled them
+    // around and the grid was hard to read.
     const familyMembers = await prisma.familyMember.findMany({
       where: { userId: session.user.id },
+      orderBy: { createdAt: "asc" },
     })
 
     if (familyMembers.length === 0) {
@@ -297,8 +302,10 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Sort by score descending
-      fittingMembers.sort((a, b) => b.score - a.score)
+      // Intentionally NOT sorted by score — fittingMembers inherits the
+      // creation-order iteration above so members stay in the same column
+      // across every card on the page. Sorting by score made the row
+      // reshuffle on each card and the grid was unreadable.
 
       if (fittingMembers.length > 0 || familyWarning) {
         const entry: { members: MemberFit[]; familyWarning?: boolean; communityFlagged?: boolean } = {

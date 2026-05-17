@@ -198,9 +198,12 @@ export async function GET(
 
     const { id } = await params
 
-    // Fetch family members for the authenticated user
+    // Fetch family members in canonical creation order (matches the
+    // profile page + batch-family-fit route) so the detail-page pillar
+    // cards stay in the same sequence as the homepage rail.
     const familyMembers = await prisma.familyMember.findMany({
       where: { userId: session.user.id },
+      orderBy: { createdAt: "asc" },
     })
 
     if (familyMembers.length === 0) {
