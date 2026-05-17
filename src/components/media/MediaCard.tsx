@@ -228,18 +228,21 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             {media.type === "GAME" && media.platforms.length > 0 && (
               <PlatformIcons platforms={media.platforms} variant="compact" maxDisplay={3} className="mt-1" />
             )}
-            {/* Family fit avatars or warning */}
-            {familyFit?.familyWarning ? (
-              <div
-                className="flex items-center gap-1 text-[9px] text-orange-600 mt-1"
-                title={familyFit.communityFlagged ? "Signalé par les parents" : undefined}
-              >
-                <ShieldAlert className="h-3 w-3 shrink-0" />
-                <span className="font-medium">Attention{familyFit.communityFlagged ? "*" : ""}</span>
-              </div>
-            ) : familyFit && familyFit.members.length > 0 ? (
-              <FamilyFitAvatars members={familyFit.members} compact className="mt-1" />
-            ) : null}
+            {/* Family fit pills or warning — reserve a fixed-height slot
+                so the compact card row stays vertically aligned. */}
+            <div className="mt-1 min-h-[3.5rem]">
+              {familyFit?.familyWarning ? (
+                <div
+                  className="flex items-center gap-1 text-[9px] text-orange-600"
+                  title={familyFit.communityFlagged ? "Signalé par les parents" : undefined}
+                >
+                  <ShieldAlert className="h-3 w-3 shrink-0" />
+                  <span className="font-medium">Attention{familyFit.communityFlagged ? "*" : ""}</span>
+                </div>
+              ) : familyFit && familyFit.members.length > 0 ? (
+                <FamilyFitAvatars members={familyFit.members} compact />
+              ) : null}
+            </div>
           </div>
         </div>
       </Link>
@@ -352,8 +355,10 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             ))}
           </div>
 
-          {/* Family fit avatars or warning — pinned to bottom */}
-          <div className="mt-auto pt-1 min-h-[1.5rem]">
+          {/* Family fit pills or warning — pinned to bottom. Reserve enough
+              height for an avatar + name + 3-heart gauge stack so the row
+              stays aligned even when a card has no per-member fits. */}
+          <div className="mt-auto pt-1 min-h-[3.75rem]">
             {familyFit?.familyWarning ? (
               <div
                 className="flex items-center gap-1 text-[10px] text-orange-600"

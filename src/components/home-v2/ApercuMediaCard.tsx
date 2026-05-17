@@ -167,11 +167,14 @@ export function ApercuMediaCard({
           </div>
         )}
       </div>
-      {familyFit && familyFit.members.length > 0 && (
-        <div className="mt-1.5">
+      {/* Reserve a fixed-height slot so cards stay horizontally aligned in
+          the grid regardless of whether the per-member pills render. The
+          slot accommodates a single avatar + name + 3-heart gauge stack. */}
+      <div className="mt-1.5 min-h-[3.5rem]">
+        {familyFit && familyFit.members.length > 0 && (
           <FamilyFitAvatars members={familyFit.members} compact />
-        </div>
-      )}
+        )}
+      </div>
     </Link>
   )
 }

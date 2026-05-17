@@ -92,12 +92,13 @@ function ExpertPickCard({ item }: { item: ExpertPickItem }) {
           </div>
         </div>
 
-        {/* Family fit avatars below card */}
-        {familyFit && familyFit.members.length > 0 && (
-          <div className="mt-1.5">
+        {/* Family fit pills — reserve a fixed-height slot so all cards in
+            the rail stay vertically aligned even when some have no fits. */}
+        <div className="mt-1.5 min-h-[3.5rem]">
+          {familyFit && familyFit.members.length > 0 && (
             <FamilyFitAvatars members={familyFit.members} compact />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Link>
   )
