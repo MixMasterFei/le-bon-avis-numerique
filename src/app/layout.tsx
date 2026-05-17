@@ -24,16 +24,24 @@ const poppins = Poppins({
   variable: "--font-heading",
 })
 
+// Anton + Edunline are only used in the brand wordmark in the header /
+// footer — not in body content. They're below-the-fold for every meaningful
+// LCP candidate, so we drop them off the critical preload list to make room
+// for Fraunces (the homepage H1 font). The browser still loads them, just
+// without the auto-emitted <link rel="preload"> stealing bandwidth from the
+// LCP path.
 const anton = localFont({
   src: "../fonts/Anton-Regular.ttf",
   variable: "--font-anton",
   display: "swap",
+  preload: false,
 })
 
 const edunline = localFont({
   src: "../fonts/edunline.ttf",
   variable: "--font-edunline",
   display: "swap",
+  preload: false,
 })
 
 const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
