@@ -113,24 +113,21 @@ export async function POST(request: NextRequest) {
     for (const media of mediaItems) {
       const metrics = media.contentMetrics ?? DEFAULT_FIT_METRICS
 
-      // Community-driven warning: enough parent flags to trigger warning
+      // Household-level warning signals. We still compute per-member fits even
+      // when these fire — the cards that want to render an orange warning
+      // badge instead of avatars (legacy MediaCard) can read the flag, while
+      // the homepage v2 ApercuMediaCard renders avatars from `members`. This
+      // way a member who is genuinely a good fit (e.g. Erwan 14 with stated
+      // violence:0 on Avengers) still shows as an avatar instead of being
+      // silently dropped.
       const communityFlagCount = warningCountMap.get(media.id) || 0
-      if (communityFlagCount >= COMMUNITY_WARNING_THRESHOLD) {
-        result[media.id] = { members: [], familyWarning: true, communityFlagged: true }
-        continue
-      }
-
-      // Algorithmic family warning for mature/violent/horror content
-      if (hasMinor) {
-        if (isFamilyWarningContent(
-          media.genres,
-          { violence: metrics.violence, sexNudity: metrics.sexNudity, toneTags: (metrics.toneTags ?? []) as string[] },
-          media.expertAgeRec,
-        )) {
-          result[media.id] = { members: [], familyWarning: true }
-          continue
-        }
-      }
+      const communityFlagged = communityFlagCount >= COMMUNITY_WARNING_THRESHOLD
+      const algorithmicWarning = hasMinor && isFamilyWarningContent(
+        media.genres,
+        { violence: metrics.violence, sexNudity: metrics.sexNudity, toneTags: (metrics.toneTags ?? []) as string[] },
+        media.expertAgeRec,
+      )
+      const familyWarning = communityFlagged || algorithmicWarning
 
       const fittingMembers: MemberFit[] = []
 
@@ -169,6 +166,7 @@ export async function POST(request: NextRequest) {
 
         let rawScore: number
         let genreScore: number | undefined
+        let avoidScore: number | undefined
         let interestsScore: number | undefined
         let positiveScore: number | undefined
         if (!hasPreferences) {
@@ -180,7 +178,7 @@ export async function POST(request: NextRequest) {
             { sensitivityViolence: member.sensitivityViolence, sensitivitySexual: member.sensitivitySexual, sensitivityLanguage: member.sensitivityLanguage, sensitivitySubstances: member.sensitivitySubstances }
           )
           genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
-          const avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
+          avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
           const toneScore = computeToneScore(
             (metrics.toneTags ?? []) as string[],
             (metrics.pacing ?? null) as string | null,
@@ -242,51 +240,73 @@ export async function POST(request: NextRequest) {
           matureCaution: maturePenalty.severity === "caution",
         })
 
-        // Hard age gate: never show a child on content rated 2+ years above their age
-        if (media.expertAgeRec != null && memberAge != null && media.expertAgeRec >= memberAge + 2) {
-          continue
-        }
+        // Derive the two pillars first — they double as the inclusion gate.
+        // We deliberately do NOT filter on guarded.score anymore: avatars
+        // signal "this is the target audience", and the avatar ring color
+        // already encodes the fit band (very adapted / good / check). Older
+        // kids on younger-skewing content (e.g. Erwan 14 on Tomodachi 7+)
+        // were silently dropped by the old >=60 gate because ageScore tanks
+        // when the gap exceeds 3 years.
+        const ageVerdict = ageVerdictFromAges(memberAge, media.expertAgeRec)
 
-        // Adults always shown — universal-appeal content (Nintendo, Ghibli, etc.) is relevant to parents
+        // Preference pillar — mirrors the per-media route's
+        // preferencePillarFromSignals so that disliked-genre and avoid-topic
+        // hard short-circuits (computeWeightedFitScore floors at 10 when
+        // genreScore===0 or avoidScore===0) propagate as the "avoid" pillar.
+        // The previous inline logic missed these, so a member who quizzed
+        // "no horror" could still slip onto a Horror card's avatars.
+        let prefPillar: PreferencePillar
+        if (avoidScore === 0) prefPillar = "avoid"
+        else if (genreScore === 0) prefPillar = "avoid"
+        else if (maturePenalty.severity === "block") prefPillar = "avoid"
+        else if (!hasPreferences) prefPillar = "noProfile"
+        else if (maturePenalty.severity === "caution") prefPillar = "check"
+        else if (guarded.level === "moderate" || guarded.score < 66) prefPillar = "check"
+        else if (guarded.score >= 80) prefPillar = "love"
+        else prefPillar = "good"
 
-        // Only include members with decent fit (>= 60)
-        if (guarded.score >= 60 && !guarded.ageWarning) {
-          const ageVerdict = ageVerdictFromAges(memberAge, media.expertAgeRec)
-          const prefReasons: string[] = []
-          if (maturePenalty.reason) {
-            prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
-          }
-          let prefPillar: PreferencePillar = hasPreferences ? "good" : "noProfile"
-          if (maturePenalty.severity === "block") prefPillar = "avoid"
-          else if (maturePenalty.severity === "caution") prefPillar = "check"
-          else if (hasPreferences && guarded.score >= 80) prefPillar = "love"
-          const preferenceVerdict: PreferenceVerdict = {
-            pillar: prefPillar,
-            label: PREFERENCE_PILLAR_LABELS[prefPillar],
-            reasons: prefReasons,
-          }
-          fittingMembers.push({
-            id: member.id,
-            name: member.name,
-            emoji: member.avatarEmoji,
-            avatarStyle: member.avatarStyle,
-            avatarSeed: member.avatarSeed,
-            avatarOptions: member.avatarOptions as Record<string, unknown> | null,
-            score: guarded.score,
-            level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
-            reason: guarded.reasonOverride ?? maturePenalty.reason ?? undefined,
-            ageVerdict,
-            preferenceVerdict,
-            hasPreferences,
-          })
+        // Inclusion rule: every age-appropriate member who hasn't been
+        // explicitly ruled out by their preferences. We allow "borderline"
+        // (gap=1) so a 9-year-old on a 10+ title still appears with an amber
+        // ring — the badge will say "Limite d'âge" rather than hiding them.
+        if (ageVerdict.pillar === "tooEarly") continue
+        if (prefPillar === "avoid") continue
+
+        const prefReasons: string[] = []
+        if (maturePenalty.reason) {
+          prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
         }
+        const preferenceVerdict: PreferenceVerdict = {
+          pillar: prefPillar,
+          label: PREFERENCE_PILLAR_LABELS[prefPillar],
+          reasons: prefReasons,
+        }
+        fittingMembers.push({
+          id: member.id,
+          name: member.name,
+          emoji: member.avatarEmoji,
+          avatarStyle: member.avatarStyle,
+          avatarSeed: member.avatarSeed,
+          avatarOptions: member.avatarOptions as Record<string, unknown> | null,
+          score: guarded.score,
+          level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
+          reason: guarded.reasonOverride ?? maturePenalty.reason ?? undefined,
+          ageVerdict,
+          preferenceVerdict,
+          hasPreferences,
+        })
       }
 
       // Sort by score descending
       fittingMembers.sort((a, b) => b.score - a.score)
 
-      if (fittingMembers.length > 0) {
-        result[media.id] = { members: fittingMembers }
+      if (fittingMembers.length > 0 || familyWarning) {
+        const entry: { members: MemberFit[]; familyWarning?: boolean; communityFlagged?: boolean } = {
+          members: fittingMembers,
+        }
+        if (familyWarning) entry.familyWarning = true
+        if (communityFlagged) entry.communityFlagged = true
+        result[media.id] = entry
       }
     }
 
