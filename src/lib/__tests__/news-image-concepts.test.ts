@@ -43,4 +43,34 @@ describe("news image concepts", () => {
       }
     }
   })
+
+  it("maps ambiguous French headlines to editorial concepts instead of literal words", () => {
+    const cases = [
+      {
+        title: "Été du Canal 2026 : plages et activités à Paris cet été",
+        summary: "Des plages éphémères et activités nautiques reviennent à Paris et en Île-de-France.",
+        category: "PARENTHOOD",
+        query: "families summer outdoor activities park",
+      },
+      {
+        title: "BBC publie un guide de survie pour les examens destiné aux élèves et à leurs familles",
+        category: "PARENTHOOD",
+        query: "students studying exam desk books",
+      },
+      {
+        title: "Classe investigation : un jeu pédagogique sur le trafic en Amazonie",
+        category: "TECH",
+        query: "students laptop classroom media literacy",
+      },
+      {
+        title: "Couvre-feu pour mineurs : une mesure contestée face au narcotrafic",
+        category: "PARENTHOOD",
+        query: "empty urban street night police lights",
+      },
+    ]
+
+    for (const item of cases) {
+      expect(deriveNewsImageConcept(item).query).toBe(item.query)
+    }
+  })
 })

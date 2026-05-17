@@ -26,6 +26,7 @@ export interface StockImage {
 }
 
 const STOCK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
+const STOCK_CACHE_VERSION = "v2"
 
 // French + English stopwords — short list, just enough to keep
 // keyword extraction from passing junk like "le", "the", "à" to the
@@ -75,7 +76,7 @@ export function extractKeywords(title: string, max = 3): string[] {
 function cacheKey(keywords: string[]): string {
   // Re-sort alphabetically for the cache key — order-of-extraction
   // shouldn't matter for cache hits ("ecrans enfants" = "enfants ecrans").
-  return [...keywords].sort().join(" ")
+  return `${STOCK_CACHE_VERSION}:${[...keywords].sort().join(" ")}`
 }
 
 async function readCache(provider: StockImage["provider"], keywords: string[]): Promise<StockImage | null> {
@@ -128,10 +129,43 @@ interface PexelsPhoto {
   photographer?: string
   photographer_url?: string
   url?: string
+  alt?: string
 }
 
 interface PexelsResponse {
   photos?: PexelsPhoto[]
+}
+
+const STOCK_REJECT_TERMS = [
+  "netflix",
+  "disney",
+  "logo",
+  "brand",
+  "christmas",
+  "sweater",
+  "map",
+  "compass",
+  "military",
+  "soldier",
+  "drum",
+  "perfume",
+  "diffuser",
+  "candle",
+  "flame",
+  "fire",
+]
+
+function isBadStockMatch(photo: PexelsPhoto | UnsplashResult): boolean {
+  const haystack = [
+    "alt" in photo ? photo.alt : "",
+    "url" in photo ? photo.url : "",
+    "links" in photo ? photo.links?.html : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+
+  return STOCK_REJECT_TERMS.some((term) => haystack.includes(term))
 }
 
 export async function searchPexels(keywords: string[]): Promise<StockImage | null> {
@@ -154,7 +188,7 @@ export async function searchPexels(keywords: string[]): Promise<StockImage | nul
       return null
     }
     const data = (await res.json()) as PexelsResponse
-    const photo = data.photos?.[0]
+    const photo = data.photos?.find((candidate) => candidate.src && !isBadStockMatch(candidate))
     if (!photo?.src) return null
 
     const image: StockImage = {

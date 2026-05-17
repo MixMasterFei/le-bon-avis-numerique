@@ -12,9 +12,42 @@ interface ConceptRule {
   label: string
 }
 
+const TOPIC_RULES: ConceptRule[] = [
+  {
+    pattern: /\b(ete du canal|plage|plages|base nautique|baignade|activites? a paris|sortie accessible)\b/i,
+    query: "families summer outdoor activities park",
+    label: "sortie famille",
+  },
+  {
+    pattern: /\b(nuit blanche|performance immersive|installation artistique|mediatheque|exposition|festival)\b/i,
+    query: "children art workshop museum",
+    label: "culture famille",
+  },
+  {
+    pattern: /\b(examen|examens|revision|revisions|etudiants?|eleves?|devoirs?|guide de survie)\b/i,
+    query: "students studying exam desk books",
+    label: "examens",
+  },
+  {
+    pattern: /\b(classe investigation|education aux medias|medias|clemi|trafic en amazonie)\b/i,
+    query: "students laptop classroom media literacy",
+    label: "education aux medias",
+  },
+  {
+    pattern: /\b(zelda|breath of the wild|botw|jeu video|manette|pere|fils|quete)\b/i,
+    query: "parent child video game controller couch",
+    label: "jeu video familial",
+  },
+  {
+    pattern: /\b(couvre-feu|couvre feu|mineurs?|narcotrafic|police municipale|securite publique)\b/i,
+    query: "empty urban street night police lights",
+    label: "securite publique",
+  },
+]
+
 const BRAND_SAFE_RULES: ConceptRule[] = [
   {
-    pattern: /\b(netflix|disney\+?|prime video|amazon prime|max|hbo|canal\+?|apple tv\+?)\b/i,
+    pattern: /\b(netflix|disney\+?|prime video|amazon prime|max|hbo|canal\+|canal plus|mycanal|apple tv\+?)\b/i,
     query: "family watching streaming service television",
     label: "streaming familial",
   },
@@ -178,7 +211,18 @@ export function deriveNewsImageConcept(input: {
   summary?: string | null
   category?: NewsCategory | string | null
 }): NewsImageConcept {
-  const haystack = `${input.title} ${input.summary ?? ""}`
+  const haystack = normalize(`${input.title} ${input.summary ?? ""}`)
+  for (const rule of TOPIC_RULES) {
+    const matches = haystack.match(rule.pattern)
+    if (matches?.length) {
+      return {
+        query: rule.query,
+        label: rule.label,
+        matchedTerms: Array.from(new Set(matches.map((m) => m.toLowerCase()))),
+      }
+    }
+  }
+
   for (const rule of BRAND_SAFE_RULES) {
     const matches = haystack.match(rule.pattern)
     if (matches?.length) {
@@ -192,11 +236,8 @@ export function deriveNewsImageConcept(input: {
 
   const scrubbed = scrubSensitiveTerms(haystack)
   if (scrubbed) {
-    return {
-      query: scrubbed,
-      label: scrubbed,
-      matchedTerms: [],
-    }
+    const categoryFallback = CATEGORY_FALLBACKS[input.category ?? ""]
+    if (categoryFallback) return categoryFallback
   }
 
   return CATEGORY_FALLBACKS[input.category ?? ""] ?? {
