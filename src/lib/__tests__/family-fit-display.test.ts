@@ -77,12 +77,15 @@ describe("legacyLevelFromPillars (Phase 0.2) — full 5x5 decision table", () =>
       avoid: "poor",
       noProfile: "poor",
     },
+    // tooLate = content is years younger than the member. Now treated as a
+    // taste signal (not a safety hard-reject), so the pref pillar decides.
+    // Only an explicit "avoid" still maps to poor.
     tooLate: {
-      love: "poor",
-      good: "poor",
-      check: "poor",
+      love: "good",
+      good: "good",
+      check: "moderate",
       avoid: "poor",
-      noProfile: "poor",
+      noProfile: "good",
     },
     unknown: {
       love: "good",

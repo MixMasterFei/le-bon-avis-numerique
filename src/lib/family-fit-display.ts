@@ -68,8 +68,13 @@ export interface PreferenceVerdict {
 export const AGE_PILLAR_LABELS: Record<AgePillar, string> = {
   ok: "\u00c2ge OK",
   borderline: "Limite d'\u00e2ge",
+  // "Trop tôt" reads correctly only when the *member* is too young for the
+  // *content*. Reserved strictly for that direction.
   tooEarly: "Trop t\u00f4t",
-  tooLate: "Trop jeune",
+  // Inverted case — content is years younger than the member. Use neutral
+  // wording so a parent reading "Mathis · Trop tôt" on a kid game stops
+  // wondering whether it's the kid or the content that's the problem.
+  tooLate: "Un peu jeune",
   unknown: "\u00c2ge \u00e0 confirmer",
 }
 
@@ -88,8 +93,11 @@ export function legacyLevelFromPillars(
   age: AgePillar,
   pref: PreferencePillar,
 ): FitLevel {
-  // Worst-case signals dominate
-  if (age === "tooEarly" || age === "tooLate" || pref === "avoid") return "poor"
+  // Hard rejects: explicit dislike OR member too young for the content.
+  // tooLate is *not* in this list — content being years younger than the
+  // member is a taste signal, not a safety one. A 14yo enjoying a 7+
+  // Nintendo title shouldn't be flagged "poor" / "Trop tôt".
+  if (age === "tooEarly" || pref === "avoid") return "poor"
 
   // No information either side — defer to "moderate" review band
   if (age === "unknown" && pref === "noProfile") return "moderate"
@@ -107,6 +115,13 @@ export function legacyLevelFromPillars(
   // Age unknown but the preference path was clear
   if (age === "unknown" && pref === "love") return "good"
   if (age === "unknown" && pref === "good") return "moderate"
+
+  // tooLate (content is years younger than member). Treat the pref pillar
+  // as the deciding axis — never auto-poor, only auto-poor was via the
+  // avoid pref which is handled by the first rule.
+  if (age === "tooLate" && pref === "love") return "good"
+  if (age === "tooLate" && pref === "good") return "good"
+  if (age === "tooLate" && pref === "noProfile") return "good"
 
   // Fallback — should be unreachable given the matrix above
   return "moderate"
