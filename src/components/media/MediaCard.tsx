@@ -16,6 +16,7 @@ import type { MediaItem as MockMediaItem } from "@/lib/types"
 import { toMediaRouteId } from "@/lib/media-route"
 import { useSettings } from "@/contexts/SettingsContext"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
+import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 
 const typeIcons = {
   MOVIE: Film,
@@ -185,7 +186,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           <div className="relative aspect-[2/3] overflow-hidden bg-violet-100 rounded-2xl shadow-md group-hover:shadow-xl group-hover:-translate-y-2 transition-all duration-300">
             <SafeImage
               fallbackClassName="absolute inset-0"
-              src={media.posterUrl}
+              src={tmdbPosterAtSize(media.posterUrl, "w342")}
               alt={media.title}
               fill
               className={cn(

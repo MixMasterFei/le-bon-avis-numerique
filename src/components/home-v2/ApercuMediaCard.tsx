@@ -8,6 +8,7 @@ import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { useSettings } from "@/contexts/SettingsContext"
 import { toMediaRouteId } from "@/lib/media-route"
+import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor } from "./apercuTheme"
@@ -88,7 +89,9 @@ export function ApercuMediaCard({
       >
         {media.posterUrl && (
           <SafeImage
-            src={media.posterUrl}
+            // Rewrite to w342 — the rail card displays at ~170-205 CSS px,
+            // so w500 was over-fetching ~50% of the bytes per poster.
+            src={tmdbPosterAtSize(media.posterUrl, "w342")}
             alt={media.title}
             fill
             className={cn(
