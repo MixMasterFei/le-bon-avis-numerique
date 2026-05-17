@@ -105,6 +105,7 @@ function isSafeStoredImage(row: StoryRow): boolean {
   return (
     row.imageSourceType === "STOCK" ||
     row.imageSourceType === "AGENCY" ||
+    row.imageSourceType === "PUBLISHER_RSS" ||
     row.imageSourceType === "FALLBACK" ||
     isFallbackCardUrl(row.imageUrl)
   )
