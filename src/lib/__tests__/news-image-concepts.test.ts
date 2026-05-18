@@ -67,6 +67,21 @@ describe("news image concepts", () => {
         category: "PARENTHOOD",
         query: "empty urban street night police lights",
       },
+      {
+        title: "Inactivité des enfants : la moitié des 6e incapables de courir 5 min",
+        category: "PARENTHOOD",
+        query: "children feet running track",
+      },
+      {
+        title: "Nuit Blanche 2026 : performance immersive à la médiathèque Sagan",
+        category: "PARENTHOOD",
+        query: "museum interior exhibition visitors",
+      },
+      {
+        title: "Zelda BotW : un père de 71 ans ému après sa première quête",
+        category: "GAMES",
+        query: "elderly man playing video game controller",
+      },
     ]
 
     for (const item of cases) {

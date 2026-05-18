@@ -132,6 +132,7 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
     const stock = await findContextualStockPhoto({
       title: row.title,
       summary: row.summary,
+      body: row.body,
       category: row.category,
     })
     if (stock) {

@@ -279,9 +279,15 @@ export async function findStockPhoto(title: string): Promise<StockImage | null> 
 export async function findContextualStockPhoto(input: {
   title: string
   summary?: string | null
+  body?: string | null
   category?: string | null
 }): Promise<(StockImage & { concept: NewsImageConcept }) | null> {
   const concept = deriveNewsImageConcept(input)
+  // If no explicit topic/brand rule matched, the concept is only a
+  // generic category fallback. In V4 that produced pretty but weakly
+  // connected images, so keep Totem's editorial fallback instead.
+  if (concept.matchedTerms.length === 0) return null
+
   const keywords = conceptKeywords(concept)
   if (keywords.length === 0) return null
   const image = (await searchPexels(keywords)) ?? (await searchUnsplash(keywords))

@@ -14,13 +14,18 @@ interface ConceptRule {
 
 const TOPIC_RULES: ConceptRule[] = [
   {
+    pattern: /\b(inactivite|sedentarite|activite physique|courir|sport|bouger|education physique)\b/i,
+    query: "children feet running track",
+    label: "activite physique",
+  },
+  {
     pattern: /\b(ete du canal|plage|plages|base nautique|baignade|activites? a paris|sortie accessible)\b/i,
     query: "families summer outdoor activities park",
     label: "sortie famille",
   },
   {
     pattern: /\b(nuit blanche|performance immersive|installation artistique|mediatheque|exposition|festival)\b/i,
-    query: "children art workshop museum",
+    query: "museum interior exhibition visitors",
     label: "culture famille",
   },
   {
@@ -34,9 +39,9 @@ const TOPIC_RULES: ConceptRule[] = [
     label: "education aux medias",
   },
   {
-    pattern: /\b(zelda|breath of the wild|botw|jeu video|manette|pere|fils|quete)\b/i,
-    query: "parent child video game controller couch",
-    label: "jeu video familial",
+    pattern: /\b(zelda|breath of the wild|botw|grand-pere|grand pere|71 ans|premiere quete)\b/i,
+    query: "elderly man playing video game controller",
+    label: "jeu video intergenerationnel",
   },
   {
     pattern: /\b(couvre-feu|couvre feu|mineurs?|narcotrafic|police municipale|securite publique)\b/i,
@@ -209,9 +214,10 @@ function scrubSensitiveTerms(query: string): string {
 export function deriveNewsImageConcept(input: {
   title: string
   summary?: string | null
+  body?: string | null
   category?: NewsCategory | string | null
 }): NewsImageConcept {
-  const haystack = normalize(`${input.title} ${input.summary ?? ""}`)
+  const haystack = normalize(`${input.title} ${input.summary ?? ""} ${input.body ?? ""}`)
   for (const rule of TOPIC_RULES) {
     const matches = haystack.match(rule.pattern)
     if (matches?.length) {
