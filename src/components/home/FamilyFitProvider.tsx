@@ -11,10 +11,20 @@ interface MemberFit {
   level: "excellent" | "good" | "moderate" | "poor"
 }
 
+interface ExcludedMember {
+  id: string
+  name: string
+  reason: string
+}
+
 interface FamilyFitResult {
   members: MemberFit[]
   familyWarning?: boolean
   communityFlagged?: boolean
+  // Admin-only diagnostic. Surfaced by the homepage debug overlay so we
+  // can answer "why does Shrek 2 have no avatars?" without diving into
+  // the DB. Non-admin responses never carry this field.
+  _debug?: { excluded: ExcludedMember[] }
 }
 
 interface FamilyFitContextType {

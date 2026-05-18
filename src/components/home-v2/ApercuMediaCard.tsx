@@ -174,6 +174,35 @@ export function ApercuMediaCard({
         {familyFit && familyFit.members.length > 0 && (
           <FamilyFitAvatars members={familyFit.members} compact />
         )}
+        {/* Admin-only debug overlay. The server only attaches `_debug` for
+            ADMIN users (defense in depth — non-admins never see this even
+            if a stale client tries to render it). Tells us at a glance why
+            a card shows 0 or fewer avatars than expected. */}
+        {familyFit?._debug && familyFit._debug.excluded.length > 0 && (
+          <details
+            className="mt-1 text-[10px] leading-tight"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <summary
+              className="cursor-pointer text-amber-700/80 hover:text-amber-800 select-none"
+              onClick={(e) => {
+                e.preventDefault()
+                const el = e.currentTarget.parentElement as HTMLDetailsElement | null
+                if (el) el.open = !el.open
+              }}
+            >
+              {familyFit._debug.excluded.length} exclu
+              {familyFit._debug.excluded.length > 1 ? "s" : ""} (admin)
+            </summary>
+            <ul className="mt-0.5 space-y-0.5 text-amber-900/90">
+              {familyFit._debug.excluded.map((x) => (
+                <li key={x.id}>
+                  <span className="font-medium">{x.name}</span> · {x.reason}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
       </div>
     </Link>
   )

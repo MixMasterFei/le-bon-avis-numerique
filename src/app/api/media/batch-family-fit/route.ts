@@ -62,12 +62,25 @@ interface MemberFit {
   hasPreferences?: boolean
 }
 
+// Admin-only diagnostic. Emitted under the `_debug` key per media so a
+// non-admin response shape stays unchanged. Lets the homepage overlay
+// explain WHY a member was filtered (Eliott avoid · Drame disliked).
+interface ExcludedMember {
+  id: string
+  name: string
+  reason: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user?.id) {
       return NextResponse.json({})
     }
+
+    // Admin-only flag — drives the _debug field that surfaces per-member
+    // exclusion reasons under empty/partial cards on the homepage rail.
+    const isAdmin = session.user.role === "ADMIN"
 
     const body = await request.json()
     const mediaIds: string[] = Array.isArray(body?.mediaIds) ? body.mediaIds.slice(0, 50) : []
@@ -112,8 +125,16 @@ export async function POST(request: NextRequest) {
       warningCounts.map((w) => [w.mediaId, w._count.id])
     )
 
-    // Build result: { [mediaId]: { members: MemberFit[], familyWarning?: boolean, communityFlagged?: boolean } }
-    const result: Record<string, { members: MemberFit[]; familyWarning?: boolean; communityFlagged?: boolean }> = {}
+    // Build result: { [mediaId]: { members: MemberFit[], familyWarning?: boolean, communityFlagged?: boolean, _debug?: { excluded: ExcludedMember[] } } }
+    const result: Record<
+      string,
+      {
+        members: MemberFit[]
+        familyWarning?: boolean
+        communityFlagged?: boolean
+        _debug?: { excluded: ExcludedMember[] }
+      }
+    > = {}
 
     for (const media of mediaItems) {
       const metrics = media.contentMetrics ?? DEFAULT_FIT_METRICS
@@ -135,6 +156,9 @@ export async function POST(request: NextRequest) {
       const familyWarning = communityFlagged || algorithmicWarning
 
       const fittingMembers: MemberFit[] = []
+      // Tracks who got filtered and why. Only attached to the response
+      // when the requester is admin (drives the homepage debug overlay).
+      const excludedForDebug: ExcludedMember[] = []
 
       for (const member of familyMembers) {
         const memberAge = getMemberAge(member.birthYear, member.birthMonth)
@@ -274,8 +298,33 @@ export async function POST(request: NextRequest) {
         // explicitly ruled out by their preferences. We allow "borderline"
         // (gap=1) so a 9-year-old on a 10+ title still appears with an amber
         // ring — the badge will say "Limite d'âge" rather than hiding them.
-        if (ageVerdict.pillar === "tooEarly") continue
-        if (prefPillar === "avoid") continue
+        if (ageVerdict.pillar === "tooEarly") {
+          if (isAdmin) {
+            const detail = media.expertAgeRec != null && memberAge != null
+              ? `âge ${memberAge} · dès ${media.expertAgeRec}`
+              : "âge insuffisant"
+            excludedForDebug.push({ id: member.id, name: member.name, reason: `trop tôt · ${detail}` })
+          }
+          continue
+        }
+        if (prefPillar === "avoid") {
+          if (isAdmin) {
+            // Identify which gate fired so the overlay can show exactly
+            // which dislike/avoid topic was responsible.
+            const normalise = (s: string) => s.toLowerCase().trim()
+            const mediaGenresLc = media.genres.map(normalise)
+            const mediaTopicsLc = media.topics.map(normalise)
+            const dislikedHit = member.dislikedGenres.find((g) => mediaGenresLc.includes(normalise(g)))
+            const avoidHit = member.avoidTopics.find((t) => mediaTopicsLc.includes(normalise(t)))
+            let why: string
+            if (dislikedHit) why = `genre rejeté : ${dislikedHit}`
+            else if (avoidHit) why = `sujet à éviter : ${avoidHit}`
+            else if (maturePenalty.severity === "block") why = "contenu mature bloqué"
+            else why = "préférence non favorable"
+            excludedForDebug.push({ id: member.id, name: member.name, reason: `avoid · ${why}` })
+          }
+          continue
+        }
 
         const prefReasons: string[] = []
         if (maturePenalty.reason) {
@@ -307,12 +356,24 @@ export async function POST(request: NextRequest) {
       // across every card on the page. Sorting by score made the row
       // reshuffle on each card and the grid was unreadable.
 
-      if (fittingMembers.length > 0 || familyWarning) {
-        const entry: { members: MemberFit[]; familyWarning?: boolean; communityFlagged?: boolean } = {
+      // Emit a result entry whenever there is something to show — either
+      // members, a household warning, or (admin only) exclusions worth
+      // explaining. The admin debug overlay reads `_debug.excluded` so the
+      // bare "Shrek 2 has no avatars" cards stop being a black box.
+      if (fittingMembers.length > 0 || familyWarning || (isAdmin && excludedForDebug.length > 0)) {
+        const entry: {
+          members: MemberFit[]
+          familyWarning?: boolean
+          communityFlagged?: boolean
+          _debug?: { excluded: ExcludedMember[] }
+        } = {
           members: fittingMembers,
         }
         if (familyWarning) entry.familyWarning = true
         if (communityFlagged) entry.communityFlagged = true
+        if (isAdmin && excludedForDebug.length > 0) {
+          entry._debug = { excluded: excludedForDebug }
+        }
         result[media.id] = entry
       }
     }
