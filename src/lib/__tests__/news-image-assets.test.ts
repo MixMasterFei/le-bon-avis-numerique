@@ -68,6 +68,42 @@ describe("news image assets", () => {
     expect(findContextualStockPhoto).not.toHaveBeenCalled()
   })
 
+  it("retries assets previously rejected because storage failed", async () => {
+    vi.mocked(prisma.newsImageAsset.findUnique).mockResolvedValueOnce({
+      id: "asset-storage-failed",
+      approved: false,
+      rejectedReason: "storage_failed",
+    } as never)
+    vi.mocked(resolveNewsVisualIntent).mockResolvedValueOnce({
+      query: "children running track",
+      negativeTerms: [],
+      confidence: 0.9,
+      label: "enfants qui courent",
+      source: "llm",
+    })
+    vi.mocked(findContextualStockPhoto).mockResolvedValueOnce({
+      url: "https://images.pexels.com/photos/123/pexels-photo.jpg",
+      credit: "Jane Doe / Pexels",
+      licenseUrl: "https://www.pexels.com/photo/123/",
+      provider: "pexels",
+      query: "children running track",
+      conceptLabel: "enfants qui courent",
+      concept: {
+        query: "children running track",
+        label: "enfants qui courent",
+        matchedTerms: ["llm"],
+      },
+    })
+    vi.mocked(uploadNewsImage).mockResolvedValueOnce("https://supabase.example/storage/news/123.jpg")
+    vi.mocked(prisma.newsImageAsset.upsert).mockResolvedValueOnce({ id: "asset-storage-retried" } as never)
+
+    const result = await prepareDiscoveryV4Image(story)
+
+    expect(result).toEqual({ status: "updated", assetId: "asset-storage-retried" })
+    expect(resolveNewsVisualIntent).toHaveBeenCalled()
+    expect(uploadNewsImage).toHaveBeenCalledWith("https://images.pexels.com/photos/123/pexels-photo.jpg")
+  })
+
   it("records a rejected asset when visual confidence is too low", async () => {
     vi.mocked(prisma.newsImageAsset.findUnique).mockResolvedValueOnce(null)
     vi.mocked(resolveNewsVisualIntent).mockResolvedValueOnce({

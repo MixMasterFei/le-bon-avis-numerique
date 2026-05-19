@@ -36,6 +36,10 @@ function candidateWhere(afterId?: string): Prisma.NewsStoryWhereInput {
   }
 }
 
+function reasonCount(reasons: Record<string, number>, reason: string): number {
+  return reasons[reason] ?? 0
+}
+
 export async function POST(req: NextRequest) {
   if (!(await isCronOrAdminAuthorized(req))) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 })
@@ -111,6 +115,12 @@ export async function POST(req: NextRequest) {
       rejected,
       errors,
       reasons,
+      reasonAlreadyPrepared: reasonCount(reasons, "already_prepared"),
+      reasonAlreadyRejected: reasonCount(reasons, "already_rejected"),
+      reasonLowConfidence: reasonCount(reasons, "low_confidence"),
+      reasonNoIntent: reasonCount(reasons, "no_intent"),
+      reasonNoStockMatch: reasonCount(reasons, "no_stock_match"),
+      reasonStorageFailed: reasonCount(reasons, "storage_failed"),
       remaining,
       lastId,
       durationMs: Date.now() - startTime,

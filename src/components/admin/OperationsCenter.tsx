@@ -690,13 +690,31 @@ const OPERATIONS: Array<{
       body: { limit: 12 },
       chunked: true,
       delayMs: 1500,
-      accumKeys: ["scanned", "updated", "skipped", "rejected", "errors"],
+      accumKeys: [
+        "scanned",
+        "updated",
+        "skipped",
+        "rejected",
+        "errors",
+        "reasonLowConfidence",
+        "reasonNoIntent",
+        "reasonNoStockMatch",
+        "reasonStorageFailed",
+        "reasonAlreadyPrepared",
+        "reasonAlreadyRejected",
+      ],
       extractProgress: (data) => ({
         processed: data.scanned || data.processed || 0,
         total: typeof data.remaining === "number" ? (data.scanned || 0) + data.remaining : null,
         updated: data.updated || 0,
         skipped: (data.skipped || 0) + (data.rejected || 0),
         errors: data.errors || 0,
+        reasonLowConfidence: data.reasonLowConfidence || 0,
+        reasonNoIntent: data.reasonNoIntent || 0,
+        reasonNoStockMatch: data.reasonNoStockMatch || 0,
+        reasonStorageFailed: data.reasonStorageFailed || 0,
+        reasonAlreadyPrepared: data.reasonAlreadyPrepared || 0,
+        reasonAlreadyRejected: data.reasonAlreadyRejected || 0,
       }),
       isDone: (data) => data.done === true,
       getNextParams: (data) => {
@@ -707,7 +725,14 @@ const OPERATIONS: Array<{
       },
       buildSummary: (stats) => {
         const errs = stats.errors || 0
-        return `${stats.updated || 0} images V4 préparées, ${stats.skipped || 0} fallback/refus${errs ? `, ${errs} erreurs` : ""}`
+        const reasons = [
+          stats.reasonStorageFailed ? `${stats.reasonStorageFailed} storage` : "",
+          stats.reasonNoStockMatch ? `${stats.reasonNoStockMatch} sans match` : "",
+          stats.reasonLowConfidence ? `${stats.reasonLowConfidence} confiance basse` : "",
+          stats.reasonNoIntent ? `${stats.reasonNoIntent} sans intention` : "",
+          stats.reasonAlreadyRejected ? `${stats.reasonAlreadyRejected} déjà rejetées` : "",
+        ].filter(Boolean)
+        return `${stats.updated || 0} images V4 préparées, ${stats.skipped || 0} fallback/refus${reasons.length ? ` (${reasons.join(", ")})` : ""}${errs ? `, ${errs} erreurs` : ""}`
       },
     },
     label: "Préparer images V4",

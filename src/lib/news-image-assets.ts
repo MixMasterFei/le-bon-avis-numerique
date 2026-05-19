@@ -6,6 +6,7 @@ import { uploadNewsImage } from "@/lib/supabase-storage"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
 const MIN_AUTO_APPROVE_CONFIDENCE = 0.72
+const RETRYABLE_REJECTION_REASONS = new Set(["storage_failed"])
 
 export interface PreparedNewsImage {
   url: string
@@ -136,10 +137,13 @@ export async function prepareDiscoveryV4Image(
         select: { id: true, approved: true, rejectedReason: true },
       })
       if (existing) {
-        return {
-          status: "skipped",
-          reason: existing.approved ? "already_prepared" : existing.rejectedReason ?? "already_rejected",
-          assetId: existing.id,
+        const reason = existing.approved ? "already_prepared" : existing.rejectedReason ?? "already_rejected"
+        if (existing.approved || !RETRYABLE_REJECTION_REASONS.has(reason)) {
+          return {
+            status: "skipped",
+            reason,
+            assetId: existing.id,
+          }
         }
       }
     }
