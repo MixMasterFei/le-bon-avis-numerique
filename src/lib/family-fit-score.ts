@@ -96,7 +96,10 @@ export const DARK_TONES = new Set([
   "Action intense",
 ])
 
-export const MATURE_GENRES = new Set(["horreur", "horror", "épouvante", "thriller", "crime"])
+// Stored in accent-folded form so callers comparing via normalizeTag()
+// (which folds accents) hit the set correctly. The unfolded "épouvante"
+// form used to live here, which silently missed accent-folded lookups.
+export const MATURE_GENRES = new Set(["horreur", "horror", "epouvante", "thriller", "crime"])
 export const CONCERNING_GENRES = new Set(["horreur", "horror", "crime", "thriller", "épouvante"])
 export const CONCERNING_TONES = new Set(["Effrayant et angoissant", "Sombre et tendu", "Action intense"])
 const FAMILY_APPEAL_GENRES = new Set(["animation", "famille", "familial", "family"])
@@ -224,6 +227,16 @@ export function computeSensitivityScore(
   return count === 0 ? 1.0 : total / count
 }
 
+// Genres that, when present on a media item, soften the dislike-genre gate.
+// Rationale: TMDB tags Shrek 2 with "Romance" (Shrek + Fiona) and La Tortue
+// rouge with "Drame" (emotional beats) even though both are clearly family
+// animations. A kid who picks "j'évite la romance" in the quiz means
+// "no adult-romance films" — not "exclude every animation with a romantic
+// subplot".
+const FAMILY_FRIENDLY_GENRE_MARKERS = new Set([
+  "animation", "famille", "familial", "family",
+])
+
 export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[], dislikedGenres: string[] = []): number {
   if (favoriteGenres.length === 0 && dislikedGenres.length === 0) return 0.5
 
@@ -233,16 +246,33 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
   const normalise = (s: string) => normalizeTag(s)
   const mediaSet = new Set(mediaGenres.map(normalise))
 
-  // Hard-zero ONLY when an explicit dislike matches. The quiz UI presents this
-  // as a categorical "do not want" choice — a soft penalty here let horror
-  // leak through favorite-genre boosts. The exact `0` value is also the
-  // sentinel that `computeWeightedFitScore` and the preference-pillar logic
-  // read as "hard reject"; reserving it strictly for dislikes is what keeps
-  // the avatar pill ("avoid") from firing on genres that simply weren't
-  // ticked as favorites (e.g. Simulator on a kid who picked Animation).
+  // Dislike handling. Three cases:
+  //   1. Mature dislike (Horror, Thriller, Crime, Épouvante) → always hard
+  //      reject. Kid said "no scary stuff" — that's load-bearing.
+  //   2. Soft dislike (Romance, Drame, Comédie, etc.) on a non-family title →
+  //      hard reject. Marriage Story is genuinely a drama; that exclusion
+  //      stands.
+  //   3. Soft dislike on a family-friendly title (has Animation / Familial /
+  //      Famille tag) → fall through to favorite scoring with a multiplier.
+  //      The title still surfaces with a lower score instead of being
+  //      silently hidden, since the dislike likely refers to the *adult*
+  //      version of the genre (the parent confirmed this).
+  // The exact `0` return is the sentinel that computeWeightedFitScore and
+  // the preference-pillar logic read as "hard reject"; only cases 1 + 2
+  // ever emit it.
+  let softDislikePenalty = 1.0
   if (dislikedGenres.length > 0) {
-    const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g))).length
-    if (dislikedMatches > 0) return 0
+    const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g)))
+    if (dislikedMatches.length > 0) {
+      const isMatureDislike = dislikedMatches.some((g) => MATURE_GENRES.has(normalise(g)))
+      const mediaHasFamilyMarker = mediaGenres.some((g) =>
+        FAMILY_FRIENDLY_GENRE_MARKERS.has(normalise(g)),
+      )
+      if (isMatureDislike || !mediaHasFamilyMarker) {
+        return 0
+      }
+      softDislikePenalty = 0.55
+    }
   }
 
   if (favoriteGenres.length > 0) {
@@ -252,12 +282,13 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
       // categorical reject. Return a neutral-low value so the weighted-fit
       // sum reflects the missing match without short-circuiting the title
       // out of the member's avatar pills.
-      return 0.35
+      return 0.35 * softDislikePenalty
     }
-    return Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
+    const base = Math.min(1.0, matching / Math.max(1, Math.min(3, favoriteGenres.length)))
+    return base * softDislikePenalty
   }
 
-  return 0.5
+  return 0.5 * softDislikePenalty
 }
 
 export function computeInterestsScore(mediaTopics: string[], emotionalThemes: string[], memberInterests: string[]): number {
@@ -397,7 +428,7 @@ export function computeMatureContentPenalty(
   memberAge: number | null,
   memberSensitivity?: MatureContentMemberSensitivity,
 ): { multiplier: number; reason: string | null; severity: MatureContentSeverity } {
-  const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(g.toLowerCase()))
+  const hasMatureGenre = mediaGenres.some((g) => MATURE_GENRES.has(normalizeTag(g)))
 
   // High content metrics only trigger when the member did not explicitly opt
   // in via the quiz. Default (sensitivity unknown) keeps the previous

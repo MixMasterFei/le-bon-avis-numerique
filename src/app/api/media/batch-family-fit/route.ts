@@ -298,6 +298,23 @@ export async function POST(request: NextRequest) {
         // explicitly ruled out by their preferences. We allow "borderline"
         // (gap=1) so a 9-year-old on a 10+ title still appears with an amber
         // ring — the badge will say "Limite d'âge" rather than hiding them.
+        //
+        // Check order is tuned so the *most semantic* reason wins when
+        // multiple gates fire. Mortal Kombat II (14+) on Eliott 9 and
+        // Mathis 13 — both should read "contenu mature bloqué", not one
+        // reading that and the other "trop tôt". Previously the order was
+        // age → pref, so the younger member got the bare age reason while
+        // the borderline one got the more informative mature-block reason.
+        if (maturePenalty.severity === "block") {
+          if (isAdmin) {
+            excludedForDebug.push({
+              id: member.id,
+              name: member.name,
+              reason: "avoid · contenu mature bloqué",
+            })
+          }
+          continue
+        }
         if (ageVerdict.pillar === "tooEarly") {
           if (isAdmin) {
             const detail = media.expertAgeRec != null && memberAge != null
@@ -319,7 +336,6 @@ export async function POST(request: NextRequest) {
             let why: string
             if (dislikedHit) why = `genre rejeté : ${dislikedHit}`
             else if (avoidHit) why = `sujet à éviter : ${avoidHit}`
-            else if (maturePenalty.severity === "block") why = "contenu mature bloqué"
             else why = "préférence non favorable"
             excludedForDebug.push({ id: member.id, name: member.name, reason: `avoid · ${why}` })
           }
