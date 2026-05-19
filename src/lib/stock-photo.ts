@@ -26,6 +26,10 @@ export interface StockImage {
   conceptLabel?: string
 }
 
+interface StockLookupOptions {
+  cacheOnly?: boolean
+}
+
 const STOCK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 const STOCK_CACHE_VERSION = "v4"
 
@@ -177,12 +181,18 @@ function isBadStockMatch(photo: PexelsPhoto | UnsplashResult, rejectTerms: strin
   return [...STOCK_REJECT_TERMS, ...rejectTerms].some((term) => haystack.includes(term.toLowerCase()))
 }
 
-export async function searchPexels(keywords: string[], rejectTerms: string[] = []): Promise<StockImage | null> {
-  const apiKey = process.env.PEXELS_API_KEY
-  if (!apiKey || keywords.length === 0) return null
-
+export async function searchPexels(
+  keywords: string[],
+  rejectTerms: string[] = [],
+  options: StockLookupOptions = {},
+): Promise<StockImage | null> {
+  if (keywords.length === 0) return null
   const cached = await readCache("pexels", keywords, rejectTerms)
   if (cached) return cached
+  if (options.cacheOnly) return null
+
+  const apiKey = process.env.PEXELS_API_KEY
+  if (!apiKey) return null
 
   const query = encodeURIComponent(keywords.join(" "))
   const url = `https://api.pexels.com/v1/search?query=${query}&per_page=5&orientation=landscape`
@@ -225,17 +235,24 @@ interface UnsplashResponse {
   results?: UnsplashResult[]
 }
 
-export async function searchUnsplash(keywords: string[], rejectTerms: string[] = []): Promise<StockImage | null> {
-  const apiKey = process.env.UNSPLASH_ACCESS_KEY
+export async function searchUnsplash(
+  keywords: string[],
+  rejectTerms: string[] = [],
+  options: StockLookupOptions = {},
+): Promise<StockImage | null> {
   // Unsplash API terms require hotlinking the returned photo.urls.*
   // assets and explicit attribution links. The news pipeline currently
   // mirrors non-fallback images into Supabase, so keep Unsplash behind
   // an opt-in until that path has provider-aware storage behavior.
   if (process.env.UNSPLASH_ENABLE_NEWS_IMAGES !== "1") return null
-  if (!apiKey || keywords.length === 0) return null
+  if (keywords.length === 0) return null
 
   const cached = await readCache("unsplash", keywords, rejectTerms)
   if (cached) return cached
+  if (options.cacheOnly) return null
+
+  const apiKey = process.env.UNSPLASH_ACCESS_KEY
+  if (!apiKey) return null
 
   const query = encodeURIComponent(keywords.join(" "))
   const url = `https://api.unsplash.com/search/photos?query=${query}&per_page=5&orientation=landscape`
@@ -290,8 +307,8 @@ export async function findContextualStockPhoto(input: {
   summary?: string | null
   body?: string | null
   category?: string | null
-}): Promise<(StockImage & { concept: NewsImageConcept; intent?: NewsVisualIntent }) | null> {
-  const intent = await resolveNewsVisualIntent(input)
+}, options: StockLookupOptions = {}): Promise<(StockImage & { concept: NewsImageConcept; intent?: NewsVisualIntent }) | null> {
+  const intent = await resolveNewsVisualIntent(input, { cacheOnly: options.cacheOnly })
   if (!intent) return null
 
   const concept: NewsImageConcept = {
@@ -302,8 +319,8 @@ export async function findContextualStockPhoto(input: {
   const keywords = conceptKeywords(concept)
   if (keywords.length === 0) return null
   const image =
-    (await searchPexels(keywords, intent.negativeTerms)) ??
-    (await searchUnsplash(keywords, intent.negativeTerms))
+    (await searchPexels(keywords, intent.negativeTerms, options)) ??
+    (await searchUnsplash(keywords, intent.negativeTerms, options))
   if (!image) return null
   return {
     ...image,

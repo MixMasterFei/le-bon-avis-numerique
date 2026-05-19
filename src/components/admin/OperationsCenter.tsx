@@ -684,6 +684,40 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "newsPrewarmImagesV4",
+      endpoint: "/api/admin/news/prewarm-images-v4",
+      method: "POST",
+      body: { limit: 12 },
+      chunked: true,
+      delayMs: 1500,
+      accumKeys: ["scanned", "updated", "skipped", "rejected", "errors"],
+      extractProgress: (data) => ({
+        processed: data.scanned || data.processed || 0,
+        total: typeof data.remaining === "number" ? (data.scanned || 0) + data.remaining : null,
+        updated: data.updated || 0,
+        skipped: (data.skipped || 0) + (data.rejected || 0),
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data) => {
+        if (!data.lastId) return null
+        const next = new URLSearchParams()
+        next.set("afterId", data.lastId)
+        return next
+      },
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} images V4 préparées, ${stats.skipped || 0} fallback/refus${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Préparer images V4",
+    description: "Préchauffer Pexels + miroir Supabase pour Discover V4 sans travail côté visiteur",
+    icon: Camera,
+    color: "purple",
+    statLabels: { updated: "préparées", skipped: "fallback/refus" },
+  },
+  {
+    config: {
       key: "newsImagesAudit",
       endpoint: "/api/admin/news/images-audit",
       method: "POST",
@@ -756,7 +790,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsImagesAudit", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsPrewarmImagesV4", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",

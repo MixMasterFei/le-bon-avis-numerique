@@ -938,6 +938,7 @@ model NewsStory {
   comments NewsComment[]
   storyReactions NewsStoryReaction[]
   savedBy NewsSavedStory[]
+  imageAssets NewsImageAsset[]
 
   @@index([publishedAt])
   @@index([category, status])
@@ -966,6 +967,36 @@ model StockImageCache {
   @@unique([provider, keywordsKey])
   @@index([createdAt])
   @@map("stock_image_cache")
+}
+
+model NewsImageAsset {
+  id             String       @id @default(uuid())
+  newsStoryId    String       @map("news_story_id")
+  variant        String       @default("DISCOVERY_V4")
+  provider       String
+  sourceUrl      String?      @map("source_url")
+  storageUrl     String?      @map("storage_url")
+  credit         String?
+  licenseUrl     String?      @map("license_url")
+  visualIntent   String       @map("visual_intent") @db.Text
+  query          String
+  negativeTerms  Json         @default("[]") @map("negative_terms")
+  topicLabel     String?      @map("topic_label")
+  category       NewsCategory
+  confidence     Float        @default(0)
+  qualityScore   Float?       @map("quality_score")
+  approved       Boolean      @default(false)
+  rejectedReason String?      @map("rejected_reason")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  newsStory NewsStory @relation(fields: [newsStoryId], references: [id], onDelete: Cascade)
+
+  @@unique([newsStoryId, variant])
+  @@index([variant, approved])
+  @@index([category])
+  @@index([rejectedReason])
+  @@map("news_image_assets")
 }
 
 enum NewsCommentStatus {

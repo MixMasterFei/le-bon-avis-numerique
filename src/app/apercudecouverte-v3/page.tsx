@@ -20,7 +20,7 @@ import { Prisma, type ImageSourceType } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
-import { findContextualStockPhoto } from "@/lib/stock-photo"
+import { getApprovedDiscoveryV4Image } from "@/lib/news-image-assets"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -112,6 +112,15 @@ function isSafeStoredImage(row: StoryRow): boolean {
   )
 }
 
+function isSafeDiscoveryV4Image(row: StoryRow): boolean {
+  return (
+    row.imageSourceType === "STOCK" ||
+    row.imageSourceType === "AGENCY" ||
+    row.imageSourceType === "FALLBACK" ||
+    isFallbackCardUrl(row.imageUrl)
+  )
+}
+
 export default async function ApercuDecouverteV3Page(props: {
   searchParams?: Promise<SearchParams>
 }) {
@@ -123,26 +132,31 @@ function shouldTryStockImage(row: StoryRow, imagePolicy: NewsImagePolicy): boole
     imagePolicy === "stockThenFallback" &&
     (row.imageSourceType === "FALLBACK" ||
       isFallbackCardUrl(row.imageUrl) ||
-      !isSafeStoredImage(row))
+      !isSafeDiscoveryV4Image(row))
+  )
+}
+
+function isValidWeatherCity(city: WeatherCity): boolean {
+  return (
+    city.name.trim().length > 0 &&
+    Number.isFinite(city.lat) &&
+    Number.isFinite(city.lon) &&
+    Math.abs(city.lat) <= 90 &&
+    Math.abs(city.lon) <= 180
   )
 }
 
 async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): Promise<ApercuNewsCardData> {
   if (shouldTryStockImage(row, imagePolicy)) {
-    const stock = await findContextualStockPhoto({
-      title: row.title,
-      summary: row.summary,
-      body: row.body,
-      category: row.category,
-    })
-    if (stock) {
+    const prepared = await getApprovedDiscoveryV4Image(row.id)
+    if (prepared) {
       return {
         slug: row.slug,
         title: row.title,
         summary: row.summary,
-        imageUrl: stock.url,
-        imageCredit: stock.credit,
-        imageLicenseUrl: stock.licenseUrl,
+        imageUrl: prepared.url,
+        imageCredit: prepared.credit,
+        imageLicenseUrl: prepared.licenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),
@@ -151,7 +165,8 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
   }
 
   const safeFallback =
-    imagePolicy !== "asStored" && !isSafeStoredImage(row)
+    ((imagePolicy === "stockThenFallback" && !isSafeDiscoveryV4Image(row)) ||
+      (imagePolicy !== "asStored" && imagePolicy !== "stockThenFallback" && !isSafeStoredImage(row)))
       ? fallbackCard(row.category, row.title)
       : null
 
@@ -412,14 +427,22 @@ export async function renderApercuDecouvertePage(props: {
       select: { weatherCityName: true, weatherCityLat: true, weatherCityLon: true },
     })
     if (u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null) {
-      hasUserCity = true
-      return { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon } satisfies WeatherCity
+      const city = { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon } satisfies WeatherCity
+      if (isValidWeatherCity(city)) {
+        hasUserCity = true
+        return city
+      }
     }
     return DEFAULT_CITY
   })()
   const weatherFlow = cityFlow.then(async (city) => {
     const snapshot = await getWeatherForCity(city)
-    return snapshot ?? { city, current: null, daily: [] }
+    if (snapshot?.current) return snapshot
+    if (city.name !== DEFAULT_CITY.name || city.lat !== DEFAULT_CITY.lat || city.lon !== DEFAULT_CITY.lon) {
+      const fallback = await getWeatherForCity(DEFAULT_CITY)
+      if (fallback?.current) return fallback
+    }
+    return { city: DEFAULT_CITY, current: null, daily: [] }
   })
   const airQualityFlow = cityFlow.then(getAirQualityForCity)
 

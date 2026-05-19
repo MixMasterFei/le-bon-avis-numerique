@@ -43,6 +43,56 @@ function topEntries(map: Record<string, number>, limit = 8) {
     .map(([label, count]) => ({ label, count }))
 }
 
+async function auditDiscoveryV4(totalStories: number) {
+  try {
+    const [prepared, approved, rejectedRows, intentRows] = await Promise.all([
+      prisma.newsImageAsset.count({ where: { variant: "DISCOVERY_V4" } }),
+      prisma.newsImageAsset.count({ where: { variant: "DISCOVERY_V4", approved: true, storageUrl: { not: null } } }),
+      prisma.newsImageAsset.groupBy({
+        by: ["rejectedReason"],
+        where: { variant: "DISCOVERY_V4", approved: false },
+        _count: { _all: true },
+        orderBy: { _count: { rejectedReason: "desc" } },
+        take: 8,
+      }),
+      prisma.newsImageAsset.groupBy({
+        by: ["topicLabel"],
+        where: { variant: "DISCOVERY_V4" },
+        _count: { _all: true },
+        orderBy: { _count: { topicLabel: "desc" } },
+        take: 8,
+      }),
+    ])
+
+    return {
+      prepared,
+      approved,
+      fallbackRemaining: Math.max(0, totalStories - approved),
+      preparedPercent: totalStories > 0 ? Math.round((approved / totalStories) * 1000) / 10 : 0,
+      fallbackPercent: totalStories > 0 ? Math.round(((totalStories - approved) / totalStories) * 1000) / 10 : 0,
+      topRejected: rejectedRows.map((row) => ({
+        label: row.rejectedReason ?? "unknown",
+        count: row._count._all,
+      })),
+      topIntentions: intentRows.map((row) => ({
+        label: row.topicLabel ?? "unknown",
+        count: row._count._all,
+      })),
+    }
+  } catch (err) {
+    return {
+      prepared: 0,
+      approved: 0,
+      fallbackRemaining: totalStories,
+      preparedPercent: 0,
+      fallbackPercent: totalStories > 0 ? 100 : 0,
+      topRejected: [],
+      topIntentions: [],
+      error: err instanceof Error ? err.message : "news_image_assets unavailable",
+    }
+  }
+}
+
 export async function POST(req: NextRequest) {
   if (!(await isCronOrAdminAuthorized(req))) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 })
@@ -99,6 +149,7 @@ export async function POST(req: NextRequest) {
   }
 
   const total = rows.length
+  const discoveryV4 = await auditDiscoveryV4(total)
   const tierPercentages = Object.fromEntries(
     Object.entries(tierCounts).map(([tier, count]) => [
       tier,
@@ -116,6 +167,7 @@ export async function POST(req: NextRequest) {
     tierPercentages,
     publisherRssCurrent,
     publisherRssAvoidedEstimate,
+    discoveryV4,
     topStockQueries: topEntries(stockQueries),
     topFallbacks: topEntries(fallbackKeys),
   })

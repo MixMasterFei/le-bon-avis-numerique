@@ -13,11 +13,15 @@ export interface NewsVisualIntent {
   source: "llm" | "rule"
 }
 
-interface VisualIntentInput {
+export interface VisualIntentInput {
   title: string
   summary?: string | null
   body?: string | null
   category?: string | null
+}
+
+interface VisualIntentOptions {
+  cacheOnly?: boolean
 }
 
 const INTENT_CACHE_PROVIDER = "visual-intent-v1"
@@ -88,7 +92,7 @@ function parseIntent(raw: string): NewsVisualIntent | null {
     const parsed = JSON.parse(match[0]) as Record<string, unknown>
     const query = cleanQuery(parsed.query)
     const confidence = typeof parsed.confidence === "number" ? parsed.confidence : 0
-    if (!query || confidence < MIN_CONFIDENCE || hasBannedQueryTerm(query)) return null
+    if (!query || hasBannedQueryTerm(query)) return null
     return {
       query,
       negativeTerms: cleanTerms(parsed.negativeTerms),
@@ -227,9 +231,16 @@ Body excerpt: ${(input.body ?? "").slice(0, 1400)}`
   return parseIntent(text)
 }
 
-export async function resolveNewsVisualIntent(input: VisualIntentInput): Promise<NewsVisualIntent | null> {
+export async function resolveNewsVisualIntent(
+  input: VisualIntentInput,
+  options: VisualIntentOptions = {},
+): Promise<NewsVisualIntent | null> {
   const cached = await readIntentCache(input)
   if (cached) return cached
+
+  if (options.cacheOnly) {
+    return ruleIntent(input)
+  }
 
   const intent = (await llmIntent(input)) ?? ruleIntent(input)
   if (!intent) return null
