@@ -82,6 +82,7 @@ const KNOWN_CRON_TASKS = [
   "streaming",
   "similarity",
   "news-discover",
+  "news.prewarmImagesV4",   // 4×/day — V4 image prewarm runs after news-discover
   "weekly-dossier",         // Tue + Fri — long-read synthesis
   "family-content-agent",   // Monday — editorial priorities email
   "debt-digest",            // Wednesday — tech/data-debt weekly digest

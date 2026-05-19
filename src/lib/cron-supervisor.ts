@@ -93,6 +93,22 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // V4 image prewarm — runs in the same GH-Actions job as news-discover
+    // (4×/day at :17 past 00/06/12/18 UTC). Same staleness budget: if it
+    // hasn't logged in 10h, either the GH workflow stopped or the step is
+    // erroring before logCronRun fires. Remediation re-pokes the route
+    // with a single small batch so we get fresh telemetry without
+    // overwhelming the function budget.
+    task: "news.prewarmImagesV4",
+    staleAfterHours: 10,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance prewarm images V4",
+      method: "POST",
+      path: "/api/admin/news/prewarm-images-v4?limit=4",
+    },
+  },
+  {
     task: "weekly-dossier",
     staleAfterHours: 96,
     // A dossier run can legitimately log "partial" when it skips
