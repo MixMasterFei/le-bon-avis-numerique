@@ -11,6 +11,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
 import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
 import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { fraunces } from "@/components/home-v2/apercuFont"
 
 const inter = Inter({
@@ -184,6 +185,7 @@ export default async function RootLayout({
           </SettingsProvider>
         </SessionProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
