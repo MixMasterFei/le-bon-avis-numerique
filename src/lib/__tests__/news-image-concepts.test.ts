@@ -82,6 +82,23 @@ describe("news image concepts", () => {
         category: "GAMES",
         query: "elderly man playing video game controller",
       },
+      {
+        title: "Fortnite de retour sur iPhone après 5 ans d'absence",
+        summary: "Fortnite est de nouveau téléchargeable sur l'App Store d'Apple en France.",
+        category: "GAMES",
+        query: "teenager playing mobile game smartphone",
+      },
+      {
+        title: "Kit pédagogique gratuit pour préparer l'éclipse du 12 août 2026",
+        summary: "Un kit de 30 pages pour observer l'éclipse solaire, conçu pour les enseignants et les familles.",
+        category: "PARENTHOOD",
+        query: "children eclipse glasses looking sky",
+      },
+      {
+        title: "Nuit des Musées le 23 mai : entrée libre et sans réservation à Paris",
+        category: "PARENTHOOD",
+        query: "museum gallery exhibition visitors",
+      },
     ]
 
     for (const item of cases) {

@@ -14,6 +14,21 @@ interface ConceptRule {
 
 const TOPIC_RULES: ConceptRule[] = [
   {
+    pattern: /\b(fortnite|app store|iphone|epic games|jeu mobile|mobile gaming)\b/i,
+    query: "teenager playing mobile game smartphone",
+    label: "jeu mobile",
+  },
+  {
+    pattern: /\b(eclipse|eclipse solaire|observatoire|lunettes eclipse|kit pedagogique)\b/i,
+    query: "children eclipse glasses looking sky",
+    label: "eclipse solaire",
+  },
+  {
+    pattern: /\b(nuit des musees|musee|musees|entree libre|lieux culturels)\b/i,
+    query: "museum gallery exhibition visitors",
+    label: "musee",
+  },
+  {
     pattern: /\b(inactivite|sedentarite|activite physique|courir|sport|bouger|education physique)\b/i,
     query: "children feet running track",
     label: "activite physique",
