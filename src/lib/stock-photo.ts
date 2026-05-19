@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
-import { conceptKeywords, deriveNewsImageConcept, type NewsImageConcept } from "@/lib/news-image-concepts"
+import { conceptKeywords, type NewsImageConcept } from "@/lib/news-image-concepts"
+import { resolveNewsVisualIntent, type NewsVisualIntent } from "@/lib/news-visual-intent"
 
 // Stock photo lookup: Pexels primary, Unsplash fallback. Both are
 // royalty-free under "do whatever you want with attribution back to
@@ -26,7 +27,7 @@ export interface StockImage {
 }
 
 const STOCK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
-const STOCK_CACHE_VERSION = "v3"
+const STOCK_CACHE_VERSION = "v4"
 
 // French + English stopwords — short list, just enough to keep
 // keyword extraction from passing junk like "le", "the", "à" to the
@@ -79,11 +80,19 @@ function cacheKey(keywords: string[]): string {
   return `${STOCK_CACHE_VERSION}:${[...keywords].sort().join(" ")}`
 }
 
-async function readCache(provider: StockImage["provider"], keywords: string[]): Promise<StockImage | null> {
+function searchKey(keywords: string[], rejectTerms: string[] = []): string[] {
+  return [...keywords, ...rejectTerms.map((term) => `not-${term}`)]
+}
+
+async function readCache(
+  provider: StockImage["provider"],
+  keywords: string[],
+  rejectTerms: string[] = [],
+): Promise<StockImage | null> {
   if (keywords.length === 0) return null
   try {
     const row = await prisma.stockImageCache.findUnique({
-      where: { provider_keywordsKey: { provider, keywordsKey: cacheKey(keywords) } },
+      where: { provider_keywordsKey: { provider, keywordsKey: cacheKey(searchKey(keywords, rejectTerms)) } },
     })
     if (!row) return null
     if (Date.now() - row.createdAt.getTime() > STOCK_CACHE_TTL_MS) return null
@@ -100,14 +109,14 @@ async function readCache(provider: StockImage["provider"], keywords: string[]): 
   }
 }
 
-async function writeCache(image: StockImage, keywords: string[]): Promise<void> {
+async function writeCache(image: StockImage, keywords: string[], rejectTerms: string[] = []): Promise<void> {
   if (keywords.length === 0) return
   try {
     await prisma.stockImageCache.upsert({
-      where: { provider_keywordsKey: { provider: image.provider, keywordsKey: cacheKey(keywords) } },
+      where: { provider_keywordsKey: { provider: image.provider, keywordsKey: cacheKey(searchKey(keywords, rejectTerms)) } },
       create: {
         provider: image.provider,
-        keywordsKey: cacheKey(keywords),
+        keywordsKey: cacheKey(searchKey(keywords, rejectTerms)),
         imageUrl: image.url,
         credit: image.credit,
         licenseUrl: image.licenseUrl,
@@ -155,7 +164,7 @@ const STOCK_REJECT_TERMS = [
   "fire",
 ]
 
-function isBadStockMatch(photo: PexelsPhoto | UnsplashResult): boolean {
+function isBadStockMatch(photo: PexelsPhoto | UnsplashResult, rejectTerms: string[] = []): boolean {
   const haystack = [
     "alt" in photo ? photo.alt : "",
     "url" in photo ? photo.url : "",
@@ -165,14 +174,14 @@ function isBadStockMatch(photo: PexelsPhoto | UnsplashResult): boolean {
     .join(" ")
     .toLowerCase()
 
-  return STOCK_REJECT_TERMS.some((term) => haystack.includes(term))
+  return [...STOCK_REJECT_TERMS, ...rejectTerms].some((term) => haystack.includes(term.toLowerCase()))
 }
 
-export async function searchPexels(keywords: string[]): Promise<StockImage | null> {
+export async function searchPexels(keywords: string[], rejectTerms: string[] = []): Promise<StockImage | null> {
   const apiKey = process.env.PEXELS_API_KEY
   if (!apiKey || keywords.length === 0) return null
 
-  const cached = await readCache("pexels", keywords)
+  const cached = await readCache("pexels", keywords, rejectTerms)
   if (cached) return cached
 
   const query = encodeURIComponent(keywords.join(" "))
@@ -188,7 +197,7 @@ export async function searchPexels(keywords: string[]): Promise<StockImage | nul
       return null
     }
     const data = (await res.json()) as PexelsResponse
-    const photo = data.photos?.find((candidate) => candidate.src && !isBadStockMatch(candidate))
+    const photo = data.photos?.find((candidate) => candidate.src && !isBadStockMatch(candidate, rejectTerms))
     if (!photo?.src) return null
 
     const image: StockImage = {
@@ -198,7 +207,7 @@ export async function searchPexels(keywords: string[]): Promise<StockImage | nul
       provider: "pexels",
     }
     if (!image.url) return null
-    await writeCache(image, keywords)
+    await writeCache(image, keywords, rejectTerms)
     return image
   } catch (err) {
     console.warn("[stock-photo] Pexels search failed:", err)
@@ -216,7 +225,7 @@ interface UnsplashResponse {
   results?: UnsplashResult[]
 }
 
-export async function searchUnsplash(keywords: string[]): Promise<StockImage | null> {
+export async function searchUnsplash(keywords: string[], rejectTerms: string[] = []): Promise<StockImage | null> {
   const apiKey = process.env.UNSPLASH_ACCESS_KEY
   // Unsplash API terms require hotlinking the returned photo.urls.*
   // assets and explicit attribution links. The news pipeline currently
@@ -225,7 +234,7 @@ export async function searchUnsplash(keywords: string[]): Promise<StockImage | n
   if (process.env.UNSPLASH_ENABLE_NEWS_IMAGES !== "1") return null
   if (!apiKey || keywords.length === 0) return null
 
-  const cached = await readCache("unsplash", keywords)
+  const cached = await readCache("unsplash", keywords, rejectTerms)
   if (cached) return cached
 
   const query = encodeURIComponent(keywords.join(" "))
@@ -241,7 +250,7 @@ export async function searchUnsplash(keywords: string[]): Promise<StockImage | n
       return null
     }
     const data = (await res.json()) as UnsplashResponse
-    const photo = data.results?.[0]
+    const photo = data.results?.find((candidate) => candidate.urls && !isBadStockMatch(candidate, rejectTerms))
     if (!photo?.urls) return null
 
     // Unsplash attribution requires linking to the photo page AND the
@@ -256,7 +265,7 @@ export async function searchUnsplash(keywords: string[]): Promise<StockImage | n
       provider: "unsplash",
     }
     if (!image.url) return null
-    await writeCache(image, keywords)
+    await writeCache(image, keywords, rejectTerms)
     return image
   } catch (err) {
     console.warn("[stock-photo] Unsplash search failed:", err)
@@ -281,21 +290,26 @@ export async function findContextualStockPhoto(input: {
   summary?: string | null
   body?: string | null
   category?: string | null
-}): Promise<(StockImage & { concept: NewsImageConcept }) | null> {
-  const concept = deriveNewsImageConcept(input)
-  // If no explicit topic/brand rule matched, the concept is only a
-  // generic category fallback. In V4 that produced pretty but weakly
-  // connected images, so keep Totem's editorial fallback instead.
-  if (concept.matchedTerms.length === 0) return null
+}): Promise<(StockImage & { concept: NewsImageConcept; intent?: NewsVisualIntent }) | null> {
+  const intent = await resolveNewsVisualIntent(input)
+  if (!intent) return null
 
+  const concept: NewsImageConcept = {
+    query: intent.query,
+    label: intent.label,
+    matchedTerms: [intent.source],
+  }
   const keywords = conceptKeywords(concept)
   if (keywords.length === 0) return null
-  const image = (await searchPexels(keywords)) ?? (await searchUnsplash(keywords))
+  const image =
+    (await searchPexels(keywords, intent.negativeTerms)) ??
+    (await searchUnsplash(keywords, intent.negativeTerms))
   if (!image) return null
   return {
     ...image,
     query: concept.query,
     conceptLabel: concept.label,
     concept,
+    intent,
   }
 }
