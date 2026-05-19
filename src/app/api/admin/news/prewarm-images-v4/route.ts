@@ -40,6 +40,13 @@ function reasonCount(reasons: Record<string, number>, reason: string): number {
   return reasons[reason] ?? 0
 }
 
+function reasonPrefixCount(reasons: Record<string, number>, prefix: string): number {
+  return Object.entries(reasons).reduce(
+    (total, [reason, count]) => total + (reason.startsWith(prefix) ? count : 0),
+    0,
+  )
+}
+
 export async function POST(req: NextRequest) {
   if (!(await isCronOrAdminAuthorized(req))) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 })
@@ -120,7 +127,15 @@ export async function POST(req: NextRequest) {
       reasonLowConfidence: reasonCount(reasons, "low_confidence"),
       reasonNoIntent: reasonCount(reasons, "no_intent"),
       reasonNoStockMatch: reasonCount(reasons, "no_stock_match"),
-      reasonStorageFailed: reasonCount(reasons, "storage_failed"),
+      reasonStorageFailed: reasonPrefixCount(reasons, "storage_"),
+      reasonStorageDisabled: reasonCount(reasons, "storage_storage_disabled"),
+      reasonStorageClientUnavailable: reasonCount(reasons, "storage_client_unavailable"),
+      reasonStorageSourceHttpError: reasonCount(reasons, "storage_source_http_error"),
+      reasonStorageNonImage: reasonCount(reasons, "storage_non_image_content_type"),
+      reasonStoragePayloadTooSmall: reasonCount(reasons, "storage_payload_too_small"),
+      reasonStorageDimensionsTooSmall: reasonCount(reasons, "storage_dimensions_too_small"),
+      reasonStorageUploadError: reasonCount(reasons, "storage_storage_upload_error"),
+      reasonStorageException: reasonCount(reasons, "storage_fetch_or_upload_exception"),
       remaining,
       lastId,
       durationMs: Date.now() - startTime,

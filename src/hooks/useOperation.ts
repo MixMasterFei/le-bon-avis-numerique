@@ -12,6 +12,7 @@ export interface OperationProgress {
   errors?: number
   skipped?: number
   chunks: number
+  [key: string]: number | null | undefined
 }
 
 export interface OperationResult {
@@ -205,6 +206,7 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
           }
 
           setProgress({
+            ...accum,
             processed: accum.processed || 0,
             total: lastTotal,
             matched: accum.matched,
@@ -273,6 +275,7 @@ export function useOperation(config: OperationConfig): UseOperationReturn {
         if (chunkProgress.total !== null) lastTotal = chunkProgress.total
 
         setProgress({
+          ...accum,
           processed: accum.processed || 0,
           total: lastTotal,
           matched: accum.matched,

@@ -2,11 +2,13 @@ import { Prisma, type NewsCategory } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
-import { uploadNewsImage } from "@/lib/supabase-storage"
+import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
 const MIN_AUTO_APPROVE_CONFIDENCE = 0.72
-const RETRYABLE_REJECTION_REASONS = new Set(["storage_failed"])
+function isRetryableRejection(reason: string): boolean {
+  return reason === "storage_failed" || reason.startsWith("storage_")
+}
 
 export interface PreparedNewsImage {
   url: string
@@ -138,7 +140,7 @@ export async function prepareDiscoveryV4Image(
       })
       if (existing) {
         const reason = existing.approved ? "already_prepared" : existing.rejectedReason ?? "already_rejected"
-        if (existing.approved || !RETRYABLE_REJECTION_REASONS.has(reason)) {
+        if (existing.approved || !isRetryableRejection(reason)) {
           return {
             status: "skipped",
             reason,
@@ -193,8 +195,9 @@ export async function prepareDiscoveryV4Image(
       return { status: "rejected", reason: "no_stock_match", assetId }
     }
 
-    const storageUrl = await uploadNewsImage(stock.url)
-    if (!storageUrl) {
+    const storage = await uploadNewsImageWithDiagnostics(stock.url)
+    if (!storage.url) {
+      const rejectedReason = `storage_${storage.reason ?? "failed"}`
       const assetId = await upsertRejectedAsset(story, {
         provider: stock.provider,
         query: stock.query ?? intent.query,
@@ -202,9 +205,9 @@ export async function prepareDiscoveryV4Image(
         topicLabel: stock.conceptLabel ?? intent.label,
         confidence: intent.confidence,
         visualIntent: intent.reason ?? intent.query,
-        rejectedReason: "storage_failed",
+        rejectedReason,
       })
-      return { status: "rejected", reason: "storage_failed", assetId }
+      return { status: "rejected", reason: rejectedReason, assetId }
     }
 
     const asset = await prisma.newsImageAsset.upsert({
@@ -219,7 +222,7 @@ export async function prepareDiscoveryV4Image(
         variant: DISCOVERY_V4_IMAGE_VARIANT,
         provider: stock.provider,
         sourceUrl: stock.url,
-        storageUrl,
+        storageUrl: storage.url,
         credit: stock.credit,
         licenseUrl: stock.licenseUrl,
         visualIntent: stock.intent?.reason ?? stock.intent?.query ?? stock.query ?? intent.query,
@@ -235,7 +238,7 @@ export async function prepareDiscoveryV4Image(
       update: {
         provider: stock.provider,
         sourceUrl: stock.url,
-        storageUrl,
+        storageUrl: storage.url,
         credit: stock.credit,
         licenseUrl: stock.licenseUrl,
         visualIntent: stock.intent?.reason ?? stock.intent?.query ?? stock.query ?? intent.query,

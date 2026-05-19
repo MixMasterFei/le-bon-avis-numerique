@@ -3,7 +3,7 @@ import { getApprovedDiscoveryV4Image, prepareDiscoveryV4Image } from "@/lib/news
 import { prisma } from "@/lib/prisma"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
-import { uploadNewsImage } from "@/lib/supabase-storage"
+import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -23,7 +23,7 @@ vi.mock("@/lib/stock-photo", () => ({
 }))
 
 vi.mock("@/lib/supabase-storage", () => ({
-  uploadNewsImage: vi.fn(),
+  uploadNewsImageWithDiagnostics: vi.fn(),
 }))
 
 const story = {
@@ -94,14 +94,16 @@ describe("news image assets", () => {
         matchedTerms: ["llm"],
       },
     })
-    vi.mocked(uploadNewsImage).mockResolvedValueOnce("https://supabase.example/storage/news/123.jpg")
+    vi.mocked(uploadNewsImageWithDiagnostics).mockResolvedValueOnce({
+      url: "https://supabase.example/storage/news/123.jpg",
+    })
     vi.mocked(prisma.newsImageAsset.upsert).mockResolvedValueOnce({ id: "asset-storage-retried" } as never)
 
     const result = await prepareDiscoveryV4Image(story)
 
     expect(result).toEqual({ status: "updated", assetId: "asset-storage-retried" })
     expect(resolveNewsVisualIntent).toHaveBeenCalled()
-    expect(uploadNewsImage).toHaveBeenCalledWith("https://images.pexels.com/photos/123/pexels-photo.jpg")
+    expect(uploadNewsImageWithDiagnostics).toHaveBeenCalledWith("https://images.pexels.com/photos/123/pexels-photo.jpg")
   })
 
   it("records a rejected asset when visual confidence is too low", async () => {
@@ -119,7 +121,7 @@ describe("news image assets", () => {
 
     expect(result).toEqual({ status: "rejected", reason: "low_confidence", assetId: "asset-low" })
     expect(findContextualStockPhoto).not.toHaveBeenCalled()
-    expect(uploadNewsImage).not.toHaveBeenCalled()
+    expect(uploadNewsImageWithDiagnostics).not.toHaveBeenCalled()
   })
 
   it("stores credit, license and mirrored URL for approved Pexels assets", async () => {
@@ -152,7 +154,9 @@ describe("news image assets", () => {
         source: "llm",
       },
     })
-    vi.mocked(uploadNewsImage).mockResolvedValueOnce("https://supabase.example/storage/news/123.jpg")
+    vi.mocked(uploadNewsImageWithDiagnostics).mockResolvedValueOnce({
+      url: "https://supabase.example/storage/news/123.jpg",
+    })
     vi.mocked(prisma.newsImageAsset.upsert).mockResolvedValueOnce({ id: "asset-ok" } as never)
 
     const result = await prepareDiscoveryV4Image(story)

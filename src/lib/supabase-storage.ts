@@ -141,23 +141,33 @@ function probeDimensions(buf: Uint8Array): { width: number; height: number } | n
  * same storage path.
  */
 export async function uploadNewsImage(sourceUrl: string): Promise<string | null> {
+  const result = await uploadNewsImageWithDiagnostics(sourceUrl)
+  return result.url
+}
+
+export interface NewsImageUploadResult {
+  url: string | null
+  reason?: string
+}
+
+export async function uploadNewsImageWithDiagnostics(sourceUrl: string): Promise<NewsImageUploadResult> {
   // Our own generated fallback card (/api/news/fallback-card) is already
   // served from this app and is permanent — re-uploading it to Supabase
   // would just create one identical copy per story. Keep the route URL.
-  if (sourceUrl.includes("/api/news/fallback-card")) return sourceUrl
+  if (sourceUrl.includes("/api/news/fallback-card")) return { url: sourceUrl }
 
-  if (!isStorageEnabled()) return null
+  if (!isStorageEnabled()) return { url: null, reason: "storage_disabled" }
   const supabase = getSupabaseAdmin()
-  if (!supabase) return null
+  if (!supabase) return { url: null, reason: "client_unavailable" }
 
   try {
     const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(15000) })
-    if (!response.ok) return null
+    if (!response.ok) return { url: null, reason: "source_http_error" }
 
     const contentType = response.headers.get("content-type") || ""
     if (!contentType.startsWith("image/")) {
       console.warn(`[uploadNewsImage] non-image content-type "${contentType}" for ${sourceUrl}`)
-      return null
+      return { url: null, reason: "non_image_content_type" }
     }
 
     const arrayBuffer = await response.arrayBuffer()
@@ -165,7 +175,7 @@ export async function uploadNewsImage(sourceUrl: string): Promise<string | null>
     // favicons, and most placeholder/error responses.
     if (arrayBuffer.byteLength < 10_000) {
       console.warn(`[uploadNewsImage] payload too small (${arrayBuffer.byteLength}B) for ${sourceUrl}`)
-      return null
+      return { url: null, reason: "payload_too_small" }
     }
 
     const buf = new Uint8Array(arrayBuffer)
@@ -175,7 +185,7 @@ export async function uploadNewsImage(sourceUrl: string): Promise<string | null>
     // Unknown format → trust content-type and ship.
     if (dims && (dims.width < 640 || dims.height < 320)) {
       console.warn(`[uploadNewsImage] dimensions too small for news card (${dims.width}x${dims.height}) for ${sourceUrl}`)
-      return null
+      return { url: null, reason: "dimensions_too_small" }
     }
 
     const { createHash } = await import("crypto")
@@ -191,13 +201,13 @@ export async function uploadNewsImage(sourceUrl: string): Promise<string | null>
       })
     if (error) {
       console.error(`[uploadNewsImage] storage upload error: ${error.message}`)
-      return null
+      return { url: null, reason: "storage_upload_error" }
     }
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
-    return data.publicUrl
+    return { url: data.publicUrl }
   } catch (err) {
     console.error(`[uploadNewsImage] failed to upload ${sourceUrl}:`, err)
-    return null
+    return { url: null, reason: "fetch_or_upload_exception" }
   }
 }
 
