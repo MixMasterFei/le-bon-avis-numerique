@@ -260,6 +260,12 @@ html {
   animation: totem-pulse 2.4s ease-in-out infinite;
 }
 
+/* Top progress bar — indeterminate slide for listing-page filter loads */
+@keyframes top-progress-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Staggered animation delays */
 .stagger-1 { animation-delay: 0.1s; }
 .stagger-2 { animation-delay: 0.2s; }

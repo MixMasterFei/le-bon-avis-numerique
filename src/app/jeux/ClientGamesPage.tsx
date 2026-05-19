@@ -6,6 +6,8 @@ import { Gamepad2, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
+import { TopProgressBar } from "@/components/ui/TopProgressBar"
+import { cn } from "@/lib/utils"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 import type { TransformedMediaItem } from "@/lib/media-queries"
 
@@ -313,15 +315,15 @@ export function ClientGamesPage({ initialData, initialFilters, initialPage }: Cl
             </p>
           </div>
 
-          {loading ? (
-            <div className="text-center py-16 text-gray-500">
-              <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50 animate-pulse" />
-              <p className="text-lg font-medium">Chargement...</p>
-              <p className="text-sm">Récupération du catalogue</p>
-            </div>
-          ) : dbGames.length > 0 ? (
+          {dbGames.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 transition-opacity duration-200",
+                  loading && "opacity-60 pointer-events-none",
+                )}
+                aria-busy={loading}
+              >
                 {dbGames.map((game) => (
                   <MediaCard key={game.id} media={game} />
                 ))}
@@ -334,6 +336,11 @@ export function ClientGamesPage({ initialData, initialFilters, initialPage }: Cl
                 className="mt-8"
               />
             </>
+          ) : loading ? (
+            <div className="text-center py-16 text-gray-400">
+              <Gamepad2 className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Chargement du catalogue…</p>
+            </div>
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Gamepad2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -343,6 +350,7 @@ export function ClientGamesPage({ initialData, initialFilters, initialPage }: Cl
           )}
         </div>
       </div>
+      <TopProgressBar loading={loading} />
     </div>
   )
 }

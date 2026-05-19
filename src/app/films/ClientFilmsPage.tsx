@@ -6,6 +6,8 @@ import { Film, Clock, Users } from "lucide-react"
 import { MediaCard } from "@/components/media/MediaCard"
 import { FilterSidebar, type FilterState, DEFAULT_MIN_AGE, DEFAULT_MAX_AGE } from "@/components/media/FilterSidebar"
 import { Pagination } from "@/components/ui/pagination"
+import { TopProgressBar } from "@/components/ui/TopProgressBar"
+import { cn } from "@/lib/utils"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 import type { TransformedMediaItem } from "@/lib/media-queries"
 
@@ -355,15 +357,21 @@ export function ClientFilmsPage({ initialData, initialFilters, initialPage, isCi
             </p>
           </div>
 
-          {loading ? (
-            <div className="text-center py-16 text-gray-500">
-              <Film className="h-12 w-12 mx-auto mb-4 opacity-50 animate-pulse" />
-              <p className="text-lg font-medium">Chargement...</p>
-              <p className="text-sm">Récupération du catalogue</p>
-            </div>
-          ) : dbMovies.length > 0 ? (
+          {/* Keep existing results in place while refetching — the grid
+              just dims to ~60% opacity. The TopProgressBar at the very top
+              of the viewport carries the "something's happening" signal.
+              Replacing the grid with a centered "Chargement..." block on
+              every filter change felt janky; this matches the YouTube /
+              Vercel / Linear pattern. */}
+          {dbMovies.length > 0 ? (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3">
+              <div
+                className={cn(
+                  "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 transition-opacity duration-200",
+                  loading && "opacity-60 pointer-events-none",
+                )}
+                aria-busy={loading}
+              >
                 {dbMovies.map((item) => (
                   <MediaCard key={item.id} media={item} />
                 ))}
@@ -376,6 +384,14 @@ export function ClientFilmsPage({ initialData, initialFilters, initialPage, isCi
                 className="mt-8"
               />
             </>
+          ) : loading ? (
+            // Cold load (no prior results to dim) — still gentle, no
+            // big spinner block. The TopProgressBar already tells the
+            // user something's happening.
+            <div className="text-center py-16 text-gray-400">
+              <Film className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Chargement du catalogue…</p>
+            </div>
           ) : (
             <div className="text-center py-16 text-gray-500">
               <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -385,6 +401,7 @@ export function ClientFilmsPage({ initialData, initialFilters, initialPage, isCi
           )}
         </div>
       </div>
+      <TopProgressBar loading={loading} />
     </div>
   )
 }
