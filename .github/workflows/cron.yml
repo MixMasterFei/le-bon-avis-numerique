@@ -55,6 +55,7 @@ on:
           - streaming
           - similarity
           - news-discover
+          - news-prewarm-images-v4
           - weekly-dossier
           - family-content-agent
           - supervisor
@@ -358,9 +359,12 @@ jobs:
     if: >-
       github.event.schedule == '17 0,6,12,18 * * *' ||
       github.event.inputs.task == 'news-discover' ||
+      github.event.inputs.task == 'news-prewarm-images-v4' ||
       github.event.inputs.task == 'all'
     steps:
       - name: Run news discovery
+        if: >-
+          github.event.inputs.task != 'news-prewarm-images-v4'
         run: |
           echo "::group::News Discover"
           # 320s — slightly OVER the route's 300s ceiling so curl waits
@@ -381,6 +385,35 @@ jobs:
             echo "::error::News discover failed with HTTP $http_code (see response body above)"
             exit 1
           fi
+          echo "::endgroup::"
+
+      - name: Prewarm Discover V4 images
+        run: |
+          echo "::group::Prewarm Discover V4 images"
+          after_id=""
+          for batch in $(seq 1 5); do
+            url="$SITE_URL/api/admin/news/prewarm-images-v4?limit=8"
+            if [ -n "$after_id" ]; then
+              url="$url&afterId=$after_id"
+            fi
+            response=$(curl -sSL --max-time 58 -X POST -w "\n%{http_code}" \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$url")
+            http_code=$(echo "$response" | tail -1)
+            body=$(echo "$response" | sed '$d')
+            echo "$body" | jq . 2>/dev/null || echo "$body"
+            if [ "$http_code" -ge 400 ]; then
+              echo "::error::V4 image prewarm failed with HTTP $http_code (see response body above)"
+              exit 1
+            fi
+            done_flag=$(echo "$body" | jq -r '.done // false' 2>/dev/null || echo "false")
+            after_id=$(echo "$body" | jq -r '.lastId // empty' 2>/dev/null || echo "")
+            if [ "$done_flag" = "true" ] || [ -z "$after_id" ]; then
+              echo "V4 image prewarm complete"
+              break
+            fi
+            sleep 2
+          done
           echo "::endgroup::"
 
   # ── Monday 06:00 UTC: family content editorial agent ─────────────
