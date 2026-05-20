@@ -18,7 +18,7 @@ import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma, type ImageSourceType } from "@prisma/client"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
-import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
+import { editorialVisualCard, fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import { getApprovedDiscoveryV4Image } from "@/lib/news-image-assets"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
@@ -152,6 +152,23 @@ function isValidWeatherCity(city: WeatherCity): boolean {
 }
 
 async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): Promise<ApercuNewsCardData> {
+  if (imagePolicy === "stockThenFallback") {
+    const editorialVisual = editorialVisualCard(row)
+    if (editorialVisual) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: editorialVisual.url,
+        imageCredit: editorialVisual.credit,
+        imageLicenseUrl: editorialVisual.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+  }
+
   if (shouldTryStockImage(row, imagePolicy)) {
     const prepared = await getApprovedDiscoveryV4Image(row.id)
     if (prepared) {
@@ -173,7 +190,7 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
       summary: row.summary,
       body: row.body,
       category: row.category,
-    })
+    }, { cacheOnly: true })
     if (stock) {
       return {
         slug: row.slug,

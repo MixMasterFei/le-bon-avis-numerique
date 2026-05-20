@@ -242,7 +242,9 @@ export async function resolveNewsVisualIntent(
     return ruleIntent(input)
   }
 
-  const intent = (await llmIntent(input)) ?? ruleIntent(input)
+  const rule = ruleIntent(input)
+  const llm = await llmIntent(input)
+  const intent = llm && llm.confidence >= MIN_CONFIDENCE ? llm : rule ?? llm
   if (!intent) return null
   await writeIntentCache(input, intent)
   return intent

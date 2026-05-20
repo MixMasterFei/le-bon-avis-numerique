@@ -39,6 +39,8 @@ const CATEGORY_MOTIFS: Record<string, string[]> = {
 const DEFAULT_MOTIFS = ["screen", "book", "console", "network", "research", "family", "phone"]
 
 const BRAND_CUES = [
+  { pattern: /\bgoogle\s*i\/?o\b/i, label: "Google I/O", accent: "#1A73E8", motif: "research" },
+  { pattern: /\bhorizon worlds?\b/i, label: "Meta Horizon", accent: "#0866FF", motif: "screen" },
   { pattern: /\b(meta|facebook|instagram|horizon worlds?)\b/i, label: "Meta", accent: "#0866FF", motif: "phone" },
   { pattern: /\b(google|android|youtube|chromebook)\b/i, label: "Google", accent: "#1A73E8", motif: "phone" },
   { pattern: /\b(openai|chatgpt)\b/i, label: "OpenAI", accent: "#0F766E", motif: "research" },
@@ -50,6 +52,8 @@ const BRAND_CUES = [
   { pattern: /\b(nintendo|switch)\b/i, label: "Nintendo", accent: "#E60012", motif: "console" },
   { pattern: /\b(roblox)\b/i, label: "Roblox", accent: "#335FFF", motif: "console" },
   { pattern: /\b(minecraft)\b/i, label: "Minecraft", accent: "#4A7D35", motif: "console" },
+  { pattern: /\b(fortnite|epic games)\b/i, label: "Fortnite", accent: "#6246EA", motif: "console" },
+  { pattern: /\b(pronote)\b/i, label: "Pronote", accent: "#2F6F9F", motif: "screen" },
   { pattern: /\b(arxiv|universit|recherche|etude|study|research)\b/i, label: "Recherche", accent: "#B31B1B", motif: "research" },
 ]
 
@@ -283,6 +287,8 @@ export async function GET(req: NextRequest) {
   const motif = motifFor(cat, Math.floor(hash / PALETTES.length), brand?.motif)
   const label = LABELS[cat] ?? "Actualites"
   const sublabel = SUBLABELS[cat] ?? "selection famille"
+  const headline = brand?.label ?? label
+  const detail = brand ? `${label} - ${sublabel}` : sublabel
   const ringShift = hash % 160
 
   return new ImageResponse(
@@ -345,11 +351,11 @@ export async function GET(req: NextRequest) {
               </div>
             ) : null}
           </div>
-          <div style={{ marginTop: 78, fontSize: cat === "PARENTHOOD" ? 82 : 88, fontWeight: 850, lineHeight: 0.98, letterSpacing: 0 }}>
-            {label}
+          <div style={{ marginTop: 78, fontSize: headline.length > 11 ? 74 : headline.length > 8 ? 82 : 92, fontWeight: 850, lineHeight: 0.98, letterSpacing: 0 }}>
+            {headline}
           </div>
           <div style={{ marginTop: 24, width: 112, height: 7, borderRadius: 999, background: accent }} />
-          <div style={{ marginTop: 30, fontSize: 34, lineHeight: 1.15, color: `${palette.ink}CC`, fontWeight: 650 }}>{sublabel}</div>
+          <div style={{ marginTop: 30, fontSize: 34, lineHeight: 1.15, color: `${palette.ink}CC`, fontWeight: 650 }}>{detail}</div>
           <div style={{ marginTop: "auto", fontSize: 23, color: `${palette.ink}82`, fontWeight: 650 }}>visuel Totem</div>
         </div>
         <div style={{ width: "48%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", paddingRight: 62 }}>

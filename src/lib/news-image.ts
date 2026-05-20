@@ -53,6 +53,28 @@ export function fallbackCard(category: string | null | undefined, seed?: string 
   }
 }
 
+const EDITORIAL_VISUAL_RULES = [
+  /\bgoogle\s*i\/?o\b/i,
+  /\bmeta\b|\bhorizon worlds?\b|\bfacebook\b|\binstagram\b/i,
+  /\bminecraft\b|\bfortnite\b|\broblox\b|\bnintendo\b|\bswitch\b|\bzelda\b/i,
+  /\bnetflix\b|\bdisney\+?\b|\bprime video\b|\bcanal\+?\b|\bmycanal\b/i,
+  /\bpronote\b|\bchatgpt\b|\bopenai\b|\bgemini\b|\bgoogle\b|\bandroid\b|\byoutube\b/i,
+]
+
+export function editorialVisualCard(input: {
+  title: string
+  summary?: string | null
+  body?: string | null
+  category?: string | null
+}): ResolvedImage | null {
+  const text = `${input.title} ${input.summary ?? ""} ${input.body ?? ""}`
+  if (!EDITORIAL_VISUAL_RULES.some((rule) => rule.test(text))) return null
+  return {
+    ...fallbackCard(input.category, text.slice(0, 240)),
+    auditLabel: "EDITORIAL_BRAND_VISUAL",
+  }
+}
+
 /** True when an image URL points at our own generated fallback card. */
 export function isFallbackCardUrl(url: string | null | undefined): boolean {
   return typeof url === "string" && url.includes(FALLBACK_CARD_PATH)

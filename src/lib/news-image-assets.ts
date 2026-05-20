@@ -2,6 +2,7 @@ import { Prisma, type NewsCategory } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
+import { editorialVisualCard } from "@/lib/news-image"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
@@ -95,6 +96,67 @@ async function upsertRejectedAsset(
   return row.id
 }
 
+async function upsertApprovedAsset(
+  story: V4ImageStoryInput,
+  data: {
+    provider: string
+    sourceUrl: string
+    storageUrl: string
+    credit: string | null
+    licenseUrl?: string | null
+    visualIntent: string
+    query: string
+    negativeTerms?: string[]
+    topicLabel?: string
+    confidence: number
+    qualityScore?: number | null
+  },
+): Promise<string> {
+  const row = await prisma.newsImageAsset.upsert({
+    where: {
+      newsStoryId_variant: {
+        newsStoryId: story.id,
+        variant: DISCOVERY_V4_IMAGE_VARIANT,
+      },
+    },
+    create: {
+      newsStoryId: story.id,
+      variant: DISCOVERY_V4_IMAGE_VARIANT,
+      provider: data.provider,
+      sourceUrl: data.sourceUrl,
+      storageUrl: data.storageUrl,
+      credit: data.credit,
+      licenseUrl: data.licenseUrl ?? null,
+      visualIntent: data.visualIntent,
+      query: data.query,
+      negativeTerms: asJsonArray(data.negativeTerms ?? []),
+      topicLabel: data.topicLabel,
+      category: normalizeCategory(story.category),
+      confidence: data.confidence,
+      qualityScore: data.qualityScore ?? data.confidence,
+      approved: true,
+      rejectedReason: null,
+    },
+    update: {
+      provider: data.provider,
+      sourceUrl: data.sourceUrl,
+      storageUrl: data.storageUrl,
+      credit: data.credit,
+      licenseUrl: data.licenseUrl ?? null,
+      visualIntent: data.visualIntent,
+      query: data.query,
+      negativeTerms: asJsonArray(data.negativeTerms ?? []),
+      topicLabel: data.topicLabel,
+      category: normalizeCategory(story.category),
+      confidence: data.confidence,
+      qualityScore: data.qualityScore ?? data.confidence,
+      approved: true,
+      rejectedReason: null,
+    },
+  })
+  return row.id
+}
+
 export async function getApprovedDiscoveryV4Image(storyId: string): Promise<PreparedNewsImage | null> {
   try {
     const row = await prisma.newsImageAsset.findUnique({
@@ -128,6 +190,23 @@ export async function prepareDiscoveryV4Image(
   options: { force?: boolean } = {},
 ): Promise<PrepareV4ImageResult> {
   try {
+    const editorialVisual = editorialVisualCard(story)
+    if (editorialVisual) {
+      const assetId = await upsertApprovedAsset(story, {
+        provider: "totem_editorial",
+        sourceUrl: editorialVisual.url,
+        storageUrl: editorialVisual.url,
+        credit: editorialVisual.credit,
+        licenseUrl: editorialVisual.licenseUrl,
+        visualIntent: editorialVisual.auditLabel ?? "editorial brand visual",
+        query: story.title,
+        topicLabel: editorialVisual.auditLabel ?? "editorial brand visual",
+        confidence: 0.95,
+        qualityScore: 0.95,
+      })
+      return { status: "updated", reason: "editorial_visual", assetId }
+    }
+
     if (!options.force) {
       const existing = await prisma.newsImageAsset.findUnique({
         where: {
@@ -197,63 +276,37 @@ export async function prepareDiscoveryV4Image(
 
     const storage = await uploadNewsImageWithDiagnostics(stock.url)
     if (!storage.url) {
-      const rejectedReason = `storage_${storage.reason ?? "failed"}`
-      const assetId = await upsertRejectedAsset(story, {
+      const storageReason = `storage_${storage.reason ?? "failed"}`
+      const assetId = await upsertApprovedAsset(story, {
         provider: stock.provider,
+        sourceUrl: stock.url,
+        storageUrl: stock.url,
+        credit: stock.credit,
+        licenseUrl: stock.licenseUrl,
         query: stock.query ?? intent.query,
         negativeTerms: intent.negativeTerms,
         topicLabel: stock.conceptLabel ?? intent.label,
         confidence: intent.confidence,
         visualIntent: intent.reason ?? intent.query,
-        rejectedReason,
       })
-      return { status: "rejected", reason: rejectedReason, assetId }
+      return { status: "updated", reason: `${storageReason}_using_source`, assetId }
     }
 
-    const asset = await prisma.newsImageAsset.upsert({
-      where: {
-        newsStoryId_variant: {
-          newsStoryId: story.id,
-          variant: DISCOVERY_V4_IMAGE_VARIANT,
-        },
-      },
-      create: {
-        newsStoryId: story.id,
-        variant: DISCOVERY_V4_IMAGE_VARIANT,
-        provider: stock.provider,
-        sourceUrl: stock.url,
-        storageUrl: storage.url,
-        credit: stock.credit,
-        licenseUrl: stock.licenseUrl,
-        visualIntent: stock.intent?.reason ?? stock.intent?.query ?? stock.query ?? intent.query,
-        query: stock.query ?? intent.query,
-        negativeTerms: asJsonArray(stock.intent?.negativeTerms ?? intent.negativeTerms),
-        topicLabel: stock.conceptLabel ?? stock.intent?.label ?? intent.label,
-        category: normalizeCategory(story.category),
-        confidence: stock.intent?.confidence ?? intent.confidence,
-        qualityScore: stock.intent?.confidence ?? intent.confidence,
-        approved: true,
-        rejectedReason: null,
-      },
-      update: {
-        provider: stock.provider,
-        sourceUrl: stock.url,
-        storageUrl: storage.url,
-        credit: stock.credit,
-        licenseUrl: stock.licenseUrl,
-        visualIntent: stock.intent?.reason ?? stock.intent?.query ?? stock.query ?? intent.query,
-        query: stock.query ?? intent.query,
-        negativeTerms: asJsonArray(stock.intent?.negativeTerms ?? intent.negativeTerms),
-        topicLabel: stock.conceptLabel ?? stock.intent?.label ?? intent.label,
-        category: normalizeCategory(story.category),
-        confidence: stock.intent?.confidence ?? intent.confidence,
-        qualityScore: stock.intent?.confidence ?? intent.confidence,
-        approved: true,
-        rejectedReason: null,
-      },
+    const assetId = await upsertApprovedAsset(story, {
+      provider: stock.provider,
+      sourceUrl: stock.url,
+      storageUrl: storage.url,
+      credit: stock.credit,
+      licenseUrl: stock.licenseUrl,
+      visualIntent: stock.intent?.reason ?? stock.intent?.query ?? stock.query ?? intent.query,
+      query: stock.query ?? intent.query,
+      negativeTerms: stock.intent?.negativeTerms ?? intent.negativeTerms,
+      topicLabel: stock.conceptLabel ?? stock.intent?.label ?? intent.label,
+      confidence: stock.intent?.confidence ?? intent.confidence,
+      qualityScore: stock.intent?.confidence ?? intent.confidence,
     })
 
-    return { status: "updated", assetId: asset.id }
+    return { status: "updated", assetId }
   } catch (err) {
     console.error("[news-image-assets] prepare failed:", err)
     return {
