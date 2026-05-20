@@ -227,6 +227,7 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
         titleAccent="mangas"
         itemNoun={{ singular: "manga", plural: "mangas" }}
         emptyTitle="Aucun manga à afficher"
+        mediaType="MANGA"
       />
     </>
   )

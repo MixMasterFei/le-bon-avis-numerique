@@ -277,6 +277,7 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
         titleAccent="jeux vidéo"
         itemNoun={{ singular: "jeu", plural: "jeux" }}
         emptyTitle="Aucun jeu à afficher"
+        mediaType="GAME"
       />
     </>
   )

@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { ApercuMediaCard, type ApercuCardMedia } from "./ApercuMediaCard"
-import { ApercuFilterSidebar } from "./ApercuFilterSidebar"
+import { ApercuFilterSidebar, type ApercuFilterMediaType } from "./ApercuFilterSidebar"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface FamilyMember {
@@ -45,6 +45,10 @@ interface ApercuFilmsListProps {
   itemNoun?: { singular: string; plural: string }
   /** Empty-state message, e.g. "Aucun film à afficher". */
   emptyTitle?: string
+  /** Drives the sidebar's platform/topic lists + search placeholder. The
+      games page was inheriting movie streaming platforms (Netflix etc.)
+      and movie-only topics like "Super-héros" until this was wired. */
+  mediaType?: ApercuFilterMediaType
 }
 
 export function ApercuFilmsList({
@@ -62,6 +66,7 @@ export function ApercuFilmsList({
   titleAccent = "films",
   itemNoun = { singular: "film", plural: "films" },
   emptyTitle = "Aucun film à afficher",
+  mediaType = "MOVIE",
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
   const countNoun = total === 1 ? itemNoun.singular : itemNoun.plural
@@ -115,6 +120,7 @@ export function ApercuFilmsList({
                 familyMembers={familyMembers}
                 initialFilters={initialFilters}
                 route={route}
+                mediaType={mediaType}
               />
 
               {/* Grid */}

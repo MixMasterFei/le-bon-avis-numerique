@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Search, X, Users } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { getMemberAge } from "@/lib/age-utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 
@@ -31,6 +32,8 @@ interface FamilyMember {
   avatarOptions: Record<string, unknown> | null
 }
 
+export type ApercuFilterMediaType = "MOVIE" | "TV" | "GAME" | "MANGA"
+
 interface ApercuFilterSidebarProps {
   serifClass: string
   familyMembers: FamilyMember[]
@@ -45,6 +48,10 @@ interface ApercuFilterSidebarProps {
   }
   /** Route to push filter changes to. Defaults to "/films". */
   route?: string
+  /** Drives placeholder copy + which platform/topic lists are shown.
+      Without this the games page was showing streaming platforms and
+      movie-only topics like "Super-héros" / "Aviation" — wrong context. */
+  mediaType?: ApercuFilterMediaType
 }
 
 const SORT_OPTIONS = [
@@ -53,7 +60,8 @@ const SORT_OPTIONS = [
   { key: "title", label: "A → Z" },
 ] as const
 
-const PLATFORMS = [
+// Streaming platforms — apply to films + TV.
+const MOVIE_TV_PLATFORMS = [
   "Netflix France",
   "Disney+",
   "Prime Video",
@@ -62,7 +70,18 @@ const PLATFORMS = [
   "Apple TV+",
 ]
 
-const TOPICS = [
+// Gaming platforms — apply to GAME. Matches the legacy FilterSidebar set.
+const GAME_PLATFORMS = [
+  "Switch",
+  "PS5",
+  "PS4",
+  "Xbox Series",
+  "Xbox One",
+  "PC",
+  "Mac",
+]
+
+const MOVIE_TV_TOPICS = [
   "Animation",
   "Aventure",
   "Comédie",
@@ -81,6 +100,54 @@ const TOPICS = [
   "Amitié",
 ]
 
+const GAME_TOPICS = [
+  "Aventure",
+  "Action",
+  "RPG",
+  "Plateforme",
+  "Puzzle",
+  "Sport",
+  "Course",
+  "Simulation",
+  "Éducatif",
+  "Famille",
+  "Multijoueur",
+  "Coopératif",
+]
+
+const MANGA_TOPICS = [
+  "Shōnen",
+  "Shōjo",
+  "Seinen",
+  "Aventure",
+  "Action",
+  "Comédie",
+  "Famille",
+  "Fantastique",
+  "Science-Fiction",
+  "Sport",
+  "Slice of life",
+]
+
+function platformsFor(mediaType: ApercuFilterMediaType): string[] {
+  if (mediaType === "GAME") return GAME_PLATFORMS
+  if (mediaType === "MANGA") return [] // no platform concept
+  return MOVIE_TV_PLATFORMS
+}
+
+function topicsFor(mediaType: ApercuFilterMediaType): string[] {
+  if (mediaType === "GAME") return GAME_TOPICS
+  if (mediaType === "MANGA") return MANGA_TOPICS
+  return MOVIE_TV_TOPICS
+}
+
+function searchPlaceholderFor(mediaType: ApercuFilterMediaType): string {
+  if (mediaType === "GAME") return "Titre du jeu..."
+  if (mediaType === "TV") return "Titre de la série..."
+  if (mediaType === "MANGA") return "Titre du manga..."
+  return "Titre du film..."
+}
+
 const DEFAULT_MIN_AGE = 2
 const DEFAULT_MAX_AGE = 18
 
@@ -89,10 +156,18 @@ export function ApercuFilterSidebar({
   familyMembers,
   initialFilters,
   route = "/films",
+  mediaType = "MOVIE",
 }: ApercuFilterSidebarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const p = APERCU_PALETTE
+  // isPending stays true while Next.js does the server roundtrip after
+  // router.replace — drives the TopProgressBar so the user sees that
+  // their filter click is doing something. Without this, the cream
+  // background gave zero visual signal during the navigation.
+  const [isPending, startTransition] = useTransition()
+  const PLATFORMS = useMemo(() => platformsFor(mediaType), [mediaType])
+  const TOPICS = useMemo(() => topicsFor(mediaType), [mediaType])
 
   const [search, setSearch] = useState(initialFilters.search)
   const [sort, setSort] = useState(initialFilters.sort)
@@ -165,8 +240,10 @@ export function ApercuFilterSidebar({
         if (finalMembers.length > 0) sp.set("members", finalMembers.join(","))
 
         const qs = sp.toString()
-        router.replace(qs ? `${route}?${qs}` : route, {
-          scroll: false,
+        startTransition(() => {
+          router.replace(qs ? `${route}?${qs}` : route, {
+            scroll: false,
+          })
         })
       },
     [
@@ -259,8 +336,10 @@ export function ApercuFilterSidebar({
     const font = searchParams.get("font")
     if (font) sp.set("font", font)
     const qs = sp.toString()
-    router.replace(qs ? `${route}?${qs}` : route, {
-      scroll: false,
+    startTransition(() => {
+      router.replace(qs ? `${route}?${qs}` : route, {
+        scroll: false,
+      })
     })
   }
 
@@ -323,7 +402,7 @@ export function ApercuFilterSidebar({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Titre du film..."
+            placeholder={searchPlaceholderFor(mediaType)}
             className="flex-1 bg-transparent outline-none placeholder:text-current/60"
             style={{ color: p.ink }}
           />
@@ -454,29 +533,35 @@ export function ApercuFilterSidebar({
         </div>
       </div>
 
-      {/* Platforms */}
-      <div>
-        <SectionLabel>Plateformes</SectionLabel>
-        <div className="flex flex-wrap gap-1.5">
-          {PLATFORMS.map((item) => {
-            const active = platforms.includes(item)
-            return (
-              <button
-                key={item}
-                onClick={() => togglePlatform(item)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
-                style={{
-                  background: active ? p.ink : p.bg2,
-                  color: active ? p.bg : p.ink2,
-                  border: `1px solid ${active ? p.ink : p.line}`,
-                }}
-              >
-                {item}
-              </button>
-            )
-          })}
+      {/* Platforms — hidden for media types where the concept doesn't apply
+          (e.g. mangas). For games this switches to console list, for
+          films/TV it stays at streaming services. */}
+      {PLATFORMS.length > 0 && (
+        <div>
+          <SectionLabel>
+            {mediaType === "GAME" ? "Consoles" : "Plateformes"}
+          </SectionLabel>
+          <div className="flex flex-wrap gap-1.5">
+            {PLATFORMS.map((item) => {
+              const active = platforms.includes(item)
+              return (
+                <button
+                  key={item}
+                  onClick={() => togglePlatform(item)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors"
+                  style={{
+                    background: active ? p.ink : p.bg2,
+                    color: active ? p.bg : p.ink2,
+                    border: `1px solid ${active ? p.ink : p.line}`,
+                  }}
+                >
+                  {item}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Topics */}
       <div>
@@ -501,6 +586,12 @@ export function ApercuFilterSidebar({
           })}
         </div>
       </div>
+
+      {/* Loading bar at the very top of the viewport while a filter
+          change is being applied (Next.js useTransition pending state).
+          The cream sidebar has zero visual signal otherwise so users
+          thought their click did nothing. */}
+      <TopProgressBar loading={isPending} />
     </aside>
   )
 }

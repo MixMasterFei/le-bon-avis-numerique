@@ -280,6 +280,7 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
         titleAccent="séries"
         itemNoun={{ singular: "série", plural: "séries" }}
         emptyTitle="Aucune série à afficher"
+        mediaType="TV"
       />
     </>
   )
