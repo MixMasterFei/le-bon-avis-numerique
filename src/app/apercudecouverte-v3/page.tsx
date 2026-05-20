@@ -121,6 +121,10 @@ function isSafeDiscoveryV4Image(row: StoryRow): boolean {
   )
 }
 
+function canUseStoredImageWhileV4Warms(row: StoryRow): boolean {
+  return Boolean(row.imageUrl && !isFallbackCardUrl(row.imageUrl) && !isBlockedHotlinkImageUrl(row.imageUrl))
+}
+
 export default async function ApercuDecouverteV3Page(props: {
   searchParams?: Promise<SearchParams>
 }) {
@@ -128,12 +132,7 @@ export default async function ApercuDecouverteV3Page(props: {
 }
 
 function shouldTryStockImage(row: StoryRow, imagePolicy: NewsImagePolicy): boolean {
-  return (
-    imagePolicy === "stockThenFallback" &&
-    (row.imageSourceType === "FALLBACK" ||
-      isFallbackCardUrl(row.imageUrl) ||
-      !isSafeDiscoveryV4Image(row))
-  )
+  return imagePolicy === "stockThenFallback"
 }
 
 function isValidWeatherCity(city: WeatherCity): boolean {
@@ -157,6 +156,24 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
         imageUrl: prepared.url,
         imageCredit: prepared.credit,
         imageLicenseUrl: prepared.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    // V4 is cache-first, not blank-first: until the backend prewarm has
+    // approved and mirrored a legal stock asset, keep the existing stored
+    // image if it is renderable. This prevents the whole page from falling
+    // back to Totem cards while storage/Pexels diagnostics are being fixed.
+    if (canUseStoredImageWhileV4Warms(row)) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: row.imageUrl,
+        imageCredit: row.imageCredit,
+        imageLicenseUrl: row.imageLicenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),
