@@ -152,23 +152,6 @@ function isValidWeatherCity(city: WeatherCity): boolean {
 }
 
 async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): Promise<ApercuNewsCardData> {
-  if (imagePolicy === "stockThenFallback") {
-    const editorialVisual = editorialVisualCard(row)
-    if (editorialVisual) {
-      return {
-        slug: row.slug,
-        title: row.title,
-        summary: row.summary,
-        imageUrl: editorialVisual.url,
-        imageCredit: editorialVisual.credit,
-        imageLicenseUrl: editorialVisual.licenseUrl,
-        category: row.category,
-        publishedAt: row.publishedAt,
-        sources: toSources(row.sources),
-      }
-    }
-  }
-
   if (shouldTryStockImage(row, imagePolicy)) {
     const prepared = await getApprovedDiscoveryV4Image(row.id)
     if (prepared) {
@@ -179,6 +162,21 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
         imageUrl: prepared.url,
         imageCredit: prepared.credit,
         imageLicenseUrl: prepared.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const editorialVisual = editorialVisualCard(row)
+    if (editorialVisual) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: editorialVisual.url,
+        imageCredit: editorialVisual.credit,
+        imageLicenseUrl: editorialVisual.licenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),

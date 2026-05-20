@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { editorialVisualCard } from "@/lib/news-image"
+import { findOfficialPressAssetForStory } from "@/lib/official-press-assets"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
@@ -190,23 +191,6 @@ export async function prepareDiscoveryV4Image(
   options: { force?: boolean } = {},
 ): Promise<PrepareV4ImageResult> {
   try {
-    const editorialVisual = editorialVisualCard(story)
-    if (editorialVisual) {
-      const assetId = await upsertApprovedAsset(story, {
-        provider: "totem_editorial",
-        sourceUrl: editorialVisual.url,
-        storageUrl: editorialVisual.url,
-        credit: editorialVisual.credit,
-        licenseUrl: editorialVisual.licenseUrl,
-        visualIntent: editorialVisual.auditLabel ?? "editorial brand visual",
-        query: story.title,
-        topicLabel: editorialVisual.auditLabel ?? "editorial brand visual",
-        confidence: 0.95,
-        qualityScore: 0.95,
-      })
-      return { status: "updated", reason: "editorial_visual", assetId }
-    }
-
     if (!options.force) {
       const existing = await prisma.newsImageAsset.findUnique({
         where: {
@@ -227,6 +211,40 @@ export async function prepareDiscoveryV4Image(
           }
         }
       }
+    }
+
+    const officialPress = await findOfficialPressAssetForStory(story)
+    if (officialPress) {
+      const assetId = await upsertApprovedAsset(story, {
+        provider: "official_press",
+        sourceUrl: officialPress.sourceUrl,
+        storageUrl: officialPress.url,
+        credit: officialPress.credit,
+        licenseUrl: officialPress.licenseUrl,
+        visualIntent: `official press asset: ${officialPress.title}`,
+        query: officialPress.tags.join(" ") || story.title,
+        topicLabel: officialPress.brand,
+        confidence: 0.98,
+        qualityScore: 0.98,
+      })
+      return { status: "updated", reason: "official_press", assetId }
+    }
+
+    const editorialVisual = editorialVisualCard(story)
+    if (editorialVisual) {
+      const assetId = await upsertApprovedAsset(story, {
+        provider: "totem_editorial",
+        sourceUrl: editorialVisual.url,
+        storageUrl: editorialVisual.url,
+        credit: editorialVisual.credit,
+        licenseUrl: editorialVisual.licenseUrl,
+        visualIntent: editorialVisual.auditLabel ?? "editorial brand visual",
+        query: story.title,
+        topicLabel: editorialVisual.auditLabel ?? "editorial brand visual",
+        confidence: 0.95,
+        qualityScore: 0.95,
+      })
+      return { status: "updated", reason: "editorial_visual", assetId }
     }
 
     const intent = await resolveNewsVisualIntent({

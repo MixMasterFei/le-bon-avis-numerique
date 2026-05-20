@@ -999,6 +999,30 @@ model NewsImageAsset {
   @@map("news_image_assets")
 }
 
+model OfficialPressAsset {
+  id           String   @id @default(uuid())
+  brand        String
+  product      String?
+  assetType    String   @default("image") @map("asset_type")
+  title        String
+  sourceUrl    String   @map("source_url")
+  storageUrl   String?  @map("storage_url")
+  credit       String
+  licenseUrl   String?  @map("license_url")
+  termsUrl     String?  @map("terms_url")
+  termsSummary String?  @map("terms_summary") @db.Text
+  tags         Json     @default("[]")
+  active       Boolean  @default(true)
+  verifiedAt   DateTime @default(now()) @map("verified_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@index([brand])
+  @@index([verifiedAt])
+  @@map("official_press_assets")
+}
+
 enum NewsCommentStatus {
   VISIBLE
   HIDDEN   // admin-hidden after moderation
