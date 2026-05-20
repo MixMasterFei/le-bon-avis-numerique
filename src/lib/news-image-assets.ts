@@ -169,12 +169,14 @@ export async function getApprovedDiscoveryV4Image(storyId: string): Promise<Prep
       },
       select: {
         approved: true,
+        provider: true,
         storageUrl: true,
         credit: true,
         licenseUrl: true,
       },
     })
     if (!row?.approved || !row.storageUrl) return null
+    if (row.provider === "totem_editorial") return null
     return {
       url: row.storageUrl,
       credit: row.credit,
@@ -199,11 +201,12 @@ export async function prepareDiscoveryV4Image(
             variant: DISCOVERY_V4_IMAGE_VARIANT,
           },
         },
-        select: { id: true, approved: true, rejectedReason: true },
+        select: { id: true, approved: true, provider: true, rejectedReason: true },
       })
       if (existing) {
         const reason = existing.approved ? "already_prepared" : existing.rejectedReason ?? "already_rejected"
-        if (existing.approved || !isRetryableRejection(reason)) {
+        const shouldRetryExistingTotemFallback = existing.approved && existing.provider === "totem_editorial"
+        if (!shouldRetryExistingTotemFallback && (existing.approved || !isRetryableRejection(reason))) {
           return {
             status: "skipped",
             reason,
@@ -228,23 +231,6 @@ export async function prepareDiscoveryV4Image(
         qualityScore: 0.98,
       })
       return { status: "updated", reason: "official_press", assetId }
-    }
-
-    const editorialVisual = editorialVisualCard(story)
-    if (editorialVisual) {
-      const assetId = await upsertApprovedAsset(story, {
-        provider: "totem_editorial",
-        sourceUrl: editorialVisual.url,
-        storageUrl: editorialVisual.url,
-        credit: editorialVisual.credit,
-        licenseUrl: editorialVisual.licenseUrl,
-        visualIntent: editorialVisual.auditLabel ?? "editorial brand visual",
-        query: story.title,
-        topicLabel: editorialVisual.auditLabel ?? "editorial brand visual",
-        confidence: 0.95,
-        qualityScore: 0.95,
-      })
-      return { status: "updated", reason: "editorial_visual", assetId }
     }
 
     const intent = await resolveNewsVisualIntent({
@@ -272,6 +258,7 @@ export async function prepareDiscoveryV4Image(
       return { status: "rejected", reason: "low_confidence", assetId }
     }
 
+    const editorialVisual = editorialVisualCard(story)
     const stock = await findContextualStockPhoto({
       title: story.title,
       summary: story.summary,
@@ -280,6 +267,22 @@ export async function prepareDiscoveryV4Image(
     })
 
     if (!stock) {
+      if (editorialVisual) {
+        const assetId = await upsertApprovedAsset(story, {
+          provider: "totem_editorial",
+          sourceUrl: editorialVisual.url,
+          storageUrl: editorialVisual.url,
+          credit: editorialVisual.credit,
+          licenseUrl: editorialVisual.licenseUrl,
+          visualIntent: editorialVisual.auditLabel ?? "editorial brand visual",
+          query: story.title,
+          topicLabel: editorialVisual.auditLabel ?? "editorial brand visual",
+          confidence: 0.95,
+          qualityScore: 0.95,
+        })
+        return { status: "updated", reason: "editorial_visual", assetId }
+      }
+
       const assetId = await upsertRejectedAsset(story, {
         provider: "pexels",
         query: intent.query,

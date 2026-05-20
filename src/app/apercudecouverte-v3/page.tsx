@@ -168,21 +168,6 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
       }
     }
 
-    const editorialVisual = editorialVisualCard(row)
-    if (editorialVisual) {
-      return {
-        slug: row.slug,
-        title: row.title,
-        summary: row.summary,
-        imageUrl: editorialVisual.url,
-        imageCredit: editorialVisual.credit,
-        imageLicenseUrl: editorialVisual.licenseUrl,
-        category: row.category,
-        publishedAt: row.publishedAt,
-        sources: toSources(row.sources),
-      }
-    }
-
     const stock = await findContextualStockPhoto({
       title: row.title,
       summary: row.summary,
@@ -197,6 +182,21 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
         imageUrl: stock.url,
         imageCredit: stock.credit,
         imageLicenseUrl: stock.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const editorialVisual = editorialVisualCard(row)
+    if (editorialVisual) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: editorialVisual.url,
+        imageCredit: editorialVisual.credit,
+        imageLicenseUrl: editorialVisual.licenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),
