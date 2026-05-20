@@ -82,7 +82,7 @@ export async function findOfficialPressAssetForStory(
 
   try {
     const assets = await prisma.officialPressAsset.findMany({
-      where: { active: true },
+      where: { active: true, assetType: "image" },
       orderBy: [{ verifiedAt: "desc" }, { createdAt: "desc" }],
       take: 250,
       select: {

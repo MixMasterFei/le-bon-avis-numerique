@@ -776,6 +776,37 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "newsPressKitScout",
+      endpoint: "/api/admin/news/press-kit-scout",
+      method: "POST",
+      chunked: true,
+      delayMs: 1000,
+      accumKeys: ["processed", "detected", "created", "alreadyKnown", "errors"],
+      extractProgress: (data) => ({
+        processed: data.scanned || data.processed || 0,
+        total: typeof data.remaining === "number" ? (data.scanned || 0) + data.remaining : null,
+        updated: data.created || 0,
+        skipped: data.alreadyKnown || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data) => {
+        if (!data.lastId) return null
+        const next = new URLSearchParams()
+        next.set("afterId", data.lastId)
+        return next
+      },
+      buildSummary: (stats) =>
+        `${stats.created || 0} references presse ajoutees, ${stats.alreadyKnown || 0} deja connues, ${stats.detected || 0} detections${stats.errors ? `, ${stats.errors} erreurs` : ""}`,
+    },
+    label: "Scanner press kits news",
+    description: "Detecter Netflix, Google, Meta, etc. dans les news et enregistrer leurs pages presse officielles a verifier",
+    icon: BadgeCheck,
+    color: "blue",
+    statLabels: { updated: "ajoutees", skipped: "connues", errors: "erreurs" },
+  },
+  {
+    config: {
       key: "newsImagesAudit",
       endpoint: "/api/admin/news/images-audit",
       method: "POST",
@@ -848,7 +879,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsPrewarmImagesV4", "newsImagesAudit", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",

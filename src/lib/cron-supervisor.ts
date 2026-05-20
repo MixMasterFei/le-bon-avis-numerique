@@ -109,6 +109,20 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // Press-kit scout — lightweight pass after news-discover. It does
+    // not publish official images directly; it registers official media
+    // centers as inactive candidates so V4 can graduate them after
+    // human/legal review.
+    task: "news.pressKitScout",
+    staleAfterHours: 10,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance scanner press kits",
+      method: "POST",
+      path: "/api/admin/news/press-kit-scout?limit=20",
+    },
+  },
+  {
     task: "weekly-dossier",
     staleAfterHours: 96,
     // A dossier run can legitimately log "partial" when it skips
