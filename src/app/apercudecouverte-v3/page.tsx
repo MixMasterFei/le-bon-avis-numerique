@@ -21,6 +21,7 @@ import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import { getApprovedDiscoveryV4Image } from "@/lib/news-image-assets"
+import { findContextualStockPhoto } from "@/lib/stock-photo"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -132,7 +133,12 @@ export default async function ApercuDecouverteV3Page(props: {
 }
 
 function shouldTryStockImage(row: StoryRow, imagePolicy: NewsImagePolicy): boolean {
-  return imagePolicy === "stockThenFallback"
+  return (
+    imagePolicy === "stockThenFallback" &&
+    (row.imageSourceType === "FALLBACK" ||
+      isFallbackCardUrl(row.imageUrl) ||
+      !isSafeDiscoveryV4Image(row))
+  )
 }
 
 function isValidWeatherCity(city: WeatherCity): boolean {
@@ -156,6 +162,26 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
         imageUrl: prepared.url,
         imageCredit: prepared.credit,
         imageLicenseUrl: prepared.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const stock = await findContextualStockPhoto({
+      title: row.title,
+      summary: row.summary,
+      body: row.body,
+      category: row.category,
+    })
+    if (stock) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: stock.url,
+        imageCredit: stock.credit,
+        imageLicenseUrl: stock.licenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),
