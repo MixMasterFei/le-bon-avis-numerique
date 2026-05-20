@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { editorialVisualCard } from "@/lib/news-image"
-import { findOfficialPressAssetForStory } from "@/lib/official-press-assets"
+import { ensureOfficialPressAssetForStory } from "@/lib/official-press-assets"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
@@ -216,7 +216,7 @@ export async function prepareDiscoveryV4Image(
       }
     }
 
-    const officialPress = await findOfficialPressAssetForStory(story)
+    const officialPress = await ensureOfficialPressAssetForStory(story)
     if (officialPress) {
       const assetId = await upsertApprovedAsset(story, {
         provider: "official_press",

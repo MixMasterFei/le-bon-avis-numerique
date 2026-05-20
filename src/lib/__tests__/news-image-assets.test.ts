@@ -3,6 +3,7 @@ import { getApprovedDiscoveryV4Image, prepareDiscoveryV4Image } from "@/lib/news
 import { prisma } from "@/lib/prisma"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
+import { ensureOfficialPressAssetForStory } from "@/lib/official-press-assets"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 vi.mock("@/lib/prisma", () => ({
@@ -22,6 +23,10 @@ vi.mock("@/lib/stock-photo", () => ({
   findContextualStockPhoto: vi.fn(),
 }))
 
+vi.mock("@/lib/official-press-assets", () => ({
+  ensureOfficialPressAssetForStory: vi.fn(),
+}))
+
 vi.mock("@/lib/supabase-storage", () => ({
   uploadNewsImageWithDiagnostics: vi.fn(),
 }))
@@ -37,6 +42,7 @@ const story = {
 describe("news image assets", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(ensureOfficialPressAssetForStory).mockResolvedValue(null)
   })
 
   it("returns only approved prepared V4 assets", async () => {

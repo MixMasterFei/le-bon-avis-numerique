@@ -1,5 +1,7 @@
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { findOfficialPressImageCandidate } from "@/lib/official-press-registry"
+import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
 
 export interface OfficialPressAssetMatch {
   id: string
@@ -120,6 +122,97 @@ export async function findOfficialPressAssetForStory(
     return best
   } catch (err) {
     console.warn("[official-press-assets] lookup failed:", err)
+    return null
+  }
+}
+
+export async function ensureOfficialPressAssetForStory(
+  input: OfficialPressAssetInput,
+): Promise<OfficialPressAssetMatch | null> {
+  const existing = await findOfficialPressAssetForStory(input)
+  if (existing) return existing
+
+  const candidate = await findOfficialPressImageCandidate(input)
+  if (!candidate) return null
+
+  try {
+    const mirrored = await uploadNewsImageWithDiagnostics(candidate.imageUrl)
+    const existingCandidate = await prisma.officialPressAsset.findFirst({
+      where: { sourceUrl: candidate.imageUrl, assetType: "image" },
+      select: { id: true },
+    })
+    const row = existingCandidate
+      ? await prisma.officialPressAsset.update({
+          where: { id: existingCandidate.id },
+          data: {
+            brand: candidate.brand,
+            product: candidate.product,
+            title: candidate.title,
+            storageUrl: mirrored.url ?? undefined,
+            credit: candidate.credit,
+            licenseUrl: candidate.pageUrl,
+            termsUrl: candidate.termsUrl,
+            termsSummary: candidate.termsSummary,
+            tags: candidate.tags,
+            active: true,
+          },
+          select: {
+            id: true,
+            brand: true,
+            product: true,
+            title: true,
+            sourceUrl: true,
+            storageUrl: true,
+            credit: true,
+            licenseUrl: true,
+            termsUrl: true,
+            tags: true,
+          },
+        })
+      : await prisma.officialPressAsset.create({
+          data: {
+            brand: candidate.brand,
+            product: candidate.product,
+            assetType: "image",
+            title: candidate.title,
+            sourceUrl: candidate.imageUrl,
+            storageUrl: mirrored.url,
+            credit: candidate.credit,
+            licenseUrl: candidate.pageUrl,
+            termsUrl: candidate.termsUrl,
+            termsSummary: candidate.termsSummary,
+            tags: candidate.tags,
+            active: true,
+          },
+          select: {
+            id: true,
+            brand: true,
+            product: true,
+            title: true,
+            sourceUrl: true,
+            storageUrl: true,
+            credit: true,
+            licenseUrl: true,
+            termsUrl: true,
+            tags: true,
+          },
+        })
+
+    return {
+      id: row.id,
+      brand: row.brand,
+      product: row.product,
+      title: row.title,
+      url: row.storageUrl ?? row.sourceUrl,
+      sourceUrl: row.sourceUrl,
+      credit: row.credit,
+      licenseUrl: row.licenseUrl ?? row.termsUrl,
+      termsUrl: row.termsUrl,
+      tags: jsonTags(row.tags),
+      score: 10,
+    }
+  } catch (err) {
+    console.warn("[official-press-assets] ensure failed:", err)
     return null
   }
 }

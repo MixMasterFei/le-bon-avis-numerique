@@ -24,6 +24,18 @@ export interface PressKitTarget {
   matchedIn: string[]
 }
 
+export interface OfficialPressImageCandidate {
+  brand: string
+  product?: string
+  title: string
+  imageUrl: string
+  pageUrl: string
+  credit: string
+  termsUrl?: string
+  termsSummary: string
+  tags: string[]
+}
+
 export const OFFICIAL_PRESS_REGISTRY: OfficialPressRegistryEntry[] = [
   {
     brand: "Netflix",
@@ -179,6 +191,10 @@ function normalize(value: string): string {
     .replace(/[\u0300-\u036f]/g, "")
 }
 
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => normalize(value).trim()).filter(Boolean)))
+}
+
 function sourcesText(sources: Prisma.JsonValue | null | undefined): string {
   if (!Array.isArray(sources)) return ""
   return sources
@@ -224,4 +240,79 @@ export function findPressKitTargetsForStory(input: PressKitStoryInput): PressKit
     if (score < 3) return []
     return [{ entry, score, matchedIn }]
   }).sort((a, b) => b.score - a.score)
+}
+
+function absolutizeUrl(url: string, baseUrl: string): string | null {
+  try {
+    return new URL(url, baseUrl).toString()
+  } catch {
+    return null
+  }
+}
+
+function firstMetaContent(html: string, patterns: RegExp[]): string | null {
+  for (const pattern of patterns) {
+    const match = html.match(pattern)
+    const value = match?.[1]?.trim()
+    if (value) return value
+  }
+  return null
+}
+
+function isUsableOfficialImageUrl(url: string): boolean {
+  if (!/^https:\/\//i.test(url)) return false
+  if (/\.(svg|ico)(\?|$)/i.test(url)) return false
+  return /\.(jpe?g|png|webp)(\?|$)/i.test(url) || /images|media|cdn|static|assets/i.test(url)
+}
+
+export async function findOfficialPressImageCandidate(
+  input: PressKitStoryInput,
+): Promise<OfficialPressImageCandidate | null> {
+  const target = findPressKitTargetsForStory(input)[0]
+  if (!target) return null
+
+  const { entry } = target
+  try {
+    const res = await fetch(entry.pressKitUrl, {
+      headers: {
+        "user-agent": "TotemAviseBot/1.0 (+https://totemavise.com)",
+        accept: "text/html,application/xhtml+xml",
+      },
+      next: { revalidate: 86_400 },
+    })
+    if (!res.ok) return null
+    const html = await res.text()
+    const rawImage = firstMetaContent(html, [
+      /<meta\s+property=["']og:image(?::secure_url)?["']\s+content=["']([^"']+)["'][^>]*>/i,
+      /<meta\s+content=["']([^"']+)["']\s+property=["']og:image(?::secure_url)?["'][^>]*>/i,
+      /<meta\s+name=["']twitter:image["']\s+content=["']([^"']+)["'][^>]*>/i,
+      /<meta\s+content=["']([^"']+)["']\s+name=["']twitter:image["'][^>]*>/i,
+    ])
+    if (!rawImage) return null
+
+    const imageUrl = absolutizeUrl(rawImage, entry.pressKitUrl)
+    if (!imageUrl || !isUsableOfficialImageUrl(imageUrl)) return null
+
+    const pageTitle =
+      firstMetaContent(html, [
+        /<meta\s+property=["']og:title["']\s+content=["']([^"']+)["'][^>]*>/i,
+        /<meta\s+content=["']([^"']+)["']\s+property=["']og:title["'][^>]*>/i,
+        /<title[^>]*>([^<]+)<\/title>/i,
+      ]) ?? `${entry.product ?? entry.brand} official press image`
+
+    return {
+      brand: entry.brand,
+      product: entry.product,
+      title: pageTitle.replace(/\s+/g, " ").trim(),
+      imageUrl,
+      pageUrl: entry.pressKitUrl,
+      credit: entry.product ? `${entry.brand} / ${entry.product}` : entry.brand,
+      termsUrl: entry.termsUrl ?? entry.newsroomUrl ?? entry.pressKitUrl,
+      termsSummary: entry.termsSummary,
+      tags: unique([...entry.tags, "official-press"]),
+    }
+  } catch (err) {
+    console.warn("[official-press-registry] image candidate fetch failed:", err)
+    return null
+  }
 }

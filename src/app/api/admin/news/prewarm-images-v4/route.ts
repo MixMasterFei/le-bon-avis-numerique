@@ -32,6 +32,15 @@ function candidateWhere(afterId?: string): Prisma.NewsStoryWhereInput {
       { imageSourceType: "PUBLISHER_OG" },
       { imageSourceType: "PUBLISHER_RSS" },
       { imageUrl: { contains: "/api/news/fallback-card" } },
+      {
+        imageAssets: {
+          some: {
+            variant: "DISCOVERY_V4",
+            provider: "totem_editorial",
+            approved: true,
+          },
+        },
+      },
     ],
   }
 }
