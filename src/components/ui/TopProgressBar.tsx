@@ -26,26 +26,21 @@ const MIN_VISIBLE_MS = 600
  * one) and the bar always paints above the site header.
  */
 export function TopProgressBar({ loading }: TopProgressBarProps) {
-  const [mounted, setMounted] = useState(false)
   const [visible, setVisible] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   // Show immediately when loading flips true; hold for MIN_VISIBLE_MS
   // after it flips back to false so very fast navigations still show a
   // full sweep.
   useEffect(() => {
     if (loading) {
-      setVisible(true)
-      return
+      const t = window.setTimeout(() => setVisible(true), 0)
+      return () => clearTimeout(t)
     }
     const t = setTimeout(() => setVisible(false), MIN_VISIBLE_MS)
     return () => clearTimeout(t)
   }, [loading])
 
-  if (!mounted) return null
+  if (typeof document === "undefined") return null
 
   const bar = (
     <div
