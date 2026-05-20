@@ -31,7 +31,7 @@ interface StockLookupOptions {
 }
 
 const STOCK_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
-const STOCK_CACHE_VERSION = "v4"
+const STOCK_CACHE_VERSION = "v5"
 
 // French + English stopwords — short list, just enough to keep
 // keyword extraction from passing junk like "le", "the", "à" to the

@@ -25,7 +25,7 @@ interface VisualIntentOptions {
 }
 
 const INTENT_CACHE_PROVIDER = "visual-intent-v1"
-const INTENT_CACHE_VERSION = "v1"
+const INTENT_CACHE_VERSION = "v2"
 const MIN_CONFIDENCE = 0.72
 const INTENT_TIMEOUT_MS = 7_000
 
@@ -244,7 +244,7 @@ export async function resolveNewsVisualIntent(
 
   const rule = ruleIntent(input)
   const llm = await llmIntent(input)
-  const intent = llm && llm.confidence >= MIN_CONFIDENCE ? llm : rule ?? llm
+  const intent = rule ?? (llm && llm.confidence >= MIN_CONFIDENCE ? llm : null) ?? llm
   if (!intent) return null
   await writeIntentCache(input, intent)
   return intent
