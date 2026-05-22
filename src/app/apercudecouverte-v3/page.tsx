@@ -154,7 +154,21 @@ function isSafeDiscoveryV4Image(row: StoryRow): boolean {
 }
 
 function canUseStoredImageWhileV4Warms(row: StoryRow): boolean {
+  return canUseDirectStoredImage(row)
+}
+
+function canUseDirectStoredImage(row: StoryRow): boolean {
   return Boolean(row.imageUrl && !isFallbackCardUrl(row.imageUrl) && !isBlockedHotlinkImageUrl(row.imageUrl))
+}
+
+function rowsForImagePolicy(rows: StoryRow[], imagePolicy: NewsImagePolicy): StoryRow[] {
+  if (imagePolicy !== "asStored") return rows
+  return rows.filter(canUseDirectStoredImage)
+}
+
+function rowForImagePolicy(row: StoryRow | null, imagePolicy: NewsImagePolicy): StoryRow | null {
+  if (!row || imagePolicy !== "asStored") return row
+  return canUseDirectStoredImage(row) ? row : null
 }
 
 export default async function ApercuDecouverteV3Page(props: {
@@ -669,7 +683,12 @@ export async function renderApercuDecouvertePage(props: {
   // failure mode that started this work). The tail of the feed is
   // untouched. Falls back to identity for rows that pre-date the
   // editorial-judge backfill (null tone → treated as neutral).
-  const balancedFrenchRows = balanceNewsForFeed(frenchRows, 6)
+  const pageFrenchRows = rowsForImagePolicy(frenchRows, imagePolicy)
+  const pageIntlRows = rowsForImagePolicy(intlRows, imagePolicy)
+  const pageTechRows = rowsForImagePolicy(techRows, imagePolicy)
+  const pageDossierRow = rowForImagePolicy(dossierRow, imagePolicy)
+
+  const balancedFrenchRows = balanceNewsForFeed(pageFrenchRows, 6)
 
   // Hero pick — freshness first, with a parent-first guardrail. The
   // newest suitable story leads, but standard game/product/licence
@@ -684,9 +703,9 @@ export async function renderApercuDecouvertePage(props: {
   // on this page — avoids 60-150 sequential DB round trips in rowToCard.
   const allImageRows: StoryRow[] = [
     ...balancedFrenchRows,
-    ...(dossierRow ? [dossierRow] : []),
-    ...intlRows,
-    ...techRows,
+    ...(pageDossierRow ? [pageDossierRow] : []),
+    ...pageIntlRows,
+    ...pageTechRows,
   ]
   const storyIds = allImageRows.map((row) => row.id)
   const relatedMediaIds = allImageRows
@@ -737,11 +756,11 @@ export async function renderApercuDecouvertePage(props: {
     seenRowIds.add(row.id)
     rowsForCards.push(row)
   }
-  pushRow(dossierRow)
+  pushRow(pageDossierRow)
   pushRow(frenchHero)
   for (const row of frenchRest) pushRow(row)
-  for (const row of intlRows) pushRow(row)
-  for (const row of techRows) pushRow(row)
+  for (const row of pageIntlRows) pushRow(row)
+  for (const row of pageTechRows) pushRow(row)
 
   const cardByStoryId = new Map<string, ApercuNewsCardData>(
     await Promise.all(
@@ -763,7 +782,7 @@ export async function renderApercuDecouvertePage(props: {
     return cards
   }
 
-  const dossierCard = dossierRow ? claim(cardFor(dossierRow)) : null
+  const dossierCard = pageDossierRow ? claim(cardFor(pageDossierRow)) : null
   const heroCard = frenchHero ? claim(cardFor(frenchHero)) : null
 
   // Backfill loop: walk frenchRest in chronological order, accumulate
@@ -796,8 +815,8 @@ export async function renderApercuDecouvertePage(props: {
     olderCards.push(card)
   }
 
-  const intlCards = claimSectionRows(intlRows)
-  const techCards = claimSectionRows(techRows)
+  const intlCards = claimSectionRows(pageIntlRows)
+  const techCards = claimSectionRows(pageTechRows)
 
   // Freshness flag — true when the chosen hero is older than 36h.
   // Surfaces a small banner on the page so a stale state (cron stuck,
