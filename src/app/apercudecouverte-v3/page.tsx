@@ -17,10 +17,15 @@ import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
 import { Prisma, type ImageSourceType } from "@prisma/client"
-import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
+import { isBlockedHotlinkImageUrl, hasTrustedPublisherSource, normalizedPublisherName } from "@/lib/news-image-policy"
 import { editorialVisualCard, fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
-import { getApprovedDiscoveryV4Image } from "@/lib/news-image-assets"
+import {
+  batchLoadApprovedDiscoveryV4Images,
+  batchLoadCatalogPosters,
+  primaryRelatedMediaId,
+  type PreparedNewsImage,
+} from "@/lib/news-image-assets"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 
 export const dynamic = "force-dynamic"
@@ -97,11 +102,25 @@ type StoryRow = {
   publishedAt: Date
   relevanceScore: number
   sources: Prisma.JsonValue
+  relatedMediaId?: string | null
+  relatedMediaIds?: string[] | null
   /** Set by news-editorial-judge after synthesis; nullable on legacy
    *  rows. Read by the balancer to avoid stacking heavy stories. */
   editorialTone?: string | null
   topicCluster?: string | null
 }
+
+type V4ImageMaps = {
+  v4AssetsMap: Map<string, PreparedNewsImage>
+  catalogPosterMap: Map<string, PreparedNewsImage>
+}
+
+const STORY_CARD_SELECT = {
+  id: true, slug: true, title: true, summary: true, body: true,
+  imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
+  category: true, publishedAt: true, relevanceScore: true, sources: true,
+  relatedMediaId: true, relatedMediaIds: true,
+} as const
 
 function isSafeStoredImage(row: StoryRow): boolean {
   return (
@@ -114,12 +133,23 @@ function isSafeStoredImage(row: StoryRow): boolean {
 }
 
 function isSafeDiscoveryV4Image(row: StoryRow): boolean {
-  return (
+  if (
     row.imageSourceType === "STOCK" ||
     row.imageSourceType === "AGENCY" ||
     row.imageSourceType === "FALLBACK" ||
     isFallbackCardUrl(row.imageUrl)
-  )
+  ) {
+    return true
+  }
+  if (
+    row.imageSourceType === "PUBLISHER_RSS" &&
+    (row.category === "FILM_TV" || row.category === "GAMES") &&
+    hasTrustedPublisherSource(row.sources) &&
+    Boolean(row.imageUrl && !isBlockedHotlinkImageUrl(row.imageUrl))
+  ) {
+    return true
+  }
+  return false
 }
 
 function canUseStoredImageWhileV4Warms(row: StoryRow): boolean {
@@ -151,9 +181,13 @@ function isValidWeatherCity(city: WeatherCity): boolean {
   )
 }
 
-async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored"): Promise<ApercuNewsCardData> {
+async function rowToCard(
+  row: StoryRow,
+  imagePolicy: NewsImagePolicy = "asStored",
+  maps?: V4ImageMaps,
+): Promise<ApercuNewsCardData> {
   if (shouldTryStockImage(row, imagePolicy)) {
-    const prepared = await getApprovedDiscoveryV4Image(row.id)
+    const prepared = maps?.v4AssetsMap.get(row.id) ?? null
     if (prepared) {
       return {
         slug: row.slug,
@@ -162,6 +196,22 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
         imageUrl: prepared.url,
         imageCredit: prepared.credit,
         imageLicenseUrl: prepared.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const relatedId = primaryRelatedMediaId(row)
+    const catalogPoster = relatedId ? maps?.catalogPosterMap.get(relatedId) : undefined
+    if (catalogPoster) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: catalogPoster.url,
+        imageCredit: catalogPoster.credit,
+        imageLicenseUrl: catalogPoster.licenseUrl,
         category: row.category,
         publishedAt: row.publishedAt,
         sources: toSources(row.sources),
@@ -188,18 +238,26 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
       }
     }
 
-    const editorialVisual = editorialVisualCard(row)
-    if (editorialVisual) {
-      return {
-        slug: row.slug,
-        title: row.title,
-        summary: row.summary,
-        imageUrl: editorialVisual.url,
-        imageCredit: editorialVisual.credit,
-        imageLicenseUrl: editorialVisual.licenseUrl,
-        category: row.category,
-        publishedAt: row.publishedAt,
-        sources: toSources(row.sources),
+    const hasTrustedPublisherImage =
+      row.imageSourceType === "PUBLISHER_RSS" &&
+      (row.category === "FILM_TV" || row.category === "GAMES") &&
+      hasTrustedPublisherSource(row.sources) &&
+      canUseStoredImageWhileV4Warms(row)
+
+    if (!catalogPoster && !hasTrustedPublisherImage) {
+      const editorialVisual = editorialVisualCard(row)
+      if (editorialVisual) {
+        return {
+          slug: row.slug,
+          title: row.title,
+          summary: row.summary,
+          imageUrl: editorialVisual.url,
+          imageCredit: editorialVisual.credit,
+          imageLicenseUrl: editorialVisual.licenseUrl,
+          category: row.category,
+          publishedAt: row.publishedAt,
+          sources: toSources(row.sources),
+        }
       }
     }
 
@@ -239,24 +297,6 @@ async function rowToCard(row: StoryRow, imagePolicy: NewsImagePolicy = "asStored
     publishedAt: row.publishedAt,
     sources: toSources(row.sources),
   }
-}
-
-function normalizedPublisherName(name: string): string {
-  const lower = name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-
-  if (lower.startsWith("numerama")) return "numerama"
-  if (lower.startsWith("allocine")) return "allocine"
-  if (lower.startsWith("20 minutes")) return "20-minutes"
-  if (lower.startsWith("franceinfo")) return "franceinfo"
-  if (lower.startsWith("la croix")) return "la-croix"
-  if (lower.startsWith("le monde")) return "le-monde"
-  if (lower.startsWith("telerama")) return "telerama"
-  if (lower.startsWith("bbc")) return "bbc"
-
-  return lower.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
 }
 
 function sourceCount(r: StoryRow): number {
@@ -539,9 +579,7 @@ export async function renderApercuDecouvertePage(props: {
       orderBy: { publishedAt: "desc" },
       take: 18,
       select: {
-        id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
-        category: true, publishedAt: true, relevanceScore: true, sources: true,
+        ...STORY_CARD_SELECT,
         // Editorial supervision tags — fed into balanceNewsForFeed
         // below so the hero is never a grave story and we never stack
         // two stories from the same topicCluster (e.g. two teen-suicide
@@ -568,9 +606,7 @@ export async function renderApercuDecouvertePage(props: {
       orderBy: { publishedAt: "desc" },
       take: SECTION_BACKFILL_POOL,
       select: {
-        id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
-        category: true, publishedAt: true, relevanceScore: true, sources: true,
+        ...STORY_CARD_SELECT,
         editorialTone: true, topicCluster: true,
       },
     }).catch(safe("intlRows", [] as StoryRow[])),
@@ -582,11 +618,7 @@ export async function renderApercuDecouvertePage(props: {
       where: { status: "PUBLISHED", storyType: "BRIEF", category: "TECH" },
       orderBy: { publishedAt: "desc" },
       take: SECTION_BACKFILL_POOL,
-      select: {
-        id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
-        category: true, publishedAt: true, relevanceScore: true, sources: true,
-      },
+      select: STORY_CARD_SELECT,
     }).catch(safe("techRows", [] as StoryRow[])),
     // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
     // the most recent dossier is always within 4 days; if a cron run
@@ -600,11 +632,7 @@ export async function renderApercuDecouvertePage(props: {
         publishedAt: { gte: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
       },
       orderBy: { publishedAt: "desc" },
-      select: {
-        id: true, slug: true, title: true, summary: true, body: true,
-        imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
-        category: true, publishedAt: true, relevanceScore: true, sources: true,
-      },
+      select: STORY_CARD_SELECT,
     }).catch(safe<StoryRow | null>("dossierRow", null)),
     // Latest story carrying a populated research sidebar.
     prisma.newsStory.findFirst({
@@ -655,6 +683,29 @@ export async function renderApercuDecouvertePage(props: {
     ? balancedFrenchRows.filter((row) => row.id !== frenchHero.id)
     : balancedFrenchRows
 
+  // Batch-load V4 image assets and catalog posters once for all cards
+  // on this page — avoids 60-150 sequential DB round trips in rowToCard.
+  const allImageRows: StoryRow[] = [
+    ...balancedFrenchRows,
+    ...(dossierRow ? [dossierRow] : []),
+    ...intlRows,
+    ...techRows,
+  ]
+  const storyIds = allImageRows.map((row) => row.id)
+  const relatedMediaIds = allImageRows
+    .map((row) => primaryRelatedMediaId(row))
+    .filter((id): id is string => Boolean(id))
+
+  const [v4AssetsMap, catalogPosterMap]: [Map<string, PreparedNewsImage>, Map<string, PreparedNewsImage>] =
+    imagePolicy === "stockThenFallback"
+      ? await Promise.all([
+          batchLoadApprovedDiscoveryV4Images(storyIds),
+          batchLoadCatalogPosters(relatedMediaIds),
+        ])
+      : [new Map(), new Map()]
+
+  const imageMaps: V4ImageMaps = { v4AssetsMap, catalogPosterMap }
+
   // Page-level image dedup: dossier wins (it's the editorial centerpiece),
   // then hero, then top briefs, then INTL, then older. Any later card
   // sharing an already-claimed imageUrl is filtered out so the same
@@ -684,14 +735,14 @@ export async function renderApercuDecouvertePage(props: {
     const cards: ApercuNewsCardData[] = []
     for (const row of rows) {
       if (cards.length >= target) break
-      const card = claim(await rowToCard(row, imagePolicy))
+      const card = claim(await rowToCard(row, imagePolicy, imageMaps))
       if (card) cards.push(card)
     }
     return cards
   }
 
-  const dossierCard = dossierRow ? claim(await rowToCard(dossierRow, imagePolicy)) : null
-  const heroCard = frenchHero ? claim(await rowToCard(frenchHero, imagePolicy)) : null
+  const dossierCard = dossierRow ? claim(await rowToCard(dossierRow, imagePolicy, imageMaps)) : null
+  const heroCard = frenchHero ? claim(await rowToCard(frenchHero, imagePolicy, imageMaps)) : null
 
   // Backfill loop: walk frenchRest in chronological order, accumulate
   // up to 3 surviving (post-dedup) cards into topCards, then push the
@@ -710,7 +761,7 @@ export async function renderApercuDecouvertePage(props: {
   const topPickedIds = new Set<string>()
   for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
     if (topCards.length >= TOP_TARGET) break
-    const card = claim(await rowToCard(row, imagePolicy))
+    const card = claim(await rowToCard(row, imagePolicy, imageMaps))
     if (!card) continue
     topCards.push(card)
     topPickedIds.add(row.id)
@@ -718,7 +769,7 @@ export async function renderApercuDecouvertePage(props: {
 
   for (const row of frenchRest) {
     if (topPickedIds.has(row.id)) continue
-    const card = claim(await rowToCard(row, imagePolicy))
+    const card = claim(await rowToCard(row, imagePolicy, imageMaps))
     if (!card) continue
     olderCards.push(card)
   }

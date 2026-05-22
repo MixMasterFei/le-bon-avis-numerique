@@ -92,6 +92,8 @@ export async function POST(req: NextRequest) {
         summary: true,
         body: true,
         category: true,
+        relatedMediaId: true,
+        relatedMediaIds: true,
       },
     })
 

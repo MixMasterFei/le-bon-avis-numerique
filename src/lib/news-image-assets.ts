@@ -24,6 +24,8 @@ export interface V4ImageStoryInput {
   summary?: string | null
   body?: string | null
   category: NewsCategory | string
+  relatedMediaId?: string | null
+  relatedMediaIds?: string[] | null
 }
 
 export interface PrepareV4ImageResult {
@@ -35,6 +37,18 @@ export interface PrepareV4ImageResult {
 function normalizeCategory(category: NewsCategory | string): NewsCategory {
   return category as NewsCategory
 }
+
+export function primaryRelatedMediaId(story: {
+  relatedMediaId?: string | null
+  relatedMediaIds?: string[] | null
+}): string | null {
+  if (story.relatedMediaIds && story.relatedMediaIds.length > 0) {
+    return story.relatedMediaIds[0] ?? null
+  }
+  return story.relatedMediaId ?? null
+}
+
+const CATALOG_POSTER_CREDIT = "Totem Avisé / Catalogue"
 
 function asJsonArray(values: string[]): Prisma.InputJsonValue {
   return values
@@ -169,14 +183,12 @@ export async function getApprovedDiscoveryV4Image(storyId: string): Promise<Prep
       },
       select: {
         approved: true,
-        provider: true,
         storageUrl: true,
         credit: true,
         licenseUrl: true,
       },
     })
     if (!row?.approved || !row.storageUrl) return null
-    if (row.provider === "totem_editorial") return null
     return {
       url: row.storageUrl,
       credit: row.credit,
@@ -184,6 +196,115 @@ export async function getApprovedDiscoveryV4Image(storyId: string): Promise<Prep
     }
   } catch (err) {
     console.warn("[news-image-assets] read failed:", err)
+    return null
+  }
+}
+
+export async function batchLoadApprovedDiscoveryV4Images(
+  storyIds: string[],
+): Promise<Map<string, PreparedNewsImage>> {
+  const uniqueIds = [...new Set(storyIds.filter(Boolean))]
+  if (uniqueIds.length === 0) return new Map()
+
+  try {
+    const rows = await prisma.newsImageAsset.findMany({
+      where: {
+        newsStoryId: { in: uniqueIds },
+        variant: DISCOVERY_V4_IMAGE_VARIANT,
+        approved: true,
+        storageUrl: { not: null },
+      },
+      select: {
+        newsStoryId: true,
+        storageUrl: true,
+        credit: true,
+        licenseUrl: true,
+      },
+    })
+
+    const map = new Map<string, PreparedNewsImage>()
+    for (const row of rows) {
+      if (!row.storageUrl) continue
+      map.set(row.newsStoryId, {
+        url: row.storageUrl,
+        credit: row.credit,
+        licenseUrl: row.licenseUrl,
+      })
+    }
+    return map
+  } catch (err) {
+    console.warn("[news-image-assets] batch read failed:", err)
+    return new Map()
+  }
+}
+
+export async function batchLoadCatalogPosters(
+  mediaIds: string[],
+): Promise<Map<string, PreparedNewsImage>> {
+  const uniqueIds = [...new Set(mediaIds.filter(Boolean))]
+  if (uniqueIds.length === 0) return new Map()
+
+  try {
+    const rows = await prisma.mediaItem.findMany({
+      where: { id: { in: uniqueIds }, posterUrl: { not: null } },
+      select: { id: true, posterUrl: true, title: true },
+    })
+
+    const map = new Map<string, PreparedNewsImage>()
+    for (const row of rows) {
+      if (!row.posterUrl) continue
+      map.set(row.id, {
+        url: row.posterUrl,
+        credit: CATALOG_POSTER_CREDIT,
+        licenseUrl: null,
+      })
+    }
+    return map
+  } catch (err) {
+    console.warn("[news-image-assets] catalog poster batch failed:", err)
+    return new Map()
+  }
+}
+
+export async function resolveCatalogPosterForStory(
+  story: V4ImageStoryInput,
+): Promise<{ image: PreparedNewsImage; assetId: string } | null> {
+  const mediaId = primaryRelatedMediaId(story)
+  if (!mediaId) return null
+
+  try {
+    const media = await prisma.mediaItem.findUnique({
+      where: { id: mediaId },
+      select: { id: true, posterUrl: true, title: true },
+    })
+    if (!media?.posterUrl) return null
+
+    const storage = await uploadNewsImageWithDiagnostics(media.posterUrl)
+    const storageUrl = storage.url ?? media.posterUrl
+
+    const assetId = await upsertApprovedAsset(story, {
+      provider: "catalog_poster",
+      sourceUrl: media.posterUrl,
+      storageUrl,
+      credit: CATALOG_POSTER_CREDIT,
+      licenseUrl: null,
+      visualIntent: `catalog poster: ${media.title}`,
+      query: media.title,
+      topicLabel: media.title,
+      confidence: 0.99,
+      qualityScore: 0.99,
+    })
+
+    return {
+      image: {
+        url: storageUrl,
+        credit: CATALOG_POSTER_CREDIT,
+        licenseUrl: null,
+      },
+      assetId,
+    }
+  } catch (err) {
+    console.warn("[news-image-assets] catalog poster failed:", err)
     return null
   }
 }
@@ -214,6 +335,11 @@ export async function prepareDiscoveryV4Image(
           }
         }
       }
+    }
+
+    const catalogPoster = await resolveCatalogPosterForStory(story)
+    if (catalogPoster) {
+      return { status: "updated", reason: "catalog_poster", assetId: catalogPoster.assetId }
     }
 
     const officialPress = await ensureOfficialPressAssetForStory(story)

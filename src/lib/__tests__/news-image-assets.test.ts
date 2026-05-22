@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { getApprovedDiscoveryV4Image, prepareDiscoveryV4Image } from "@/lib/news-image-assets"
+import {
+  getApprovedDiscoveryV4Image,
+  prepareDiscoveryV4Image,
+  primaryRelatedMediaId,
+} from "@/lib/news-image-assets"
 import { prisma } from "@/lib/prisma"
 import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
@@ -10,7 +14,12 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     newsImageAsset: {
       findUnique: vi.fn(),
+      findMany: vi.fn(),
       upsert: vi.fn(),
+    },
+    mediaItem: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }))
@@ -58,6 +67,62 @@ describe("news image assets", () => {
       credit: "Jane Doe / Pexels",
       licenseUrl: "https://pexels.com/photo/1",
     })
+  })
+
+  it("returns totem_editorial prepared assets instead of rejecting them", async () => {
+    vi.mocked(prisma.newsImageAsset.findUnique).mockResolvedValueOnce({
+      approved: true,
+      storageUrl: "https://cdn.example/netflix-card.png",
+      credit: "Totem Avisé",
+      licenseUrl: null,
+    } as never)
+
+    await expect(getApprovedDiscoveryV4Image("story-netflix")).resolves.toEqual({
+      url: "https://cdn.example/netflix-card.png",
+      credit: "Totem Avisé",
+      licenseUrl: null,
+    })
+  })
+
+  it("prefers catalog poster before official press or stock", async () => {
+    const catalogStory = {
+      ...story,
+      relatedMediaId: "media-tsubasa",
+      relatedMediaIds: ["media-tsubasa"],
+    }
+
+    vi.mocked(prisma.newsImageAsset.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(prisma.mediaItem.findUnique).mockResolvedValueOnce({
+      id: "media-tsubasa",
+      title: "Captain Tsubasa",
+      posterUrl: "https://image.tmdb.org/poster/tsubasa.jpg",
+    } as never)
+    vi.mocked(uploadNewsImageWithDiagnostics).mockResolvedValueOnce({
+      url: "https://supabase.example/catalog/tsubasa.jpg",
+    })
+    vi.mocked(prisma.newsImageAsset.upsert).mockResolvedValueOnce({ id: "asset-catalog" } as never)
+
+    const result = await prepareDiscoveryV4Image(catalogStory)
+
+    expect(result).toEqual({ status: "updated", reason: "catalog_poster", assetId: "asset-catalog" })
+    expect(ensureOfficialPressAssetForStory).not.toHaveBeenCalled()
+    expect(resolveNewsVisualIntent).not.toHaveBeenCalled()
+    expect(findContextualStockPhoto).not.toHaveBeenCalled()
+    expect(prisma.newsImageAsset.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          provider: "catalog_poster",
+          credit: "Totem Avisé / Catalogue",
+          approved: true,
+        }),
+      }),
+    )
+  })
+
+  it("resolves primary related media id from relatedMediaIds first", () => {
+    expect(primaryRelatedMediaId({ relatedMediaIds: ["a", "b"], relatedMediaId: "c" })).toBe("a")
+    expect(primaryRelatedMediaId({ relatedMediaId: "c" })).toBe("c")
+    expect(primaryRelatedMediaId({})).toBeNull()
   })
 
   it("does not reprocess an existing asset unless forced", async () => {
