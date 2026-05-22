@@ -38,6 +38,10 @@ jobs:
       NEXTAUTH_URL: http://localhost:3000
       TMDB_API_KEY: ci-placeholder
       NODE_ENV: test
+      # `next start` forces NODE_ENV=production at runtime; the seed route is
+      # guarded in prod unless this flag is set. Safe here: localhost + isolated
+      # Postgres service container, never deployed to public production.
+      ALLOW_TEST_SEED: "true"
       # Tells playwright.config.ts to skip its auto-spawned dev server — we
       # boot `npm start` ourselves below so the build is exercised.
       PLAYWRIGHT_BASE_URL: http://localhost:3000
