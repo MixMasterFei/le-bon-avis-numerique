@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import {
+  batchResolveCatalogPostersByTitle,
   getApprovedDiscoveryV4Image,
   prepareDiscoveryV4Image,
   primaryRelatedMediaId,
@@ -9,6 +10,12 @@ import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 import { ensureOfficialPressAssetForStory } from "@/lib/official-press-assets"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
+import { extractCatalogMatchesFromStory, loadCatalogIndex } from "@/lib/news-linkify"
+
+vi.mock("@/lib/news-linkify", () => ({
+  loadCatalogIndex: vi.fn(),
+  extractCatalogMatchesFromStory: vi.fn(),
+}))
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -52,6 +59,8 @@ describe("news image assets", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(ensureOfficialPressAssetForStory).mockResolvedValue(null)
+    vi.mocked(loadCatalogIndex).mockResolvedValue([])
+    vi.mocked(extractCatalogMatchesFromStory).mockReturnValue([])
   })
 
   it("returns only approved prepared V4 assets", async () => {
@@ -123,6 +132,78 @@ describe("news image assets", () => {
     expect(primaryRelatedMediaId({ relatedMediaIds: ["a", "b"], relatedMediaId: "c" })).toBe("a")
     expect(primaryRelatedMediaId({ relatedMediaId: "c" })).toBe("c")
     expect(primaryRelatedMediaId({})).toBeNull()
+  })
+
+  it("batch-resolves catalog posters from story titles when relatedMediaId is missing", async () => {
+    vi.mocked(loadCatalogIndex).mockResolvedValueOnce([
+      {
+        id: "media-tsubasa",
+        title: "Captain Tsubasa",
+        originalTitle: null,
+        type: "TV",
+        releaseYear: 2018,
+        expertAgeRec: 7,
+      },
+    ])
+    vi.mocked(extractCatalogMatchesFromStory).mockReturnValueOnce(["media-tsubasa"])
+    vi.mocked(prisma.mediaItem.findMany).mockResolvedValueOnce([
+      {
+        id: "media-tsubasa",
+        posterUrl: "https://image.tmdb.org/poster/tsubasa.jpg",
+        title: "Captain Tsubasa",
+      },
+    ] as never)
+
+    const map = await batchResolveCatalogPostersByTitle([
+      {
+        id: "story-tsubasa",
+        title: "Captain Tsubasa revient sur Netflix",
+        summary: "La saga anime revient en streaming.",
+        category: "FILM_TV",
+      },
+    ])
+
+    expect(map.get("story-tsubasa")).toEqual({
+      url: "https://image.tmdb.org/poster/tsubasa.jpg",
+      credit: "Totem Avisé / Catalogue",
+      licenseUrl: null,
+    })
+  })
+
+  it("prefers catalog poster from title when relatedMediaId is absent during prewarm", async () => {
+    const titleStory = {
+      ...story,
+      id: "story-title-tsubasa",
+      title: "Captain Tsubasa : la saison revient sur Netflix",
+      category: "FILM_TV",
+    }
+
+    vi.mocked(prisma.newsImageAsset.findUnique).mockResolvedValueOnce(null)
+    vi.mocked(loadCatalogIndex).mockResolvedValueOnce([
+      {
+        id: "media-tsubasa",
+        title: "Captain Tsubasa",
+        originalTitle: null,
+        type: "TV",
+        releaseYear: 2018,
+        expertAgeRec: 7,
+      },
+    ])
+    vi.mocked(extractCatalogMatchesFromStory).mockReturnValueOnce(["media-tsubasa"])
+    vi.mocked(prisma.mediaItem.findUnique).mockResolvedValueOnce({
+      id: "media-tsubasa",
+      title: "Captain Tsubasa",
+      posterUrl: "https://image.tmdb.org/poster/tsubasa.jpg",
+    } as never)
+    vi.mocked(uploadNewsImageWithDiagnostics).mockResolvedValueOnce({
+      url: "https://supabase.example/catalog/tsubasa.jpg",
+    })
+    vi.mocked(prisma.newsImageAsset.upsert).mockResolvedValueOnce({ id: "asset-title-catalog" } as never)
+
+    const result = await prepareDiscoveryV4Image(titleStory)
+
+    expect(result).toEqual({ status: "updated", reason: "catalog_poster", assetId: "asset-title-catalog" })
+    expect(ensureOfficialPressAssetForStory).not.toHaveBeenCalled()
   })
 
   it("does not reprocess an existing asset unless forced", async () => {

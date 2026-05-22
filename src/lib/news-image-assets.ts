@@ -5,6 +5,7 @@ import { resolveNewsVisualIntent } from "@/lib/news-visual-intent"
 import { editorialVisualCard } from "@/lib/news-image"
 import { ensureOfficialPressAssetForStory } from "@/lib/official-press-assets"
 import { uploadNewsImageWithDiagnostics } from "@/lib/supabase-storage"
+import { extractCatalogMatchesFromStory, loadCatalogIndex } from "@/lib/news-linkify"
 
 export const DISCOVERY_V4_IMAGE_VARIANT = "DISCOVERY_V4"
 const MIN_AUTO_APPROVE_CONFIDENCE = 0.72
@@ -238,6 +239,49 @@ export async function batchLoadApprovedDiscoveryV4Images(
   }
 }
 
+/**
+ * Title-based catalog match for stories missing relatedMediaId.
+ * Uses the same deterministic linkifier as reverify-related, but
+ * without LLM subject terms — exact title mentions only.
+ */
+export async function batchResolveCatalogPostersByTitle(
+  stories: V4ImageStoryInput[],
+): Promise<Map<string, PreparedNewsImage>> {
+  const needsMatch = stories.filter((story) => !primaryRelatedMediaId(story))
+  if (needsMatch.length === 0) return new Map()
+
+  try {
+    const catalog = await loadCatalogIndex()
+    if (catalog.length === 0) return new Map()
+
+    const storyToMediaId = new Map<string, string>()
+    for (const story of needsMatch) {
+      const matches = extractCatalogMatchesFromStory(
+        {
+          title: story.title,
+          summary: story.summary,
+          body: story.body ?? "",
+        },
+        catalog,
+        1,
+      )
+      const mediaId = matches[0]
+      if (mediaId) storyToMediaId.set(story.id, mediaId)
+    }
+
+    const posterMap = await batchLoadCatalogPosters([...storyToMediaId.values()])
+    const result = new Map<string, PreparedNewsImage>()
+    for (const [storyId, mediaId] of storyToMediaId) {
+      const poster = posterMap.get(mediaId)
+      if (poster) result.set(storyId, poster)
+    }
+    return result
+  } catch (err) {
+    console.warn("[news-image-assets] title catalog batch failed:", err)
+    return new Map()
+  }
+}
+
 export async function batchLoadCatalogPosters(
   mediaIds: string[],
 ): Promise<Map<string, PreparedNewsImage>> {
@@ -266,11 +310,10 @@ export async function batchLoadCatalogPosters(
   }
 }
 
-export async function resolveCatalogPosterForStory(
+async function resolveCatalogPosterByMediaId(
   story: V4ImageStoryInput,
+  mediaId: string,
 ): Promise<{ image: PreparedNewsImage; assetId: string } | null> {
-  const mediaId = primaryRelatedMediaId(story)
-  if (!mediaId) return null
 
   try {
     const media = await prisma.mediaItem.findUnique({
@@ -305,6 +348,34 @@ export async function resolveCatalogPosterForStory(
     }
   } catch (err) {
     console.warn("[news-image-assets] catalog poster failed:", err)
+    return null
+  }
+}
+
+export async function resolveCatalogPosterForStory(
+  story: V4ImageStoryInput,
+): Promise<{ image: PreparedNewsImage; assetId: string } | null> {
+  const relatedId = primaryRelatedMediaId(story)
+  if (relatedId) {
+    return resolveCatalogPosterByMediaId(story, relatedId)
+  }
+
+  try {
+    const catalog = await loadCatalogIndex()
+    const matches = extractCatalogMatchesFromStory(
+      {
+        title: story.title,
+        summary: story.summary,
+        body: story.body ?? "",
+      },
+      catalog,
+      1,
+    )
+    const mediaId = matches?.[0]
+    if (!mediaId) return null
+    return resolveCatalogPosterByMediaId(story, mediaId)
+  } catch (err) {
+    console.warn("[news-image-assets] title catalog poster failed:", err)
     return null
   }
 }

@@ -23,10 +23,10 @@ import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import {
   batchLoadApprovedDiscoveryV4Images,
   batchLoadCatalogPosters,
+  batchResolveCatalogPostersByTitle,
   primaryRelatedMediaId,
   type PreparedNewsImage,
 } from "@/lib/news-image-assets"
-import { findContextualStockPhoto } from "@/lib/stock-photo"
 
 export const dynamic = "force-dynamic"
 // Note: `revalidate` removed — incompatible with `force-dynamic` and
@@ -113,6 +113,7 @@ type StoryRow = {
 type V4ImageMaps = {
   v4AssetsMap: Map<string, PreparedNewsImage>
   catalogPosterMap: Map<string, PreparedNewsImage>
+  storyCatalogMap: Map<string, PreparedNewsImage>
 }
 
 const STORY_CARD_SELECT = {
@@ -203,7 +204,9 @@ async function rowToCard(
     }
 
     const relatedId = primaryRelatedMediaId(row)
-    const catalogPoster = relatedId ? maps?.catalogPosterMap.get(relatedId) : undefined
+    const catalogPoster =
+      (relatedId ? maps?.catalogPosterMap.get(relatedId) : undefined) ??
+      maps?.storyCatalogMap?.get(row.id)
     if (catalogPoster) {
       return {
         slug: row.slug,
@@ -218,33 +221,27 @@ async function rowToCard(
       }
     }
 
-    const stock = await findContextualStockPhoto({
-      title: row.title,
-      summary: row.summary,
-      body: row.body,
-      category: row.category,
-    }, { cacheOnly: true })
-    if (stock) {
-      return {
-        slug: row.slug,
-        title: row.title,
-        summary: row.summary,
-        imageUrl: stock.url,
-        imageCredit: stock.credit,
-        imageLicenseUrl: stock.licenseUrl,
-        category: row.category,
-        publishedAt: row.publishedAt,
-        sources: toSources(row.sources),
-      }
-    }
-
     const hasTrustedPublisherImage =
       row.imageSourceType === "PUBLISHER_RSS" &&
       (row.category === "FILM_TV" || row.category === "GAMES") &&
       hasTrustedPublisherSource(row.sources) &&
       canUseStoredImageWhileV4Warms(row)
 
-    if (!catalogPoster && !hasTrustedPublisherImage) {
+    if (hasTrustedPublisherImage) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: row.imageUrl,
+        imageCredit: row.imageCredit,
+        imageLicenseUrl: row.imageLicenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    if (!catalogPoster) {
       const editorialVisual = editorialVisualCard(row)
       if (editorialVisual) {
         return {
@@ -696,15 +693,20 @@ export async function renderApercuDecouvertePage(props: {
     .map((row) => primaryRelatedMediaId(row))
     .filter((id): id is string => Boolean(id))
 
-  const [v4AssetsMap, catalogPosterMap]: [Map<string, PreparedNewsImage>, Map<string, PreparedNewsImage>] =
+  const [v4AssetsMap, catalogPosterMap, storyCatalogMap]: [
+    Map<string, PreparedNewsImage>,
+    Map<string, PreparedNewsImage>,
+    Map<string, PreparedNewsImage>,
+  ] =
     imagePolicy === "stockThenFallback"
       ? await Promise.all([
           batchLoadApprovedDiscoveryV4Images(storyIds),
           batchLoadCatalogPosters(relatedMediaIds),
+          batchResolveCatalogPostersByTitle(allImageRows),
         ])
-      : [new Map(), new Map()]
+      : [new Map(), new Map(), new Map()]
 
-  const imageMaps: V4ImageMaps = { v4AssetsMap, catalogPosterMap }
+  const imageMaps: V4ImageMaps = { v4AssetsMap, catalogPosterMap, storyCatalogMap }
 
   // Page-level image dedup: dossier wins (it's the editorial centerpiece),
   // then hero, then top briefs, then INTL, then older. Any later card
@@ -728,21 +730,41 @@ export async function renderApercuDecouvertePage(props: {
     return card
   }
 
-  const claimSectionRows = async (
+  const rowsForCards: StoryRow[] = []
+  const seenRowIds = new Set<string>()
+  const pushRow = (row: StoryRow | null | undefined) => {
+    if (!row || seenRowIds.has(row.id)) return
+    seenRowIds.add(row.id)
+    rowsForCards.push(row)
+  }
+  pushRow(dossierRow)
+  pushRow(frenchHero)
+  for (const row of frenchRest) pushRow(row)
+  for (const row of intlRows) pushRow(row)
+  for (const row of techRows) pushRow(row)
+
+  const cardByStoryId = new Map<string, ApercuNewsCardData>(
+    await Promise.all(
+      rowsForCards.map(async (row) => [row.id, await rowToCard(row, imagePolicy, imageMaps)] as const),
+    ),
+  )
+  const cardFor = (row: StoryRow): ApercuNewsCardData => cardByStoryId.get(row.id)!
+
+  const claimSectionRows = (
     rows: StoryRow[],
     target = SECTION_CARD_TARGET,
-  ): Promise<ApercuNewsCardData[]> => {
+  ): ApercuNewsCardData[] => {
     const cards: ApercuNewsCardData[] = []
     for (const row of rows) {
       if (cards.length >= target) break
-      const card = claim(await rowToCard(row, imagePolicy, imageMaps))
+      const card = claim(cardFor(row))
       if (card) cards.push(card)
     }
     return cards
   }
 
-  const dossierCard = dossierRow ? claim(await rowToCard(dossierRow, imagePolicy, imageMaps)) : null
-  const heroCard = frenchHero ? claim(await rowToCard(frenchHero, imagePolicy, imageMaps)) : null
+  const dossierCard = dossierRow ? claim(cardFor(dossierRow)) : null
+  const heroCard = frenchHero ? claim(cardFor(frenchHero)) : null
 
   // Backfill loop: walk frenchRest in chronological order, accumulate
   // up to 3 surviving (post-dedup) cards into topCards, then push the
@@ -761,7 +783,7 @@ export async function renderApercuDecouvertePage(props: {
   const topPickedIds = new Set<string>()
   for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
     if (topCards.length >= TOP_TARGET) break
-    const card = claim(await rowToCard(row, imagePolicy, imageMaps))
+    const card = claim(cardFor(row))
     if (!card) continue
     topCards.push(card)
     topPickedIds.add(row.id)
@@ -769,13 +791,13 @@ export async function renderApercuDecouvertePage(props: {
 
   for (const row of frenchRest) {
     if (topPickedIds.has(row.id)) continue
-    const card = claim(await rowToCard(row, imagePolicy, imageMaps))
+    const card = claim(cardFor(row))
     if (!card) continue
     olderCards.push(card)
   }
 
-  const intlCards = await claimSectionRows(intlRows)
-  const techCards = await claimSectionRows(techRows)
+  const intlCards = claimSectionRows(intlRows)
+  const techCards = claimSectionRows(techRows)
 
   // Freshness flag — true when the chosen hero is older than 36h.
   // Surfaces a small banner on the page so a stale state (cron stuck,
