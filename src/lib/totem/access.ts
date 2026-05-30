@@ -1,14 +1,19 @@
 // Totem Assistant access gate.
 //
-// Default: admin-only (alpha rollout). Set `TOTEM_PUBLIC=true` in the
-// environment to open it to all authenticated users, then to anonymous
-// visitors. Mirrors the NEWSLETTER_PUBLIC pattern documented in CLAUDE.md.
+// Graduated rollout via the `TOTEM_PUBLIC` env var:
+//   (unset)            → admin-only (alpha default)
+//   "auth"             → all authenticated users (logged-in, any role)
+//   "true" / "1"       → fully public, anonymous visitors included
+// This lets the assistant open to logged-in members first and only then to
+// anonymous traffic — a deliberate two-step, not a single jump to public.
+// Mirrors the NEWSLETTER_PUBLIC pattern documented in CLAUDE.md.
 
-export type TotemAccessMode = "off" | "admin-only" | "public"
+export type TotemAccessMode = "off" | "admin-only" | "authenticated" | "public"
 
 export function getTotemAccessMode(): TotemAccessMode {
   const flag = process.env.TOTEM_PUBLIC?.toLowerCase()
   if (flag === "true" || flag === "1") return "public"
+  if (flag === "auth" || flag === "authenticated") return "authenticated"
   return "admin-only"
 }
 
@@ -18,9 +23,14 @@ export interface TotemAccessInput {
 }
 
 export function canUseTotem(input: TotemAccessInput): boolean {
-  const mode = getTotemAccessMode()
-  if (mode === "off") return false
-  if (mode === "public") return true
-  // admin-only
-  return input.role === "ADMIN"
+  switch (getTotemAccessMode()) {
+    case "off":
+      return false
+    case "public":
+      return true
+    case "authenticated":
+      return input.isAuthenticated
+    case "admin-only":
+      return input.role === "ADMIN"
+  }
 }

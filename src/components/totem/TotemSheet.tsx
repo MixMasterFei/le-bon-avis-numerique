@@ -140,16 +140,28 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
         />
         <DialogPrimitive.Content
           className={cn(
-            "fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col shadow-2xl",
-            "sm:w-[440px]",
+            "fixed z-50 flex flex-col shadow-2xl",
+            // Mobile: bottom sheet that stops short of the top so the page
+            // stays visible behind it (tap the backdrop to dismiss) — instead
+            // of a disorienting full-screen takeover.
+            "inset-x-0 bottom-0 h-[88dvh] max-h-[88dvh] w-full rounded-t-2xl",
+            // Desktop (sm+): full-height right-side panel as before.
+            "sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:w-[440px] sm:rounded-t-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+            // Slide up from the bottom on mobile, in from the right on desktop.
+            "max-sm:data-[state=open]:slide-in-from-bottom max-sm:data-[state=closed]:slide-out-to-bottom",
+            "sm:data-[state=open]:slide-in-from-right sm:data-[state=closed]:slide-out-to-right",
             "duration-200",
           )}
           style={{ background: "var(--color-bg)", color: "var(--color-ink)" }}
           aria-describedby={undefined}
         >
           <DialogPrimitive.Title className="sr-only">Totem — assistant familial</DialogPrimitive.Title>
+
+          {/* Mobile grab-handle — signals the bottom-sheet affordance. */}
+          <div className="flex justify-center pt-2 sm:hidden" aria-hidden>
+            <div className="h-1 w-10 rounded-full" style={{ background: "var(--color-line)" }} />
+          </div>
 
           {/* Header */}
           <div

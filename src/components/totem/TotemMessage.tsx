@@ -9,6 +9,16 @@ import { TotemWatchlistCard } from "./TotemWatchlistCard"
 import { TotemReactionCard } from "./TotemReactionCard"
 import { TotemFeedbackButtons } from "./TotemFeedbackButtons"
 
+// Belt-and-suspenders sanitisation of LLM output: react-markdown already
+// escapes raw HTML (no rehype-raw), and on top of that we restrict rendering
+// to plain text-formatting elements only. Inline links/images are stripped
+// (text kept) — navigation is intentionally confirmation-gated through the
+// proposeNavigation tool, never an unvetted inline <a>/<img> from the model.
+const ALLOWED_MD_ELEMENTS = [
+  "p", "br", "strong", "b", "em", "i", "del",
+  "ul", "ol", "li", "code", "pre", "blockquote", "h3", "h4", "hr",
+]
+
 export interface TotemMessageProps {
   message: UIMessage
   onAcceptNavigation: (toolCallId: string, path: string) => void
@@ -88,7 +98,9 @@ export function TotemMessage({
                   "prose-p:my-1.5 prose-em:italic prose-strong:font-semibold prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5",
                 )}
               >
-                <ReactMarkdown>{part.text}</ReactMarkdown>
+                <ReactMarkdown allowedElements={ALLOWED_MD_ELEMENTS} unwrapDisallowed>
+                  {part.text}
+                </ReactMarkdown>
               </div>
             )
           }

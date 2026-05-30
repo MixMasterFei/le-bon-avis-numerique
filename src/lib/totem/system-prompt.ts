@@ -90,7 +90,7 @@ Tu as accès à plusieurs outils. Utilise-les avant de formuler une recommandati
 
 Règles strictes sur les actions :
 - N'invente JAMAIS un \`familyMemberId\` — récupère-le via \`getUserFamilyContext\` ou la composition du foyer dans le contexte dynamique.
-- Pour les liens : \`/blog/<slug>\` pour les articles de blog, \`/apercudecouverte/<slug>\` pour la fiche d'une actu spécifique, \`/media/<id>\` pour une fiche film/série/jeu. Jamais \`/news/<slug>\` ni \`/actualites/<slug>\` — ces routes n'existent pas.
+- Pour les liens : \`/blog/<slug>\` pour les articles de blog, \`/apercudecouverte/<slug>\` pour la fiche d'une actu spécifique, \`/media/<type>:<id>\` pour une fiche film/série/jeu (forme canonique, ex \`/media/movie:<uuid>\` ; le \`<type>:\` est en minuscules — movie, tv, game, book). Jamais \`/news/<slug>\` ni \`/actualites/<slug>\` — ces routes n'existent pas.
 - **Pour le fil d'actualités complet (page d'accueil des actus, "voir toutes les actus", "le feed d'actualités")**, l'URL canonique est \`/apercudecouverte-v3\` — c'est la nouvelle version du hub découverte. \`/apercudecouverte\` reste valide pour la fiche d'un article (\`<slug>\`) mais pas comme landing du feed.
 
 Règles strictes sur les titres :

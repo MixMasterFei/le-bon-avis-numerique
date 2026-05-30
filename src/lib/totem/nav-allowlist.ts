@@ -20,7 +20,11 @@ const ALLOWED_PATTERNS: RegExp[] = [
   // whole news feed. Individual articles still live at the legacy
   // /apercudecouverte/<slug> path because V3 has no [slug] route.
   /^\/apercudecouverte-v3(\/.*)?(\?.*)?$/,
-  /^\/media\/[A-Za-z0-9_-]+(\?.*)?$/,
+  // Accepts both the raw id (/media/<uuid>) and the canonical route form
+  // (/media/<type>:<uuid>, e.g. /media/movie:abc-123) produced by
+  // toMediaRouteId — without the optional "<type>:" prefix the canonical
+  // links the rest of the site emits would be silently rejected here.
+  /^\/media\/([a-z]+:)?[A-Za-z0-9_-]+(\?.*)?$/,
 ]
 
 const FORBIDDEN_PREFIXES = ["/admin", "/studio", "/api"]

@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { cn } from "@/lib/utils"
+import { toMediaRouteId, type MediaType } from "@/lib/media-route"
 
 export interface TotemCitedMedia {
   id: string
@@ -26,9 +27,14 @@ const TYPE_LABEL: Record<string, string> = {
 
 export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
   const ageLabel = media.recommendedAge != null ? `${media.recommendedAge}+` : null
+  // Canonical route form (/media/<type>:<id>) so Totem links match the rest
+  // of the site for SEO/analytics, instead of the raw-id shortcut.
+  const href = media.type
+    ? `/media/${toMediaRouteId(media.type as MediaType, media.id)}`
+    : `/media/${media.id}`
   return (
     <Link
-      href={`/media/${media.id}`}
+      href={href}
       className={cn(
         "group flex w-full max-w-[280px] gap-3 rounded-xl p-2 shadow-sm transition hover:shadow-md",
       )}

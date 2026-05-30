@@ -682,12 +682,12 @@ export function buildTotemTools(ctx: TotemToolContext) {
      */
     proposeNavigation: tool({
       description:
-        "Propose à l'utilisateur de naviguer vers une page interne du site (ex: /connexion, /profil, /films, /media/[id]). L'utilisateur voit un bouton de confirmation et peut accepter ou refuser. À utiliser quand la question est fondamentalement de la navigation.",
+        "Propose à l'utilisateur de naviguer vers une page interne du site (ex: /connexion, /profil, /films, /media/<type>:<id>). L'utilisateur voit un bouton de confirmation et peut accepter ou refuser. À utiliser quand la question est fondamentalement de la navigation.",
       inputSchema: z.object({
         path: z
           .string()
           .describe(
-            "Chemin interne commençant par '/'. Pages autorisées : /, /connexion, /inscription, /profil, /profil/*, /films, /films/*, /series, /series/*, /jeux, /jeux/*, /livres, /livres/*, /recherche, /blog, /blog/*, /news, /news/*, /media/[id]. Aucune URL externe.",
+            "Chemin interne commençant par '/'. Pages autorisées : /, /connexion, /inscription, /profil, /profil/*, /films, /films/*, /series, /series/*, /jeux, /jeux/*, /livres, /livres/*, /recherche, /blog, /blog/*, /apercudecouverte/*, /media/<type>:<id> (ex: /media/movie:<uuid>). Aucune URL externe — surtout pas /news ni /actualites (n'existent pas).",
           ),
         label: z.string().describe("Libellé court de la destination, en français (ex: 'Page de connexion')."),
         reason: z
