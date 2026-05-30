@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 
 function extractErrorInfo(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -10,12 +11,24 @@ function extractErrorInfo(error: unknown) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Detailed diagnostics (catalog counts, Prisma error codes/messages) reveal
+  // DB state and internal error detail that has no business being public, so
+  // they're gated to cron/admin callers. Anonymous callers get a bare liveness
+  // signal — enough for an uptime probe, nothing exploitable.
+  const authorized = await isCronOrAdminAuthorized(req)
+
   try {
     await prisma.$queryRaw`SELECT 1`
 
-    const mediaCount = await prisma.mediaItem.count()
-    const streamingCount = await prisma.streamingAvailability.count()
+    if (!authorized) {
+      return NextResponse.json({ ok: true })
+    }
+
+    const [mediaCount, streamingCount] = await Promise.all([
+      prisma.mediaItem.count(),
+      prisma.streamingAvailability.count(),
+    ])
 
     return NextResponse.json({
       ok: true,
@@ -24,6 +37,9 @@ export async function GET() {
       streamingItems: streamingCount,
     })
   } catch (error) {
+    if (!authorized) {
+      return NextResponse.json({ ok: false }, { status: 500 })
+    }
     const info = extractErrorInfo(error)
     return NextResponse.json(
       {
