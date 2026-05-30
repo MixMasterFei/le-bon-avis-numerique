@@ -497,13 +497,16 @@ export async function renderApercuDecouvertePage(props: {
   searchParams?: Promise<SearchParams>
 }, options: { imagePolicy?: NewsImagePolicy; callbackUrl?: string } = {}) {
   const callbackUrl = options.callbackUrl ?? "/apercudecouverte-v3"
-  // V3 renders stored publisher photos as-is and never shows a branded
-  // Totem card. "asStored" filters out any fallback-card / blocked-hotlink
-  // row, which now means it simply hides the legacy FALLBACK stories
-  // (pre-May-2026 image policy) and surfaces only real RSS/agency photos.
-  // This is safe because news-discover now drops image-less items instead
-  // of carding them — every fresh story carries a direct publisher image.
-  const imagePolicy = options.imagePolicy ?? "asStored"
+  // Hybrid image policy ("safeFallback"): show a story's real publisher
+  // photo when it has one, and a branded category card otherwise — never
+  // hide a story. The old "asStored" (direct-photo-only) policy filtered
+  // out every fallback-card row, which starved the page to ~0 visible
+  // stories once sourcing degraded: ~half of RSS items carry no image,
+  // and many that do are hotlink-protected (200 to a server HEAD, 403 to
+  // the browser). "safeFallback" keeps the feed fresh regardless, while
+  // real-photo coverage improves separately via the discover-time image
+  // mirror to Supabase. See docs/tech-audit.md (news-image section).
+  const imagePolicy = options.imagePolicy ?? "safeFallback"
   let session
   try {
     session = await auth()
