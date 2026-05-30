@@ -1,0 +1,92 @@
+name: Prod health smoke
+
+# Lightweight production smoke test: hits a set of key public URLs and
+# fails loudly if any does not return its expected HTTP status.
+#
+# Why this exists: the previous "smoke" automation ran from a remote
+# cloud sandbox whose datacenter IP was rejected by Vercel Deployment
+# Protection (403 host_not_allowed), so it could never actually test the
+# site. GitHub Actions runs the check here and authenticates past
+# Deployment Protection with the Protection Bypass for Automation secret
+# (x-vercel-protection-bypass header), read from an encrypted repo secret
+# — the value never appears in code, logs, or anywhere public.
+#
+# Triggers:
+#   - push to main (post-deploy verification; waits for Vercel to deploy)
+#   - daily schedule
+#   - manual (workflow_dispatch)
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Daily at 07:00 UTC (09:00 Paris) — after the nightly cron batch.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Production URL smoke
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://totemavise.com
+      BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Wait for Vercel deploy
+        if: github.event_name == 'push'
+        # Give Vercel time to build & promote before we probe production.
+        run: sleep 90
+
+      - name: Smoke-test production URLs
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # "PATH|EXPECTED_CODE" — expected status after following redirects.
+          urls=(
+            "/|200"
+            "/films|200"
+            "/series|200"
+            "/jeux|200"
+            "/livres|200"
+            "/recherche|200"
+            "/a-propos|200"
+            "/connexion|200"
+            "/profil|200"
+            "/api/cinema|200"
+            "/api/db/movies?limit=1|200"
+            "/api/db/streaming?provider=Netflix&limit=1|200"
+          )
+
+          # Build the bypass header only if the secret is set (keeps the
+          # workflow usable even before the secret is configured).
+          header_args=()
+          if [ -n "${BYPASS:-}" ]; then
+            header_args=(-H "x-vercel-protection-bypass: ${BYPASS}")
+          else
+            echo "::warning::VERCEL_AUTOMATION_BYPASS_SECRET is not set — probing without bypass header."
+          fi
+
+          fail=0
+          printf '%-45s %-8s %-8s %s\n' "PATH" "EXPECT" "GOT" "RESULT"
+          printf '%s\n' "--------------------------------------------------------------------------"
+          for entry in "${urls[@]}"; do
+            path="${entry%|*}"
+            expected="${entry##*|}"
+            code=$(curl -s -o /dev/null -w "%{http_code}" -L --max-time 25 \
+              "${header_args[@]}" "${BASE_URL}${path}" || echo "000")
+            if [ "$code" = "$expected" ]; then
+              result="ok"
+            else
+              result="FAIL"
+              fail=1
+            fi
+            printf '%-45s %-8s %-8s %s\n' "$path" "$expected" "$code" "$result"
+          done
+
+          echo ""
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::One or more production URLs returned an unexpected status."
+            exit 1
+          fi
+          echo "All production URLs healthy."
