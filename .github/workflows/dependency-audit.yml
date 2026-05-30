@@ -1,0 +1,106 @@
+name: Dependency audit
+
+# Weekly dependency-vulnerability + outdated-package check. Replaces the
+# dependency-audit portion of the retired "weekly-post-cron-health-check"
+# remote agent — runs here from GitHub's own infra (no sandbox/IP issues,
+# no report branches).
+#
+# Policy:
+#   - FAIL (red + email) only on CRITICAL vulnerabilities — a real emergency.
+#   - High vulnerabilities surface as a yellow ::warning:: but do not fail,
+#     so the check isn't perpetually red on unfixable transitive deps.
+#   - A full summary table is always written to the run's Step Summary.
+#
+# Triggers: weekly (Sat 08:00 UTC, the old agent's slot) + manual.
+
+on:
+  schedule:
+    - cron: "0 8 * * 6"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Run npm audit
+        shell: bash
+        run: |
+          set -uo pipefail
+
+          # npm audit exits non-zero when vulns exist — capture, don't abort.
+          npm audit --json > audit.json 2>/dev/null || true
+
+          read -r crit high mod low total < <(jq -r '
+            .metadata.vulnerabilities |
+            "\(.critical) \(.high) \(.moderate) \(.low) \(.total)"' audit.json)
+
+          {
+            echo "## Dependency audit"
+            echo ""
+            echo "| Severity | Count |"
+            echo "|----------|-------|"
+            echo "| 🔴 Critical | ${crit} |"
+            echo "| 🟠 High | ${high} |"
+            echo "| 🟡 Moderate | ${mod} |"
+            echo "| ⚪ Low | ${low} |"
+            echo "| **Total** | **${total}** |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # List the high/critical advisories by package, if any.
+          high_crit=$(jq -r '
+            [.vulnerabilities[]? | select(.severity=="high" or .severity=="critical")
+             | "- **\(.name)** (\(.severity)) — \(.via[0].title // (.via[0]|tostring))"]
+            | unique | .[]' audit.json 2>/dev/null || true)
+          if [ -n "${high_crit}" ]; then
+            {
+              echo "### High / Critical advisories"
+              echo "${high_crit}"
+              echo ""
+              echo "_Try \`npm audit fix\` locally; review breaking changes before \`--force\`._"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "Vulnerabilities — critical:${crit} high:${high} moderate:${mod} low:${low}"
+
+          if [ "${high}" -gt 0 ]; then
+            echo "::warning::${high} high-severity vulnerabilit(y/ies) found — review the run summary."
+          fi
+          if [ "${crit}" -gt 0 ]; then
+            echo "::error::${crit} CRITICAL vulnerabilit(y/ies) found — fix promptly."
+            exit 1
+          fi
+
+      - name: Check key packages for updates
+        if: always()
+        shell: bash
+        run: |
+          set -uo pipefail
+          # Security-relevant packages — informational only, never fails.
+          npm outdated --json next next-auth prisma @prisma/client react react-dom \
+            > outdated.json 2>/dev/null || true
+
+          rows=$(jq -r 'to_entries[]? | "| \(.key) | \(.value.current) | \(.value.latest) |"' outdated.json 2>/dev/null || true)
+          {
+            echo "## Key packages"
+            if [ -n "${rows}" ]; then
+              echo ""
+              echo "| Package | Current | Latest |"
+              echo "|---------|---------|--------|"
+              echo "${rows}"
+            else
+              echo ""
+              echo "All key packages up to date. ✅"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
