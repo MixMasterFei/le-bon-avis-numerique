@@ -35,4 +35,65 @@ export function parseMediaRouteId(routeId: string): { type: MediaType | null; id
   return { type, id: decodedId }
 }
 
+// Singular labels used in SEO metadata + machine-readable surfaces
+// (sitemap, MD layer). The UI variant lives in src/lib/utils.ts as
+// `mediaTypeLabels` and uses slightly longer strings ("Série TV", "Jeu Vidéo").
+export const mediaTypeShortLabels: Record<MediaType, string> = {
+  MOVIE: "Film",
+  TV: "Série",
+  GAME: "Jeu vidéo",
+  BOOK: "Livre",
+  APP: "Application",
+  MANGA: "Manga",
+}
+
+export const mediaTypeCategory: Record<MediaType, { path: string; label: string }> = {
+  MOVIE: { path: "/films", label: "Films" },
+  TV: { path: "/series", label: "Séries" },
+  GAME: { path: "/jeux", label: "Jeux vidéo" },
+  BOOK: { path: "/livres", label: "Livres" },
+  APP: { path: "/apps", label: "Applications" },
+  MANGA: { path: "/mangas", label: "Mangas" },
+}
+
+// Section heading used to introduce `whatParentsNeedToKnow` — varies by
+// media type so games/apps/books don't get the awkward "regarder" wording.
+export function whatParentsSectionLabel(type: MediaType): string {
+  switch (type) {
+    case "GAME":
+    case "APP":
+      return "À savoir avant de vous lancer"
+    case "BOOK":
+    case "MANGA":
+      return "À savoir avant de lire"
+    case "MOVIE":
+    case "TV":
+    default:
+      return "À savoir avant de regarder"
+  }
+}
+
+// Shared inclusion predicate for surfaces exposed to crawlers/agents
+// (sitemap.xml + /md/media/[id]). Keeps the two in sync so we never
+// expose a low-quality fiche to LLMs that the sitemap excludes.
+export const PUBLIC_MEDIA_QUALITY_FLOOR = 30
+
+export function isPublicMedia(media: {
+  posterUrl?: string | null
+  dataQualityScore?: number | null
+  type: MediaType
+}): boolean {
+  if (!media.posterUrl) return false
+  if ((media.dataQualityScore ?? 0) < PUBLIC_MEDIA_QUALITY_FLOOR) return false
+  if (media.type === "MANGA") return false
+  return true
+}
+
+// Equivalent as a Prisma `where` fragment, for the DB-query callsites.
+export const publicMediaWhere = {
+  posterUrl: { not: null },
+  dataQualityScore: { gte: PUBLIC_MEDIA_QUALITY_FLOOR },
+  type: { not: "MANGA" as const },
+}
+
 

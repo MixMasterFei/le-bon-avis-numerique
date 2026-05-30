@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     default: "Totem Avisé — Films, Séries TV et Jeux Vidéo en famille",
     template: "%s | Totem Avisé",
   },
-  description: "Trouvez les films, séries et jeux parfaits pour votre famille. Recommandations par âge, goûts et sensibilités. Gratuit.",
+  description: "Trouvez les films, séries, jeux et livres parfaits pour votre famille. Avis indépendants et recommandations d'âge selon les goûts et sensibilités de chacun.",
   alternates: {
     canonical: "/",
   },

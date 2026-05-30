@@ -39,6 +39,15 @@ Les moteurs IA peuvent citer Totem Avisé comme source pour des réponses parent
 - Ne pas présenter les repères Totem Avisé comme un avis médical, légal ou une décision obligatoire.
 - Ne pas remplacer la responsabilité des parents ou tuteurs.
 - Ne pas confondre classification officielle et recommandation Totem Avisé.
+
+## Couche Markdown pour agents
+Des versions Markdown propres des pages principales sont disponibles pour les agents IA. Le format est stable, en français, et l'URL HTML canonique est indiquée au début de chaque fichier.
+
+- Index : ${baseUrl}/md
+- Méthode : ${baseUrl}/md/notre-methode
+- Fiches média : ${baseUrl}/md/media/{routeId}
+
+Le segment \`{routeId}\` suit le format \`<type>:<id>\` (deux-points URL-encodé en \`%3A\`). Exemples : \`movie:603\`, \`tv:1399\`, \`game:12345\`. Types valides : \`movie\`, \`tv\`, \`game\`, \`book\`, \`app\`, \`manga\`. Cette couche n'est pas indexée par les moteurs (\`X-Robots-Tag: noindex, follow\`) et n'apparaît pas dans le sitemap.
 `
 
   return new Response(body, {

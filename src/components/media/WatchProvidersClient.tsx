@@ -13,6 +13,7 @@ interface WatchProvidersClientProps {
 export function WatchProvidersClient({ mediaId, mediaType, className }: WatchProvidersClientProps) {
   const [providers, setProviders] = useState<TMDBWatchProviderResult | null>(null)
   const [trailer, setTrailer] = useState<TMDBVideo | null>(null)
+  const [inTheaters, setInTheaters] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -31,6 +32,7 @@ export function WatchProvidersClient({ mediaId, mediaType, className }: WatchPro
           if (!cancelled) {
             setProviders(data.watchProviders)
             setTrailer(data.trailer)
+            setInTheaters(Boolean(data.inTheaters))
           }
         }
       } catch {
@@ -61,8 +63,8 @@ export function WatchProvidersClient({ mediaId, mediaType, className }: WatchPro
     )
   }
 
-  // Render providers + trailer (or nothing if both null)
-  if (!providers && !trailer) return null
+  // Render providers + trailer (or nothing if all empty)
+  if (!providers && !trailer && !inTheaters) return null
 
-  return <WatchProviders providers={providers} trailer={trailer} className={className} />
+  return <WatchProviders providers={providers} trailer={trailer} inTheaters={inTheaters} className={className} />
 }

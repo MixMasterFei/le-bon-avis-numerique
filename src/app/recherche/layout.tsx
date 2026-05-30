@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Recherche — Trouvez le film, la série ou le jeu idéal",
+  title: "Recherche — Films, séries et jeux par âge",
   description: "Recherchez parmi des milliers de films, séries TV et jeux vidéo avec des recommandations d'âge et des analyses détaillées pour les familles.",
   alternates: { canonical: "/recherche" },
   openGraph: {

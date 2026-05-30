@@ -7,6 +7,7 @@ import {
   getTVVideos,
   getBestTrailer,
 } from "@/lib/tmdb"
+import { isMovieNowPlaying } from "@/lib/cinema"
 
 export async function GET(
   _request: NextRequest,
@@ -23,7 +24,7 @@ export async function GET(
 
     if (!media || !media.tmdbId) {
       return NextResponse.json(
-        { watchProviders: null, trailer: null },
+        { watchProviders: null, trailer: null, inTheaters: false },
         {
           headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
         }
@@ -32,6 +33,9 @@ export async function GET(
 
     const tmdbId = media.tmdbId
     const mediaType = media.type
+
+    // Is this movie currently in French theaters? (cached now_playing lookup, MOVIE-only)
+    const inTheaters = mediaType === "MOVIE" ? await isMovieNowPlaying(tmdbId) : false
 
     // Try DB-stored streaming data first (fast path)
     let watchProviders = null
@@ -86,7 +90,7 @@ export async function GET(
     }
 
     return NextResponse.json(
-      { watchProviders, trailer },
+      { watchProviders, trailer, inTheaters },
       {
         headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" },
       }
@@ -94,7 +98,7 @@ export async function GET(
   } catch (error) {
     console.error("Media extras error:", error)
     return NextResponse.json(
-      { watchProviders: null, trailer: null },
+      { watchProviders: null, trailer: null, inTheaters: false },
       { status: 500 }
     )
   }

@@ -73,6 +73,30 @@ function matchesAgeFilter(movie: Pick<CinemaMovie, "expertAgeRec">, filters: Cin
   return true
 }
 
+/**
+ * Returns the set of TMDB movie ids currently playing in French cinemas.
+ * Backed by TMDB's now_playing endpoint (region=FR), which is cached 1h, so
+ * this is cheap to call per request. Do NOT use release date as a proxy —
+ * a film can be months old and still in theaters (or recent and already gone).
+ */
+export async function getNowPlayingTmdbIds(): Promise<Set<number>> {
+  try {
+    const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
+    return new Set(tmdbPages.flatMap((page) => page.results || []).map((movie) => movie.id))
+  } catch {
+    return new Set()
+  }
+}
+
+/**
+ * Whether a single movie (by TMDB id) is currently in French theaters.
+ */
+export async function isMovieNowPlaying(tmdbId: number | null | undefined): Promise<boolean> {
+  if (!tmdbId) return false
+  const ids = await getNowPlayingTmdbIds()
+  return ids.has(tmdbId)
+}
+
 export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<CinemaMovie[]> {
   const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
   const filteredMovies = sortCinemaMovies(

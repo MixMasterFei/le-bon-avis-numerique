@@ -33,6 +33,7 @@ import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
+import { buildQuickAnswer } from "@/lib/quick-answer"
 import {
   getMovieDetails,
   getTVDetails,
@@ -232,9 +233,27 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   const title = `${media.title}${ageStr}`
 
   const typeLabel = typeLabels[media.type] || "Média"
-  const description = media.synopsisFr
-    ? media.synopsisFr.slice(0, 155) + (media.synopsisFr.length > 155 ? "…" : "")
-    : `${typeLabel} analysé par Totem Avisé. Découvrez notre avis détaillé et recommandation d'âge pour les familles.`
+
+  // Lead the meta description with the age verdict + family angle. This both
+  // answers the "[titre] à partir de quel âge" query directly in the SERP and
+  // differentiates us from generic plot-summary results (AlloCiné, Wikipédia).
+  const agePrefix = media.expertAgeRec && media.expertAgeRec > 0
+    ? `Dès ${media.expertAgeRec} ans · Notre avis famille`
+    : null
+  const synopsis = media.synopsisFr?.trim() || ""
+  const truncate = (text: string, max: number) =>
+    text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text
+
+  let description: string
+  if (agePrefix && synopsis) {
+    description = `${agePrefix} — ${truncate(synopsis, 160 - agePrefix.length - 3)}`
+  } else if (synopsis) {
+    description = truncate(synopsis, 160)
+  } else if (agePrefix) {
+    description = `${agePrefix}. ${typeLabel} analysé par Totem Avisé pour les familles.`
+  } else {
+    description = `${typeLabel} analysé par Totem Avisé. Découvrez notre avis détaillé et recommandation d'âge pour les familles.`
+  }
 
   const ogType = media.type === "MOVIE" ? "video.movie"
     : media.type === "TV" ? "video.tv_show"
@@ -245,6 +264,7 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     description,
     alternates: {
       canonical: `/media/${id}`,
+      types: { "text/markdown": `/md/media/${id}` },
     },
     keywords: [
       ...media.genres.slice(0, 5),
@@ -271,39 +291,6 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
         images: [media.posterUrl],
       }),
     },
-  }
-}
-
-function buildQuickAnswer(media: DatabaseMediaItem) {
-  const typeLabel = mediaTypeLabels[media.type]?.toLowerCase() || "contenu"
-  const age = media.expertAgeRec && media.expertAgeRec > 0
-    ? `à partir de ${media.expertAgeRec} ans`
-    : "avec un âge à confirmer"
-  const sensitivePoints: string[] = []
-
-  if (media.contentMetrics.violence >= 3) sensitivePoints.push("violence")
-  if (media.contentMetrics.sexNudity >= 3) sensitivePoints.push("sexe ou nudité")
-  if (media.contentMetrics.language >= 3) sensitivePoints.push("langage")
-  if (media.contentMetrics.substanceUse >= 3) sensitivePoints.push("substances")
-  if (media.contentMetrics.consumerism >= 3) sensitivePoints.push("consumérisme")
-
-  const positivePoints: string[] = []
-  if (media.contentMetrics.positiveMessages >= 4) positivePoints.push("messages positifs")
-  if (media.contentMetrics.roleModels >= 4) positivePoints.push("modèles positifs")
-
-  const sensitiveText = sensitivePoints.length > 0
-    ? `Points à vérifier : ${sensitivePoints.join(", ")}.`
-    : "Aucun signal sensible majeur ne ressort dans les dimensions principales."
-  const positiveText = positivePoints.length > 0
-    ? `Points favorables : ${positivePoints.join(", ")}.`
-    : "Les apports positifs sont à lire dans l'analyse détaillée."
-
-  return {
-    question: `${media.title} est-il adapté aux enfants ?`,
-    answer: `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText} ${positiveText}`,
-    age,
-    sensitiveText,
-    positiveText,
   }
 }
 

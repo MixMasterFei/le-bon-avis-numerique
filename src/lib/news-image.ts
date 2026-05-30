@@ -240,12 +240,23 @@ export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | n
     }
   }
 
-  if (rssImage && item.sourceName && SAFE_RSS_SOURCE_NAMES.has(item.sourceName)) {
+  // Tier 2: PUBLISHER_RSS — any RSS-embedded image from a publisher.
+  // Xavier's call (May 2026): the news grid shows the real publisher
+  // photo straight from the feed, never a branded Totem card. The two
+  // hard guards still apply (they ran earlier and returned null):
+  //   - low-quality-image publishers (mascot art) → dropped at top
+  //   - blocked-hotlink hosts (sortiraparis CDN, …) → dropped above
+  // So any rssImage that reaches here is a real, renderable photo.
+  // The former 5-source SAFE_RSS allowlist now only refines the audit
+  // label (institutional sources are still tagged distinctly for the
+  // operations log) — it no longer gates whether the image is used.
+  if (rssImage) {
+    const known = Boolean(item.sourceName && SAFE_RSS_SOURCE_NAMES.has(item.sourceName))
     return {
       url: rssImage,
       sourceType: "PUBLISHER_RSS",
-      credit: item.sourceName ?? articleHost ?? "Source",
-      auditLabel: "PUBLISHER_RSS_ALLOWLIST",
+      credit: item.sourceName ?? articleHost ?? imageHostFromUrl(rssImage) ?? "Source",
+      auditLabel: known ? "PUBLISHER_RSS_ALLOWLIST" : "PUBLISHER_RSS_DIRECT",
     }
   }
 

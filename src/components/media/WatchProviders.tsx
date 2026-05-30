@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { YoutubeIcon, ChevronDown, ChevronUp, Play, ShoppingCart, Gift } from "lucide-react"
+import { YoutubeIcon, ChevronDown, ChevronUp, Play, ShoppingCart, Gift, Clapperboard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
 import { getProviderLogoUrl } from "@/lib/tmdb"
@@ -34,30 +34,34 @@ function deduplicateProviders(
 interface WatchProvidersProps {
   providers: TMDBWatchProviderResult | null
   trailer: TMDBVideo | null
+  inTheaters?: boolean
   className?: string
 }
 
-export function WatchProviders({ providers, trailer, className = "" }: WatchProvidersProps) {
+export function WatchProviders({ providers, trailer, inTheaters = false, className = "" }: WatchProvidersProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   // Collect and deduplicate providers by category
   const streamingProviders = deduplicateProviders(providers?.flatrate || [])
   const freeProviders = deduplicateProviders(providers?.free || [])
-  const rentProviders = deduplicateProviders(providers?.rent || [])
-  const buyProviders = deduplicateProviders(providers?.buy || [])
+  // Rent and Buy almost always list the same stores — merge into a single
+  // "Location / achat" group to avoid showing identical logos twice.
+  const rentBuyProviders = deduplicateProviders([
+    ...(providers?.rent || []),
+    ...(providers?.buy || []),
+  ])
 
   // Preview: prefer streaming/free, fall back to rent/buy
   const primaryPreview = deduplicateProviders([...streamingProviders, ...freeProviders])
   const previewProviders = primaryPreview.length > 0
     ? primaryPreview.slice(0, 3)
-    : deduplicateProviders([...rentProviders, ...buyProviders]).slice(0, 3)
+    : rentBuyProviders.slice(0, 3)
 
   const hasProviders = streamingProviders.length > 0 ||
     freeProviders.length > 0 ||
-    rentProviders.length > 0 ||
-    buyProviders.length > 0
+    rentBuyProviders.length > 0
 
-  if (!hasProviders && !trailer) {
+  if (!hasProviders && !trailer && !inTheaters) {
     return null
   }
 
@@ -65,6 +69,14 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
     <div className={`${className}`}>
       {/* Compact row */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* In-theaters badge */}
+        {inTheaters && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
+            <Clapperboard className="h-3.5 w-3.5" />
+            Au cinéma
+          </span>
+        )}
+
         {/* Trailer Button */}
         {trailer && (
           <a
@@ -147,23 +159,13 @@ export function WatchProviders({ providers, trailer, className = "" }: WatchProv
             />
           )}
 
-          {/* Rent */}
-          {rentProviders.length > 0 && (
+          {/* Rent / Buy (merged — same stores usually offer both) */}
+          {rentBuyProviders.length > 0 && (
             <ProviderRow
-              title="Location"
+              title="Location / achat"
               icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={rentProviders}
+              providers={rentBuyProviders}
               color="text-amber-400"
-            />
-          )}
-
-          {/* Buy */}
-          {buyProviders.length > 0 && (
-            <ProviderRow
-              title="Achat"
-              icon={<ShoppingCart className="h-3.5 w-3.5" />}
-              providers={buyProviders}
-              color="text-purple-400"
             />
           )}
 

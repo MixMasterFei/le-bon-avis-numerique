@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 import { prisma } from "@/lib/prisma"
-import { toMediaRouteId } from "@/lib/media-route"
+import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
 import { sanityClient } from "@/sanity/client"
 
 // Revalidate sitemap every 6 hours (ISR) — picks up new cron imports
@@ -44,13 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let mediaPages: MetadataRoute.Sitemap = []
   try {
     const mediaItems = await prisma.mediaItem.findMany({
-      where: {
-        posterUrl: { not: null },
-        dataQualityScore: { gte: 30 },
-        // Manga detail pages excluded from sitemap while the category
-        // is admin-only. Remove when the catalog launches publicly.
-        type: { not: "MANGA" },
-      },
+      where: publicMediaWhere,
       select: { id: true, type: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
     })

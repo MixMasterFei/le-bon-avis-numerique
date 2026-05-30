@@ -27,7 +27,7 @@ import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-sub
 const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
-import { resolveImage, isImageLargeEnough, fallbackCard, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { resolveImage, isImageLargeEnough, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
 import { isLowQualityImagePublisher } from "@/lib/news-image-policy"
 import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
 import { slugify, faviconFor } from "@/lib/news-slug"
@@ -604,14 +604,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const pairs = fetchBatches.flat()
   const fetchRssMs = Date.now() - fetchStart
 
-  // 2. Resolve image per item. Items with no usable photo are no longer
-  //    dropped — they're kept and assigned the branded category fallback
-  //    card. Only a missing hard requirement (date/link/title) or a
-  //    flagged low-quality-image publisher still drops the item.
+  // 2. Resolve image per item. Items with no usable publisher photo are
+  //    dropped (no branded card) — Xavier's call (May 2026): the grid
+  //    shows real RSS/agency photos only. A missing hard requirement
+  //    (date/link/title), a low-quality-image publisher, a blocked
+  //    hotlink, or an image too small for a 16:9 hero all drop the item.
   const imageStart = Date.now()
   const hydrated: HydratedItem[] = []
   let droppedNoImage = 0
-  let fellBackToCard = 0
+  // Retained at 0 for stats-shape stability — the pipeline no longer
+  // substitutes a fallback card for image-less items (it drops them).
+  const fellBackToCard = 0
   await parallelMap(pairs, 6, async ({ source, item }) => {
     const iso = item.isoDate ?? item.pubDate
     if (!iso || !item.link || !item.title) {
@@ -635,13 +638,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       category: source.category,
     })
     // No publisher image, a blocked-hotlink image, or only a thumbnail
-    // too small to render as a 16:9 hero → use the branded category
-    // card. (The dimension gate stops the visibly-upscaled portrait
-    // look Xavier flagged on the old Café Pédagogique brief; fails open
-    // on probe errors so a transient blip doesn't force a fallback.)
+    // too small to render as a 16:9 hero → DROP the item. Xavier's call
+    // (May 2026): the news grid shows real publisher photos only, never
+    // a branded Totem card. resolveImage now accepts any direct RSS
+    // image, so the drop rate stays low. (The dimension gate still stops
+    // the visibly-upscaled portrait look Xavier flagged on the old Café
+    // Pédagogique brief; it fails open on probe errors so a transient
+    // blip doesn't drop a story whose image is actually fine.)
     if (!resolved || !(await isImageLargeEnough(resolved.url))) {
-      resolved = fallbackCard(source.category, item.title)
-      fellBackToCard++
+      droppedNoImage++
+      return
     }
     hydrated.push({
       sourceName: source.name,
@@ -947,14 +953,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //    serving from our own storage, we sidestep that entirely. As a
   //    bonus: stories survive even if the source CDN goes down.
   //    If the upload fails (origin returns a tiny placeholder, network
-  //    error, CDN block), keep the editorial story alive on the branded
-  //    fallback card instead of turning a valid brief into a 0-story run.
+  //    error, CDN block), DROP the story — we no longer substitute a
+  //    branded card. Storing the un-mirrored URL would just 403 in the
+  //    browser, so a failed mirror means we have no renderable photo.
   const mirrored = await Promise.all(
     moderatedStories.map((s) =>
       isStorageEnabled() ? uploadNewsImage(s.imageUrl) : Promise.resolve(s.imageUrl),
     ),
   )
-  const droppedImageUnreachable = 0
+  let droppedImageUnreachable = 0
   const liveStories: SynthesizedStory[] = []
   moderatedStories.forEach((s, i) => {
     const mirroredUrl = mirrored[i]
@@ -962,17 +969,10 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       liveStories.push({ ...s, imageUrl: mirroredUrl })
       return
     }
-    const fallback = fallbackCard(s.category, s.title)
+    droppedImageUnreachable++
     console.warn(
-      `[news-discover] image mirror failed; using fallback card for "${s.title.slice(0, 80)}"`,
+      `[news-discover] image mirror failed; dropping "${s.title.slice(0, 80)}"`,
     )
-    liveStories.push({
-      ...s,
-      imageUrl: fallback.url,
-      imageSourceType: fallback.sourceType,
-      imageCredit: fallback.credit,
-      imageLicenseUrl: fallback.licenseUrl,
-    })
   })
 
   const synthesizeMs = Date.now() - synthStart

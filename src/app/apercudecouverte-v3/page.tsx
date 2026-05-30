@@ -497,6 +497,12 @@ export async function renderApercuDecouvertePage(props: {
   searchParams?: Promise<SearchParams>
 }, options: { imagePolicy?: NewsImagePolicy; callbackUrl?: string } = {}) {
   const callbackUrl = options.callbackUrl ?? "/apercudecouverte-v3"
+  // V3 renders stored publisher photos as-is and never shows a branded
+  // Totem card. "asStored" filters out any fallback-card / blocked-hotlink
+  // row, which now means it simply hides the legacy FALLBACK stories
+  // (pre-May-2026 image policy) and surfaces only real RSS/agency photos.
+  // This is safe because news-discover now drops image-less items instead
+  // of carding them — every fresh story carries a direct publisher image.
   const imagePolicy = options.imagePolicy ?? "asStored"
   let session
   try {
