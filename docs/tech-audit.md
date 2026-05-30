@@ -1,89 +1,81 @@
-# Technical Audit - Totem Avisé
+# Technical Audit — Totem Avisé
 
-**Date:** 2026-02-15 (updated)
-**Original audit:** 2026-02-14
-**Auditor:** Claude (AI Technical Advisor)
-**Codebase:** Next.js 16 / React 19 / Prisma / Supabase
+**Date:** 2026-05-31 (this supersedes the 2026-02 audit, archived at the bottom)
+**Codebase:** Next.js 16.2 / React 19 / Tailwind v4 / Prisma / Supabase / Vercel
 
 ---
 
-## Overall Rating: 82/100 (was 70/100)
+## Overall: ~85/100 — solid production base
 
-| Category | Score | Max | Status | Change |
-|---|---|---|---|---|
-| Architecture & Structure | 18 | 20 | Excellent | - |
-| Security | 15 | 15 | Excellent | - |
-| Type Safety | 14 | 15 | Very Good | - |
-| Database Design | 14 | 15 | Very Good | +1 (TMDB ratings, CronLog) |
-| Error Handling | 8 | 10 | Good | +4 (error.tsx, not-found.tsx, loading states) |
-| Testing | 2 | 10 | Basic | +2 (Vitest setup, CI) |
-| CI/CD & DevOps | 8 | 10 | Good | +6 (GitHub Actions CI + cron) |
-| Performance | 4 | 5 | Good | - |
-| **Total** | **83** | **100** | **Strong foundation, minor gaps** | **+13** |
-
----
-
-## What's Improved Since Initial Audit
-
-### Error Handling (4 -> 8)
-- [x] Added `error.tsx` at app root
-- [x] Added `not-found.tsx` at app root
-- [x] Added `loading.tsx` to main routes
-- [x] Environment variable validation at startup (`src/instrumentation.ts`)
-- Still missing: Sentry/external error tracking, centralized error logging
-
-### Testing (0 -> 2)
-- [x] Vitest configured with React Testing Library
-- [x] Basic test infrastructure in place
-- Still missing: Meaningful test coverage, E2E tests
-
-### CI/CD & DevOps (2 -> 8)
-- [x] GitHub Actions CI: lint + type-check + tests + build on PRs
-- [x] GitHub Actions cron: automated maintenance 3 days/week (import, enrich, quality, streaming, ratings, similarity)
-- [x] Vercel Cron for weekly import (Monday 3AM UTC)
-- [x] Cron job activity logging (cron_logs table + admin dashboard UI)
-- [x] CRON_SECRET auth for automated routes
-- Still missing: Sentry, Vercel Analytics, preview deployments
-
-### Database Design (13 -> 14)
-- [x] Added `tmdbRating` and `tmdbVoteCount` fields for internal quality ranking
-- [x] Added `CronLog` model for automated job tracking
-- Note: Still using manual SQL migrations (not `prisma migrate`) due to topics table schema conflict
-
----
-
-## Remaining Action Items
-
-### P2 - Recommended (When Convenient)
-
-| # | Action | Effort | Notes |
-|---|---|---|---|
-| 1 | Add Sentry error tracking | 1 hr | |
-| 2 | Add Vercel Analytics | 15 min | |
-| 3 | Resolve topics table schema conflict | 1 hr | Blocking `prisma db push` |
-| 4 | Add Zod validation on API request bodies | 3 hrs | |
-| 5 | Clean up `src/lib/mock-data.ts` | 30 min | Still used by some components |
-
-### P3 - Future Improvements
-
-| # | Action | Effort | Notes |
-|---|---|---|---|
-| 6 | Upgrade Prisma to v7 | 2 hrs | |
-| 7 | Add E2E tests with Playwright | 4 hrs | |
-| 8 | Add database seeding script | 2 hrs | |
-| 9 | Increase test coverage | Ongoing | |
-| 10 | Add OpenAPI/Swagger docs | 4 hrs | 24+ admin routes now |
-
----
-
-## Codebase Statistics
-
-| Metric | Count | Change |
+| Category | Score | Notes |
 |---|---|---|
-| TypeScript/TSX files | ~240 | +18 |
-| React components | ~90 | +8 |
-| API routes | ~85 | +6 |
-| Prisma models | 28 | +1 (CronLog) |
-| GitHub Actions workflows | 2 | +2 (CI + cron) |
-| Dependencies | 44 | - |
-| Test files | 1 | +1 |
+| Security | 14 / 15 | Strong for a consumer app; CSP + distributed rate-limit are the gaps before scale |
+| Ops / CI | 15 / 15 | Mature: CI, GH-Actions crons + Vercel heartbeat, supervisor, debt digest, prod smoke, weekly dep audit |
+| Performance | 3 / 5 | Deliberate trade-offs penalise Lighthouse (unoptimized images, temp source maps) |
+| Code quality | 16 / 20 | Clear architecture; some god-objects (600–1100 lines) and duplicated rate-limit/auth |
+| Tests | 6 / 10 | ~16 Vitest + ~20 Playwright; thin on API routes + news pipeline |
+| SEO / product | 9 / 10 | Sitemap, JSON-LD, age-intent metadata, /age, /md, llms.txt |
+| Observability | 5 / 5 | Sentry + Vercel Analytics + Speed Insights + Plausible + prod smoke |
+| **Total** | **68 / 80 → 85%** | Production-ready; gaps are assumed trade-offs + complexity debt, not critical flaws |
+
+> 68/80 is exactly 85% (a May external "Composer" audit rounded it to 86).
+
+---
+
+## Recent hardening (May 2026)
+
+- **Security**: `next` bumped 16.1.1 → 16.2.6 (clears ~20 advisories incl. App-Router middleware-bypass). `/api/db/health` gated — public callers get a bare `{ ok: true }`; catalog counts + Prisma error detail are cron/admin-only.
+- **CI/ops**: `prod-health-smoke.yml` (12 URLs, daily + post-deploy, authenticates past Vercel Deployment Protection via `VERCEL_AUTOMATION_BYPASS_SECRET`). `dependency-audit.yml` (weekly `npm audit`, fails on critical). Retired 3 legacy remote "report" agents (smoke/seo/health) that were blocked at the Vercel edge and spamming branches; pruned ~47 stale branches.
+- **Product**: movie pages gained an "Au cinéma" badge (TMDB now_playing) + merged rent/buy availability row; age-led meta descriptions across media pages.
+
+---
+
+## Known issues by priority
+
+### P0 — quick, low-risk
+- **`productionBrowserSourceMaps: true`** ([next.config.ts](../next.config.ts)) — only on to debug an unresolved **React #418 hydration crash on `/apercudecouverte-v3`**. Fix the hydration crash first, then remove the maps. (v3 is admin-only, so low urgency.) Likely cause is a relative-time / `Date.now()` render path in `src/components/home-v2/` — needs a focused pass, not a blind change.
+- **Images `unoptimized: true`** ([next.config.ts](../next.config.ts)) — **do NOT blind-flip to `false`.** On Vercel this meters per-image Image-Optimization billing across ~10k catalog items; and the app already does responsive sizing via TMDB CDN sizes (w92/w342/w500). Real LCP gain is the AVIF/WebP + srcset delta only. **Measure first**, then decide; if flipped, watch the Vercel image meter.
+
+### P1 — before scaling / before the Totem AI assistant goes public
+- **No CSP** — middleware sets the other security headers but no `Content-Security-Policy`. Inline theme/JSON-LD/Plausible scripts need a nonce-based `script-src`.
+- **In-memory rate limiting** ([middleware.ts](../src/middleware.ts) + [security.ts](../src/lib/security.ts), duplicated) — per-serverless-instance, bypassable across regions/instances. Move to one shared store (Vercel WAF rate rules or Upstash) — important once `totem/chat` is public.
+- **Validation** — Zod on only ~4 routes; the rest rely on manual checks. Prioritise auth / user / `totem/chat` / contact / reviews.
+
+### P2 — quality / debt
+- God-objects to split: `media/[id]/page.tsx`, `SiteHeader.tsx`, `MemberCorner.tsx`, `apercudecouverte-v3/page.tsx` (~900–1100 lines each).
+- `mock-data.ts` still imported in `media/[id]/page.tsx`.
+- Error boundaries: only a root `error.tsx`; no per-section boundaries.
+- API tests for ~10–15 critical routes (auth, family-fit, recommendations).
+
+### P3 — long-term
+- `topics` table schema conflict blocks `prisma db push` (manual SQL migrations).
+- OpenAPI for the ~140 API routes.
+
+---
+
+## Deep-dive: `/apercudecouverte-v3` news staleness (diagnosed + fixed 2026-05-31)
+
+**Symptom:** the (admin-only) v3 discovery page showed stories 10–16 days old.
+
+**Root cause — a chain, not a single bug:**
+1. The news pipeline is healthy (fresh briefs daily, cron `success` 4×/day).
+2. But since ~May 15, **~100% of stories carry no reachable direct photo**: about half the RSS items have no image at all, and many that do are **hotlink-protected** (200 to a server-side HEAD, 403 to the browser GET). Verified live: extraction code + feeds are fine (Le Monde 5/5, France Info 5/5 from a residential IP), but production yields 0 — the difference is the datacenter-IP fetch.
+3. A prior change flipped `news-discover` from *card image-less items* → *drop them* (and same at the image-mirror step), pushing persistence toward "0 stories produced" cycles.
+4. v3 ran the **`asStored` "direct-photo-only"** policy, which *hides* every photo-less story → the page fell through to the last stories that still had real photos (16 days old).
+
+**Signal that nailed it:** `resolveImagesMs` per cron run — `99ms` (zero network = extraction finding nothing) before the late-May `news-image.ts` fix, `3089ms` (real probing) after. Extraction is fixed; persistence + display were the remaining gaps.
+
+**Fix (hybrid), commit `fce5ab9`:**
+- `news-discover` — restored the branded category-card safety net at both drop points, so valid briefs always persist.
+- `apercudecouverte-v3` — `imagePolicy` `asStored` → **`safeFallback`**: show the real photo when present, a branded card otherwise, never hide a story.
+
+**Follow-up (not yet done) — "news-image V2":** raise real-photo coverage so the feed leans on actual photos, not cards. Options: (a) ensure the **discover-time Supabase image mirror** (`uploadNewsImage`) is enabled + reliable (it already exists to defeat hotlinking — downloads then re-serves from our storage), (b) re-add an **OG:image tier** (removed in the May-6 2-tier simplification) to find images RSS feeds omit. The mirror is higher-leverage: it fixes both the no-image and the hotlink-403 problems at once.
+
+---
+
+<details>
+<summary>Archived: 2026-02 audit (historical — most items since resolved)</summary>
+
+The Feb audit rated the project 82/100 and flagged, among others: no external error tracking (now: Sentry), weak testing 2/10 (now: ~16 Vitest + ~20 Playwright + CI), minimal CI/CD (now: full GitHub Actions CI + cron pipeline), no Vercel Analytics (now: Analytics + Speed Insights). Those gaps are closed; see the current scores above. Remaining Feb items still open: `topics` schema conflict (P3), broader Zod validation (P1), `mock-data.ts` cleanup (P2), OpenAPI docs (P3).
+
+</details>
