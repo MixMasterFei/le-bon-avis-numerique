@@ -26,7 +26,12 @@ test.describe("Family recommendations", () => {
     seededFamily,
   }) => {
     await page.goto(`/media/${seededFamily.media.family.id}`)
-    await expect(page.getByText(/Test Family Movie/i)).toBeVisible({ timeout: 15_000 })
+    // Title now appears in several places (h1, the "… est-il adapté ?" FAQ
+    // heading, the quick-answer paragraph) — target the page heading and take
+    // the first match to avoid a strict-mode violation.
+    await expect(
+      page.getByRole("heading", { name: /Test Family Movie/i }).first(),
+    ).toBeVisible({ timeout: 15_000 })
     // Family-fit card surfaces some indicator (score, level, or member badge).
     // Stay loose on the exact copy.
     await expect(
