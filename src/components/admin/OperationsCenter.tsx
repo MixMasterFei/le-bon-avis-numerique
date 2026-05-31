@@ -917,11 +917,15 @@ const GROUPS: OperationGroup[] = [
 
 interface OperationsCenterProps {
   onComplete?: () => void
+  /** When true, all groups start collapsed (recommended on /admin/operations). */
+  startCollapsed?: boolean
 }
 
-export function OperationsCenter({ onComplete }: OperationsCenterProps) {
+export function OperationsCenter({ onComplete, startCollapsed = false }: OperationsCenterProps) {
   const [query, setQuery] = useState("")
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsed] = useState<Set<string>>(() =>
+    startCollapsed ? new Set(GROUPS.map((g) => g.label)) : new Set(),
+  )
 
   // Reverse index: key → operation, so we render in group order without
   // mutating the OPERATIONS array. New ops with no group end up in "Autres".

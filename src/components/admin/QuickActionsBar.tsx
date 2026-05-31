@@ -1,15 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Search, Film, Tv, Gamepad2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuickImportModal } from "./QuickImportModal"
 
 interface QuickActionsBarProps {
   onImportComplete?: () => void
+  /** Hide section title when nested inside AdminSectionCard */
+  embedded?: boolean
+  /** Parent can request the search modal to open (e.g. from shortcut bar) */
+  requestOpen?: boolean
+  onOpenHandled?: () => void
 }
 
-export function QuickActionsBar({ onImportComplete }: QuickActionsBarProps) {
+export function QuickActionsBar({
+  onImportComplete,
+  embedded,
+  requestOpen,
+  onOpenHandled,
+}: QuickActionsBarProps) {
   const [showImportModal, setShowImportModal] = useState(false)
   const [selectedType, setSelectedType] = useState<"MOVIE" | "TV" | "GAME" | null>(null)
 
@@ -23,10 +33,19 @@ export function QuickActionsBar({ onImportComplete }: QuickActionsBarProps) {
     setSelectedType(null)
   }
 
+  useEffect(() => {
+    if (requestOpen) {
+      setShowImportModal(true)
+      onOpenHandled?.()
+    }
+  }, [requestOpen, onOpenHandled])
+
   return (
     <>
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-gray-700 mb-3">Actions rapides</h2>
+      <div className={embedded ? "mb-4" : "mb-6"}>
+        {!embedded && (
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">Actions rapides</h2>
+        )}
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => handleOpenModal()}

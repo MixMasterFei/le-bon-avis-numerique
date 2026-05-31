@@ -3,9 +3,11 @@
 import { useState } from "react"
 import { Loader2, Film, Tv, Gamepad2, Sparkles, Library, CalendarClock } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface ImportPresetsBarProps {
   onImportComplete?: () => void
+  embedded?: boolean
 }
 
 interface Preset {
@@ -68,7 +70,7 @@ const PRESETS: Preset[] = [
   },
 ]
 
-export function ImportPresetsBar({ onImportComplete }: ImportPresetsBarProps) {
+export function ImportPresetsBar({ onImportComplete, embedded }: ImportPresetsBarProps) {
   const [loadingPreset, setLoadingPreset] = useState<string | null>(null)
   const [results, setResults] = useState<Record<string, { success: boolean; count?: number; error?: string }>>({})
 
@@ -107,8 +109,13 @@ export function ImportPresetsBar({ onImportComplete }: ImportPresetsBarProps) {
   }
 
   return (
-    <div className="mb-6">
-      <h3 className="text-sm font-medium text-gray-500 mb-2">Import rapide par catégorie</h3>
+    <div className={embedded ? "" : "mb-6"}>
+      <h3
+        className={`text-sm font-medium mb-2 ${embedded ? "" : "text-gray-500"}`}
+        style={embedded ? { color: APERCU_PALETTE.ink2 } : undefined}
+      >
+        Lots prédéfinis
+      </h3>
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((preset) => {
           const isLoading = loadingPreset === preset.id

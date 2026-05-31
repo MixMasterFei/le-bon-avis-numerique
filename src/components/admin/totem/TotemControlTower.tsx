@@ -1,9 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import Link from "next/link"
 import {
-  ArrowLeft,
   Bot,
   Download,
   Loader2,
@@ -32,6 +30,7 @@ import {
 } from "recharts"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { fraunces } from "@/components/home-v2/apercuFont"
+import { AdminNavPills } from "@/components/admin/shared/AdminShell"
 import type {
   TotemAdminOverview,
   TotemConversationDetail,
@@ -361,14 +360,6 @@ export function TotemControlTower() {
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
           <div>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-1.5 text-xs font-medium mb-3 hover:opacity-70"
-              style={{ color: p.ink2 }}
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Tableau de bord
-            </Link>
             <div className="flex items-center gap-2 mb-1.5">
               <Bot className="h-5 w-5" style={{ color: p.accent }} />
               <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
@@ -423,6 +414,8 @@ export function TotemControlTower() {
             </a>
           </div>
         </header>
+
+        <AdminNavPills active="totem" />
 
         {/* KPI band */}
         {t && (

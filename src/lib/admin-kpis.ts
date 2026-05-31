@@ -66,6 +66,23 @@ export interface AdminKpis {
   generatedAt: Date
 }
 
+/** JSON-safe shape for passing KPIs from server components to client views. */
+export type SerializedAdminKpis = Omit<AdminKpis, "generatedAt" | "cronTasks"> & {
+  generatedAt: string
+  cronTasks: Array<Omit<CronTaskHealth, "lastRun"> & { lastRun: string | null }>
+}
+
+export function serializeAdminKpis(kpis: AdminKpis): SerializedAdminKpis {
+  return {
+    ...kpis,
+    generatedAt: kpis.generatedAt.toISOString(),
+    cronTasks: kpis.cronTasks.map((t) => ({
+      ...t,
+      lastRun: t.lastRun?.toISOString() ?? null,
+    })),
+  }
+}
+
 function daysAgo(n: number): Date {
   return new Date(Date.now() - n * MS_PER_DAY)
 }
