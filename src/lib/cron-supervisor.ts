@@ -8,6 +8,17 @@ type RecentLog = {
   status: CronStatus
   summary: string
   createdAt: Date
+  details?: unknown
+}
+
+// A numeric field inside a task's logged `details` whose collapse toward zero
+// signals "the task ran but produced almost nothing" — the failure mode a
+// run/error/staleness check is blind to (e.g. news-discover logging success
+// while publishing 0 stories).
+type OutputMetric = {
+  key: string
+  label: string
+  minBaseline?: number
 }
 
 type ExpectedTask = {
@@ -15,6 +26,7 @@ type ExpectedTask = {
   staleAfterHours: number
   allowRepeatedPartial?: boolean
   remediation?: Remediation
+  outputMetric?: OutputMetric
 }
 
 type Remediation = {
@@ -26,7 +38,7 @@ type Remediation = {
 
 type Issue = {
   task: string
-  status: "missing" | "stale" | "error" | "repeated-partial"
+  status: "missing" | "stale" | "error" | "repeated-partial" | "output-anomaly"
   summary: string
   latest?: RecentLog
   remediation?: Remediation
@@ -51,11 +63,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || "htt
 const MAX_REMEDIATIONS = 4
 
 const EXPECTED_TASKS: ExpectedTask[] = [
-  { task: "import", staleAfterHours: 36 },
-  { task: "import-games", staleAfterHours: 36 },
+  { task: "import", staleAfterHours: 36, outputMetric: { key: "totalExamined", label: "Items TMDB examinés" } },
+  { task: "import-games", staleAfterHours: 36, outputMetric: { key: "fetched", label: "Jeux récupérés" } },
   {
     task: "enrich",
     staleAfterHours: 36,
+    outputMetric: { key: "processed", label: "Items traités (enrichissement)" },
     remediation: {
       label: "Relance enrichissement batch réduit",
       method: "POST",
@@ -66,6 +79,7 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "enrich-deep",
     staleAfterHours: 36,
+    outputMetric: { key: "processed", label: "Items traités (deep)" },
     remediation: {
       label: "Relance deep enrichment batch réduit",
       method: "POST",
@@ -76,6 +90,7 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "quality",
     staleAfterHours: 36,
+    outputMetric: { key: "total", label: "Items scorés" },
     remediation: {
       label: "Relance quality compute batch réduit",
       method: "POST",
@@ -86,6 +101,10 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "news-discover",
     staleAfterHours: 10,
+    // The motivating case: the pipeline logged "success" for ~2 weeks while
+    // publishing 0 stories (image sourcing had collapsed). Staleness/error
+    // checks never caught it; this does.
+    outputMetric: { key: "storiesPersisted", label: "Stories publiées" },
     remediation: {
       label: "Relance news discovery",
       method: "GET",
@@ -180,6 +199,7 @@ const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "streaming",
     staleAfterHours: 192,
+    outputMetric: { key: "total", label: "Fiches streaming examinées" },
     remediation: {
       label: "Relance streaming films batch réduit",
       method: "POST",
@@ -267,6 +287,76 @@ function detectIssues(logs: RecentLog[]): Issue[] {
   }
 
   return issues
+}
+
+function extractMetric(details: unknown, key: string): number | null {
+  let obj: unknown = details
+  if (typeof obj === "string") {
+    try {
+      obj = JSON.parse(obj)
+    } catch {
+      return null
+    }
+  }
+  if (typeof obj !== "object" || obj === null) return null
+  const value = (obj as Record<string, unknown>)[key]
+  return typeof value === "number" && Number.isFinite(value) ? value : null
+}
+
+function median(nums: number[]): number {
+  if (nums.length === 0) return 0
+  const sorted = [...nums].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+}
+
+// Detects tasks that ran successfully but whose output collapsed toward zero
+// relative to their own recent baseline — the "ran but produced nothing" blind
+// spot of run/error/staleness checks (e.g. news-discover publishing 0 stories
+// while logging success). Alert-only: a quality collapse is usually a code/data
+// bug, not a transient miss, so it carries no auto-remediation (re-triggering
+// blindly would just hide it).
+function detectOutputAnomalies(logs: RecentLog[]): Issue[] {
+  const byTask = groupByTask(logs)
+  const anomalies: Issue[] = []
+
+  for (const expected of EXPECTED_TASKS) {
+    const metric = expected.outputMetric
+    if (!metric) continue
+
+    const taskLogs = byTask.get(expected.task) ?? []
+    const latest = taskLogs[0]
+    // Only judge a successful latest run — error/stale/missing are handled
+    // elsewhere, and a failed run's low output is expected, not an anomaly.
+    if (!latest || latest.status !== "success") continue
+
+    // Output metric across the recent successful runs, newest first.
+    const vals = taskLogs
+      .filter((log) => log.status === "success")
+      .map((log) => extractMetric(log.details, metric.key))
+      .filter((v): v is number => v !== null)
+    // Need the latest two runs + a couple of baseline points.
+    if (vals.length < 4) continue
+
+    const [latestVal, secondVal, ...priorVals] = vals
+    const baseline = median(priorVals)
+    const floor = metric.minBaseline ?? 1
+    const collapsed = (v: number) => v === 0 || v < baseline * 0.25
+    // Flag only a *sustained* collapse: the task normally produces a meaningful
+    // amount (baseline ≥ floor) but the last TWO runs both dropped to ~0. Two
+    // consecutive filters out single-cycle blips (e.g. a news cycle that
+    // legitimately yields 0) while still catching a real outage within a day.
+    if (baseline >= floor && collapsed(latestVal) && collapsed(secondVal)) {
+      anomalies.push({
+        task: expected.task,
+        status: "output-anomaly",
+        summary: `${metric.label} : ${latestVal} puis ${secondVal} aux 2 derniers runs (référence ~${Math.round(baseline)}). La tâche s'exécute mais ne produit presque rien — probablement un bug en amont, pas un simple raté.`,
+        latest,
+      })
+    }
+  }
+
+  return anomalies
 }
 
 async function runRemediation(issue: Issue): Promise<ActionResult> {
@@ -458,8 +548,8 @@ export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): 
       prisma.cronLog.findMany({
         where: { task: expected.task },
         orderBy: { createdAt: "desc" },
-        take: 3,
-        select: { task: true, status: true, summary: true, createdAt: true },
+        take: 8, // latest 2 runs + a short baseline window for output-anomaly checks
+        select: { task: true, status: true, summary: true, createdAt: true, details: true },
       }),
     ),
   )
@@ -469,9 +559,16 @@ export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): 
     status: log.status as CronStatus,
     summary: log.summary ?? "",
     createdAt: log.createdAt,
+    details: log.details,
   }))
 
+  // Run/error/staleness issues, plus output-anomalies (ran fine but produced
+  // almost nothing). A task already flagged by detectIssues isn't double-counted.
   const issues = detectIssues(recentLogs)
+  const flaggedTasks = new Set(issues.map((i) => i.task))
+  for (const anomaly of detectOutputAnomalies(recentLogs)) {
+    if (!flaggedTasks.has(anomaly.task)) issues.push(anomaly)
+  }
   const remediationsEnabled = process.env.CRON_SUPERVISOR_REMEDIATE !== "false"
   const actions: ActionResult[] = []
 
