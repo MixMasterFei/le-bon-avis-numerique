@@ -11,7 +11,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { cn } from "@/lib/utils"
-import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor } from "./apercuTheme"
+import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor, genreLabelFr } from "./apercuTheme"
 
 export interface ApercuCardMedia {
   id: string
@@ -29,14 +29,24 @@ export interface ApercuCardMedia {
   } | null
 }
 
+// French media-type labels — same wording as the main card (Film /
+// Série / Jeu) so the badge stays consistent site-wide.
+const TYPE_LABELS: Record<ApercuCardMedia["type"], string> = {
+  MOVIE: "Film",
+  TV: "Série",
+  GAME: "Jeu",
+}
+
 export function ApercuMediaCard({
   media,
   size = "md",
   serifClass,
+  showType = false,
 }: {
   media: ApercuCardMedia
   size?: "sm" | "md"
   serifClass: string
+  showType?: boolean
 }) {
   const { getFamilyFit, registerMediaId } = useFamilyFit()
   const { settings } = useSettings()
@@ -142,6 +152,22 @@ export function ApercuMediaCard({
             {media.cornerLabel}
           </div>
         )}
+        {/* Media-type badge (Film / Série / Jeu) — only on mixed-type
+            rails (showType) and only when no cornerLabel already occupies
+            the top-right corner. Lets parents tell a film from a series
+            or a game at a glance. */}
+        {showType && !media.cornerLabel && (
+          <div
+            className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-tight z-20 backdrop-blur-sm"
+            style={{
+              background: "rgba(28,25,23,0.62)",
+              color: "#FFFFFF",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.18)",
+            }}
+          >
+            {TYPE_LABELS[media.type]}
+          </div>
+        )}
       </div>
       <div className="mt-1.5">
         <div
@@ -153,6 +179,7 @@ export function ApercuMediaCard({
         {visibleGenres.length > 0 && (
           <div className="mt-1 flex flex-nowrap gap-0.5 overflow-hidden max-h-[18px]">
             {visibleGenres.map((g) => {
+              const label = genreLabelFr(g)
               const c = genreBadgeColor(g)
               return (
                 <span
@@ -160,7 +187,7 @@ export function ApercuMediaCard({
                   className="px-1 py-0.5 rounded text-[9px] font-semibold leading-tight whitespace-nowrap truncate"
                   style={{ background: c.bg, color: c.text }}
                 >
-                  {g}
+                  {label}
                 </span>
               )
             })}

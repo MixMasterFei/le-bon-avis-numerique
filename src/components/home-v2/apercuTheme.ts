@@ -123,14 +123,98 @@ const GENRE_COLORS: Record<string, BadgeColor> = {
   Mystere: { bg: "#A79BC7", text: "#3E2D5C" },
   Histoire: { bg: "#E9C7A1", text: "#5C3F1E" },
   Western: { bg: "#E8A87C", text: "#5C2E1E" },
+  // Jeux vidéo (genres IGDB traduits) — chacun a sa couleur pour qu'aucune
+  // pastille ne reste « grise » sur les cartes du catalogue.
+  Course: { bg: "#8DBDC9", text: "#1E3E47" },
+  Arcade: { bg: "#F8D775", text: "#5C4500" },
+  Réflexion: { bg: "#C9B7D9", text: "#3E2D5C" },
+  Simulation: { bg: "#B8D89A", text: "#2D3E1E" },
+  Stratégie: { bg: "#8DBDC9", text: "#1E3E47" },
+  Sport: { bg: "#B8D89A", text: "#2D3E1E" },
+  Tir: { bg: "#E8A87C", text: "#5C2E1E" },
+  Combat: { bg: "#E8A87C", text: "#5C2E1E" },
+  Plateforme: { bg: "#F4C7A6", text: "#5C3D1E" },
+  RPG: { bg: "#C9B7D9", text: "#3E2D5C" },
+  Indé: { bg: "#E9C7A1", text: "#5C3F1E" },
+  Tactique: { bg: "#8DBDC9", text: "#1E3E47" },
+  MOBA: { bg: "#A79BC7", text: "#3E2D5C" },
+  "Jeu de société": { bg: "#E9C7A1", text: "#5C3F1E" },
+  Quiz: { bg: "#F8D775", text: "#5C4500" },
+  Flipper: { bg: "#F4C7A6", text: "#5C3D1E" },
+  "Roman visuel": { bg: "#D89AB0", text: "#5C2D40" },
 }
+
+// Soft but still-visible neutral for the rare genre we have no dedicated
+// color for — warm sand, never the page background (which read as
+// "uncolored / grey" to users).
+const GENRE_NEUTRAL: BadgeColor = { bg: "#E3DAC9", text: "#5A4F3C" }
 
 const WARNING_BADGE: BadgeColor = {
   bg: APERCU_PALETTE.accent,
   text: "#FFFFFF",
 }
 
+// Canonical French label for a raw genre string. TMDB returns French for
+// films/séries, but IGDB game genres arrive in English ("Racing",
+// "Indie", "Puzzle"…) and a few TMDB labels vary ("Familial" vs
+// "Famille"). Normalize everything to one French set so the UI never
+// shows English and always matches a color above.
+const GENRE_FR: Record<string, string> = {
+  // Jeux (IGDB, anglais)
+  adventure: "Aventure",
+  indie: "Indé",
+  racing: "Course",
+  arcade: "Arcade",
+  puzzle: "Réflexion",
+  simulator: "Simulation",
+  simulation: "Simulation",
+  strategy: "Stratégie",
+  sport: "Sport",
+  shooter: "Tir",
+  fighting: "Combat",
+  platform: "Plateforme",
+  "role-playing (rpg)": "RPG",
+  rpg: "RPG",
+  "turn-based strategy (tbs)": "Stratégie",
+  "real time strategy (rts)": "Stratégie",
+  "hack and slash/beat 'em up": "Action",
+  "point-and-click": "Aventure",
+  "card & board game": "Jeu de société",
+  "quiz/trivia": "Quiz",
+  tactical: "Tactique",
+  pinball: "Flipper",
+  "visual novel": "Roman visuel",
+  moba: "MOBA",
+  // Films / séries (anglais résiduels)
+  comedy: "Comédie",
+  drama: "Drame",
+  family: "Famille",
+  fantasy: "Fantastique",
+  "science fiction": "Science-Fiction",
+  "sci-fi & fantasy": "Science-Fiction",
+  "action & adventure": "Action",
+  animation: "Animation",
+  documentary: "Documentaire",
+  history: "Histoire",
+  music: "Musique",
+  mystery: "Mystère",
+  romance: "Romance",
+  thriller: "Thriller",
+  war: "Guerre",
+  "war & politics": "Guerre",
+  western: "Western",
+  crime: "Crime",
+  horror: "Horreur",
+  // Variantes françaises à normaliser
+  familial: "Famille",
+}
+
+export function genreLabelFr(genre: string): string {
+  return GENRE_FR[genre.trim().toLowerCase()] ?? genre
+}
+
 export function genreBadgeColor(genre: string): BadgeColor {
-  if (WARNING_GENRES.has(genre)) return WARNING_BADGE
-  return GENRE_COLORS[genre] ?? NEUTRAL_BADGE
+  const label = genreLabelFr(genre)
+  if (WARNING_GENRES.has(label)) return WARNING_BADGE
+  return GENRE_COLORS[label] ?? GENRE_NEUTRAL
 }
