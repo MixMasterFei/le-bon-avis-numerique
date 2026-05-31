@@ -65,6 +65,20 @@ function toCard(row: DBRow): ApercuCardMedia {
 // siblings discover more mature content elsewhere on the site.
 const FAMILY_AGE_CAP = 12
 
+// Pool size the rotating slots shuffle over. Large enough that the daily
+// seed yields visible variety; small enough to stay above the quality
+// floor (the pool is still ordered by votes/recency before shuffling).
+const ROTATION_POOL = 24
+
+// Day-seeded pick: shuffle a quality-ordered pool with today's seed and
+// take the first N. Same idea as fetchDefault — it stops the rail from
+// pinning the single highest-voted title every day (Les Simpson, Forza…)
+// and rotates a different family pick instead. The cache key already
+// includes the Paris day, so the shuffle re-rolls once per day.
+function dayPick(rows: DBRow[], take: number): DBRow[] {
+  return seededShuffle(rows, getDaySeed()).slice(0, take)
+}
+
 // Streaming fallback when the new-on-streaming query returns nothing
 // (e.g. availableFrom not yet backfilled on most rows). Returns
 // recently added titles that have at least one streaming provider, age-
@@ -90,7 +104,7 @@ async function fetchStreamingFallback(ageCap: number, take: number): Promise<DBR
 // Family-friendly TV series for "tonight" / "weekend" — bingeable
 // episodes paired with a film hero.
 async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
-  return withPrismaRetry(() =>
+  const pool = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where: {
         type: "TV",
@@ -100,16 +114,17 @@ async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
       orderBy: [{ tmdbVoteCount: "desc" }],
-      take,
+      take: ROTATION_POOL,
       select: baseSelect,
     }),
   )
+  return dayPick(pool, take)
 }
 
 // Games for the rail — recent and family-friendly. Different release-
 // date threshold (looser) since the games catalogue is smaller.
 async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> {
-  return withPrismaRetry(() =>
+  const pool = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where: {
         type: "GAME",
@@ -117,10 +132,54 @@ async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> 
         expertAgeRec: { not: null, lte: ageCap },
       },
       orderBy: [{ releaseDate: { sort: "desc", nulls: "last" } }],
-      take,
+      take: ROTATION_POOL,
       select: baseSelect,
     }),
   )
+  return dayPick(pool, take)
+}
+
+// Family-friendly streaming films for "tonight" — popular-platform movies,
+// day-rotated over a quality pool so it isn't always the single top-voted
+// title. (Replaces the old inline `tmdbVoteCount desc` take-1 query.)
+async function fetchStreamingFilms(ageCap: number, take: number): Promise<DBRow[]> {
+  const pool = await withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
+      where: {
+        type: "MOVIE",
+        posterUrl: { not: null, startsWith: "http" },
+        platforms: { hasSome: POPULAR_PROVIDERS },
+        expertAgeRec: { not: null, lte: ageCap },
+        tmdbVoteCount: { gte: 200 },
+        NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
+      },
+      orderBy: [{ tmdbVoteCount: "desc" }],
+      take: ROTATION_POOL,
+      select: baseSelect,
+    }),
+  )
+  return dayPick(pool, take)
+}
+
+// High-quality family films for the holidays rail — day-rotated over a
+// quality-floored pool instead of pinning the single top-voted title.
+async function fetchQualityFilms(ageCap: number, take: number): Promise<DBRow[]> {
+  const pool = await withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
+      where: {
+        type: "MOVIE",
+        posterUrl: { not: null, startsWith: "http" },
+        expertAgeRec: { not: null, lte: ageCap },
+        dataQualityScore: { gte: 70 },
+        tmdbVoteCount: { gte: 500 },
+        NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
+      },
+      orderBy: [{ tmdbVoteCount: "desc" }],
+      take: ROTATION_POOL,
+      select: baseSelect,
+    }),
+  )
+  return dayPick(pool, take)
 }
 
 async function fetchTonight(ageCap: number): Promise<HeroData> {
@@ -128,21 +187,7 @@ async function fetchTonight(ageCap: number): Promise<HeroData> {
   // movie/episode-coded, not game-coded. 4 cards, type-diverse.
   const [cinema, streamingFilms, series] = await Promise.all([
     fetchCinemaSlice(1, ageCap),
-    withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where: {
-          type: "MOVIE",
-          posterUrl: { not: null, startsWith: "http" },
-          platforms: { hasSome: POPULAR_PROVIDERS },
-          expertAgeRec: { not: null, lte: ageCap },
-          tmdbVoteCount: { gte: 200 },
-          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
-        },
-        orderBy: [{ tmdbVoteCount: "desc" }],
-        take: 1,
-        select: baseSelect,
-      }),
-    ),
+    fetchStreamingFilms(ageCap, 1),
     fetchFamilyTV(ageCap, 2),
   ])
 
@@ -205,21 +250,7 @@ async function fetchHolidays(ageCap: number): Promise<HeroData> {
   // film, 1 game, 1 cinema for a one-stop "what to do" rail.
   const [series, films, games, cinema] = await Promise.all([
     fetchFamilyTV(ageCap, 1),
-    withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where: {
-          type: "MOVIE",
-          posterUrl: { not: null, startsWith: "http" },
-          expertAgeRec: { not: null, lte: ageCap },
-          dataQualityScore: { gte: 70 },
-          tmdbVoteCount: { gte: 500 },
-          NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
-        },
-        orderBy: [{ tmdbVoteCount: "desc" }],
-        take: 1,
-        select: baseSelect,
-      }),
-    ),
+    fetchQualityFilms(ageCap, 1),
     fetchFamilyGames(ageCap, 1),
     fetchCinemaSlice(1, ageCap),
   ])
