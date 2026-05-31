@@ -7,7 +7,7 @@ import type { UnenrichedByType } from "@/lib/admin-kpis"
 // Drillable replacement for the opaque "1069 œuvres à enrichir" card.
 // Shows the total + per-type breakdown so the user knows whether the
 // backlog is films, mangas, jeux, etc. before clicking through. Each
-// per-type row deep-links to /admin/enrich with the matching type
+// per-type row deep-links to /admin/operations#enrich with the matching type
 // pre-selected.
 //
 // Data source: AdminKpis.catalogUnenrichedByType (groupBy on
@@ -21,7 +21,7 @@ const TYPE_LABEL: Record<string, string> = {
   MANGA: "Mangas",
 }
 
-// /admin/enrich's selectedType state uses lowercase singular tags.
+// /admin/operations#enrich selectedType uses lowercase singular tags.
 // Mapping here so the deep-link initializes the right filter.
 const TYPE_TO_QUERY: Record<string, string> = {
   MOVIE: "movie",
@@ -76,7 +76,7 @@ export function EnrichmentStockpile({ serifClass, total, byType, variant = "card
             </div>
           </div>
           <Link
-            href="/admin/enrich"
+            href="/admin/operations#enrich"
             className="text-sm hover:opacity-70 inline-flex items-center gap-1"
             style={{ color: p.ink }}
           >
@@ -91,7 +91,7 @@ export function EnrichmentStockpile({ serifClass, total, byType, variant = "card
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {rows.map((r) => {
               const queryType = TYPE_TO_QUERY[r.type]
-              const href = queryType ? `/admin/enrich?type=${queryType}` : "/admin/enrich"
+              const href = queryType ? `/admin/operations?type=${queryType}#enrich` : "/admin/operations#enrich"
               return (
                 <Link
                   key={r.type}
@@ -118,7 +118,7 @@ export function EnrichmentStockpile({ serifClass, total, byType, variant = "card
   // ── Card variant (dashboard action queue grid) ──
   return (
     <Link
-      href="/admin/enrich"
+      href="/admin/operations#enrich"
       className="group rounded-2xl p-5 flex flex-col gap-3 transition-transform hover:-translate-y-0.5"
       style={{
         background: urgent ? p.card : "transparent",

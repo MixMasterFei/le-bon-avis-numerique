@@ -34,8 +34,8 @@ export function AdminActionQueue({
 
   const items = [
     { count: disagreedAgeItems, label: "désaccords communautaires", href: "/admin/disagreed-items" },
-    { count: correctionsPending, label: "corrections en attente", href: "/admin/corrections" },
-    { count: requestsPending, label: "demandes de contenu", href: "/admin/requests" },
+    { count: correctionsPending, label: "corrections en attente", href: "/admin/operations#moderation" },
+    { count: requestsPending, label: "demandes de contenu", href: "/admin/operations#moderation" },
     { count: newsReportsPending, label: "signalements commentaires", href: "/admin/news-reports" },
   ]
     .filter((i) => i.count > 0)

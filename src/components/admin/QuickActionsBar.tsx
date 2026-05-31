@@ -2,14 +2,12 @@
 
 import { useState } from "react"
 import { Search, Film, Tv, Gamepad2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { QuickImportModal } from "./QuickImportModal"
+import { AdminBtn } from "./shared/admin-ui"
 
 interface QuickActionsBarProps {
   onImportComplete?: () => void
-  /** Hide section title when nested inside AdminSectionCard */
   embedded?: boolean
-  /** Parent can request the search modal to open (e.g. from shortcut bar) */
   requestOpen?: boolean
   onOpenHandled?: () => void
 }
@@ -43,40 +41,19 @@ export function QuickActionsBar({
           <h2 className="text-lg font-semibold text-gray-700 mb-3">Actions rapides</h2>
         )}
         <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => handleOpenModal()}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Search className="h-4 w-4 mr-2" />
-            Rechercher & Ajouter
-          </Button>
-
-          <div className="flex gap-2 ml-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleOpenModal("MOVIE")}
-            >
-              <Film className="h-4 w-4 mr-1" />
-              Film
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleOpenModal("TV")}
-            >
-              <Tv className="h-4 w-4 mr-1" />
-              Série
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleOpenModal("GAME")}
-            >
-              <Gamepad2 className="h-4 w-4 mr-1" />
-              Jeu
-            </Button>
-          </div>
+          <AdminBtn variant="primary" onClick={() => handleOpenModal()}>
+            <Search className="h-4 w-4" />
+            Rechercher &amp; ajouter
+          </AdminBtn>
+          <AdminBtn size="sm" onClick={() => handleOpenModal("MOVIE")}>
+            <Film className="h-4 w-4" /> Film
+          </AdminBtn>
+          <AdminBtn size="sm" onClick={() => handleOpenModal("TV")}>
+            <Tv className="h-4 w-4" /> Série
+          </AdminBtn>
+          <AdminBtn size="sm" onClick={() => handleOpenModal("GAME")}>
+            <Gamepad2 className="h-4 w-4" /> Jeu
+          </AdminBtn>
         </div>
       </div>
 

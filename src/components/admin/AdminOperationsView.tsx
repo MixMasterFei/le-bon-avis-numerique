@@ -1,7 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { RefreshCw, Settings, Upload, Wrench, CalendarClock } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import dynamic from "next/dynamic"
+import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, Loader2 } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,
@@ -9,27 +10,45 @@ import {
 } from "@/components/admin"
 import { CronLogsSection } from "@/components/admin/CronLogsSection"
 import { AdminShell } from "./shared/AdminShell"
-import { AdminOpsShortcuts } from "./AdminOpsShortcuts"
+import { OperationsSectionNav } from "./OperationsSectionNav"
 import { adminPalette } from "./shared/admin-ui"
 import { AdminSectionCard } from "./shared/AdminSectionCard"
 
-export function AdminOperationsView() {
+const EnrichmentPanel = dynamic(
+  () => import("./panels/EnrichmentPanel").then((m) => m.EnrichmentPanel),
+  {
+    loading: () => (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: adminPalette.accent }} />
+      </div>
+    ),
+  },
+)
+
+const ModerationPanel = dynamic(
+  () => import("./panels/ModerationPanel").then((m) => m.ModerationPanel),
+  {
+    loading: () => (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: adminPalette.accent }} />
+      </div>
+    ),
+  },
+)
+
+interface Props {
+  initialEnrichType?: string
+}
+
+export function AdminOperationsView({ initialEnrichType }: Props) {
   const [loading, setLoading] = useState(false)
   const [importKey, setImportKey] = useState(0)
-  const [requestImportOpen, setRequestImportOpen] = useState(false)
-  const importRef = useRef<HTMLDivElement>(null)
   const p = adminPalette
 
   const bump = useCallback(() => {
     setImportKey((k) => k + 1)
   }, [])
 
-  const openImport = useCallback(() => {
-    importRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    setRequestImportOpen(true)
-  }, [])
-
-  // OperationsCenter gère son propre état ; on ne charge plus tout le dashboard API.
   const onRefresh = useCallback(() => {
     setLoading(true)
     bump()
@@ -37,10 +56,12 @@ export function AdminOperationsView() {
   }, [bump])
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash) {
-      const el = document.querySelector(window.location.hash)
-      el?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
+    if (typeof window === "undefined") return
+    const hash = window.location.hash
+    if (!hash) return
+    requestAnimationFrame(() => {
+      document.querySelector(hash)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    })
   }, [])
 
   return (
@@ -53,7 +74,7 @@ export function AdminOperationsView() {
           Boîte à <em className="italic" style={{ color: p.accent }}>outils</em>
         </>
       }
-      subtitle="Import manuel, maintenance catalogue et suivi des jobs automatiques."
+      subtitle="Tout sur une page — import, enrichissement, modération, maintenance et jobs."
       actions={
         <button
           type="button"
@@ -67,36 +88,50 @@ export function AdminOperationsView() {
         </button>
       }
     >
-      <AdminOpsShortcuts onQuickImport={openImport} />
+      <OperationsSectionNav />
 
-      <div ref={importRef} id="import">
+      <div id="import" className="scroll-mt-28">
         <AdminSectionCard
           icon={Upload}
           title="Importer du contenu"
           subtitle="Recherche ciblée ou lots prédéfinis"
         >
-          <QuickActionsBar
-            key={`qa-${importKey}`}
-            embedded
-            onImportComplete={bump}
-            requestOpen={requestImportOpen}
-            onOpenHandled={() => setRequestImportOpen(false)}
-          />
+          <QuickActionsBar key={`qa-${importKey}`} embedded onImportComplete={bump} />
           <ImportPresetsBar embedded onImportComplete={bump} />
         </AdminSectionCard>
       </div>
 
-      <div id="maintenance">
+      <div id="enrich" className="scroll-mt-28">
+        <AdminSectionCard
+          icon={Sparkles}
+          title="Enrichissement IA"
+          subtitle="Pass 1 (batch) et pass 2 (profond) — âge expert et métriques contenu"
+        >
+          <EnrichmentPanel initialType={initialEnrichType} />
+        </AdminSectionCard>
+      </div>
+
+      <div id="moderation" className="scroll-mt-28">
+        <AdminSectionCard
+          icon={FileWarning}
+          title="Modération"
+          subtitle="Corrections utilisateurs et demandes de nouveaux contenus"
+        >
+          <ModerationPanel />
+        </AdminSectionCard>
+      </div>
+
+      <div id="maintenance" className="scroll-mt-28">
         <AdminSectionCard
           icon={Wrench}
           title="Maintenance catalogue"
-          subtitle="Opérations groupées — utilisez la recherche pour filtrer"
+          subtitle="Opérations groupées — filtrez par mot-clé"
         >
           <OperationsCenter onComplete={bump} startCollapsed />
         </AdminSectionCard>
       </div>
 
-      <div id="cron">
+      <div id="cron" className="scroll-mt-28">
         <AdminSectionCard
           icon={CalendarClock}
           title="Historique des jobs"

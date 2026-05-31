@@ -126,7 +126,7 @@ export function AdminDashboardView({
       <div className="flex flex-wrap gap-2 pt-2">
         <QuickLink href="/admin/operations" icon={Settings} label="Outils & import" primary />
         <QuickLink href="/admin/totem" icon={Bot} label="Assistant Totem" />
-        <QuickLink href="/admin/enrich" icon={Sparkles} label="Enrichir" />
+        <QuickLink href="/admin/operations#enrich" icon={Sparkles} label="Enrichir" />
       </div>
     </AdminShell>
   )

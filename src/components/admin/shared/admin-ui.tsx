@@ -101,6 +101,45 @@ export function AdminKpiTile({
   )
 }
 
+export function AdminBtn({
+  children,
+  onClick,
+  disabled,
+  variant = "secondary",
+  size = "md",
+  type = "button",
+  className = "",
+}: {
+  children: React.ReactNode
+  onClick?: () => void
+  disabled?: boolean
+  variant?: "primary" | "secondary" | "ghost"
+  size?: "sm" | "md"
+  type?: "button" | "submit"
+  className?: string
+}) {
+  const p = adminPalette
+  const pad = size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-3 py-2 text-sm"
+  const style =
+    variant === "primary"
+      ? { background: p.ink, color: p.bg, border: `1px solid ${p.ink}` }
+      : variant === "ghost"
+        ? { background: "transparent", color: p.ink2, border: "none" }
+        : { background: p.card, color: p.ink, border: `1px solid ${p.line}` }
+
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-1.5 rounded-xl font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 ${pad} ${className}`}
+      style={style}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function AdminSectionTitle({
   title,
   subtitle,
