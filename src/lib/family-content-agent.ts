@@ -3,6 +3,7 @@ import { getAnthropic, DEFAULT_MODEL } from "@/lib/anthropic"
 import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 import { sendEditorialAgentReport } from "@/lib/email"
 import { toMediaRouteId } from "@/lib/media-route"
+import { withVerdict } from "@/lib/agent-verdict"
 
 type Candidate = {
   id: string
@@ -366,10 +367,16 @@ ${JSON.stringify(compactCandidates, null, 2)}`,
 
 export async function runFamilyContentAgent(): Promise<FamilyContentAgentResult> {
   const candidates = await getCandidates()
-  const report =
+  const body =
     candidates.length > 0
       ? (await buildClaudeReport(candidates)) ?? buildFallbackReport(candidates)
       : "# Agent sorties famille\n\nAucune fiche candidate prioritaire détectée cette semaine."
+
+  const report = withVerdict(body, {
+    count: candidates.length,
+    kind: "action",
+    top: candidates.length > 0 ? `${candidates.length} fiche(s) à vérifier / promouvoir` : undefined,
+  })
 
   await sendEditorialAgentReport({
     subject: `Agent sorties famille — ${candidates.length} fiches candidates`,

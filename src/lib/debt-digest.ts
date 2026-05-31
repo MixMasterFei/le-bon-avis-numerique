@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { fetchAdminKpis } from "@/lib/admin-kpis"
 import { sendDebtDigest } from "@/lib/email"
+import { withVerdict } from "@/lib/agent-verdict"
 
 /**
  * Weekly "technical & data debt" digest.
@@ -217,7 +218,13 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   if (agentTodo.length === 0) agentTodo.push("Rien à corriger côté code cette semaine.")
   for (const t of agentTodo) L.push(`- ${t}`)
 
-  const report = L.join("\n")
+  // Verdict = jobs en souffrance (the "act this week" signal). Catalogue debt
+  // is slow-moving and informational, so it doesn't trigger an action verdict.
+  const report = withVerdict(L.join("\n"), {
+    count: cronProblems,
+    kind: "action",
+    top: cronProblems > 0 ? `${cronProblems} job(s) automatique(s) en souffrance` : undefined,
+  })
 
   let emailSent = false
   if (opts.email !== false) {

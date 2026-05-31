@@ -5,6 +5,7 @@
 // cheapest wins — you're already shown, you're just not clicked yet.
 
 import { querySearchAnalytics, gscDateRange, isGscConfigured } from "./gsc"
+import { withVerdict } from "./agent-verdict"
 
 export interface StrikingQuery {
   query: string
@@ -63,7 +64,7 @@ function buildReport(
       "C'est normal sur un site jeune : le volume d'impressions est encore faible.",
       "Le rapport deviendra utile à mesure que le trafic monte.",
     )
-    return lines.join("\n")
+    return withVerdict(lines.join("\n"), { count: 0 })
   }
 
   lines.push(
@@ -93,7 +94,12 @@ function buildReport(
     "- Le levier n'est pas de nouveaux mots-clés, mais de pousser ceux-ci de quelques positions.",
   )
 
-  return lines.join("\n")
+  const lead = striking[0]
+  return withVerdict(lines.join("\n"), {
+    count: striking.length,
+    kind: "opportunity",
+    top: lead ? `top : « ${lead.query} » (pos. ${lead.position.toFixed(0)})` : undefined,
+  })
 }
 
 export async function runSeoStrikingDistance(opts: { minImpressions?: number } = {}): Promise<SeoStrikingResult> {

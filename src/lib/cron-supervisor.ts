@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { sendCronSupervisorDigest } from "@/lib/email"
+import { withVerdict } from "@/lib/agent-verdict"
 
 type CronStatus = "success" | "error" | "partial"
 
@@ -488,7 +489,7 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
     lines.push("")
     lines.push("## Action pour l'agent")
     lines.push("- Rien a traiter.")
-    return lines.join("\n")
+    return withVerdict(lines.join("\n"), { count: 0 })
   }
 
   const failedActions = actions.filter((action) => !action.ok)
@@ -544,7 +545,12 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
     }
   }
 
-  return lines.filter(Boolean).join("\n")
+  const leadIssue = unresolved[0]
+  return withVerdict(lines.filter(Boolean).join("\n"), {
+    count: unresolved.length,
+    kind: "action",
+    top: leadIssue ? `${leadIssue.task} (${leadIssue.status})` : "anomalies corrigées automatiquement — vérifier au prochain run",
+  })
 }
 
 export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): Promise<CronSupervisorResult> {
