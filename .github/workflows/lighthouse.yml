@@ -35,20 +35,46 @@ jobs:
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli@0.14.x
 
-      - name: Wait for Vercel preview (PR only)
+      # Resolve + wait for the Vercel preview ourselves: the pinned
+      # wait-for-vercel-preview@v1.3.2 can't send the protection bypass (no
+      # header input; it ignores `path` for the readiness GET), so it always
+      # 401s on protection-gated previews. We poll with the bypass header
+      # instead — which also definitively tests that the bypass secret works.
+      - name: Wait for protected Vercel preview (PR only)
         id: vercel
         if: github.event_name == 'pull_request'
-        uses: patrickedqvist/wait-for-vercel-preview@v1.3.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
-          check_interval: 10
-          # Preview deployments sit behind Vercel Deployment Protection (401).
-          # This pinned action version has no bypass-header input, but Vercel
-          # also honours the bypass as a query param — poll the readiness check
-          # through it so we get 200 instead of 401. (Lighthouse itself uses the
-          # header form via lighthouserc.js extraHeaders.)
-          path: "/?x-vercel-protection-bypass=${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}&x-vercel-set-bypass-cookie=true"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BYPASS: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # 1. Resolve the preview URL from the Vercel integration's deployment.
+          url=""
+          for i in $(seq 1 30); do
+            for id in $(gh api "repos/${REPO}/deployments?sha=${HEAD_SHA}&per_page=30" --jq '.[].id' 2>/dev/null); do
+              u=$(gh api "repos/${REPO}/deployments/${id}/statuses?per_page=10" \
+                --jq 'first(.[] | select(.environment_url != null and (.environment_url|test("vercel\\.app"))) | .environment_url) // empty' 2>/dev/null || true)
+              if [ -n "$u" ]; then url="$u"; break; fi
+            done
+            [ -n "$url" ] && break
+            echo "waiting for preview deployment ($i/30)…"; sleep 10
+          done
+          if [ -z "$url" ]; then echo "::error::No Vercel preview URL found for ${HEAD_SHA}"; exit 1; fi
+          echo "preview url: $url"
+          # 2. Poll until live, bypassing Deployment Protection via the header.
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "x-vercel-protection-bypass: ${BYPASS}" -L "$url" || echo 000)
+            echo "ready check $i: $code"
+            if [ "$code" = "200" ]; then
+              echo "url=$url" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Preview never returned 200 with the bypass header. Verify 'Protection Bypass for Automation' is enabled in Vercel and that VERCEL_AUTOMATION_BYPASS_SECRET matches the token Vercel generated."
+          exit 1
 
       - name: Run Lighthouse CI
         run: lhci autorun
