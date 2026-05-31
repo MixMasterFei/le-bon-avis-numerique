@@ -43,6 +43,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           max_timeout: 600
           check_interval: 10
+          # Preview deployments are behind Vercel Deployment Protection — send
+          # the automation bypass so the readiness poll gets 200 instead of 401.
+          vercel_protection_bypass_header: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Run Lighthouse CI
         run: lhci autorun
@@ -51,6 +54,9 @@ jobs:
           # PR runs use the Vercel preview URL; manual dispatch uses
           # the input (defaults to prod totemavise.com).
           LHCI_TARGET_URL: ${{ steps.vercel.outputs.url || github.event.inputs.target_url || 'https://totemavise.com' }}
+          # lighthouserc.js sends this as x-vercel-protection-bypass so Chrome
+          # can load the protected preview (no-op for the public prod URL).
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
       - name: Upload Lighthouse reports
         if: always()
