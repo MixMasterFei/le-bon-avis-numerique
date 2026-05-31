@@ -197,6 +197,19 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // Weekly (Thu) SEO striking-distance report. No outputMetric: 0
+    // opportunities is normal on a low-traffic site, so a "produced nothing"
+    // check would false-positive. Logs "partial" until GSC env is configured.
+    task: "seo-striking-distance",
+    staleAfterHours: 192,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance rapport SEO striking-distance",
+      method: "GET",
+      path: "/api/cron/seo-striking-distance",
+    },
+  },
+  {
     task: "streaming",
     staleAfterHours: 192,
     outputMetric: { key: "total", label: "Fiches streaming examinées" },

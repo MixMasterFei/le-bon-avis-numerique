@@ -39,6 +39,11 @@ on:
     # news-discover. Mid-week so it's not competing with the Mon/Sat
     # batches and lands while there's a working day to act on it.
     - cron: "13 6 * * 3"
+    # Thursday 6:23 AM UTC — weekly SEO "striking distance" report. Pulls
+    # Search Console queries ranking pos. 8–20 and proposes the on-page
+    # nudge to push them onto page 1. Off-the-hour (:23), Thursday to
+    # spread load off the Wed debt-digest.
+    - cron: "23 6 * * 4"
   workflow_dispatch:
     inputs:
       task:
@@ -61,6 +66,7 @@ on:
           - family-content-agent
           - supervisor
           - debt-digest
+          - seo-striking-distance
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -552,6 +558,31 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Debt digest failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  seo-striking-distance:
+    name: SEO striking distance
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '23 6 * * 4' ||
+      github.event.inputs.task == 'seo-striking-distance' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Pull GSC striking-distance queries and email the report
+        run: |
+          echo "::group::SEO striking distance"
+          response=$(curl -sSfL --max-time 90 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/seo-striking-distance")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq . 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::SEO striking-distance failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"

@@ -87,6 +87,7 @@ const KNOWN_CRON_TASKS = [
   "weekly-dossier",         // Tue + Fri — long-read synthesis
   "family-content-agent",   // Monday — editorial priorities email
   "debt-digest",            // Wednesday — tech/data-debt weekly digest
+  "seo-striking-distance",  // Thursday — GSC striking-distance opportunities
   "cron-supervisor",        // Daily — health check + remediation digest
   "heartbeat",              // Daily — Vercel-Cron watchdog for the GH Actions pipeline
 ]
