@@ -20,14 +20,22 @@ export async function GET(req: NextRequest) {
     const result = await runSeoStrikingDistance()
 
     if (!result.configured) {
+      // Diagnostic: which env-var NAMES the runtime can see (booleans only,
+      // never values). Pinpoints a missing var / wrong-scope / typo at a glance.
+      const present = {
+        GSC_OAUTH_CLIENT_ID: Boolean(process.env.GSC_OAUTH_CLIENT_ID),
+        GSC_OAUTH_CLIENT_SECRET: Boolean(process.env.GSC_OAUTH_CLIENT_SECRET),
+        GSC_OAUTH_REFRESH_TOKEN: Boolean(process.env.GSC_OAUTH_REFRESH_TOKEN),
+        GSC_PROPERTY_URL: Boolean(process.env.GSC_PROPERTY_URL),
+      }
       await logCronRun({
         task: "seo-striking-distance",
         status: "partial",
         summary: "GSC non configuré — aucune analyse",
-        details: { configured: false },
+        details: { configured: false, present },
         startTime,
       })
-      return NextResponse.json({ success: false, reason: "gsc_not_configured" })
+      return NextResponse.json({ success: false, reason: "gsc_not_configured", present })
     }
 
     let emailed = false
