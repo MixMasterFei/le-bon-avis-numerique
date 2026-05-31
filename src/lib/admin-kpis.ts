@@ -215,12 +215,20 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     count: r._count._all,
   }))
 
-  // cronRuns is latest-per-task; merge with KNOWN_CRON_TASKS to cover silent tasks
+  // cronRuns is latest-per-task; seed from KNOWN_CRON_TASKS (the *scheduled*
+  // jobs) and only fill in runs for those. Manual one-offs (news-rebuild,
+  // streaming-cache, news.reprocessImages, news.reverifyRelated,
+  // news-reset-recent…) and retired jobs (weekly-manga) also log to
+  // cron_logs, but they aren't on a schedule — so an old "last run" is
+  // expected, not a problem. Surfacing them here turned the health widget
+  // into permanent false "needs attention" alerts. The full per-run history
+  // (incl. these ad-hoc ops) is still available on /admin/operations.
   const taskMap = new Map<string, CronTaskHealth>()
   for (const t of KNOWN_CRON_TASKS) {
     taskMap.set(t, { task: t, lastRun: null, lastStatus: null, errors7d: 0 })
   }
   for (const run of cronRuns) {
+    if (!taskMap.has(run.task)) continue // skip unscheduled / ad-hoc tasks
     taskMap.set(run.task, {
       task: run.task,
       lastRun: run.lastRun,
