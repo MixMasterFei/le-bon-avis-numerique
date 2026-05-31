@@ -21,6 +21,12 @@ const BASE =
 // Strip trailing slash so we build consistent URLs.
 const base = BASE.replace(/\/+$/, "")
 
+// Vercel preview deployments sit behind Deployment Protection (401 to public
+// CI). When the automation bypass secret is available, send it as a header so
+// Lighthouse (Chrome) can actually load the preview + its sub-resources.
+const bypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+const extraHeaders = bypass ? { "x-vercel-protection-bypass": bypass } : undefined
+
 module.exports = {
   ci: {
     collect: {
@@ -38,6 +44,7 @@ module.exports = {
           throughputKbps: 10240,
           cpuSlowdownMultiplier: 1,
         },
+        ...(extraHeaders ? { extraHeaders } : {}),
       },
     },
     assert: {
