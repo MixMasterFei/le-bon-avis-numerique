@@ -43,9 +43,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           max_timeout: 600
           check_interval: 10
-          # Preview deployments are behind Vercel Deployment Protection — send
-          # the automation bypass so the readiness poll gets 200 instead of 401.
-          vercel_protection_bypass_header: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          # Preview deployments sit behind Vercel Deployment Protection (401).
+          # This pinned action version has no bypass-header input, but Vercel
+          # also honours the bypass as a query param — poll the readiness check
+          # through it so we get 200 instead of 401. (Lighthouse itself uses the
+          # header form via lighthouserc.js extraHeaders.)
+          path: "/?x-vercel-protection-bypass=${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}&x-vercel-set-bypass-cookie=true"
 
       - name: Run Lighthouse CI
         run: lhci autorun
