@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Loader2, RefreshCw, Settings, Upload, Wrench, CalendarClock } from "lucide-react"
+import { RefreshCw, Settings, Upload, Wrench, CalendarClock } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,

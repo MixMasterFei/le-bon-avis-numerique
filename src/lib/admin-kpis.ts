@@ -66,10 +66,13 @@ export interface AdminKpis {
   generatedAt: Date
 }
 
+/** JSON-safe cron task row for client admin views. */
+export type SerializedCronTask = Omit<CronTaskHealth, "lastRun"> & { lastRun: string | null }
+
 /** JSON-safe shape for passing KPIs from server components to client views. */
 export type SerializedAdminKpis = Omit<AdminKpis, "generatedAt" | "cronTasks"> & {
   generatedAt: string
-  cronTasks: Array<Omit<CronTaskHealth, "lastRun"> & { lastRun: string | null }>
+  cronTasks: SerializedCronTask[]
 }
 
 export function serializeAdminKpis(kpis: AdminKpis): SerializedAdminKpis {

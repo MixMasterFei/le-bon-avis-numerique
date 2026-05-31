@@ -19,5 +19,11 @@ export default async function AdminDashboardPage() {
   }
 
   const kpis = await fetchAdminKpis()
-  return <AdminDashboardView kpis={serializeAdminKpis(kpis)} />
+  const serialized = serializeAdminKpis(kpis)
+  return (
+    <AdminDashboardView
+      kpis={serialized}
+      now={new Date(serialized.generatedAt).getTime()}
+    />
+  )
 }

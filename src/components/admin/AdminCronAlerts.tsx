@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react"
-import type { CronTaskHealth } from "@/lib/admin-kpis"
+import type { SerializedCronTask } from "@/lib/admin-kpis"
 import { adminPalette, AdminSectionTitle, fmt } from "./shared/admin-ui"
 
-export type SerializedCronTask = Omit<CronTaskHealth, "lastRun"> & { lastRun: string | null }
+export type { SerializedCronTask } from "@/lib/admin-kpis"
 
 const LABELS: Record<string, string> = {
   import: "Import hebdo",

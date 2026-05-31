@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Search, Film, Tv, Gamepad2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QuickImportModal } from "./QuickImportModal"
@@ -31,14 +31,10 @@ export function QuickActionsBar({
   const handleClose = () => {
     setShowImportModal(false)
     setSelectedType(null)
+    if (requestOpen) onOpenHandled?.()
   }
 
-  useEffect(() => {
-    if (requestOpen) {
-      setShowImportModal(true)
-      onOpenHandled?.()
-    }
-  }, [requestOpen, onOpenHandled])
+  const modalOpen = showImportModal || !!requestOpen
 
   return (
     <>
@@ -85,7 +81,7 @@ export function QuickActionsBar({
       </div>
 
       <QuickImportModal
-        open={showImportModal}
+        open={modalOpen}
         onClose={handleClose}
         defaultType={selectedType}
         onImportComplete={onImportComplete}

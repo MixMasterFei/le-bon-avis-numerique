@@ -1,5 +1,6 @@
 "use client"
 
+import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { LayoutDashboard, RefreshCw, Settings, Bot, Sparkles } from "lucide-react"
@@ -18,10 +19,16 @@ import { AdminGrowthChart } from "./AdminGrowthChart"
 import { AdminActionQueue } from "./AdminActionQueue"
 import { AdminCronAlerts } from "./AdminCronAlerts"
 
-export function AdminDashboardView({ kpis }: { kpis: SerializedAdminKpis }) {
+export function AdminDashboardView({
+  kpis,
+  now,
+}: {
+  kpis: SerializedAdminKpis
+  /** Captured on the server — avoids impure Date.now() in client render. */
+  now: number
+}) {
   const router = useRouter()
   const p = adminPalette
-  const now = Date.now()
 
   const pendingModeration =
     kpis.correctionsPending +
@@ -132,7 +139,7 @@ function QuickLink({
   primary,
 }: {
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
   label: string
   primary?: boolean
 }) {
