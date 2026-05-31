@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Settings } from "lucide-react"
+import { Bot, Settings } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { fetchAdminKpis } from "@/lib/admin-kpis"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -111,7 +111,15 @@ export default async function AdminDashboardPage(props: {
 
           <AdminCronStrip serifClass={serifClass} tasks={kpis.cronTasks} now={now} />
 
-          <div className="flex justify-end pt-2">
+          <div className="flex flex-wrap justify-end gap-3 pt-2">
+            <Link
+              href="/admin/totem"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
+              style={{ background: p.card, color: p.ink, border: `1px solid ${p.line}` }}
+            >
+              <Bot className="w-4 h-4" />
+              Tour de contrôle Totem
+            </Link>
             <Link
               href="/admin/operations"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
