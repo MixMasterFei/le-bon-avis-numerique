@@ -445,14 +445,26 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
 }
 
 export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): Promise<CronSupervisorResult> {
-  const since = new Date(Date.now() - 9 * 24 * 3_600_000)
-  const logs = await prisma.cronLog.findMany({
-    where: { createdAt: { gte: since } },
-    orderBy: { createdAt: "desc" },
-    take: 300,
-  })
+  // Fetch the latest few runs *per expected task* rather than a global
+  // recent-window slice. High-frequency tasks (news.prewarmImagesV4 logs
+  // ~20×/day, pressKitScout ~12×/day) used to fill the 300-log window and
+  // push weekly/10-day tasks out of it entirely — so detectIssues saw no
+  // run for them and false-flagged "missing", firing needless re-triggers
+  // (e.g. family-content-agent running off-schedule). Per-task fetch is
+  // immune to volume and far cheaper (≤3 rows per task). "missing" now means
+  // genuinely never-logged; a task that ran but lapsed is caught as "stale".
+  const perTaskLogs = await Promise.all(
+    EXPECTED_TASKS.map((expected) =>
+      prisma.cronLog.findMany({
+        where: { task: expected.task },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: { task: true, status: true, summary: true, createdAt: true },
+      }),
+    ),
+  )
 
-  const recentLogs: RecentLog[] = logs.map((log) => ({
+  const recentLogs: RecentLog[] = perTaskLogs.flat().map((log) => ({
     task: log.task,
     status: log.status as CronStatus,
     summary: log.summary ?? "",
