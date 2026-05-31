@@ -141,10 +141,10 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
         <DialogPrimitive.Content
           className={cn(
             "fixed z-50 flex flex-col shadow-2xl",
-            // Mobile: bottom sheet that stops short of the top so the page
-            // stays visible behind it (tap the backdrop to dismiss) — instead
-            // of a disorienting full-screen takeover.
-            "inset-x-0 bottom-0 h-[88dvh] max-h-[88dvh] w-full rounded-t-2xl",
+            // Mobile: bottom sheet that stops well short of the top so the
+            // page stays visible behind it (tap the backdrop to dismiss) —
+            // instead of a disorienting full-screen takeover.
+            "inset-x-0 bottom-0 h-[80dvh] max-h-[80dvh] w-full rounded-t-2xl",
             // Desktop (sm+): full-height right-side panel as before.
             "sm:inset-x-auto sm:inset-y-0 sm:right-0 sm:h-full sm:max-h-none sm:w-[440px] sm:rounded-t-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -191,7 +191,9 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                   {view === "chat" && <TotemAlphaBadge variant="full" />}
                 </div>
                 {view === "chat" && (
-                  <p className="text-[11px]" style={{ color: "var(--color-ink2)" }}>
+                  // Hidden on mobile — redundant with the empty-state intro and
+                  // costs a line in the cramped phone header.
+                  <p className="hidden text-[11px] sm:block" style={{ color: "var(--color-ink2)" }}>
                     Le guide indépendant des familles.
                   </p>
                 )}

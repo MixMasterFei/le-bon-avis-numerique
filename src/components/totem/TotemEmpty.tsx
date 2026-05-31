@@ -10,24 +10,24 @@ export interface TotemEmptyProps {
 
 export function TotemEmpty({ sourcePage, isAuthenticated, onPickPrompt }: TotemEmptyProps) {
   return (
-    <div className="space-y-4 px-1 py-2" style={{ color: "var(--color-ink)" }}>
-      <div className="space-y-1.5">
+    <div className="space-y-3 px-1 py-1 sm:space-y-4 sm:py-2" style={{ color: "var(--color-ink)" }}>
+      <div className="space-y-1">
         <p
-          className="text-lg leading-snug"
+          className="text-base leading-snug sm:text-lg"
           style={{ fontFamily: "var(--font-fraunces)", letterSpacing: "-0.01em" }}
         >
           Bonjour — je suis <em className="italic" style={{ color: "var(--color-accent)" }}>Totem</em>.
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
-          Je vous aide à choisir des <em>films</em>, <em>séries</em> ou <em>jeux</em>
-          {" "}adaptés à <em>votre famille</em>. Posez-moi votre question — l&apos;âge des enfants,
-          {" "}leurs goûts, ce que vous voulez éviter.
+        <p className="text-sm leading-snug sm:leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+          Je vous aide à choisir des <em>films</em>, <em>séries</em> et <em>jeux</em> pour
+          {" "}<em>votre famille</em>. Dites-moi l&apos;âge, les goûts, ce qu&apos;il faut éviter.
         </p>
       </div>
 
       <TotemSuggestionChips sourcePage={sourcePage} onPick={onPickPrompt} />
 
-      <div className="text-[11px] leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+      {/* Hidden on mobile — keeps the first screen focused on the chips + input. */}
+      <div className="hidden text-[11px] leading-relaxed sm:block" style={{ color: "var(--color-ink2)" }}>
         {isAuthenticated ? (
           <>
             Vos échanges sont conservés sur votre compte. Cliquez sur{" "}
