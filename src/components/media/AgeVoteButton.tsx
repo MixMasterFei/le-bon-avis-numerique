@@ -133,6 +133,7 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
                   : "transparent",
               color: data.userVote?.agree === true ? SAGE : p.ink2,
             }}
+            aria-label="D'accord avec l'âge conseillé"
             title="Cette recommandation d'âge est correcte"
           >
             {submitting ? (
@@ -154,6 +155,7 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
                   : "transparent",
               color: data.userVote?.agree === false ? p.accent : p.ink2,
             }}
+            aria-label="Pas d'accord avec l'âge conseillé"
             title="Cette recommandation d'âge est incorrecte"
           >
             <ThumbsDown className="h-3 w-3" />

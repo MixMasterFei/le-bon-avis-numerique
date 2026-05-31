@@ -61,11 +61,19 @@ const rateLimitStore = new Map<
   { count: number; resetTime: number }
 >()
 
+// E2E suites drive every request from a single localhost IP, so the whole
+// run shares one bucket — the per-test sign-ins alone (auth: 5/min) and the
+// seed calls quickly trip the limiter and fail unrelated specs. ALLOW_TEST_SEED
+// is only ever set in the isolated CI test environment (it also gates the
+// dev-only seed route), so it doubles as a safe "skip rate limiting here"
+// signal. It is NEVER set on public production.
+const RATE_LIMIT_DISABLED = process.env.ALLOW_TEST_SEED === "true"
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Apply rate limiting for API routes
-  if (pathname.startsWith("/api/")) {
+  if (pathname.startsWith("/api/") && !RATE_LIMIT_DISABLED) {
     const clientIp = getClientIp(request)
     const limitType = getRateLimitType(pathname)
 
