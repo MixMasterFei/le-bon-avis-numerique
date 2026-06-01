@@ -26,8 +26,22 @@ import {
   uploadPoster,
   isStorageEnabled,
 } from "@/lib/supabase-storage"
+import { getWeekSeed } from "@/lib/seeded-shuffle"
 
 export const maxDuration = 60
+
+// The young-kids catalogue (0–7) was starving: the importer only hit
+// page 1 of "family"/"animation" each week, and TMDB returns the same
+// blockbusters there, so dedup left almost nothing new. We now rotate
+// DEEPER into the catalogue each week (page = f(week)) so successive
+// runs surface fresh, less-famous young-audience titles instead of
+// re-fetching the same page 1. Pages 1..YOUNG_PAGE_DEPTH cycle weekly.
+const YOUNG_PAGE_DEPTH = 25
+function rotatingYoungPage(): number {
+  // getWeekSeed() = year*100 + ISO week; modulo gives a 1..depth cursor
+  // that advances one page per week and wraps around.
+  return (getWeekSeed() % YOUNG_PAGE_DEPTH) + 1
+}
 
 // Map French CSA certification to recommended age
 function certificationToAge(cert: string | null): number | null {
@@ -85,14 +99,15 @@ function hasTVFrenchRelevance(
 }
 
 async function importMoviesFromSource(
-  source: "popular" | "now_playing" | "family" | "animation",
-  pages: number
+  source: "popular" | "now_playing" | "family" | "animation" | "young_kids",
+  pages: number,
+  startPage = 1
 ): Promise<ImportStats> {
   const stats: ImportStats = { total: 0, imported: 0, skipped: 0, skippedNoFR: 0, errors: 0 }
 
   // Fetch movie IDs from TMDB
   const allMovies: Array<{ id: number; title: string }> = []
-  for (let page = 1; page <= pages; page++) {
+  for (let page = startPage; page < startPage + pages; page++) {
     try {
       let response
       switch (source) {
@@ -110,6 +125,20 @@ async function importMoviesFromSource(
           response = await discoverMovies({
             page,
             with_genres: MovieGenres.ANIMATION.toString(),
+            sort_by: "popularity.desc",
+          })
+          break
+        case "young_kids":
+          // Very-young audience: Animation+Family genres, French CSA
+          // certified "all audiences" (TP/U → maps to age 0), with a
+          // small vote floor so we still surface real titles, not noise.
+          // This is the source that fills the starved 0–7 buckets.
+          response = await discoverMovies({
+            page,
+            with_genres: `${MovieGenres.ANIMATION},${MovieGenres.FAMILY}`,
+            certification_country: "FR",
+            "certification.lte": "10",
+            "vote_count.gte": "20",
             sort_by: "popularity.desc",
           })
           break
@@ -384,9 +413,14 @@ export async function GET(req: NextRequest) {
     // Import now playing movies (1 page = ~20 movies)
     results.nowPlaying = await importMoviesFromSource("now_playing", 1)
 
-    // Import family/animation movies (1 page each)
-    results.familyMovies = await importMoviesFromSource("family", 1)
-    results.animationMovies = await importMoviesFromSource("animation", 1)
+    // Young-audience sources — rotate DEEPER each week so we keep
+    // surfacing fresh 0–7 titles instead of re-fetching page 1's
+    // blockbusters. This is the fix for the starved tout-petits/enfants
+    // buckets. family + animation + a dedicated very-young source.
+    const youngPage = rotatingYoungPage()
+    results.familyMovies = await importMoviesFromSource("family", 1, youngPage)
+    results.animationMovies = await importMoviesFromSource("animation", 1, youngPage)
+    results.youngKids = await importMoviesFromSource("young_kids", 2, youngPage)
 
     // Import popular TV shows (2 pages)
     results.tvShows = await importTVFromSource(2)

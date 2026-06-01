@@ -33,8 +33,10 @@ function certificationToAge(cert: string | null): number | null {
   return map[cert] ?? null
 }
 
-// Sources that are inherently French-relevant (skip FR check)
-const FR_SAFE_SOURCES = ["french", "kids", "now_playing"]
+// Sources that are inherently French-relevant (skip FR check).
+// `kids`/`young_kids` use certification_country=FR so every result is
+// already CSA-rated → French-released by definition.
+const FR_SAFE_SOURCES = ["french", "kids", "young_kids", "now_playing"]
 
 interface ImportStats {
   total: number
@@ -103,6 +105,19 @@ export async function POST(request: Request) {
               with_genres: `${MovieGenres.ANIMATION},${MovieGenres.FAMILY}`,
               certification_country: "FR",
               "certification.lte": "12",
+              sort_by: "popularity.desc",
+            })
+            break
+          case "young_kids":
+            // Very-young audience (0–7): Animation+Family, French CSA
+            // "all audiences / 10 and under", small vote floor to skip
+            // noise. Targets the starved tout-petits/enfants buckets.
+            response = await discoverMovies({
+              page,
+              with_genres: `${MovieGenres.ANIMATION},${MovieGenres.FAMILY}`,
+              certification_country: "FR",
+              "certification.lte": "10",
+              "vote_count.gte": "20",
               sort_by: "popularity.desc",
             })
             break
