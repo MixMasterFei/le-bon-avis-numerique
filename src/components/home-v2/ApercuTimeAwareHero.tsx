@@ -121,8 +121,14 @@ async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
   return dayPick(pool, take)
 }
 
-// Games for the rail — recent and family-friendly. Different release-
-// date threshold (looser) since the games catalogue is smaller.
+// Minimum recognizability floor — for games this is the IGDB rating
+// count (stored in `tmdbVoteCount`, see media-queries.ts). Keeps obscure
+// titles nobody recognizes out of the "what to play" rail.
+const GAME_MIN_VOTES = 80
+
+// Games for the rail — popular and family-friendly. Ordered by rating
+// count (notoriety) first so unknown titles don't surface; recency is
+// the tiebreaker so the pool still rotates as new well-known games land.
 async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> {
   const pool = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
@@ -130,8 +136,12 @@ async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> 
         type: "GAME",
         posterUrl: { not: null, startsWith: "http" },
         expertAgeRec: { not: null, lte: ageCap },
+        tmdbVoteCount: { gte: GAME_MIN_VOTES },
       },
-      orderBy: [{ releaseDate: { sort: "desc", nulls: "last" } }],
+      orderBy: [
+        { tmdbVoteCount: { sort: "desc", nulls: "last" } },
+        { releaseDate: { sort: "desc", nulls: "last" } },
+      ],
       take: ROTATION_POOL,
       select: baseSelect,
     }),
@@ -183,21 +193,21 @@ async function fetchQualityFilms(ageCap: number, take: number): Promise<DBRow[]>
 }
 
 async function fetchTonight(ageCap: number): Promise<HeroData> {
-  // Mix: 1 cinema + 1 streaming film + 2 streaming series. Tonight is
-  // movie/episode-coded, not game-coded. 4 cards, type-diverse.
-  const [cinema, streamingFilms, series] = await Promise.all([
-    fetchCinemaSlice(1, ageCap),
-    fetchStreamingFilms(ageCap, 1),
+  // "Pour ce soir" = what to watch AT HOME tonight, so no cinema (you
+  // can't stream a film that's still in theaters tonight). Mix: 2
+  // streaming films + 2 streaming series. Tonight is movie/episode-
+  // coded, not game-coded. 4 cards.
+  const [streamingFilms, series] = await Promise.all([
+    fetchStreamingFilms(ageCap, 2),
     fetchFamilyTV(ageCap, 2),
   ])
 
   return {
     cards: dedupeAndCap(
-      [...cinema, ...streamingFilms.map(toCard), ...series.map(toCard)],
+      [...streamingFilms.map(toCard), ...series.map(toCard)],
       4,
     ),
     links: [
-      { label: "Au cinéma", href: `/films?sort=cinema&maxAge=${ageCap}` },
       { label: "Streaming films", href: `/films/recherche?maxAge=${ageCap}` },
       { label: "Séries", href: `/series?maxAge=${ageCap}` },
     ],
