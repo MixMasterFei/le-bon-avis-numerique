@@ -5,11 +5,19 @@ import {
   type MemberPreferences,
 } from "../scoring"
 
+// Derive the birth year from the current year so the member is ALWAYS
+// exactly 10, independent of when the suite runs. A hard-coded year +
+// month (was 2015/June) made the member silently turn 11 once the real
+// calendar passed that birthday, flipping the "one year above age"
+// assertions. January birthMonth means the birthday has always already
+// happened this year, so getMemberAge() returns a stable `currentYear -
+// birthYear` with no month-boundary ambiguity.
+const TEST_MEMBER_AGE = 10
 const baseMember: MemberPreferences = {
   id: "m1",
   name: "Test",
-  birthYear: 2015,
-  birthMonth: 6,
+  birthYear: new Date().getFullYear() - TEST_MEMBER_AGE,
+  birthMonth: 1,
   sensitivityViolence: 2,
   sensitivityScary: 2,
   sensitivitySexual: 2,
