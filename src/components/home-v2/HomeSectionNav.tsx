@@ -15,8 +15,8 @@ import { APERCU_PALETTE } from "./apercuTheme"
 // the matching id="..." on the section wrapper.
 
 const SECTIONS = [
-  { id: "coups-de-coeur", label: "Coups de cœur" },
   { id: "cinema", label: "Au cinéma" },
+  { id: "coups-de-coeur", label: "Coups de cœur" },
   { id: "par-age", label: "Par âge" },
   { id: "streaming", label: "Streaming" },
   { id: "jeux-recents", label: "Nouveaux jeux" },

@@ -45,19 +45,26 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false, topSlo
             sticky SiteHeader (~64-80px tall) so the section title
             isn't hidden under the header on jump-scroll. */}
 
-        <section id="coups-de-coeur" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg2 }}>
+        {/* Cinéma promoted directly under the time-aware rail: it's the
+            freshest, most differentiated signal (live theatrical listings
+            + expert ages, which AlloCiné doesn't do). The quick-jump nav
+            rides up here too so it stays near the top of the page. */}
+        <section id="cinema" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg }}>
           <div className="container mx-auto px-4 md:px-8">
-            {/* Quick-jump nav for the rest of the homepage — rendered
-                as the first thing in Coups de cœur so it doesn't
-                compete with the hero search above. */}
             <HomeSectionNav />
-            <ApercuExpertPicks serifClass={serifClass} />
+            <ApercuNowInCinema serifClass={serifClass} />
           </div>
         </section>
 
-        <section id="cinema" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg }}>
+        {/* NOTE: a promoted social-proof section ("Ce que les familles
+            regardent") used to sit here. Pulled until there's enough
+            engagement to show — a single "1 réaction" reads weaker than
+            no social proof at all. The buzz/additions rows live on in
+            ApercuPulse lower down. Re-promote once reaction volume grows. */}
+
+        <section id="coups-de-coeur" className="py-10 md:py-14 scroll-mt-24" style={{ background: p.bg2 }}>
           <div className="container mx-auto px-4 md:px-8">
-            <ApercuNowInCinema serifClass={serifClass} />
+            <ApercuExpertPicks serifClass={serifClass} />
           </div>
         </section>
 
