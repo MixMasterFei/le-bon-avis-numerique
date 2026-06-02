@@ -284,14 +284,45 @@ Blog first (manual today → biggest unlock, lowest data-risk), then catalog (hi
 
 ---
 
-## 8. Open questions for you (to resolve before dev mode)
+## 8. Open questions — with recommended answers
 
-1. **Blog cadence & autonomy ceiling:** how many posts/week, and which categories (if any) may *ever* auto-publish without your review?
-2. **Marketing scope:** organic/SEO + newsletter only, or also paid social/ads (the latter needs spend gates + a budget)?
-3. **Hosting preference:** keep everything self-hosted (Agent SDK on GH Actions/worker), or are you comfortable piloting **Managed Agents** (data enters Anthropic's hosted sandbox) for marketing?
-4. **Provider consolidation:** migrate the remaining OpenAI enrichment to Claude for a single-provider stack (simpler, you already consolidated news that way), or keep the dual-provider setup?
-5. **Approval channel:** email (Resend, already wired), or add Slack/Telegram for one-tap approvals?
-6. **Budget ceiling:** confirm a hard monthly cap (e.g., $300) so the harness caps can be set against it.
+These were the decisions to settle before dev mode. Below each is a **recommended default**, reasoned from where Totem Avisé actually is: a solo-operated, growth-phase product whose moat is *trust + French-first SEO*, handling *CNIL-sensitive family/child data*, on a near-zero infra budget. Treat them as starting positions to confirm or override.
+
+### Q1 — Blog cadence & autonomy ceiling
+**Recommendation: 2–3 posts/week. Start fully gated. Graduate only evergreen guides to auto-publish; keep anything sensitive or topical permanently gated.**
+- *Why this cadence:* SEO is your primary growth lever and organic takes 3–6 months — you need consistent velocity, but you're cold-starting and your brand voice ("warm, never corporate") is fragile. 2–3/week compounds without flooding. Tie each post to a real fiche + a priority keyword (*"film pour enfant [âge]"*, *"à partir de quel âge [film]"*) so every post does SEO double-duty.
+- *Autonomy ceiling:* the categories split cleanly by risk. **May eventually auto-publish (after ~20 clean gated runs):** "Guides pratiques" and age-based evergreen guides — low factual volatility, high SEO value. **Keep permanently human-gated:** "Actualités", and "Parentalité numérique" when it touches hard subjects (the editorial pipeline already tags tone `grave`/`concerning` — reuse that signal to force a gate). Never let an agent auto-publish a post whose claims aren't grounded in a catalog fiche or a cited source.
+
+### Q2 — Marketing scope
+**Recommendation: organic/SEO + newsletter only for now. No agent-controlled ad spend. Revisit paid once Plausible proves a converting funnel.**
+- *Why:* your launch budget is ~$11/mo and you have no analytics yet — buying traffic before you can measure conversion is spending blind. Your cheapest, highest-leverage channel is the GSC striking-distance loop you've *already built*; the marketing agent should exploit that plus newsletter (Brevo) and drafted social, all gated. Defer Google Ads (the Phase-4 "[titre] avis enfant" idea) until you can see signup/return rates. When you do enable paid, it stays **human-approved per campaign with a hard budget** — never an autonomous spend tool.
+
+### Q3 — Hosting
+**Recommendation: self-host the Agent SDK on your existing GitHub Actions backbone. Pilot Managed Agents *only* for marketing-asset generation that touches no personal data.**
+- *Why:* you handle family profiles and children's data under CNIL/GDPR, and your ops/CI is already mature (15/15). Keeping the catalog, blog, and ops agents on your own infra means user data never leaves your Postgres. Managed Agents' hosted sandbox is genuinely useful for *non-PII* work — drafting carousels, press kits, social copy with the `docx`/`pptx` Skills — so scope the pilot there. Because both share MCP/Skills, tools you build stay portable if you later move a workload either direction.
+
+### Q4 — Provider consolidation
+**Recommendation: consolidate onto Claude, but as a *Phase-2 optimization*, not a day-1 blocker — and A/B the enrichment quality first.**
+- *Why:* you already moved the news pipeline to single-provider Claude precisely because the multi-provider cascade caused silent failures — same logic favors consolidating enrichment (operational simplicity, one bill, one set of guardrails, prompt-caching across all agents). The one thing to protect is **Pass-2 deep enrichment's web-search** step (currently gpt-4o); validate Claude's equivalent matches quality on a sample before cutting over. Until then, leave enrichment as-is so the migration never blocks the agentic rollout.
+
+### Q5 — Approval channel
+**Recommendation: start with email (Resend — already wired). Add Telegram for one-tap mobile approvals in Phase 3 when volume makes email tedious.**
+- *Why:* you're solo and every digest in the system already flows through Resend, so email approvals are zero new infra — the agent stages a Sanity draft / queued asset and emails you an approve link. Once the blog + marketing agents are producing several artifacts a day, batch-approving from your phone via Telegram beats inbox triage. Don't add Slack (no team to justify it).
+
+### Q6 — Budget ceiling
+**Recommendation: hard cap **$200/mo**, target **~$150**. Per-agent sub-caps; Haiku-first routing; batch + prompt-caching mandatory.**
+- *Why:* the modelled agentic range is $120–300/mo; for a solo growth-stage product, $300 is a ceiling you shouldn't *need* to hit. Set the harness hard-cap at **$200** with sub-caps (e.g. blog $60, marketing $35, catalog $25, ops $10, orchestrator $25, buffer $45) and let the chatbot scale separately with traffic. Route Haiku by default, escalate to Sonnet/Opus only on signal, cache the long stable prompts, and batch everything non-urgent — that keeps the realistic run-rate near $150 and leaves headroom before the cap ever trips.
+
+### One-line summary of the recommended posture
+Self-hosted Agent SDK · blog 2–3×/wk starting fully gated · organic-only marketing (no agent ad spend) · email approvals → Telegram later · consolidate to Claude in Phase 2 · **$200/mo hard cap (~$150 target)**. Conservative on autonomy and spend, aggressive on SEO leverage — matching a trust-led, growth-phase, solo product.
+
+### Original questions (for reference)
+1. **Blog cadence & autonomy ceiling** — how many posts/week, and which categories (if any) may *ever* auto-publish?
+2. **Marketing scope** — organic/SEO + newsletter only, or also paid?
+3. **Hosting** — self-hosted Agent SDK, or pilot Managed Agents?
+4. **Provider** — consolidate enrichment onto Claude, or keep dual-provider?
+5. **Approval channel** — email, or add Slack/Telegram?
+6. **Budget ceiling** — confirm a hard monthly cap.
 
 ---
 
