@@ -72,6 +72,16 @@ export async function POST(request: Request) {
       // Ensure consistent ordering (smaller ID first) to avoid duplicate pairs
       const [first, second] = idA < idB ? [idA, idB] : [idB, idA]
       try {
+        // Don't clobber curated edges. EXPERT (e.g. the SEO maillage agent in
+        // seo-autofix.ts) and COMMUNITY rows are hand-placed and would otherwise
+        // be silently downgraded to ALGORITHM + rescored on the weekly recompute.
+        const existing = await prisma.mediaSimilarity.findUnique({
+          where: { mediaIdA_mediaIdB: { mediaIdA: first, mediaIdB: second } },
+          select: { source: true },
+        })
+        if (existing && existing.source !== "ALGORITHM") {
+          return
+        }
         await prisma.mediaSimilarity.upsert({
           where: { mediaIdA_mediaIdB: { mediaIdA: first, mediaIdB: second } },
           create: {

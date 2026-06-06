@@ -40,10 +40,11 @@ function pageLabel(rawUrl: string): string {
 }
 
 function recommendation(q: StrikingQuery): string {
-  if (q.position <= 10) {
-    return `Bas de page 1 — tout près du clic. Intègre « ${q.query} » dans le titre/H1 et le 1er paragraphe de ${pageLabel(q.page)}, et ajoute 2–3 liens internes vers cette page depuis des pages liées.`
-  }
-  return `Page 2 — à faire remonter. Renforce « ${q.query} » dans le titre + le chapô de ${pageLabel(q.page)}, étoffe le contenu pertinent, et maille en interne depuis des fiches/articles proches.`
+  // The maillage interne + chapô/synopsis nudges are handled automatically by the
+  // write-side agent (seo-autofix.ts) — see the "Actions de l'agent" section below.
+  // What stays manual is the title/H1, which is never auto-edited (global rename risk).
+  const proximity = q.position <= 10 ? "Bas de page 1 — tout près du clic." : "Page 2 — à faire remonter."
+  return `${proximity} L'agent renforce le maillage interne et le chapô (synopsis) de ${pageLabel(q.page)} si nécessaire. Reste manuel : vérifie que le titre/H1 reflète bien « ${q.query} » (ajustement à la main si pertinent).`
 }
 
 function buildReport(
