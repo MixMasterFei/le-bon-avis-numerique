@@ -200,6 +200,7 @@ Automated maintenance, all jobs use `CRON_SECRET` Bearer auth.
 | Tue + Fri 5:00 AM | Weekly dossier (`weekly-dossier`) — long-read synthesis |
 | Monday 6:00 AM | Family content editorial agent (`family-content-agent`) — priorities email |
 | **Wed 6:13 AM** | **Debt digest (`debt-digest`)** — weekly tech/data-debt email: cron health, catalog gaps (unenriched / no poster / no age rec / low quality / no topics, manga excluded), editorial queue. Read-only. |
+| **Thu 6:23 AM** | **SEO striking distance (`seo-striking-distance`)** — pulls GSC pos. 8–20 queries + emails them. **Write-side** when `SEO_AGENT_AUTOFIX=true`: per target fiche, creates internal-link maillage (`source:"EXPERT"` `MediaSimilarity` edges, protected from the Saturday recompute) and rewrites `synopsisFr` when the query keyword is absent (`src/lib/seo-autofix.ts`, gpt-5-mini, max 3/run). Title/H1 never auto-edited. Default OFF / `?dryRun=1`. |
 | Daily 7:00 AM | Cron supervisor (`supervisor`) — health check + limited safe auto-remediation + digest email when anomalies |
 
 **Total enrichment:** ~210 items/week via OpenAI GPT-4o-mini (~$0.35-0.90/week)
@@ -233,7 +234,7 @@ The homepage cinema section and `/films?sort=cinema` use the **TMDB `now_playing
 - **API route:** `/api/cinema` — Calls TMDB live (1-hour cache), cross-references with DB for age recommendations
 - **Component:** `src/components/home/NowInCinema.tsx` — Shows 7 items (1 row)
 - **Important:** Do NOT use `releaseDate` filtering as a proxy for "now playing". TMDB's `now_playing` endpoint with `region=FR` is the only accurate source.
-- Movies in TMDB now_playing but not yet in the DB still show (with TMDB poster) — they just lack age recommendations until the next cron import.
+- Movies in TMDB now_playing but not yet in the DB still show (with TMDB poster) and now carry a **provisional age** estimated from TMDB `genre_ids` (so the cinema age filter isn't empty), badged "à confirmer" until imported/enriched. See "Provisional age ratings".
 
 ---
 
@@ -259,6 +260,15 @@ When creating new homepage sections with "Voir tout", always ensure the target p
 - **`tmdbRating` / `tmdbVoteCount`** — TMDB audience ratings stored internally. Used for quality sorting and featured selection. Never displayed to users (not the site's purpose).
 - **Featured criteria:** `tmdbRating >= 6.5`, `tmdbVoteCount >= 200`, has poster, has age rating, French/English language, `dataQualityScore >= 50`
 - **Tag thresholds:** Educatif requires `positiveMessages >= 5`, Modeles+ requires `roleModels >= 5` (raised from 4 to avoid false positives)
+
+### Provisional ("WIP") age ratings
+
+Imported films get an estimated `expertAgeRec` immediately (French CSA → foreign cert → genre heuristic — `src/lib/import-helpers.ts` `estimateProvisionalAge`), so recent/theatrical titles are visible without waiting for AI enrichment. A film is **provisional** when `!isEnriched && expertAgeRec != null` (surfaced as `isProvisional` on `TransformedMediaItem`/`MockMediaItem`, badged "Âge provisoire · à confirmer" via `ProvisionalBadge`).
+
+- **Curated surfaces stay expert-only.** `fetchMovies`/`fetchSeries` keep the `isEnriched: true` gate by default; pass `includeProvisional: true` (API: `?includeProvisional=1`) to also surface provisional films. Enabled only on **search** (`/films/recherche`), **`/films?sort=newest`**, and the **cinema** view (off-DB now_playing films get an age estimated from TMDB `genre_ids` in `src/lib/cinema.ts`). Homepage rails, recommendations, and family-fit remain expert-only.
+- **Smart filter (`/api/filter/smart`) is expert-only** (`isEnriched: true` in `buildSmartFilterWhere`): provisional films have no `ContentMetrics`, so per-member sensitivity scoring can't include them safely.
+- **Imports populate platforms day-one** (`createMovieFromTmdb` calls watch-providers) so a freshly-imported Netflix film is filterable before the Saturday streaming cron. Provider strings are normalized via the shared `src/lib/streaming-providers.ts` (`"Netflix"`, not `"Netflix France"` — filter UIs must match).
+- **Backfill** old null-age films via `POST /api/admin/backfill-provisional-age` (admin "Backfill âges provisoires" preset), estimating from stored `officialRating`/`genres` only. Theatrical top-ups: admin "Cinéma (sorties en salle)" preset (`source=now_playing`).
 
 ---
 
@@ -364,6 +374,7 @@ RESEND_API_KEY                    # Email (optional)
 RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
 NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
 TOTEM_PUBLIC                      # Set to "true" to expose the Totem Assistant chatbot to all visitors. Default: admin-only alpha (dock + homepage CTA + /api/totem/chat all gated by ADMIN role). Mirrors NEWSLETTER_PUBLIC.
+SEO_AGENT_AUTOFIX                 # Set to "true" to let the weekly seo-striking-distance cron WRITE (internal-link maillage + synopsis rewrites). Default OFF (report-only). The cron also accepts ?dryRun=1 to force report-only regardless. See Automation notes.
 PEXELS_API_KEY                    # DEPRECATED (May 2026). Stock-photo fallback removed from news-image.ts in the news-pipeline simplification. Safe to remove from Vercel env. Stock-image cache table left in place for now.
 UNSPLASH_ACCESS_KEY               # DEPRECATED (May 2026). Same as PEXELS_API_KEY — stock-photo tier removed.
 ```

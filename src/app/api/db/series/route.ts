@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     featured: sp.get("featured") === "true",
     language: sp.get("language") || undefined,
     frenchOnly: sp.get("frenchOnly") === "true",
+    includeProvisional: sp.get("includeProvisional") === "1",
   }
 
   try {

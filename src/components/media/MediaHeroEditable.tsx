@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
 import { AgeVoteButton } from "./AgeVoteButton"
 import { MethodBadge } from "@/components/ui/MethodBadge"
+import { ProvisionalBadge } from "@/components/media/ProvisionalBadge"
 
 interface Review {
   role: string
@@ -27,6 +28,7 @@ interface MediaHeroEditableProps {
   releaseDate: string | null
   originalTitle: string | null | undefined
   reviews?: Review[]
+  isProvisional?: boolean
 }
 
 export function MediaHeroEditable({
@@ -41,6 +43,7 @@ export function MediaHeroEditable({
   releaseDate,
   originalTitle,
   reviews = [],
+  isProvisional = false,
 }: MediaHeroEditableProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -269,7 +272,7 @@ export function MediaHeroEditable({
           />
         </div>
       ) : (
-        <AgeRecommendationsRow expertAge={initialAge} reviews={reviews} mediaId={mediaId} />
+        <AgeRecommendationsRow expertAge={initialAge} reviews={reviews} mediaId={mediaId} isProvisional={isProvisional} />
       )}
 
       {/* Floating Admin Bar */}
@@ -317,7 +320,7 @@ export function MediaHeroEditable({
 }
 
 // Unified expert + community age recommendations row
-function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: number | null; reviews: Review[]; mediaId: string }) {
+function AgeRecommendationsRow({ expertAge, reviews, mediaId, isProvisional = false }: { expertAge: number | null; reviews: Review[]; mediaId: string; isProvisional?: boolean }) {
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
@@ -370,6 +373,7 @@ function AgeRecommendationsRow({ expertAge, reviews, mediaId }: { expertAge: num
                 Notre recommandation
               </p>
               <MethodBadge size="xs" />
+              {isProvisional && <ProvisionalBadge size="sm" withTooltip />}
             </div>
             <p className="text-xs" style={{ color: WARM_INK2 }}>
               dès {expertAge} ans

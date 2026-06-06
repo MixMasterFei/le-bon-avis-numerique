@@ -126,6 +126,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       synopsisFr: dbMedia.synopsisFr,
       officialRating: dbMedia.officialRating,
       expertAgeRec: dbMedia.expertAgeRec,
+      // Imported with an estimated age but not yet AI-enriched → "âge provisoire".
+      isProvisional: !dbMedia.isEnriched && dbMedia.expertAgeRec != null,
       communityAgeRec: dbMedia.communityAgeRec,
       tmdbRating: dbMedia.tmdbRating,
       tmdbVoteCount: dbMedia.tmdbVoteCount,
@@ -693,6 +695,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 releaseDate={media.releaseDate}
                 originalTitle={media.originalTitle || null}
                 reviews={media.reviews}
+                isProvisional={media.isProvisional}
               />
 
               <div

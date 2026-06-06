@@ -26,6 +26,10 @@ export interface MediaQueryFilters {
   frenchOnly?: boolean
   shuffle?: string
   nowPlaying?: boolean
+  // Include provisional (imported-but-not-yet-AI-enriched) films that have an
+  // estimated age. OFF by default so curated surfaces stay expert-only; ON only
+  // for search / cinema / "nouveautés" (see CLAUDE.md provisional-ratings note).
+  includeProvisional?: boolean
   // Content-metric caps (0-5 scale, values from ContentMetrics table).
   // Each filter excludes items whose metric exceeds the cap AND items
   // without a ContentMetrics row (safer default for family-friendly URLs).
@@ -87,6 +91,9 @@ export interface TransformedMediaItem {
   toneTags?: string[]
   pacing?: string | null
   enrichmentSource?: string | null
+  // True for imported films shown with an estimated age before AI enrichment.
+  // Drives the "Âge provisoire · à confirmer" badge.
+  isProvisional?: boolean
 }
 
 // ── European languages (default filter for French audience) ──────────
@@ -235,6 +242,8 @@ function transformItem(item: PrismaMediaWithRelations): TransformedMediaItem {
     toneTags: (item.contentMetrics as { toneTags?: string[] } | null)?.toneTags || [],
     pacing: (item.contentMetrics as { pacing?: string } | null)?.pacing || null,
     enrichmentSource: (item.contentMetrics as { enrichmentSource?: string } | null)?.enrichmentSource || null,
+    // Has an (estimated) age but hasn't been through AI enrichment yet.
+    isProvisional: !item.isEnriched && item.expertAgeRec != null,
   }
 }
 
@@ -246,10 +255,13 @@ export async function fetchMovies(filters: MediaQueryFilters = {}): Promise<Medi
   const skip = (page - 1) * limit
   const useWeeklyShuffle = filters.shuffle === "weekly" && page === 1
 
+  // Default: only AI-enriched films (curated). When includeProvisional is set
+  // (search / cinema / nouveautés), also surface imported films that carry an
+  // estimated age — they're badged "provisoire" in the UI.
   const where: Prisma.MediaItemWhereInput = {
     type: "MOVIE",
-    isEnriched: true,
     expertAgeRec: { not: null },
+    ...(filters.includeProvisional ? {} : { isEnriched: true }),
   }
 
   // Release date filter
@@ -376,9 +388,9 @@ export async function fetchSeries(filters: MediaQueryFilters = {}): Promise<Medi
 
   const where: Prisma.MediaItemWhereInput = {
     type: "TV",
-    isEnriched: true,
     expertAgeRec: { not: null },
     releaseDate: { lte: new Date() },
+    ...(filters.includeProvisional ? {} : { isEnriched: true }),
   }
 
   if (filters.requirePoster || filters.featured) {

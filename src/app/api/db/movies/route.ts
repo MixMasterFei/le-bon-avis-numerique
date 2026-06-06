@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     frenchOnly: sp.get("frenchOnly") === "true",
     shuffle: sp.get("shuffle") || undefined,
     nowPlaying: sp.get("nowPlaying") === "true",
+    includeProvisional: sp.get("includeProvisional") === "1",
   }
 
   try {

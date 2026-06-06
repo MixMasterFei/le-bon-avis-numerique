@@ -8,7 +8,6 @@ import {
   discoverMovies,
   getMovieDetails,
   getFrenchCertification,
-  getDirector,
   MovieGenres,
   mapCertificationToInternal,
   getPopularTVShows,
@@ -27,6 +26,8 @@ import {
   isStorageEnabled,
 } from "@/lib/supabase-storage"
 import { getWeekSeed } from "@/lib/seeded-shuffle"
+import { certificationToAge, createMovieFromTmdb } from "@/lib/import-helpers"
+import { extractProviders } from "@/lib/streaming-providers"
 
 export const maxDuration = 60
 
@@ -41,13 +42,6 @@ function rotatingYoungPage(): number {
   // getWeekSeed() = year*100 + ISO week; modulo gives a 1..depth cursor
   // that advances one page per week and wraps around.
   return (getWeekSeed() % YOUNG_PAGE_DEPTH) + 1
-}
-
-// Map French CSA certification to recommended age
-function certificationToAge(cert: string | null): number | null {
-  if (!cert) return null
-  const map: Record<string, number> = { U: 0, TP: 0, "10": 10, "12": 12, "16": 16, "18": 18 }
-  return map[cert] ?? null
 }
 
 // Verify Vercel Cron Secret
@@ -170,59 +164,29 @@ async function importMoviesFromSource(
       const details = await getMovieDetails(movie.id)
       const frCert = getFrenchCertification(details.release_dates)
 
-      // Skip movies with no French relevance
-      let isFR = hasMovieFrenchRelevance(details, frCert)
-      if (!isFR) {
-        // Last resort: check if available on French streaming platforms
-        const frProviders = await getMovieWatchProviders(movie.id)
-        isFR = frProviders !== null
-      }
-      if (!isFR) {
-        stats.skippedNoFR++
-        continue
+      // Fetch FR watch providers once — reused for both the FR-relevance
+      // fallback and day-one platform population.
+      let watch: Awaited<ReturnType<typeof getMovieWatchProviders>> | undefined
+      const loadWatch = async () => {
+        if (watch === undefined) watch = await getMovieWatchProviders(movie.id)
+        return watch
       }
 
-      const director = getDirector(details.credits)
-      const internalRating = mapCertificationToInternal(frCert)
-      const ageRec = certificationToAge(frCert)
+      // now_playing = French theatrical releases by definition (region=FR), so
+      // don't gate them on the FR-relevance heuristic — that was dropping current
+      // theatrical films before they were ever created.
+      if (source !== "now_playing") {
+        let isFR = hasMovieFrenchRelevance(details, frCert)
+        if (!isFR) isFR = (await loadWatch()) !== null
+        if (!isFR) {
+          stats.skippedNoFR++
+          continue
+        }
+      }
 
-      const genres = details.genres?.map((g: { id: number; name: string }) => g.name) || []
-      const releaseDate = details.release_date ? new Date(details.release_date) : null
-
-      // Pre-generate ID so we can upload images with deterministic paths
-      const id = randomUUID()
-      const [posterUrl, backdropUrl] = await Promise.all([
-        uploadTMDBPoster(id, details.poster_path),
-        uploadTMDBBackdrop(id, details.backdrop_path),
-      ])
-
-      await prisma.mediaItem.create({
-        data: {
-          id,
-          tmdbId: details.id,
-          title: details.title,
-          originalTitle: details.original_title !== details.title ? details.original_title : null,
-          type: "MOVIE",
-          releaseDate,
-          posterUrl,
-          backdropUrl,
-          synopsisFr: details.overview || null,
-          officialRating: internalRating,
-          expertAgeRec: ageRec,
-          duration: details.runtime || null,
-          director: director || null,
-          genres,
-          platforms: [],
-          topics: [],
-          originalLanguage: details.original_language || null,
-          tmdbRating: details.vote_average || null,
-          tmdbVoteCount: details.vote_count || null,
-          dataSource: "TMDB",
-          dataQualityScore: ageRec ? 30 : 10,
-          isEnriched: false,
-          lastVerifiedAt: new Date(),
-        },
-      })
+      // Shared create: provisional age (CSA → foreign → genre) + day-one platforms.
+      const providers = extractProviders(await loadWatch())
+      await createMovieFromTmdb(details, { providers })
       stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
     } catch {

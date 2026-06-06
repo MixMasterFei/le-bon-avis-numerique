@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server"
-import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 
 // Vercel serverless function config - max duration for hobby is 10s, pro is 60s
@@ -12,26 +11,11 @@ import {
   discoverMovies,
   getMovieDetails,
   getFrenchCertification,
-  getDirector,
   MovieGenres,
-  mapCertificationToInternal,
   getMovieWatchProviders,
 } from "@/lib/tmdb"
-import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
-
-// Map French CSA certification to recommended age
-function certificationToAge(cert: string | null): number | null {
-  if (!cert) return null
-  const map: Record<string, number> = {
-    U: 0,
-    TP: 0,
-    "10": 10,
-    "12": 12,
-    "16": 16,
-    "18": 18,
-  }
-  return map[cert] ?? null
-}
+import { createMovieFromTmdb } from "@/lib/import-helpers"
+import { extractProviders } from "@/lib/streaming-providers"
 
 // Sources that are inherently French-relevant (skip FR check).
 // `kids`/`young_kids` use certification_country=FR so every result is
@@ -217,56 +201,28 @@ export async function POST(request: Request) {
         const details = await getMovieDetails(movie.id)
         const certification = getFrenchCertification(details.release_dates)
 
+        // Fetch FR watch providers once — reused for the FR-relevance fallback
+        // and day-one platform population.
+        let watch: Awaited<ReturnType<typeof getMovieWatchProviders>> | undefined
+        const loadWatch = async () => {
+          if (watch === undefined) watch = await getMovieWatchProviders(movie.id)
+          return watch
+        }
+
         // Skip movies with no French relevance (unless source is inherently FR)
         if (!FR_SAFE_SOURCES.includes(source)) {
           const isFR = details.original_language === "fr"
             || !!certification
             || details.release_dates?.results?.some((r: any) => r.iso_3166_1 === "FR")
-          if (!isFR) {
-            const frProviders = await getMovieWatchProviders(movie.id)
-            if (!frProviders) {
-              stats.skippedNoFR++
-              continue
-            }
+          if (!isFR && (await loadWatch()) === null) {
+            stats.skippedNoFR++
+            continue
           }
         }
 
-        const director = getDirector(details.credits)
-
-        // Pre-generate ID for deterministic storage paths
-        const id = randomUUID()
-        const [posterUrl, backdropUrl] = await Promise.all([
-          uploadTMDBPoster(id, details.poster_path),
-          uploadTMDBBackdrop(id, details.backdrop_path),
-        ])
-
-        // Create the movie (we already filtered out existing ones)
-        await prisma.mediaItem.create({
-          data: {
-            id,
-            tmdbId: movie.id,
-            title: details.title,
-            originalTitle: details.original_title,
-            type: "MOVIE",
-            synopsisFr: details.overview || null,
-            posterUrl,
-            backdropUrl,
-            releaseDate: details.release_date
-              ? new Date(details.release_date)
-              : null,
-            duration: details.runtime || null,
-            director: director,
-            genres: details.genres.map((g) => g.name),
-            officialRating: mapCertificationToInternal(certification),
-            expertAgeRec: certificationToAge(certification),
-            originalLanguage: details.original_language || null,
-            tmdbRating: details.vote_average || null,
-            tmdbVoteCount: details.vote_count || null,
-            platforms: [],
-            topics: [],
-            lastVerifiedAt: new Date(),
-          },
-        })
+        // Shared create: provisional age (CSA → foreign → genre) + day-one platforms.
+        const providers = extractProviders(await loadWatch())
+        await createMovieFromTmdb(details, { providers })
 
         stats.imported++
 

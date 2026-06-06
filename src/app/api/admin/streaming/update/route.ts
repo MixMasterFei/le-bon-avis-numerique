@@ -1,91 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getMovieWatchProviders, getTVWatchProviders } from "@/lib/tmdb"
+import { extractProviders } from "@/lib/streaming-providers"
 import { logCronRun } from "@/lib/cron-log"
 
 export const maxDuration = 60 // seconds
-
-// Map TMDB provider names to our simplified names
-const PROVIDER_NAME_MAP: Record<string, string> = {
-  "Netflix": "Netflix",
-  "Netflix basic with Ads": "Netflix",
-  "Amazon Prime Video": "Prime Video",
-  "Disney Plus": "Disney+",
-  "Canal+": "Canal+",
-  "Canal+ Cinema": "Canal+",
-  "myCANAL": "Canal+",
-  "Apple TV Plus": "Apple TV+",
-  "Apple TV": "Apple TV+",
-  "France TV": "France TV",
-  "france.tv": "France TV",
-  "Arte": "Arte",
-  "ARTE": "Arte",
-  "OCS Go": "OCS",
-  "OCS": "OCS",
-  "Paramount Plus": "Paramount+",
-  "Paramount+ Amazon Channel": "Paramount+",
-  "Max": "Max",
-  "Max Amazon Channel": "Max",
-  "Crunchyroll": "Crunchyroll",
-  "ADN": "ADN",
-  "Anime Digital Network": "ADN",
-  "Salto": "Salto",
-  "YouTube Premium": "YouTube",
-  "Google Play Movies": "Google Play",
-  "Microsoft Store": "Microsoft",
-}
-
-// Providers we care about (French market)
-const RELEVANT_PROVIDERS = new Set([
-  "Netflix",
-  "Prime Video",
-  "Disney+",
-  "Canal+",
-  "Apple TV+",
-  "France TV",
-  "Arte",
-  "OCS",
-  "Paramount+",
-  "Max",
-  "Crunchyroll",
-  "ADN",
-])
-
-function normalizeProviderName(name: string): string | null {
-  // Check direct mapping
-  if (PROVIDER_NAME_MAP[name]) {
-    return PROVIDER_NAME_MAP[name]
-  }
-  // Check if it's already a relevant provider
-  if (RELEVANT_PROVIDERS.has(name)) {
-    return name
-  }
-  return null
-}
-
-function extractProviders(watchData: Awaited<ReturnType<typeof getMovieWatchProviders>>): string[] {
-  if (!watchData) return []
-
-  const providers = new Set<string>()
-
-  // Flatrate = subscription services (Netflix, Disney+, etc.)
-  if (watchData.flatrate) {
-    for (const provider of watchData.flatrate) {
-      const normalized = normalizeProviderName(provider.provider_name)
-      if (normalized) providers.add(normalized)
-    }
-  }
-
-  // Also include free streaming
-  if (watchData.free) {
-    for (const provider of watchData.free) {
-      const normalized = normalizeProviderName(provider.provider_name)
-      if (normalized) providers.add(normalized)
-    }
-  }
-
-  return Array.from(providers)
-}
 
 // POST /api/admin/streaming/update - Update streaming platforms for movies
 export async function POST(request: Request) {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { getNowPlayingMovies, getImageUrl, ImageSize, type TMDBMovie } from "@/lib/tmdb"
+import { estimateAgeFromTmdbGenreIds } from "@/lib/import-helpers"
 import {
   CINEMA_TMDB_PAGES,
   cinemaReleaseBucketPriority,
@@ -35,6 +36,8 @@ export interface CinemaMovie {
     substanceUse: number | null
   } | null
   inDatabase: boolean
+  // Age is an estimate (not in DB, or in DB but not yet AI-enriched) → "âge provisoire".
+  isProvisional: boolean
 }
 
 interface CinemaFilters {
@@ -113,6 +116,7 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
     posterUrl: string | null
     expertAgeRec: number | null
     communityAgeRec: number | null
+    isEnriched: boolean
     genres: string[]
     platforms: string[]
     topics: string[]
@@ -139,6 +143,7 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
           posterUrl: true,
           expertAgeRec: true,
           communityAgeRec: true,
+          isEnriched: true,
           genres: true,
           platforms: true,
           topics: true,
@@ -165,6 +170,12 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
   return filteredMovies
     .map((tmdb) => {
       const db = dbByTmdbId.get(tmdb.id)
+      // Out-of-DB (or in-DB but unrated) films get a provisional age estimated
+      // from TMDB genre ids, so the cinema age filter isn't empty for current
+      // theatrical releases that haven't been imported/enriched yet.
+      const estimatedAge =
+        db?.expertAgeRec ?? estimateAgeFromTmdbGenreIds(tmdb.genre_ids ?? [])
+      const isProvisional = !db || !db.isEnriched
       const movie: CinemaMovie = {
         id: db?.id ?? `tmdb-${tmdb.id}`,
         tmdbId: tmdb.id,
@@ -176,7 +187,7 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
           getImageUrl(tmdb.poster_path, ImageSize.poster.medium),
         releaseDate: tmdb.release_date || null,
         cinemaReleaseBucket: getCinemaReleaseBucket(tmdb.release_date),
-        expertAgeRec: db?.expertAgeRec ?? null,
+        expertAgeRec: estimatedAge,
         communityAgeRec: db?.communityAgeRec ?? null,
         genres: db?.genres ?? [],
         platforms: db?.platforms ?? [],
@@ -191,6 +202,7 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
             }
           : null,
         inDatabase: !!db,
+        isProvisional,
       }
       return movie
     })

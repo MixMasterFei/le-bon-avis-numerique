@@ -38,9 +38,13 @@ function getQuickCompleteness(member: FamilyMember): { percent: number; color: s
   return { percent, color }
 }
 
-// Streaming platforms for movies/TV
+// Streaming platforms for movies/TV.
+// NOTE: these strings are used as the exact filter value matched against the
+// MediaItem.platforms[] array, which the streaming updater stores normalized
+// (e.g. "Netflix", not "Netflix France"). Keep them in sync with
+// PROVIDER_NAME_MAP in api/admin/streaming/update/route.ts.
 const streamingPlatforms = [
-  "Netflix France",
+  "Netflix",
   "Disney+",
   "Prime Video",
   "Canal+",

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Film, Tv, Gamepad2, Sparkles, Library, CalendarClock, Baby } from "lucide-react"
+import { Loader2, Film, Tv, Gamepad2, Sparkles, Library, CalendarClock, Baby, Clapperboard, Wand2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
@@ -63,6 +63,25 @@ const PRESETS: Preset[] = [
     // mostly new → slow per item). `paginated` advances the cursor.
     params: { source: "young_kids", pages: 2, skipExisting: 1 },
     paginated: true,
+  },
+  {
+    id: "cinema-now-playing",
+    label: "Cinéma (sorties en salle)",
+    icon: Clapperboard,
+    description:
+      "Films actuellement en salle en France (TMDB now_playing). Importés avec un âge provisoire + plateformes. Chaque clic explore une page plus loin.",
+    endpoint: "/api/admin/import/movies",
+    params: { source: "now_playing", pages: 1, skipExisting: 1 },
+    paginated: true,
+  },
+  {
+    id: "backfill-ages",
+    label: "Backfill âges provisoires",
+    icon: Wand2,
+    description:
+      "Attribue un âge provisoire (classification ou genre) aux films/séries sans âge — les rend visibles en recherche/cinéma. Recliquer jusqu'à épuisement.",
+    endpoint: "/api/admin/backfill-provisional-age",
+    params: { limit: 150 },
   },
   {
     id: "games-recent",

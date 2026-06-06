@@ -160,9 +160,14 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const maxSubstance = parseMetric("maxSubstance")
   const maxConsumerism = parseMetric("maxConsumerism")
 
+  // "Derniers ajouts" (sort=newest) is an in-scope surface for provisional films;
+  // the default curated browse stays expert-only.
+  const includeProvisional = (get(params, "sort") || get(params, "sortBy")) === "newest"
+
   const result = isCinema ? null : await fetchMovies({
     page,
     limit: PAGE_SIZE,
+    includeProvisional,
     minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
     // <= (not <) so maxAge=18 from the homepage "16+" age tile is
     // treated as a real filter (expertAgeRec ≤ 18 AND NOT NULL),

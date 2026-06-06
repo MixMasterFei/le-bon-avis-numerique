@@ -22,6 +22,9 @@ function FilmsRechercheContent() {
   const initialGenres = searchParams.get("genres")?.split(",").filter(Boolean) || []
   const initialPlatforms = searchParams.get("platforms")?.split(",").filter(Boolean) || []
   const initialSearch = searchParams.get("q") || ""
+  // ?members= deep-link parity with /films: pre-select the family members so
+  // "Adapter à" filtering is active on load.
+  const initialMembers = searchParams.get("members")?.split(",").filter(Boolean) || []
   const initialMinQuality = useMemo(() => searchParams.get("minQuality") ? parseInt(searchParams.get("minQuality")!) : undefined, [searchParams])
   const initialSortBy = useMemo(() => searchParams.get("sortBy") || undefined, [searchParams])
   const initialExcludeGenres = useMemo(() => searchParams.get("excludeGenres")?.split(",").filter(Boolean) || [], [searchParams])
@@ -44,6 +47,8 @@ function FilmsRechercheContent() {
     platforms: initialPlatforms,
     topics: mergedTopics,
     searchQuery: initialSearch,
+    familyMemberIds: initialMembers,
+    useFamilyFilter: initialMembers.length > 0,
   })
   const [source, setSource] = useState<"db" | "api" | "mock">("mock")
   const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
@@ -65,6 +70,9 @@ function FilmsRechercheContent() {
     }
     if (newFilters.searchQuery) {
       params.set("q", newFilters.searchQuery)
+    }
+    if (newFilters.useFamilyFilter && newFilters.familyMemberIds?.length) {
+      params.set("members", newFilters.familyMemberIds.join(","))
     }
     // Preserve sort/quality params from the original URL
     if (initialSortBy) {
@@ -96,6 +104,69 @@ function FilmsRechercheContent() {
     async function load() {
       queueMicrotask(() => setApiLoading(true))
       try {
+        // "Adapter à [membre]" → per-member smart filtering (expert-only: it
+        // scores on ContentMetrics, so provisional films are excluded). Server
+        // derives the age band from the members' ages when no maxAge is set.
+        if (filters.useFamilyFilter && filters.familyMemberIds && filters.familyMemberIds.length > 0) {
+          const offset = (currentPage - 1) * ITEMS_PER_PAGE
+          const smartRes = await fetch("/api/filter/smart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              familyMemberIds: filters.familyMemberIds,
+              mediaType: "MOVIE",
+              limit: ITEMS_PER_PAGE,
+              offset,
+              strictMode: true,
+              minScore: 65,
+              topics: filters.topics,
+              platforms: filters.platforms,
+              search: filters.searchQuery || "",
+              requirePoster: true,
+              language: "fr,en",
+              ...(filters.maxAge < 18 ? { maxAge: filters.maxAge } : {}),
+            }),
+            signal: controller.signal,
+          })
+          if (smartRes.ok) {
+            const smartData = await smartRes.json()
+            if (smartData.success && Array.isArray(smartData.results)) {
+              const zeros = { violence: 0, sexNudity: 0, language: 0, consumerism: 0, substanceUse: 0, positiveMessages: 0, roleModels: 0, whatParentsNeedToKnow: [] }
+              const mapped: MockMediaItem[] = smartData.results.map((r: Record<string, unknown>) => ({
+                id: String(r.mediaId),
+                title: String(r.title || ""),
+                originalTitle: r.originalTitle ? String(r.originalTitle) : undefined,
+                type: "MOVIE",
+                releaseDate: (r.releaseDate as string) ?? null,
+                posterUrl: String(r.posterUrl || ""),
+                synopsisFr: (r.synopsisFr as string) ?? null,
+                officialRating: (r.officialRating as string) ?? null,
+                expertAgeRec: (r.expertAgeRec as number) ?? null,
+                communityAgeRec: null,
+                genres: (r.genres as string[]) || [],
+                platforms: (r.platforms as string[]) || [],
+                topics: (r.topics as string[]) || [],
+                contentMetrics: (r.contentMetrics as MockMediaItem["contentMetrics"]) || zeros,
+                reviews: [],
+                reviewCount: 0,
+                reviewAvgRating: null,
+                tmdbRating: null,
+                tmdbVoteCount: null,
+              }))
+              if (!cancelled) {
+                setSource("db")
+                setApiMovies(mapped)
+                const total = smartData.total || 0
+                setApiTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
+                setApiTotalResults(total)
+                setApiLoading(false)
+              }
+              return
+            }
+          }
+          // Smart filter failed — fall through to the normal DB fetch below.
+        }
+
         // First, try to fetch from database
         const dbParams = new URLSearchParams({
           page: currentPage.toString(),
@@ -133,6 +204,8 @@ function FilmsRechercheContent() {
         if (initialMaxLanguage) dbParams.set("maxLanguage", initialMaxLanguage)
         if (initialMaxSubstance) dbParams.set("maxSubstance", initialMaxSubstance)
         if (initialMaxConsumerism) dbParams.set("maxConsumerism", initialMaxConsumerism)
+        // Search is an in-scope surface for provisional (imported, not-yet-enriched) films.
+        dbParams.set("includeProvisional", "1")
 
         const dbRes = await fetch(`/api/db/movies?${dbParams}`, { signal: controller.signal })
         if (dbRes.ok) {
@@ -167,6 +240,7 @@ function FilmsRechercheContent() {
               reviewAvgRating: m.reviewAvgRating ?? null,
               tmdbRating: m.tmdbRating ?? null,
               tmdbVoteCount: m.tmdbVoteCount ?? null,
+              isProvisional: (m.isProvisional as boolean | undefined) ?? undefined,
             }))
 
             if (!cancelled) {
@@ -247,7 +321,7 @@ function FilmsRechercheContent() {
       cancelled = true
       controller.abort()
     }
-  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy, initialExcludeGenres, initialMinQuality, initialRequirePoster, initialSortBy, initialMaxViolence, initialMaxSexual, initialMaxLanguage, initialMaxSubstance, initialMaxConsumerism])
+  }, [currentPage, filters.maxAge, filters.platforms, filters.topics, filters.searchQuery, filters.sortBy, filters.useFamilyFilter, filters.familyMemberIds, initialExcludeGenres, initialMinQuality, initialRequirePoster, initialSortBy, initialMaxViolence, initialMaxSexual, initialMaxLanguage, initialMaxSubstance, initialMaxConsumerism])
 
   const filteredMovies = useMemo(() => {
     return apiMovies
@@ -284,7 +358,7 @@ function FilmsRechercheContent() {
   const paginatedMovies = filteredMovies
 
   // Check if any filters are active
-  const hasActiveFilters = filters.maxAge < 18 || filters.platforms.length > 0 || filters.topics.length > 0 || filters.searchQuery !== ""
+  const hasActiveFilters = filters.maxAge < 18 || filters.platforms.length > 0 || filters.topics.length > 0 || filters.searchQuery !== "" || !!filters.useFamilyFilter
 
   // Generate dynamic page title based on active filters
   const getPageTitle = () => {

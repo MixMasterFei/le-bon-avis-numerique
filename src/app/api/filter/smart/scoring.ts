@@ -52,8 +52,11 @@ export interface WhereClauseInput {
 // inline — kept here for testability.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildSmartFilterWhere(input: WhereClauseInput): Record<string, any> {
+  // Per-member scoring relies on ContentMetrics (violence, scary, …). Provisional
+  // (not-yet-enriched) films have no metrics, so they'd score as falsely safe —
+  // never let them through the family filter. Smart filtering stays expert-only.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: Record<string, any> = { type: input.mediaType }
+  const where: Record<string, any> = { type: input.mediaType, isEnriched: true }
 
   if (typeof input.maxAge === "number") {
     where.expertAgeRec = { ...(where.expertAgeRec || {}), lte: input.maxAge }

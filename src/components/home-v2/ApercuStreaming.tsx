@@ -14,7 +14,7 @@ interface Provider {
 }
 
 const PROVIDERS: Provider[] = [
-  { id: "netflix", label: "Netflix", search: "Netflix", filter: "Netflix France", dot: "#E50914" },
+  { id: "netflix", label: "Netflix", search: "Netflix", filter: "Netflix", dot: "#E50914" },
   { id: "disney", label: "Disney+", search: "Disney Plus", filter: "Disney+", dot: "#113CCF" },
   { id: "prime", label: "Prime Video", search: "Amazon Prime Video", filter: "Prime Video", dot: "#00A8E1" },
   { id: "canal", label: "Canal+", search: "Canal", filter: "Canal+", dot: "#111111" },

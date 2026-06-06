@@ -39,6 +39,8 @@ export interface MediaItem {
   toneTags?: string[]
   pacing?: string
   enrichmentSource?: string
+  // Imported film shown with an estimated age before AI enrichment → "âge provisoire" badge.
+  isProvisional?: boolean
 }
 
 export type MediaType = MediaItem["type"]

@@ -66,7 +66,7 @@ const streamingServices = [
     id: "netflix",
     name: "Netflix",
     searchName: "Netflix", // TMDB API search term
-    filterName: "Netflix France", // Filter sidebar name
+    filterName: "Netflix", // must match MediaItem.platforms[] value (stored as "Netflix")
     color: "bg-red-600",
     hoverColor: "hover:bg-red-700",
     textColor: "text-red-600",

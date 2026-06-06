@@ -103,7 +103,7 @@ export const mockMediaItems: MockMediaItem[] = [
     duration: 152,
     director: "Chris Columbus",
     genres: ["Fantastique", "Aventure", "Famille"],
-    platforms: ["Netflix France", "Prime Video"],
+    platforms: ["Netflix", "Prime Video"],
     topics: ["Magie", "Amitié", "École", "Fantastique"],
     contentMetrics: {
       violence: 2,
@@ -219,7 +219,7 @@ export const mockMediaItems: MockMediaItem[] = [
     duration: 140,
     director: "Joaquim Dos Santos",
     genres: ["Animation", "Action", "Aventure", "Science-Fiction"],
-    platforms: ["Netflix France", "Prime Video"],
+    platforms: ["Netflix", "Prime Video"],
     topics: ["Super-héros", "Identité", "Famille", "Multivers"],
     contentMetrics: {
       violence: 3,
@@ -294,7 +294,7 @@ export const mockMediaItems: MockMediaItem[] = [
     expertAgeRec: 13,
     communityAgeRec: 12.5,
     genres: ["Science-Fiction", "Horreur", "Drame"],
-    platforms: ["Netflix France"],
+    platforms: ["Netflix"],
     topics: ["Années 80", "Surnaturel", "Amitié", "Suspense"],
     contentMetrics: {
       violence: 4,

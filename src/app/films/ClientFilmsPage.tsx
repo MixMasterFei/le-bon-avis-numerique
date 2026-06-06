@@ -31,6 +31,7 @@ interface ApiMediaRecord {
   reviewAvgRating?: number | null
   tmdbRating?: number | null
   tmdbVoteCount?: number | null
+  isProvisional?: boolean
   mediaId?: string
 }
 
@@ -57,6 +58,7 @@ function mapApiToMediaItem(m: ApiMediaRecord, type: "MOVIE" | "TV" | "GAME" = "M
     reviewAvgRating: m.reviewAvgRating ?? null,
     tmdbRating: m.tmdbRating ?? null,
     tmdbVoteCount: m.tmdbVoteCount ?? null,
+    isProvisional: m.isProvisional ?? undefined,
   } as MockMediaItem
 }
 
@@ -81,6 +83,7 @@ function ssrItemToMediaItem(item: TransformedMediaItem): MockMediaItem {
     reviewAvgRating: item.reviewAvgRating ?? null,
     tmdbRating: item.tmdbRating ?? null,
     tmdbVoteCount: item.tmdbVoteCount ?? null,
+    isProvisional: item.isProvisional,
   } as MockMediaItem
 }
 

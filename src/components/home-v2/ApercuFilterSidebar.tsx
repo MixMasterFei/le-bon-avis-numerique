@@ -61,8 +61,10 @@ const SORT_OPTIONS = [
 ] as const
 
 // Streaming platforms — apply to films + TV.
+// Values must match MediaItem.platforms[] exactly (stored normalized as "Netflix",
+// not "Netflix France" — see PROVIDER_NAME_MAP in api/admin/streaming/update).
 const MOVIE_TV_PLATFORMS = [
-  "Netflix France",
+  "Netflix",
   "Disney+",
   "Prime Video",
   "Canal+",

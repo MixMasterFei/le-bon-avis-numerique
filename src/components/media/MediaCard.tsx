@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "./AgeBadge"
+import { ProvisionalBadge } from "./ProvisionalBadge"
 import { FamilyFitAvatars } from "./FamilyFitAvatars"
 import { SafetyBar } from "./ContentGrid"
 import { PlatformIcons } from "./PlatformIcons"
@@ -215,8 +216,9 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-violet-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             {media.expertAgeRec && media.expertAgeRec > 0 && (
-              <div className="absolute top-2 left-2">
+              <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
                 <AgeBadge age={media.expertAgeRec} size="xs" />
+                {media.isProvisional && <ProvisionalBadge size="xs" />}
               </div>
             )}
           </div>
@@ -330,6 +332,8 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
                 {media.expertAgeRec}+
               </div>
             )}
+
+            {media.isProvisional && <ProvisionalBadge size="xs" />}
 
             {/* Family-friendliness gauge */}
             <FamilyGauge metrics={media.contentMetrics} ageRec={media.expertAgeRec} />
