@@ -93,6 +93,15 @@ export function ApercuFilm({
 }) {
   const p = APERCU_PALETTE
 
+  // A film that hasn't been released yet can't have a real content
+  // evaluation — any 0–5 scores would be guessed from the premise alone.
+  // We hide the definitive content card pre-release (defense-in-depth:
+  // enrichment already skips unreleased titles, but this also covers any
+  // stale metrics that predate that guard). See enrich/route.ts.
+  const isUnreleased = media.releaseDate
+    ? new Date(media.releaseDate).getTime() > Date.now()
+    : false
+
   return (
     <FamilyFitProvider>
       <div
@@ -112,7 +121,8 @@ export function ApercuFilm({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
               {/* Main column */}
               <div className="lg:col-span-2 space-y-10">
-                {media.contentMetrics &&
+                {!isUnreleased &&
+                  media.contentMetrics &&
                   media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
                     <ApercuSection
                       eyebrow="Ce qu’il faut savoir"
@@ -257,7 +267,7 @@ export function ApercuFilm({
                   </WarmCard>
                 </ApercuSection>
 
-                {media.contentMetrics && (
+                {isUnreleased ? (
                   <ApercuSection
                     eyebrow="Les 8 dimensions"
                     title="Analyse"
@@ -265,17 +275,39 @@ export function ApercuFilm({
                     tight
                     serifClass={serifClass}
                   >
-                    <WarmCard padded={false}>
-                      <div className="p-5">
-                        <DualMetricsDisplay
-                          mediaId={media.id}
-                          mediaTitle={media.title}
-                          expertMetrics={media.contentMetrics}
-                          topics={media.topics}
-                        />
-                      </div>
+                    <WarmCard>
+                      <p className="text-sm" style={{ color: p.ink2 }}>
+                        Ce film n’est pas encore sorti
+                        {media.releaseDate
+                          ? ` (sortie prévue le ${formatDateFr(media.releaseDate)})`
+                          : ""}
+                        . L’évaluation détaillée du contenu sera disponible après
+                        sa sortie, une fois le film visionné. L’âge indiqué reste
+                        une estimation à confirmer.
+                      </p>
                     </WarmCard>
                   </ApercuSection>
+                ) : (
+                  media.contentMetrics && (
+                    <ApercuSection
+                      eyebrow="Les 8 dimensions"
+                      title="Analyse"
+                      titleAccent="en détail"
+                      tight
+                      serifClass={serifClass}
+                    >
+                      <WarmCard padded={false}>
+                        <div className="p-5">
+                          <DualMetricsDisplay
+                            mediaId={media.id}
+                            mediaTitle={media.title}
+                            expertMetrics={media.contentMetrics}
+                            topics={media.topics}
+                          />
+                        </div>
+                      </WarmCard>
+                    </ApercuSection>
+                  )
                 )}
 
                 <ApercuSection

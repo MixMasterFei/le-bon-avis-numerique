@@ -439,6 +439,18 @@ export async function POST(request: NextRequest) {
       ? {}
       : { type: type.toUpperCase() as "MOVIE" | "TV" | "GAME" | "MANGA" }
 
+    // Never fully enrich a title that hasn't been released yet — there's
+    // no content to assess, so the model confabulates content metrics
+    // (violence/language/etc.) from the premise alone and presents them
+    // as a definitive evaluation. These titles stay "provisional" (age
+    // estimate only, badged "à confirmer") until their release date
+    // passes, then the cron picks them up. Preserves the documented
+    // invariant: provisional ⟹ !isEnriched ⟹ no ContentMetrics.
+    // (null releaseDate = unknown/old catalog item → still eligible.)
+    const notUnreleased = {
+      OR: [{ releaseDate: null }, { releaseDate: { lte: new Date() } }],
+    }
+
     // Build where clause based on mode
     let whereClause
     if (onlyLegacy) {
@@ -464,6 +476,9 @@ export async function POST(request: NextRequest) {
     } else {
       whereClause = typeFilter
     }
+
+    // Apply the release-date guard to every mode.
+    whereClause = { AND: [whereClause, notUnreleased] }
 
     // Find items to enrich
     const items = await prisma.mediaItem.findMany({
