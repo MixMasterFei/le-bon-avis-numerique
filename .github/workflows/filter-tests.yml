@@ -27,9 +27,9 @@ jobs:
       github.event.inputs.test_scope == 'all' ||
       github.event.inputs.test_scope == 'api-only'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload API test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: api-filter-report
           path: playwright-report/
@@ -57,9 +57,9 @@ jobs:
       github.event.inputs.test_scope == 'all' ||
       github.event.inputs.test_scope == 'e2e-only'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -84,7 +84,7 @@ jobs:
 
       - name: Upload E2E test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: e2e-filter-report
           path: playwright-report/
@@ -92,7 +92,7 @@ jobs:
 
       - name: Upload screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: filter-screenshots
           path: e2e/screenshots/
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload test results (traces)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-results
           path: e2e/test-results/
