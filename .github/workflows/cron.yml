@@ -314,6 +314,11 @@ jobs:
           github.event.inputs.task != 'streaming'
         run: |
           echo "::group::Similarity"
+          # set +e so a single batch's curl timeout (exit 28 against the
+          # 290s ceiling on a cold/slow function) is handled by the
+          # empty-response failure counter below instead of aborting the
+          # whole step under `bash -e`. Matches the backfill/quality steps.
+          set +e
           # 50 items/batch against the route's 300s ceiling; --max-time
           # 290 lets curl actually wait for the function instead of
           # bailing at 55s (which previously made every batch after the
