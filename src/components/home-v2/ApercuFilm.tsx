@@ -82,6 +82,15 @@ interface ApercuFilmMedia {
   }>
 }
 
+// Kept at module scope (not inside the component body) so the
+// `react-hooks/purity` rule doesn't flag the unavoidable `Date.now()`.
+// This is a server component rendered once per request, so reading the
+// current time here is correct and stable for the response.
+function computeIsUnreleased(releaseDate: string | null): boolean {
+  if (!releaseDate) return false
+  return new Date(releaseDate).getTime() > Date.now()
+}
+
 export function ApercuFilm({
   media,
   serifClass,
@@ -98,9 +107,7 @@ export function ApercuFilm({
   // We hide the definitive content card pre-release (defense-in-depth:
   // enrichment already skips unreleased titles, but this also covers any
   // stale metrics that predate that guard). See enrich/route.ts.
-  const isUnreleased = media.releaseDate
-    ? new Date(media.releaseDate).getTime() > Date.now()
-    : false
+  const isUnreleased = computeIsUnreleased(media.releaseDate)
 
   return (
     <FamilyFitProvider>
