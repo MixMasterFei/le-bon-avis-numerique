@@ -495,6 +495,61 @@ export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
   return igdbFetch<IGDBGame[]>("/games", body)
 }
 
+// ============================================
+// POPULARITY ("TENDANCE DU MOMENT")
+// ============================================
+
+// IGDB popularity_type IDs we treat as "trending right now". These are
+// IGDB's own primitives:
+//   2 = Want to Play, 3 = Playing.
+// (1 = Visits and 4 = Played are noisier / lagging, so we skip them.)
+// Each type's `value` is normalized within that type, so we merge by
+// taking the max across types per game rather than summing.
+const IGDB_TRENDING_TYPES = [2, 3] as const
+
+/**
+ * Returns IGDB game IDs trending right now, ordered most→least, paired
+ * with a raw popularity value. Unlike `total_rating_count` (lifetime
+ * notoriety) this reflects current activity, mirroring TMDB /trending.
+ *
+ * Hits the `/popularity_primitives` endpoint per type and merges by
+ * game_id (max value wins). Resilient: a failing type is skipped, and an
+ * empty result just yields `[]` so the caller can fall back gracefully.
+ */
+export async function getTrendingGameIds(
+  limit = 100
+): Promise<Array<{ gameId: number; value: number }>> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 100
+  const best = new Map<number, number>()
+
+  for (const type of IGDB_TRENDING_TYPES) {
+    try {
+      const body = `
+        fields game_id, value, popularity_type;
+        where popularity_type = ${type};
+        sort value desc;
+        limit ${safeLimit};
+      `
+      const rows = await igdbFetch<Array<{ game_id: number; value: number }>>(
+        "/popularity_primitives",
+        body
+      )
+      for (const r of rows) {
+        if (typeof r.game_id !== "number" || typeof r.value !== "number") continue
+        const prev = best.get(r.game_id)
+        if (prev === undefined || r.value > prev) best.set(r.game_id, r.value)
+      }
+    } catch {
+      // Skip this popularity type on error; other types still contribute.
+    }
+  }
+
+  return [...best.entries()]
+    .map(([gameId, value]) => ({ gameId, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, safeLimit)
+}
+
 // Export platform IDs for use in route
 export { PLATFORM_IDS }
 

@@ -28,6 +28,7 @@ import {
 import { getWeekSeed } from "@/lib/seeded-shuffle"
 import { certificationToAge, createMovieFromTmdb } from "@/lib/import-helpers"
 import { extractProviders } from "@/lib/streaming-providers"
+import { refreshTrending } from "@/lib/trending"
 
 export const maxDuration = 60
 
@@ -392,6 +393,18 @@ export async function GET(req: NextRequest) {
     // Validate and refresh broken poster URLs
     const posterRefresh = await validateAndRefreshPosters(30)
 
+    // Refresh the "tendance du moment" signal that powers the homepage
+    // hero rail. Best-effort: a failure here must not fail the import.
+    let trending: Awaited<ReturnType<typeof refreshTrending>> | null = null
+    try {
+      trending = await refreshTrending()
+      console.log(
+        `[cron] Trending refresh: ${trending.total} items (${trending.movies} films, ${trending.tv} séries, ${trending.games} jeux)`
+      )
+    } catch (e) {
+      console.error("[cron] Trending refresh failed:", e)
+    }
+
     const totalImported = Object.values(results).reduce((sum, s) => sum + s.imported, 0)
     const totalExamined = Object.values(results).reduce((sum, s) => sum + s.total, 0)
     const totalErrors =
@@ -413,7 +426,7 @@ export async function GET(req: NextRequest) {
       task: "import",
       status: isPartial ? "partial" : "success",
       summary: `${totalImported} nouveaux contenus importes en ${duration}s${totalErrors > 0 ? ` (${totalErrors} erreurs ignorées)` : ""}`,
-      details: { results, posterRefresh, totalErrors, totalExamined },
+      details: { results, posterRefresh, trending, totalErrors, totalExamined },
       startTime,
     })
 
@@ -423,6 +436,7 @@ export async function GET(req: NextRequest) {
       totalImported,
       results,
       posterRefresh,
+      trending,
     })
   } catch (error) {
     console.error("[cron] Weekly import failed:", error)

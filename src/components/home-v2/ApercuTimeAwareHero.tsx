@@ -33,6 +33,7 @@ const baseSelect = {
   posterUrl: true,
   expertAgeRec: true,
   genres: true,
+  trendingScore: true,
   contentMetrics: {
     select: {
       violence: true,
@@ -70,13 +71,24 @@ const FAMILY_AGE_CAP = 12
 // floor (the pool is still ordered by votes/recency before shuffling).
 const ROTATION_POOL = 24
 
-// Day-seeded pick: shuffle a quality-ordered pool with today's seed and
-// take the first N. Same idea as fetchDefault — it stops the rail from
-// pinning the single highest-voted title every day (Les Simpson, Forza…)
-// and rotates a different family pick instead. The cache key already
-// includes the Paris day, so the shuffle re-rolls once per day.
+// Pick that LEADS with what's trending right now, then day-rotates the
+// rest for variety. The pool arrives ordered `trendingScore desc nulls
+// last, then votes`, so currently-trending titles sit at the front.
+//
+//  - Lead slots go to those trending titles (most-trending first) — this
+//    is what makes the rail feel "du moment" instead of pinning the same
+//    evergreen blockbusters (Les Simpson, Forza…) every day.
+//  - Remaining slots are filled by a day-seeded shuffle of the non-
+//    trending quality pool, so when little is trending the rail still
+//    rotates a fresh family pick daily (cache key includes the Paris day).
 function dayPick(rows: DBRow[], take: number): DBRow[] {
-  return seededShuffle(rows, getDaySeed()).slice(0, take)
+  const trending = rows.filter((r) => r.trendingScore != null)
+  const rest = rows.filter((r) => r.trendingScore == null)
+  const lead = trending.slice(0, take)
+  const remaining = take - lead.length
+  if (remaining <= 0) return lead
+  const rotated = seededShuffle(rest, getDaySeed()).slice(0, remaining)
+  return [...lead, ...rotated]
 }
 
 // Streaming fallback when the new-on-streaming query returns nothing
@@ -113,7 +125,7 @@ async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
         tmdbVoteCount: { gte: 300 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
-      orderBy: [{ tmdbVoteCount: "desc" }],
+      orderBy: [{ trendingScore: { sort: "desc", nulls: "last" } }, { tmdbVoteCount: "desc" }],
       take: ROTATION_POOL,
       select: baseSelect,
     }),
@@ -139,6 +151,7 @@ async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> 
         tmdbVoteCount: { gte: GAME_MIN_VOTES },
       },
       orderBy: [
+        { trendingScore: { sort: "desc", nulls: "last" } },
         { tmdbVoteCount: { sort: "desc", nulls: "last" } },
         { releaseDate: { sort: "desc", nulls: "last" } },
       ],
@@ -163,7 +176,7 @@ async function fetchStreamingFilms(ageCap: number, take: number): Promise<DBRow[
         tmdbVoteCount: { gte: 200 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
-      orderBy: [{ tmdbVoteCount: "desc" }],
+      orderBy: [{ trendingScore: { sort: "desc", nulls: "last" } }, { tmdbVoteCount: "desc" }],
       take: ROTATION_POOL,
       select: baseSelect,
     }),
@@ -184,7 +197,7 @@ async function fetchQualityFilms(ageCap: number, take: number): Promise<DBRow[]>
         tmdbVoteCount: { gte: 500 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
       },
-      orderBy: [{ tmdbVoteCount: "desc" }],
+      orderBy: [{ trendingScore: { sort: "desc", nulls: "last" } }, { tmdbVoteCount: "desc" }],
       take: ROTATION_POOL,
       select: baseSelect,
     }),
@@ -279,9 +292,9 @@ async function fetchHolidays(ageCap: number): Promise<HeroData> {
 }
 
 async function fetchDefault(ageCap: number): Promise<HeroData> {
-  // Day-seeded mix of editorial + new arrivals + cinema across all
-  // media types so the "default" state still feels varied.
-  const seed = getDaySeed()
+  // Trending-led mix of editorial + new arrivals across all media types.
+  // The pool is ordered trending-first so `dayPick` leads "La sélection
+  // du jour" with what's hot right now, then day-rotates the rest.
   const [pool, newest] = await Promise.all([
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
@@ -293,6 +306,7 @@ async function fetchDefault(ageCap: number): Promise<HeroData> {
           tmdbVoteCount: { gte: 500 },
           NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
         },
+        orderBy: [{ trendingScore: { sort: "desc", nulls: "last" } }, { tmdbVoteCount: "desc" }],
         take: 60,
         select: baseSelect,
       }),
@@ -312,7 +326,7 @@ async function fetchDefault(ageCap: number): Promise<HeroData> {
     ),
   ])
 
-  const shuffled = seededShuffle(pool, seed).slice(0, 3).map(toCard)
+  const shuffled = dayPick(pool, 3).map(toCard)
   const fresh = newest.slice(0, 1).map(toCard)
   return {
     cards: dedupeAndCap([...shuffled, ...fresh], 4),
@@ -361,7 +375,7 @@ const getHeroData = unstable_cache(
     if (state === "holidays") return fetchHolidays(ageCap)
     return fetchDefault(ageCap)
   },
-  ["homepage-hero-rail-v3"],
+  ["homepage-hero-rail-v4"],
   { revalidate: 600 },
 )
 

@@ -254,6 +254,31 @@ export async function getPopularMovies(page = 1) {
 }
 
 /**
+ * Get the movies trending RIGHT NOW (TMDB /trending, weekly window).
+ *
+ * Unlike `/movie/popular` (a slow-moving all-time-ish ranking) or our
+ * stored `tmdbVoteCount` (lifetime accumulation), `/trending` reflects
+ * what people are actually engaging with this week. This is the "du
+ * moment" signal feeding the homepage hero rail. Trending is a global
+ * endpoint (no `region` param), but `tmdbFetch` still sends `language`
+ * so titles come back in French. `window` is "week" (steadier) or "day".
+ */
+export async function getTrendingMovies(window: "day" | "week" = "week", page = 1) {
+  return tmdbFetch<TMDBSearchResult<TMDBMovie>>(`/trending/movie/${window}`, {
+    page: page.toString(),
+  })
+}
+
+/**
+ * Get the TV shows trending RIGHT NOW. See `getTrendingMovies`.
+ */
+export async function getTrendingTVShows(window: "day" | "week" = "week", page = 1) {
+  return tmdbFetch<TMDBSearchResult<TMDBTVShow>>(`/trending/tv/${window}`, {
+    page: page.toString(),
+  })
+}
+
+/**
  * Get movies now playing in French cinemas
  */
 export async function getNowPlayingMovies(page = 1) {

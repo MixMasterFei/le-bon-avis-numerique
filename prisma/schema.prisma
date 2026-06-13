@@ -164,6 +164,15 @@ model MediaItem {
   tmdbRating     Float? @map("tmdb_rating")      // vote_average (0-10 scale)
   tmdbVoteCount  Int?   @map("tmdb_vote_count")  // number of votes
 
+  // "Tendance du moment" signal — refreshed daily from TMDB /trending and
+  // IGDB popularity primitives. Rank-normalized 0–100 within each refresh
+  // batch (top item = 100) so movies/TV/games stay comparable. Drives the
+  // homepage time-aware hero rail ordering. NULL = not currently trending;
+  // queries fall back to tmdbVoteCount. trendingUpdatedAt lets readers
+  // ignore stale scores. See src/lib/trending.ts.
+  trendingScore     Float?    @map("trending_score")
+  trendingUpdatedAt DateTime? @map("trending_updated_at")
+
   // Data quality tracking
   dataSource       DataSource @default(TMDB) @map("data_source")
   dataQualityScore Int        @default(0) @map("data_quality_score") // 0-100
@@ -201,6 +210,7 @@ model MediaItem {
   @@index([releaseDate])
   @@index([type, releaseDate])
   @@index([type, latestVolumeDate]) // drives "Nouveautés manga" rail + /mangas sort=newest
+  @@index([type, trendingScore]) // drives homepage time-aware "tendance du moment" rail
   @@map("media_items")
 }
 
