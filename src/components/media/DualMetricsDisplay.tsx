@@ -1,15 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Users, Award, Info } from "lucide-react"
+import { Info } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { UserMetricsButton } from "./UserMetricsButton"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { MethodBadge } from "@/components/ui/MethodBadge"
-
-const SAGE = "#5C8A5C"
-const AMBER = "#C08A3E"
-const TERRACOTTA_MID = "#E08A5C"
 
 interface ContentMetrics {
   violence: number
@@ -104,135 +100,104 @@ function withEducationalValue(metrics: ContentMetrics | null, topics: string[] =
   }
 }
 
-function MetricBar({
-  value,
-  isPositive = false,
-}: {
-  value: number
-  isPositive?: boolean
-}) {
-  const p = APERCU_PALETTE
-  const percentage = (value / 5) * 100
-  const color = isPositive
-    ? SAGE
-    : value <= 1
-      ? SAGE
-      : value <= 2
-        ? AMBER
-        : value <= 3
-          ? TERRACOTTA_MID
-          : p.accent
+// Track fills — solid for Totem (our analysis), hatched for Community votes,
+// mirroring the redesign prototype's scorecard legend.
+const TOTEM_NEG = "linear-gradient(90deg,#b9ad9b,#a59885)"
+const TOTEM_POS = `linear-gradient(90deg,#e8835f,${APERCU_PALETTE.accent})`
+const COMM_NEG = "repeating-linear-gradient(45deg,#cabfae 0 4px,#e9e1d3 4px,#e9e1d3 7px)"
+const COMM_POS = "repeating-linear-gradient(45deg,#eaa288 0 4px,#f7dccf 4px,#f7dccf 7px)"
 
+const VIGILANCE_KEYS: (keyof ContentMetrics)[] = [
+  "violence",
+  "sexNudity",
+  "language",
+  "consumerism",
+  "substanceUse",
+]
+const POSITIVE_KEYS: (keyof ContentMetrics)[] = [
+  "positiveMessages",
+  "roleModels",
+  "educationalValue",
+]
+
+const ROW_GRID = "grid grid-cols-[88px_1fr_1fr] sm:grid-cols-[150px_1fr_1fr] gap-3 sm:gap-4 items-center"
+
+const formatScore = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
+
+// One score track + numeric readout. `value === null` renders an empty,
+// honest "no data" track (used for the Community column before any votes).
+function ScoreTrack({ value, fill }: { value: number | null; fill: string }) {
+  const p = APERCU_PALETTE
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className="flex-1 h-2 rounded-full overflow-hidden"
-        style={{ background: p.bg2 }}
-      >
-        <div
-          className="h-full transition-all"
-          style={{ width: `${percentage}%`, background: color }}
-        />
-      </div>
+    <span className="flex items-center gap-2 min-w-0">
       <span
-        className="text-xs font-medium w-4 text-right"
-        style={{ color: p.ink }}
+        className="flex-1 h-[9px] rounded-md overflow-hidden"
+        style={{ background: p.bg, border: `1px solid ${p.line}` }}
       >
-        {value}
+        {value !== null && (
+          <span
+            className="block h-full rounded-md transition-all"
+            style={{ width: `${(value / 5) * 100}%`, background: fill }}
+          />
+        )}
       </span>
-    </div>
+      <span
+        className="font-serif font-semibold text-[15px] w-10 text-right shrink-0"
+        style={{ color: value === null ? p.ink2 : p.ink }}
+      >
+        {value === null ? (
+          "—"
+        ) : (
+          <>
+            {formatScore(value)}
+            <small className="text-[11px] font-sans" style={{ color: p.ink2 }}>
+              /5
+            </small>
+          </>
+        )}
+      </span>
+    </span>
   )
 }
 
-function MetricsColumn({
-  title,
-  icon: Icon,
-  metrics,
-  count,
+// A single metric row: tooltip-labelled name + Totem track + Community track.
+function ScoreRow({
+  metricKey,
+  expert,
+  community,
+  hasComm,
 }: {
-  title: string
-  icon: React.ElementType
-  metrics: ContentMetrics | null
-  count?: number
+  metricKey: keyof ContentMetrics
+  expert: ContentMetrics | null
+  community: ContentMetrics | null
+  hasComm: boolean
 }) {
   const p = APERCU_PALETTE
-
-  if (!metrics) {
-    return (
-      <div
-        className="flex-1 p-4 rounded-xl"
-        style={{ background: p.bg2 }}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <Icon className="h-4 w-4" style={{ color: p.ink2 }} />
-          <span className="text-sm font-medium" style={{ color: p.ink2 }}>
-            {title}
-          </span>
-        </div>
-        <p
-          className="text-sm text-center py-4"
-          style={{ color: p.ink2 }}
-        >
-          Pas de données
-        </p>
-      </div>
-    )
-  }
+  const meta = METRIC_LABELS[metricKey]
+  if (!meta) return null
+  const isPositive = !!meta.isPositive
+  const expertVal = expert ? Math.round((expert[metricKey] || 0) * 10) / 10 : null
+  const commVal = hasComm && community ? Math.round((community[metricKey] || 0) * 10) / 10 : null
 
   return (
-    <div className="flex-1 p-4 rounded-xl" style={{ background: p.bg2 }}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4" style={{ color: p.accent }} />
-          <span className="text-sm font-medium" style={{ color: p.ink }}>
-            {title}
+    <div className={`${ROW_GRID} py-1`}>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger asChild>
+          <span
+            className="text-[13px] font-medium cursor-help underline decoration-dotted truncate"
+            style={{ color: p.ink, textDecorationColor: p.line2 }}
+          >
+            {meta.label}
           </span>
-        </div>
-        {count !== undefined && (
-          <span className="text-xs" style={{ color: p.ink2 }}>
-            ({count} avis)
-          </span>
-        )}
-      </div>
-
-      <TooltipProvider>
-        <div className="space-y-2">
-          {Object.entries(METRIC_LABELS).map(
-            ([key, { label, description, example, isPositive }]) => (
-              <div key={key} className="flex items-center gap-2">
-                <Tooltip delayDuration={200}>
-                  <TooltipTrigger asChild>
-                    <span
-                      className="text-[11px] w-[85px] shrink-0 cursor-help underline decoration-dotted"
-                      style={{
-                        color: p.ink2,
-                        textDecorationColor: p.line2,
-                      }}
-                    >
-                      {label}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-xs p-3">
-                    <p className="font-medium text-sm mb-1">{label}</p>
-                    <p className="text-xs mb-2">{description}</p>
-                    <p className="text-xs italic opacity-70">{example}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <div className="flex-1 min-w-0">
-                  <MetricBar
-                    value={
-                      Math.round(
-                        (metrics[key as keyof ContentMetrics] || 0) * 10
-                      ) / 10
-                    }
-                    isPositive={isPositive}
-                  />
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      </TooltipProvider>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs p-3">
+          <p className="font-medium text-sm mb-1">{meta.label}</p>
+          <p className="text-xs mb-2">{meta.description}</p>
+          <p className="text-xs italic opacity-70">{meta.example}</p>
+        </TooltipContent>
+      </Tooltip>
+      <ScoreTrack value={expertVal} fill={isPositive ? TOTEM_POS : TOTEM_NEG} />
+      <ScoreTrack value={commVal} fill={isPositive ? COMM_POS : COMM_NEG} />
     </div>
   )
 }
@@ -270,19 +235,27 @@ export function DualMetricsDisplay({
     return null
   }
 
+  const expert = withEducationalValue(expertMetrics || null, topics)
+  const community = withEducationalValue(communityData?.averages || null, topics)
+  const hasComm = !!communityData?.hasData
+  const commCount = communityData?.count ?? 0
+
   return (
     <div
-      className="rounded-2xl p-5"
-      style={{ background: p.card, border: `1px solid ${p.line}` }}
+      className="rounded-2xl p-5 sm:p-6"
+      style={{
+        background: p.card,
+        border: `1px solid ${p.line}`,
+        boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
+      }}
     >
-      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <h3
-            className={`${serifClass} text-lg font-medium`}
-            style={{ color: p.ink, letterSpacing: "-0.02em" }}
-          >
-            Évaluation du contenu
-          </h3>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+        <h3
+          className={`${serifClass} text-lg sm:text-xl font-medium flex items-center gap-2`}
+          style={{ color: p.ink, letterSpacing: "-0.02em" }}
+        >
+          Évaluation du contenu
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
@@ -297,39 +270,67 @@ export function DualMetricsDisplay({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-        </div>
+        </h3>
         <MethodBadge
+          iconOnly
           anchor="metriques-contenu"
           description="Les 8 dimensions (violence, sexe, langage, valeur éducative, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Les dimensions évaluables sont recalibrées par les familles inscrites."
         />
       </div>
-      <div className="space-y-4">
-        <div className="flex gap-3">
-          <MetricsColumn
-            title="Totem Avisé"
-            icon={Award}
-            metrics={withEducationalValue(expertMetrics || null, topics)}
-          />
 
-          {loading ? (
-            <div
-              className="flex-1 p-4 rounded-xl flex items-center justify-center"
-              style={{ background: p.bg2 }}
-            >
-              <span className="text-sm" style={{ color: p.ink2 }}>
-                Chargement...
-              </span>
-            </div>
-          ) : (
-            <MetricsColumn
-              title="Communauté"
-              icon={Users}
-              metrics={withEducationalValue(communityData?.averages || null, topics)}
-              count={communityData?.count}
-            />
-          )}
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5 mb-3 text-[13px]" style={{ color: p.ink2 }}>
+        <span className="inline-flex items-center gap-2">
+          <span className="w-5 h-2.5 rounded" style={{ background: p.ink2 }} />
+          Totem Avisé — notre analyse
+        </span>
+        <span className="inline-flex items-center gap-2">
+          <span className="w-5 h-2.5 rounded" style={{ background: COMM_NEG, border: `1px solid ${p.line2}` }} />
+          Communauté — notes des spectateurs
+        </span>
+      </div>
+
+      <TooltipProvider>
+        {/* Column headers */}
+        <div className={`${ROW_GRID} items-end pb-1.5 mb-1 border-b`} style={{ borderColor: p.line }}>
+          <span />
+          <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: p.ink2 }}>
+            Totem Avisé
+          </span>
+          <span className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: p.ink2 }}>
+            Communauté
+            <small className="block font-normal tracking-normal normal-case" style={{ color: p.ink2 }}>
+              {hasComm ? `${commCount} avis` : "aucune note"}
+            </small>
+          </span>
         </div>
 
+        {/* Points de vigilance */}
+        <div className="text-[11px] uppercase tracking-wider font-bold mt-3 mb-1" style={{ color: p.ink2 }}>
+          Points de vigilance
+        </div>
+        {VIGILANCE_KEYS.map((k) => (
+          <ScoreRow key={k} metricKey={k} expert={expert} community={community} hasComm={hasComm} />
+        ))}
+
+        {/* Points positifs */}
+        <div className="text-[11px] uppercase tracking-wider font-bold mt-3 mb-1" style={{ color: p.accent }}>
+          Points positifs
+        </div>
+        {POSITIVE_KEYS.map((k) => (
+          <ScoreRow key={k} metricKey={k} expert={expert} community={community} hasComm={hasComm} />
+        ))}
+      </TooltipProvider>
+
+      {/* Contribute */}
+      <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${p.line}` }}>
+        {!hasComm && (
+          <p className="text-[13px] mb-2" style={{ color: p.ink2 }}>
+            {loading
+              ? "Chargement des notes de la communauté…"
+              : "Aucune note de la communauté pour l'instant — soyez le premier à noter."}
+          </p>
+        )}
         <UserMetricsButton
           mediaId={mediaId}
           mediaTitle={mediaTitle}

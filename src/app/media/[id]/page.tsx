@@ -5,12 +5,9 @@ import { cache, Suspense } from "react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
 import { MethodBadge } from "@/components/ui/MethodBadge"
-import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
@@ -19,6 +16,10 @@ import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { FamilyFitHero } from "@/components/media/FamilyFitHero"
+import { FicheDataProvider } from "@/components/media/FicheDataContext"
+import { MediaDashboardBar } from "@/components/media/MediaDashboardBar"
+import { FamilyQuickAnswer } from "@/components/media/FamilyQuickAnswer"
+import { AccountChip } from "@/components/media/AccountChip"
 import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
@@ -28,13 +29,12 @@ import { GameInfoCard } from "@/components/media/GameInfoCard"
 import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
-import { HeroBackdrop } from "@/components/media/HeroBackdrop"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
-import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
   getMovieDetails,
   getTVDetails,
@@ -642,11 +642,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // Watch providers and trailer are now fetched client-side via /api/media/[id]/extras
   // This eliminates the 1-5s TMDB blocking from server render
 
-  const avgRating =
-    media.reviews?.length
-      ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
-      : 0
-
   const adminUser = await checkIsAdmin()
 
   // Pre-release / provisional fiches: we have NOT evaluated the title, so
@@ -663,8 +658,27 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
 
+  // Shared white-card styling for the warm page (cards float on the cream bg).
+  const warmCard = {
+    background: "var(--color-warm-card)",
+    border: "1px solid var(--color-warm-line)",
+    boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
+  } as const
+
+  // Not-yet-released: surface "Au cinéma / Sortie le {date}" in the bar.
+  const isUpcoming = isUnreleased(media.releaseDate) || isUnreleasedStatus(media.releaseStatus)
+  const releaseDateLabel = media.releaseDate ? formatDateFr(media.releaseDate) : null
+
+  // "Vous l'avez vu ?" — phrased per media type so it reads naturally.
+  const seenQuestion =
+    media.type === "GAME"
+      ? "Vous y avez joué ?"
+      : media.type === "BOOK" || media.type === "MANGA"
+        ? "Vous l'avez lu ?"
+        : "Vous l'avez vu ?"
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: "var(--color-warm-bg)" }}>
       {/* JSON-LD Structured Data */}
       <script
         type="application/ld+json"
@@ -679,323 +693,278 @@ export default async function MediaPage({ params }: MediaPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faqPage) }}
       />
 
-      {/* Hero Section — warm cream with blurred backdrop overlay */}
-      <section
-        className="relative"
-        style={{ background: "var(--color-warm-bg)" }}
-      >
-        {/* Blurred backdrop + warm cream overlay */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <HeroBackdrop
-            src={media.posterUrl}
-            expertAgeRec={media.expertAgeRec}
-            violenceScore={media.contentMetrics?.violence}
-          />
+      <FicheDataProvider mediaId={dbId} mediaType={media.type}>
+        {/* Collapsing summary bar — slides in once the hero scrolls behind
+            the header (fixed overlay, no layout shift). */}
+        <MediaDashboardBar
+          mediaId={dbId}
+          mediaType={media.type}
+          title={media.title}
+          posterUrl={media.posterUrl}
+          expertAgeRec={media.expertAgeRec}
+          isProvisional={media.isProvisional}
+          hideContentAnalysis={hideContentAnalysis}
+          releaseDateLabel={releaseDateLabel}
+          director={media.director || null}
+          isUpcoming={isUpcoming}
+        />
+
+      {/* ===== HERO — verdict-first horizontal card on a warm wash ===== */}
+      <section id="fiche-hero" className="relative" style={{ background: "var(--color-warm-bg)" }}>
+        {/* Decorative warm wash at the top. Replaces the old per-hero blurred
+            backdrop: the redesign favours a clean, contained hero card. The
+            poster's own sensitivity blur (BlurredPoster) is unchanged. */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-72"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(209, 106, 74, 0.08) 0%, transparent 70%)",
+          }}
+        />
+
+        <div className="container mx-auto px-4 pt-6 pb-10 relative">
+          <BackButton className="mb-5" />
+
           <div
-            className="absolute inset-0"
+            className="rounded-2xl p-5 sm:p-6 lg:p-7"
             style={{
-              background:
-                "linear-gradient(180deg, rgba(209, 106, 74, 0.10) 0%, var(--color-hero-mid) 45%, var(--color-warm-bg) 100%)",
+              ...warmCard,
+              boxShadow:
+                "0 1px 2px rgba(58,46,34,.05), 0 18px 40px -22px rgba(58,46,34,.28)",
             }}
-          />
-        </div>
-
-        <div className="container mx-auto px-4 py-8 relative">
-          <BackButton className="mb-8" />
-
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-            {/* Poster */}
-            <div className="lg:w-1/4 shrink-0">
-              <div
-                className="relative aspect-[2/3] rounded-2xl overflow-hidden"
-                style={{ boxShadow: "0 24px 48px rgba(0,0,0,0.18)" }}
-              >
-                <BlurredPoster
-                  src={media.posterUrl}
-                  alt={media.title}
-                  expertAgeRec={media.expertAgeRec}
-                  violenceScore={media.contentMetrics?.violence}
-                  mediaType={media.type}
-                  priority
-                />
-              </div>
-            </div>
-
-            {/* Info */}
-            <div
-              className="flex-1 min-w-0"
-              style={{ color: "var(--color-warm-ink)" }}
-            >
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <span
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                  style={{
-                    background: "var(--color-warm-bg2)",
-                    color: "var(--color-warm-ink)",
-                  }}
-                >
-                  {mediaTypeLabels[media.type]}
-                </span>
-                <OfficialRatingBadge
-                  rating={media.officialRating}
-                  type={media.type}
-                  showLabel
-                />
-              </div>
-
-              <MediaHeroEditable
-                isAdmin={adminUser}
-                mediaId={media.id}
-                title={media.title}
-                synopsisFr={media.synopsisFr}
-                expertAgeRec={media.expertAgeRec}
-                genres={media.genres}
-                director={media.director || null}
-                duration={media.duration || null}
-                releaseDate={media.releaseDate}
-                originalTitle={media.originalTitle || null}
-                reviews={media.reviews}
-                isProvisional={media.isProvisional}
-              />
-
-              <div
-                className="mb-5 rounded-2xl p-4"
-                style={{
-                  background: "var(--color-warm-card)",
-                  border: "1px solid var(--color-warm-line)",
-                }}
-              >
-                <p
-                  className="text-[11px] font-semibold uppercase tracking-wide mb-1"
-                  style={{ color: "var(--color-warm-accent)" }}
-                >
-                  Réponse rapide
-                </p>
-                <h2
-                  className="font-serif text-lg font-medium mb-2"
-                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
-                >
-                  {quickAnswer.question}
-                </h2>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
-                  {quickAnswer.answer}
-                </p>
-              </div>
-
-              {/* Platforms for games */}
-              {media.type === "GAME" && media.platforms.length > 0 && (
-                <div className="mb-6">
-                  <PlatformIcons platforms={media.platforms} variant="hero" />
-                </div>
-              )}
-
-              {/* Watch Providers & Trailer - loaded client-side */}
-              <WatchProvidersClient mediaId={dbId} mediaType={media.type} className="mb-4" />
-
-              {/* Favorite, Watchlist & Review Actions */}
-              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
-
-              {/* Rating Summary */}
-              {(media.reviews?.length || 0) > 0 ? (
+          >
+            {/* poster · main · family panel — collapses to 2-col then stacked */}
+            <div className="grid gap-6 lg:gap-7 lg:grid-cols-[200px_minmax(0,1fr)] xl:grid-cols-[210px_minmax(0,1fr)_320px] lg:items-start">
+              {/* Poster */}
+              <div className="mx-auto w-40 sm:w-48 lg:mx-0 lg:w-full">
                 <div
-                  className="flex items-center gap-6 p-4 rounded-xl"
-                  style={{
-                    background: "var(--color-warm-card)",
-                    border: "1px solid var(--color-warm-line)",
-                  }}
+                  className="relative aspect-[2/3] rounded-xl overflow-hidden"
+                  style={{ boxShadow: "0 18px 36px rgba(0,0,0,0.16)" }}
                 >
-                  <div className="flex items-center gap-2">
-                    <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
-                    <span
-                      className="font-serif text-2xl font-medium"
-                      style={{
-                        color: "var(--color-warm-ink)",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      {avgRating.toFixed(1)}
-                    </span>
-                    <span style={{ color: "var(--color-warm-ink2)" }}>/ 5</span>
-                  </div>
-                  <div
-                    className="text-sm"
-                    style={{ color: "var(--color-warm-ink2)" }}
-                  >
-                    Basé sur {media.reviews.length} avis
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="flex items-center gap-3 p-4 rounded-xl"
-                  style={{
-                    background: "var(--color-warm-card)",
-                    border: "1px solid var(--color-warm-line)",
-                  }}
-                >
-                  <Star
-                    className="h-5 w-5"
-                    style={{ color: "var(--color-warm-ink2)" }}
+                  <BlurredPoster
+                    src={media.posterUrl}
+                    alt={media.title}
+                    expertAgeRec={media.expertAgeRec}
+                    violenceScore={media.contentMetrics?.violence}
+                    mediaType={media.type}
+                    priority
                   />
-                  <span
-                    className="text-sm"
-                    style={{ color: "var(--color-warm-ink2)" }}
-                  >
-                    Aucun avis pour le moment — soyez le premier à donner votre avis !
-                  </span>
+                </div>
+              </div>
+
+              {/* Main column */}
+              <div className="min-w-0" style={{ color: "var(--color-warm-ink)" }}>
+                <MediaHeroEditable
+                  isAdmin={adminUser}
+                  mediaId={media.id}
+                  type={media.type}
+                  officialRating={media.officialRating}
+                  title={media.title}
+                  synopsisFr={media.synopsisFr}
+                  expertAgeRec={media.expertAgeRec}
+                  genres={media.genres}
+                  director={media.director || null}
+                  duration={media.duration || null}
+                  releaseDate={media.releaseDate}
+                  originalTitle={media.originalTitle || null}
+                  reviews={media.reviews}
+                  isProvisional={media.isProvisional}
+                />
+
+                {/* Platforms for games */}
+                {media.type === "GAME" && media.platforms.length > 0 && (
+                  <div className="mt-1 mb-2">
+                    <PlatformIcons platforms={media.platforms} variant="hero" />
+                  </div>
+                )}
+
+                {/* Où le regarder + bande-annonce — loaded client-side */}
+                <WatchProvidersClient mediaId={dbId} mediaType={media.type} className="mt-4" />
+
+                {/* Favori · à voir · avis */}
+                <div className="mt-4">
+                  <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
+                </div>
+              </div>
+
+              {/* Family panel — "Repères pour ma famille". Hidden pre-release:
+                  the fit verdict leans on content we haven't evaluated yet.
+                  Spans full width on lg (2-col), own column on xl (3-col). */}
+              {dbId && !hideContentAnalysis && (
+                <div className="lg:col-span-2 xl:col-span-1">
+                  <FamilyFitHero mediaId={dbId} />
                 </div>
               )}
             </div>
-
-            {/* Family Fit — hero column. Hidden pre-release: the fit verdict
-                leans on content sensitivity we haven't evaluated yet. */}
-            {dbId && !hideContentAnalysis && (
-              <div className="lg:w-72 xl:w-80 shrink-0">
-                <FamilyFitHero mediaId={dbId} />
-              </div>
-            )}
           </div>
         </div>
       </section>
 
-      {/* Content Section */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {hideContentAnalysis ? (
-              /* Pas encore sorti / fiche provisoire : aucune évaluation de
-                 contenu inventée. On reste factuel et honnête, l'âge affiché
-                 est une estimation à confirmer. */
-              <div
-                className="rounded-2xl p-5"
-                style={{
-                  background: "var(--color-warm-card)",
-                  border: "1px solid var(--color-warm-line)",
-                }}
+      {/* ===== CONTENT — single full-width column of cards ===== */}
+      <div className="container mx-auto px-4 pb-16">
+        <div className="flex flex-col gap-5 lg:gap-6">
+          {/* Réponse rapide — generic answer (kept in the DOM as the FAQ
+              rich-result source) + the personalized "Adapté à ma famille ?"
+              companion when logged in (collapses to full width otherwise). */}
+          <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--color-warm-accent)" }}
               >
-                <p
-                  className="text-[11px] font-semibold uppercase tracking-wide mb-1"
-                  style={{ color: "var(--color-warm-accent)" }}
-                >
-                  À venir
-                </p>
+                Réponse rapide
+              </p>
+              <AccountChip />
+            </div>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div
+                className="flex-1 rounded-xl p-4"
+                style={{ background: "var(--color-warm-card)", border: "1px solid var(--color-warm-line)" }}
+              >
                 <h2
-                  className="font-serif text-lg font-medium mb-2"
+                  className="font-serif text-lg sm:text-xl font-medium mb-1"
                   style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
                 >
-                  {media.releaseDate
-                    ? `Sortie prévue le ${formatDateFr(media.releaseDate)}`
-                    : "Pas encore sorti"}
+                  {quickAnswer.question}
                 </h2>
+                <p className="text-xs mb-2" style={{ color: "var(--color-warm-ink2)" }}>
+                  Réponse générale
+                </p>
                 <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
-                  {`Ce ${mediaTypeLabels[media.type]?.toLowerCase() || "contenu"} n'est pas encore sorti. `}
-                  {media.expertAgeRec
-                    ? `L'âge indiqué (dès ${media.expertAgeRec} ans) est une estimation à confirmer. `
-                    : ""}
-                  {"L'évaluation détaillée du contenu (violence, langage, messages…) sera publiée après sa sortie, une fois le titre visionné."}
+                  {quickAnswer.answer}
                 </p>
               </div>
-            ) : (
-              <>
-                {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
-                {media.type !== "GAME" && (
-                  <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
-                )}
+              {dbId && !hideContentAnalysis && <FamilyQuickAnswer mediaId={dbId} />}
+            </div>
+          </div>
 
-                {/* Talk to Your Kids - for movies/TV/books only (not games) */}
-                <TalkToYourKids
-                  title={media.title}
-                  type={media.type}
-                  metrics={media.contentMetrics}
+          {hideContentAnalysis ? (
+            /* Pas encore sorti / fiche provisoire : aucune évaluation de
+               contenu inventée. On reste factuel et honnête, l'âge affiché
+               est une estimation à confirmer. */
+            <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+                style={{ color: "var(--color-warm-accent)" }}
+              >
+                À venir
+              </p>
+              <h2
+                className="font-serif text-lg font-medium mb-2"
+                style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
+              >
+                {media.releaseDate
+                  ? `Sortie prévue le ${formatDateFr(media.releaseDate)}`
+                  : "Pas encore sorti"}
+              </h2>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
+                {`Ce ${mediaTypeLabels[media.type]?.toLowerCase() || "contenu"} n'est pas encore sorti. `}
+                {media.expertAgeRec
+                  ? `L'âge indiqué (dès ${media.expertAgeRec} ans) est une estimation à confirmer. `
+                  : ""}
+                {"L'évaluation détaillée du contenu (violence, langage, messages…) sera publiée après sa sortie, une fois le titre visionné."}
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Ce que les parents doivent savoir — pas pour les jeux
+                  (ils ont GameInfoCard). */}
+              {media.type !== "GAME" && (
+                <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
+              )}
+
+              {/* Talk to Your Kids — actuellement désactivé (rend null). */}
+              <TalkToYourKids
+                title={media.title}
+                type={media.type}
+                metrics={media.contentMetrics}
+                genres={media.genres}
+                topics={media.topics}
+              />
+
+              {/* Évaluation du contenu :
+                  - jeux        → GameInfoCard
+                  - en base     → DualMetricsDisplay (Totem vs Communauté)
+                  - hors base   → ContentGrid (analyse seule, pas de communauté) */}
+              {media.type === "GAME" ? (
+                <GameInfoCard
+                  platforms={media.platforms}
                   genres={media.genres}
+                  consumerism={media.contentMetrics.consumerism}
+                  violence={media.contentMetrics.violence}
+                />
+              ) : dbId ? (
+                <DualMetricsDisplay
+                  mediaId={dbId}
+                  mediaTitle={media.title}
+                  expertMetrics={media.contentMetrics}
                   topics={media.topics}
                 />
-              </>
-            )}
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Analyse du contenu</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ContentGrid metrics={media.contentMetrics} topics={media.topics} />
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
 
-            {/* Screenshots - from local database */}
-            {media.screenshots && media.screenshots.length > 0 && (
-              <AdminScreenshotsWrapper
-                screenshots={media.screenshots}
-                title={media.title}
-                isAdmin={adminUser}
-              />
-            )}
-
-            <MediaDetailTabs
-              reviewsCount={media.reviews?.length || 0}
-              reviewsContent={<ReviewsSection reviews={media.reviews} />}
-              detailsContent={
-                <div
-                  className="rounded-2xl p-6 space-y-4"
-                  style={{
-                    background: "var(--color-warm-card)",
-                    border: "1px solid var(--color-warm-line)",
-                  }}
+          {/* ===== Contribution zone — réactions famille + avis ===== */}
+          {dbId && (
+            <>
+              <div className="pt-3">
+                <h2
+                  className="font-serif text-xl sm:text-2xl font-medium"
+                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
                 >
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <h4
-                        className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                        style={{ color: "var(--color-warm-ink2)" }}
-                      >
-                        Type
-                      </h4>
-                      <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                        {mediaTypeLabels[media.type]}
-                      </p>
-                    </div>
-                    {media.releaseDate && (
+                  {seenQuestion}
+                </h2>
+                <p className="text-sm mt-1 max-w-xl" style={{ color: "var(--color-warm-ink2)" }}>
+                  Partagez les réactions de votre famille et votre avis — vous aiderez les autres parents à décider.
+                </p>
+              </div>
+              <FamilyReactions mediaId={dbId} mediaTitle={media.title} />
+            </>
+          )}
+
+          {/* Avis des familles — standalone (Détails tab removed: type/date/
+              durée/réalisateur already live in the hero). */}
+          <div>
+            <h2
+              className="font-serif text-xl sm:text-2xl font-medium mb-4"
+              style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
+            >
+              Avis des familles{media.reviews.length > 0 ? ` (${media.reviews.length})` : ""}
+            </h2>
+            <ReviewsSection reviews={media.reviews} />
+          </div>
+
+          {/* Fiche technique — only facts not already shown in the hero:
+              auto-detected themes + manga format. */}
+          {(media.topics.length > 0 ||
+            (media.type === "MANGA" &&
+              (media.volumeCount || media.chapterCount || media.demographic || media.status))) && (
+            <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
+              <h2
+                className="font-serif text-xl sm:text-2xl font-medium mb-4"
+                style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
+              >
+                {media.type === "MANGA" &&
+                (media.volumeCount || media.chapterCount || media.demographic || media.status)
+                  ? "Fiche technique"
+                  : "Thèmes"}
+              </h2>
+
+              {media.type === "MANGA" &&
+                (media.volumeCount || media.chapterCount || media.demographic || media.status) && (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    {(media.volumeCount || media.chapterCount) && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Date de sortie
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {formatDateFr(media.releaseDate)}
-                        </p>
-                      </div>
-                    )}
-                    {media.duration && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Durée
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.duration} minutes
-                        </p>
-                      </div>
-                    )}
-                    {media.director && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          {media.type === "BOOK"
-                            ? "Auteur"
-                            : media.type === "MANGA"
-                              ? "Auteur(s)"
-                              : media.type === "GAME"
-                                ? "Développeur"
-                                : "Réalisateur"}
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.director}
-                        </p>
-                      </div>
-                    )}
-                    {media.type === "MANGA" && (media.volumeCount || media.chapterCount) && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Volumes
                         </h4>
                         <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
@@ -1005,12 +974,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                         </p>
                       </div>
                     )}
-                    {media.type === "MANGA" && media.demographic && (
+                    {media.demographic && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Public cible
                         </h4>
                         <p className="font-medium capitalize" style={{ color: "var(--color-warm-ink)" }}>
@@ -1018,12 +984,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                         </p>
                       </div>
                     )}
-                    {media.type === "MANGA" && media.status && (
+                    {media.status && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Statut
                         </h4>
                         <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
@@ -1038,182 +1001,131 @@ export default async function MediaPage({ params }: MediaPageProps) {
                       </div>
                     )}
                   </div>
+                )}
 
-                  {media.type === "GAME" && media.platforms.length > 0 && (
-                    <PlatformIcons platforms={media.platforms} variant="full" />
-                  )}
-
-                  {media.topics.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h4
-                          className="text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Thèmes
-                        </h4>
-                        <MethodBadge
-                          size="xs"
-                          anchor="themes-detectes"
-                          label="Détectés automatiquement"
-                          description="Les thèmes sont détectés automatiquement à partir du contenu (synopsis, classifications, genres). Ils sont indicatifs et peuvent être affinés par les signalements de la communauté."
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {media.topics.map((topic) => (
-                          <span
-                            key={topic}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              background: "var(--color-warm-bg2)",
-                              color: "var(--color-warm-ink)",
-                            }}
-                          >
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              }
-            />
-
-            {/* Similar Media — streamed via Suspense to avoid blocking page render */}
-            {dbId && (
-              <Suspense fallback={
-                <div className="animate-pulse">
-                  <div
-                    className="h-6 w-48 rounded mb-4"
-                    style={{ background: "var(--color-warm-bg2)" }}
-                  />
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="aspect-[2/3] rounded-lg"
-                        style={{ background: "var(--color-warm-placeholder)" }}
-                      />
+              {media.topics.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
+                      Thèmes
+                    </h4>
+                    <MethodBadge
+                      iconOnly
+                      size="xs"
+                      anchor="themes-detectes"
+                      label="Détectés automatiquement"
+                      description="Les thèmes sont détectés automatiquement à partir du contenu (synopsis, classifications, genres). Ils sont indicatifs et peuvent être affinés par les signalements de la communauté."
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {media.topics.map((topic) => (
+                      <span
+                        key={topic}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style={{ background: "var(--color-warm-bg2)", color: "var(--color-warm-ink)" }}
+                      >
+                        {topic}
+                      </span>
                     ))}
                   </div>
                 </div>
-              }>
-                <div>
-                  <div
-                    className="mb-6"
-                    style={{ borderTop: "1px solid var(--color-warm-line)" }}
-                  />
-                  <h2
-                    className="font-serif text-xl md:text-2xl font-medium mb-4"
-                    style={{
-                      color: "var(--color-warm-ink)",
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    Dans le même{" "}
-                    <em
-                      className="italic"
-                      style={{ color: "var(--color-warm-accent)" }}
-                    >
-                      genre
-                    </em>
-                  </h2>
-                  <ApercuSimilarMedia
-                    mediaId={dbId}
-                    mediaType={media.type}
-                    genres={media.genres}
-                    topics={media.topics}
-                    serifClass="font-serif"
-                  />
+              )}
+            </div>
+          )}
+
+          {/* Captures d'écran — renders its own section heading */}
+          {media.screenshots && media.screenshots.length > 0 && (
+            <AdminScreenshotsWrapper
+              screenshots={media.screenshots}
+              title={media.title}
+              isAdmin={adminUser}
+            />
+          )}
+
+          {/* Dans le même genre — streamed via Suspense to avoid blocking render */}
+          {dbId && (
+            <Suspense fallback={
+              <div className="rounded-2xl p-5 sm:p-6 animate-pulse" style={warmCard}>
+                <div className="h-6 w-48 rounded mb-4" style={{ background: "var(--color-warm-bg2)" }} />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[2/3] rounded-lg"
+                      style={{ background: "var(--color-warm-placeholder)" }}
+                    />
+                  ))}
                 </div>
-              </Suspense>
-            )}
-          </div>
+              </div>
+            }>
+              <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
+                <h2
+                  className="font-serif text-xl md:text-2xl font-medium mb-4"
+                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
+                >
+                  Dans le même{" "}
+                  <em className="italic" style={{ color: "var(--color-warm-accent)" }}>
+                    genre
+                  </em>
+                </h2>
+                <ApercuSimilarMedia
+                  mediaId={dbId}
+                  mediaType={media.type}
+                  genres={media.genres}
+                  topics={media.topics}
+                  serifClass="font-serif"
+                />
+              </div>
+            </Suspense>
+          )}
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Game Info Card - for games only. Carries content scores
-                (violence/consumérisme) so it's withheld pre-release. */}
-            {media.type === "GAME" && !hideContentAnalysis && (
-              <GameInfoCard
-                platforms={media.platforms}
-                genres={media.genres}
-                consumerism={media.contentMetrics.consumerism}
-                violence={media.contentMetrics.violence}
-              />
-            )}
-
-            {/* Family Reactions */}
-            {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
-
-            {/* Dual Content Metrics (Expert vs Community) - NOT for games,
-                and not before release (no evaluation exists yet). */}
-            {dbId && media.type !== "GAME" && !hideContentAnalysis && (
-              <DualMetricsDisplay
-                mediaId={dbId}
-                mediaTitle={media.title}
-                expertMetrics={media.contentMetrics}
-                topics={media.topics}
-              />
-            )}
-
-            {/* Fallback to single ContentGrid if no dbId - NOT for games */}
-            {!dbId && media.type !== "GAME" && !hideContentAnalysis && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Analyse du contenu</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ContentGrid metrics={media.contentMetrics} topics={media.topics} />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Report Correction Button */}
-            {dbId && (
+          {/* Signaler une correction */}
+          {dbId && (
+            <div className="flex justify-center pt-2">
               <ReportCorrectionButton mediaId={dbId} mediaTitle={media.title} />
-            )}
+            </div>
+          )}
 
-            {/* Related (only for demo/mock items for now) */}
-            {source === "mock" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {mockMediaItems
-                    .filter((m) => m.id !== media.id && m.type === media.type)
-                    .slice(0, 3)
-                    .map((related) => (
-                      <Link
-                        key={related.id}
-                        href={`/media/${toMediaRouteId(related.type, related.id)}`}
-                        className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                          <Image
-                            src={related.posterUrl}
-                            alt={related.title}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm line-clamp-1">{related.title}</p>
-                          <p className="text-xs text-gray-500">
-                            {related.expertAgeRec === null || related.expertAgeRec === undefined
-                              ? "Âge non renseigné"
-                              : `${related.expertAgeRec}+ ans`}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          {/* Suggestions (éléments de démonstration uniquement) */}
+          {source === "mock" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {mockMediaItems
+                  .filter((m) => m.id !== media.id && m.type === media.type)
+                  .slice(0, 3)
+                  .map((related) => (
+                    <Link
+                      key={related.id}
+                      href={`/media/${toMediaRouteId(related.type, related.id)}`}
+                      className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
+                        <Image
+                          src={related.posterUrl}
+                          alt={related.title}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm line-clamp-1">{related.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {related.expertAgeRec === null || related.expertAgeRec === undefined
+                            ? "Âge non renseigné"
+                            : `${related.expertAgeRec}+ ans`}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+      </FicheDataProvider>
     </div>
   )
 }

@@ -10,15 +10,20 @@ import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
 import { AgeVoteButton } from "./AgeVoteButton"
 import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ProvisionalBadge } from "@/components/media/ProvisionalBadge"
+import { mediaTypeLabels } from "@/lib/utils"
 
 interface Review {
   role: string
   ageSuggestion: number
 }
 
+type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
+
 interface MediaHeroEditableProps {
   isAdmin: boolean
   mediaId: string
+  type: MediaType
+  officialRating: string | null
   title: string
   synopsisFr: string | null
   expertAgeRec: number | null
@@ -31,9 +36,37 @@ interface MediaHeroEditableProps {
   isProvisional?: boolean
 }
 
+// Human label for an official CSA / PEGI rating (mirrors OfficialRatingBadge).
+function officialRatingLabel(rating: string | null, type: MediaType): string {
+  if (!rating) return "Non classé"
+  if (type === "MOVIE" || type === "TV") {
+    switch (rating) {
+      case "TOUS_PUBLICS": return "Tous publics"
+      case "CSA_10": return "-10"
+      case "CSA_12": return "-12"
+      case "CSA_16": return "-16"
+      case "CSA_18": return "-18"
+      default: return rating
+    }
+  }
+  if (type === "GAME" || type === "APP") {
+    switch (rating) {
+      case "PEGI_3": return "PEGI 3"
+      case "PEGI_7": return "PEGI 7"
+      case "PEGI_12": return "PEGI 12"
+      case "PEGI_16": return "PEGI 16"
+      case "PEGI_18": return "PEGI 18"
+      default: return rating
+    }
+  }
+  return rating
+}
+
 export function MediaHeroEditable({
   isAdmin,
   mediaId,
+  type,
+  officialRating,
   title: initialTitle,
   synopsisFr: initialSynopsis,
   expertAgeRec: initialAge,
@@ -135,8 +168,37 @@ export function MediaHeroEditable({
   const WARM_INK = "var(--color-warm-ink)"
   const WARM_INK2 = "var(--color-warm-ink2)"
 
+  // Tag pill shared style (genres + official rating)
+  const tagPill =
+    "inline-flex items-center rounded-full text-[13px] font-semibold px-2.5 py-1"
+  const tagStyle = {
+    background: "var(--color-warm-card)",
+    border: "1px solid var(--color-warm-line)",
+    color: WARM_INK2,
+  }
+
   return (
     <>
+      {/* TAGS — type · genres · official rating (display only) */}
+      {!isEditing && (
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span
+            className="inline-flex items-center rounded-full text-[13px] font-semibold px-2.5 py-1"
+            style={{ background: "#42413c", color: "#F3E7D4" }}
+          >
+            {mediaTypeLabels[type]}
+          </span>
+          {initialGenres.map((genre) => (
+            <span key={genre} className={tagPill} style={tagStyle}>
+              {genre}
+            </span>
+          ))}
+          <span className={tagPill} style={tagStyle}>
+            {officialRatingLabel(officialRating, type)} · classif. officielle
+          </span>
+        </div>
+      )}
+
       {/* Title */}
       {isEditing ? (
         <Input
@@ -147,27 +209,21 @@ export function MediaHeroEditable({
         />
       ) : (
         <h1
-          className="font-serif text-3xl md:text-4xl lg:text-5xl font-medium mb-2 leading-[1.05]"
-          style={{ color: WARM_INK, letterSpacing: "-0.02em" }}
+          className="font-serif text-3xl sm:text-4xl lg:text-[2.75rem] font-medium mb-2 leading-[1.04]"
+          style={{ color: WARM_INK, letterSpacing: "-0.01em" }}
         >
           {title}
         </h1>
       )}
 
       {originalTitle && originalTitle !== title && (
-        <p
-          className="font-serif italic text-lg md:text-xl mb-4"
-          style={{ color: WARM_INK2 }}
-        >
+        <p className="font-serif italic text-lg md:text-xl mb-3" style={{ color: WARM_INK2 }}>
           {originalTitle}
         </p>
       )}
 
       {/* Meta Info */}
-      <div
-        className="flex flex-wrap items-center gap-4 mb-6 text-sm"
-        style={{ color: WARM_INK2 }}
-      >
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-5 text-sm" style={{ color: WARM_INK2 }}>
         {releaseDate && (
           <span className="flex items-center gap-1.5">
             <Calendar className="h-4 w-4" />
@@ -209,8 +265,8 @@ export function MediaHeroEditable({
         )}
       </div>
 
-      {/* Genres */}
-      {isEditing ? (
+      {/* Genres editor (edit mode only — display lives in the tags row above) */}
+      {isEditing && (
         <div className="mb-4">
           <Input
             value={genresStr}
@@ -221,41 +277,9 @@ export function MediaHeroEditable({
             Séparés par des virgules
           </p>
         </div>
-      ) : (
-        <div className="flex flex-wrap gap-2 mb-4">
-          {initialGenres.map((genre) => (
-            <span
-              key={genre}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-              style={{
-                background: "var(--color-warm-bg2)",
-                color: WARM_INK,
-              }}
-            >
-              {genre}
-            </span>
-          ))}
-        </div>
       )}
 
-      {/* Synopsis */}
-      {isEditing ? (
-        <Textarea
-          value={synopsisFr}
-          onChange={(e) => setSynopsisFr(e.target.value)}
-          className="mb-8 max-w-3xl min-h-[120px]"
-          placeholder="Synopsis en français"
-        />
-      ) : (
-        <p
-          className="leading-relaxed mb-8 max-w-3xl text-base md:text-lg"
-          style={{ color: WARM_INK }}
-        >
-          {initialSynopsis}
-        </p>
-      )}
-
-      {/* Age Recommendations Row - Expert + Community side by side */}
+      {/* VERDICT — placed before the synopsis (verdict-first hierarchy) */}
       {isEditing ? (
         <div className="flex items-center gap-2 mb-6">
           <span className="text-sm" style={{ color: WARM_INK2 }}>
@@ -272,7 +296,26 @@ export function MediaHeroEditable({
           />
         </div>
       ) : (
-        <AgeRecommendationsRow expertAge={initialAge} reviews={reviews} mediaId={mediaId} isProvisional={isProvisional} />
+        <AgeRecommendationsRow
+          expertAge={initialAge}
+          reviews={reviews}
+          mediaId={mediaId}
+          isProvisional={isProvisional}
+        />
+      )}
+
+      {/* Synopsis */}
+      {isEditing ? (
+        <Textarea
+          value={synopsisFr}
+          onChange={(e) => setSynopsisFr(e.target.value)}
+          className="mb-2 max-w-3xl min-h-[120px]"
+          placeholder="Synopsis en français"
+        />
+      ) : (
+        <p className="leading-relaxed max-w-3xl text-[16px] md:text-[16.5px]" style={{ color: WARM_INK2 }}>
+          {initialSynopsis}
+        </p>
       )}
 
       {/* Floating Admin Bar */}
@@ -283,19 +326,10 @@ export function MediaHeroEditable({
           </Badge>
           {isEditing ? (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSaving}
-              >
+              <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
                 <X className="h-4 w-4 mr-1" /> Annuler
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={isSaving || !hasChanges}
-              >
+              <Button size="sm" onClick={handleSave} disabled={isSaving || !hasChanges}>
                 {isSaving ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
@@ -305,11 +339,7 @@ export function MediaHeroEditable({
               </Button>
             </>
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsEditing(true)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
               <Pencil className="h-4 w-4 mr-1" /> Modifier
             </Button>
           )}
@@ -319,8 +349,19 @@ export function MediaHeroEditable({
   )
 }
 
-// Unified expert + community age recommendations row
-function AgeRecommendationsRow({ expertAge, reviews, mediaId, isProvisional = false }: { expertAge: number | null; reviews: Review[]; mediaId: string; isProvisional?: boolean }) {
+// Verdict-first age block: a prominent "Notre recommandation" strip with a
+// big amber badge, plus the community parent/kid averages when they exist.
+function AgeRecommendationsRow({
+  expertAge,
+  reviews,
+  mediaId,
+  isProvisional = false,
+}: {
+  expertAge: number | null
+  reviews: Review[]
+  mediaId: string
+  isProvisional?: boolean
+}) {
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
@@ -333,15 +374,7 @@ function AgeRecommendationsRow({ expertAge, reviews, mediaId, isProvisional = fa
     : null
   const totalReviews = reviews.length
 
-  const getBgColor = (age: number) => {
-    if (age <= 3) return "bg-emerald-500"
-    if (age <= 7) return "bg-emerald-600"
-    if (age <= 10) return "bg-amber-500"
-    if (age <= 13) return "bg-orange-500"
-    return "bg-red-500"
-  }
-
-  if (!isRated && !parentAvg && !kidAvg) return null
+  if (!isRated && parentAvg === null && kidAvg === null) return null
 
   const WARM_INK = "var(--color-warm-ink)"
   const WARM_INK2 = "var(--color-warm-ink2)"
@@ -349,86 +382,86 @@ function AgeRecommendationsRow({ expertAge, reviews, mediaId, isProvisional = fa
   const WARM_LINE = "var(--color-warm-line)"
 
   return (
-    <div className="flex flex-col sm:flex-row items-stretch gap-3 mb-6">
-      {/* Expert recommendation */}
+    <div className="flex flex-col gap-3 mb-5">
+      {/* Expert recommendation — the verdict strip */}
       {isRated && (
         <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl"
+          className="flex items-center gap-4 rounded-xl px-4 py-3"
           style={{
-            background: WARM_CARD,
-            border: `1px solid ${WARM_LINE}`,
+            background: "linear-gradient(135deg,#FFF6EE,#FFFBF7)",
+            border: "1px solid #FBE9D2",
           }}
         >
           <div
-            className={`flex items-center justify-center h-12 w-12 rounded-full text-white font-bold text-lg shadow-md ${getBgColor(expertAge!)}`}
+            className="flex items-center justify-center rounded-full font-bold text-white shrink-0"
+            style={{
+              width: 62,
+              height: 62,
+              fontSize: 23,
+              background: "radial-gradient(circle at 32% 28%,#F9A23E,#EF8C2A)",
+              boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
+            }}
           >
             {expertAge}+
           </div>
           <div className="min-w-0">
+            <div className="text-[12px] font-bold uppercase tracking-[0.08em]" style={{ color: "#EF8C2A" }}>
+              Notre recommandation
+            </div>
+            <div
+              className="font-serif font-bold leading-none my-0.5"
+              style={{ fontSize: 22, color: WARM_INK }}
+            >
+              Dès {expertAge} ans
+            </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <p
-                className="text-sm font-semibold"
-                style={{ color: WARM_INK }}
-              >
-                Notre recommandation
-              </p>
               <MethodBadge size="xs" />
               {isProvisional && <ProvisionalBadge size="sm" withTooltip />}
             </div>
-            <p className="text-xs" style={{ color: WARM_INK2 }}>
-              dès {expertAge} ans
-            </p>
           </div>
-          <AgeVoteButton mediaId={mediaId} className="ml-auto" />
-        </div>
-      )}
-
-      {/* Parent community */}
-      {parentAvg !== null && (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl"
-          style={{
-            background: WARM_CARD,
-            border: `1px solid ${WARM_LINE}`,
-          }}
-        >
-          <div className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base" style={{ background: "#A79BC7" }}>
-            {parentAvg}+
-          </div>
-          <div>
-            <p className="text-sm font-medium" style={{ color: WARM_INK }}>
-              Parents
-            </p>
-            <p className="text-xs" style={{ color: WARM_INK2 }}>
-              {totalReviews} avis
-            </p>
+          <div className="ml-auto self-start">
+            <AgeVoteButton mediaId={mediaId} />
           </div>
         </div>
       )}
 
-      {/* Kids community */}
-      {kidAvg !== null && (
-        <div
-          className="flex items-center gap-3 px-4 py-3 rounded-xl"
-          style={{
-            background: WARM_CARD,
-            border: `1px solid ${WARM_LINE}`,
-          }}
-        >
-          <div
-            className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
-            style={{ background: "#D89AB0" }}
-          >
-            {kidAvg}+
-          </div>
-          <div>
-            <p className="text-sm font-medium" style={{ color: WARM_INK }}>
-              Enfants
-            </p>
-            <p className="text-xs" style={{ color: WARM_INK2 }}>
-              {kidReviews.length} avis
-            </p>
-          </div>
+      {/* Community averages — only when families have voted */}
+      {(parentAvg !== null || kidAvg !== null) && (
+        <div className="flex flex-wrap gap-3">
+          {parentAvg !== null && (
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+              style={{ background: WARM_CARD, border: `1px solid ${WARM_LINE}` }}
+            >
+              <div
+                className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
+                style={{ background: "#A79BC7" }}
+              >
+                {parentAvg}+
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: WARM_INK }}>Parents</p>
+                <p className="text-xs" style={{ color: WARM_INK2 }}>{totalReviews} avis</p>
+              </div>
+            </div>
+          )}
+          {kidAvg !== null && (
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+              style={{ background: WARM_CARD, border: `1px solid ${WARM_LINE}` }}
+            >
+              <div
+                className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
+                style={{ background: "#D89AB0" }}
+              >
+                {kidAvg}+
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: WARM_INK }}>Enfants</p>
+                <p className="text-xs" style={{ color: WARM_INK2 }}>{kidReviews.length} avis</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
