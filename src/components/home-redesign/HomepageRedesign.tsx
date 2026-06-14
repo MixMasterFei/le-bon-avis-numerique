@@ -5,7 +5,7 @@ import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
-import { WeekendRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
+import { WeekendRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
 
 interface HomepageRedesignProps {
@@ -41,6 +41,7 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
       >
         <HeroRedesign heroPosters={heroPosters} selectedKeys={selectedKeys} onToggleAge={toggleAge} />
         <WeekendRail maxAge={weekendMaxAge} caps={weekendCaps} />
+        <UpcomingRail />
         <CinemaRail />
         <CoupsDeCoeurRail />
         <AgeGridRedesign />
