@@ -24,6 +24,11 @@ export interface MediaItem {
     positiveMessages: number
     roleModels: number
     whatParentsNeedToKnow: string[]
+    // Hedged "Ce qui peut marquer" category flags (closed list in
+    // src/lib/sensitive-warnings.ts). Optional so mock-data stays valid.
+    sensitiveWarnings?: string[]
+    // AI confidence (0-1) — used to gate the sensitive-warnings card (>= 0.6).
+    enrichmentConfidence?: number | null
   }
   reviews: {
     id: string

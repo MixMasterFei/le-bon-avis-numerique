@@ -11,6 +11,7 @@ import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
+import { SensitiveWarnings } from "@/components/media/SensitiveWarnings"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
@@ -150,6 +151,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
             positiveMessages: dbMedia.contentMetrics.positiveMessages,
             roleModels: dbMedia.contentMetrics.roleModels,
             whatParentsNeedToKnow: dbMedia.contentMetrics.whatParentsNeedToKnow || [],
+            sensitiveWarnings: dbMedia.contentMetrics.sensitiveWarnings || [],
+            enrichmentConfidence: dbMedia.contentMetrics.enrichmentConfidence,
           }
         : {
             violence: 0,
@@ -160,6 +163,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
             positiveMessages: 0,
             roleModels: 0,
             whatParentsNeedToKnow: [],
+            sensitiveWarnings: [],
+            enrichmentConfidence: null,
           },
       reviews: dbMedia.reviews.map((r) => {
         const ext = r as unknown as { editedAt?: Date; familyMember?: { id: string; name: string; avatarEmoji?: string } }
@@ -872,6 +877,15 @@ export default async function MediaPage({ params }: MediaPageProps) {
               {media.type !== "GAME" && (
                 <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
               )}
+
+              {/* Ce qui peut marquer — repères de vigilance générés par IA, en
+                  cadrage prudent. Affiché seulement si la confiance IA est
+                  suffisante (>= 0.6) ; sinon masqué (les items peu fiables sont
+                  déjà en file d'attente pour l'enrichissement approfondi). */}
+              {media.type !== "GAME" &&
+                (media.contentMetrics.enrichmentConfidence ?? 0) >= 0.6 && (
+                  <SensitiveWarnings items={media.contentMetrics.sensitiveWarnings ?? []} />
+                )}
 
               {/* Talk to Your Kids — actuellement désactivé (rend null). */}
               <TalkToYourKids
