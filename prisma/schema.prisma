@@ -132,6 +132,12 @@ model MediaItem {
   originalTitle   String?   @map("original_title")
   type            MediaType
   releaseDate     DateTime? @map("release_date")
+  // TMDB release lifecycle: "Released" | "Planned" | "In Production" |
+  // "Post Production" | "Canceled" | "Rumored". DISTINCT from `status`
+  // below (which is the manga/series ongoing/completed status). Lets the
+  // anti-fabrication guard catch upcoming titles that have NO release date
+  // yet (e.g. announced sequels). See src/lib/release-status.ts.
+  releaseStatus   String?   @map("release_status")
   posterUrl       String?   @map("poster_url")
   backdropUrl     String?   @map("backdrop_url")
   synopsisFr      String?   @map("synopsis_fr") @db.Text

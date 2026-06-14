@@ -34,6 +34,7 @@ import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 import {
   getMovieDetails,
   getTVDetails,
@@ -122,6 +123,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       originalTitle: dbMedia.originalTitle || undefined,
       type: dbMedia.type as MockMediaItem["type"],
       releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
+      releaseStatus: dbMedia.releaseStatus,
       posterUrl: dbMedia.posterUrl || "/placeholder-poster.jpg",
       synopsisFr: dbMedia.synopsisFr,
       officialRating: dbMedia.officialRating,
@@ -228,8 +230,19 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     }
   }
 
-  const ageStr = media.expertAgeRec && media.expertAgeRec > 0
-    ? ` — Dès ${media.expertAgeRec} ans`
+  // Pre-release/provisional: the age is an estimate, so the SERP wording must
+  // not assert a definitive verdict. See @/lib/release-status.
+  const hide = shouldHideContentAnalysis({
+    releaseDate: media.releaseDate,
+    isProvisional: media.isProvisional,
+    releaseStatus: media.releaseStatus,
+  })
+
+  const hasAge = media.expertAgeRec && media.expertAgeRec > 0
+  const ageStr = hasAge
+    ? hide
+      ? ` — Dès ${media.expertAgeRec} ans (à confirmer)`
+      : ` — Dès ${media.expertAgeRec} ans`
     : ""
 
   const title = `${media.title}${ageStr}`
@@ -239,8 +252,10 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   // Lead the meta description with the age verdict + family angle. This both
   // answers the "[titre] à partir de quel âge" query directly in the SERP and
   // differentiates us from generic plot-summary results (AlloCiné, Wikipédia).
-  const agePrefix = media.expertAgeRec && media.expertAgeRec > 0
-    ? `Dès ${media.expertAgeRec} ans · Notre avis famille`
+  const agePrefix = hasAge
+    ? hide
+      ? `Âge conseillé dès ${media.expertAgeRec} ans (à confirmer)`
+      : `Dès ${media.expertAgeRec} ans · Notre avis famille`
     : null
   const synopsis = media.synopsisFr?.trim() || ""
   const truncate = (text: string, max: number) =>
@@ -272,7 +287,12 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
       ...media.genres.slice(0, 5),
       typeLabel,
       "avis parents",
+      // Cover the real query variants by rating system: games skew PEGI,
+      // films/séries skew CSA + "parents guide".
       "à partir de quel âge",
+      ...(media.type === "GAME"
+        ? ["pegi", `${media.title} pegi`, "âge pour jouer"]
+        : ["age minimum", "age conseillé", "parents guide"]),
       media.title,
     ],
     openGraph: {
@@ -296,8 +316,11 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   }
 }
 
-// Build JSON-LD structured data for a media item
-function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
+// Build JSON-LD structured data for a media item.
+// `hideContentAnalysis` = pre-release/provisional: we suppress the
+// AggregateRating (a TMDB score on an unwatched title reads like a full
+// "avis") and keep the FAQ answer an honest estimate.
+function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnalysis: boolean) {
   const baseUrl = "https://totemavise.com"
   const pageUrl = `${baseUrl}/media/${routeId}`
   const category = typeCategoryPaths[media.type]
@@ -320,7 +343,9 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
     ? Math.round((internalRatings.reduce((a, b) => a + b, 0) / internalCount) * 10) / 10
     : 0
 
-  const aggregateRating = internalCount > 0
+  const aggregateRating = hideContentAnalysis
+    ? undefined
+    : internalCount > 0
     ? {
         "@type": "AggregateRating",
         ratingValue: internalAvg,
@@ -419,7 +444,24 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string) {
       }
   }
 
-  return { breadcrumb, mainEntity }
+  // FAQPage — answers the dominant "[titre] à partir de quel âge ?" intent
+  // with the SAME wording as the on-page "Réponse rapide" (single source via
+  // buildQuickAnswer). For pre-release/provisional titles the answer stays an
+  // honest age estimate with zero content claims (hideContentAnalysis).
+  const qa = buildQuickAnswer({ ...media, hideContentAnalysis })
+  const faqPage = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: qa.question,
+        acceptedAnswer: { "@type": "Answer", text: qa.answer },
+      },
+    ],
+  }
+
+  return { breadcrumb, mainEntity, faqPage }
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
@@ -603,9 +645,19 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
   const adminUser = await checkIsAdmin()
 
+  // Pre-release / provisional fiches: we have NOT evaluated the title, so
+  // every content-analysis surface (réponse rapide, metric bars, parent
+  // prompts, AggregateRating, content JSON-LD) must stay silent — only the
+  // age estimate (badged "à confirmer") shows. See @/lib/release-status.
+  const hideContentAnalysis = shouldHideContentAnalysis({
+    releaseDate: media.releaseDate,
+    isProvisional: media.isProvisional,
+    releaseStatus: media.releaseStatus,
+  })
+
   // JSON-LD structured data
-  const jsonLd = buildJsonLd(media, id)
-  const quickAnswer = buildQuickAnswer(media)
+  const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
+  const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
 
   return (
     <div className="min-h-screen bg-background">
@@ -617,6 +669,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.mainEntity) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faqPage) }}
       />
 
       {/* Hero Section — warm cream with blurred backdrop overlay */}
@@ -786,8 +842,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
               )}
             </div>
 
-            {/* Family Fit — hero column */}
-            {dbId && (
+            {/* Family Fit — hero column. Hidden pre-release: the fit verdict
+                leans on content sensitivity we haven't evaluated yet. */}
+            {dbId && !hideContentAnalysis && (
               <div className="lg:w-72 xl:w-80 shrink-0">
                 <FamilyFitHero mediaId={dbId} />
               </div>
@@ -801,19 +858,56 @@ export default async function MediaPage({ params }: MediaPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
-            {media.type !== "GAME" && (
-              <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
-            )}
+            {hideContentAnalysis ? (
+              /* Pas encore sorti / fiche provisoire : aucune évaluation de
+                 contenu inventée. On reste factuel et honnête, l'âge affiché
+                 est une estimation à confirmer. */
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: "var(--color-warm-card)",
+                  border: "1px solid var(--color-warm-line)",
+                }}
+              >
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+                  style={{ color: "var(--color-warm-accent)" }}
+                >
+                  À venir
+                </p>
+                <h2
+                  className="font-serif text-lg font-medium mb-2"
+                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
+                >
+                  {media.releaseDate
+                    ? `Sortie prévue le ${formatDateFr(media.releaseDate)}`
+                    : "Pas encore sorti"}
+                </h2>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
+                  {`Ce ${mediaTypeLabels[media.type]?.toLowerCase() || "contenu"} n'est pas encore sorti. `}
+                  {media.expertAgeRec
+                    ? `L'âge indiqué (dès ${media.expertAgeRec} ans) est une estimation à confirmer. `
+                    : ""}
+                  {"L'évaluation détaillée du contenu (violence, langage, messages…) sera publiée après sa sortie, une fois le titre visionné."}
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* What Parents Need to Know - NOT for games (they have GameInfoCard) */}
+                {media.type !== "GAME" && (
+                  <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
+                )}
 
-            {/* Talk to Your Kids - for movies/TV/books only (not games) */}
-            <TalkToYourKids
-              title={media.title}
-              type={media.type}
-              metrics={media.contentMetrics}
-              genres={media.genres}
-              topics={media.topics}
-            />
+                {/* Talk to Your Kids - for movies/TV/books only (not games) */}
+                <TalkToYourKids
+                  title={media.title}
+                  type={media.type}
+                  metrics={media.contentMetrics}
+                  genres={media.genres}
+                  topics={media.topics}
+                />
+              </>
+            )}
 
             {/* Screenshots - from local database */}
             {media.screenshots && media.screenshots.length > 0 && (
@@ -1034,8 +1128,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Game Info Card - for games only */}
-            {media.type === "GAME" && (
+            {/* Game Info Card - for games only. Carries content scores
+                (violence/consumérisme) so it's withheld pre-release. */}
+            {media.type === "GAME" && !hideContentAnalysis && (
               <GameInfoCard
                 platforms={media.platforms}
                 genres={media.genres}
@@ -1047,8 +1142,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
             {/* Family Reactions */}
             {dbId && <FamilyReactions mediaId={dbId} mediaTitle={media.title} />}
 
-            {/* Dual Content Metrics (Expert vs Community) - NOT for games */}
-            {dbId && media.type !== "GAME" && (
+            {/* Dual Content Metrics (Expert vs Community) - NOT for games,
+                and not before release (no evaluation exists yet). */}
+            {dbId && media.type !== "GAME" && !hideContentAnalysis && (
               <DualMetricsDisplay
                 mediaId={dbId}
                 mediaTitle={media.title}
@@ -1058,7 +1154,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
             )}
 
             {/* Fallback to single ContentGrid if no dbId - NOT for games */}
-            {!dbId && media.type !== "GAME" && (
+            {!dbId && media.type !== "GAME" && !hideContentAnalysis && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Analyse du contenu</CardTitle>

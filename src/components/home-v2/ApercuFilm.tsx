@@ -17,6 +17,7 @@ import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
+import { isUnreleased } from "@/lib/release-status"
 import { ApercuSimilarMedia } from "./ApercuSimilarMedia"
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
@@ -82,15 +83,6 @@ interface ApercuFilmMedia {
   }>
 }
 
-// Kept at module scope (not inside the component body) so the
-// `react-hooks/purity` rule doesn't flag the unavoidable `Date.now()`.
-// This is a server component rendered once per request, so reading the
-// current time here is correct and stable for the response.
-function computeIsUnreleased(releaseDate: string | null): boolean {
-  if (!releaseDate) return false
-  return new Date(releaseDate).getTime() > Date.now()
-}
-
 export function ApercuFilm({
   media,
   serifClass,
@@ -107,7 +99,7 @@ export function ApercuFilm({
   // We hide the definitive content card pre-release (defense-in-depth:
   // enrichment already skips unreleased titles, but this also covers any
   // stale metrics that predate that guard). See enrich/route.ts.
-  const isUnreleased = computeIsUnreleased(media.releaseDate)
+  const unreleased = isUnreleased(media.releaseDate)
 
   return (
     <FamilyFitProvider>
@@ -128,7 +120,7 @@ export function ApercuFilm({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-10">
               {/* Main column */}
               <div className="lg:col-span-2 space-y-10">
-                {!isUnreleased &&
+                {!unreleased &&
                   media.contentMetrics &&
                   media.contentMetrics.whatParentsNeedToKnow.length > 0 && (
                     <ApercuSection
@@ -274,7 +266,7 @@ export function ApercuFilm({
                   </WarmCard>
                 </ApercuSection>
 
-                {isUnreleased ? (
+                {unreleased ? (
                   <ApercuSection
                     eyebrow="Les 8 dimensions"
                     title="Analyse"
