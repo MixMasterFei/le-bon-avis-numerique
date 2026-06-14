@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
+import { runSmartFilter } from "@/lib/smart-filter"
 
 export const revalidate = 300
 
@@ -145,26 +146,52 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
     }
   }
 
-  const result = await fetchGames({
-    page,
-    limit: PAGE_SIZE,
-    minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
-    // <= (not <) — see films/page.tsx note: keeps the homepage "16+"
-    // age tile from being silently a no-op when maxAge equals the default cap.
-    maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
-    platforms: platforms.length > 0 ? platforms : undefined,
-    topics: topics.length > 0 ? topics : undefined,
-    search: search || undefined,
-    sortBy: sortKey,
-    requirePoster: true,
-    // Recency-sorted browse only surfaces games with enough IGDB
-    // signal to be considered mainstream — keeps obscure shovelware
-    // out of "Récents". Popularity / quality / A→Z sorts naturally
-    // sink unknowns to the bottom so they don't need this floor.
-    minVoteCount: sortKey === "releaseDate" ? 20 : undefined,
-  })
+  // Soft personalization: a selected member re-ORDERS by family fit (nothing
+  // hidden — strictMode=false, minScore=0). /jeux defaults to popularity sort;
+  // any explicit sort keeps the DB order. See src/lib/smart-filter.ts.
+  const useSmartRerank =
+    !!userId && memberIds.length > 0 && sortKey === "popularity"
 
-  const items = result.items.map((m) => {
+  const smart = useSmartRerank
+    ? await runSmartFilter({
+        userId: userId!,
+        familyMemberIds: memberIds,
+        mediaType: "GAME",
+        offset: (page - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        strictMode: false,
+        minScore: 0,
+        platforms: platforms.length > 0 ? platforms : undefined,
+        topics: topics.length > 0 ? topics : undefined,
+        search: search || undefined,
+        minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+        maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+      })
+    : null
+
+  const result = useSmartRerank
+    ? null
+    : await fetchGames({
+        page,
+        limit: PAGE_SIZE,
+        minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+        // <= (not <) — see films/page.tsx note: keeps the homepage "16+"
+        // age tile from being silently a no-op when maxAge equals the default cap.
+        maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+        platforms: platforms.length > 0 ? platforms : undefined,
+        topics: topics.length > 0 ? topics : undefined,
+        search: search || undefined,
+        sortBy: sortKey,
+        requirePoster: true,
+        // Recency-sorted browse only surfaces games with enough IGDB
+        // signal to be considered mainstream — keeps obscure shovelware
+        // out of "Récents". Popularity / quality / A→Z sorts naturally
+        // sink unknowns to the bottom so they don't need this floor.
+        minVoteCount: sortKey === "releaseDate" ? 20 : undefined,
+      })
+
+  const num = (v: unknown): number | null => (typeof v === "number" ? v : null)
+  const dbItems = (result?.items ?? []).map((m) => {
     const cm = m.contentMetrics as
       | {
           violence?: number | null
@@ -191,6 +218,28 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
         : null,
     }
   })
+  const smartItems = (smart?.results ?? []).map((m) => ({
+    id: m.mediaId,
+    type: m.type as "MOVIE" | "TV" | "GAME",
+    title: m.title,
+    posterUrl: m.posterUrl ?? null,
+    expertAgeRec: m.expertAgeRec,
+    genres: m.genres,
+    releaseDate: m.releaseDate ? m.releaseDate.toISOString().split("T")[0] : null,
+    contentMetrics: m.contentMetrics
+      ? {
+          violence: num(m.contentMetrics.violence),
+          sexNudity: num(m.contentMetrics.sexNudity),
+          language: num(m.contentMetrics.language),
+          substanceUse: num(m.contentMetrics.substanceUse),
+        }
+      : null,
+  }))
+  const items = useSmartRerank ? smartItems : dbItems
+  const totalItems = useSmartRerank ? smart?.total ?? 0 : result?.pagination.total ?? 0
+  const totalPages = useSmartRerank
+    ? Math.max(1, Math.ceil((smart?.total ?? 0) / PAGE_SIZE))
+    : result?.pagination.totalPages ?? 1
 
   const filterSp = new URLSearchParams()
   if (search) filterSp.set("q", search)
@@ -218,13 +267,13 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
     ],
   }
 
-  const itemListLd = result.items.length
+  const itemListLd = items.length
     ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: "Jeux vidéo pour la famille",
-        numberOfItems: result.pagination.total,
-        itemListElement: result.items.slice(0, 20).map((item, idx) => ({
+        numberOfItems: totalItems,
+        itemListElement: items.slice(0, 20).map((item, idx) => ({
           "@type": "ListItem",
           position: (page - 1) * PAGE_SIZE + idx + 1,
           url: `${baseUrl}/media/${encodeURIComponent(item.id)}`,
@@ -247,9 +296,9 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
       )}
       <ApercuFilmsList
         items={items}
-        total={result.pagination.total}
+        total={totalItems}
         page={page}
-        totalPages={result.pagination.totalPages}
+        totalPages={totalPages}
         serifClass="font-serif"
         familyMembers={familyMembers.map((m) => ({
           id: m.id,
