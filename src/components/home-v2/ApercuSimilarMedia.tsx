@@ -177,9 +177,8 @@ export async function ApercuSimilarMedia({
   const p = APERCU_PALETTE
 
   return (
-    <div className="relative -mx-4 md:-mx-8">
-      <div className="flex gap-4 overflow-x-auto pb-4 px-4 md:px-8 scrollbar-thin">
-        {similarMedia.map((item) => {
+    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+      {similarMedia.map((item) => {
           const year = item.releaseDate
             ? new Date(item.releaseDate).getFullYear()
             : null
@@ -187,7 +186,7 @@ export async function ApercuSimilarMedia({
             <Link
               key={item.id}
               href={`/media/${toMediaRouteId(item.type as MediaType, item.id)}`}
-              className="group flex-shrink-0 w-[160px]"
+              className="group block"
             >
               {/* Poster */}
               <div
@@ -239,7 +238,6 @@ export async function ApercuSimilarMedia({
             </Link>
           )
         })}
-      </div>
     </div>
   )
 }

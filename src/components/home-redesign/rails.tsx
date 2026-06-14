@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { seededShuffle } from "@/lib/seeded-shuffle"
-import { CardRailSection, Em, Band, Wrap, SectionHead, RailRow } from "./parts"
+import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 
@@ -132,17 +132,13 @@ export function UpcomingRail() {
           lead="Anticipez vos prochaines séances. L'âge affiché est une estimation, précisée après la sortie."
           action={{ label: "Tout le calendrier", href: "/films" }}
         />
-        <RailRow>
+        <div className="v2-row-up">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-[232px] w-[300px] flex-none animate-pulse rounded-[14px]"
-                  style={{ background: "var(--placeholder, #E6DFCE)", scrollSnapAlign: "start" }}
-                />
+                <div key={i} className="h-[232px] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
               ))
             : items.slice(0, 12).map((it) => <UpcomingCard key={it.id} item={it} />)}
-        </RailRow>
+        </div>
       </Wrap>
     </Band>
   )
