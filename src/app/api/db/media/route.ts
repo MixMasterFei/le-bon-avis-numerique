@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
+import { publicMediaWhere } from "@/lib/media-route"
 import { Prisma } from "@prisma/client"
 
 // Unified media endpoint - fetches all types with filtering
@@ -19,10 +20,13 @@ export async function GET(request: NextRequest) {
   const skip = (page - 1) * limit
 
   try {
-    // Manga is admin-only during soft launch — exclude from this public
-    // endpoint by default. Callers that need it (admin tooling) can pass
-    // ?type=MANGA explicitly and it'll be used.
-    const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
+    // Public gate: poster + quality floor (≥30) + no manga — the SAME bar as
+    // the sitemap and category pages. This endpoint feeds user-facing surfaces
+    // (header search, recommendations), so it must not surface incomplete /
+    // unvetted fiches (no poster, no age) that /films/recherche would exclude.
+    // Quality ≥30 still includes provisional films (they carry an age estimate).
+    // Admin tooling can still override `type` below (incl. ?type=MANGA).
+    const where: Prisma.MediaItemWhereInput = { ...publicMediaWhere }
 
     // Filter by type — overrides the default MANGA exclusion when caller
     // explicitly asks for a type (including MANGA, e.g. /admin contexts).
@@ -169,6 +173,7 @@ export async function GET(request: NextRequest) {
       const fallbackItems = await withPrismaRetry(() =>
         prisma.mediaItem.findMany({
           where: {
+            ...publicMediaWhere,
             ...(type && ["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"].includes(type)
               ? { type: type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" }
               : {}),

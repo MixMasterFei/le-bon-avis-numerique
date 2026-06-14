@@ -103,7 +103,19 @@ export function buildSmartFilterWhere(input: WhereClauseInput): Record<string, a
   }
 
   if (input.search && input.search.trim().length >= 2) {
-    where.title = { contains: input.search.trim(), mode: "insensitive" }
+    // Match BOTH title and originalTitle (like fetchMovies) so e.g. "Spirited
+    // Away" finds "Le Voyage de Chihiro". AND-composed to avoid clobbering the
+    // topics OR above.
+    const q = input.search.trim()
+    where.AND = [
+      ...(where.AND || []),
+      {
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { originalTitle: { contains: q, mode: "insensitive" } },
+        ],
+      },
+    ]
   }
 
   if (input.requirePoster) {

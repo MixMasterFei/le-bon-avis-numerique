@@ -35,21 +35,28 @@ export const PROVIDER_NAME_MAP: Record<string, string> = {
   "Microsoft Store": "Microsoft",
 }
 
-// Providers we care about (French market).
-export const RELEVANT_PROVIDERS = new Set([
+// Ordered list of streaming platforms the filter UIs (FilterSidebar,
+// ApercuFilterSidebar) should offer for movies/séries, most-relevant first.
+// This is the SINGLE source of truth for the UI — `RELEVANT_PROVIDERS` is
+// derived from it so the two can never drift (the bug where Arte/Max/
+// Paramount+/OCS/Crunchyroll/ADN existed here but not in the sidebars).
+export const FILTERABLE_PLATFORMS = [
   "Netflix",
-  "Prime Video",
   "Disney+",
+  "Prime Video",
   "Canal+",
-  "Apple TV+",
   "France TV",
-  "Arte",
-  "OCS",
-  "Paramount+",
+  "Apple TV+",
   "Max",
+  "Paramount+",
+  "OCS",
+  "Arte",
   "Crunchyroll",
   "ADN",
-])
+] as const
+
+// Providers we care about (French market) — derived from the UI list above.
+export const RELEVANT_PROVIDERS = new Set<string>(FILTERABLE_PLATFORMS)
 
 export function normalizeProviderName(name: string): string | null {
   if (PROVIDER_NAME_MAP[name]) return PROVIDER_NAME_MAP[name]

@@ -22,12 +22,12 @@ test.describe("Family fit — disliked-genre filtering", () => {
     const memberRow = page.getByRole("button", { name: new RegExp(seededFamily.members.child.name) })
     await memberRow.first().click()
 
-    // Confirm the family filter is active via the sidebar summary ("Adapté
-    // pour <membre>"). We sync on this rather than the page section heading:
-    // the results are correctly family-filtered, but the heading copy doesn't
-    // always flip for a single-member selection — a cosmetic quirk, not a
-    // filtering bug (verified: horror is excluded from the results below).
-    await expect(page.getByText(/Adapté pour/i).first()).toBeVisible({ timeout: 30_000 })
+    // Confirm the age filter is active via the sidebar summary ("Tranche
+    // d'âge pour <membre>"). On /films, selecting a member narrows the AGE
+    // band — full personalization (sensitivity + disliked-genre exclusion)
+    // lives on /films/recherche. Here horror is kept out by the age cap (a
+    // 10-year-old's band excludes 13+/16+ horror), which is what we verify.
+    await expect(page.getByText(/Tranche d'âge pour/i).first()).toBeVisible({ timeout: 30_000 })
 
     // Give the API a moment to settle, then inspect rendered cards
     await page.waitForLoadState("networkidle")
