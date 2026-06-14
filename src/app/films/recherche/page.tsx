@@ -320,11 +320,6 @@ function FilmsRechercheContent() {
     router.replace("/films/recherche", { scroll: false })
   }
 
-  // Get all available titles for autocomplete
-  const availableTitles = useMemo(() => {
-    return [...new Set(apiMovies.map(m => m.title))]
-  }, [apiMovies])
-
   // Pagination
   const totalPages = apiTotalPages
   const paginatedMovies = filteredMovies
@@ -397,7 +392,6 @@ function FilmsRechercheContent() {
               key={sidebarResetKey}
               onFiltersChange={handleFiltersChange}
               mediaType="MOVIE"
-              availableTitles={availableTitles}
               initialFilters={filters}
             />
             {hasActiveFilters && (

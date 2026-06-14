@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery } from "@/lib/security"
+import { PUBLIC_MEDIA_QUALITY_FLOOR } from "@/lib/media-route"
 
 // Optional ?type= filter — restricts results to a single MediaType.
 // Anything else (or absent) returns all eligible types.
@@ -36,6 +37,10 @@ export async function GET(request: NextRequest) {
     const results = await prisma.mediaItem.findMany({
       where: {
         ...typeWhere,
+        // Public gate (same bar as the sitemap/browse): never suggest
+        // posterless or sub-quality fiches — they'd lead to thin pages.
+        posterUrl: { not: null },
+        dataQualityScore: { gte: PUBLIC_MEDIA_QUALITY_FLOOR },
         OR: [
           { title: { contains: query, mode: "insensitive" } },
           { originalTitle: { contains: query, mode: "insensitive" } },
@@ -73,6 +78,8 @@ export async function GET(request: NextRequest) {
         `SELECT id, title, type, poster_url, release_date, expert_age_rec
          FROM media_items
          WHERE ${typeClause}
+           AND poster_url IS NOT NULL
+           AND data_quality_score >= ${PUBLIC_MEDIA_QUALITY_FLOOR}
            AND (LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1
              OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1)
          LIMIT 8`,
