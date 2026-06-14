@@ -44,17 +44,39 @@ export interface ExtrasData {
   inTheaters: boolean
 }
 
+// ── Trigger-vote (community "Ce qui peut marquer" consensus) shapes ──
+export interface CategoryConsensus {
+  present: number
+  absent: number
+  total: number
+  presentPercent: number | null
+  userVote: boolean | null
+}
+
+export interface TriggerConsensusResponse {
+  categories: Record<string, CategoryConsensus>
+  threshold: { minVotes: number; minPercent: number }
+}
+
 interface FicheData {
   familyFit: FamilyFitResponse | null
   familyFitLoading: boolean
   extras: ExtrasData | null
   extrasLoading: boolean
+  triggerVotes: TriggerConsensusResponse | null
+  triggerVotesLoading: boolean
 }
 
 const FicheDataContext = createContext<FicheData | undefined>(undefined)
 
 function wantsExtras(mediaId: string | null, mediaType: string): boolean {
   return !!mediaId && (mediaType === "MOVIE" || mediaType === "TV")
+}
+
+// Trigger votes only exist for DB-backed, non-game fiches (the warnings card is
+// hidden on GAME and off-DB cinema fiches anyway).
+function wantsTriggers(mediaId: string | null, mediaType: string): boolean {
+  return !!mediaId && mediaType !== "GAME"
 }
 
 /**
@@ -85,6 +107,8 @@ export function FicheDataProvider({
   const [familyFitLoading, setFamilyFitLoading] = useState(!!mediaId)
   const [extras, setExtras] = useState<ExtrasData | null>(null)
   const [extrasLoading, setExtrasLoading] = useState(wantsExtras(mediaId, mediaType))
+  const [triggerVotes, setTriggerVotes] = useState<TriggerConsensusResponse | null>(null)
+  const [triggerVotesLoading, setTriggerVotesLoading] = useState(wantsTriggers(mediaId, mediaType))
 
   useEffect(() => {
     if (!mediaId) return
@@ -108,8 +132,21 @@ export function FicheDataProvider({
     return () => { cancelled = true }
   }, [mediaId, mediaType])
 
+  useEffect(() => {
+    if (!wantsTriggers(mediaId, mediaType)) return
+    let cancelled = false
+    fetch(`/api/media/${mediaId}/trigger-vote`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled) setTriggerVotes(j) })
+      .catch(() => { if (!cancelled) setTriggerVotes(null) })
+      .finally(() => { if (!cancelled) setTriggerVotesLoading(false) })
+    return () => { cancelled = true }
+  }, [mediaId, mediaType])
+
   return (
-    <FicheDataContext.Provider value={{ familyFit, familyFitLoading, extras, extrasLoading }}>
+    <FicheDataContext.Provider
+      value={{ familyFit, familyFitLoading, extras, extrasLoading, triggerVotes, triggerVotesLoading }}
+    >
       {children}
     </FicheDataContext.Provider>
   )
@@ -170,5 +207,34 @@ export function useExtrasData(mediaId: string | null, mediaType: string): {
   }, [hasCtx, enabled, mediaId])
 
   if (ctx) return { data: ctx.extras, loading: ctx.extrasLoading }
+  return { data, loading }
+}
+
+/**
+ * Trigger-vote consensus for a fiche. Reads from the provider when present
+ * (single shared fetch); otherwise self-fetches so the warnings card still
+ * works standalone (e.g. /apercufilm). Mirrors useFamilyFitData.
+ */
+export function useTriggerVotes(mediaId: string | null): {
+  data: TriggerConsensusResponse | null
+  loading: boolean
+} {
+  const ctx = useContext(FicheDataContext)
+  const hasCtx = ctx !== undefined
+  const [data, setData] = useState<TriggerConsensusResponse | null>(null)
+  const [loading, setLoading] = useState(!hasCtx && !!mediaId)
+
+  useEffect(() => {
+    if (hasCtx || !mediaId) return // provider supplies the data, or nothing to fetch
+    let cancelled = false
+    fetch(`/api/media/${mediaId}/trigger-vote`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled) setData(j) })
+      .catch(() => { if (!cancelled) setData(null) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [hasCtx, mediaId])
+
+  if (ctx) return { data: ctx.triggerVotes, loading: ctx.triggerVotesLoading }
   return { data, loading }
 }

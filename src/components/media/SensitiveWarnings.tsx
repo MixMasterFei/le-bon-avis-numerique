@@ -2,9 +2,13 @@ import { AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { MethodBadge } from "@/components/ui/MethodBadge"
+import { TriggerChip } from "./TriggerChip"
 
 interface SensitiveWarningsProps {
   items: string[]
+  // When set (DB-backed fiche), each flag becomes a parent-votable TriggerChip
+  // that confirms/rejects it in place. Null/undefined (off-DB cinema) → inert.
+  mediaId?: string | null
   className?: string
 }
 
@@ -16,7 +20,7 @@ interface SensitiveWarningsProps {
  * src/lib/sensitive-warnings.ts). The page only renders this card when AI
  * confidence is high enough (>= 0.6), so we never surface low-confidence guesses.
  */
-export function SensitiveWarnings({ items, className }: SensitiveWarningsProps) {
+export function SensitiveWarnings({ items, mediaId, className }: SensitiveWarningsProps) {
   const p = APERCU_PALETTE
 
   if (!items || items.length === 0) return null
@@ -50,17 +54,21 @@ export function SensitiveWarnings({ items, className }: SensitiveWarningsProps) 
         vous-même, il ne s&apos;agit pas de scènes confirmées.
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        {items.map((item, index) => (
-          <span
-            key={index}
-            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[14px]"
-            style={{ background: p.bg, border: `1px solid ${p.line2}`, color: p.ink2 }}
-          >
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: p.accent }} />
-            {item}
-          </span>
-        ))}
+      <div className="flex flex-wrap gap-2 items-start">
+        {items.map((item, index) =>
+          mediaId ? (
+            <TriggerChip key={index} mediaId={mediaId} category={item} />
+          ) : (
+            <span
+              key={index}
+              className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[14px]"
+              style={{ background: p.bg, border: `1px solid ${p.line2}`, color: p.ink2 }}
+            >
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" style={{ color: p.accent }} />
+              {item}
+            </span>
+          )
+        )}
       </div>
     </div>
   )

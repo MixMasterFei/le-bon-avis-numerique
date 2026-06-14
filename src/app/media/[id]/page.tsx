@@ -884,7 +884,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   déjà en file d'attente pour l'enrichissement approfondi). */}
               {media.type !== "GAME" &&
                 (media.contentMetrics.enrichmentConfidence ?? 0) >= 0.6 && (
-                  <SensitiveWarnings items={media.contentMetrics.sensitiveWarnings ?? []} />
+                  <SensitiveWarnings items={media.contentMetrics.sensitiveWarnings ?? []} mediaId={dbId} />
                 )}
 
               {/* Talk to Your Kids — actuellement désactivé (rend null). */}
