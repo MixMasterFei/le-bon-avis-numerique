@@ -20,9 +20,13 @@ const OPTIONS = [
 export function MangaDemographicPills({
   active,
   baseQuery,
+  variant = "classic",
 }: {
   active?: string
   baseQuery: string
+  /** "v2" drops the full-width bar + uses scoped [data-home=v2] tokens so it
+   *  fits inside the CatalogueRedesign above-grid slot. */
+  variant?: "classic" | "v2"
 }) {
   const p = APERCU_PALETTE
 
@@ -33,6 +37,31 @@ export function MangaDemographicPills({
     if (value) sp.set("demographic", value)
     const qs = sp.toString()
     return qs ? `/mangas?${qs}` : "/mangas"
+  }
+
+  if (variant === "v2") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {OPTIONS.map((opt) => {
+          const isActive = (active ?? null) === opt.value
+          return (
+            <Link
+              key={opt.value ?? "all"}
+              href={buildHref(opt.value)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors"
+              style={{
+                background: isActive ? "var(--ink)" : "var(--card)",
+                color: isActive ? "var(--paper)" : "var(--ink)",
+                border: `1px solid ${isActive ? "var(--ink)" : "var(--line)"}`,
+              }}
+              title={"hint" in opt ? opt.hint : undefined}
+            >
+              {opt.label}
+            </Link>
+          )
+        })}
+      </div>
+    )
   }
 
   return (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { seededShuffle } from "@/lib/seeded-shuffle"
+import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
@@ -62,25 +62,88 @@ function useRail(url: string, key: string, fallbackType: CardType) {
 }
 
 // ── Pour ce week-end — age-chip driven, with a "Recharger" reshuffle ──
-export function WeekendRail({ maxAge, caps }: { maxAge: number; caps: Record<string, number> }) {
-  const params = new URLSearchParams({
-    maxAge: String(maxAge),
-    shuffle: "weekly",
-    requirePoster: "true",
-    language: "fr,en",
-    limit: "24",
-  })
-  for (const [k, v] of Object.entries(caps)) params.set(k, String(v))
-  const { items: pool, loading } = useRail(`/api/db/movies?${params}`, "movies", "MOVIE")
+//
+// The hero selection must be MIXED media (films + séries + jeux) and read as
+// attractive to a newcomer: roughly half fresh releases + half recognizable,
+// quality titles. We blend two pools from the unified /api/db/media endpoint:
+//   - quality : sort=popularity + a tmdbVoteCount floor → well-known films/TV
+//     (games carry no tmdb votes, so they naturally come from the fresh pool).
+//   - fresh   : sort=newest → recent mixed media incl. séries + jeux.
+// Both are age-gated (expertAgeRec ≤ the selected family age) and vetted by the
+// endpoint's public quality floor. We then weekly-seed-shuffle the blend so the
+// row rotates each Monday; "Recharger" reshuffles on demand.
+interface MediaApiItem {
+  id: string
+  type?: string
+  title: string
+  posterUrl: string | null
+  expertAgeRec?: number | null
+  genres?: string[] | null
+  contentMetrics?: RedesignCardMedia["contentMetrics"]
+}
+
+function mapMedia(items: unknown): RedesignCardMedia[] {
+  if (!Array.isArray(items)) return []
+  return (items as MediaApiItem[])
+    .filter((it) => it.type === "MOVIE" || it.type === "TV" || it.type === "GAME")
+    .map((it) => toCard(it, "MOVIE"))
+}
+
+function useWeekend(maxAge: number) {
+  const [quality, setQuality] = useState<RedesignCardMedia[]>([])
+  const [fresh, setFresh] = useState<RedesignCardMedia[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    const age = `maxAge=${maxAge}`
+    Promise.all([
+      fetch(`/api/db/media?sort=popularity&minVotes=200&${age}&limit=40`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch(`/api/db/media?sort=newest&${age}&limit=40`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ])
+      .then(([q, f]) => {
+        if (cancelled) return
+        setQuality(mapMedia(q?.items))
+        setFresh(mapMedia(f?.items))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [maxAge])
+
+  return { quality, fresh, loading }
+}
+
+export function WeekendRail({ maxAge }: { maxAge: number }) {
+  const { quality, fresh, loading } = useWeekend(maxAge)
   const [nonce, setNonce] = useState(0)
-  const shown = useMemo(() => seededShuffle(pool, nonce + 1).slice(0, 10), [pool, nonce])
+
+  const shown = useMemo(() => {
+    const seed = getWeekSeed() + nonce
+    const seen = new Set<string>()
+    const take = (arr: RedesignCardMedia[], n: number, s: number) => {
+      const out: RedesignCardMedia[] = []
+      for (const m of seededShuffle(arr, s)) {
+        if (seen.has(m.id)) continue
+        seen.add(m.id)
+        out.push(m)
+        if (out.length >= n) break
+      }
+      return out
+    }
+    // ~half fresh, ~half quality, then blend so types/sources interleave.
+    const freshHalf = take(fresh, 5, seed)
+    const qualityHalf = take(quality, 5, seed + 1)
+    return seededShuffle([...freshHalf, ...qualityHalf], seed + 2)
+  }, [fresh, quality, nonce])
 
   return (
     <CardRailSection
       id="weekend"
       eyebrow="Ce week-end"
       title={<>Pour <Em tone="terra">ce week-end</Em> en famille</>}
-      lead="Des idées prêtes à lancer. Ajustez les âges plus haut pour personnaliser."
+      lead="Un mélange de nouveautés et de valeurs sûres, prêtes à lancer. Ajustez les âges plus haut pour personnaliser."
       items={shown}
       loading={loading}
       totem="full"

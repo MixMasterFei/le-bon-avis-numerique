@@ -213,6 +213,11 @@ export function ApercuFilterSidebar({
         const sp = new URLSearchParams()
         const font = searchParams.get("font")
         if (font) sp.set("font", font)
+        // Preserve the admin V2/classic override so filtering on the classic
+        // fallback doesn't bounce an admin back to V2 (no-op for the public —
+        // anon users never carry a `v` param).
+        const variant = searchParams.get("v")
+        if (variant) sp.set("v", variant)
         const finalSearch = next.search ?? search
         const finalSort = next.sort ?? sort
         const finalMinAge = next.minAge ?? minAge

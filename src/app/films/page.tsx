@@ -1,9 +1,19 @@
 import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { fetchMovies } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
+
+// Admin-only V2 catalogue. Dynamically imported so its chunk + the 3 V2 fonts
+// never ship to anonymous/public visitors (the default classic view is served
+// to everyone else).
+const CatalogueRedesign = dynamic(() =>
+  import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
+    (m) => m.CatalogueRedesign,
+  ),
+)
 import { isCinemaSort } from "@/lib/cinema-policy"
 import { getCinemaMovies } from "@/lib/cinema"
 import { runSmartFilter } from "@/lib/smart-filter"
@@ -103,6 +113,9 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const params = await searchParams
   const session = await auth()
   const userId = (session?.user as { id?: string } | undefined)?.id
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === "ADMIN"
+  const showV2 = isAdmin && get(params, "v") !== "classic"
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
@@ -327,6 +340,9 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   if (platforms.length > 0) filterSp.set("platforms", platforms.join(","))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
   if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
+  // Carry the admin V2/classic override through pagination + the toggle.
+  const variant = get(params, "v")
+  if (variant) filterSp.set("v", variant)
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -367,6 +383,36 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         ? "Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus."
         : undefined
 
+  const listProps = {
+    items,
+    total: totalItems,
+    page,
+    totalPages,
+    serifClass: "font-serif",
+    familyMembers: familyMembers.map((m) => ({
+      id: m.id,
+      name: m.name,
+      birthYear: m.birthYear,
+      birthMonth: m.birthMonth,
+      avatarEmoji: m.avatarEmoji,
+      avatarStyle: m.avatarStyle,
+      avatarSeed: m.avatarSeed,
+      avatarOptions: m.avatarOptions as Record<string, unknown> | null,
+    })),
+    initialFilters: {
+      search,
+      sort: isCinema ? "cinema" : sortKey,
+      minAge: effectiveMinAge,
+      maxAge: effectiveMaxAge,
+      platforms,
+      topics,
+      familyMemberIds: memberIds,
+    },
+    filterQuery: filterSp.toString(),
+    route: "/films",
+    notice,
+  }
+
   return (
     <>
       <script
@@ -379,35 +425,11 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
         />
       )}
-      <ApercuFilmsList
-        items={items}
-        total={totalItems}
-        page={page}
-        totalPages={totalPages}
-        serifClass="font-serif"
-        familyMembers={familyMembers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          birthYear: m.birthYear,
-          birthMonth: m.birthMonth,
-          avatarEmoji: m.avatarEmoji,
-          avatarStyle: m.avatarStyle,
-          avatarSeed: m.avatarSeed,
-          avatarOptions: m.avatarOptions as Record<string, unknown> | null,
-        }))}
-        initialFilters={{
-          search,
-          sort: isCinema ? "cinema" : sortKey,
-          minAge: effectiveMinAge,
-          maxAge: effectiveMaxAge,
-          platforms,
-          topics,
-          familyMemberIds: memberIds,
-        }}
-        filterQuery={filterSp.toString()}
-        route="/films"
-        notice={notice}
-      />
+      {showV2 ? (
+        <CatalogueRedesign {...listProps} defaultSort="releaseDate" />
+      ) : (
+        <ApercuFilmsList {...listProps} />
+      )}
     </>
   )
 }

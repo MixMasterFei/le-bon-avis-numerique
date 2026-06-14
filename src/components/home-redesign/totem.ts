@@ -11,6 +11,8 @@ export interface TotemMetrics {
   sexNudity?: number | null
   language?: number | null
   substanceUse?: number | null
+  /** Microtransactions / in-game purchases (games). */
+  consumerism?: number | null
 }
 
 export type TotemLevel = 0 | 1 | 2 | 3
@@ -25,6 +27,9 @@ export function totemLevel(v: number | null | undefined): TotemLevel {
 
 export const TOTEM_WORDS = ["Aucun", "Léger", "Modéré", "Marqué"] as const
 
+/** Per-axis word override (e.g. purchases read better than "Marqué"). */
+export const PURCHASE_WORDS = ["Aucun", "Quelques-uns", "Présents", "Nombreux"] as const
+
 // CSS vars resolved within [data-home="v2"].
 export const TOTEM_COLORS = [
   "var(--r0)",
@@ -37,19 +42,39 @@ export interface TotemAxis {
   key: keyof TotemMetrics
   short: string
   label: string
+  /** Optional level-word override for this axis (else TOTEM_WORDS). */
+  words?: readonly string[]
 }
 
-export const TOTEM_AXES: TotemAxis[] = [
+// Films / TV / series: the four sensibility axes.
+export const TOTEM_AXES_FILM: TotemAxis[] = [
   { key: "violence", short: "V", label: "Violence" },
   { key: "sexNudity", short: "S", label: "Sexe / Sensualité" },
   { key: "language", short: "L", label: "Langage" },
   { key: "substanceUse", short: "A", label: "Substances" },
 ]
 
-/** True when there's at least one non-null axis to show a content totem. */
-export function hasTotemData(m: TotemMetrics | null | undefined): boolean {
+// Games: parents care about violence + microtransactions, not the film
+// axes (which are mostly noise for games). consumerism = in-game purchases.
+export const TOTEM_AXES_GAME: TotemAxis[] = [
+  { key: "violence", short: "V", label: "Violence" },
+  { key: "consumerism", short: "€", label: "Achats intégrés", words: PURCHASE_WORDS },
+]
+
+/** Default export kept for the generic decoder / back-compat (film axes). */
+export const TOTEM_AXES = TOTEM_AXES_FILM
+
+/** The axes to display for a given media type. */
+export function totemAxesFor(type?: string | null): TotemAxis[] {
+  return type === "GAME" ? TOTEM_AXES_GAME : TOTEM_AXES_FILM
+}
+
+/** True when there's at least one non-null axis to show a content totem,
+ *  scoped to the axes relevant for the media type. */
+export function hasTotemData(
+  m: TotemMetrics | null | undefined,
+  type?: string | null,
+): boolean {
   if (!m) return false
-  return [m.violence, m.sexNudity, m.language, m.substanceUse].some(
-    (x) => typeof x === "number",
-  )
+  return totemAxesFor(type).some((a) => typeof m[a.key] === "number")
 }

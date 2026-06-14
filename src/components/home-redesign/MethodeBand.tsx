@@ -7,7 +7,7 @@ import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
 import { Band, Wrap, Em } from "./parts"
-import { totemLevel, TOTEM_AXES, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
+import { totemLevel, totemAxesFor, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
 
 interface DecoderItem {
   id: string
@@ -111,13 +111,14 @@ function Decoder({ item }: { item: DecoderItem | null }) {
           </span>
         )}
       </div>
-      {TOTEM_AXES.map((a) => {
+      {totemAxesFor(item.type).map((a) => {
         const lvl = totemLevel(metrics[a.key])
+        const words = a.words ?? TOTEM_WORDS
         return (
           <div key={a.key} className="flex items-center gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
             <div className="flex-1">
               <b className="block text-[14.5px] text-white">{a.label}</b>
-              <span className="text-[12.5px]" style={{ color: "#A9C4B3" }}>{TOTEM_WORDS[lvl]}</span>
+              <span className="text-[12.5px]" style={{ color: "#A9C4B3" }}>{words[lvl]}</span>
             </div>
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (

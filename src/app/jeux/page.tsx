@@ -1,10 +1,19 @@
 import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { fetchGames } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { runSmartFilter } from "@/lib/smart-filter"
+
+// Admin-only V2 catalogue, code-split so its chunk + fonts stay out of the
+// public bundle. Classic /jeux is unchanged for anon/non-admin.
+const CatalogueRedesign = dynamic(() =>
+  import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
+    (m) => m.CatalogueRedesign,
+  ),
+)
 
 export const revalidate = 300
 
@@ -101,6 +110,9 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
   const params = await searchParams
   const session = await auth()
   const userId = (session?.user as { id?: string } | undefined)?.id
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === "ADMIN"
+  const showV2 = isAdmin && get(params, "v") !== "classic"
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
@@ -198,6 +210,7 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
           sexNudity?: number | null
           language?: number | null
           substanceUse?: number | null
+          consumerism?: number | null
         }
       | null
     return {
@@ -208,12 +221,15 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
       expertAgeRec: m.expertAgeRec,
       genres: m.genres,
       releaseDate: m.releaseDate,
+      // Games show Violence + Achats intégrés (consumerism) in the totem,
+      // so consumerism must ride along (films/TV ignore it).
       contentMetrics: cm
         ? {
             violence: cm.violence ?? null,
             sexNudity: cm.sexNudity ?? null,
             language: cm.language ?? null,
             substanceUse: cm.substanceUse ?? null,
+            consumerism: cm.consumerism ?? null,
           }
         : null,
     }
@@ -232,6 +248,9 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
           sexNudity: num(m.contentMetrics.sexNudity),
           language: num(m.contentMetrics.language),
           substanceUse: num(m.contentMetrics.substanceUse),
+          consumerism: num(
+            (m.contentMetrics as { consumerism?: number | null }).consumerism,
+          ),
         }
       : null,
   }))
@@ -251,6 +270,8 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
   if (platforms.length > 0) filterSp.set("platforms", platforms.join(","))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
   if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
+  const variant = get(params, "v")
+  if (variant) filterSp.set("v", variant)
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -299,41 +320,48 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
         />
       )}
-      <ApercuFilmsList
-        items={items}
-        total={totalItems}
-        page={page}
-        totalPages={totalPages}
-        serifClass="font-serif"
-        familyMembers={familyMembers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          birthYear: m.birthYear,
-          birthMonth: m.birthMonth,
-          avatarEmoji: m.avatarEmoji,
-          avatarStyle: m.avatarStyle,
-          avatarSeed: m.avatarSeed,
-          avatarOptions: m.avatarOptions as Record<string, unknown> | null,
-        }))}
-        initialFilters={{
-          search,
-          sort: sortKey,
-          minAge: effectiveMinAge,
-          maxAge: effectiveMaxAge,
-          platforms,
-          topics,
-          familyMemberIds: memberIds,
-        }}
-        filterQuery={filterSp.toString()}
-        route="/jeux"
-        notice={notice}
-        eyebrow="Catalogue"
-        titlePrefix="Tous les"
-        titleAccent="jeux vidéo"
-        itemNoun={{ singular: "jeu", plural: "jeux" }}
-        emptyTitle="Aucun jeu à afficher"
-        mediaType="GAME"
-      />
+      {(() => {
+        const listProps = {
+          items,
+          total: totalItems,
+          page,
+          totalPages,
+          serifClass: "font-serif",
+          familyMembers: familyMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            birthYear: m.birthYear,
+            birthMonth: m.birthMonth,
+            avatarEmoji: m.avatarEmoji,
+            avatarStyle: m.avatarStyle,
+            avatarSeed: m.avatarSeed,
+            avatarOptions: m.avatarOptions as Record<string, unknown> | null,
+          })),
+          initialFilters: {
+            search,
+            sort: sortKey,
+            minAge: effectiveMinAge,
+            maxAge: effectiveMaxAge,
+            platforms,
+            topics,
+            familyMemberIds: memberIds,
+          },
+          filterQuery: filterSp.toString(),
+          route: "/jeux",
+          notice,
+          eyebrow: "Catalogue",
+          titlePrefix: "Tous les",
+          titleAccent: "jeux vidéo",
+          itemNoun: { singular: "jeu", plural: "jeux" },
+          emptyTitle: "Aucun jeu à afficher",
+          mediaType: "GAME" as const,
+        }
+        return showV2 ? (
+          <CatalogueRedesign {...listProps} defaultSort="popularity" />
+        ) : (
+          <ApercuFilmsList {...listProps} />
+        )
+      })()}
     </>
   )
 }
