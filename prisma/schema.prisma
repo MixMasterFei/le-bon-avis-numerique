@@ -141,6 +141,12 @@ model MediaItem {
   posterUrl       String?   @map("poster_url")
   backdropUrl     String?   @map("backdrop_url")
   synopsisFr      String?   @map("synopsis_fr") @db.Text
+  // SEO-only meta <title> override (NOT the display name). When set, the
+  // /media/[id] page uses it for the <title>/OG/Twitter tag only — the H1,
+  // cards, links and structured-data name stay `title`. Written by the
+  // striking-distance agent to put a ranking keyword in the SERP title
+  // without a site-wide rename. See src/lib/seo-autofix.ts (Lever C).
+  seoTitle        String?   @map("seo_title")
   officialRating  String?   @map("official_rating")
   expertAgeRec    Int?      @map("expert_age_rec")
   communityAgeRec Float?    @map("community_age_rec")

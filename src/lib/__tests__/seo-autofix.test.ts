@@ -5,6 +5,7 @@ import {
   keywordPresent,
   isJunkQuery,
   scoreNeighbor,
+  seoTitlePasses,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -85,5 +86,40 @@ describe("scoreNeighbor", () => {
         tmdbRating: null,
       }),
     ).toBe(0)
+  })
+})
+
+describe("seoTitlePasses", () => {
+  it("accepts a faithful title that adds the keyword within the length cap", () => {
+    expect(
+      seoTitlePasses(
+        "tigre et dragon age minimum",
+        "Tigre et Dragon",
+        "Tigre et Dragon : âge minimum ? Avis famille (dès 12 ans)",
+      ),
+    ).toBe(true)
+  })
+
+  it("rejects when the real work title is missing (no silent rename)", () => {
+    expect(
+      seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", "Âge minimum d'un film d'action"),
+    ).toBe(false)
+  })
+
+  it("rejects when the ranking keyword still isn't covered", () => {
+    expect(
+      seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", "Tigre et Dragon — film culte"),
+    ).toBe(false)
+  })
+
+  it("rejects an over-long title (> SEO cap)", () => {
+    const tooLong = "Tigre et Dragon : à partir de quel âge minimum pour le regarder en famille sans souci"
+    expect(seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", tooLong)).toBe(false)
+  })
+
+  it("rejects a junk/navigational candidate", () => {
+    expect(
+      seoTitlePasses("tigre et dragon age", "Tigre et Dragon", "Tigre et Dragon streaming gratuit age"),
+    ).toBe(false)
   })
 })

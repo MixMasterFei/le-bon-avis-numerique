@@ -35,6 +35,9 @@ const EXPERT_SCORE = 0.95
 const MAX_REWRITES = 3
 const SYNOPSIS_MAX = 400
 const MIN_QUALITY = 50
+// Lever C — SEO meta <title> override. Same cost discipline as synopsis.
+const MAX_TITLE_REWRITES = 3
+const SEO_TITLE_MAX = 65 // Google truncates ~60 chars; keep a small margin.
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for unit tests)
@@ -133,7 +136,10 @@ export interface SeoActionTarget {
   synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "not-enriched" | "ai-failed" | "no-keyword"
   synopsisBefore?: string
   synopsisAfter?: string
-  titleNeedsKeyword: boolean // query term missing from title → manual job
+  titleNeedsKeyword: boolean // query term missing from the display title
+  // Lever C — meta <title> override action (display title is never changed).
+  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "not-enriched" | "ai-failed" | "n/a"
+  seoTitleAfter?: string
 }
 
 export interface SeoAutofixResult {
@@ -142,6 +148,7 @@ export interface SeoAutofixResult {
   targets: SeoActionTarget[]
   linksCreated: number
   synopsesRewritten: number
+  titlesSet: number
   flagged: number
   skippedNonMedia: number
   section: string // markdown to append to the email
@@ -160,6 +167,7 @@ type TargetItem = {
   director: string | null
   expertAgeRec: number | null
   synopsisFr: string | null
+  seoTitle: string | null
   isEnriched: boolean
 }
 
@@ -253,7 +261,10 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
   ].filter(Boolean).join("\n")
 }
 
-async function callRewrite(openai: OpenAI, prompt: string): Promise<string | null> {
+/** Single gpt-5-mini call that returns one string field from a JSON reply.
+ *  Shared by the synopsis (field "synopsis") and meta-title (field "title")
+ *  rewriters. */
+async function callJsonField(openai: OpenAI, prompt: string, field: string): Promise<string | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 35_000)
   try {
@@ -274,8 +285,9 @@ async function callRewrite(openai: OpenAI, prompt: string): Promise<string | nul
     if (!content) return null
     const match = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim().match(/\{[\s\S]*\}/)
     if (!match) return null
-    const parsed = JSON.parse(match[0]) as { synopsis?: unknown }
-    return typeof parsed.synopsis === "string" ? parsed.synopsis.trim() : null
+    const parsed = JSON.parse(match[0]) as Record<string, unknown>
+    const value = parsed[field]
+    return typeof value === "string" ? value.trim() : null
   } catch {
     return null
   } finally {
@@ -291,6 +303,38 @@ function rewritePasses(query: string, before: string | null, after: string): boo
   if (!keywordPresent(query, after)) return false
   // Don't let the model gut the description.
   if (before && after.length < before.length * 0.5) return false
+  return true
+}
+
+// ---------------------------------------------------------------------------
+// Lever C — SEO meta <title> (separate `seoTitle` field; NEVER the display name)
+// ---------------------------------------------------------------------------
+
+function buildTitlePrompt(target: TargetItem, query: string): string {
+  const typeLabel = target.type.toLowerCase()
+  return [
+    `Tu rédiges la balise <title> SEO d'une fiche ${typeLabel} de notre guide média familial.`,
+    `Titre exact de l'œuvre (à placer au début, sans le modifier) : « ${target.title} »`,
+    target.expertAgeRec ? `Âge conseillé : dès ${target.expertAgeRec} ans.` : "",
+    `Des familles cherchent cette fiche via : « ${query} ».`,
+    "Rédige un <title> Google qui COMMENCE par le titre exact de l'œuvre, puis répond à cette intention.",
+    "Contraintes STRICTES :",
+    `- Français, ${SEO_TITLE_MAX} caractères MAXIMUM.`,
+    `- DOIT commencer par « ${target.title} ».`,
+    "- Intègre naturellement le mot-clé de la requête (ex. « à partir de quel âge », « âge minimum »).",
+    "- N'invente aucun fait. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
+    'Réponds en JSON valide uniquement : {"title": "..."}',
+  ].filter(Boolean).join("\n")
+}
+
+/** Gate a candidate meta title before it touches the DB. */
+export function seoTitlePasses(query: string, realTitle: string, candidate: string): boolean {
+  if (!candidate || candidate.length > SEO_TITLE_MAX) return false
+  if (isJunkQuery(candidate)) return false
+  // Stay faithful — the real work title must still be present (no rename).
+  if (!normalize(candidate).includes(normalize(realTitle))) return false
+  // Must now cover the ranking keyword it was meant to add.
+  if (!keywordPresent(query, candidate)) return false
   return true
 }
 
@@ -336,13 +380,14 @@ export async function runSeoAutofix(
 
   const targets: SeoActionTarget[] = []
   let rewritesUsed = 0
+  let titleRewritesUsed = 0
 
   for (const t of byTarget.values()) {
     const item = await prisma.mediaItem.findUnique({
       where: { id: t.id },
       select: {
         id: true, title: true, type: true, genres: true, topics: true,
-        director: true, expertAgeRec: true, synopsisFr: true, isEnriched: true,
+        director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
       },
     })
     if (!item) continue
@@ -370,7 +415,7 @@ export async function runSeoAutofix(
       synopsis = "ai-failed"
     } else {
       rewritesUsed++
-      const draft = await callRewrite(openai, buildRewritePrompt(item, t.query))
+      const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
       if (draft && rewritePasses(t.query, item.synopsisFr, draft)) {
         await prisma.mediaItem.update({ where: { id: item.id }, data: { synopsisFr: draft } })
         synopsis = "rewritten"
@@ -378,6 +423,36 @@ export async function runSeoAutofix(
         synopsisAfter = draft
       } else {
         synopsis = "ai-failed"
+      }
+    }
+
+    // Lever C — SEO meta title. Only when the keyword is missing from the
+    // DISPLAY title; writes the separate `seoTitle` field, never `title`.
+    let seoTitle: SeoActionTarget["seoTitle"]
+    let seoTitleAfter: string | undefined
+    if (!titleNeedsKeyword) {
+      seoTitle = "n/a"
+    } else if (!item.isEnriched) {
+      seoTitle = "not-enriched"
+    } else if (isJunkQuery(t.query)) {
+      seoTitle = "flagged-junk"
+    } else if (item.seoTitle && keywordPresent(t.query, item.seoTitle)) {
+      seoTitle = "covered"
+    } else if (dryRun) {
+      seoTitle = "would-set"
+    } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
+      seoTitle = "deferred-cap"
+    } else if (!openai) {
+      seoTitle = "ai-failed"
+    } else {
+      titleRewritesUsed++
+      const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title")
+      if (draft && seoTitlePasses(t.query, item.title, draft)) {
+        await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: draft } })
+        seoTitle = "set"
+        seoTitleAfter = draft
+      } else {
+        seoTitle = "ai-failed"
       }
     }
 
@@ -393,13 +468,19 @@ export async function runSeoAutofix(
       synopsisBefore,
       synopsisAfter,
       titleNeedsKeyword,
+      seoTitle,
+      seoTitleAfter,
     })
   }
 
   const linksCreated = targets.reduce((s, t) => s + t.linksCreated.length, 0)
   const synopsesRewritten = targets.filter((t) => t.synopsis === "rewritten").length
+  const titlesSet = targets.filter((t) => t.seoTitle === "set").length
+  // "Flagged" = couldn't be auto-handled and wants human eyes. Titles are no
+  // longer auto-flagged just for missing a keyword — the agent sets seoTitle.
+  const blocked = new Set(["flagged-junk", "deferred-cap", "ai-failed"])
   const flagged = targets.filter(
-    (t) => t.titleNeedsKeyword || t.synopsis === "flagged-junk" || t.synopsis === "deferred-cap",
+    (t) => blocked.has(t.synopsis) || blocked.has(t.seoTitle),
   ).length
 
   return {
@@ -408,9 +489,10 @@ export async function runSeoAutofix(
     targets,
     linksCreated,
     synopsesRewritten,
+    titlesSet,
     flagged,
     skippedNonMedia,
-    section: buildActionsSection({ dryRun, targets, linksCreated, synopsesRewritten, skippedNonMedia }),
+    section: buildActionsSection({ dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia }),
   }
 }
 
@@ -429,14 +511,26 @@ const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
   "no-keyword": "rien à ajouter",
 }
 
+const SEO_TITLE_LABEL: Record<SeoActionTarget["seoTitle"], string> = {
+  "set": "titre SEO (balise <title>) réécrit",
+  "would-set": "titre SEO à réécrire (mot-clé absent du titre)",
+  "covered": "titre SEO déjà pertinent",
+  "flagged-junk": "requête navigationnelle — titre non touché",
+  "deferred-cap": "titre SEO reporté (plafond atteint)",
+  "not-enriched": "fiche non enrichie — titre ignoré",
+  "ai-failed": "titre SEO échoué/refusé",
+  "n/a": "",
+}
+
 function buildActionsSection(input: {
   dryRun: boolean
   targets: SeoActionTarget[]
   linksCreated: number
   synopsesRewritten: number
+  titlesSet: number
   skippedNonMedia: number
 }): string {
-  const { dryRun, targets, linksCreated, synopsesRewritten, skippedNonMedia } = input
+  const { dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia } = input
   const verb = dryRun ? "à faire (simulation)" : "fait"
   const lines: string[] = [
     "",
@@ -444,10 +538,11 @@ function buildActionsSection(input: {
     "",
     dryRun
       ? "_Mode simulation (`dryRun`) : aucune écriture en base._"
-      : "_Écritures appliquées automatiquement. Le titre/H1 n'est jamais modifié automatiquement._",
+      : "_Écritures appliquées automatiquement. Le titre SEO modifie UNIQUEMENT la balise <title> (résultat Google) — jamais le nom affiché (H1/cartes)._",
     "",
     `- Liens internes ${verb} : **${linksCreated}**`,
     `- Synopsis ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.synopsis === "would-rewrite").length : synopsesRewritten}**`,
+    `- Titres SEO ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.seoTitle === "would-set").length : titlesSet}**`,
     `- URLs hors fiche ignorées : ${skippedNonMedia}`,
     "",
   ]
@@ -470,8 +565,11 @@ function buildActionsSection(input: {
       lines.push(`  - Avant : ${t.synopsisBefore || "(vide)"}`)
       lines.push(`  - Après : ${t.synopsisAfter}`)
     }
-    if (t.titleNeedsKeyword) {
-      lines.push(`- ⚠️ Manuel : le titre ne contient pas le mot-clé — à ajuster à la main si pertinent (jamais automatique).`)
+    if (t.seoTitle !== "n/a") {
+      lines.push(`- Titre SEO : ${SEO_TITLE_LABEL[t.seoTitle]}`)
+      if ((t.seoTitle === "set") && t.seoTitleAfter) {
+        lines.push(`  - Balise <title> : ${t.seoTitleAfter}`)
+      }
     }
     lines.push("")
   })

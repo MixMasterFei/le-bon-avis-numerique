@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     if (result.strikingQueries.length > 0 || forceEmail) {
       const fixedNote = dryRun
         ? ""
-        : ` · ${autofix.linksCreated} lien(s) · ${autofix.synopsesRewritten} synopsis`
+        : ` · ${autofix.linksCreated} lien(s) · ${autofix.synopsesRewritten} synopsis · ${autofix.titlesSet} titre(s)`
       await sendSeoReport({
         subject: `SEO — ${result.strikingQueries.length} opportunité(s) à portée de page 1${fixedNote}`,
         report: result.report + autofix.section,
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     await logCronRun({
       task: "seo-striking-distance",
       status: "success",
-      summary: `${result.strikingQueries.length} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis`}${emailed ? " · email envoyé" : ""}`,
+      summary: `${result.strikingQueries.length} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis, ${autofix.titlesSet} titres`}${emailed ? " · email envoyé" : ""}`,
       details: {
         configured: true,
         strikingCount: result.strikingQueries.length,
@@ -76,12 +76,17 @@ export async function GET(req: NextRequest) {
         dryRun,
         linksCreated: autofix.linksCreated,
         synopsesRewritten: autofix.synopsesRewritten,
+        titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
         // Before/after for any rewrite, so a bad one can be reverted by hand.
         rewrites: autofix.targets
           .filter((t) => t.synopsis === "rewritten")
           .map((t) => ({ id: t.routeId, title: t.title, before: t.synopsisBefore, after: t.synopsisAfter })),
+        // SEO titles set (meta only), for visibility / hand-revert.
+        seoTitles: autofix.targets
+          .filter((t) => t.seoTitle === "set")
+          .map((t) => ({ id: t.routeId, title: t.title, seoTitle: t.seoTitleAfter })),
       },
       startTime,
     })
@@ -96,6 +101,7 @@ export async function GET(req: NextRequest) {
       autofix: {
         linksCreated: autofix.linksCreated,
         synopsesRewritten: autofix.synopsesRewritten,
+        titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
         targets: autofix.targets,

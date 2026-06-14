@@ -124,6 +124,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       type: dbMedia.type as MockMediaItem["type"],
       releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
       releaseStatus: dbMedia.releaseStatus,
+      seoTitle: dbMedia.seoTitle,
       posterUrl: dbMedia.posterUrl || "/placeholder-poster.jpg",
       synopsisFr: dbMedia.synopsisFr,
       officialRating: dbMedia.officialRating,
@@ -245,7 +246,10 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
       : ` — Dès ${media.expertAgeRec} ans`
     : ""
 
-  const title = `${media.title}${ageStr}`
+  // The striking-distance agent can set a `seoTitle` override that puts a
+  // ranking keyword in the SERP <title> WITHOUT renaming the work (the H1,
+  // cards and structured-data name all stay `media.title`). See seo-autofix.
+  const title = media.seoTitle?.trim() || `${media.title}${ageStr}`
 
   const typeLabel = typeLabels[media.type] || "Média"
 
@@ -296,7 +300,7 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
       media.title,
     ],
     openGraph: {
-      title: `${media.title}${ageStr} | Totem Avisé`,
+      title: `${title} | Totem Avisé`,
       description,
       type: ogType as "video.movie" | "video.tv_show" | "website",
       ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
@@ -307,7 +311,7 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     },
     twitter: {
       card: "summary_large_image",
-      title: `${media.title}${ageStr}`,
+      title,
       description,
       ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
         images: [media.posterUrl],
