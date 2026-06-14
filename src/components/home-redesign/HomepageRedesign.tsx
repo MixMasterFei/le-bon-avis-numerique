@@ -7,6 +7,9 @@ import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
 import { WeekendRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
+import { PlatformsSection } from "./PlatformsSection"
+import { MethodeBand } from "./MethodeBand"
+import { FamilyNudge } from "./FamilyNudge"
 
 interface HomepageRedesignProps {
   isLoggedIn: boolean
@@ -45,9 +48,12 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
         <CinemaRail />
         <CoupsDeCoeurRail />
         <AgeGridRedesign />
+        <PlatformsSection />
         <GamesRail />
+        <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />
+        <FamilyNudge selectedKeys={selectedKeys} isLoggedIn={isLoggedIn} />
       </div>
     </FamilyFitProvider>
   )

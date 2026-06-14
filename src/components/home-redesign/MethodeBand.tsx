@@ -1,0 +1,140 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { SafeImage } from "@/components/ui/SafeImage"
+import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { toMediaRouteId } from "@/lib/media-route"
+import { genreLabelFr } from "@/components/home-v2/apercuTheme"
+import { Band, Wrap, Em } from "./parts"
+import { totemLevel, TOTEM_AXES, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
+
+interface DecoderItem {
+  id: string
+  type: "MOVIE" | "TV" | "GAME"
+  title: string
+  posterUrl: string | null
+  expertAgeRec: number | null
+  genres: string[]
+  contentMetrics: TotemMetrics | null
+}
+
+const TYPE_LABELS: Record<DecoderItem["type"], string> = { MOVIE: "Film", TV: "Série", GAME: "Jeu" }
+
+function metricsSum(m: TotemMetrics | null): number {
+  if (!m) return -1
+  return (m.violence ?? 0) + (m.sexNudity ?? 0) + (m.language ?? 0) + (m.substanceUse ?? 0)
+}
+
+/** "Notre méthode" trust band — pine card + a live totem decoder of one real
+ * title (the most illustrative pick, i.e. the one with the richest totem). */
+export function MethodeBand() {
+  const [item, setItem] = useState<DecoderItem | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/db/expert-picks?limit=12")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return
+        const arr: DecoderItem[] = Array.isArray(data?.items) ? data.items : []
+        const withMetrics = arr.filter((m) => m.contentMetrics)
+        const best = [...withMetrics].sort((a, b) => metricsSum(b.contentMetrics) - metricsSum(a.contentMetrics))[0] ?? arr[0] ?? null
+        if (best) setItem(best)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <Band alt>
+      <Wrap>
+        <div
+          className="grid items-center gap-8 rounded-[24px] p-8 md:p-10 lg:grid-cols-[1.05fr_1fr]"
+          style={{ background: "var(--pine)", color: "#EAF2EC" }}
+        >
+          <div>
+            <div className="flex items-center gap-2.5 text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--gold)" }}>
+              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--gold)" }} />
+              Notre méthode
+            </div>
+            <h2 className="mt-3 text-[clamp(26px,3.2vw,38px)] font-bold leading-[1.05] text-white" style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em" }}>
+              Le <Em tone="gold">totem</Em>, notre repère en un coup d&apos;œil.
+            </h2>
+            <p className="mt-3.5 text-[15.5px]" style={{ color: "#CFE0D5" }}>
+              Chaque titre est analysé sur ce qui compte vraiment. Pas un avis opaque : un âge conseillé, plus quatre repères de sensibilité, lisibles d&apos;un regard. Vous décidez en connaissance de cause.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link href="/notre-methode" className="rounded-full px-5 py-3 text-[14.5px] font-bold" style={{ background: "var(--gold)", color: "#23201C" }}>
+                Comment ça marche
+              </Link>
+              <Link href="/nos-valeurs" className="rounded-full px-5 py-3 text-[14.5px] font-bold text-white" style={{ border: "1px solid rgba(255,255,255,.35)" }}>
+                Notre indépendance
+              </Link>
+            </div>
+          </div>
+
+          <Decoder item={item} />
+        </div>
+      </Wrap>
+    </Band>
+  )
+}
+
+function Decoder({ item }: { item: DecoderItem | null }) {
+  const shell = { background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.16)" }
+  if (!item) {
+    return <div className="min-h-[280px] animate-pulse rounded-[18px] p-[22px]" style={shell} />
+  }
+  const href = `/media/${toMediaRouteId(item.type, item.id)}`
+  const genres = item.genres.slice(0, 2).map(genreLabelFr).join(", ")
+  const metrics = item.contentMetrics ?? {}
+  return (
+    <div className="rounded-[18px] p-[22px]" style={shell}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Link href={href} className="flex min-w-0 items-center gap-3">
+          <div className="relative h-[62px] w-[46px] flex-none overflow-hidden rounded-[9px]" style={{ background: "rgba(0,0,0,.3)" }}>
+            {item.posterUrl && (
+              <SafeImage src={tmdbPosterAtSize(item.posterUrl, "w185")} alt={item.title} fill className="object-cover" sizes="46px" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-[15.5px] font-bold text-white">{item.title}</div>
+            <div className="mt-0.5 text-[12.5px]" style={{ color: "#A9C4B3" }}>
+              {TYPE_LABELS[item.type]}{genres ? ` · ${genres}` : ""}
+            </div>
+          </div>
+        </Link>
+        {typeof item.expertAgeRec === "number" && item.expertAgeRec > 0 && (
+          <span className="rounded-[8px] px-[9px] py-[3px] text-[15px] font-extrabold" style={{ background: "var(--gold)", color: "#23201C", fontFamily: "var(--font-bricolage)" }}>
+            {item.expertAgeRec}+
+          </span>
+        )}
+      </div>
+      {TOTEM_AXES.map((a) => {
+        const lvl = totemLevel(metrics[a.key])
+        return (
+          <div key={a.key} className="flex items-center gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
+            <div className="flex-1">
+              <b className="block text-[14.5px] text-white">{a.label}</b>
+              <span className="text-[12.5px]" style={{ color: "#A9C4B3" }}>{TOTEM_WORDS[lvl]}</span>
+            </div>
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <i key={i} className="block" style={{ width: 14, height: 14, borderRadius: 4, background: i < lvl ? TOTEM_COLORS[lvl] : "rgba(255,255,255,.14)" }} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+      <div className="mt-4 flex flex-wrap gap-4 text-[12.5px]" style={{ color: "#A9C4B3" }}>
+        {[1, 2, 3].map((l) => (
+          <span key={l} className="inline-flex items-center gap-1.5">
+            <i className="block" style={{ width: 10, height: 10, borderRadius: 3, background: TOTEM_COLORS[l] }} />
+            {TOTEM_WORDS[l]}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
