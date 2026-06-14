@@ -331,7 +331,7 @@ export function SiteHeader() {
             </div>
           </Link>
 
-          <div className="hidden lg:flex flex-1 items-center justify-center min-w-0">
+          <div className="hidden lg:flex flex-1 items-center min-w-0 pl-6 xl:pl-10">
             <nav className="flex items-center space-x-0.5 xl:space-x-1">
               {navigation.map((item) =>
                 item.comingSoon ? (

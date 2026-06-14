@@ -80,19 +80,9 @@ export function Em({ tone = "terra", children }: { tone?: "terra" | "pine" | "go
   )
 }
 
-/** Single-row horizontal rail (snap-scroll, hidden scrollbar) — bleeds to
- * the container edges so cards scroll off-screen as the design intends. */
-export function RailRow({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] sm:-mx-7 sm:px-7 [&::-webkit-scrollbar]:hidden" style={{ scrollSnapType: "x mandatory" }}>
-      {children}
-    </div>
-  )
-}
-
 /**
- * "eyebrow + heading + single-row rail of cards" section. One row, scrolls
- * horizontally (per the design) — not a multi-row grid.
+ * "eyebrow + heading + single-row grid of cards" section. Shows exactly one
+ * full row (no horizontal scroll, no cut), via the .v2-row CSS in globals.css.
  */
 export function CardRailSection({
   id,
@@ -122,7 +112,7 @@ export function CardRailSection({
   emptyText?: string
 }) {
   if (!loading && items.length === 0 && !emptyText) return null
-  const cardW = totem === "full" ? 220 : 178
+  const rowClass = totem === "full" ? "v2-row-lg" : "v2-row"
   return (
     <Band id={id} alt={alt}>
       <Wrap>
@@ -130,19 +120,13 @@ export function CardRailSection({
         {!loading && items.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>{emptyText}</p>
         ) : (
-          <RailRow>
+          <div className={rowClass}>
             {loading
-              ? Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex-none" style={{ width: cardW, scrollSnapAlign: "start" }}>
-                    <div className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
-                  </div>
+              ? Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
                 ))
-              : items.map((m) => (
-                  <div key={m.id} className="flex-none" style={{ width: cardW, scrollSnapAlign: "start" }}>
-                    <RedesignCard media={m} totem={totem} showType={showType} />
-                  </div>
-                ))}
-          </RailRow>
+              : items.map((m) => <RedesignCard key={m.id} media={m} totem={totem} showType={showType} />)}
+          </div>
         )}
       </Wrap>
     </Band>

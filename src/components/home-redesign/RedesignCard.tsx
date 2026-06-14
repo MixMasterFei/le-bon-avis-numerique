@@ -11,7 +11,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { cn } from "@/lib/utils"
-import { genreLabelFr } from "@/components/home-v2/apercuTheme"
+import { genreLabelFr, genreBadgeColor } from "@/components/home-v2/apercuTheme"
 import { TotemRating } from "./TotemRating"
 import { hasTotemData, type TotemMetrics } from "./totem"
 
@@ -58,7 +58,7 @@ export function RedesignCard({
   }, [media.id, registerMediaId])
 
   const familyFit = getFamilyFit(media.id)
-  const genres = (media.genres ?? []).slice(0, 2).map(genreLabelFr).join(" · ")
+  const visibleGenres = (media.genres ?? []).slice(0, 2)
   const showTotem = !upcoming && hasTotemData(media.contentMetrics)
   const ageLabel = typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
 
@@ -155,10 +155,25 @@ export function RedesignCard({
       </div>
 
       <div className="mt-2.5">
-        <div className="text-[14.5px] font-bold leading-tight" style={{ color: "var(--ink)" }}>
+        <div className="text-[14.5px] font-bold leading-tight line-clamp-1" style={{ color: "var(--ink)" }}>
           {media.title}
         </div>
-        {genres && <div className="mt-0.5 text-[12.5px]" style={{ color: "var(--ink-3)" }}>{genres}</div>}
+        {visibleGenres.length > 0 && (
+          <div className="mt-1 flex flex-nowrap gap-1 overflow-hidden">
+            {visibleGenres.map((g) => {
+              const c = genreBadgeColor(g)
+              return (
+                <span
+                  key={g}
+                  className="whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold leading-tight"
+                  style={{ background: c.bg, color: c.text }}
+                >
+                  {genreLabelFr(g)}
+                </span>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Family-fit avatars (reserved height keeps the rail aligned) */}

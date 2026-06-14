@@ -142,6 +142,39 @@
 }
 @media (prefers-reduced-motion: reduce) { .v2-blob { animation: none; } }
 
+/* V2 single-row card rows — show exactly one full row of cards (no
+   horizontal scroll, no partial/cut cards, no second row). Extra items are
+   hidden and reached via "Voir tout"/"Recharger". Column count is responsive;
+   the matching extra items are hidden per breakpoint. */
+[data-home="v2"] .v2-row { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+[data-home="v2"] .v2-row > *:nth-child(n+4) { display: none; }
+[data-home="v2"] .v2-row-lg { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+[data-home="v2"] .v2-row-lg > *:nth-child(n+3) { display: none; }
+[data-home="v2"] .v2-row-up { display: grid; gap: 16px; grid-template-columns: repeat(1, minmax(0, 1fr)); }
+[data-home="v2"] .v2-row-up > *:nth-child(n+2) { display: none; }
+@media (min-width: 640px) {
+  [data-home="v2"] .v2-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row > *:nth-child(-n+4) { display: block; }
+  [data-home="v2"] .v2-row > *:nth-child(n+5) { display: none; }
+  [data-home="v2"] .v2-row-lg { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row-lg > *:nth-child(-n+3) { display: block; }
+  [data-home="v2"] .v2-row-lg > *:nth-child(n+4) { display: none; }
+  [data-home="v2"] .v2-row-up { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row-up > *:nth-child(-n+2) { display: block; }
+  [data-home="v2"] .v2-row-up > *:nth-child(n+3) { display: none; }
+}
+@media (min-width: 1024px) {
+  [data-home="v2"] .v2-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row > *:nth-child(-n+6) { display: block; }
+  [data-home="v2"] .v2-row > *:nth-child(n+7) { display: none; }
+  [data-home="v2"] .v2-row-lg { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row-lg > *:nth-child(-n+5) { display: block; }
+  [data-home="v2"] .v2-row-lg > *:nth-child(n+6) { display: none; }
+  [data-home="v2"] .v2-row-up { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  [data-home="v2"] .v2-row-up > *:nth-child(-n+4) { display: block; }
+  [data-home="v2"] .v2-row-up > *:nth-child(n+5) { display: none; }
+}
+
 @layer base {
   * {
     @apply border-border;

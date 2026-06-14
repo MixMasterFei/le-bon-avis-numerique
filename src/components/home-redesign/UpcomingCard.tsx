@@ -65,7 +65,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
 
   return (
     <div
-      className="flex w-[300px] flex-none flex-col overflow-hidden rounded-[14px]"
+      className="flex w-full flex-col overflow-hidden rounded-[14px]"
       style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "var(--shadow-sm, 0 10px 26px -22px rgba(40,28,12,.6))", scrollSnapAlign: "start" }}
     >
       <Link href={href} className="block">

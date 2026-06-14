@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Band, Wrap, SectionHead, Em, RailRow } from "./parts"
+import { Band, Wrap, SectionHead, Em } from "./parts"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 
 interface Provider {
@@ -84,22 +84,18 @@ export function PlatformsSection() {
         </div>
 
         {loading ? (
-          <RailRow>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex-none" style={{ width: 178, scrollSnapAlign: "start" }}>
-                <div className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
-              </div>
+          <div className="v2-row">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
             ))}
-          </RailRow>
+          </div>
         ) : items.length > 0 ? (
           <>
-            <RailRow>
+            <div className="v2-row">
               {items.map((m) => (
-                <div key={m.id} className="flex-none" style={{ width: 178, scrollSnapAlign: "start" }}>
-                  <RedesignCard media={m} totem="compact" showType />
-                </div>
+                <RedesignCard key={m.id} media={m} totem="compact" showType />
               ))}
-            </RailRow>
+            </div>
             <div className="mt-3 text-[14px]" style={{ color: "var(--ink-2)" }}>
               {total.toLocaleString("fr-FR")} titres sur {sel.label} ·{" "}
               <Link
