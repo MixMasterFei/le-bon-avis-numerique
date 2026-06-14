@@ -44,7 +44,7 @@ export function RedesignCard({
   totem = "compact",
   upcoming = false,
   showType = false,
-  familyVariant = "avatars",
+  familyVariant = "meter",
 }: {
   media: RedesignCardMedia
   totem?: "compact" | "full"
@@ -129,7 +129,9 @@ export function RedesignCard({
           </button>
         )}
 
-        {/* Totem badge (or honest "à confirmer" for unreleased) */}
+        {/* Totem badge + detail popover (popover reveals on badge hover/tap
+            only, not whole-card hover). Or an honest "à confirmer" for
+            unreleased titles, which carry no content scores. */}
         {showTotem ? (
           <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant={totem} type={media.type} />
         ) : (
@@ -145,9 +147,6 @@ export function RedesignCard({
             </div>
           )
         )}
-
-        {/* Hover explainer — only when we have real content data */}
-        {showTotem && <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant="popover" type={media.type} />}
 
         {media.cornerLabel && (
           <span
