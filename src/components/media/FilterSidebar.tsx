@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { getAgeCategory, getMemberAge } from "@/lib/age-utils"
 import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
+import { GAME_GENRE_TOPICS } from "@/lib/igdb-genres"
 
 interface FamilyMember {
   id: string
@@ -82,20 +83,11 @@ const movieTopics = [
 ]
 
 // Topics/themes for games
-const gameTopics = [
-  "Aventure",
-  "Action",
-  "RPG",
-  "Plateforme",
-  "Puzzle",
-  "Sport",
-  "Course",
-  "Simulation",
-  "Éducatif",
-  "Famille",
-  "Multijoueur",
-  "Coopératif",
-]
+// Game genre filter labels — sourced from the single canonical French list
+// so they exactly match the normalized stored genres (see igdb-genres.ts).
+// (Modes/themes like Famille/Multijoueur dropped: not IGDB genres → never
+// matched; the PEGI age filter covers family fit.)
+const gameTopics = GAME_GENRE_TOPICS
 
 export type MediaType = "MOVIE" | "TV" | "GAME"
 

@@ -15,6 +15,7 @@ import {
   getPegiRating,
   normalizePlatforms,
 } from "@/lib/igdb"
+import { normalizeGameGenres } from "@/lib/igdb-genres"
 import { getBookDetails, transformBook } from "@/lib/google-books"
 import { uploadTMDBPoster, uploadTMDBBackdrop, uploadPoster, isStorageEnabled } from "@/lib/supabase-storage"
 
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
           releaseDate: game.first_release_date
             ? new Date(game.first_release_date * 1000)
             : null,
-          genres: game.genres?.map((g) => g.name) || [],
+          genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
           platforms: normalizePlatforms(game.platforms),
           officialRating: pegi?.internal || null,
           expertAgeRec: pegi?.age || null,

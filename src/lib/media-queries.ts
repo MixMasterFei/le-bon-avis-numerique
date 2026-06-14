@@ -511,6 +511,22 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
     where.platforms = { hasSome: filters.platforms }
   }
 
+  // Topics / genres filter — was MISSING for games, so `/jeux?topics=Aventure`
+  // never filtered. Mirrors fetchMovies/fetchSeries: a topic matches either
+  // topics[] or genres[]. Game genres are normalized to French at import
+  // (see src/lib/igdb-genres.ts), so the French UI labels now match.
+  if (filters.genres && filters.genres.length > 0) {
+    where.genres = { hasSome: filters.genres }
+  }
+  if (filters.topics && filters.topics.length > 0) {
+    appendAnd(where, {
+      OR: [
+        { topics: { hasSome: filters.topics } },
+        { genres: { hasSome: filters.topics } },
+      ],
+    })
+  }
+
   // Popularity floor — IGDB rating count, stored as tmdbVoteCount.
   // Keeps obscure indie shovelware out of recency-sorted surfaces
   // (homepage rail + /jeux?sort=releaseDate). AAA pre-release titles

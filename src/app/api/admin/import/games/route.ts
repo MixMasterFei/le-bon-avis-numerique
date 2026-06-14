@@ -20,6 +20,7 @@ import {
   normalizePlatforms,
   IGDBGame,
 } from "@/lib/igdb"
+import { normalizeGameGenres } from "@/lib/igdb-genres"
 
 interface ImportStats {
   total: number
@@ -42,7 +43,7 @@ function transformGameToMediaItem(game: IGDBGame) {
     releaseDate: game.first_release_date
       ? new Date(game.first_release_date * 1000)
       : null,
-    genres: game.genres?.map((g) => g.name) || [],
+    genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
     platforms: normalizePlatforms(game.platforms), // Only modern platforms
     officialRating: pegi?.internal || null,
     expertAgeRec: pegi?.age || null,

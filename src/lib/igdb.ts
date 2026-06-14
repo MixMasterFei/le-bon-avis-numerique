@@ -14,6 +14,7 @@
  */
 
 import { escapeIGDBQuery, sanitizeNumber } from "./security"
+import { normalizeGameGenres } from "./igdb-genres"
 
 const IGDB_BASE_URL = "https://api.igdb.com/v4"
 const TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/token"
@@ -731,7 +732,7 @@ export function transformGame(game: IGDBGame) {
       : null,
     officialRating: pegi?.internal || null,
     expertAgeRec: pegi?.age || null,
-    genres: game.genres?.map((g) => g.name) || [],
+    genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
     platforms: normalizePlatforms(game.platforms),
     developer: developer?.company.name || null,
     publisher: publisher?.company.name || null,

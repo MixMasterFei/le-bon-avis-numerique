@@ -9,6 +9,7 @@ import {
   normalizePlatforms,
   type IGDBGame,
 } from "@/lib/igdb"
+import { normalizeGameGenres } from "@/lib/igdb-genres"
 
 export const maxDuration = 60
 
@@ -64,7 +65,7 @@ function transformGame(game: IGDBGame) {
     releaseDate: game.first_release_date
       ? new Date(game.first_release_date * 1000)
       : null,
-    genres: game.genres?.map((g) => g.name) || [],
+    genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
     platforms: normalizePlatforms(game.platforms),
     officialRating: pegi?.internal || null,
     expertAgeRec: ageRec,
