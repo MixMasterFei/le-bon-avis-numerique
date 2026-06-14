@@ -50,7 +50,10 @@ function FilmsRechercheContent() {
     familyMemberIds: initialMembers,
     useFamilyFilter: initialMembers.length > 0,
   })
-  const [source, setSource] = useState<"db" | "api" | "mock">("mock")
+  const [source, setSource] = useState<"db" | "mock">("mock")
+  // Bumped by clearFilters to force-remount FilterSidebar (which only reads
+  // initialFilters at mount) so its UI controls reset on "Effacer les filtres".
+  const [sidebarResetKey, setSidebarResetKey] = useState(0)
   const [apiMovies, setApiMovies] = useState<MockMediaItem[]>([])
   const [apiTotalPages, setApiTotalPages] = useState(1)
   const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
@@ -254,54 +257,17 @@ function FilmsRechercheContent() {
           }
         }
 
-        // Fallback to external API if database is empty
-        const endpoint = filters.maxAge <= 12 ? "/api/movies/family" : "/api/movies/popular"
-        const res = await fetch(`${endpoint}?page=${currentPage}`, { signal: controller.signal })
-        if (!res.ok) {
+        // DB is the source of truth. An empty result is a VALID, honest
+        // answer ("Aucun film trouvé") for the active filters — we do NOT
+        // fall back to an unfiltered TMDB list, which would ignore the
+        // platform/age/topics/member filters and surface films with no Totem
+        // age or review. Showing the catalog we actually rate beats showing
+        // a misleading wall of unvetted results. (See docs/tech-audit.md.)
+        if (!cancelled) {
           setSource("db")
           setApiMovies([])
           setApiTotalPages(1)
           setApiTotalResults(0)
-          return
-        }
-        const data = await res.json()
-        const movies = Array.isArray(data?.movies) ? data.movies : []
-        const mapped: MockMediaItem[] = movies.map((m: Record<string, unknown>) => ({
-          id: String(m.id),
-          title: String(m.title || ""),
-          originalTitle: m.originalTitle ? String(m.originalTitle) : undefined,
-          type: "MOVIE",
-          releaseDate: m.releaseDate ?? null,
-          posterUrl: String(m.posterUrl || ""),
-          synopsisFr: m.synopsisFr ?? null,
-          officialRating: null,
-          expertAgeRec: null,
-          communityAgeRec: m.rating ?? null,
-          genres: [],
-          platforms: [],
-          topics: [],
-          contentMetrics: {
-            violence: 0,
-            sexNudity: 0,
-            language: 0,
-            consumerism: 0,
-            substanceUse: 0,
-            positiveMessages: 0,
-            roleModels: 0,
-            whatParentsNeedToKnow: [],
-          },
-          reviews: [],
-          reviewCount: m.reviewCount || 0,
-          reviewAvgRating: m.reviewAvgRating ?? null,
-          tmdbRating: m.tmdbRating ?? null,
-          tmdbVoteCount: m.tmdbVoteCount ?? null,
-        }))
-
-        if (!cancelled) {
-          setSource("api")
-          setApiMovies(mapped)
-          setApiTotalPages(Math.max(1, Number(data?.totalPages) || 1))
-          setApiTotalResults(typeof data?.totalResults === "number" ? data.totalResults : null)
         }
       } catch {
         if (!cancelled) {
@@ -345,6 +311,12 @@ function FilmsRechercheContent() {
     }
     setFilters(cleared)
     setCurrentPage(1)
+    // FilterSidebar seeds its internal state from `initialFilters` once (no
+    // prop-sync effect), so bump its key to remount it with the cleared
+    // values — otherwise its checkboxes/sliders stay visually set after
+    // "Effacer les filtres". Keyed on clear only (not every keystroke) to
+    // avoid remounting mid-typing.
+    setSidebarResetKey((k) => k + 1)
     router.replace("/films/recherche", { scroll: false })
   }
 
@@ -422,6 +394,7 @@ function FilmsRechercheContent() {
         <div className="lg:w-64 shrink-0">
           <div className="lg:sticky lg:top-24">
             <FilterSidebar
+              key={sidebarResetKey}
               onFiltersChange={handleFiltersChange}
               mediaType="MOVIE"
               availableTitles={availableTitles}
@@ -446,9 +419,9 @@ function FilmsRechercheContent() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <p className="text-gray-600">
-                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
-                {((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
-                trouvé{((source === "db" || source === "api") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
+                {((source === "db") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length)} film
+                {((source === "db") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}{" "}
+                trouvé{((source === "db") ? apiTotalResults ?? filteredMovies.length : filteredMovies.length) !== 1 ? "s" : ""}
               </p>
             </div>
             {totalPages > 1 && (

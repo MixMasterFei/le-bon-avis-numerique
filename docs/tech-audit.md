@@ -73,6 +73,28 @@
 
 ---
 
+## Search & filters audit (June 2026 — "Composer" review)
+
+Usability review of the search/filter surfaces. Each claim was verified against code; fixes shipped in branch `fix/search-ux-honesty`. Deferred items tracked below.
+
+### Fixed
+- 🔴 **TMDB fallback on empty `/films/recherche`** — an empty DB result now shows an honest "Aucun film trouvé" instead of falling back to `/api/movies/popular`/`family`, which ignored every active filter (platform/age/topics/members) and surfaced unrated TMDB titles.
+- 🟠 **Misleading "Adapté pour X"** on `/films` / `/series` / `/jeux` — these only narrow the age band (the full smart filter lives on `/films/recherche`). Label is now "Tranche d'âge pour X".
+- 🟠 **`/recherche` (header) → `/api/db/media`** now applies the public gate (poster + `dataQualityScore` ≥30 + no manga), same bar as the sitemap — no more incomplete/age-less fiches in global search + recommendations.
+- 🟡 **FilterSidebar desync** on "Effacer les filtres" — sidebar remounts (reset key) so its controls actually clear.
+- 🟡 **Platform list** — both sidebars now derive from `FILTERABLE_PLATFORMS` (single source in `streaming-providers.ts`); Arte / Max / Paramount+ / OCS / Crunchyroll / ADN are now filterable.
+- 🟡 **Smart filter search** now matches `originalTitle` too ("Spirited Away" → "Le Voyage de Chihiro").
+- 🟢 **Dead code** — `ClientFilmsPage` / `ClientSeriesPage` / `ClientGamesPage` deleted (unmounted since the Aperçu rewrite).
+
+### Deferred (open)
+- 🟡 **Autocomplete is page-scoped** (`/films/recherche`): suggestions come from the current page of results, not the whole catalogue. Needs a dedicated title-suggestions endpoint. (P2)
+- 🟡 **Smart filter caps at 500** (`/api/filter/smart` takes 500 then paginates in memory): pages past the window can be empty with no message. Needs DB-side scoring or at least a "résultats limités" notice. Rare in practice (per-member queries are narrow). (P2)
+- 🟡 **Genre FR/EN mismatch**: topic/genre filtering is exact `hasSome`; the DB sometimes stores TMDB English names ("Comedy" vs "Comédie"), so some filters under-return. Needs normalization at import + a backfill. (P2)
+- 🟢 **Cinéma + platform filter**: `/films?sort=cinema` titles have `platforms: []`, so a platform filter yields an empty grid (correct but confusing). A "filtre plateforme non applicable en salle" note would help. (P3)
+- **Full personalization on `/films`**: wiring the smart filter (sensitivity + disliked-genre exclusion) into the category browse pages — currently age-only there. A real feature, deserves its own pass. (P2)
+
+---
+
 <details>
 <summary>Archived: 2026-02 audit (historical — most items since resolved)</summary>
 

@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { getMemberAge } from "@/lib/age-utils"
+import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 /**
@@ -60,17 +61,10 @@ const SORT_OPTIONS = [
   { key: "title", label: "A → Z" },
 ] as const
 
-// Streaming platforms — apply to films + TV.
-// Values must match MediaItem.platforms[] exactly (stored normalized as "Netflix",
-// not "Netflix France" — see PROVIDER_NAME_MAP in api/admin/streaming/update).
-const MOVIE_TV_PLATFORMS = [
-  "Netflix",
-  "Disney+",
-  "Prime Video",
-  "Canal+",
-  "France TV",
-  "Apple TV+",
-]
+// Streaming platforms — apply to films + TV. Sourced from the single canonical
+// list so values match MediaItem.platforms[] exactly and new providers (Arte,
+// Max, Paramount+…) show up automatically. See @/lib/streaming-providers.
+const MOVIE_TV_PLATFORMS = [...FILTERABLE_PLATFORMS]
 
 // Gaming platforms — apply to GAME. Matches the legacy FilterSidebar set.
 const GAME_PLATFORMS = [
@@ -195,17 +189,22 @@ export function ApercuFilterSidebar({
       })
   }, [memberIds, familyMembers])
 
+  // NOTE: on these browse pages, selecting a member only narrows the AGE
+  // band (see toggleMember below) — it does NOT apply sensitivity scoring or
+  // exclude disliked genres (that's the smart filter on /films/recherche).
+  // So the label says "Tranche d'âge pour …", not "Adapté pour …", to avoid
+  // over-promising a full personalization we don't run here.
   const filterSummary = useMemo(() => {
     if (selectedMembers.length === 0) return null
     if (selectedMembers.length === 1) {
       const m = selectedMembers[0]
       return m.age !== null
-        ? `Adapté pour ${m.name} (${m.age} ans)`
+        ? `Tranche d'âge pour ${m.name} (${m.age} ans)`
         : `Filtré pour ${m.name}`
     }
     const youngest = selectedMembers[0]
     return youngest.age !== null
-      ? `Adapté pour ${youngest.name} (${youngest.age} ans) et ${selectedMembers.length - 1} autre${selectedMembers.length > 2 ? "s" : ""}`
+      ? `Tranche d'âge pour ${youngest.name} (${youngest.age} ans) et ${selectedMembers.length - 1} autre${selectedMembers.length > 2 ? "s" : ""}`
       : `Filtré pour ${selectedMembers.length} membres`
   }, [selectedMembers])
 

@@ -169,4 +169,24 @@ describe("buildSmartFilterWhere", () => {
     const where = buildSmartFilterWhere({ ...baseInput, language: "fr,en" })
     expect(where.originalLanguage).toEqual({ in: ["fr", "en"] })
   })
+
+  it("searches BOTH title and originalTitle (so 'Spirited Away' finds 'Le Voyage de Chihiro')", () => {
+    const where = buildSmartFilterWhere({ ...baseInput, search: "Spirited Away" })
+    const andArr = (where.AND as Array<{ OR?: Array<Record<string, unknown>> }>) || []
+    const searchClause = andArr.find((c) =>
+      c.OR?.some((o) => "originalTitle" in o)
+    )
+    expect(searchClause).toBeDefined()
+    expect(searchClause!.OR).toEqual([
+      { title: { contains: "Spirited Away", mode: "insensitive" } },
+      { originalTitle: { contains: "Spirited Away", mode: "insensitive" } },
+    ])
+  })
+
+  it("ignores a too-short search term (<2 chars)", () => {
+    const where = buildSmartFilterWhere({ ...baseInput, search: "a" })
+    const andArr = (where.AND as Array<{ OR?: Array<Record<string, unknown>> }>) || []
+    const searchClause = andArr.find((c) => c.OR?.some((o) => "originalTitle" in o))
+    expect(searchClause).toBeUndefined()
+  })
 })

@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { getAgeCategory, getMemberAge } from "@/lib/age-utils"
+import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
 
 interface FamilyMember {
   id: string
@@ -39,18 +40,11 @@ function getQuickCompleteness(member: FamilyMember): { percent: number; color: s
 }
 
 // Streaming platforms for movies/TV.
-// NOTE: these strings are used as the exact filter value matched against the
-// MediaItem.platforms[] array, which the streaming updater stores normalized
-// (e.g. "Netflix", not "Netflix France"). Keep them in sync with
-// PROVIDER_NAME_MAP in api/admin/streaming/update/route.ts.
-const streamingPlatforms = [
-  "Netflix",
-  "Disney+",
-  "Prime Video",
-  "Canal+",
-  "France TV",
-  "Apple TV+",
-]
+// Streaming platforms offered for movies/séries — sourced from the single
+// canonical list so the UI matches exactly what the importer/cron store in
+// MediaItem.platforms[] (e.g. "Netflix", not "Netflix France"), and so new
+// providers (Arte, Max, Paramount+…) appear here automatically.
+const streamingPlatforms = [...FILTERABLE_PLATFORMS]
 
 // Gaming platforms (modern consoles only)
 const gamingPlatforms = [
