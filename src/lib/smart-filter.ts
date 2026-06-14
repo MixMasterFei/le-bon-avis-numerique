@@ -69,6 +69,9 @@ export interface RunSmartFilterResult {
   total: number
   offset: number
   limit: number
+  /** True when the popularity window was full → more titles exist beyond it
+   *  (coverage limit). Lets the UI say so instead of silently truncating. */
+  capped: boolean
 }
 
 /**
@@ -92,7 +95,7 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
     language = "",
     minAge,
     maxAge,
-    take = 500,
+    take = 1000,
   } = params
 
   if (!Array.isArray(familyMemberIds) || familyMemberIds.length === 0) return null
@@ -254,5 +257,6 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
     total: results.length,
     offset,
     limit,
+    capped: mediaItems.length === take,
   }
 }

@@ -58,6 +58,9 @@ function FilmsRechercheContent() {
   const [apiTotalPages, setApiTotalPages] = useState(1)
   const [apiTotalResults, setApiTotalResults] = useState<number | null>(null)
   const [apiLoading, setApiLoading] = useState(false)
+  // True when the "Adapter à" smart filter hit its scoring window (more
+  // titles exist beyond it) — surfaced as an honest coverage note.
+  const [capped, setCapped] = useState(false)
 
   // Update URL when filters change, preserving sort/quality params
   const updateUrl = useCallback((newFilters: FilterState) => {
@@ -159,6 +162,7 @@ function FilmsRechercheContent() {
               if (!cancelled) {
                 setSource("db")
                 setApiMovies(mapped)
+                setCapped(!!smartData.capped)
                 const total = smartData.total || 0
                 setApiTotalPages(Math.max(1, Math.ceil(total / ITEMS_PER_PAGE)))
                 setApiTotalResults(total)
@@ -249,6 +253,7 @@ function FilmsRechercheContent() {
             if (!cancelled) {
               setSource("db")
               setApiMovies(mapped)
+              setCapped(false)
               setApiTotalPages(dbData.pagination?.totalPages || 1)
               setApiTotalResults(dbData.pagination?.total || mapped.length)
               setApiLoading(false)
@@ -424,6 +429,12 @@ function FilmsRechercheContent() {
               </p>
             )}
           </div>
+
+          {capped && !apiLoading && (
+            <p className="mb-6 -mt-2 text-sm text-gray-500">
+              Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus.
+            </p>
+          )}
 
           {apiLoading ? (
             <div className="text-center py-16 text-gray-500">

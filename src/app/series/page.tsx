@@ -286,6 +286,11 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
       }
     : null
 
+  const notice =
+    useSmartRerank && smart?.capped
+      ? "Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus."
+      : undefined
+
   return (
     <>
       <script
@@ -325,6 +330,7 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
         }}
         filterQuery={filterSp.toString()}
         route="/series"
+        notice={notice}
         eyebrow="Catalogue"
         titlePrefix="Toutes les"
         titleAccent="séries"

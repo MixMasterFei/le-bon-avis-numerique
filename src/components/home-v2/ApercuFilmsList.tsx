@@ -49,6 +49,9 @@ interface ApercuFilmsListProps {
       games page was inheriting movie streaming platforms (Netflix etc.)
       and movie-only topics like "Super-héros" until this was wired. */
   mediaType?: ApercuFilterMediaType
+  /** Optional one-line context banner above the grid (e.g. "le filtre
+      plateforme ne s'applique pas en salle", or a coverage-limit note). */
+  notice?: string
 }
 
 export function ApercuFilmsList({
@@ -67,6 +70,7 @@ export function ApercuFilmsList({
   itemNoun = { singular: "film", plural: "films" },
   emptyTitle = "Aucun film à afficher",
   mediaType = "MOVIE",
+  notice,
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
   const countNoun = total === 1 ? itemNoun.singular : itemNoun.plural
@@ -125,6 +129,14 @@ export function ApercuFilmsList({
 
               {/* Grid */}
               <div>
+                {notice && (
+                  <div
+                    className="mb-4 rounded-xl px-4 py-2.5 text-sm"
+                    style={{ background: p.bg, border: `1px solid ${p.line}`, color: p.ink2 }}
+                  >
+                    {notice}
+                  </div>
+                )}
                 {items.length === 0 ? (
                   <EmptyState serifClass={serifClass} title={emptyTitle} />
                 ) : (

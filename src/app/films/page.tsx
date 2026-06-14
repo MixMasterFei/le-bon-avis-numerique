@@ -358,6 +358,15 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
       }
     : null
 
+  // Honest context banner: cinema films aren't on streaming, and a
+  // personalized (member) view re-ranks only the top popularity window.
+  const notice =
+    isCinema && platforms.length > 0
+      ? "En salle — le filtre plateforme ne s'applique pas aux films au cinéma."
+      : useSmartRerank && smart?.capped
+        ? "Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus."
+        : undefined
+
   return (
     <>
       <script
@@ -397,6 +406,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         }}
         filterQuery={filterSp.toString()}
         route="/films"
+        notice={notice}
       />
     </>
   )
