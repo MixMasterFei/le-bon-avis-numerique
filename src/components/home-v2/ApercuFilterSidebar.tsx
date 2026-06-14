@@ -8,6 +8,7 @@ import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { getMemberAge } from "@/lib/age-utils"
 import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
+import { GAME_GENRE_TOPICS } from "@/lib/igdb-genres"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 /**
@@ -96,20 +97,9 @@ const MOVIE_TV_TOPICS = [
   "Amitié",
 ]
 
-const GAME_TOPICS = [
-  "Aventure",
-  "Action",
-  "RPG",
-  "Plateforme",
-  "Puzzle",
-  "Sport",
-  "Course",
-  "Simulation",
-  "Éducatif",
-  "Famille",
-  "Multijoueur",
-  "Coopératif",
-]
+// Sourced from the single canonical French list so labels match the
+// normalized stored game genres (see igdb-genres.ts).
+const GAME_TOPICS = GAME_GENRE_TOPICS
 
 const MANGA_TOPICS = [
   "Shōnen",
