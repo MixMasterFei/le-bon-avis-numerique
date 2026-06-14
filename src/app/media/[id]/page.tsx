@@ -34,7 +34,7 @@ import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
-import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
   getMovieDetails,
   getTVDetails,
@@ -665,6 +665,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
     boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
   } as const
 
+  // Not-yet-released: surface "Au cinéma / Sortie le {date}" in the bar.
+  const isUpcoming = isUnreleased(media.releaseDate) || isUnreleasedStatus(media.releaseStatus)
+  const releaseDateLabel = media.releaseDate ? formatDateFr(media.releaseDate) : null
+
   // "Vous l'avez vu ?" — phrased per media type so it reads naturally.
   const seenQuestion =
     media.type === "GAME"
@@ -700,6 +704,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
           expertAgeRec={media.expertAgeRec}
           isProvisional={media.isProvisional}
           hideContentAnalysis={hideContentAnalysis}
+          releaseDateLabel={releaseDateLabel}
+          director={media.director || null}
+          isUpcoming={isUpcoming}
         />
 
       {/* ===== HERO — verdict-first horizontal card on a warm wash ===== */}

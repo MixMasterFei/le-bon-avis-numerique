@@ -105,7 +105,13 @@ export async function ApercuSimilarMedia({
           type: mediaType as MediaType,
           genres: { hasSome: genres },
           posterUrl: { not: null, startsWith: "http" },
-          originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] },
+          // Language filter only makes sense for film/TV (avoid obscure
+          // foreign titles). Games / books / manga frequently have a null
+          // originalLanguage, which would otherwise exclude them all and
+          // leave "Dans le même genre" empty.
+          ...(mediaType === "MOVIE" || mediaType === "TV"
+            ? { originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] } }
+            : {}),
         },
         select: {
           id: true,

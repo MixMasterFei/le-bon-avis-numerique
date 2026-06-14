@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { Play, Share2, Heart } from "lucide-react"
+import { Play, Share2, Heart, Clapperboard, Calendar } from "lucide-react"
 import { useFamilyFitData, useExtrasData } from "@/components/media/FicheDataContext"
 import { familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
@@ -26,6 +26,9 @@ interface MediaDashboardBarProps {
   expertAgeRec: number | null
   isProvisional?: boolean
   hideContentAnalysis?: boolean
+  releaseDateLabel?: string | null
+  director?: string | null
+  isUpcoming?: boolean
 }
 
 function Separator({ at }: { at: "md" | "lg" }) {
@@ -53,6 +56,9 @@ export function MediaDashboardBar({
   expertAgeRec,
   isProvisional,
   hideContentAnalysis,
+  releaseDateLabel,
+  director,
+  isUpcoming,
 }: MediaDashboardBarProps) {
   const { data: session } = useSession()
   const [show, setShow] = useState(false)
@@ -96,6 +102,7 @@ export function MediaDashboardBar({
   const familyStatus = familyFit?.status
 
   const flatrate = extras?.watchProviders?.flatrate ?? []
+  const inTheaters = Boolean(extras?.inTheaters)
   const trailerKey = extras?.trailer?.key ?? null
   const provisional = isProvisional || hideContentAnalysis
 
@@ -178,6 +185,14 @@ export function MediaDashboardBar({
                 <span>Âge à venir</span>
               )}
             </span>
+            {(releaseDateLabel || director) && (
+              <span
+                className="hidden truncate text-[11px] lg:block"
+                style={{ color: "var(--color-ink2)", maxWidth: "34vw" }}
+              >
+                {[releaseDateLabel, director].filter(Boolean).join(" · ")}
+              </span>
+            )}
           </div>
 
           {/* MA FAMILLE — chips, or a "Se connecter" CTA when logged out */}
@@ -214,22 +229,53 @@ export function MediaDashboardBar({
             </>
           )}
 
-          {/* OÙ LE REGARDER — streaming chips */}
-          {flatrate.length > 0 && (
+          {/* OÙ LE REGARDER — upcoming release date, "Au cinéma", or streaming */}
+          {(isUpcoming || inTheaters || flatrate.length > 0) && (
             <>
               <Separator at="lg" />
               <div className="hidden shrink-0 flex-col gap-1 lg:flex">
                 <span className={labelClass} style={{ color: "var(--color-ink2)" }}>Où le regarder</span>
                 <div className="flex gap-1.5">
-                  {flatrate.slice(0, 3).map((prov) => (
+                  {isUpcoming ? (
                     <span
-                      key={prov.provider_id || prov.provider_name}
-                      className="whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold"
-                      style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}
+                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold"
+                      style={{ background: "#F7ECD7", color: "#C7892F" }}
                     >
-                      {prov.provider_name}
+                      {mediaType === "MOVIE" ? (
+                        <Clapperboard className="h-3 w-3" />
+                      ) : (
+                        <Calendar className="h-3 w-3" />
+                      )}
+                      {mediaType === "MOVIE"
+                        ? releaseDateLabel
+                          ? `Au cinéma le ${releaseDateLabel}`
+                          : "Bientôt au cinéma"
+                        : releaseDateLabel
+                          ? `Sortie le ${releaseDateLabel}`
+                          : "Bientôt disponible"}
                     </span>
-                  ))}
+                  ) : (
+                    <>
+                      {inTheaters && (
+                        <span
+                          className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold"
+                          style={{ background: "#E7EFE7", color: "#5C8A66" }}
+                        >
+                          <Clapperboard className="h-3 w-3" />
+                          Au cinéma
+                        </span>
+                      )}
+                      {flatrate.slice(0, inTheaters ? 2 : 3).map((prov) => (
+                        <span
+                          key={prov.provider_id || prov.provider_name}
+                          className="whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold"
+                          style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}
+                        >
+                          {prov.provider_name}
+                        </span>
+                      ))}
+                    </>
+                  )}
                 </div>
               </div>
             </>
