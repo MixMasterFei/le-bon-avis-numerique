@@ -282,6 +282,11 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
       }
     : null
 
+  const notice =
+    useSmartRerank && smart?.capped
+      ? "Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus."
+      : undefined
+
   return (
     <>
       <script
@@ -321,6 +326,7 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
         }}
         filterQuery={filterSp.toString()}
         route="/jeux"
+        notice={notice}
         eyebrow="Catalogue"
         titlePrefix="Tous les"
         titleAccent="jeux vidéo"
