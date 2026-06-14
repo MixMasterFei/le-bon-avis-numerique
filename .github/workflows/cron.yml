@@ -179,6 +179,32 @@ jobs:
           done
           echo "::endgroup::"
 
+      # Self-healing backfill: re-runs the basic enrichment on already-enriched
+      # items that predate a v2 field (missing toneTags/confidence, or never had
+      # sensitive warnings computed → sensitive_warnings_at IS NULL). Most-popular
+      # first. Terminates on its own once every row is marked, then no-ops at zero
+      # cost — so it's safe to run nightly forever. Stops early when a batch
+      # returns 0 enriched.
+      - name: Backfill legacy enrichment fields (onlyLegacy)
+        if: >-
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'enrich-deep'
+        run: |
+          set +e
+          echo "::group::Legacy backfill"
+          for i in 1 2 3; do
+            response=$(curl -sSL --max-time 290 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"onlyLegacy":true,"limit":50}' \
+              "$SITE_URL/api/admin/enrich" 2>&1)
+            enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null || echo "0")
+            echo "Backfill batch $i: $enriched enriched"
+            if [ "$enriched" = "0" ]; then break; fi
+            sleep 3
+          done
+          echo "::endgroup::"
+
       - name: Deep enrichment (Pass 2 - GPT-5 + web search)
         if: >-
           github.event.inputs.task != 'quality' &&

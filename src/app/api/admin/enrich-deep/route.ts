@@ -365,6 +365,7 @@ export async function POST(request: NextRequest) {
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
             sensitiveWarnings: analysis.sensitiveWarnings,
+            sensitiveWarningsAt: new Date(),
             pass2At: new Date(),
           },
         })
