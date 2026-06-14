@@ -40,7 +40,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge }: HeroRed
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 grid grid-cols-8 gap-3.5 px-3.5"
-          style={{ transform: "rotate(-8deg) scale(1.5)", transformOrigin: "center", opacity: 0.12, filter: "saturate(.9)" }}
+          style={{ transform: "rotate(-8deg) scale(1.5)", transformOrigin: "center", opacity: 0.25, filter: "saturate(.9)" }}
         >
           {columns.map((col, ci) => (
             <div
@@ -104,15 +104,15 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge }: HeroRed
                   type="button"
                   aria-pressed={on}
                   onClick={() => onToggleAge(b.key)}
-                  className="flex flex-col items-center rounded-full px-[15px] py-[9px] text-[14px] font-semibold leading-tight transition-colors"
+                  className="flex flex-col items-center rounded-full px-[18px] py-[10px] text-center leading-tight transition-colors"
                   style={{
                     border: `1.5px solid ${on ? "var(--pine)" : "var(--line)"}`,
                     background: on ? "var(--pine)" : "var(--paper-2)",
-                    color: on ? "#fff" : "var(--ink-2)",
+                    color: on ? "#fff" : "var(--ink)",
                   }}
                 >
-                  {b.label}
-                  <small className="text-[11px] font-semibold" style={{ color: on ? "rgba(255,255,255,.7)" : "var(--ink-3)" }}>ans</small>
+                  <span className="whitespace-nowrap text-[14.5px] font-bold">{b.label} ans</span>
+                  <span className="text-[11.5px] font-semibold" style={{ color: on ? "rgba(255,255,255,.72)" : "var(--ink-3)" }}>{b.name}</span>
                 </button>
               )
             })}
