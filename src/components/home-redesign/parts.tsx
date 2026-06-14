@@ -80,9 +80,19 @@ export function Em({ tone = "terra", children }: { tone?: "terra" | "pine" | "go
   )
 }
 
+/** Single-row horizontal rail (snap-scroll, hidden scrollbar) — bleeds to
+ * the container edges so cards scroll off-screen as the design intends. */
+export function RailRow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-3 [scrollbar-width:none] sm:-mx-7 sm:px-7 [&::-webkit-scrollbar]:hidden" style={{ scrollSnapType: "x mandatory" }}>
+      {children}
+    </div>
+  )
+}
+
 /**
- * "eyebrow + heading + grid of cards" section. A responsive grid (not a
- * horizontal rail) so no card is ever clipped on the right edge.
+ * "eyebrow + heading + single-row rail of cards" section. One row, scrolls
+ * horizontally (per the design) — not a multi-row grid.
  */
 export function CardRailSection({
   id,
@@ -96,7 +106,6 @@ export function CardRailSection({
   loading,
   totem = "compact",
   showType = false,
-  upcoming = false,
   emptyText,
 }: {
   id?: string
@@ -110,33 +119,30 @@ export function CardRailSection({
   loading: boolean
   totem?: "compact" | "full"
   showType?: boolean
-  upcoming?: boolean
   emptyText?: string
 }) {
   if (!loading && items.length === 0 && !emptyText) return null
-  const grid =
-    totem === "full"
-      ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-5"
-      : "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4"
-  const skeletonCount = totem === "full" ? 5 : 6
+  const cardW = totem === "full" ? 220 : 178
   return (
     <Band id={id} alt={alt}>
       <Wrap>
         <SectionHead eyebrow={eyebrow} title={title} lead={lead} action={action} onReload={onReload} />
-        {loading ? (
-          <div className={grid}>
-            {Array.from({ length: skeletonCount }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <div className={grid}>
-            {items.map((m) => (
-              <RedesignCard key={m.id} media={m} totem={totem} showType={showType} upcoming={upcoming} />
-            ))}
-          </div>
-        ) : (
+        {!loading && items.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>{emptyText}</p>
+        ) : (
+          <RailRow>
+            {loading
+              ? Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex-none" style={{ width: cardW, scrollSnapAlign: "start" }}>
+                    <div className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
+                  </div>
+                ))
+              : items.map((m) => (
+                  <div key={m.id} className="flex-none" style={{ width: cardW, scrollSnapAlign: "start" }}>
+                    <RedesignCard media={m} totem={totem} showType={showType} />
+                  </div>
+                ))}
+          </RailRow>
         )}
       </Wrap>
     </Band>
