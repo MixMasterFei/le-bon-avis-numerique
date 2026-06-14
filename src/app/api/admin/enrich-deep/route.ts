@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
+import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import OpenAI from "openai"
 
 // Each item runs a web-search-enabled gpt-4o call (~15-30 s) plus Prisma
@@ -80,6 +81,7 @@ interface DeepAnalysis {
   pacing: string
   visualStyle: string
   emotionalThemes: string[]
+  sensitiveWarnings: string[]
   corrections: string[]
 }
 
@@ -148,6 +150,10 @@ STYLE VISUEL (exactement 1): "Animation 2D classique", "Animation 3D/CGI", "Stop
 
 THEMES EMOTIONNELS (1 a 4): "Dépassement de soi", "Acceptation de la différence", "Force de l'amitié", "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place", "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs", "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation", "Confiance en soi", "Solidarité et entraide"
 
+POINTS A SURVEILLER — "Ce qui peut marquer" (0 a 6 categories, UNIQUEMENT dans cette liste, casse exacte):
+${VALID_SENSITIVE_WARNINGS.map((w) => `"${w}"`).join(", ")}
+Reperes de vigilance prudents (categories seulement, jamais de scene precise inventee). Renvoie [] si rien de pertinent.
+
 Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
 
 Reponds UNIQUEMENT avec un JSON valide:
@@ -162,6 +168,7 @@ Reponds UNIQUEMENT avec un JSON valide:
   "pacing": "<rythme>",
   "visualStyle": "<style>",
   "emotionalThemes": ["<theme1>", "<theme2>"],
+  "sensitiveWarnings": ["<categorie de la liste>", "..."],
   "corrections": ["<ce qui a ete corrige par rapport a l'analyse precedente>"]
 }`
 
@@ -234,6 +241,10 @@ Reponds UNIQUEMENT avec un JSON valide:
       emotionalThemes: filterToValidList(
         Array.isArray(parsed.emotionalThemes) ? parsed.emotionalThemes.slice(0, 4) : [],
         VALID_EMOTIONAL_THEMES
+      ),
+      sensitiveWarnings: filterToValidList(
+        Array.isArray(parsed.sensitiveWarnings) ? parsed.sensitiveWarnings.slice(0, 6) : [],
+        VALID_SENSITIVE_WARNINGS as unknown as string[]
       ),
       corrections: Array.isArray(parsed.corrections) ? parsed.corrections.slice(0, 5) : [],
     }
@@ -353,6 +364,7 @@ export async function POST(request: NextRequest) {
             pacing: analysis.pacing || null,
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
+            sensitiveWarnings: analysis.sensitiveWarnings,
             pass2At: new Date(),
           },
         })

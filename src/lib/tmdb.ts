@@ -553,6 +553,38 @@ export async function getTVWatchProviders(tvId: number): Promise<TMDBWatchProvid
 }
 
 /**
+ * Get TMDB keywords for a movie. Used as a best-effort GROUNDING HINT for AI
+ * enrichment (e.g. "death of mother", "child in peril") — never surfaced to
+ * users. Returns [] on any error so enrichment never blocks on TMDB.
+ * Note: the movie endpoint nests them under `keywords`.
+ */
+export async function getMovieKeywords(movieId: number): Promise<string[]> {
+  try {
+    const response = await tmdbFetch<{ keywords?: { id: number; name: string }[] }>(
+      `/movie/${movieId}/keywords`,
+    )
+    return (response.keywords || []).map((k) => k.name)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get TMDB keywords for a TV show. Same grounding-hint use as the movie variant.
+ * Note: the TV endpoint nests them under `results` (different shape from movies).
+ */
+export async function getTVKeywords(tvId: number): Promise<string[]> {
+  try {
+    const response = await tmdbFetch<{ results?: { id: number; name: string }[] }>(
+      `/tv/${tvId}/keywords`,
+    )
+    return (response.results || []).map((k) => k.name)
+  } catch {
+    return []
+  }
+}
+
+/**
  * Get videos for a movie (trailers, teasers, etc.)
  * Prioritizes French videos, falls back to English
  */

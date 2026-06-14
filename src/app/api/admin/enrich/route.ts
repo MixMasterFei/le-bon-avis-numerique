@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import { UNRELEASED_TMDB_STATUSES } from "@/lib/release-status"
+import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
@@ -34,6 +36,7 @@ interface ContentAnalysis {
     roleModels: number
   }
   whatParentsNeedToKnow: string[]
+  sensitiveWarnings: string[]
   synopsis: string
   tags: string[]
   // V2 enrichment fields
@@ -137,6 +140,7 @@ async function analyzeWithOpenAI(
     tmdbVoteCount?: number | null
     demographic?: string | null
   },
+  tmdbKeywords: string[] = [],
   retryCount = 0
 ): Promise<ContentAnalysis> {
   // Type label + noun used in the prompt. MANGA has its own phrasing so
@@ -172,6 +176,14 @@ PARTICULARITES MANGA — TIENS EN COMPTE:
 - Langage cru et themes adultes sont frequents en seinen/josei — n'hesite pas a monter a 16+/18+ si justifie`
     : ""
 
+  // Best-effort grounding hint. These TMDB keywords are PISTES only — they help
+  // the model recall what categories of sensitive content may be present; they
+  // are never echoed to users and must not be treated as verified scenes.
+  const keywordHint =
+    tmdbKeywords.length > 0
+      ? `\n- Indices (mots-cles TMDB, PISTES uniquement — ne decris jamais une scene precise comme un fait verifie): ${tmdbKeywords.slice(0, 40).join(", ")}`
+      : ""
+
   const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
 Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
 
@@ -182,7 +194,7 @@ ${item.originalTitle ? `- Titre original: ${item.originalTitle}` : ""}
 - Genres: ${item.genres.join(", ") || "Non specifie"}
 ${item.releaseDate ? `- Date de sortie: ${item.releaseDate.toISOString().split("T")[0]}` : ""}
 ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : ""}
-- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}${mangaRubric}
+- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}${keywordHint}${mangaRubric}
 
 IMPORTANT:
 - Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
@@ -242,6 +254,12 @@ STYLE VISUEL (choisis exactement 1):
 THEMES EMOTIONNELS (choisis 1 a 4 — ce que le spectateur RESSENT):
 "Dépassement de soi", "Acceptation de la différence", "Force de l'amitié", "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place", "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs", "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation", "Confiance en soi", "Solidarité et entraide"
 
+POINTS A SURVEILLER — "Ce qui peut marquer" (choisis 0 a 6 categories, UNIQUEMENT dans cette liste, casse exacte):
+${VALID_SENSITIVE_WARNINGS.map((w) => `"${w}"`).join(", ")}
+- Ce sont des REPERES DE VIGILANCE prudents ("ce qui PEUT marquer"), pas un verdict.
+- Choisis uniquement les categories reellement pertinentes ; renvoie [] (tableau vide) pour un contenu doux sans point de vigilance.
+- N'INVENTE JAMAIS de scene precise, de minutage, ni de detail d'intrigue. Categories seulement.
+
 CONFIANCE dans ton analyse (0.0 a 1.0):
 - 0.9-1.0: Tu connais tres bien ce contenu et es certain de tes evaluations
 - 0.7-0.8: Tu connais le contenu ou as assez d'informations pour une evaluation fiable
@@ -272,6 +290,7 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     "roleModels": <0-5>
   },
   "whatParentsNeedToKnow": ["<1 phrase, max 120 car>", "<idem>", "<idem>"],
+  "sensitiveWarnings": ["<categorie de la liste>", "..."],
   "synopsis": "<EN FRANCAIS, 2-3 phrases, max 400 car>",
   "tags": ["<tag1>", "<tag2>"],
   "confidence": <0.0-1.0>,
@@ -373,6 +392,10 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
       whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
         ? parsed.whatParentsNeedToKnow.slice(0, 5)
         : [],
+      sensitiveWarnings: filterToValidList(
+        Array.isArray(parsed.sensitiveWarnings) ? parsed.sensitiveWarnings.slice(0, 6) : [],
+        VALID_SENSITIVE_WARNINGS as unknown as string[]
+      ),
       synopsis: parsed.synopsis || item.synopsis || "",
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
       // V2 fields with validation
@@ -398,7 +421,7 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
       if (isRateLimit) {
         // Wait longer for rate limit errors
         await new Promise((resolve) => setTimeout(resolve, 2000 * (retryCount + 1)))
-        return analyzeWithOpenAI(openai, item, retryCount + 1)
+        return analyzeWithOpenAI(openai, item, tmdbKeywords, retryCount + 1)
       }
     }
     throw error
@@ -474,6 +497,7 @@ export async function POST(request: NextRequest) {
         OR: [
           { contentMetrics: { toneTags: { isEmpty: true } } },
           { contentMetrics: { enrichmentConfidence: null } },
+          { contentMetrics: { sensitiveWarnings: { isEmpty: true } } },
         ],
       }
     } else if (onlyMissing) {
@@ -532,6 +556,14 @@ export async function POST(request: NextRequest) {
           break
         }
 
+        // Best-effort TMDB keyword grounding (MOVIE/TV with a tmdbId only).
+        // Never blocks enrichment: the fetchers swallow errors and return [].
+        let tmdbKeywords: string[] = []
+        if (item.tmdbId) {
+          if (item.type === "MOVIE") tmdbKeywords = await getMovieKeywords(item.tmdbId)
+          else if (item.type === "TV") tmdbKeywords = await getTVKeywords(item.tmdbId)
+        }
+
         // Analyze with OpenAI
         const analysis = await analyzeWithOpenAI(openai, {
           title: item.title,
@@ -543,7 +575,7 @@ export async function POST(request: NextRequest) {
           officialRating: item.officialRating,
           tmdbVoteCount: item.tmdbVoteCount,
           demographic: item.demographic,
-        })
+        }, tmdbKeywords)
 
         // Compute final confidence with heuristic adjustments
         const { score: finalConfidence, needsDeepEnrich } = computeFinalConfidence(
@@ -587,6 +619,7 @@ export async function POST(request: NextRequest) {
             pacing: analysis.pacing || null,
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
+            sensitiveWarnings: analysis.sensitiveWarnings,
             pass1At: new Date(),
           },
           create: {
@@ -607,6 +640,7 @@ export async function POST(request: NextRequest) {
             pacing: analysis.pacing || null,
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
+            sensitiveWarnings: analysis.sensitiveWarnings,
             pass1At: new Date(),
           },
         })
