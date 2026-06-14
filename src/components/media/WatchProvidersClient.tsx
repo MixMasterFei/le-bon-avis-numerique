@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { WatchProviders } from "@/components/media/WatchProviders"
-import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
+import { useExtrasData } from "@/components/media/FicheDataContext"
 
 interface WatchProvidersClientProps {
   mediaId: string | null
@@ -11,46 +10,15 @@ interface WatchProvidersClientProps {
 }
 
 export function WatchProvidersClient({ mediaId, mediaType, className }: WatchProvidersClientProps) {
-  const [providers, setProviders] = useState<TMDBWatchProviderResult | null>(null)
-  const [trailer, setTrailer] = useState<TMDBVideo | null>(null)
-  const [inTheaters, setInTheaters] = useState(false)
-  const [loaded, setLoaded] = useState(false)
-
-  useEffect(() => {
-    if (!mediaId || (mediaType !== "MOVIE" && mediaType !== "TV")) {
-      setLoaded(true)
-      return
-    }
-
-    let cancelled = false
-
-    async function fetchExtras() {
-      try {
-        const res = await fetch(`/api/media/${mediaId}/extras`)
-        if (res.ok) {
-          const data = await res.json()
-          if (!cancelled) {
-            setProviders(data.watchProviders)
-            setTrailer(data.trailer)
-            setInTheaters(Boolean(data.inTheaters))
-          }
-        }
-      } catch {
-        // Silently fail — streaming/trailer are non-critical
-      } finally {
-        if (!cancelled) setLoaded(true)
-      }
-    }
-
-    fetchExtras()
-    return () => { cancelled = true }
-  }, [mediaId, mediaType])
+  // Shared with the dashboard bar via FicheDataProvider when present; falls
+  // back to its own fetch on pages without the provider (e.g. /apercufilm).
+  const { data, loading } = useExtrasData(mediaId, mediaType)
 
   // Don't render anything for games/books
   if (mediaType !== "MOVIE" && mediaType !== "TV") return null
 
   // Skeleton while loading
-  if (!loaded) {
+  if (loading) {
     return (
       <div className={`animate-pulse ${className}`}>
         <div className="flex gap-2 mb-2">
@@ -62,6 +30,10 @@ export function WatchProvidersClient({ mediaId, mediaType, className }: WatchPro
       </div>
     )
   }
+
+  const providers = data?.watchProviders ?? null
+  const trailer = data?.trailer ?? null
+  const inTheaters = Boolean(data?.inTheaters)
 
   // Render providers + trailer (or nothing if all empty)
   if (!providers && !trailer && !inTheaters) return null

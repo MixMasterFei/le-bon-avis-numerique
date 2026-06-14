@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
 import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
@@ -8,6 +7,7 @@ import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import { useFamilyFitData } from "@/components/media/FicheDataContext"
 
 const SAGE = "#5C8A5C"
 const AMBER = "#C08A3E"
@@ -15,34 +15,6 @@ const AMBER = "#C08A3E"
 // ---------------------------------------------------------------------------
 // Types (shared with FamilyFitCard)
 // ---------------------------------------------------------------------------
-
-interface AffinityInfo {
-  hasConnection: boolean
-  connectedMedia?: { title: string; reaction: string }
-  affinityReason?: string
-  genreAffinityScore?: number
-}
-
-interface FamilyFitMember {
-  id: string
-  name: string
-  avatarEmoji: string
-  avatarStyle?: string | null
-  avatarSeed?: string | null
-  avatarOptions?: Record<string, unknown> | null
-  age: number | null
-  score: number
-  level: "excellent" | "good" | "moderate" | "poor"
-  reason: string
-  hasPreferences?: boolean
-  affinity?: AffinityInfo
-}
-
-type FamilyFitResponse =
-  | { status: "not_logged_in" }
-  | { status: "no_family" }
-  | { status: "ok"; members: FamilyFitMember[] }
-  | { status: "family_warning"; members: FamilyFitMember[] }
 
 interface FamilyFitHeroProps {
   mediaId: string
@@ -132,30 +104,9 @@ function HeroSkeleton() {
 // ---------------------------------------------------------------------------
 
 export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
-  const [data, setData] = useState<FamilyFitResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function fetchFit() {
-      try {
-        const res = await fetch(`/api/media/${mediaId}/family-fit`)
-        if (!res.ok) throw new Error("Erreur réseau")
-        const json = await res.json()
-        if (!cancelled) setData(json)
-      } catch {
-        if (!cancelled) setData(null)
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    fetchFit()
-    return () => {
-      cancelled = true
-    }
-  }, [mediaId])
+  // Reads the shared fiche data (single fetch via FicheDataProvider on the
+  // media page); self-fetches when rendered without the provider.
+  const { data, loading } = useFamilyFitData(mediaId)
 
   // ---------- Loading ----------
   if (loading) return <HeroSkeleton />

@@ -19,6 +19,9 @@ import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { FamilyReactions } from "@/components/media/FamilyReactions"
 import { FamilyFitHero } from "@/components/media/FamilyFitHero"
+import { FicheDataProvider } from "@/components/media/FicheDataContext"
+import { MediaDashboardBar } from "@/components/media/MediaDashboardBar"
+import { FamilyQuickAnswer } from "@/components/media/FamilyQuickAnswer"
 import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
@@ -692,8 +695,21 @@ export default async function MediaPage({ params }: MediaPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faqPage) }}
       />
 
+      <FicheDataProvider mediaId={dbId} mediaType={media.type}>
+        {/* Collapsing summary bar — slides in once the hero scrolls behind
+            the header (fixed overlay, no layout shift). */}
+        <MediaDashboardBar
+          mediaId={dbId}
+          mediaType={media.type}
+          title={media.title}
+          posterUrl={media.posterUrl}
+          expertAgeRec={media.expertAgeRec}
+          isProvisional={media.isProvisional}
+          hideContentAnalysis={hideContentAnalysis}
+        />
+
       {/* ===== HERO — verdict-first horizontal card on a warm wash ===== */}
-      <section className="relative" style={{ background: "var(--color-warm-bg)" }}>
+      <section id="fiche-hero" className="relative" style={{ background: "var(--color-warm-bg)" }}>
         {/* Decorative warm wash at the top. Replaces the old per-hero blurred
             backdrop: the redesign favours a clean, contained hero card. The
             poster's own sensitivity blur (BlurredPoster) is unchanged. */}
@@ -827,24 +843,36 @@ export default async function MediaPage({ params }: MediaPageProps) {
       {/* ===== CONTENT — single full-width column of cards ===== */}
       <div className="container mx-auto px-4 pb-16">
         <div className="flex flex-col gap-5 lg:gap-6">
-          {/* Réponse rapide (generic) — kept visible in the DOM as the
-              FAQ rich-result source (mirrors buildQuickAnswer in JSON-LD). */}
+          {/* Réponse rapide — generic answer (kept in the DOM as the FAQ
+              rich-result source) + the personalized "Adapté à ma famille ?"
+              companion when logged in (collapses to full width otherwise). */}
           <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
             <p
-              className="text-[11px] font-semibold uppercase tracking-wide mb-1"
+              className="text-[11px] font-semibold uppercase tracking-wide mb-3"
               style={{ color: "var(--color-warm-accent)" }}
             >
               Réponse rapide
             </p>
-            <h2
-              className="font-serif text-lg sm:text-xl font-medium mb-2"
-              style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
-            >
-              {quickAnswer.question}
-            </h2>
-            <p className="text-sm sm:text-[15px] leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
-              {quickAnswer.answer}
-            </p>
+            <div className="flex flex-col md:flex-row gap-4">
+              <div
+                className="flex-1 rounded-xl p-4"
+                style={{ background: "var(--color-warm-bg2)", border: "1px solid var(--color-warm-line)" }}
+              >
+                <h2
+                  className="font-serif text-lg sm:text-xl font-medium mb-1"
+                  style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
+                >
+                  {quickAnswer.question}
+                </h2>
+                <p className="text-xs mb-2" style={{ color: "var(--color-warm-ink2)" }}>
+                  Réponse générale
+                </p>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
+                  {quickAnswer.answer}
+                </p>
+              </div>
+              {dbId && !hideContentAnalysis && <FamilyQuickAnswer mediaId={dbId} />}
+            </div>
           </div>
 
           {hideContentAnalysis ? (
@@ -1190,6 +1218,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           )}
         </div>
       </div>
+      </FicheDataProvider>
     </div>
   )
 }
