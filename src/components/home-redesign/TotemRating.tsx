@@ -1,6 +1,6 @@
 import {
   totemLevel,
-  TOTEM_AXES,
+  totemAxesFor,
   TOTEM_COLORS,
   TOTEM_WORDS,
   type TotemMetrics,
@@ -10,6 +10,8 @@ interface TotemRatingProps {
   age: number | null | undefined
   metrics: TotemMetrics | null | undefined
   variant: "compact" | "full" | "popover"
+  /** Media type — selects the axis set (games → violence + achats intégrés). */
+  type?: string | null
 }
 
 /**
@@ -19,9 +21,10 @@ interface TotemRatingProps {
  * - `popover`  — hover explainer anchored in the poster (per-axis label + word)
  * Colors/words come from totem.ts; CSS vars resolve inside [data-home="v2"].
  */
-export function TotemRating({ age, metrics, variant }: TotemRatingProps) {
+export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
   const ageLabel = typeof age === "number" && age > 0 ? `${age}+` : "?"
   const m = metrics ?? {}
+  const axes = totemAxesFor(type)
 
   if (variant === "compact") {
     return (
@@ -33,7 +36,7 @@ export function TotemRating({ age, metrics, variant }: TotemRatingProps) {
           {ageLabel}
         </span>
         <div className="flex gap-0.5">
-          {TOTEM_AXES.map((a) => {
+          {axes.map((a) => {
             const lvl = totemLevel(m[a.key])
             return (
               <i
@@ -57,7 +60,7 @@ export function TotemRating({ age, metrics, variant }: TotemRatingProps) {
         <span className="text-center text-[17px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
           {ageLabel}
         </span>
-        {TOTEM_AXES.map((a) => {
+        {axes.map((a) => {
           const lvl = totemLevel(m[a.key])
           return (
             <div key={a.key} className="flex items-center gap-1.5 text-[10px] font-bold text-white/90">
@@ -92,13 +95,14 @@ export function TotemRating({ age, metrics, variant }: TotemRatingProps) {
       <div className="mb-2 text-[11px] font-semibold leading-snug" style={{ color: "#C9BCA8" }}>
         Dès <b className="font-bold text-white">{age} ans</b> · ce que contient ce titre
       </div>
-      {TOTEM_AXES.map((a) => {
+      {axes.map((a) => {
         const lvl = totemLevel(m[a.key])
+        const words = a.words ?? TOTEM_WORDS
         return (
           <div key={a.key} className="flex items-center justify-between gap-2.5 py-1">
             <div className="flex min-w-0 flex-col leading-tight">
               <b className="text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>{a.label}</b>
-              <span className="mt-px text-[9.5px] font-bold" style={{ color: "#A99C88" }}>{TOTEM_WORDS[lvl]}</span>
+              <span className="mt-px text-[9.5px] font-bold" style={{ color: "#A99C88" }}>{words[lvl]}</span>
             </div>
             <span className="flex flex-none gap-0.5">
               {[0, 1, 2].map((i) => (

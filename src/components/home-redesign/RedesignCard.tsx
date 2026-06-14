@@ -64,7 +64,7 @@ export function RedesignCard({
 
   const familyFit = getFamilyFit(media.id)
   const visibleGenres = (media.genres ?? []).slice(0, 2)
-  const showTotem = !upcoming && hasTotemData(media.contentMetrics)
+  const showTotem = !upcoming && hasTotemData(media.contentMetrics, media.type)
   const ageLabel = typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
 
   const shouldBlur =
@@ -131,7 +131,7 @@ export function RedesignCard({
 
         {/* Totem badge (or honest "à confirmer" for unreleased) */}
         {showTotem ? (
-          <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant={totem} />
+          <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant={totem} type={media.type} />
         ) : (
           ageLabel && (
             <div
@@ -147,7 +147,7 @@ export function RedesignCard({
         )}
 
         {/* Hover explainer — only when we have real content data */}
-        {showTotem && <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant="popover" />}
+        {showTotem && <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant="popover" type={media.type} />}
 
         {media.cornerLabel && (
           <span
