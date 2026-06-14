@@ -95,7 +95,6 @@ interface FilterSidebarProps {
   className?: string
   onFiltersChange?: (filters: FilterState) => void
   mediaType?: MediaType
-  availableTitles?: string[] // For autocomplete suggestions
   initialFilters?: Partial<FilterState> // For pre-setting filters from URL
 }
 
@@ -113,7 +112,7 @@ export interface FilterState {
 export const DEFAULT_MIN_AGE = 2
 export const DEFAULT_MAX_AGE = 18
 
-export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", availableTitles = [], initialFilters }: FilterSidebarProps) {
+export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE", initialFilters }: FilterSidebarProps) {
   const { data: session } = useSession()
   // Select appropriate platforms and topics based on media type
   const platforms = mediaType === "GAME" ? gamingPlatforms : streamingPlatforms
@@ -209,14 +208,39 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
     return `Filtré pour ${selectedMembersWithAge.map(m => m.name).join(", ")}`
   }, [selectedMembersWithAge, familyMembers.length])
 
-  // Compute suggestions based on search query
-  const suggestions = useMemo(() => {
-    if (!searchQuery.trim() || searchQuery.length < 2) return []
-    const query = searchQuery.toLowerCase().trim()
-    return availableTitles
-      .filter(title => title.toLowerCase().includes(query))
-      .slice(0, 8) // Limit to 8 suggestions
-  }, [searchQuery, availableTitles])
+  // Catalogue-wide suggestions: debounced fetch to /api/autocomplete (NOT
+  // just the current page of results). Mirrors HeroSearch — 200ms debounce +
+  // abort the in-flight request when the query changes so stale results never
+  // land. Titles only (the dropdown shows + fills the search box).
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const suggestAbortRef = useRef<AbortController | null>(null)
+  useEffect(() => {
+    const q = searchQuery.trim()
+    if (q.length < 2) {
+      setSuggestions([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      suggestAbortRef.current?.abort()
+      const ctrl = new AbortController()
+      suggestAbortRef.current = ctrl
+      try {
+        const res = await fetch(
+          `/api/autocomplete?q=${encodeURIComponent(q)}&type=${mediaType}`,
+          { signal: ctrl.signal },
+        )
+        if (!res.ok) return
+        const data = await res.json()
+        const titles: string[] = Array.isArray(data.suggestions)
+          ? [...new Set((data.suggestions as Array<{ title: string }>).map((s) => s.title))]
+          : []
+        setSuggestions(titles)
+      } catch {
+        /* aborted or network error — keep last suggestions */
+      }
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [searchQuery, mediaType])
 
   // Close suggestions when clicking outside
   useEffect(() => {
