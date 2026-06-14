@@ -243,7 +243,11 @@ export function DualMetricsDisplay({
   return (
     <div
       className="rounded-2xl p-5 sm:p-6"
-      style={{ background: p.card, border: `1px solid ${p.line}` }}
+      style={{
+        background: p.card,
+        border: `1px solid ${p.line}`,
+        boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">

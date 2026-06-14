@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { Play, Share2 } from "lucide-react"
+import Link from "next/link"
+import { useSession } from "next-auth/react"
+import { Play, Share2, Heart } from "lucide-react"
 import { useFamilyFitData, useExtrasData } from "@/components/media/FicheDataContext"
-import {
-  familyFitBandFromLevel,
-  FAMILY_FIT_LABELS,
-  type FamilyFitBand,
-} from "@/lib/family-fit-display"
-import { ageBadgeColor } from "@/components/home-v2/apercuTheme"
+import { familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
-const BAND_CHIP: Record<FamilyFitBand, { bg: string; text: string; mark: string }> = {
-  veryAdapted: { bg: "rgba(92,138,92,0.16)", text: "#4d8a63", mark: "✓" },
-  goodChoice: { bg: "rgba(62,126,156,0.14)", text: "#3E7E9C", mark: "✓" },
-  check: { bg: "rgba(192,138,62,0.18)", text: "#B07A2E", mark: "·" },
-  notYet: { bg: "rgba(209,106,74,0.16)", text: "#C8512F", mark: "⚠" },
+// Prototype status colours (green / blue / warn / coral).
+const BAND_CHIP: Record<FamilyFitBand, { bg: string; border: string; text: string; mark: string }> = {
+  veryAdapted: { bg: "#E7EFE7", border: "#cfe0d2", text: "#5C8A66", mark: "✓" },
+  goodChoice: { bg: "#E7EDF5", border: "#d3deec", text: "#5777A4", mark: "✓" },
+  check: { bg: "#F7ECD7", border: "#ecdcbc", text: "#C7892F", mark: "⚠" },
+  notYet: { bg: "#FBEAE2", border: "#f0cdbe", text: "#DB6242", mark: "⚠" },
 }
+
+const AMBER_BADGE = "radial-gradient(circle at 32% 28%,#F9A23E,#EF8C2A)"
 
 interface MediaDashboardBarProps {
   mediaId: string | null
@@ -30,9 +30,11 @@ interface MediaDashboardBarProps {
 
 /**
  * Slim, collapsing summary bar that slides in once the hero scrolls behind
- * the site header. Reads the shared fiche data (family fit + streaming) from
- * FicheDataProvider. Fixed overlay (no layout shift), sits just below the
- * sticky header, and respects prefers-reduced-motion.
+ * the site header. Mirrors the redesign prototype: poster · verdict, a
+ * labelled "Ma famille" section (chips, or a "Se connecter" CTA when logged
+ * out), a "Où le regarder" section, and the key actions. Reads the shared
+ * fiche data (family fit + streaming) from FicheDataProvider. Fixed overlay
+ * (no layout shift), positioned under the header, respects reduced-motion.
  */
 export function MediaDashboardBar({
   mediaId,
@@ -43,8 +45,11 @@ export function MediaDashboardBar({
   isProvisional,
   hideContentAnalysis,
 }: MediaDashboardBarProps) {
+  const { data: session } = useSession()
   const [show, setShow] = useState(false)
   const [topOffset, setTopOffset] = useState(64)
+  const [inList, setInList] = useState(false)
+  const [listBusy, setListBusy] = useState(false)
   const { data: familyFit } = useFamilyFitData(mediaId)
   const { data: extras } = useExtrasData(mediaId, mediaType)
 
@@ -54,9 +59,8 @@ export function MediaDashboardBar({
     const header = document.querySelector("header")
     let io: IntersectionObserver | null = null
 
-    // Position the bar right under the (variable-height) header and reveal
-    // it once the hero has scrolled past that line. Recomputed on resize so
-    // the offset tracks the header growing/shrinking across breakpoints.
+    // Position the bar under the (variable-height) header and reveal it once
+    // the hero has scrolled past that line. Recomputed on resize.
     const setup = () => {
       const h = header?.offsetHeight ?? 64
       setTopOffset(h)
@@ -76,13 +80,13 @@ export function MediaDashboardBar({
     }
   }, [])
 
-  const ageColor = ageBadgeColor(expertAgeRec)
   const members =
     !hideContentAnalysis &&
     familyFit &&
     (familyFit.status === "ok" || familyFit.status === "family_warning")
       ? familyFit.members.slice(0, 3)
       : []
+  const familyStatus = familyFit?.status
 
   const flatrate = extras?.watchProviders?.flatrate ?? []
   const trailerKey = extras?.trailer?.key ?? null
@@ -98,6 +102,29 @@ export function MediaDashboardBar({
     }
   }
 
+  const toggleList = async () => {
+    if (!mediaId || listBusy) return
+    setListBusy(true)
+    setInList((v) => !v)
+    try {
+      const res = await fetch("/api/user/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setInList(Boolean(data.inWatchlist))
+      }
+    } catch {
+      setInList((v) => !v)
+    } finally {
+      setListBusy(false)
+    }
+  }
+
+  const labelClass = "text-[10px] font-bold uppercase tracking-[0.08em]"
+
   return (
     <div
       className="fixed inset-x-0 z-40 transition-transform duration-300 motion-reduce:transition-none"
@@ -112,79 +139,91 @@ export function MediaDashboardBar({
       aria-hidden={!show}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center gap-3 sm:gap-4 py-2">
+        <div className="flex items-center gap-4 py-2">
           {/* poster + identity */}
           <div
-            className="relative h-12 w-8 shrink-0 overflow-hidden rounded"
+            className="relative h-[54px] w-9 shrink-0 overflow-hidden rounded-md"
             style={{ background: "var(--color-placeholder)" }}
           >
-            <Image src={posterUrl} alt={title} fill sizes="32px" className="object-cover" />
+            <Image src={posterUrl} alt={title} fill sizes="36px" className="object-cover" />
           </div>
           <div className="flex min-w-0 flex-col leading-tight">
             <span
-              className="truncate font-serif text-sm font-medium sm:text-base"
-              style={{ color: "var(--color-ink)", maxWidth: "42vw" }}
+              className="truncate font-serif text-base font-semibold"
+              style={{ color: "var(--color-ink)", maxWidth: "38vw" }}
             >
               {title}
             </span>
-            <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--color-ink2)" }}>
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--color-ink2)" }}>
               {expertAgeRec ? (
                 <>
                   <span
-                    className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                    style={{ background: ageColor.bg, color: ageColor.text }}
+                    className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
+                    style={{ background: AMBER_BADGE }}
                   >
                     {expertAgeRec}+
                   </span>
-                  <span className="hidden sm:inline">
-                    Dès {expertAgeRec} ans{provisional ? " · à confirmer" : ""}
-                  </span>
+                  <span>Dès {expertAgeRec} ans{provisional ? " · à confirmer" : ""}</span>
                 </>
               ) : (
-                <span className="hidden sm:inline">Âge à venir</span>
+                <span>Âge à venir</span>
               )}
             </span>
           </div>
 
-          {/* family chips — hidden < md */}
-          {members.length > 0 && (
-            <div
-              className="ml-1 hidden items-center gap-1.5 border-l pl-3 md:flex"
-              style={{ borderColor: "var(--color-line)" }}
-            >
-              {members.map((m) => {
-                const band = familyFitBandFromLevel(m.level)
-                const c = BAND_CHIP[band]
-                return (
-                  <span
-                    key={m.id}
-                    className="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                    style={{ background: c.bg, color: c.text }}
-                    title={FAMILY_FIT_LABELS[band]}
+          {/* MA FAMILLE — chips, or a "Se connecter" CTA when logged out */}
+          {!hideContentAnalysis && familyStatus && (
+            <>
+              <div className="hidden h-10 w-px shrink-0 md:block" style={{ background: "var(--color-line)" }} />
+              <div className="hidden shrink-0 flex-col gap-1 md:flex">
+                <span className={labelClass} style={{ color: "var(--color-ink2)" }}>Ma famille</span>
+                {members.length > 0 ? (
+                  <div className="flex gap-1.5">
+                    {members.map((m) => {
+                      const c = BAND_CHIP[familyFitBandFromLevel(m.level)]
+                      return (
+                        <span
+                          key={m.id}
+                          className="whitespace-nowrap rounded-full px-2 py-0.5 text-[12px] font-semibold"
+                          style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}
+                        >
+                          {m.name} {c.mark}
+                        </span>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <Link
+                    href={familyStatus === "no_family" ? "/profil" : "/connexion"}
+                    className="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
+                    style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
                   >
-                    {m.name} {c.mark}
-                  </span>
-                )
-              })}
-            </div>
+                    {familyStatus === "no_family" ? "Créer mon profil" : "Se connecter →"}
+                  </Link>
+                )}
+              </div>
+            </>
           )}
 
-          {/* streaming chips — hidden < lg */}
+          {/* OÙ LE REGARDER — streaming chips */}
           {flatrate.length > 0 && (
-            <div
-              className="ml-1 hidden items-center gap-1.5 border-l pl-3 lg:flex"
-              style={{ borderColor: "var(--color-line)" }}
-            >
-              {flatrate.slice(0, 3).map((prov) => (
-                <span
-                  key={prov.provider_id || prov.provider_name}
-                  className="whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-semibold"
-                  style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}
-                >
-                  {prov.provider_name}
-                </span>
-              ))}
-            </div>
+            <>
+              <div className="hidden h-10 w-px shrink-0 lg:block" style={{ background: "var(--color-line)" }} />
+              <div className="hidden shrink-0 flex-col gap-1 lg:flex">
+                <span className={labelClass} style={{ color: "var(--color-ink2)" }}>Où le regarder</span>
+                <div className="flex gap-1.5">
+                  {flatrate.slice(0, 3).map((prov) => (
+                    <span
+                      key={prov.provider_id || prov.provider_name}
+                      className="whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold"
+                      style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}
+                    >
+                      {prov.provider_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {/* actions */}
@@ -201,6 +240,27 @@ export function MediaDashboardBar({
                 <span className="hidden sm:inline">Bande-annonce</span>
               </a>
             )}
+            {mediaId &&
+              (session?.user ? (
+                <button
+                  onClick={toggleList}
+                  disabled={listBusy}
+                  aria-label="Ajouter à ma liste"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-60"
+                  style={{ background: "var(--color-bg2)", color: inList ? "#5C8A66" : "var(--color-ink)" }}
+                >
+                  <Heart className="h-4 w-4" style={{ fill: inList ? "#5C8A66" : "transparent" }} />
+                </button>
+              ) : (
+                <Link
+                  href="/connexion"
+                  aria-label="À voir"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full"
+                  style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}
+                >
+                  <Heart className="h-4 w-4" />
+                </Link>
+              ))}
             <button
               onClick={handleShare}
               aria-label="Partager"

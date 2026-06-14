@@ -116,6 +116,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   const shellStyle = {
     background: p.card,
     border: `1px solid ${p.line}`,
+    boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
   }
 
   // ---------- Not logged in ----------

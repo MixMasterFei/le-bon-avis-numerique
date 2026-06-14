@@ -8,10 +8,10 @@ import {
 import { familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
 const BAND_PILL: Record<FamilyFitBand, { bg: string; text: string; mark: string }> = {
-  veryAdapted: { bg: "rgba(92,138,92,0.16)", text: "#4d8a63", mark: "✓" },
-  goodChoice: { bg: "rgba(62,126,156,0.14)", text: "#3E7E9C", mark: "✓" },
-  check: { bg: "rgba(192,138,62,0.18)", text: "#B07A2E", mark: "· à voir" },
-  notYet: { bg: "rgba(209,106,74,0.16)", text: "#C8512F", mark: "⚠" },
+  veryAdapted: { bg: "#E7EFE7", text: "#5C8A66", mark: "✓" },
+  goodChoice: { bg: "#E7EDF5", text: "#5777A4", mark: "✓" },
+  check: { bg: "#F7ECD7", text: "#C7892F", mark: "· à voir" },
+  notYet: { bg: "#FBEAE2", text: "#DB6242", mark: "⚠" },
 }
 
 function joinNames(members: FamilyFitMember[]): string {
@@ -49,8 +49,8 @@ export function FamilyQuickAnswer({ mediaId, className }: { mediaId: string; cla
     <div
       className={`flex-1 rounded-xl p-4 ${className ?? ""}`}
       style={{
-        background: "linear-gradient(135deg, var(--color-warm-bg2), var(--color-warm-card))",
-        border: "1px solid var(--color-warm-line)",
+        background: "linear-gradient(135deg, #FFF7F3, var(--color-warm-card))",
+        border: "1px solid #f0cdbe",
       }}
     >
       <h3

@@ -5,12 +5,10 @@ import { cache, Suspense } from "react"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
-import { Star } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
 import { MethodBadge } from "@/components/ui/MethodBadge"
-import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
@@ -22,6 +20,7 @@ import { FamilyFitHero } from "@/components/media/FamilyFitHero"
 import { FicheDataProvider } from "@/components/media/FicheDataContext"
 import { MediaDashboardBar } from "@/components/media/MediaDashboardBar"
 import { FamilyQuickAnswer } from "@/components/media/FamilyQuickAnswer"
+import { AccountChip } from "@/components/media/AccountChip"
 import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
@@ -644,11 +643,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // Watch providers and trailer are now fetched client-side via /api/media/[id]/extras
   // This eliminates the 1-5s TMDB blocking from server render
 
-  const avgRating =
-    media.reviews?.length
-      ? media.reviews.reduce((acc, r) => acc + r.rating, 0) / media.reviews.length
-      : 0
-
   const adminUser = await checkIsAdmin()
 
   // Pre-release / provisional fiches: we have NOT evaluated the title, so
@@ -669,6 +663,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const warmCard = {
     background: "var(--color-warm-card)",
     border: "1px solid var(--color-warm-line)",
+    boxShadow: "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
   } as const
 
   // "Vous l'avez vu ?" — phrased per media type so it reads naturally.
@@ -753,26 +748,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
               {/* Main column */}
               <div className="min-w-0" style={{ color: "var(--color-warm-ink)" }}>
-                <div className="flex flex-wrap items-center gap-2 mb-3">
-                  <span
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                    style={{
-                      background: "var(--color-warm-ink)",
-                      color: "var(--color-warm-card)",
-                    }}
-                  >
-                    {mediaTypeLabels[media.type]}
-                  </span>
-                  <OfficialRatingBadge
-                    rating={media.officialRating}
-                    type={media.type}
-                    showLabel
-                  />
-                </div>
-
                 <MediaHeroEditable
                   isAdmin={adminUser}
                   mediaId={media.id}
+                  type={media.type}
+                  officialRating={media.officialRating}
                   title={media.title}
                   synopsisFr={media.synopsisFr}
                   expertAgeRec={media.expertAgeRec}
@@ -799,32 +779,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 <div className="mt-4">
                   <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions={!!dbId} />
                 </div>
-
-                {/* Rating summary */}
-                {(media.reviews?.length || 0) > 0 ? (
-                  <div className="mt-4 flex items-center gap-6 p-4 rounded-xl" style={warmCard}>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-6 w-6 fill-amber-500 text-amber-500" />
-                      <span
-                        className="font-serif text-2xl font-medium"
-                        style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
-                      >
-                        {avgRating.toFixed(1)}
-                      </span>
-                      <span style={{ color: "var(--color-warm-ink2)" }}>/ 5</span>
-                    </div>
-                    <div className="text-sm" style={{ color: "var(--color-warm-ink2)" }}>
-                      Basé sur {media.reviews.length} avis
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 flex items-center gap-3 p-4 rounded-xl" style={warmCard}>
-                    <Star className="h-5 w-5" style={{ color: "var(--color-warm-ink2)" }} />
-                    <span className="text-sm" style={{ color: "var(--color-warm-ink2)" }}>
-                      Aucun avis pour le moment — soyez le premier à donner votre avis !
-                    </span>
-                  </div>
-                )}
               </div>
 
               {/* Family panel — "Repères pour ma famille". Hidden pre-release:
@@ -847,16 +801,19 @@ export default async function MediaPage({ params }: MediaPageProps) {
               rich-result source) + the personalized "Adapté à ma famille ?"
               companion when logged in (collapses to full width otherwise). */}
           <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
-            <p
-              className="text-[11px] font-semibold uppercase tracking-wide mb-3"
-              style={{ color: "var(--color-warm-accent)" }}
-            >
-              Réponse rapide
-            </p>
+            <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--color-warm-accent)" }}
+              >
+                Réponse rapide
+              </p>
+              <AccountChip />
+            </div>
             <div className="flex flex-col md:flex-row gap-4">
               <div
                 className="flex-1 rounded-xl p-4"
-                style={{ background: "var(--color-warm-bg2)", border: "1px solid var(--color-warm-line)" }}
+                style={{ background: "var(--color-warm-card)", border: "1px solid var(--color-warm-line)" }}
               >
                 <h2
                   className="font-serif text-lg sm:text-xl font-medium mb-1"
