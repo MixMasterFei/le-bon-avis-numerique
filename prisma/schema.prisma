@@ -260,6 +260,10 @@ model ContentMetrics {
   // Hedged, AI-generated "Ce qui peut marquer" category flags (closed list in
   // src/lib/sensitive-warnings.ts). Categories only — never specific scenes.
   sensitiveWarnings    String[]  @default([]) @map("sensitive_warnings")
+  // When the warnings were last computed. Distinguishes "computed, none found"
+  // (empty array, gentle title) from "never computed" (legacy row) so the
+  // backfill/cron sweep on `sensitiveWarningsAt: null` terminates cleanly.
+  sensitiveWarningsAt  DateTime? @map("sensitive_warnings_at")
   pass1At              DateTime? @map("pass1_at")
   pass2At              DateTime? @map("pass2_at")
 

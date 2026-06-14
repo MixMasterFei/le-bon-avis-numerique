@@ -497,7 +497,11 @@ export async function POST(request: NextRequest) {
         OR: [
           { contentMetrics: { toneTags: { isEmpty: true } } },
           { contentMetrics: { enrichmentConfidence: null } },
-          { contentMetrics: { sensitiveWarnings: { isEmpty: true } } },
+          // Legacy rows enriched before the warnings feature: never computed
+          // (null), as opposed to "computed, none found" (empty array). Using
+          // the timestamp lets the sweep terminate instead of re-processing
+          // warning-free titles forever.
+          { contentMetrics: { sensitiveWarningsAt: null } },
         ],
       }
     } else if (onlyMissing) {
@@ -620,6 +624,7 @@ export async function POST(request: NextRequest) {
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
             sensitiveWarnings: analysis.sensitiveWarnings,
+            sensitiveWarningsAt: new Date(),
             pass1At: new Date(),
           },
           create: {
@@ -641,6 +646,7 @@ export async function POST(request: NextRequest) {
             visualStyle: analysis.visualStyle || null,
             emotionalThemes: analysis.emotionalThemes,
             sensitiveWarnings: analysis.sensitiveWarnings,
+            sensitiveWarningsAt: new Date(),
             pass1At: new Date(),
           },
         })
