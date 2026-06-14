@@ -50,6 +50,7 @@ model User {
   adminActivities    AdminActivity[]
   ageVotes           AgeVote[]
   familyWarningVotes FamilyWarningVote[]
+  triggerVotes       TriggerVote[]
   newsComments          NewsComment[]
   newsCommentReactions  NewsCommentReaction[]
   newsCommentReports    NewsCommentReport[]
@@ -210,6 +211,7 @@ model MediaItem {
   screenshots           MediaScreenshot[]
   ageVotes              AgeVote[]
   familyWarningVotes    FamilyWarningVote[]
+  triggerVotes          TriggerVote[]
   recoClicks            RecoClick[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
@@ -828,6 +830,32 @@ model FamilyWarningVote {
   @@unique([userId, mediaId])
   @@index([mediaId])
   @@map("family_warning_votes")
+}
+
+// Community verification of the AI-generated "Ce qui peut marquer" sensitive
+// warnings. One parent vote per (user, media, category): present=true confirms
+// the flag is in the work, present=false rejects it. `category` is validated at
+// the API boundary against VALID_SENSITIVE_WARNINGS (kept a plain String so the
+// churn-prone taxonomy never forces an enum migration). intensity/spoiler are
+// reserved for a future scene-detail tier.
+model TriggerVote {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  mediaId   String   @map("media_id")
+  category  String
+  present   Boolean
+  intensity Int?
+  spoiler   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId, category])
+  @@index([mediaId])
+  @@index([mediaId, category])
+  @@map("trigger_votes")
 }
 
 // ============================================
