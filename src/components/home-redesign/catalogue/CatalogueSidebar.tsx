@@ -159,7 +159,9 @@ export function CatalogueSidebar({
         </div>
       )}
 
-      {/* Age range */}
+      {/* Age range — hidden for mangas (demographic pills are the primary
+          lens; a 0–99 slider there would be meaningless). */}
+      {mediaType !== "MANGA" && (
       <div>
         <SectionLabel>Tranche d&apos;âge</SectionLabel>
         <div className="px-1">
@@ -177,6 +179,7 @@ export function CatalogueSidebar({
           </div>
         </div>
       </div>
+      )}
 
       {/* Platforms / consoles */}
       {f.PLATFORMS.length > 0 && (

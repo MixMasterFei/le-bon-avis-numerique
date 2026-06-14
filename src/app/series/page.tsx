@@ -1,10 +1,19 @@
 import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { fetchSeries } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { runSmartFilter } from "@/lib/smart-filter"
+
+// Admin-only V2 catalogue, code-split so its chunk + fonts stay out of the
+// public bundle. Classic /series is unchanged for anon/non-admin.
+const CatalogueRedesign = dynamic(() =>
+  import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
+    (m) => m.CatalogueRedesign,
+  ),
+)
 
 export const revalidate = 300
 
@@ -96,6 +105,9 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   const params = await searchParams
   const session = await auth()
   const userId = (session?.user as { id?: string } | undefined)?.id
+  const isAdmin =
+    (session?.user as { role?: string } | undefined)?.role === "ADMIN"
+  const showV2 = isAdmin && get(params, "v") !== "classic"
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
@@ -255,6 +267,8 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   if (platforms.length > 0) filterSp.set("platforms", platforms.join(","))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
   if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
+  const variant = get(params, "v")
+  if (variant) filterSp.set("v", variant)
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -303,41 +317,48 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
         />
       )}
-      <ApercuFilmsList
-        items={items}
-        total={totalItems}
-        page={page}
-        totalPages={totalPages}
-        serifClass="font-serif"
-        familyMembers={familyMembers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          birthYear: m.birthYear,
-          birthMonth: m.birthMonth,
-          avatarEmoji: m.avatarEmoji,
-          avatarStyle: m.avatarStyle,
-          avatarSeed: m.avatarSeed,
-          avatarOptions: m.avatarOptions as Record<string, unknown> | null,
-        }))}
-        initialFilters={{
-          search,
-          sort: sortKey,
-          minAge: effectiveMinAge,
-          maxAge: effectiveMaxAge,
-          platforms,
-          topics,
-          familyMemberIds: memberIds,
-        }}
-        filterQuery={filterSp.toString()}
-        route="/series"
-        notice={notice}
-        eyebrow="Catalogue"
-        titlePrefix="Toutes les"
-        titleAccent="séries"
-        itemNoun={{ singular: "série", plural: "séries" }}
-        emptyTitle="Aucune série à afficher"
-        mediaType="TV"
-      />
+      {(() => {
+        const listProps = {
+          items,
+          total: totalItems,
+          page,
+          totalPages,
+          serifClass: "font-serif",
+          familyMembers: familyMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            birthYear: m.birthYear,
+            birthMonth: m.birthMonth,
+            avatarEmoji: m.avatarEmoji,
+            avatarStyle: m.avatarStyle,
+            avatarSeed: m.avatarSeed,
+            avatarOptions: m.avatarOptions as Record<string, unknown> | null,
+          })),
+          initialFilters: {
+            search,
+            sort: sortKey,
+            minAge: effectiveMinAge,
+            maxAge: effectiveMaxAge,
+            platforms,
+            topics,
+            familyMemberIds: memberIds,
+          },
+          filterQuery: filterSp.toString(),
+          route: "/series",
+          notice,
+          eyebrow: "Catalogue",
+          titlePrefix: "Toutes les",
+          titleAccent: "séries",
+          itemNoun: { singular: "série", plural: "séries" },
+          emptyTitle: "Aucune série à afficher",
+          mediaType: "TV" as const,
+        }
+        return showV2 ? (
+          <CatalogueRedesign {...listProps} defaultSort="releaseDate" />
+        ) : (
+          <ApercuFilmsList {...listProps} />
+        )
+      })()}
     </>
   )
 }

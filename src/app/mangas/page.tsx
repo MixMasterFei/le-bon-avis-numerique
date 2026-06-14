@@ -1,10 +1,19 @@
 import type { Metadata } from "next"
+import dynamic from "next/dynamic"
 import { notFound } from "next/navigation"
 import { fetchMangas } from "@/lib/media-queries"
 import { auth, isAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { MangaDemographicPills } from "@/components/mangas/MangaDemographicPills"
+
+// /mangas is already admin-only (notFound for non-admin), so V2 is the default
+// for admins; ?v=classic flips back. Code-split like the other catalogue routes.
+const CatalogueRedesign = dynamic(() =>
+  import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
+    (m) => m.CatalogueRedesign,
+  ),
+)
 
 export const revalidate = 300
 
@@ -91,6 +100,8 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
   const params = await searchParams
   const session = await auth()
   const userId = (session?.user as { id?: string } | undefined)?.id
+  // Admin is guaranteed here (notFound above); V2 is the default, ?v=classic flips back.
+  const showV2 = get(params, "v") !== "classic"
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
@@ -172,6 +183,8 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
   if (demographic) filterSp.set("demographic", demographic)
   if (explicitMaxAge && explicitMaxAge < DEFAULT_MAX_AGE) filterSp.set("maxAge", String(explicitMaxAge))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
+  const variant = get(params, "v")
+  if (variant) filterSp.set("v", variant)
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -189,46 +202,66 @@ export default async function MangasPage({ searchParams }: MangasPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
-      {/* Demographic pill row sits above the shared films list layout. */}
-      <MangaDemographicPills active={demographic} baseQuery={filterSp.toString()} />
-      <ApercuFilmsList
-        items={items}
-        total={result.pagination.total}
-        page={page}
-        totalPages={result.pagination.totalPages}
-        serifClass="font-serif"
-        familyMembers={familyMembers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          birthYear: m.birthYear,
-          birthMonth: m.birthMonth,
-          avatarEmoji: m.avatarEmoji,
-          avatarStyle: m.avatarStyle,
-          avatarSeed: m.avatarSeed,
-          avatarOptions: m.avatarOptions as Record<string, unknown> | null,
-        }))}
-        initialFilters={{
-          search,
-          sort: sortKey,
-          // No default age range for mangas — demographic pills are the
-          // primary filter. Pass 0/99 so the sidebar doesn't preset a
-          // "2-18" constraint that would confuse demographic-based
-          // browsing.
-          minAge: 0,
-          maxAge: explicitMaxAge ?? 99,
-          platforms: [],
-          topics,
-          familyMemberIds: [],
-        }}
-        filterQuery={filterSp.toString()}
-        route="/mangas"
-        eyebrow="Catalogue manga"
-        titlePrefix="Tous les"
-        titleAccent="mangas"
-        itemNoun={{ singular: "manga", plural: "mangas" }}
-        emptyTitle="Aucun manga à afficher"
-        mediaType="MANGA"
-      />
+      {(() => {
+        const listProps = {
+          items,
+          total: result.pagination.total,
+          page,
+          totalPages: result.pagination.totalPages,
+          serifClass: "font-serif",
+          familyMembers: familyMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            birthYear: m.birthYear,
+            birthMonth: m.birthMonth,
+            avatarEmoji: m.avatarEmoji,
+            avatarStyle: m.avatarStyle,
+            avatarSeed: m.avatarSeed,
+            avatarOptions: m.avatarOptions as Record<string, unknown> | null,
+          })),
+          initialFilters: {
+            search,
+            sort: sortKey,
+            // No default age range for mangas — demographic pills are the
+            // primary filter. Pass 0/99 so the sidebar doesn't preset a
+            // "2-18" constraint that would confuse demographic-based browsing.
+            minAge: 0,
+            maxAge: explicitMaxAge ?? 99,
+            platforms: [],
+            topics,
+            familyMemberIds: [],
+          },
+          filterQuery: filterSp.toString(),
+          route: "/mangas",
+          eyebrow: "Catalogue manga",
+          titlePrefix: "Tous les",
+          titleAccent: "mangas",
+          itemNoun: { singular: "manga", plural: "mangas" },
+          emptyTitle: "Aucun manga à afficher",
+          mediaType: "MANGA" as const,
+        }
+        return showV2 ? (
+          <CatalogueRedesign
+            {...listProps}
+            defaultSort="newest"
+            defaultMinAge={0}
+            defaultMaxAge={99}
+            aboveGrid={
+              <MangaDemographicPills
+                active={demographic}
+                baseQuery={filterSp.toString()}
+                variant="v2"
+              />
+            }
+          />
+        ) : (
+          <>
+            {/* Demographic pill row sits above the shared films list layout. */}
+            <MangaDemographicPills active={demographic} baseQuery={filterSp.toString()} />
+            <ApercuFilmsList {...listProps} />
+          </>
+        )
+      })()}
     </>
   )
 }

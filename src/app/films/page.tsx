@@ -340,6 +340,9 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   if (platforms.length > 0) filterSp.set("platforms", platforms.join(","))
   if (topics.length > 0) filterSp.set("topics", topics.join(","))
   if (memberIds.length > 0) filterSp.set("members", memberIds.join(","))
+  // Carry the admin V2/classic override through pagination + the toggle.
+  const variant = get(params, "v")
+  if (variant) filterSp.set("v", variant)
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {

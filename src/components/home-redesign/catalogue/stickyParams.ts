@@ -5,7 +5,10 @@
  * they touched a filter or changed page. `font` is the existing dev font
  * override that ApercuFilterSidebar already preserved ad hoc.
  */
-const STICKY_KEYS = ["font", "v"] as const
+// `demographic` is manga-only (never present on other routes, so a harmless
+// no-op there) — carrying it keeps the shounen/shoujo selection alive when a
+// manga filter changes.
+const STICKY_KEYS = ["font", "v", "demographic"] as const
 
 /**
  * Copy the sticky params from `current` into `target` (in place), unless
