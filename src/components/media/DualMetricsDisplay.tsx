@@ -272,6 +272,7 @@ export function DualMetricsDisplay({
           </TooltipProvider>
         </h3>
         <MethodBadge
+          iconOnly
           anchor="metriques-contenu"
           description="Les 8 dimensions (violence, sexe, langage, valeur éducative, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Les dimensions évaluables sont recalibrées par les familles inscrites."
         />

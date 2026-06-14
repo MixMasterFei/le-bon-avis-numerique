@@ -19,6 +19,12 @@ interface MethodBadgeProps {
   description?: string
   /** Optional variant for size/density. */
   size?: "sm" | "xs"
+  /**
+   * Render a discreet "?" help button instead of the full text pill. Same
+   * tooltip (the label becomes the tooltip heading). Use where the disclosure
+   * would otherwise repeat several times on one page.
+   */
+  iconOnly?: boolean
 }
 
 const DEFAULT_DESCRIPTION =
@@ -36,6 +42,7 @@ export function MethodBadge({
   label = "Analyse automatisée · en calibrage",
   description = DEFAULT_DESCRIPTION,
   size = "sm",
+  iconOnly = false,
 }: MethodBadgeProps) {
   const p = APERCU_PALETTE
   const isXs = size === "xs"
@@ -59,6 +66,23 @@ export function MethodBadge({
     </span>
   )
 
+  // Discreet "?" help button — same tooltip, far less visual repetition.
+  const help = (
+    <span
+      className="inline-flex items-center justify-center rounded-full font-bold leading-none"
+      style={{
+        width: isXs ? 16 : 18,
+        height: isXs ? 16 : 18,
+        fontSize: isXs ? 10 : 11,
+        background: p.bg2,
+        color: p.ink2,
+        border: `1px solid ${p.line}`,
+      }}
+    >
+      ?
+    </span>
+  )
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={150}>
@@ -66,12 +90,13 @@ export function MethodBadge({
           <button
             type="button"
             className="cursor-help focus:outline-none"
-            aria-label="Comment cette estimation est-elle générée ?"
+            aria-label={`${label} — comment cette estimation est-elle générée ?`}
           >
-            {pill}
+            {iconOnly ? help : pill}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs p-3">
+          {iconOnly && <p className="text-xs font-semibold mb-1">{label}</p>}
           <p className="text-xs leading-relaxed mb-2">{description}</p>
           <Link
             href={`/notre-methode#${anchor}`}

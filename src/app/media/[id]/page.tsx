@@ -1010,6 +1010,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                       Thèmes
                     </h4>
                     <MethodBadge
+                      iconOnly
                       size="xs"
                       anchor="themes-detectes"
                       label="Détectés automatiquement"

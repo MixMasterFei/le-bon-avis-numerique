@@ -33,6 +33,7 @@ export function WhatParentsNeedToKnow({
           Ce que les parents doivent savoir
         </h2>
         <MethodBadge
+          iconOnly
           anchor="points-cles"
           description="Les points clés sont extraits par analyse automatisée du synopsis et du contenu analysé. Ils complètent mais ne remplacent pas l'avis de la communauté."
         />
