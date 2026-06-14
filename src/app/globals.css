@@ -107,6 +107,33 @@
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   Homepage V2 (admin-only redesign) — design tokens scoped to the V2
+   subtree so the classic homepage + the rest of the site are untouched.
+   Used via var(--paper) etc. in the home-redesign components. Dark mode
+   flows through the existing [data-theme="dark"] on <html>.
+   ───────────────────────────────────────────────────────────────────── */
+[data-home="v2"] {
+  --paper: #F4ECDE; --paper-2: #FBF5EA; --card: #FFFDF8;
+  --ink: #23201C; --ink-2: #4F463C; --ink-3: #867A6B;
+  --line: #E2D6C2; --line-2: #EDE3D2;
+  --terra: #C5512C; --terra-2: #A8421F; --terra-soft: #F0D9CB;
+  --pine: #23493D; --pine-2: #2E5C4D; --pine-soft: #D7E6DD;
+  --gold: #D99524;
+  --r0: #CFC4B2; --r1: #4F9E6A; --r2: #E0902A; --r3: #C2412A;
+}
+:root[data-theme="dark"] [data-home="v2"] {
+  --paper: #17130E; --paper-2: #201A13; --card: #241E15;
+  --ink: #F3EBDD; --ink-2: #CDBFA9; --ink-3: #8E8070;
+  --line: #362D22; --line-2: #2C261D;
+  --terra: #E0734A; --terra-2: #C95C36; --pine-2: #5CB991; --gold: #E6B04A;
+}
+/* Subtle drifting poster wall behind the V2 hero. */
+@keyframes v2-drift { from { transform: translateY(0); } to { transform: translateY(-33.33%); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-home="v2"] .v2-drift-col { animation: none !important; }
+}
+
 @layer base {
   * {
     @apply border-border;
