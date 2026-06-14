@@ -1,6 +1,5 @@
 "use client"
 
-import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import {
   FAMILY_FIT_LABELS,
   familyFitBandFromLevel,
@@ -8,6 +7,7 @@ import {
 } from "@/lib/family-fit-display"
 import type { FitLevel } from "@/lib/family-fit-score"
 import { memberColor, BAND_TO_SEGMENTS } from "./family"
+import { MemberMonogram } from "./MemberMonogram"
 
 interface MemberFit {
   id: string
@@ -58,16 +58,7 @@ export function FamilyFitMeter({ members }: { members: MemberFit[] }) {
 
           return (
             <div key={member.id} className="flex items-center gap-1" title={title}>
-              <MemberAvatar
-                avatarStyle={member.avatarStyle ?? null}
-                avatarSeed={member.avatarSeed ?? null}
-                avatarOptions={member.avatarOptions ?? null}
-                avatarEmoji={member.emoji ?? null}
-                name={member.name}
-                size={24}
-                ring={null}
-                className="shadow-sm"
-              />
+              <MemberMonogram name={member.name} color={color} size={24} />
               {/* vertical meter: segment s (0=top … 2=bottom) lights when
                   s >= 3 - lit, so fills from the bottom up. */}
               <div className="flex flex-col gap-[2px]">

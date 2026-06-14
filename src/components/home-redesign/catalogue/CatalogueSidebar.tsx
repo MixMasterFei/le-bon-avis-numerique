@@ -2,10 +2,10 @@
 
 import { Search, X, Users, Check } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
-import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { getMemberAge } from "@/lib/age-utils"
 import { memberColor } from "../family"
+import { MemberMonogram } from "../MemberMonogram"
 import {
   useCatalogueFilters,
   searchPlaceholderFor,
@@ -137,15 +137,7 @@ export function CatalogueSidebar({
                     border: `1px solid ${active ? mc : "transparent"}`,
                   }}
                 >
-                  <MemberAvatar
-                    avatarStyle={m.avatarStyle}
-                    avatarSeed={m.avatarSeed}
-                    avatarOptions={m.avatarOptions}
-                    avatarEmoji={m.avatarEmoji}
-                    name={m.name}
-                    size={28}
-                    ring={null}
-                  />
+                  <MemberMonogram name={m.name} color={mc} size={28} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold" style={{ color: "var(--ink)" }}>{m.name}</div>
                     {age !== null && <div className="text-[11px]" style={{ color: "var(--ink-2)" }}>{age} ans</div>}
