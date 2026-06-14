@@ -28,13 +28,22 @@ interface MediaDashboardBarProps {
   hideContentAnalysis?: boolean
 }
 
+function Separator({ at }: { at: "md" | "lg" }) {
+  return (
+    <div
+      className={`hidden ${at === "md" ? "md:block" : "lg:block"} h-11 w-px shrink-0`}
+      style={{ background: "var(--color-line2)" }}
+    />
+  )
+}
+
 /**
  * Slim, collapsing summary bar that slides in once the hero scrolls behind
  * the site header. Mirrors the redesign prototype: poster · verdict, a
  * labelled "Ma famille" section (chips, or a "Se connecter" CTA when logged
- * out), a "Où le regarder" section, and the key actions. Reads the shared
- * fiche data (family fit + streaming) from FicheDataProvider. Fixed overlay
- * (no layout shift), positioned under the header, respects reduced-motion.
+ * out), a "Où le regarder" section, then the key actions. Sits on a lighter
+ * elevated surface (with a drop shadow) so it stands out from the header.
+ * Fixed overlay (no layout shift), respects reduced-motion.
  */
 export function MediaDashboardBar({
   mediaId,
@@ -59,8 +68,6 @@ export function MediaDashboardBar({
     const header = document.querySelector("header")
     let io: IntersectionObserver | null = null
 
-    // Position the bar under the (variable-height) header and reveal it once
-    // the hero has scrolled past that line. Recomputed on resize.
     const setup = () => {
       const h = header?.offsetHeight ?? 64
       setTopOffset(h)
@@ -131,12 +138,14 @@ export function MediaDashboardBar({
       style={{
         top: topOffset,
         transform: show ? "translateY(0)" : "translateY(-130%)",
-        background: "var(--color-header-bg)",
-        borderBottom: "1px solid var(--color-line)",
+        background: "var(--color-card)",
+        borderBottom: "1px solid var(--color-line2)",
+        boxShadow: "0 16px 32px -16px rgba(58,46,34,.45)",
         backdropFilter: "saturate(140%) blur(12px)",
         WebkitBackdropFilter: "saturate(140%) blur(12px)",
       }}
       aria-hidden={!show}
+      inert={!show}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center gap-4 py-2">
@@ -174,7 +183,7 @@ export function MediaDashboardBar({
           {/* MA FAMILLE — chips, or a "Se connecter" CTA when logged out */}
           {!hideContentAnalysis && familyStatus && (
             <>
-              <div className="hidden h-10 w-px shrink-0 md:block" style={{ background: "var(--color-line)" }} />
+              <Separator at="md" />
               <div className="hidden shrink-0 flex-col gap-1 md:flex">
                 <span className={labelClass} style={{ color: "var(--color-ink2)" }}>Ma famille</span>
                 {members.length > 0 ? (
@@ -208,7 +217,7 @@ export function MediaDashboardBar({
           {/* OÙ LE REGARDER — streaming chips */}
           {flatrate.length > 0 && (
             <>
-              <div className="hidden h-10 w-px shrink-0 lg:block" style={{ background: "var(--color-line)" }} />
+              <Separator at="lg" />
               <div className="hidden shrink-0 flex-col gap-1 lg:flex">
                 <span className={labelClass} style={{ color: "var(--color-ink2)" }}>Où le regarder</span>
                 <div className="flex gap-1.5">

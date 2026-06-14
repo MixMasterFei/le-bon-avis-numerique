@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { YoutubeIcon, ChevronDown, ChevronUp, Play, ShoppingCart, Gift, Clapperboard } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronDown, ChevronUp, Play, ShoppingCart, Gift, Clapperboard } from "lucide-react"
 import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
 import { getProviderLogoUrl } from "@/lib/tmdb"
 
@@ -77,21 +76,20 @@ export function WatchProviders({ providers, trailer, inTheaters = false, classNa
           </span>
         )}
 
-        {/* Trailer Button */}
+        {/* Trailer Button — filled coral primary (matches the dashboard bar) */}
         {trailer && (
           <a
             href={`https://www.youtube.com/watch?v=${trailer.key}`}
             target="_blank"
             rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            style={{
+              background: "var(--color-accent)",
+              boxShadow: "0 8px 18px -8px rgba(219,98,66,.7)",
+            }}
           >
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-1.5 h-8"
-            >
-              <YoutubeIcon className="h-4 w-4" />
-              Bande-annonce
-            </Button>
+            <Play className="h-4 w-4 fill-current" />
+            Bande-annonce
           </a>
         )}
 

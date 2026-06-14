@@ -7,7 +7,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { MediaDetailTabs } from "@/components/media/MediaDetailTabs"
 import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
@@ -925,81 +924,40 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </>
           )}
 
-          {/* Avis + Détails (fiche technique, par type) */}
-          <MediaDetailTabs
-              reviewsCount={media.reviews?.length || 0}
-              reviewsContent={<ReviewsSection reviews={media.reviews} />}
-              detailsContent={
-                <div
-                  className="rounded-2xl p-6 space-y-4"
-                  style={{
-                    background: "var(--color-warm-card)",
-                    border: "1px solid var(--color-warm-line)",
-                  }}
-                >
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <h4
-                        className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                        style={{ color: "var(--color-warm-ink2)" }}
-                      >
-                        Type
-                      </h4>
-                      <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                        {mediaTypeLabels[media.type]}
-                      </p>
-                    </div>
-                    {media.releaseDate && (
+          {/* Avis des familles — standalone (Détails tab removed: type/date/
+              durée/réalisateur already live in the hero). */}
+          <div>
+            <h2
+              className="font-serif text-xl sm:text-2xl font-medium mb-4"
+              style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
+            >
+              Avis des familles{media.reviews.length > 0 ? ` (${media.reviews.length})` : ""}
+            </h2>
+            <ReviewsSection reviews={media.reviews} />
+          </div>
+
+          {/* Fiche technique — only facts not already shown in the hero:
+              auto-detected themes + manga format. */}
+          {(media.topics.length > 0 ||
+            (media.type === "MANGA" &&
+              (media.volumeCount || media.chapterCount || media.demographic || media.status))) && (
+            <div className="rounded-2xl p-5 sm:p-6" style={warmCard}>
+              <h2
+                className="font-serif text-xl sm:text-2xl font-medium mb-4"
+                style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
+              >
+                {media.type === "MANGA" &&
+                (media.volumeCount || media.chapterCount || media.demographic || media.status)
+                  ? "Fiche technique"
+                  : "Thèmes"}
+              </h2>
+
+              {media.type === "MANGA" &&
+                (media.volumeCount || media.chapterCount || media.demographic || media.status) && (
+                  <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                    {(media.volumeCount || media.chapterCount) && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Date de sortie
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {formatDateFr(media.releaseDate)}
-                        </p>
-                      </div>
-                    )}
-                    {media.duration && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Durée
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.duration} minutes
-                        </p>
-                      </div>
-                    )}
-                    {media.director && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          {media.type === "BOOK"
-                            ? "Auteur"
-                            : media.type === "MANGA"
-                              ? "Auteur(s)"
-                              : media.type === "GAME"
-                                ? "Développeur"
-                                : "Réalisateur"}
-                        </h4>
-                        <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
-                          {media.director}
-                        </p>
-                      </div>
-                    )}
-                    {media.type === "MANGA" && (media.volumeCount || media.chapterCount) && (
-                      <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Volumes
                         </h4>
                         <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
@@ -1009,12 +967,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                         </p>
                       </div>
                     )}
-                    {media.type === "MANGA" && media.demographic && (
+                    {media.demographic && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Public cible
                         </h4>
                         <p className="font-medium capitalize" style={{ color: "var(--color-warm-ink)" }}>
@@ -1022,12 +977,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                         </p>
                       </div>
                     )}
-                    {media.type === "MANGA" && media.status && (
+                    {media.status && (
                       <div>
-                        <h4
-                          className="text-xs font-semibold mb-1 uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
+                        <h4 className="text-xs font-semibold mb-1 uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
                           Statut
                         </h4>
                         <p className="font-medium" style={{ color: "var(--color-warm-ink)" }}>
@@ -1042,46 +994,36 @@ export default async function MediaPage({ params }: MediaPageProps) {
                       </div>
                     )}
                   </div>
+                )}
 
-                  {media.type === "GAME" && media.platforms.length > 0 && (
-                    <PlatformIcons platforms={media.platforms} variant="full" />
-                  )}
-
-                  {media.topics.length > 0 && (
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h4
-                          className="text-xs font-semibold uppercase tracking-wide"
-                          style={{ color: "var(--color-warm-ink2)" }}
-                        >
-                          Thèmes
-                        </h4>
-                        <MethodBadge
-                          size="xs"
-                          anchor="themes-detectes"
-                          label="Détectés automatiquement"
-                          description="Les thèmes sont détectés automatiquement à partir du contenu (synopsis, classifications, genres). Ils sont indicatifs et peuvent être affinés par les signalements de la communauté."
-                        />
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {media.topics.map((topic) => (
-                          <span
-                            key={topic}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              background: "var(--color-warm-bg2)",
-                              color: "var(--color-warm-ink)",
-                            }}
-                          >
-                            {topic}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              {media.topics.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-warm-ink2)" }}>
+                      Thèmes
+                    </h4>
+                    <MethodBadge
+                      size="xs"
+                      anchor="themes-detectes"
+                      label="Détectés automatiquement"
+                      description="Les thèmes sont détectés automatiquement à partir du contenu (synopsis, classifications, genres). Ils sont indicatifs et peuvent être affinés par les signalements de la communauté."
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {media.topics.map((topic) => (
+                      <span
+                        key={topic}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        style={{ background: "var(--color-warm-bg2)", color: "var(--color-warm-ink)" }}
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              }
-            />
+              )}
+            </div>
+          )}
 
           {/* Captures d'écran — renders its own section heading */}
           {media.screenshots && media.screenshots.length > 0 && (
