@@ -14,6 +14,14 @@ export interface QuickAnswerInput {
     positiveMessages: number
     roleModels: number
   }
+  /**
+   * When true (film/jeu pas encore sorti ou fiche provisoire), we have NOT
+   * watched/evaluated the title, so the answer must stay an honest estimate:
+   * the age is flagged "à confirmer" and we make zero claims about content
+   * (no "aucun signal sensible majeur" — that would imply an analysis exists).
+   * See `shouldHideContentAnalysis` in @/lib/release-status.
+   */
+  hideContentAnalysis?: boolean
 }
 
 export interface QuickAnswer {
@@ -28,6 +36,27 @@ export interface QuickAnswer {
 // the /md/media/[id] route, so both renders give the same wording.
 export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
   const typeLabel = mediaTypeLabels[media.type]?.toLowerCase() || "contenu"
+
+  // Question phrased to match the dominant search intent ("à partir de quel
+  // âge") while keeping the natural "adapté aux enfants" follow-up.
+  const question = `${media.title} : à partir de quel âge ? Est-il adapté aux enfants ?`
+
+  // Pre-release / provisional: honest estimate, no content claims.
+  if (media.hideContentAnalysis) {
+    const age = media.expertAgeRec && media.expertAgeRec > 0
+      ? `à partir de ${media.expertAgeRec} ans (à confirmer)`
+      : "à un âge encore à confirmer"
+    const pending =
+      "L'évaluation détaillée du contenu sera publiée après sa sortie, une fois le titre visionné."
+    return {
+      question,
+      answer: `${media.title} est un ${typeLabel} dont l'âge est estimé ${age} par Totem Avisé. ${pending}`,
+      age,
+      sensitiveText: pending,
+      positiveText: "",
+    }
+  }
+
   const age = media.expertAgeRec && media.expertAgeRec > 0
     ? `à partir de ${media.expertAgeRec} ans`
     : "avec un âge à confirmer"
@@ -51,7 +80,7 @@ export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
     : "Les apports positifs sont à lire dans l'analyse détaillée."
 
   return {
-    question: `${media.title} est-il adapté aux enfants ?`,
+    question,
     answer: `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText} ${positiveText}`,
     age,
     sensitiveText,

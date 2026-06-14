@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
+import { UNRELEASED_TMDB_STATUSES } from "@/lib/release-status"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
@@ -447,8 +448,20 @@ export async function POST(request: NextRequest) {
     // passes, then the cron picks them up. Preserves the documented
     // invariant: provisional ⟹ !isEnriched ⟹ no ContentMetrics.
     // (null releaseDate = unknown/old catalog item → still eligible.)
+    //
+    // BUT a future title can have a NULL release date (announced sequel with
+    // no date yet, e.g. "Les Indestructibles 3") — the date check alone lets
+    // it through and fabricates content. So we ALSO exclude titles whose TMDB
+    // lifecycle (`releaseStatus`) is a not-yet-released value. We match the
+    // UNRELEASED set (not `== "Released"`) so aired series ("Returning
+    // Series"/"Ended") aren't blocked. See src/lib/release-status.
     const notUnreleased = {
-      OR: [{ releaseDate: null }, { releaseDate: { lte: new Date() } }],
+      AND: [
+        { OR: [{ releaseDate: null }, { releaseDate: { lte: new Date() } }] },
+        // null-safe: keep rows with no status (old catalog) AND rows whose
+        // status isn't a pre-release value. A bare NOT/in would drop NULLs.
+        { OR: [{ releaseStatus: null }, { releaseStatus: { notIn: [...UNRELEASED_TMDB_STATUSES] } }] },
+      ],
     }
 
     // Build where clause based on mode

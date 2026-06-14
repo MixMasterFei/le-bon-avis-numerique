@@ -177,6 +177,10 @@ export async function createMovieFromTmdb(
       originalTitle: details.original_title !== details.title ? details.original_title : null,
       type: "MOVIE",
       releaseDate: details.release_date ? new Date(details.release_date) : null,
+      // TMDB lifecycle ("Released" | "Post Production" | "Planned" …) — lets
+      // the enrich guard withhold content for upcoming titles even when the
+      // release date is unknown. See src/lib/release-status.
+      releaseStatus: details.status || null,
       posterUrl,
       backdropUrl,
       synopsisFr: details.overview || null,

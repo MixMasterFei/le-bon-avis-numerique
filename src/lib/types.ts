@@ -41,6 +41,9 @@ export interface MediaItem {
   enrichmentSource?: string
   // Imported film shown with an estimated age before AI enrichment → "âge provisoire" badge.
   isProvisional?: boolean
+  // TMDB release lifecycle ("Released" | "Planned" | …). Used to withhold
+  // content evaluation for upcoming titles. See @/lib/release-status.
+  releaseStatus?: string | null
 }
 
 export type MediaType = MediaItem["type"]

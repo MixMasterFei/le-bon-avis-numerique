@@ -1,70 +1,47 @@
 /**
- * Revert films that were fully enriched while still unreleased back to
- * "provisional" state, so their fabricated content metrics stop showing.
+ * Revert titles enriched while still UNRELEASED back to "provisional" so
+ * their fabricated content metrics stop showing. Thin CLI wrapper around
+ * the shared core in src/lib/revert-unreleased.ts (also used by the admin
+ * route /api/admin/revert-unreleased).
  *
- *   - deletes their ContentMetrics row (the guessed 0–5 dimensions)
- *   - sets isEnriched = false  → re-enters the enrichment queue, which now
- *     skips it until release date passes (see enrich/route.ts guard)
- *   - KEEPS expertAgeRec so the title stays visible with a provisional,
- *     "à confirmer" age estimate (isProvisional = !isEnriched && age != null)
- *
- * Dry-run by default. Pass --apply to actually write.
- *   npx tsx scripts/revert-unreleased-to-provisional.ts            (preview)
- *   npx tsx scripts/revert-unreleased-to-provisional.ts --apply    (write)
+ * Pass B (null-dated titles) needs TMDB_API_KEY → run where it's set.
+ * Dry-run by default.
+ *   npx tsx scripts/revert-unreleased-to-provisional.ts              (preview, both passes)
+ *   npx tsx scripts/revert-unreleased-to-provisional.ts --apply      (write)
+ *   npx tsx scripts/revert-unreleased-to-provisional.ts --skip-null  (pass A only, no TMDB)
+ *   npx tsx scripts/revert-unreleased-to-provisional.ts --limit 200  (cap pass-B lookups)
  */
 import { config } from "dotenv"
 config({ path: ".env.local" })
 config({ path: ".env" })
 
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "../src/lib/prisma"
+import { revertUnreleasedToProvisional } from "../src/lib/revert-unreleased"
 
-const prisma = new PrismaClient()
 const APPLY = process.argv.includes("--apply")
+const SKIP_NULL = process.argv.includes("--skip-null")
+const LIMIT = (() => {
+  const i = process.argv.indexOf("--limit")
+  return i >= 0 ? parseInt(process.argv[i + 1] || "0") || 0 : 0
+})()
 
 async function main() {
-  const now = new Date()
-
-  const targets = await prisma.mediaItem.findMany({
-    where: { isEnriched: true, releaseDate: { gt: now } },
-    select: {
-      id: true,
-      title: true,
-      type: true,
-      releaseDate: true,
-      expertAgeRec: true,
-      contentMetrics: { select: { id: true } },
-    },
-    orderBy: { releaseDate: "asc" },
+  const result = await revertUnreleasedToProvisional({
+    apply: APPLY,
+    skipNull: SKIP_NULL,
+    limit: LIMIT,
+    onProgress: (m) => console.log(m),
   })
 
-  console.log(`${APPLY ? "APPLYING" : "DRY-RUN"} — ${targets.length} unreleased-but-enriched titles\n`)
-  for (const m of targets) {
-    console.log(
-      `  ${m.releaseDate?.toISOString().split("T")[0]}  [${m.type}]  ${m.title}` +
-        `  (age ${m.expertAgeRec} kept, metrics ${m.contentMetrics ? "DELETE" : "none"})`,
-    )
+  console.log(`\n${result.dryRun ? "DRY-RUN" : "APPLIED"} — ${result.targets.length} unreleased-but-enriched titles\n`)
+  for (const t of result.targets) {
+    console.log(`  [${t.type}] ${t.title}  (${t.reason}; metrics ${t.hadMetrics ? "DELETE" : "none"})`)
   }
-
-  if (!APPLY) {
+  if (result.dryRun) {
     console.log(`\nDry-run only. Re-run with --apply to write.`)
-    return
+  } else {
+    console.log(`\nDone. Reverted ${result.reverted} titles to provisional.`)
   }
-
-  let metricsDeleted = 0
-  let reverted = 0
-  for (const m of targets) {
-    if (m.contentMetrics) {
-      await prisma.contentMetrics.delete({ where: { mediaId: m.id } })
-      metricsDeleted++
-    }
-    await prisma.mediaItem.update({
-      where: { id: m.id },
-      data: { isEnriched: false },
-    })
-    reverted++
-  }
-
-  console.log(`\nDone. Reverted ${reverted} titles, deleted ${metricsDeleted} ContentMetrics rows.`)
 }
 
 main()

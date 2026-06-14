@@ -259,6 +259,8 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
           originalTitle: details.original_name !== details.name ? details.original_name : null,
           type: "TV",
           releaseDate,
+          // TMDB lifecycle for the anti-fabrication guard (src/lib/release-status).
+          releaseStatus: (details as { status?: string }).status || null,
           posterUrl,
           backdropUrl,
           synopsisFr: details.overview || null,

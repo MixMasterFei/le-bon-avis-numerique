@@ -6,6 +6,7 @@ import {
   type MediaType,
 } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -17,6 +18,8 @@ export interface MediaMdInput {
   officialRating: string | null
   originalLanguage?: string | null
   releaseDate: string | null
+  isEnriched?: boolean
+  releaseStatus?: string | null
   updatedAt: Date
   topics: string[]
   contentMetrics: {
@@ -74,7 +77,11 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   const canonical = `${SITE_URL}/media/${routeId}`
   const typeLabel = mediaTypeShortLabels[media.type]
   const category = mediaTypeCategory[media.type]
-  const quick = buildQuickAnswer(media)
+  // Pre-release / provisional fiches must not present a content evaluation
+  // we haven't actually made — keep the answer an honest age estimate and
+  // skip the metric dump below. See @/lib/release-status.
+  const hideContentAnalysis = shouldHideContentAnalysis(media)
+  const quick = buildQuickAnswer({ ...media, hideContentAnalysis })
   const sectionLabel = whatParentsSectionLabel(media.type)
 
   const lines: string[] = []
@@ -92,23 +99,33 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   lines.push("## Réponse courte", "")
   lines.push(quick.answer, "")
 
-  lines.push("## Repères pour les parents", "")
-  lines.push(`- Violence: ${media.contentMetrics.violence}/5`)
-  lines.push(`- Langage: ${media.contentMetrics.language}/5`)
-  lines.push(`- Sexe et nudité: ${media.contentMetrics.sexNudity}/5`)
-  lines.push(`- Substances: ${media.contentMetrics.substanceUse}/5`)
-  lines.push(`- Consumérisme: ${media.contentMetrics.consumerism}/5`)
-  lines.push(`- Messages positifs: ${media.contentMetrics.positiveMessages}/5`)
-  lines.push(`- Modèles positifs: ${media.contentMetrics.roleModels}/5`)
-  lines.push("")
-
-  const wpntk = media.contentMetrics.whatParentsNeedToKnow.filter((s) => s && s.trim().length > 0)
-  if (wpntk.length > 0) {
-    lines.push(`## ${sectionLabel}`, "")
-    for (const point of wpntk) {
-      lines.push(`- ${point.trim()}`)
-    }
+  if (hideContentAnalysis) {
+    // Not out yet (or provisional): no content evaluation exists. Be explicit
+    // rather than printing a misleading row of 0/5 scores.
+    lines.push("## Repères pour les parents", "")
+    lines.push(
+      "Évaluation détaillée du contenu à publier après la sortie. L'âge indiqué est une estimation à confirmer.",
+      ""
+    )
+  } else {
+    lines.push("## Repères pour les parents", "")
+    lines.push(`- Violence: ${media.contentMetrics.violence}/5`)
+    lines.push(`- Langage: ${media.contentMetrics.language}/5`)
+    lines.push(`- Sexe et nudité: ${media.contentMetrics.sexNudity}/5`)
+    lines.push(`- Substances: ${media.contentMetrics.substanceUse}/5`)
+    lines.push(`- Consumérisme: ${media.contentMetrics.consumerism}/5`)
+    lines.push(`- Messages positifs: ${media.contentMetrics.positiveMessages}/5`)
+    lines.push(`- Modèles positifs: ${media.contentMetrics.roleModels}/5`)
     lines.push("")
+
+    const wpntk = media.contentMetrics.whatParentsNeedToKnow.filter((s) => s && s.trim().length > 0)
+    if (wpntk.length > 0) {
+      lines.push(`## ${sectionLabel}`, "")
+      for (const point of wpntk) {
+        lines.push(`- ${point.trim()}`)
+      }
+      lines.push("")
+    }
   }
 
   if (media.topics.length > 0) {

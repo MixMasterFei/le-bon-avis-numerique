@@ -76,6 +76,8 @@ export async function GET(_req: Request, { params }: RouteParams) {
     officialRating: dbMedia.officialRating,
     originalLanguage: (dbMedia as unknown as { originalLanguage?: string | null }).originalLanguage ?? null,
     releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
+    isEnriched: dbMedia.isEnriched,
+    releaseStatus: (dbMedia as unknown as { releaseStatus?: string | null }).releaseStatus ?? null,
     updatedAt: dbMedia.updatedAt,
     topics: dbMedia.topics || [],
     contentMetrics: metrics
