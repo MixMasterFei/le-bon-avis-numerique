@@ -88,10 +88,12 @@ Usability review of the search/filter surfaces. Each claim was verified against 
 
 ### Deferred (open)
 - 🟡 **Autocomplete is page-scoped** (`/films/recherche`): suggestions come from the current page of results, not the whole catalogue. Needs a dedicated title-suggestions endpoint. (P2)
-- 🟡 **Smart filter caps at 500** (`/api/filter/smart` takes 500 then paginates in memory): pages past the window can be empty with no message. Needs DB-side scoring or at least a "résultats limités" notice. Rare in practice (per-member queries are narrow). (P2)
+- 🟡 **Smart filter caps at 500** (`/api/filter/smart` / `runSmartFilter` take 500 then paginate in memory): pages past the window can be empty with no message. Now also affects the `/films` etc. member re-rank (a personalized view re-ranks the top-500 popularity window of the age band). Needs DB-side scoring or at least a "résultats limités" notice. Rare in practice (per-member queries are narrow). (P2)
 - 🟡 **Genre FR/EN mismatch**: topic/genre filtering is exact `hasSome`; the DB sometimes stores TMDB English names ("Comedy" vs "Comédie"), so some filters under-return. Needs normalization at import + a backfill. (P2)
 - 🟢 **Cinéma + platform filter**: `/films?sort=cinema` titles have `platforms: []`, so a platform filter yields an empty grid (correct but confusing). A "filtre plateforme non applicable en salle" note would help. (P3)
-- **Full personalization on `/films`**: wiring the smart filter (sensitivity + disliked-genre exclusion) into the category browse pages — currently age-only there. A real feature, deserves its own pass. (P2)
+
+### Done since
+- **Soft personalization on `/films` / `/series` / `/jeux`** — selecting a member now re-ORDERS by family fit (`runSmartFilter`, `strictMode=false`, `minScore=0`): loved genres + positive content rise, disliked + sensitive sink. Nothing is hidden beyond the age band (deliberate: a horror film stays findable). The advanced `/films/recherche` keeps the strict, content-hiding filter. The smart engine is now shared (`src/lib/smart-filter.ts`).
 
 ---
 

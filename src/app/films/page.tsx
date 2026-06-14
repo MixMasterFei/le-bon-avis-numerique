@@ -6,6 +6,7 @@ import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { isCinemaSort } from "@/lib/cinema-policy"
 import { getCinemaMovies } from "@/lib/cinema"
+import { runSmartFilter } from "@/lib/smart-filter"
 
 export const revalidate = 300
 
@@ -164,7 +165,33 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   // the default curated browse stays expert-only.
   const includeProvisional = (get(params, "sort") || get(params, "sortBy")) === "newest"
 
-  const result = isCinema ? null : await fetchMovies({
+  // Soft personalization: when a member is selected (and the user hasn't picked
+  // an explicit sort), re-ORDER the age-appropriate catalogue by family fit.
+  // strictMode=false + minScore=0 → nothing is hidden, only re-ranked, so a kid
+  // who dislikes horror sees it lower, never gone. Explicit sorts (newest/
+  // quality/title) and cinema mode keep the plain DB order.
+  const useSmartRerank =
+    !!userId && memberIds.length > 0 && !isCinema && sortKey === "releaseDate"
+
+  const smart = useSmartRerank
+    ? await runSmartFilter({
+        userId: userId!,
+        familyMemberIds: memberIds,
+        mediaType: "MOVIE",
+        offset: (page - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        strictMode: false,
+        minScore: 0,
+        platforms: platforms.length > 0 ? platforms : undefined,
+        topics: topics.length > 0 ? topics : undefined,
+        search: search || undefined,
+        language: "fr,en",
+        minAge: effectiveMinAge > DEFAULT_MIN_AGE ? effectiveMinAge : undefined,
+        maxAge: effectiveMaxAge <= DEFAULT_MAX_AGE ? effectiveMaxAge : undefined,
+      })
+    : null
+
+  const result = isCinema || useSmartRerank ? null : await fetchMovies({
     page,
     limit: PAGE_SIZE,
     includeProvisional,
@@ -218,13 +245,21 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
   )
-  const sourceItems = isCinema ? cinemaPageItems : result!.items
-  const totalItems = isCinema ? filteredCinemaMovies.length : result!.pagination.total
+  const sourceItems = isCinema ? cinemaPageItems : useSmartRerank ? [] : result!.items
+  const totalItems = isCinema
+    ? filteredCinemaMovies.length
+    : useSmartRerank
+      ? smart?.total ?? 0
+      : result!.pagination.total
   const totalPages = isCinema
     ? Math.max(1, Math.ceil(filteredCinemaMovies.length / PAGE_SIZE))
-    : result!.pagination.totalPages
+    : useSmartRerank
+      ? Math.max(1, Math.ceil((smart?.total ?? 0) / PAGE_SIZE))
+      : result!.pagination.totalPages
 
-  const items = sourceItems.map((m) => {
+  // Cinema + DB-browse share one mapping; the smart re-rank path maps its own
+  // scored results below. Both produce the same grid-item shape.
+  const dbItems = sourceItems.map((m) => {
     const cinemaReleaseBucket =
       "cinemaReleaseBucket" in m ? m.cinemaReleaseBucket : undefined
     const cm = m.contentMetrics as
@@ -260,6 +295,28 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     }
   })
 
+  const num = (v: unknown): number | null => (typeof v === "number" ? v : null)
+  const smartItems = (smart?.results ?? []).map((m) => ({
+    id: m.mediaId,
+    type: m.type as "MOVIE" | "TV" | "GAME",
+    title: m.title,
+    posterUrl: m.posterUrl ?? null,
+    cornerLabel: null as string | null,
+    expertAgeRec: m.expertAgeRec,
+    genres: m.genres,
+    releaseDate: m.releaseDate ? m.releaseDate.toISOString().split("T")[0] : null,
+    contentMetrics: m.contentMetrics
+      ? {
+          violence: num(m.contentMetrics.violence),
+          sexNudity: num(m.contentMetrics.sexNudity),
+          language: num(m.contentMetrics.language),
+          substanceUse: num(m.contentMetrics.substanceUse),
+        }
+      : null,
+  }))
+
+  const items = useSmartRerank ? smartItems : dbItems
+
   const filterSp = new URLSearchParams()
   if (search) filterSp.set("q", search)
   if (sortKey !== "releaseDate") filterSp.set("sort", sortKey)
@@ -286,13 +343,13 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
     ],
   }
 
-  const itemListLd = sourceItems.length
+  const itemListLd = items.length
     ? {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: "Films pour la famille",
         numberOfItems: totalItems,
-        itemListElement: sourceItems.slice(0, 20).map((item, idx) => ({
+        itemListElement: items.slice(0, 20).map((item, idx) => ({
           "@type": "ListItem",
           position: (page - 1) * PAGE_SIZE + idx + 1,
           url: `${baseUrl}/media/${encodeURIComponent(item.id)}`,
