@@ -15,7 +15,7 @@ interface FamilyMember {
   avatarOptions: Record<string, unknown> | null
 }
 
-interface ApercuFilmsListProps {
+export interface ApercuFilmsListProps {
   items: (ApercuCardMedia & { releaseDate: string | null })[]
   total: number
   page: number

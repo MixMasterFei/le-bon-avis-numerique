@@ -121,6 +121,7 @@
   --pine: #23493D; --pine-2: #2E5C4D; --pine-soft: #D7E6DD;
   --gold: #D99524;
   --r0: #CFC4B2; --r1: #4F9E6A; --r2: #E0902A; --r3: #C2412A;
+  --r-lg: 22px; --r-md: 14px;
 }
 :root[data-theme="dark"] [data-home="v2"] {
   --paper: #17130E; --paper-2: #201A13; --card: #241E15;

@@ -13,6 +13,7 @@ import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { cn } from "@/lib/utils"
 import { genreLabelFr, genreBadgeColor } from "@/components/home-v2/apercuTheme"
 import { TotemRating } from "./TotemRating"
+import { FamilyFitMeter } from "./FamilyFitMeter"
 import { hasTotemData, type TotemMetrics } from "./totem"
 
 export interface RedesignCardMedia {
@@ -43,11 +44,15 @@ export function RedesignCard({
   totem = "compact",
   upcoming = false,
   showType = false,
+  familyVariant = "avatars",
 }: {
   media: RedesignCardMedia
   totem?: "compact" | "full"
   upcoming?: boolean
   showType?: boolean
+  /** Family-fit row style: "avatars" = heart gauge (homepage rails),
+   *  "meter" = vertical-segment meter (catalogue V2 cards). */
+  familyVariant?: "avatars" | "meter"
 }) {
   const { getFamilyFit, registerMediaId } = useFamilyFit()
   const { settings } = useSettings()
@@ -176,9 +181,14 @@ export function RedesignCard({
         )}
       </div>
 
-      {/* Family-fit avatars (reserved height keeps the rail aligned) */}
+      {/* Family-fit row (reserved height keeps the grid aligned) */}
       <div className="mt-1.5 min-h-[2rem]">
-        {familyFit && familyFit.members.length > 0 && <FamilyFitAvatars members={familyFit.members} compact />}
+        {familyFit && familyFit.members.length > 0 &&
+          (familyVariant === "meter" ? (
+            <FamilyFitMeter members={familyFit.members} />
+          ) : (
+            <FamilyFitAvatars members={familyFit.members} compact />
+          ))}
       </div>
     </Link>
   )
