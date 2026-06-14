@@ -133,6 +133,14 @@
 @media (prefers-reduced-motion: reduce) {
   [data-home="v2"] .v2-drift-col { animation: none !important; }
 }
+/* Glowing wavy blob behind the collapsed family launcher. */
+.v2-blob { z-index: 0; animation: v2-blob-wave 4.5s ease-in-out infinite; }
+@keyframes v2-blob-wave {
+  0%, 100% { border-radius: 42% 58% 55% 45%/55% 45% 58% 42%; transform: rotate(0deg) scale(1); opacity: .55; }
+  33% { border-radius: 62% 38% 42% 58%/45% 62% 38% 55%; transform: rotate(120deg) scale(1.12); opacity: .78; }
+  66% { border-radius: 48% 52% 62% 38%/56% 46% 54% 44%; transform: rotate(240deg) scale(1.05); opacity: .65; }
+}
+@media (prefers-reduced-motion: reduce) { .v2-blob { animation: none; } }
 
 @layer base {
   * {
