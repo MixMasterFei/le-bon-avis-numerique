@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { seededShuffle } from "@/lib/seeded-shuffle"
-import { CardRailSection, Em } from "./parts"
+import { CardRailSection, Em, Band, Wrap, SectionHead, RailRow } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
+import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -89,9 +90,9 @@ export function WeekendRail({ maxAge, caps }: { maxAge: number; caps: Record<str
   )
 }
 
-// ── Bientôt — prochaines sorties (unreleased media; honest "à confirmer") ──
+// ── Bientôt — prochaines sorties (unreleased media → compact up-cards) ──
 function useUpcoming() {
-  const [items, setItems] = useState<RedesignCardMedia[]>([])
+  const [items, setItems] = useState<UpcomingItem[]>([])
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     let cancelled = false
@@ -108,10 +109,7 @@ function useUpcoming() {
             posterUrl: m.posterUrl,
             expertAgeRec: m.expertAgeRec ?? null,
             genres: m.genres ?? [],
-            contentMetrics: null, // unreleased — no content scores
-            cornerLabel: m.releaseDate
-              ? new Date(m.releaseDate).toLocaleDateString("fr-FR", { month: "short", year: "numeric" })
-              : "Bientôt",
+            releaseDate: m.releaseDate ?? null,
           })),
         )
       })
@@ -126,18 +124,27 @@ export function UpcomingRail() {
   const { items, loading } = useUpcoming()
   if (!loading && items.length === 0) return null
   return (
-    <CardRailSection
-      alt
-      id="bientot"
-      eyebrow="Bientôt"
-      title={<>Les <Em tone="pine">prochaines sorties</Em> à surveiller</>}
-      lead="Anticipez vos prochaines séances. L'âge indiqué est une estimation à confirmer — l'analyse détaillée arrive après la sortie."
-      items={items.slice(0, 10)}
-      loading={loading}
-      totem="compact"
-      showType
-      upcoming
-    />
+    <Band alt id="bientot">
+      <Wrap>
+        <SectionHead
+          eyebrow="Bientôt"
+          title={<>Les <Em tone="pine">prochaines sorties</Em> à surveiller</>}
+          lead="Anticipez vos prochaines séances. L'âge affiché est une estimation, précisée après la sortie."
+          action={{ label: "Tout le calendrier", href: "/films" }}
+        />
+        <RailRow>
+          {loading
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-[232px] w-[300px] flex-none animate-pulse rounded-[14px]"
+                  style={{ background: "var(--placeholder, #E6DFCE)", scrollSnapAlign: "start" }}
+                />
+              ))
+            : items.slice(0, 12).map((it) => <UpcomingCard key={it.id} item={it} />)}
+        </RailRow>
+      </Wrap>
+    </Band>
   )
 }
 
