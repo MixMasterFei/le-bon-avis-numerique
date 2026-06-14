@@ -31,9 +31,6 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
     ? selected.reduce((a, b) => (b.maxAge > a.maxAge ? b : a))
     : null
   const weekendMaxAge = activeBucket?.maxAge ?? defaultMaxAge
-  const weekendCaps = Object.fromEntries(
-    Object.entries(activeBucket?.caps ?? {}).filter(([, v]) => typeof v === "number"),
-  ) as Record<string, number>
 
   return (
     <FamilyFitProvider>
@@ -43,7 +40,7 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
         <HeroRedesign heroPosters={heroPosters} selectedKeys={selectedKeys} onToggleAge={toggleAge} />
-        <WeekendRail maxAge={weekendMaxAge} caps={weekendCaps} />
+        <WeekendRail maxAge={weekendMaxAge} />
         <UpcomingRail />
         <CinemaRail />
         <CoupsDeCoeurRail />
