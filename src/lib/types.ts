@@ -44,6 +44,8 @@ export interface MediaItem {
   // TMDB release lifecycle ("Released" | "Planned" | …). Used to withhold
   // content evaluation for upcoming titles. See @/lib/release-status.
   releaseStatus?: string | null
+  // SEO-only meta <title> override (NOT the display name). See @/lib/seo-autofix.
+  seoTitle?: string | null
 }
 
 export type MediaType = MediaItem["type"]
