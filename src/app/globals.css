@@ -162,16 +162,17 @@ html[data-v2-type="on"] body {
 }
 @media (prefers-reduced-motion: reduce) { .v2-blob { animation: none; } }
 
-/* V2 single-row card rows — show exactly one full row of cards (no
-   horizontal scroll, no partial/cut cards, no second row). Extra items are
-   hidden and reached via "Voir tout"/"Recharger". Column count is responsive;
-   the matching extra items are hidden per breakpoint. */
+/* V2 card rows — one full row on tablet/desktop (no horizontal scroll, no
+   partial/cut cards). On MOBILE (base, < 640px) we show TWO rows instead of
+   one, since a single row of 2–3 cards feels too limited on a phone. Extra
+   items beyond the visible grid are hidden and reached via "Voir tout". Column
+   count is responsive; the matching extra items are hidden per breakpoint. */
 [data-home="v2"] .v2-row { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-[data-home="v2"] .v2-row > *:nth-child(n+4) { display: none; }
+[data-home="v2"] .v2-row > *:nth-child(n+7) { display: none; } /* mobile: 3 cols × 2 rows */
 [data-home="v2"] .v2-row-lg { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-[data-home="v2"] .v2-row-lg > *:nth-child(n+3) { display: none; }
+[data-home="v2"] .v2-row-lg > *:nth-child(n+5) { display: none; } /* mobile: 2 cols × 2 rows */
 [data-home="v2"] .v2-row-up { display: grid; gap: 16px; grid-template-columns: repeat(1, minmax(0, 1fr)); }
-[data-home="v2"] .v2-row-up > *:nth-child(n+2) { display: none; }
+[data-home="v2"] .v2-row-up > *:nth-child(n+3) { display: none; } /* mobile: 1 col × 2 rows */
 @media (min-width: 640px) {
   [data-home="v2"] .v2-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   [data-home="v2"] .v2-row > *:nth-child(-n+4) { display: block; }
