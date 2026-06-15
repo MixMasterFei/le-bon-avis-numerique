@@ -38,7 +38,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
   }
 
   return (
-    <section className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--line)" }}>
+    <section id="v2-hero" className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--line)" }}>
       {/* Poster wall — subtle, recognizable, drifting */}
       {heroPosters.length > 0 && (
         <div

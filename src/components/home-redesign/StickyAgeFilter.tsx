@@ -1,14 +1,16 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
 
 /**
- * Slim filter bar shown once age bands are selected. Placed right after the
- * hero with `sticky top-16`, it scrolls with the page until it tucks just under
- * the global header, then stays — so the active filters remain visible (and
- * adjustable) while browsing the rails below. Hidden when nothing is selected.
+ * Filter bar that slides IN from the top once the hero (with its filters)
+ * scrolls out of view — same scroll-triggered pattern as the media page's
+ * MediaDashboardBar. It keeps the active age/family filters visible and
+ * adjustable while browsing the rails, then slides away when you scroll back
+ * to the hero. Only relevant when something is selected.
  */
 export function StickyAgeFilter({
   selectedKeys,
@@ -30,12 +32,47 @@ export function StickyAgeFilter({
   maxAge?: number
   isLoggedIn: boolean
 }) {
-  if (selectedKeys.length === 0 && selectedMemberIds.length === 0) return null
+  const [scrolledPastHero, setScrolledPastHero] = useState(false)
+  const [topOffset, setTopOffset] = useState(64)
+
+  useEffect(() => {
+    const hero = document.getElementById("v2-hero")
+    if (!hero) return
+    const header = document.querySelector("header")
+    let io: IntersectionObserver | null = null
+    const setup = () => {
+      const h = header?.offsetHeight ?? 64
+      setTopOffset(h)
+      io?.disconnect()
+      io = new IntersectionObserver(
+        ([entry]) => setScrolledPastHero(!entry.isIntersecting),
+        { rootMargin: `-${h}px 0px 0px 0px`, threshold: 0 },
+      )
+      io.observe(hero)
+    }
+    setup()
+    window.addEventListener("resize", setup)
+    return () => {
+      io?.disconnect()
+      window.removeEventListener("resize", setup)
+    }
+  }, [])
+
+  const hasFilters = selectedKeys.length > 0 || selectedMemberIds.length > 0
+  const visible = scrolledPastHero && hasFilters
 
   return (
     <div
-      className="sticky top-16 z-40 border-b backdrop-blur-md"
-      style={{ background: "color-mix(in srgb, var(--paper) 90%, transparent)", borderColor: "var(--line)" }}
+      className="fixed inset-x-0 z-40 border-b backdrop-blur-md transition-transform duration-300 motion-reduce:transition-none"
+      style={{
+        top: topOffset,
+        transform: visible ? "translateY(0)" : "translateY(-130%)",
+        background: "color-mix(in srgb, var(--paper) 92%, transparent)",
+        borderColor: "var(--line)",
+        boxShadow: "0 16px 32px -18px rgba(58,46,34,.5)",
+      }}
+      aria-hidden={!visible}
+      inert={!visible}
     >
       <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-2.5 sm:px-7">
         <span className="hidden whitespace-nowrap text-[12.5px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
