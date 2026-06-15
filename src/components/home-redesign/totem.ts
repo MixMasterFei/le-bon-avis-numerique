@@ -78,3 +78,51 @@ export function hasTotemData(
   if (!m) return false
   return totemAxesFor(type).some((a) => typeof m[a.key] === "number")
 }
+
+// ─────────────────────────────────────────────────────────────────────────
+// Vigilance indicator (on-card display)
+//
+// `totemLevel` above stays the detailed 0–5→0–3 mapping for the fiche. On the
+// CARDS we deliberately show a coarser, age-anchored "vigilance" signal so the
+// totem reads as "y a-t-il un point à surveiller ?" rather than a precise score:
+//
+//   - cartoon-friendly bucketing: raw ≤2 → 0, 3 → 1 (léger), 4 → 2 (à noter),
+//     5 → 3 (marqué). Mild/stylized peril (most family content sits at 2–3 raw)
+//     no longer lights up orange.
+//   - age anchor: a young-rated title (expertAge ≤ 8) is capped at 1, so a
+//     stray over-scored axis can't make a kids film look as alarming as an
+//     action film. expertAge == null → bucketing only (no cap), so a genuinely
+//     graphic unrated/provisional title still flags.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Coarse per-axis vigilance level for the card badge/popover. */
+export function vigilanceAxisLevel(
+  raw: number | null | undefined,
+  expertAge?: number | null,
+): TotemLevel {
+  let level: TotemLevel =
+    !raw || raw <= 2 ? 0 : raw === 3 ? 1 : raw === 4 ? 2 : 3
+  if (typeof expertAge === "number" && expertAge <= 8 && level > 1) {
+    level = 1
+  }
+  return level
+}
+
+/**
+ * Overall vigilance for a title = MAX across its (type-scoped) axes. A single
+ * axis at 4 flips the badge to amber even if every other axis is 0 — the badge
+ * answers "is there a point to watch?", not an average.
+ */
+export function vigilanceMax(
+  m: TotemMetrics | null | undefined,
+  type?: string | null,
+  expertAge?: number | null,
+): TotemLevel {
+  if (!m) return 0
+  let max: TotemLevel = 0
+  for (const a of totemAxesFor(type)) {
+    const lvl = vigilanceAxisLevel(m[a.key], expertAge)
+    if (lvl > max) max = lvl
+  }
+  return max
+}

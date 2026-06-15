@@ -127,6 +127,41 @@ function filterToValidList(values: string[], validList: string[]): string[] {
   return values.filter((v) => validList.includes(v))
 }
 
+/**
+ * Deterministic safety net beyond the LLM rubric: a title classified for the
+ * youngest audiences (CSA "Tous publics"/"-10", PEGI 3/7, BBFC U/G) should not
+ * carry high SENSIBILITY scores. If the model still returns >2 on violence /
+ * sex / language / substances for such a title, cap it at 2. Conservative —
+ * only the clearly-young tiers, and NOT consumerism (microtransactions aren't
+ * bounded by an age rating: a PEGI 3 game can be heavily monetized).
+ */
+function isYoungRating(officialRating?: string | null): boolean {
+  if (!officialRating) return false
+  const r = officialRating.toLowerCase()
+  return (
+    r.includes("tous public") ||
+    r.includes("-10") ||
+    /pegi\s*[37]\b/.test(r) ||
+    r === "u" ||
+    r === "g"
+  )
+}
+
+function clampMetricsByRating(
+  m: ContentAnalysis["contentMetrics"],
+  officialRating?: string | null,
+): ContentAnalysis["contentMetrics"] {
+  if (!isYoungRating(officialRating)) return m
+  const cap = (v: number) => Math.min(v, 2)
+  return {
+    ...m,
+    violence: cap(m.violence),
+    sexNudity: cap(m.sexNudity),
+    language: cap(m.language),
+    substanceUse: cap(m.substanceUse),
+  }
+}
+
 async function analyzeWithOpenAI(
   openai: OpenAI,
   item: {
@@ -267,7 +302,19 @@ CONFIANCE dans ton analyse (0.0 a 1.0):
 - 0.3-0.4: Tu ne connais pas ce contenu, tes evaluations sont basees uniquement sur le synopsis/genre
 - 0.1-0.2: Information insuffisante, evaluation tres incertaine
 
-Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
+ECHELLE DES METRIQUES (0-5) — calibree pour une sensibilite FAMILIALE.
+Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-heros sans consequence reelle) du contenu REALISTE / GRAPHIQUE : la meme scene "vaut" moins en animation legere qu'en prise de vue reelle.
+- Violence: 0=aucune. 1-2=peril leger, slapstick, bagarres cartoon/animees sans consequence ni sang. 3=bagarres repetees, armes, tension, mort hors-champ. 4=violence realiste, sang, blessures montrees. 5=gore, torture, morts graphiques.
+- Sexe/Sensualite: 0=aucun. 1-2=romance, baisers, allusions legeres. 3=sensualite marquee, nudite suggeree. 4=scenes de sexe implicites / nudite. 5=sexe explicite.
+- Langage: 0=aucun. 1-2=quelques mots familiers. 3=insultes regulieres. 4=langage grossier frequent. 5=tres cru ou haineux.
+- Substances: 0=aucune. 1-2=alcool en arriere-plan. 3=consommation montree. 4=abus/drogues au coeur du recit. 5=usage glorifie ou explicite.
+- Achats integres (jeux): 0=aucun. 1-2=cosmetiques optionnels. 3=microtransactions presentes. 4-5=pay-to-win / loot boxes au coeur du jeu.
+Echelle generale des mots: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense.
+
+ANCRAGE SUR LA CLASSIFICATION OFFICIELLE (plafond de bon sens):
+- "Tous publics", "-10", "PEGI 3", "PEGI 7", "U" : titre familial — ne depasse 2 sur un axe QUE si une scene precise le justifie clairement.
+- "-12" / "PEGI 12" : 3 plausible. "-16" / "PEGI 16" : jusqu'a 4. "-18" / "PEGI 18" : jusqu'a 5.
+- Pas de classification (vide) : aucun plafond officiel — reste prudent en te basant sur les genres (Animation / Famille => plutot bas).
 
 Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.
 
@@ -580,6 +627,14 @@ export async function POST(request: NextRequest) {
           tmdbVoteCount: item.tmdbVoteCount,
           demographic: item.demographic,
         }, tmdbKeywords)
+
+        // Deterministic guardrail: cap sensibility axes for clearly young-rated
+        // titles (backstop beyond the LLM rubric — fixes mislabeled scores on
+        // the fiche too, not just the card badge).
+        analysis.contentMetrics = clampMetricsByRating(
+          analysis.contentMetrics,
+          item.officialRating,
+        )
 
         // Compute final confidence with heuristic adjustments
         const { score: finalConfidence, needsDeepEnrich } = computeFinalConfidence(

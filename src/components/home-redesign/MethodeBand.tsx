@@ -7,7 +7,7 @@ import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
 import { Band, Wrap, Em } from "./parts"
-import { totemLevel, totemAxesFor, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
+import { vigilanceAxisLevel, totemAxesFor, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
 
 interface DecoderItem {
   id: string
@@ -112,29 +112,20 @@ function Decoder({ item }: { item: DecoderItem | null }) {
         )}
       </div>
       {totemAxesFor(item.type).map((a) => {
-        const lvl = totemLevel(metrics[a.key])
+        const lvl = vigilanceAxisLevel(metrics[a.key], item.expertAgeRec)
         const words = a.words ?? TOTEM_WORDS
         return (
-          <div key={a.key} className="flex items-center gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
-            <div className="flex-1">
-              <b className="block text-[14.5px] text-white">{a.label}</b>
-              <span className="text-[12.5px]" style={{ color: "#A9C4B3" }}>{words[lvl]}</span>
-            </div>
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <i key={i} className="block" style={{ width: 14, height: 14, borderRadius: 4, background: i < lvl ? TOTEM_COLORS[lvl] : "rgba(255,255,255,.14)" }} />
-              ))}
-            </div>
+          <div key={a.key} className="flex items-center justify-between gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
+            <b className="text-[14.5px] text-white">{a.label}</b>
+            <span className="flex items-center gap-2 text-[12.5px] font-semibold" style={{ color: "#A9C4B3" }}>
+              {words[lvl]}
+              <i className="block" style={{ width: 11, height: 11, borderRadius: 4, background: TOTEM_COLORS[lvl] }} />
+            </span>
           </div>
         )
       })}
-      <div className="mt-4 flex flex-wrap gap-4 text-[12.5px]" style={{ color: "#A9C4B3" }}>
-        {[1, 2, 3].map((l) => (
-          <span key={l} className="inline-flex items-center gap-1.5">
-            <i className="block" style={{ width: 10, height: 10, borderRadius: 3, background: TOTEM_COLORS[l] }} />
-            {TOTEM_WORDS[l]}
-          </span>
-        ))}
+      <div className="mt-4 text-[12px]" style={{ color: "#8FA89A" }}>
+        Un repère indicatif, pas une note. Le détail complet est sur chaque fiche.
       </div>
     </div>
   )
