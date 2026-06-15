@@ -13,6 +13,9 @@ import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { fraunces } from "@/components/home-v2/apercuFont"
+import { v2FontVars } from "@/components/home-redesign/fonts"
+import { V2TypeProvider } from "@/components/providers/V2TypeProvider"
+import { v2Enabled } from "@/lib/v2-flag"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -99,10 +102,17 @@ export default async function RootLayout({
     isAuthenticated: !!session?.user,
     role: session?.user?.role ?? null,
   })
+  // Site-wide V2 typography — admin-only until HOMEPAGE_V2_PUBLIC=true. The V2
+  // font variables are only attached (and `data-v2-type="on"` set) when the
+  // viewer qualifies; globals.css remaps --font-sans/--font-heading/--font-serif
+  // under that attribute, so the whole site (incl. Family Corner, blog) inherits
+  // the new fonts. Public visitors get neither the attribute nor the webfonts.
+  const v2TypeOn = v2Enabled(session?.user?.role === "ADMIN")
   return (
     <html
       lang="fr"
-      className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable} ${fraunces.variable}`}
+      className={`${inter.variable} ${poppins.variable} ${anton.variable} ${edunline.variable} ${fraunces.variable}${v2TypeOn ? ` ${v2FontVars}` : ""}`}
+      data-v2-type={v2TypeOn ? "on" : undefined}
       suppressHydrationWarning
     >
       <head>
@@ -173,6 +183,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col">
+        <V2TypeProvider value={v2TypeOn}>
         <SessionProvider>
           <SettingsProvider>
             {hydrationDebugEnabled ? <HydrationCatcher /> : null}
@@ -184,6 +195,7 @@ export default async function RootLayout({
             {totemEnabled && <TotemDockClient />}
           </SettingsProvider>
         </SessionProvider>
+        </V2TypeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

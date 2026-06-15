@@ -19,9 +19,15 @@ export async function GET(request: NextRequest) {
   const seed = seedParam ? parseInt(seedParam) : getWeekSeed()
   const tenYearsAgo = new Date()
   tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10)
-  // Curated picks are family-capped at 12; the homepage age filter can lower it.
+  // Curated picks default to a family cap of 12, but follow the homepage age
+  // filter when it's set — including the teen bands (13–15 / 16+), so selecting
+  // an older child actually changes this rail instead of silently staying ≤12.
+  // Clamped to [0, 18] as a sanity bound.
   const maxAgeParam = searchParams.get("maxAge")
-  const ageCap = Math.min(12, maxAgeParam ? parseInt(maxAgeParam) : 12)
+  const parsedMaxAge = maxAgeParam ? parseInt(maxAgeParam) : NaN
+  const ageCap = Number.isFinite(parsedMaxAge)
+    ? Math.min(18, Math.max(0, parsedMaxAge))
+    : 12
 
   try {
     // Fetch a large pool — most movies share the same DQS so we need

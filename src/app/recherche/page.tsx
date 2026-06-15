@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic"
 import { auth } from "@/lib/auth"
+import { v2Enabled } from "@/lib/v2-flag"
 import { RechercheClassic } from "./RechercheClassic"
 
 // Admin-only V2 search, code-split so its chunk + fonts stay out of the public
@@ -18,7 +19,7 @@ export default async function RecherchePage({ searchParams }: PageProps) {
   const isAdmin =
     (session?.user as { role?: string } | undefined)?.role === "ADMIN"
   const v = typeof params.v === "string" ? params.v : undefined
-  const showV2 = isAdmin && v !== "classic"
+  const showV2 = v2Enabled(isAdmin) && v !== "classic"
 
   return showV2 ? <RechercheV2 /> : <RechercheClassic />
 }

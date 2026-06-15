@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import dynamic from "next/dynamic"
 import { fetchMovies } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
+import { v2Enabled } from "@/lib/v2-flag"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
@@ -115,7 +116,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
   const userId = (session?.user as { id?: string } | undefined)?.id
   const isAdmin =
     (session?.user as { role?: string } | undefined)?.role === "ADMIN"
-  const showV2 = isAdmin && get(params, "v") !== "classic"
+  const showV2 = v2Enabled(isAdmin) && get(params, "v") !== "classic"
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()

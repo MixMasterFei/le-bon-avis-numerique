@@ -18,7 +18,9 @@ export function AgeChips({
 }) {
   const compact = size === "sm"
   return (
-    <div className={compact ? "flex flex-wrap gap-1.5" : "flex flex-wrap gap-2.5"}>
+    // Compact = inside the sticky bar: a single non-wrapping row that scrolls
+    // horizontally with the bar (wrapping would make the pill grow tall).
+    <div className={compact ? "flex flex-nowrap gap-1.5" : "flex flex-wrap gap-2.5"}>
       {APERCU_AGE_BUCKETS.map((b) => {
         const on = selectedKeys.includes(b.key)
         return (
@@ -29,7 +31,7 @@ export function AgeChips({
             onClick={() => onToggleAge(b.key)}
             className={
               compact
-                ? "rounded-full px-3 py-1 text-[12.5px] font-bold transition-colors"
+                ? "shrink-0 rounded-full px-3 py-1 text-[12.5px] font-bold transition-colors"
                 : "flex flex-col items-center rounded-full px-[18px] py-[10px] text-center leading-tight transition-colors"
             }
             style={{

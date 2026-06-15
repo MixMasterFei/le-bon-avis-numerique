@@ -51,21 +51,36 @@ export function FamilyFitProvider({ children }: { children: React.ReactNode }) {
   const fetchedIds = useRef<Set<string>>(new Set())
   const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // The batch route caps each request at 50 IDs. The homepage renders 50+
+  // unique cards across all rails, so we MUST chunk — otherwise IDs past 50 are
+  // silently dropped and never retried, and the lower rails show no per-member
+  // meters. Mark an ID `fetched` only after its chunk succeeds; a failed chunk
+  // is un-marked so a later register can retry it.
+  const BATCH_LIMIT = 50
+
   const fetchBatch = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return
     setIsLoading(true)
     try {
-      const res = await fetch("/api/media/batch-family-fit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaIds: ids }),
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setResults((prev) => ({ ...prev, ...data }))
+      for (let i = 0; i < ids.length; i += BATCH_LIMIT) {
+        const chunk = ids.slice(i, i + BATCH_LIMIT)
+        try {
+          const res = await fetch("/api/media/batch-family-fit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mediaIds: chunk }),
+          })
+          if (res.ok) {
+            const data = await res.json()
+            setResults((prev) => ({ ...prev, ...data }))
+            for (const id of chunk) fetchedIds.current.add(id)
+          } else {
+            for (const id of chunk) fetchedIds.current.delete(id)
+          }
+        } catch {
+          for (const id of chunk) fetchedIds.current.delete(id)
+        }
       }
-    } catch (error) {
-      console.error("Failed to fetch batch family fit:", error)
     } finally {
       setIsLoading(false)
     }
@@ -82,6 +97,8 @@ export function FamilyFitProvider({ children }: { children: React.ReactNode }) {
       batchTimer.current = setTimeout(() => {
         const ids = Array.from(pendingIds.current)
         pendingIds.current.clear()
+        // Mark as in-flight to dedupe concurrent registers; fetchBatch un-marks
+        // any chunk that fails so it can be retried.
         for (const id of ids) fetchedIds.current.add(id)
         fetchBatch(ids)
       }, 200)

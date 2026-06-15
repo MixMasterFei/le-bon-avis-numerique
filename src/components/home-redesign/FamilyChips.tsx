@@ -50,7 +50,9 @@ export function FamilyChips({
   }
 
   return (
-    <div className={compact ? "flex flex-wrap gap-1.5" : "flex flex-wrap gap-2"}>
+    // Compact = inside the sticky bar: non-wrapping row so it scrolls with the
+    // bar instead of stacking. Large = hero, where wrapping is fine.
+    <div className={compact ? "flex flex-nowrap gap-1.5" : "flex flex-wrap gap-2"}>
       {members.map((m, idx) => {
         const on = selectedMemberIds.includes(m.id)
         const color = memberColor(idx)
@@ -60,7 +62,7 @@ export function FamilyChips({
             type="button"
             aria-pressed={on}
             onClick={() => onToggleMember(m)}
-            className={`inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-60 ${compact ? "py-1 pl-1 pr-2.5 text-[12px]" : "py-1.5 pl-1.5 pr-3 text-[13px]"}`}
+            className={`inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-60 ${compact ? "shrink-0 py-1 pl-1 pr-2.5 text-[12px]" : "py-1.5 pl-1.5 pr-3 text-[13px]"}`}
             style={{
               background: on ? `${color}1A` : "var(--paper-2)",
               border: `1.5px solid ${on ? color : "var(--line)"}`,

@@ -67,7 +67,7 @@ export function FamilyNudge({ selectedKeys, isLoggedIn }: { selectedKeys: string
 
   return (
     <aside
-      className="fixed bottom-6 left-6 z-[60] w-[332px] max-w-[calc(100vw-2rem)] rounded-[20px] p-[18px]"
+      className="fixed bottom-6 left-6 z-[60] w-[332px] max-w-[calc(100vw-3rem)] rounded-[20px] p-[18px]"
       style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "0 26px 64px -22px rgba(40,28,12,.55)" }}
     >
       <button onClick={collapse} aria-label="Réduire" className="absolute right-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full" style={{ color: "var(--ink-3)" }}>

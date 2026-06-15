@@ -6,6 +6,7 @@ import { getAvatarDataUri, AVATAR_STYLES, BACKGROUND_COLORS, randomSeed, DEFAULT
 import { cn } from "@/lib/utils"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useV2Type } from "@/components/providers/V2TypeProvider"
 
 export interface AvatarValue {
   style: string
@@ -22,6 +23,10 @@ interface AvatarPickerProps {
 const FACES_PER_PAGE = 8
 
 export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) {
+  // Under the V2 visual system avatars render as two-letter monograms, so the
+  // generated-avatar picker is moot — hide it (the guard sits after all hooks,
+  // before the JSX return, to keep hook order stable). Public/classic keeps it.
+  const v2Type = useV2Type()
   const [selectedBg, setSelectedBg] = useState<string | null>(
     (value.options?.backgroundColor as string) ?? null
   )
@@ -100,6 +105,13 @@ export function AvatarPicker({ value, onChange, className }: AvatarPickerProps) 
       })),
     [seedBatch, value.style, value.options]
   )
+
+  if (v2Type)
+    return (
+      <p className={cn("text-sm text-gray-500", className)}>
+        L&apos;avatar s&apos;affiche à partir des initiales du prénom.
+      </p>
+    )
 
   return (
     <div className={cn("space-y-4", className)}>

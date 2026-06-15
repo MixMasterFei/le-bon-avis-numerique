@@ -28,6 +28,19 @@ export function memberColor(index: number): string {
 }
 
 /**
+ * Deterministic identity color from a name — used where we render a member
+ * monogram without knowing its position in the family list (e.g. the global
+ * MemberAvatar's V2 fallback). Same name always maps to the same palette color.
+ */
+export function memberColorFromName(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  }
+  return V2_MEMBER_COLORS[hash % V2_MEMBER_COLORS.length]
+}
+
+/**
  * Verdict band → number of lit segments on the 3-segment vertical meter.
  * Mirrors BAND_TO_HEARTS in FamilyFitAvatars so the V2 meter and the classic
  * heart gauge encode the exact same verdict for a given title.

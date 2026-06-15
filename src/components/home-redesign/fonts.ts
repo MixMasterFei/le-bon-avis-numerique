@@ -1,10 +1,12 @@
 import { Bricolage_Grotesque, Newsreader, Hanken_Grotesk } from "next/font/google"
 
 /**
- * Fonts for the admin-only V2 homepage. Imported only by HomepageRedesign
- * (which is `next/dynamic`-loaded for admins in page.tsx), so these never
- * ship to anonymous visitors. Applied to the V2 wrapper div, not <html>,
- * so they're scoped to the redesign subtree.
+ * The V2 font system (Bricolage headings, Newsreader italic accents, Hanken
+ * body). Imported by the root layout, which attaches `v2FontVars` to <html>
+ * ONLY when the viewer qualifies for V2 (admin, or HOMEPAGE_V2_PUBLIC=true) —
+ * see @/lib/v2-flag. The webfonts are only fetched when something references
+ * them, so public visitors (no attribute, no remap in globals.css) never load
+ * them. Also imported by HomepageRedesign for the redesign subtree.
  */
 export const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
