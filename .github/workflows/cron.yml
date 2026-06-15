@@ -56,6 +56,7 @@ on:
           - backfill-ratings
           - enrich
           - enrich-deep
+          - recalibrate-ratings
           - quality
           - streaming
           - similarity
@@ -131,12 +132,14 @@ jobs:
       github.event.schedule == '0 4 * * *' ||
       github.event.inputs.task == 'enrich' ||
       github.event.inputs.task == 'enrich-deep' ||
+      github.event.inputs.task == 'recalibrate-ratings' ||
       github.event.inputs.task == 'quality' ||
       github.event.inputs.task == 'all'
     steps:
       - name: Enrich movies (2 batches of 5)
         if: >-
-          github.event.inputs.task != 'quality'
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'recalibrate-ratings'
         run: |
           echo "::group::Enrich movies"
           for i in 1 2; do
@@ -151,7 +154,8 @@ jobs:
 
       - name: Enrich TV shows (2 batches of 5)
         if: >-
-          github.event.inputs.task != 'quality'
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'recalibrate-ratings'
         run: |
           echo "::group::Enrich TV"
           for i in 1 2; do
@@ -166,7 +170,8 @@ jobs:
 
       - name: Enrich games (2 batches of 5)
         if: >-
-          github.event.inputs.task != 'quality'
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'recalibrate-ratings'
         run: |
           echo "::group::Enrich games"
           for i in 1 2; do
@@ -188,7 +193,8 @@ jobs:
       - name: Backfill legacy enrichment fields (onlyLegacy)
         if: >-
           github.event.inputs.task != 'quality' &&
-          github.event.inputs.task != 'enrich-deep'
+          github.event.inputs.task != 'enrich-deep' &&
+          github.event.inputs.task != 'recalibrate-ratings'
         run: |
           set +e
           echo "::group::Legacy backfill"
@@ -200,6 +206,32 @@ jobs:
               "$SITE_URL/api/admin/enrich" 2>&1)
             enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null || echo "0")
             echo "Backfill batch $i: $enriched enriched"
+            if [ "$enriched" = "0" ]; then break; fi
+            sleep 3
+          done
+          echo "::endgroup::"
+
+      # Recalibrate over-scored ratings: re-enrich already-enriched titles whose
+      # scores look inflated under the old rubric (curated ≤12 but a sensibility
+      # axis ≥4, or all-zero). Self-draining (oldest-touched first + 3-day
+      # staleness guard) so it terminates and then no-ops at near-zero cost.
+      # Runs nightly to keep the catalog calibrated; also dispatchable alone via
+      # task=recalibrate-ratings to jump-start the backlog.
+      - name: Recalibrate over-scored ratings
+        if: >-
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'enrich-deep'
+        run: |
+          set +e
+          echo "::group::Recalibrate ratings"
+          for i in 1 2 3 4; do
+            response=$(curl -sSL --max-time 290 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"recalibrate":true,"onlyMissing":false,"limit":40}' \
+              "$SITE_URL/api/admin/enrich" 2>&1)
+            enriched=$(echo "$response" | jq -r '.result.enriched // 0' 2>/dev/null || echo "0")
+            echo "Recalibrate batch $i: $enriched re-enriched"
             if [ "$enriched" = "0" ]; then break; fi
             sleep 3
           done
