@@ -95,7 +95,7 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
               <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
             ))}
           </div>
-        ) : items.length > 0 ? (
+        ) : ranked.length > 0 ? (
           <>
             <div className="v2-row">
               {ranked.map((m) => (
