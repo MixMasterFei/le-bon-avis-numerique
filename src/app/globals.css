@@ -81,6 +81,25 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────
+   Site-wide V2 typography — applied only when the root layout sets
+   data-v2-type="on" (admin, or HOMEPAGE_V2_PUBLIC=true). Remaps the global
+   font tokens to the V2 families so EVERY surface (Family Corner, profile,
+   blog, auth, static pages) inherits the new look without per-component
+   edits. Public visitors never get the attribute, so they keep Inter/Poppins
+   and the V2 webfonts are never fetched. The home-redesign components that
+   reference --font-bricolage/--font-newsreader directly keep working since
+   the variables are now defined globally (attached to <html>).
+   ───────────────────────────────────────────────────────────────────── */
+html[data-v2-type="on"] {
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-bricolage), ui-serif, Georgia, serif;
+}
+html[data-v2-type="on"] body {
+  font-family: var(--font-sans);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    Dark mode (Soirée) — triggered by [data-theme="dark"] on <html>.
    The blocking inline script in layout.tsx sets this attribute before
    first paint based on localStorage.theme, then falling back to

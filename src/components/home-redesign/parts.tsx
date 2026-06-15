@@ -45,7 +45,7 @@ export function SectionHead({
   onReload?: () => void
 }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4">
+    <div className="mb-6 flex flex-col items-start gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div>
         <Eyebrow>{eyebrow}</Eyebrow>
         <h2

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { runSmartFilter } from "@/lib/smart-filter"
+import { v2Enabled } from "@/lib/v2-flag"
 import { FilmsRechercheLegacy } from "./FilmsRechercheLegacy"
 
 export const revalidate = 300
@@ -54,7 +55,7 @@ export default async function FilmsRecherchePage({ searchParams }: PageProps) {
   const userId = (session?.user as { id?: string } | undefined)?.id
   const isAdmin =
     (session?.user as { role?: string } | undefined)?.role === "ADMIN"
-  const showV2 = isAdmin && get(params, "v") !== "classic"
+  const showV2 = v2Enabled(isAdmin) && get(params, "v") !== "classic"
 
   // Public + classic fallback keep the legacy client search page untouched.
   if (!showV2) return <FilmsRechercheLegacy />

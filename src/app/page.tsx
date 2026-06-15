@@ -7,6 +7,7 @@ import { getWeekSeed, seededShuffle } from "@/lib/seeded-shuffle"
 import { HomepageApercu } from "@/components/home-v2/HomepageApercu"
 import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
 import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggle"
+import { v2Enabled } from "@/lib/v2-flag"
 
 // V2 redesign is admin-only and dynamically imported so its chunk + the
 // three design fonts never ship to anonymous visitors.
@@ -95,9 +96,9 @@ export default async function HomePage({
 
   const maxAgeCap = session?.user?.id ? await resolveFamilyAgeCap(session.user.id) : null
 
-  // Admins see the V2 redesign by default; `?v=classic` shows the current
-  // homepage. Everyone else always gets the classic homepage.
-  const showV2 = isAdmin && sp.v !== "classic"
+  // V2 is admin-only until HOMEPAGE_V2_PUBLIC=true (see @/lib/v2-flag).
+  // `?v=classic` always shows the current homepage.
+  const showV2 = v2Enabled(isAdmin) && sp.v !== "classic"
 
   if (showV2) {
     const [heroPosters, familyMembers] = await Promise.all([

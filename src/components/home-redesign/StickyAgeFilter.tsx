@@ -65,20 +65,22 @@ export function StickyAgeFilter({
 
   return (
     <div
-      className="fixed left-1/2 z-40 transition-all duration-300 motion-reduce:transition-none"
+      className="fixed inset-x-0 z-40 px-3 transition-all duration-300 motion-reduce:transition-none"
       style={{
         top: topOffset + 10,
-        transform: `translateX(-50%) translateY(${visible ? "0" : "-160%"})`,
+        transform: `translateY(${visible ? "0" : "-160%"})`,
         opacity: visible ? 1 : 0,
-        maxWidth: "calc(100vw - 24px)",
       }}
       aria-hidden={!visible}
       inert={!visible}
     >
-      {/* Rounded, content-width card — a floating filter dashboard, not a
-          full-bleed bar. */}
+      {/* Rounded, content-width card — a floating filter dashboard. Centered via
+          mx-auto (NOT a translateX hack, which overflowed on mobile); `w-fit`
+          keeps it compact on desktop while `max-w-full` + `overflow-x-auto` let
+          the chips scroll inside the viewport on phones instead of pushing the
+          page sideways. */}
       <div
-        className="flex items-center gap-2.5 overflow-x-auto rounded-full border px-3 py-2 backdrop-blur-md"
+        className="mx-auto flex w-fit max-w-full items-center gap-1.5 overflow-x-auto rounded-full border px-3 py-2 backdrop-blur-md sm:gap-2.5"
         style={{
           background: "color-mix(in srgb, var(--card) 94%, transparent)",
           borderColor: "var(--line)",
@@ -86,19 +88,23 @@ export function StickyAgeFilter({
         }}
       >
         {hasFilters && typeof maxAge === "number" && (
-          <span className="hidden whitespace-nowrap pl-1 text-[12px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
+          <span className="hidden shrink-0 whitespace-nowrap pl-1 text-[12px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
             jusqu&apos;à {maxAge} ans
           </span>
         )}
         {familyMembers.length > 0 && (
-          <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="sm" />
+          <div className="shrink-0">
+            <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="sm" />
+          </div>
         )}
-        <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
+        <div className="shrink-0">
+          <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
+        </div>
         {hasFilters && (
           <button
             type="button"
             onClick={onClear}
-            className="flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-bold transition-opacity hover:opacity-70"
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-bold transition-opacity hover:opacity-70"
             style={{ color: "var(--terra)" }}
           >
             <X className="h-3.5 w-3.5" /> Effacer

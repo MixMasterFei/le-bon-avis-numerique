@@ -67,7 +67,7 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
           title={audience ? <>Sur vos <Em tone="pine">plateformes</Em> <Em tone="terra">· {audience}</Em></> : <>Sur vos <Em tone="pine">plateformes</Em></>}
           lead="Ce qui est dispo, là, maintenant — filtré par vos abonnements."
         />
-        <div className="mb-6 flex flex-wrap gap-2.5">
+        <div className="mb-6 flex flex-wrap gap-2 sm:gap-2.5">
           {PROVIDERS.map((pr) => {
             const active = sel.id === pr.id
             return (
@@ -75,7 +75,7 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
                 key={pr.id}
                 onClick={() => setSel(pr)}
                 aria-pressed={active}
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-bold transition-colors"
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-bold transition-colors sm:px-4 sm:py-2 sm:text-[14px]"
                 style={{
                   border: `1.5px solid ${active ? "var(--ink)" : "var(--line)"}`,
                   background: active ? "var(--paper-2)" : "var(--card)",

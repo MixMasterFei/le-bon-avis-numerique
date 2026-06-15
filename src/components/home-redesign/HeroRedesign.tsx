@@ -126,7 +126,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
           {/* Votre sélection, sur mesure — member shortcuts inline on one row
               (or a sign-up nudge when there's no family yet). Kept compact. */}
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4" style={{ borderColor: "var(--line)" }}>
-            <span className="whitespace-nowrap text-[14px] font-bold" style={{ color: "var(--ink)" }}>
+            <span className="w-full whitespace-nowrap text-[14px] font-bold sm:w-auto" style={{ color: "var(--ink)" }}>
               Votre sélection, sur mesure :
             </span>
             <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="lg" />
