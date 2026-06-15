@@ -12,15 +12,19 @@ import { PlatformsSection } from "./PlatformsSection"
 import { MethodeBand } from "./MethodeBand"
 import { FamilyNudge } from "./FamilyNudge"
 
+import type { FamilyMemberLite } from "./FamilyChips"
+
 interface HomepageRedesignProps {
   isLoggedIn: boolean
   /** Real family-friendly poster URLs for the hero wall (weekly set). */
   heroPosters: string[]
   /** Family age floor (min(12, youngest minor)) — default weekend-rail cap. */
   defaultMaxAge: number
+  /** The signed-in family's members (for the "Votre famille" shortcuts). */
+  familyMembers: FamilyMemberLite[]
 }
 
-export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
 
   const toggleAge = (k: string) =>
@@ -43,8 +47,20 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
         className={`${v2FontVars} flex flex-col overflow-x-hidden`}
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
-        <HeroRedesign heroPosters={heroPosters} selectedKeys={selectedKeys} onToggleAge={toggleAge} />
-        <StickyAgeFilter selectedKeys={selectedKeys} onToggleAge={toggleAge} onClear={() => setSelectedKeys([])} />
+        <HeroRedesign
+          heroPosters={heroPosters}
+          selectedKeys={selectedKeys}
+          onToggleAge={toggleAge}
+          familyMembers={familyMembers}
+          isLoggedIn={isLoggedIn}
+        />
+        <StickyAgeFilter
+          selectedKeys={selectedKeys}
+          onToggleAge={toggleAge}
+          onClear={() => setSelectedKeys([])}
+          familyMembers={familyMembers}
+          isLoggedIn={isLoggedIn}
+        />
         <WeekendRail maxAge={weekendMaxAge} />
         <UpcomingRail />
         <CinemaRail maxAge={globalMaxAge} />
