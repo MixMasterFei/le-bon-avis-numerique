@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { getMemberAge } from "@/lib/age-utils"
-import { ageBucketKeyForAge } from "@/components/home-v2/apercuTheme"
 import { MemberMonogram } from "./MemberMonogram"
 import { memberColor } from "./family"
 
@@ -15,22 +14,22 @@ export interface FamilyMemberLite {
 }
 
 /**
- * "Votre famille sur mesure" — one chip per family member; clicking a member
- * activates the homepage age filter for their age band (maps to the same
- * selectedKeys the age chips use). When the visitor has no family (logged out
- * or no members yet), it shows a single "+" that leads to family creation — a
- * gentle nudge to sign up / build a profile.
+ * "Votre famille sur mesure" — one chip per family member. Selecting a member
+ * adapts the whole homepage to their age AND adds a personalized rail driven by
+ * their profile (genres, sensitivity, avoid topics — see PersonalizedRail).
+ * When the visitor has no family (logged out or no members yet), it shows a
+ * single "+" that leads to family creation — a gentle sign-up / profile nudge.
  */
 export function FamilyChips({
   members,
-  selectedKeys,
-  onToggleAge,
+  selectedMemberIds,
+  onToggleMember,
   isLoggedIn,
   size = "lg",
 }: {
   members: FamilyMemberLite[]
-  selectedKeys: string[]
-  onToggleAge: (key: string) => void
+  selectedMemberIds: string[]
+  onToggleMember: (member: FamilyMemberLite) => void
   isLoggedIn: boolean
   size?: "lg" | "sm"
 }) {
@@ -55,16 +54,14 @@ export function FamilyChips({
     <div className={compact ? "flex flex-wrap gap-1.5" : "flex flex-wrap gap-2"}>
       {members.map((m, idx) => {
         const age = getMemberAge(m.birthYear, m.birthMonth)
-        const bucketKey = age != null ? ageBucketKeyForAge(age) : null
-        const on = bucketKey ? selectedKeys.includes(bucketKey) : false
+        const on = selectedMemberIds.includes(m.id)
         const color = memberColor(idx)
         return (
           <button
             key={m.id}
             type="button"
             aria-pressed={on}
-            disabled={!bucketKey}
-            onClick={() => bucketKey && onToggleAge(bucketKey)}
+            onClick={() => onToggleMember(m)}
             className={`inline-flex items-center gap-1.5 rounded-full font-semibold transition-colors disabled:opacity-60 ${compact ? "py-1 pl-1 pr-2.5 text-[12px]" : "py-1.5 pl-1.5 pr-3 text-[13px]"}`}
             style={{
               background: on ? `${color}1A` : "var(--paper-2)",

@@ -17,10 +17,12 @@ interface HeroRedesignProps {
   selectedKeys: string[]
   onToggleAge: (key: string) => void
   familyMembers: FamilyMemberLite[]
+  selectedMemberIds: string[]
+  onToggleMember: (member: FamilyMemberLite) => void
   isLoggedIn: boolean
 }
 
-export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, isLoggedIn }: HeroRedesignProps) {
+export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn }: HeroRedesignProps) {
   const router = useRouter()
   const [q, setQ] = useState("")
 
@@ -134,7 +136,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
                 : "Créez votre famille pour des recommandations vraiment sur-mesure."}
             </p>
             <div className="mt-3">
-              <FamilyChips members={familyMembers} selectedKeys={selectedKeys} onToggleAge={onToggleAge} isLoggedIn={isLoggedIn} size="lg" />
+              <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="lg" />
             </div>
           </div>
         </div>

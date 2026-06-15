@@ -1,7 +1,6 @@
 "use client"
 
 import { X } from "lucide-react"
-import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
 
@@ -16,18 +15,22 @@ export function StickyAgeFilter({
   onToggleAge,
   onClear,
   familyMembers,
+  selectedMemberIds,
+  onToggleMember,
+  maxAge,
   isLoggedIn,
 }: {
   selectedKeys: string[]
   onToggleAge: (key: string) => void
   onClear: () => void
   familyMembers: FamilyMemberLite[]
+  selectedMemberIds: string[]
+  onToggleMember: (member: FamilyMemberLite) => void
+  /** Global cap (oldest selected band/member) for the bar label. */
+  maxAge?: number
   isLoggedIn: boolean
 }) {
-  if (selectedKeys.length === 0) return null
-
-  const selected = APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key))
-  const maxAge = selected.reduce((m, b) => Math.max(m, b.maxAge), 0)
+  if (selectedKeys.length === 0 && selectedMemberIds.length === 0) return null
 
   return (
     <div
@@ -36,11 +39,11 @@ export function StickyAgeFilter({
     >
       <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-2.5 sm:px-7">
         <span className="hidden whitespace-nowrap text-[12.5px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
-          Adapté · jusqu&apos;à {maxAge} ans
+          {typeof maxAge === "number" ? <>Adapté · jusqu&apos;à {maxAge} ans</> : "Filtré"}
         </span>
         <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
           {familyMembers.length > 0 && (
-            <FamilyChips members={familyMembers} selectedKeys={selectedKeys} onToggleAge={onToggleAge} isLoggedIn={isLoggedIn} size="sm" />
+            <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="sm" />
           )}
           <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
         </div>

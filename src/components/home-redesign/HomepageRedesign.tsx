@@ -3,9 +3,11 @@
 import { useState } from "react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
+import { getMemberAge } from "@/lib/age-utils"
 import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
 import { StickyAgeFilter } from "./StickyAgeFilter"
+import { PersonalizedRail } from "./PersonalizedRail"
 import { WeekendRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
 import { PlatformsSection } from "./PlatformsSection"
@@ -13,6 +15,12 @@ import { MethodeBand } from "./MethodeBand"
 import { FamilyNudge } from "./FamilyNudge"
 
 import type { FamilyMemberLite } from "./FamilyChips"
+
+/** Bucket maxAge that contains `age` — derives the global filter cap from a member. */
+function bucketMaxForAge(age: number): number {
+  for (const b of APERCU_AGE_BUCKETS) if (age <= b.maxAge) return b.maxAge
+  return APERCU_AGE_BUCKETS[APERCU_AGE_BUCKETS.length - 1].maxAge
+}
 
 interface HomepageRedesignProps {
   isLoggedIn: boolean
@@ -26,19 +34,31 @@ interface HomepageRedesignProps {
 
 export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
   const toggleAge = (k: string) =>
     setSelectedKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]))
 
-  // The selected band with the largest maxAge drives the week-end rail and,
-  // once any band is picked, the WHOLE homepage (all age-filterable rails show
-  // only content for that age and below). No selection → no global filter.
-  const selected = APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key))
-  const activeBucket = selected.length
-    ? selected.reduce((a, b) => (b.maxAge > a.maxAge ? b : a))
-    : null
-  const weekendMaxAge = activeBucket?.maxAge ?? defaultMaxAge
-  const globalMaxAge = activeBucket?.maxAge // undefined when nothing selected
+  const toggleMember = (m: FamilyMemberLite) =>
+    setSelectedMemberIds((prev) => (prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id]))
+
+  // Global age cap = oldest of everything selected (age bands + members' ages).
+  // Picking any band or member adapts the WHOLE homepage to that age and below;
+  // nothing selected → no filter.
+  const selectedMembers = familyMembers.filter((m) => selectedMemberIds.includes(m.id))
+  const caps: number[] = [
+    ...APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key)).map((b) => b.maxAge),
+    ...selectedMembers
+      .map((m) => getMemberAge(m.birthYear, m.birthMonth))
+      .filter((a): a is number => typeof a === "number")
+      .map(bucketMaxForAge),
+  ]
+  const globalMaxAge = caps.length ? Math.max(...caps) : undefined
+  const weekendMaxAge = globalMaxAge ?? defaultMaxAge
+
+  // Personalized rail heading: a single name, or "votre famille" for several.
+  const personalizedTitle =
+    selectedMembers.length === 1 ? selectedMembers[0].name : "votre famille"
 
   return (
     <FamilyFitProvider>
@@ -52,15 +72,25 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
           selectedKeys={selectedKeys}
           onToggleAge={toggleAge}
           familyMembers={familyMembers}
+          selectedMemberIds={selectedMemberIds}
+          onToggleMember={toggleMember}
           isLoggedIn={isLoggedIn}
         />
         <StickyAgeFilter
           selectedKeys={selectedKeys}
           onToggleAge={toggleAge}
-          onClear={() => setSelectedKeys([])}
+          onClear={() => { setSelectedKeys([]); setSelectedMemberIds([]) }}
           familyMembers={familyMembers}
+          selectedMemberIds={selectedMemberIds}
+          onToggleMember={toggleMember}
+          maxAge={globalMaxAge}
           isLoggedIn={isLoggedIn}
         />
+        {/* Preference-aware rail when a child is picked — quiz fit + age, like
+            the catalogue's "Adapter à". */}
+        {selectedMemberIds.length > 0 && (
+          <PersonalizedRail memberIds={selectedMemberIds} title={personalizedTitle} maxAge={globalMaxAge} />
+        )}
         <WeekendRail maxAge={weekendMaxAge} />
         <UpcomingRail />
         <CinemaRail maxAge={globalMaxAge} />
