@@ -16,12 +16,6 @@ import { FamilyNudge } from "./FamilyNudge"
 
 import type { FamilyMemberLite } from "./FamilyChips"
 
-/** Bucket maxAge that contains `age` — derives the global filter cap from a member. */
-function bucketMaxForAge(age: number): number {
-  for (const b of APERCU_AGE_BUCKETS) if (age <= b.maxAge) return b.maxAge
-  return APERCU_AGE_BUCKETS[APERCU_AGE_BUCKETS.length - 1].maxAge
-}
-
 interface HomepageRedesignProps {
   isLoggedIn: boolean
   /** Real family-friendly poster URLs for the hero wall (weekly set). */
@@ -42,23 +36,33 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
   const toggleMember = (m: FamilyMemberLite) =>
     setSelectedMemberIds((prev) => (prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id]))
 
-  // Global age cap = oldest of everything selected (age bands + members' ages).
-  // Picking any band or member adapts the WHOLE homepage to that age and below;
-  // nothing selected → no filter.
+  // Audience cap that adapts the WHOLE homepage:
+  //  - members selected → the YOUNGEST selected child's age, so a family
+  //    selection shows content everyone can actually watch (and each picked
+  //    member fits every card);
+  //  - only age bands → the oldest selected band;
+  //  - nothing → no filter.
   const selectedMembers = familyMembers.filter((m) => selectedMemberIds.includes(m.id))
-  const caps: number[] = [
-    ...APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key)).map((b) => b.maxAge),
-    ...selectedMembers
-      .map((m) => getMemberAge(m.birthYear, m.birthMonth))
-      .filter((a): a is number => typeof a === "number")
-      .map(bucketMaxForAge),
-  ]
-  const globalMaxAge = caps.length ? Math.max(...caps) : undefined
+  const memberAges = selectedMembers
+    .map((m) => getMemberAge(m.birthYear, m.birthMonth))
+    .filter((a): a is number => typeof a === "number")
+  const bandMax = APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key)).map((b) => b.maxAge)
+  const globalMaxAge = memberAges.length
+    ? Math.min(...memberAges)
+    : bandMax.length
+      ? Math.max(...bandMax)
+      : undefined
   const weekendMaxAge = globalMaxAge ?? defaultMaxAge
 
-  // Personalized rail heading: a single name, or "votre famille" for several.
+  // Shown in section titles so every rail visibly reflects the selection.
   const personalizedTitle =
     selectedMembers.length === 1 ? selectedMembers[0].name : "votre famille"
+  const audienceLabel =
+    selectedMembers.length === 1
+      ? `pour ${selectedMembers[0].name}`
+      : selectedMembers.length > 1
+        ? "pour votre famille"
+        : undefined
 
   return (
     <FamilyFitProvider>
@@ -91,13 +95,13 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {selectedMemberIds.length > 0 && (
           <PersonalizedRail memberIds={selectedMemberIds} title={personalizedTitle} maxAge={globalMaxAge} />
         )}
-        <WeekendRail maxAge={weekendMaxAge} />
+        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} />
         <UpcomingRail />
-        <CinemaRail maxAge={globalMaxAge} />
-        <CoupsDeCoeurRail maxAge={globalMaxAge} />
+        <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} />
+        <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} />
         <AgeGridRedesign />
-        <PlatformsSection maxAge={globalMaxAge} />
-        <GamesRail maxAge={globalMaxAge} />
+        <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} />
+        <GamesRail maxAge={globalMaxAge} audience={audienceLabel} />
         <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />

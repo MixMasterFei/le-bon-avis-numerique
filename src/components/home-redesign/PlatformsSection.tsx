@@ -20,7 +20,7 @@ const PROVIDERS: Provider[] = [
   { id: "canal", label: "Canal+", search: "Canal", filter: "Canal+", dot: "#111111" },
 ]
 
-export function PlatformsSection({ maxAge }: { maxAge?: number }) {
+export function PlatformsSection({ maxAge, audience }: { maxAge?: number; audience?: string }) {
   const [sel, setSel] = useState<Provider>(PROVIDERS[0])
   const [items, setItems] = useState<RedesignCardMedia[]>([])
   const [total, setTotal] = useState(0)
@@ -62,7 +62,7 @@ export function PlatformsSection({ maxAge }: { maxAge?: number }) {
       <Wrap>
         <SectionHead
           eyebrow="Ce soir"
-          title={<>Sur vos <Em tone="pine">plateformes</Em></>}
+          title={audience ? <>Sur vos <Em tone="pine">plateformes</Em> <Em tone="terra">· {audience}</Em></> : <>Sur vos <Em tone="pine">plateformes</Em></>}
           lead="Ce qui est dispo, là, maintenant — filtré par vos abonnements."
         />
         <div className="mb-6 flex flex-wrap gap-2.5">
