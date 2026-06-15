@@ -122,14 +122,18 @@ export function CardRailSection({
 }) {
   const ranked = useRankedByFit(items, rankByMemberIds)
 
-  if (!loading && items.length === 0 && !emptyText) return null
+  // "Empty" is based on the RANKED set: once a member is selected, member-fit
+  // filtering can legitimately drain a rail to zero — hide it rather than leave
+  // a heading over an empty row.
+  const isEmpty = !loading && ranked.length === 0
+  if (isEmpty && !emptyText) return null
   const rowClass = totem === "full" ? "v2-row-lg" : "v2-row"
   const fullTitle = audience ? <>{title} <Em tone="terra">· {audience}</Em></> : title
   return (
     <Band id={id} alt={alt}>
       <Wrap>
         <SectionHead eyebrow={eyebrow} title={fullTitle} lead={lead} action={action} onReload={onReload} />
-        {!loading && items.length === 0 ? (
+        {isEmpty ? (
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>{emptyText}</p>
         ) : (
           <div className={rowClass}>

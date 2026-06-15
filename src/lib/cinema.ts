@@ -63,6 +63,14 @@ function sortCinemaMovies(movies: TMDBMovie[]): TMDBMovie[] {
         cinemaReleaseBucketPriority(getCinemaReleaseBucket(a.movie.release_date)) -
         cinemaReleaseBucketPriority(getCinemaReleaseBucket(b.movie.release_date))
       if (bucketDelta !== 0) return bucketDelta
+      // Within a release bucket, surface the MAINSTREAM films first. TMDB's
+      // now_playing (region=FR) lists every title in French theaters — incl.
+      // tiny art-house — in an order that doesn't reflect box-office. Ranking
+      // by TMDB popularity brings the well-known releases to the top (closer to
+      // what mainstream French cinema listings show) and buries the obscure
+      // long-tail below the single visible row.
+      const popDelta = (b.movie.popularity ?? 0) - (a.movie.popularity ?? 0)
+      if (popDelta !== 0) return popDelta
       return a.index - b.index
     })
     .map(({ movie }) => movie)
@@ -206,5 +214,8 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
       }
       return movie
     })
+    // Drop old reissues ("reprises", e.g. a restored 1902 classic): they're
+    // technically "now playing" but read as obscure on a mainstream cinema rail.
+    .filter((movie) => movie.cinemaReleaseBucket !== "reissue")
     .filter((movie) => matchesAgeFilter(movie, filters))
 }
