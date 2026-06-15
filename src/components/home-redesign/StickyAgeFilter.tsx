@@ -65,7 +65,9 @@ export function StickyAgeFilter({
 
   return (
     <div
-      className="fixed inset-x-0 z-40 transition-transform duration-300 motion-reduce:transition-none"
+      // Desktop/tablet only — the sticky filter dashboard is hidden on phones
+      // (the hero filters remain the way to personalize on mobile).
+      className="fixed inset-x-0 z-40 hidden transition-transform duration-300 motion-reduce:transition-none sm:block"
       style={{
         top: topOffset,
         transform: `translateY(${visible ? "0" : "-130%"})`,
