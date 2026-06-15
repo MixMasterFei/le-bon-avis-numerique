@@ -59,8 +59,11 @@ export function PersonalizedRail({
         familyMemberIds: memberIds,
         mediaType: "MOVIE",
         limit: 12,
-        strictMode: false,
-        minScore: 55,
+        // ALL selected members must fit (family score = lowest member score),
+        // so a title that doesn't suit the youngest is excluded — not averaged
+        // away. maxAge is the youngest selected child's age (passed in).
+        strictMode: true,
+        minScore: 50,
         requirePoster: true,
         language: "fr,en",
         ...(typeof maxAge === "number" ? { maxAge } : {}),

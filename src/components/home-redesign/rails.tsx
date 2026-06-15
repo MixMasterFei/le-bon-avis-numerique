@@ -140,7 +140,7 @@ function useWeekend(maxAge: number) {
   return { quality, fresh, loading }
 }
 
-export function WeekendRail({ maxAge }: { maxAge: number }) {
+export function WeekendRail({ maxAge, audience, rankByMemberIds }: { maxAge: number; audience?: string; rankByMemberIds?: string[] }) {
   const { quality, fresh, loading } = useWeekend(maxAge)
   const [nonce, setNonce] = useState(0)
 
@@ -173,6 +173,8 @@ export function WeekendRail({ maxAge }: { maxAge: number }) {
       loading={loading}
       totem="full"
       showType
+      audience={audience}
+      rankByMemberIds={rankByMemberIds}
       onReload={() => setNonce((n) => n + 1)}
     />
   )
@@ -233,7 +235,7 @@ export function UpcomingRail() {
 }
 
 // ── À l'affiche au cinéma ──
-export function CinemaRail({ maxAge }: { maxAge?: number }) {
+export function CinemaRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/cinema${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "movies", "MOVIE")
   return (
@@ -245,12 +247,14 @@ export function CinemaRail({ maxAge }: { maxAge?: number }) {
       items={items.slice(0, 12)}
       loading={loading}
       totem="compact"
+      audience={audience}
+      rankByMemberIds={rankByMemberIds}
     />
   )
 }
 
 // ── Nos coups de cœur ──
-export function CoupsDeCoeurRail({ maxAge }: { maxAge?: number }) {
+export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/db/expert-picks?limit=10${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "items", "MOVIE")
   return (
@@ -265,12 +269,14 @@ export function CoupsDeCoeurRail({ maxAge }: { maxAge?: number }) {
       loading={loading}
       totem="full"
       showType
+      audience={audience}
+      rankByMemberIds={rankByMemberIds}
     />
   )
 }
 
 // ── Sortis récemment en jeux vidéo (self-hides < 3) ──
-export function GamesRail({ maxAge }: { maxAge?: number }) {
+export function GamesRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "games", "GAME")
   if (!loading && items.length < 3) return null
@@ -283,6 +289,8 @@ export function GamesRail({ maxAge }: { maxAge?: number }) {
       items={items.slice(0, 12)}
       loading={loading}
       totem="compact"
+      audience={audience}
+      rankByMemberIds={rankByMemberIds}
     />
   )
 }

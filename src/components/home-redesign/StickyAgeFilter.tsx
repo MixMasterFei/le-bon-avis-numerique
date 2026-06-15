@@ -59,39 +59,51 @@ export function StickyAgeFilter({
   }, [])
 
   const hasFilters = selectedKeys.length > 0 || selectedMemberIds.length > 0
-  const visible = scrolledPastHero && hasFilters
+  // Show the dashboard whenever the hero is scrolled past — "Effacer" only
+  // clears the selection, it doesn't dismiss the bar.
+  const visible = scrolledPastHero
 
   return (
     <div
-      className="fixed inset-x-0 z-40 border-b backdrop-blur-md transition-transform duration-300 motion-reduce:transition-none"
+      className="fixed left-1/2 z-40 transition-all duration-300 motion-reduce:transition-none"
       style={{
-        top: topOffset,
-        transform: visible ? "translateY(0)" : "translateY(-130%)",
-        background: "color-mix(in srgb, var(--paper) 92%, transparent)",
-        borderColor: "var(--line)",
-        boxShadow: "0 16px 32px -18px rgba(58,46,34,.5)",
+        top: topOffset + 10,
+        transform: `translateX(-50%) translateY(${visible ? "0" : "-160%"})`,
+        opacity: visible ? 1 : 0,
+        maxWidth: "calc(100vw - 24px)",
       }}
       aria-hidden={!visible}
       inert={!visible}
     >
-      <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-5 py-2.5 sm:px-7">
-        <span className="hidden whitespace-nowrap text-[12.5px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
-          {typeof maxAge === "number" ? <>Adapté · jusqu&apos;à {maxAge} ans</> : "Filtré"}
-        </span>
-        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
-          {familyMembers.length > 0 && (
-            <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="sm" />
-          )}
-          <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
-        </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="flex items-center gap-1 whitespace-nowrap text-[12.5px] font-bold transition-opacity hover:opacity-70"
-          style={{ color: "var(--terra)" }}
-        >
-          <X className="h-3.5 w-3.5" /> Effacer
-        </button>
+      {/* Rounded, content-width card — a floating filter dashboard, not a
+          full-bleed bar. */}
+      <div
+        className="flex items-center gap-2.5 overflow-x-auto rounded-full border px-3 py-2 backdrop-blur-md"
+        style={{
+          background: "color-mix(in srgb, var(--card) 94%, transparent)",
+          borderColor: "var(--line)",
+          boxShadow: "0 18px 40px -16px rgba(58,46,34,.55)",
+        }}
+      >
+        {hasFilters && typeof maxAge === "number" && (
+          <span className="hidden whitespace-nowrap pl-1 text-[12px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
+            jusqu&apos;à {maxAge} ans
+          </span>
+        )}
+        {familyMembers.length > 0 && (
+          <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="sm" />
+        )}
+        <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-bold transition-opacity hover:opacity-70"
+            style={{ color: "var(--terra)" }}
+          >
+            <X className="h-3.5 w-3.5" /> Effacer
+          </button>
+        )}
       </div>
     </div>
   )

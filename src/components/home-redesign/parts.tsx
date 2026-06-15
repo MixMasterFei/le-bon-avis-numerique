@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
+import { useRankedByFit } from "./useRankedByFit"
 
 /** Section band — alt bands use --paper-2 with hairline top/bottom borders. */
 export function Band({ id, alt, children }: { id?: string; alt?: boolean; children: React.ReactNode }) {
@@ -97,6 +98,8 @@ export function CardRailSection({
   totem = "compact",
   showType = false,
   emptyText,
+  audience,
+  rankByMemberIds,
 }: {
   id?: string
   alt?: boolean
@@ -110,13 +113,22 @@ export function CardRailSection({
   totem?: "compact" | "full"
   showType?: boolean
   emptyText?: string
+  /** When set (a child/family is selected), appended to the title so the rail
+   *  visibly reflects the filter, e.g. "… · pour Erwan". */
+  audience?: string
+  /** When set, re-orders the row by these members' family-fit so the child's
+   *  taste (not just their age) drives what shows first. */
+  rankByMemberIds?: string[]
 }) {
+  const ranked = useRankedByFit(items, rankByMemberIds)
+
   if (!loading && items.length === 0 && !emptyText) return null
   const rowClass = totem === "full" ? "v2-row-lg" : "v2-row"
+  const fullTitle = audience ? <>{title} <Em tone="terra">· {audience}</Em></> : title
   return (
     <Band id={id} alt={alt}>
       <Wrap>
-        <SectionHead eyebrow={eyebrow} title={title} lead={lead} action={action} onReload={onReload} />
+        <SectionHead eyebrow={eyebrow} title={fullTitle} lead={lead} action={action} onReload={onReload} />
         {!loading && items.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>{emptyText}</p>
         ) : (
@@ -127,7 +139,7 @@ export function CardRailSection({
               ? Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
                 ))
-              : items.map((m) => <RedesignCard key={m.id} media={m} totem={totem} showType={showType} />)}
+              : ranked.map((m) => <RedesignCard key={m.id} media={m} totem={totem} showType={showType} />)}
           </div>
         )}
       </Wrap>
