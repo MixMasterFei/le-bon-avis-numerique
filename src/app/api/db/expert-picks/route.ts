@@ -32,6 +32,11 @@ export async function GET(request: NextRequest) {
           NOT: {
             genres: { hasSome: ["Horreur", "Horror", "Thriller", "Erotique", "Adult"] },
           },
+          // Pre-publish trust gate: only feature titles whose ratings are
+          // trustworthy — enriched, and NOT explicitly low-confidence. (null
+          // confidence = legacy "non noté", allowed; only < 0.6 is excluded.)
+          isEnriched: true,
+          AND: [{ NOT: { contentMetrics: { enrichmentConfidence: { lt: 0.6 } } } }],
           OR: [
             {
               // Movies/TV: hard TMDB quality gate so hero cards always
