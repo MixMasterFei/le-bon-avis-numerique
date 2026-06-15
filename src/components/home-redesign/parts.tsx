@@ -121,7 +121,9 @@ export function CardRailSection({
           <p className="text-sm" style={{ color: "var(--ink-3)" }}>{emptyText}</p>
         ) : (
           <div className={rowClass}>
-            {loading
+            {/* Skeletons only on the FIRST load; on a filter change we keep the
+                current cards visible until the new set arrives (no empty flash). */}
+            {loading && items.length === 0
               ? Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: "var(--placeholder, #E6DFCE)" }} />
                 ))

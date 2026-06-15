@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
@@ -42,22 +42,47 @@ function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
   }
 }
 
+// Per-rail in-memory cache so re-selecting a filter is INSTANT (no refetch),
+// and a module-scoped cache survives remounts within the session.
+const RAIL_CACHE = new Map<string, RedesignCardMedia[]>()
+
 function useRail(url: string, key: string, fallbackType: CardType) {
-  const [items, setItems] = useState<RedesignCardMedia[]>([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `${key}@${url}`
+  const [items, setItems] = useState<RedesignCardMedia[]>(() => RAIL_CACHE.get(cacheKey) ?? [])
+  const [loading, setLoading] = useState(!RAIL_CACHE.has(cacheKey))
+  // Skeletons only on the very first load; after that, filter changes keep the
+  // current cards visible until the new set arrives (no empty flash).
+  const didInit = useRef(RAIL_CACHE.has(cacheKey))
+
   useEffect(() => {
+    const cached = RAIL_CACHE.get(cacheKey)
+    if (cached) {
+      // Instant: serve from cache (deferred to avoid a synchronous cascade).
+      didInit.current = true
+      queueMicrotask(() => {
+        setItems(cached)
+        setLoading(false)
+      })
+      return
+    }
+    // Not cached: keep the current cards visible while fetching (loading is
+    // already true on the very first load via useState; we don't re-raise it
+    // on filter changes, so there's no empty skeleton flash).
     let cancelled = false
     fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
         const arr = Array.isArray(data?.[key]) ? (data[key] as ApiMedia[]) : []
-        setItems(arr.map((m) => toCard(m, fallbackType)))
+        const mapped = arr.map((m) => toCard(m, fallbackType))
+        RAIL_CACHE.set(cacheKey, mapped)
+        setItems(mapped)
+        didInit.current = true
       })
-      .catch(() => { if (!cancelled) setItems([]) })
+      .catch(() => { if (!cancelled && !didInit.current) setItems([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [url, key, fallbackType])
+  }, [url, key, fallbackType, cacheKey])
   return { items, loading }
 }
 

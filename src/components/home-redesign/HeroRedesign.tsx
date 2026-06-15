@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import Link from "next/link"
 import { Search, Sparkles } from "lucide-react"
 import { Wrap, Em } from "./parts"
 import { AgeChips } from "./AgeChips"
+import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
 
 // Column drift durations (s) — slow, staggered, like the prototype.
 const DRIFT = [54, 63, 47, 71, 50, 67, 44, 58]
@@ -16,9 +16,11 @@ interface HeroRedesignProps {
   heroPosters: string[]
   selectedKeys: string[]
   onToggleAge: (key: string) => void
+  familyMembers: FamilyMemberLite[]
+  isLoggedIn: boolean
 }
 
-export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge }: HeroRedesignProps) {
+export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, isLoggedIn }: HeroRedesignProps) {
   const router = useRouter()
   const [q, setQ] = useState("")
 
@@ -119,18 +121,21 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge }: HeroRed
             </a>
           </form>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
-            Populaire :
-            {[
-              { label: "Films pour enfants", href: "/films?maxAge=7" },
-              { label: "Animation", href: "/films/recherche?genres=Animation" },
-              { label: "Aventure", href: "/films/recherche?genres=Aventure" },
-              { label: "Comédie", href: "/films/recherche?genres=Comédie" },
-            ].map((t) => (
-              <Link key={t.label} href={t.href} className="rounded-full px-[11px] py-[5px] font-semibold" style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink-2)" }}>
-                {t.label}
-              </Link>
-            ))}
+          {/* 2 · Votre famille sur mesure — member shortcuts (or a sign-up
+              nudge when there's no family yet). */}
+          <div className="mt-5 border-t pt-4" style={{ borderColor: "var(--line)" }}>
+            <div className="flex items-center gap-2.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
+              <span className="grid h-[22px] w-[22px] place-items-center rounded-full text-[12px] text-white" style={{ background: "var(--pine)" }}>2</span>
+              Votre famille sur mesure
+            </div>
+            <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+              {familyMembers.length > 0
+                ? "Cliquez sur un enfant pour adapter toute la page à son âge."
+                : "Créez votre famille pour des recommandations vraiment sur-mesure."}
+            </p>
+            <div className="mt-3">
+              <FamilyChips members={familyMembers} selectedKeys={selectedKeys} onToggleAge={onToggleAge} isLoggedIn={isLoggedIn} size="lg" />
+            </div>
           </div>
         </div>
       </Wrap>

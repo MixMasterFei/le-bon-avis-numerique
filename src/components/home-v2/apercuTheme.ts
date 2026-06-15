@@ -49,6 +49,14 @@ export const APERCU_AGE_BUCKETS: ApercuAgeBucket[] = [
   { key: "16+", maxAge: 18, label: "16+", name: "Jeunes adultes", color: "#D89AB0", caps: {} },
 ]
 
+/** The age-band key whose range contains `age` (smallest bucket where age ≤ maxAge). */
+export function ageBucketKeyForAge(age: number): string {
+  for (const b of APERCU_AGE_BUCKETS) {
+    if (age <= b.maxAge) return b.key
+  }
+  return APERCU_AGE_BUCKETS[APERCU_AGE_BUCKETS.length - 1].key
+}
+
 export function buildAgeBucketHref(bucket: ApercuAgeBucket): string {
   const params = new URLSearchParams({ maxAge: String(bucket.maxAge) })
   for (const [k, v] of Object.entries(bucket.caps)) {

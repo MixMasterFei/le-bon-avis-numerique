@@ -3,6 +3,7 @@
 import { X } from "lucide-react"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { AgeChips } from "./AgeChips"
+import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
 
 /**
  * Slim filter bar shown once age bands are selected. Placed right after the
@@ -14,10 +15,14 @@ export function StickyAgeFilter({
   selectedKeys,
   onToggleAge,
   onClear,
+  familyMembers,
+  isLoggedIn,
 }: {
   selectedKeys: string[]
   onToggleAge: (key: string) => void
   onClear: () => void
+  familyMembers: FamilyMemberLite[]
+  isLoggedIn: boolean
 }) {
   if (selectedKeys.length === 0) return null
 
@@ -33,7 +38,10 @@ export function StickyAgeFilter({
         <span className="hidden whitespace-nowrap text-[12.5px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
           Adapté · jusqu&apos;à {maxAge} ans
         </span>
-        <div className="min-w-0 flex-1 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto">
+          {familyMembers.length > 0 && (
+            <FamilyChips members={familyMembers} selectedKeys={selectedKeys} onToggleAge={onToggleAge} isLoggedIn={isLoggedIn} size="sm" />
+          )}
           <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="sm" />
         </div>
         <button

@@ -70,6 +70,19 @@ async function resolveFamilyAgeCap(userId: string): Promise<number | null> {
   }
 }
 
+/** Family members for the V2 hero "Votre famille sur mesure" shortcuts. */
+async function getFamilyMembersLite(userId: string) {
+  try {
+    return await prisma.familyMember.findMany({
+      where: { userId },
+      select: { id: true, name: true, birthYear: true, birthMonth: true },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+    })
+  } catch {
+    return []
+  }
+}
+
 export default async function HomePage({
   searchParams,
 }: {
@@ -87,13 +100,17 @@ export default async function HomePage({
   const showV2 = isAdmin && sp.v !== "classic"
 
   if (showV2) {
-    const heroPosters = await getHeroWallPosters(getWeekSeed())
+    const [heroPosters, familyMembers] = await Promise.all([
+      getHeroWallPosters(getWeekSeed()),
+      session?.user?.id ? getFamilyMembersLite(session.user.id) : Promise.resolve([]),
+    ])
     return (
       <>
         <HomepageRedesign
           isLoggedIn={isLoggedIn}
           heroPosters={heroPosters}
           defaultMaxAge={maxAgeCap ?? 12}
+          familyMembers={familyMembers}
         />
         <AdminVariantToggle variant="v2" />
       </>
