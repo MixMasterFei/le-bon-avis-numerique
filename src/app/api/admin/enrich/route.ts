@@ -477,6 +477,8 @@ export async function POST(request: NextRequest) {
       limit = 10, // How many to process at once
       onlyMissing = true, // Only enrich items without contentMetrics
       onlyLegacy = false, // Only re-enrich items missing v2 fields (toneTags empty)
+      recalibrate = false, // Re-enrich already-enriched items whose scores look
+                           // over-calibrated under the old rubric (see below)
     } = body
 
     if (!process.env.OPENAI_API_KEY) {
@@ -529,7 +531,42 @@ export async function POST(request: NextRequest) {
 
     // Build where clause based on mode
     let whereClause
-    if (onlyLegacy) {
+    if (recalibrate) {
+      // Re-enrich already-enriched items whose scores look over-calibrated
+      // under the OLD rubric (no cartoon discount). Targets the cluster the
+      // rating audit flags: curated ≤12 but a sensibility axis still ≥4, OR
+      // every sensibility axis = 0 (likely a failed/empty pass). As items are
+      // re-scored under the new rubric they fall out of this filter, so
+      // repeated batches drain it; oldest-touched first so it terminates.
+      // Staleness guard: skip items touched in the last 3 days so a run (and
+      // the nightly cron) terminates — a freshly re-scored item won't be
+      // re-picked, and a legitimately-high title only re-cycles every few days
+      // at most instead of being re-processed every batch.
+      const recalCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      whereClause = {
+        ...typeFilter,
+        isEnriched: true,
+        updatedAt: { lt: recalCutoff },
+        OR: [
+          {
+            expertAgeRec: { not: null, lte: 12 },
+            contentMetrics: {
+              OR: [
+                { violence: { gte: 4 } },
+                { sexNudity: { gte: 4 } },
+                { language: { gte: 4 } },
+                { substanceUse: { gte: 4 } },
+              ],
+            },
+          },
+          {
+            contentMetrics: {
+              is: { violence: 0, sexNudity: 0, language: 0, substanceUse: 0 },
+            },
+          },
+        ],
+      }
+    } else if (onlyLegacy) {
       // Re-enrich items that have metrics but missing v2 fields
       whereClause = {
         ...typeFilter,
@@ -565,9 +602,11 @@ export async function POST(request: NextRequest) {
     const items = await prisma.mediaItem.findMany({
       where: whereClause,
       include: { contentMetrics: true },
-      orderBy: onlyLegacy
-        ? { tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }
-        : { createdAt: "desc" },
+      orderBy: recalibrate
+        ? { updatedAt: "asc" as const } // oldest-touched first → drains + terminates
+        : onlyLegacy
+          ? { tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }
+          : { createdAt: "desc" },
       take: Math.min(limit, 50), // Max 50 at a time
     })
 
@@ -586,8 +625,9 @@ export async function POST(request: NextRequest) {
 
     for (const item of items) {
       try {
-        // Skip if already has metrics and onlyMissing is true
-        if (onlyMissing && !onlyLegacy && item.contentMetrics) {
+        // Skip if already has metrics and onlyMissing is true (but recalibrate
+        // deliberately re-processes already-enriched items).
+        if (onlyMissing && !onlyLegacy && !recalibrate && item.contentMetrics) {
           result.skipped++
           continue
         }
