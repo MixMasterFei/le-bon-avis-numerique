@@ -62,6 +62,8 @@ export const methodeSections: MethodeSection[] = [
     title: "Les métriques de contenu (0–5)",
     content: [
       "Chaque contenu est noté sur 8 dimensions, une échelle de 0 à 5. Violence, sexe et nudité, langage, substances, consumérisme pour les éléments sensibles ; messages positifs, modèles positifs et valeur éducative pour les apports positifs.",
+      "Ces repères sont calibrés pour une sensibilité familiale : une scène d'action stylisée (dessin animé, fantastique) ne pèse pas comme une scène réaliste équivalente, et les niveaux restent cohérents avec l'âge conseillé — un contenu conseillé dès 6–8 ans n'affiche pas de niveau élevé sur un axe sensible. L'âge conseillé reste le signal principal ; les niveaux de contenu sont des repères de vigilance (« y a-t-il un point à surveiller ? »), pas une note de sévérité au point près. La fiche détaille le 0 à 5 ; les vues rapides n'en gardent que l'essentiel.",
+      "Pour les jeux vidéo, on met en avant les deux repères qui comptent le plus pour les parents : la violence et les achats intégrés (microtransactions).",
       "Comme les recommandations d'âge, ces scores démarrent en analyse automatisée. Les dimensions évaluables par les parents sont ensuite recalibrées par les familles qui notent elles-mêmes le contenu. Vous pouvez proposer vos propres scores depuis la fiche via « Évaluer ce contenu » — quand assez de parents contribuent, les scores communautaires remplacent progressivement les estimations initiales.",
     ],
   },
