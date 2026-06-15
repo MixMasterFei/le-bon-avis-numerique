@@ -117,6 +117,58 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
       .catch(() => 0),
   ])
 
+  // ── Rating-quality audit (trust watchdog) ──────────────────────────
+  // The site's value is the trustworthiness of its ratings, so we surface
+  // structural rating problems the other sections don't catch. All deterministic
+  // (no LLM). The recalibrate cron drains `ratingOverScored`; a non-zero
+  // `ratingIncoherentYoung` is a regression (should stay ~0 post-backfill).
+  const SENS = ["violence", "sexNudity", "language", "substanceUse"] as const
+  const [
+    ratingIncoherentYoung,
+    ratingOverScored,
+    ratingAllZero,
+    ratingLowConfidence,
+    ratingDocViolent,
+  ] = await Promise.all([
+    // ≤8 curated but a sensibility axis still ≥3 — the display anchor + backfill
+    // should keep this at 0; if not, something re-inflated young titles.
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, type: SCOPED_NOT, expertAgeRec: { not: null, lte: 8 },
+        contentMetrics: { OR: SENS.map((k) => ({ [k]: { gte: 3 } })) },
+      },
+    }).catch(() => 0),
+    // ≤12 curated with an axis ≥4 — the over-scored cluster the recalibrate cron
+    // is draining. Trends to ~0 over time.
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, type: SCOPED_NOT, expertAgeRec: { not: null, lte: 12 },
+        contentMetrics: { OR: SENS.map((k) => ({ [k]: { gte: 4 } })) },
+      },
+    }).catch(() => 0),
+    // Enriched video with every sensibility axis 0 — likely a failed/empty pass.
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, type: { in: [...VIDEO] },
+        contentMetrics: { is: { violence: 0, sexNudity: 0, language: 0, substanceUse: 0 } },
+      },
+    }).catch(() => 0),
+    // Enriched but low-confidence scores (excludes legacy null = "non noté").
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, type: SCOPED_NOT,
+        contentMetrics: { is: { enrichmentConfidence: { lt: 0.6, not: null } } },
+      },
+    }).catch(() => 0),
+    // Genre sanity: documentaries flagged very violent (usually real, but spot-check).
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, genres: { hasSome: ["Documentaire", "Documentary"] },
+        contentMetrics: { is: { violence: { gte: 4 } } },
+      },
+    }).catch(() => 0),
+  ])
+
   // Unenriched, MANGA excluded — recompute from the per-type breakdown.
   const unenrichedByTypeScoped = kpis.catalogUnenrichedByType.filter((r) => r.type !== "MANGA")
   const catalogUnenrichedScoped = unenrichedByTypeScoped.reduce((s, r) => s + r.count, 0)
@@ -179,6 +231,14 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Enrichies mais sans topics (jeunesse, hors titres 14+) : ${noTopics}`)
   L.push("")
 
+  L.push("## Qualité des notations (confiance du site)", "")
+  L.push(`- ⚠ Jeunesse (≤8) avec un axe sensibilité ≥3 — devrait être 0 : ${ratingIncoherentYoung}`)
+  L.push(`- Sur-notées (≤12 avec un axe ≥4) — drainées par la recalibration : ${ratingOverScored}`)
+  L.push(`- Vidéos enrichies tout à 0 (passe ratée probable) : ${ratingAllZero}`)
+  L.push(`- Notations à faible confiance (< 0,6) : ${ratingLowConfidence}`)
+  L.push(`- Documentaires notés très violents (à vérifier) : ${ratingDocViolent}`)
+  L.push("")
+
   L.push("## File éditoriale", "")
   L.push(`- Corrections en attente : ${kpis.correctionsPending}`)
   L.push(`- Demandes de contenu : ${kpis.requestsPending}`)
@@ -214,6 +274,12 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   }
   if (noTopics > 20) {
     agentTodo.push(`Vérifier pourquoi ${noTopics} fiches jeunesse enrichies n'ont aucun topic (re-enrichissement à lancer ? vocabulaire trop étroit ?).`)
+  }
+  if (ratingIncoherentYoung > 0) {
+    agentTodo.push(`RÉGRESSION notations : ${ratingIncoherentYoung} fiches ≤8 ans portent un axe sensibilité ≥3 — relancer scripts/recalibrate-young-ratings.ts + vérifier le garde-fou clampMetricsByAge.`)
+  }
+  if (ratingAllZero > 50) {
+    agentTodo.push(`${ratingAllZero} vidéos enrichies ont toutes leurs métriques à 0 — passes ratées probables, à recalibrer (task=recalibrate-ratings).`)
   }
   if (agentTodo.length === 0) agentTodo.push("Rien à corriger côté code cette semaine.")
   for (const t of agentTodo) L.push(`- ${t}`)

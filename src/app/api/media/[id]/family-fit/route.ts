@@ -16,13 +16,17 @@ import {
   computeWeightedFitScore,
   DARK_TONES,
   DEFAULT_FIT_METRICS,
+  finalizeDetailPageFit,
   GENTLE_TONES,
   hasRichProfile,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   isFamilyWarningContent,
+  qualifiesForPositiveContentCopy,
   type FitLevel,
+  type FitMetrics,
 } from "@/lib/family-fit-score"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 import {
   ageVerdictFromAges,
   legacyLevelFromPillars,
@@ -103,6 +107,81 @@ function preferenceVerdictFromPillar(
   return { pillar, label: PREFERENCE_PILLAR_LABELS[pillar], reasons }
 }
 
+function detailMetricsBlock(
+  metrics: typeof DEFAULT_FIT_METRICS,
+  toneTags: string[],
+) {
+  return {
+    positiveMessages: metrics.positiveMessages,
+    roleModels: metrics.roleModels,
+    violence: metrics.violence,
+    sexNudity: metrics.sexNudity,
+    toneTags,
+  }
+}
+
+function applyDetailPagePresentation(input: {
+  level: FitLevel
+  reason: string
+  memberAge: number | null
+  expertAgeRec: number | null
+  mediaGenres: string[]
+  metrics: ReturnType<typeof detailMetricsBlock>
+  maturePenaltySeverity: "block" | "caution" | null
+  positiveScore: number
+  contentAnalysisHidden: boolean
+  ageVerdict: AgeVerdict
+  prefPillar: PreferencePillar
+  prefReasons: string[]
+}): {
+  level: FitLevel
+  reason: string
+  ageVerdict: AgeVerdict
+  preferenceVerdict: PreferenceVerdict
+} {
+  const finalized = finalizeDetailPageFit({
+    level: input.level,
+    reason: input.reason,
+    memberAge: input.memberAge,
+    expertAgeRec: input.expertAgeRec,
+    mediaGenres: input.mediaGenres,
+    metrics: input.metrics,
+    maturePenaltySeverity: input.maturePenaltySeverity,
+    positiveScore: input.positiveScore,
+    contentAnalysisHidden: input.contentAnalysisHidden,
+  })
+
+  let ageVerdict = input.ageVerdict
+  let prefPillar = input.prefPillar
+  const prefReasons = [...input.prefReasons]
+
+  if (finalized.reason !== input.reason) {
+    if (
+      input.expertAgeRec != null &&
+      input.memberAge != null &&
+      input.expertAgeRec > input.memberAge
+    ) {
+      ageVerdict = ageVerdictFromAges(input.memberAge, input.expertAgeRec)
+    }
+    if (finalized.level === "poor" && finalized.reason.includes("Pas pour ce profil")) {
+      prefPillar = "avoid"
+      prefReasons.unshift(finalized.reason)
+    } else if (finalized.level === "moderate" || finalized.level === "poor") {
+      prefPillar = "check"
+      if (!prefReasons.some((r) => r === finalized.reason)) {
+        prefReasons.unshift(finalized.reason)
+      }
+    }
+  }
+
+  return {
+    level: finalized.level,
+    reason: finalized.reason,
+    ageVerdict,
+    preferenceVerdict: preferenceVerdictFromPillar(prefPillar, prefReasons),
+  }
+}
+
 function buildReason(
   ageScore: number,
   sensitivityScore: number,
@@ -113,8 +192,15 @@ function buildReason(
   positiveScore: number,
   memberAge: number | null,
   expertAgeRec: number | null,
-  toneTags: string[]
+  toneTags: string[],
+  metrics: Pick<FitMetrics, "positiveMessages" | "roleModels" | "violence" | "toneTags">,
+  mediaGenres: string[],
+  contentAnalysisHidden: boolean,
 ): string {
+  if (contentAnalysisHidden) {
+    return "Sortie à venir — repère provisoire, à revalider"
+  }
+
   const parts: string[] = []
 
   // Avoided topic is the most critical flag
@@ -163,8 +249,8 @@ function buildReason(
     parts.push("correspond à ses centres d'intérêt")
   }
 
-  // Positive content
-  if (positiveScore >= 0.8) {
+  // Positive content — only when metrics, tone and genre all align
+  if (qualifiesForPositiveContentCopy(positiveScore, metrics, mediaGenres)) {
     parts.push("contenu éducatif/positif apprécié")
   }
 
@@ -232,6 +318,14 @@ export async function GET(
     })
 
     const metrics = media.contentMetrics ?? DEFAULT_FIT_METRICS
+    const toneTags = (metrics.toneTags ?? []) as string[]
+
+    const contentAnalysisHidden = shouldHideContentAnalysis({
+      releaseDate: media.releaseDate,
+      isEnriched: media.isEnriched,
+      expertAgeRec: media.expertAgeRec,
+      releaseStatus: media.releaseStatus,
+    })
 
     // Family warning for mature/violent/horror content when household has minors
     let isFamilyWarning = false
@@ -417,6 +511,20 @@ export async function GET(
           affinityScore,
         })
         const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
+        const detail = applyDetailPagePresentation({
+          level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
+          reason,
+          memberAge,
+          expertAgeRec: media.expertAgeRec,
+          mediaGenres: media.genres,
+          metrics: detailMetricsBlock(metrics, toneTags),
+          maturePenaltySeverity: maturePenalty.severity,
+          positiveScore: 0.5,
+          contentAnalysisHidden,
+          ageVerdict,
+          prefPillar,
+          prefReasons,
+        })
         return {
           id: member.id,
           name: member.name,
@@ -426,10 +534,10 @@ export async function GET(
           avatarOptions: member.avatarOptions as Record<string, unknown> | null,
           age: memberAge,
           score: guardrails.score,
-          level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
-          reason,
-          ageVerdict,
-          preferenceVerdict,
+          level: detail.level,
+          reason: detail.reason,
+          ageVerdict: detail.ageVerdict,
+          preferenceVerdict: detail.preferenceVerdict,
           hasPreferences,
           affinity,
         }
@@ -531,7 +639,15 @@ export async function GET(
         positiveScore,
         memberAge,
         media.expertAgeRec,
-        (metrics.toneTags ?? []) as string[]
+        toneTags,
+        {
+          positiveMessages: metrics.positiveMessages,
+          roleModels: metrics.roleModels,
+          violence: metrics.violence,
+          toneTags,
+        },
+        media.genres,
+        contentAnalysisHidden,
       )
 
       // Override reason if mature content penalty is the dominant factor
@@ -567,6 +683,20 @@ export async function GET(
         affinityScore,
       })
       const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
+      const detail = applyDetailPagePresentation({
+        level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
+        reason,
+        memberAge,
+        expertAgeRec: media.expertAgeRec,
+        mediaGenres: media.genres,
+        metrics: detailMetricsBlock(metrics, toneTags),
+        maturePenaltySeverity: maturePenalty.severity,
+        positiveScore,
+        contentAnalysisHidden,
+        ageVerdict,
+        prefPillar,
+        prefReasons,
+      })
       return {
         id: member.id,
         name: member.name,
@@ -576,10 +706,10 @@ export async function GET(
         avatarOptions: member.avatarOptions as Record<string, unknown> | null,
         age: memberAge,
         score: guardrails.score,
-        level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
-        reason,
-        ageVerdict,
-        preferenceVerdict,
+        level: detail.level,
+        reason: detail.reason,
+        ageVerdict: detail.ageVerdict,
+        preferenceVerdict: detail.preferenceVerdict,
         hasPreferences,
         affinity,
       }

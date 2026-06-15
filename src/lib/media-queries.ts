@@ -188,6 +188,21 @@ function applyContentMetricCaps(
   appendAnd(where, { contentMetrics: metricFilter })
 }
 
+/**
+ * Pre-publish trust gate for FEATURED surfaces (homepage rails, expert picks):
+ * only surface titles whose ratings are trustworthy — enriched, and NOT
+ * explicitly low-confidence. null confidence (legacy "non noté") is allowed;
+ * only an explicit < 0.6 is excluded. Keeps the riskiest data off the
+ * highest-visibility cards. Not applied to plain browse/search.
+ */
+function applyTrustGate(where: Prisma.MediaItemWhereInput) {
+  appendAnd(
+    where,
+    { isEnriched: true },
+    { NOT: { contentMetrics: { enrichmentConfidence: { lt: 0.6 } } } },
+  )
+}
+
 function applySearchFilter(where: Prisma.MediaItemWhereInput, search?: string, includeOriginalTitle = true) {
   if (!search) return
   const orConditions: Prisma.MediaItemWhereInput[] = [
@@ -292,6 +307,7 @@ export async function fetchMovies(filters: MediaQueryFilters = {}): Promise<Medi
       { expertAgeRec: { not: null } },
       { originalLanguage: { in: ["fr", "en"] } },
     )
+    applyTrustGate(where)
   }
 
   // Language
@@ -404,6 +420,7 @@ export async function fetchSeries(filters: MediaQueryFilters = {}): Promise<Medi
   if (filters.featured) {
     where.dataQualityScore = { gte: 50 }
     appendAnd(where, { originalLanguage: { in: ["fr", "en"] } })
+    applyTrustGate(where)
   }
 
   applyLanguageFilter(where, filters.language, filters.frenchOnly)
@@ -494,6 +511,7 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
 
   if (filters.featured) {
     where.dataQualityScore = { gte: 50 }
+    applyTrustGate(where)
   }
 
   // Console platform filter (default: on)
