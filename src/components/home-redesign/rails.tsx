@@ -220,7 +220,6 @@ export function UpcomingRail() {
           eyebrow="Bientôt"
           title={<>Les <Em tone="pine">prochaines sorties</Em> à surveiller</>}
           lead="Anticipez vos prochaines séances. L'âge affiché est une estimation, précisée après la sortie."
-          action={{ label: "Tout le calendrier", href: "/films" }}
         />
         <div className="v2-row-up">
           {loading
