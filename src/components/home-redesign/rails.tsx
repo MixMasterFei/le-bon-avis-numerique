@@ -208,8 +208,9 @@ export function UpcomingRail() {
 }
 
 // ── À l'affiche au cinéma ──
-export function CinemaRail() {
-  const { items, loading } = useRail("/api/cinema", "movies", "MOVIE")
+export function CinemaRail({ maxAge }: { maxAge?: number }) {
+  const url = `/api/cinema${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
+  const { items, loading } = useRail(url, "movies", "MOVIE")
   return (
     <CardRailSection
       id="cinema"
@@ -224,8 +225,9 @@ export function CinemaRail() {
 }
 
 // ── Nos coups de cœur ──
-export function CoupsDeCoeurRail() {
-  const { items, loading } = useRail("/api/db/expert-picks?limit=10", "items", "MOVIE")
+export function CoupsDeCoeurRail({ maxAge }: { maxAge?: number }) {
+  const url = `/api/db/expert-picks?limit=10${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
+  const { items, loading } = useRail(url, "items", "MOVIE")
   return (
     <CardRailSection
       alt
@@ -243,12 +245,9 @@ export function CoupsDeCoeurRail() {
 }
 
 // ── Sortis récemment en jeux vidéo (self-hides < 3) ──
-export function GamesRail() {
-  const { items, loading } = useRail(
-    "/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20",
-    "games",
-    "GAME",
-  )
+export function GamesRail({ maxAge }: { maxAge?: number }) {
+  const url = `/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
+  const { items, loading } = useRail(url, "games", "GAME")
   if (!loading && items.length < 3) return null
   return (
     <CardRailSection

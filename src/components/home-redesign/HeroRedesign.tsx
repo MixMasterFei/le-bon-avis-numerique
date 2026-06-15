@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import Link from "next/link"
 import { Search, Sparkles } from "lucide-react"
-import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { Wrap, Em } from "./parts"
+import { AgeChips } from "./AgeChips"
 
 // Column drift durations (s) — slow, staggered, like the prototype.
 const DRIFT = [54, 63, 47, 71, 50, 67, 44, 58]
@@ -95,27 +95,8 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge }: HeroRed
             Les âges de vos enfants&nbsp;?
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2.5">
-            {APERCU_AGE_BUCKETS.map((b) => {
-              const on = selectedKeys.includes(b.key)
-              return (
-                <button
-                  key={b.key}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => onToggleAge(b.key)}
-                  className="flex flex-col items-center rounded-full px-[18px] py-[10px] text-center leading-tight transition-colors"
-                  style={{
-                    border: `1.5px solid ${on ? "var(--pine)" : "var(--line)"}`,
-                    background: on ? "var(--pine)" : "var(--paper-2)",
-                    color: on ? "#fff" : "var(--ink)",
-                  }}
-                >
-                  <span className="whitespace-nowrap text-[14.5px] font-bold">{b.label} ans</span>
-                  <span className="text-[11.5px] font-semibold" style={{ color: on ? "rgba(255,255,255,.72)" : "var(--ink-3)" }}>{b.name}</span>
-                </button>
-              )
-            })}
+          <div className="mt-3">
+            <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="lg" />
           </div>
 
           <form onSubmit={onSubmit} className="mt-[18px] flex items-center gap-3">

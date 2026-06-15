@@ -20,17 +20,21 @@ const PROVIDERS: Provider[] = [
   { id: "canal", label: "Canal+", search: "Canal", filter: "Canal+", dot: "#111111" },
 ]
 
-export function PlatformsSection() {
+export function PlatformsSection({ maxAge }: { maxAge?: number }) {
   const [sel, setSel] = useState<Provider>(PROVIDERS[0])
   const [items, setItems] = useState<RedesignCardMedia[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
+  // Family-oriented section: default cap 12; when the homepage age filter is
+  // active, follow it.
+  const cap = typeof maxAge === "number" ? maxAge : 12
+
   useEffect(() => {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    fetch(`/api/db/streaming?provider=${encodeURIComponent(sel.search)}&limit=12&maxAge=12&type=SUBSCRIPTION&shuffle=weekly&language=fr,en`)
+    fetch(`/api/db/streaming?provider=${encodeURIComponent(sel.search)}&limit=12&maxAge=${cap}&type=SUBSCRIPTION&shuffle=weekly&language=fr,en`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
@@ -51,7 +55,7 @@ export function PlatformsSection() {
       .catch(() => { if (!cancelled) { setItems([]); setTotal(0) } })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [sel])
+  }, [sel, cap])
 
   return (
     <Band alt id="streaming">
