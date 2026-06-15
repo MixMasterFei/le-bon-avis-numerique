@@ -65,29 +65,26 @@ export function StickyAgeFilter({
 
   return (
     <div
-      className="fixed inset-x-0 z-40 px-3 transition-all duration-300 motion-reduce:transition-none"
+      className="fixed inset-x-0 z-40 transition-transform duration-300 motion-reduce:transition-none"
       style={{
-        top: topOffset + 10,
-        transform: `translateY(${visible ? "0" : "-160%"})`,
-        opacity: visible ? 1 : 0,
+        top: topOffset,
+        transform: `translateY(${visible ? "0" : "-130%"})`,
+        background: "color-mix(in srgb, var(--card) 92%, transparent)",
+        borderBottom: "1px solid var(--line)",
+        boxShadow: "0 16px 32px -20px rgba(58,46,34,.45)",
+        backdropFilter: "saturate(140%) blur(12px)",
+        WebkitBackdropFilter: "saturate(140%) blur(12px)",
       }}
       aria-hidden={!visible}
       inert={!visible}
     >
-      {/* Rounded, content-width card — a floating filter dashboard. Centered via
-          mx-auto (NOT a translateX hack, which overflowed on mobile); `w-fit`
-          keeps it compact on desktop while `max-w-full` + `overflow-x-auto` let
-          the chips scroll inside the viewport on phones instead of pushing the
-          page sideways. */}
-      <div
-        className="mx-auto flex w-fit max-w-full items-center gap-1.5 overflow-x-auto rounded-full border px-3 py-2 backdrop-blur-md sm:gap-2.5"
-        style={{
-          background: "color-mix(in srgb, var(--card) 94%, transparent)",
-          borderColor: "var(--line)",
-          boxShadow: "0 18px 40px -16px rgba(58,46,34,.55)",
-        }}
-      >
-        {hasFilters && typeof maxAge === "number" && (
+      {/* Full-bleed bar flush under the header (same pattern as the media page's
+          MediaDashboardBar) — page-wide and connected. Content is centered via
+          `mx-auto w-max`, which degrades to a left-anchored horizontal scroll on
+          phones when the chips don't fit (no clipped start, no page overflow). */}
+      <div className="overflow-x-auto px-4 py-2.5">
+        <div className="mx-auto flex w-max items-center gap-1.5 sm:gap-2.5">
+          {hasFilters && typeof maxAge === "number" && (
           <span className="hidden shrink-0 whitespace-nowrap pl-1 text-[12px] font-bold sm:inline" style={{ color: "var(--ink-2)" }}>
             jusqu&apos;à {maxAge} ans
           </span>
@@ -110,6 +107,7 @@ export function StickyAgeFilter({
             <X className="h-3.5 w-3.5" /> Effacer
           </button>
         )}
+        </div>
       </div>
     </div>
   )
