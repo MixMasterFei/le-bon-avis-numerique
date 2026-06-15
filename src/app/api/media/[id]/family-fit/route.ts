@@ -289,7 +289,7 @@ export async function GET(
     // cards stay in the same sequence as the homepage rail.
     const familyMembers = await prisma.familyMember.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
     })
 
     if (familyMembers.length === 0) {

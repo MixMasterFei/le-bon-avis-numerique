@@ -218,10 +218,10 @@ describe("computeGenreScore disliked-genre handling", () => {
     expect(computeGenreScore(["Racing"], ["Course"], [])).toBe(1)
   })
 
-  it("respects FR dislikes against EN catalog tags too", () => {
-    // Symmetric to the favorites path — disliking "Stratégie" must still
-    // hard-zero a "Strategy" game.
-    expect(computeGenreScore(["Strategy"], [], ["Stratégie"])).toBe(0)
+  it("soft-penalizes FR dislikes against EN catalog tags (not hard-zero)", () => {
+    const score = computeGenreScore(["Strategy"], [], ["Stratégie"])
+    expect(score).toBeGreaterThan(0)
+    expect(score).toBeLessThan(0.5)
   })
 
   it("soft-penalizes a non-mature dislike when the title is family-friendly", () => {
@@ -239,14 +239,13 @@ describe("computeGenreScore disliked-genre handling", () => {
     expect(score).toBeLessThan(1)
   })
 
-  it("still hard-rejects a non-mature dislike when the title has no family marker", () => {
-    // Marriage Story (Drame, Romance) on a kid who dislikes Drame — no
-    // Animation/Familial marker, so the dislike is on a primary signal.
-    // Stays a hard reject.
-    expect(computeGenreScore(["Drame", "Romance"], ["Comédie"], ["Drame"])).toBe(0)
+  it("soft-penalizes Drame even on a primary drama title (no hard reject)", () => {
+    const score = computeGenreScore(["Drame", "Romance"], ["Comédie"], ["Drame"])
+    expect(score).toBeGreaterThan(0)
+    expect(score).toBeLessThan(0.5)
   })
 
-  it("hard-rejects mature dislikes regardless of family marker", () => {
+  it("still hard-rejects mature dislikes regardless of family marker", () => {
     // Horror is load-bearing — even an animated horror short still gets
     // hard-rejected when the kid said "no scary stuff".
     expect(computeGenreScore(["Animation", "Horreur"], ["Animation"], ["Horreur"])).toBe(0)

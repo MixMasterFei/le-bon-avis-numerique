@@ -1,3 +1,5 @@
+import { dislikedGenresForHardExclusion } from "@/lib/disliked-genres"
+
 // Pure helpers used by /api/recommendations/family — extracted so they can be
 // unit-tested without spinning up Prisma or the auth stack.
 
@@ -25,7 +27,9 @@ export function buildFamilyRecsFilters(input: FamilyRecsWhereInput): FamilyRecsW
     ? { expertAgeRec: { lte: input.youngestAge } }
     : {}
 
-  const dislikedArr = Array.from(new Set(input.dislikedGenres))
+  const dislikedArr = dislikedGenresForHardExclusion(
+    Array.from(new Set(input.dislikedGenres)),
+  )
   const avoidArr = Array.from(new Set(input.avoidTopics))
 
   if (dislikedArr.length === 0 && avoidArr.length === 0) {

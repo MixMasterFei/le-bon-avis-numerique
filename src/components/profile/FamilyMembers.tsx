@@ -23,6 +23,8 @@ import {
   Sliders,
   Sparkles,
   User,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react"
 import { MemberPreferencesModal } from "./MemberPreferencesModal"
 import { formatAgeFromBirthYear } from "@/lib/utils"
@@ -186,6 +188,28 @@ export function FamilyMembers() {
     setFormData({ name: "", birthYear: "", avatarEmoji: "👧" })
   }
 
+  // Reorder card priority: members shown first fill the limited card slots;
+  // the rest collapse into the "+N" overflow. Optimistic, persisted to
+  // /api/user/family/reorder (sets displayOrder = index).
+  const moveMember = async (index: number, dir: -1 | 1) => {
+    const target = index + dir
+    if (target < 0 || target >= members.length) return
+    const prev = members
+    const next = [...members]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setMembers(next)
+    try {
+      const res = await fetch("/api/user/family/reorder", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds: next.map((m) => m.id) }),
+      })
+      if (!res.ok) throw new Error("reorder failed")
+    } catch {
+      setMembers(prev) // revert on failure
+    }
+  }
+
   const currentYear = new Date().getFullYear()
 
   if (loading) {
@@ -302,12 +326,41 @@ export function FamilyMembers() {
           </div>
         ) : (
           <div className="space-y-4">
-            {members.map((member) => (
+            {members.length > 1 && (
+              <p className="text-xs text-gray-500 -mt-1">
+                Utilisez les flèches pour choisir qui apparaît en premier sur les cartes (les autres se regroupent en « +N »).
+              </p>
+            )}
+            {members.map((member, index) => (
               <div
                 key={member.id}
                 className="p-4 border rounded-lg hover:border-gray-300 transition-colors"
               >
                 <div className="flex items-start gap-4">
+                  {/* Reorder (card priority) */}
+                  {members.length > 1 && (
+                    <div className="flex flex-col gap-0.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => moveMember(index, -1)}
+                        disabled={index === 0}
+                        aria-label={`Monter ${member.name}`}
+                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveMember(index, 1)}
+                        disabled={index === members.length - 1}
+                        aria-label={`Descendre ${member.name}`}
+                        className="text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+
                   {/* Avatar */}
                   <MemberAvatar
                     avatarStyle={member.avatarStyle}

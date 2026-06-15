@@ -54,7 +54,7 @@ interface MemberPreferencesModalProps {
 const AVAILABLE_GENRES = [
   "Animation",
   "Aventure",
-  "Comedie",
+  "Comédie",
   "Fantastique",
   "Science-Fiction",
   "Famille",
@@ -63,8 +63,17 @@ const AVAILABLE_GENRES = [
   "Musical",
   "Drame",
   "Romance",
+  "Mystère",
+  "Crime",
   "Thriller",
   "Horreur",
+  "Plateforme",
+  "Stratégie",
+  "Simulation",
+  "RPG",
+  "Sport",
+  "Course",
+  "Puzzle",
 ]
 
 export function MemberPreferencesModal({

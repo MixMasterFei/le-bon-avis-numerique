@@ -60,7 +60,8 @@ export async function GET() {
           select: { reactions: true },
         },
       },
-      orderBy: { createdAt: "asc" },
+      // Priority order (parent-set) first, then creation order.
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
     })
 
     return NextResponse.json({ familyMembers })

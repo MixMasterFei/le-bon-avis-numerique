@@ -240,6 +240,15 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
       <div className="mb-4">
         <FamilyWarningVoteButton mediaId={mediaId} />
       </div>
+
+      <p className="text-xs mb-4 rounded-lg px-3 py-2" style={{ background: p.bg2, color: p.ink2 }}>
+        Pas d&apos;accord avec un repère pour un enfant ? Complétez{" "}
+        <Link href="/profil" className="underline font-medium" style={{ color: p.accent }}>
+          son quiz de préférences
+        </Link>{" "}
+        (goûts et sensibilité) — l&apos;âge expert se vote juste au-dessus.
+      </p>
+
       <div className="space-y-3">
         {members.map((member) => {
           const config = BAND_CONFIG[familyFitBandFromLevel(member.level)]
