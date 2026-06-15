@@ -126,3 +126,35 @@ export function vigilanceMax(
   }
   return max
 }
+
+// Genres that, on their own, signal intense content for families — used as a
+// robust fallback so a horror/thriller reads RED even when its AI metric is
+// under-scored (the "horror at Modéré" case). FR + EN spellings.
+export const MATURE_GENRES = new Set([
+  "Horreur", "Horror", "Thriller", "Crime", "Policier",
+  "Guerre", "War", "Épouvante", "Epouvante",
+])
+
+export type VigilanceTone = "none" | "amber" | "red"
+
+/**
+ * Coarse severity for the card badge dot — a 2-color signal, NOT a precise
+ * level claim:
+ *   red   = strong → any axis "Important/Intense" (raw ≥4, age-anchored) OR a
+ *           mature genre (horror/thriller/crime/war).
+ *   amber = some points to note (a flagged axis, raw 3).
+ *   none  = nothing to flag.
+ * Genre is a deliberate floor so under-scored mature titles still read red.
+ */
+export function vigilanceTone(
+  m: TotemMetrics | null | undefined,
+  type?: string | null,
+  expertAge?: number | null,
+  genres?: string[] | null,
+): VigilanceTone {
+  const mature = (genres ?? []).some((g) => MATURE_GENRES.has(g))
+  const max = vigilanceMax(m, type, expertAge)
+  if (max >= 2 || mature) return "red"
+  if (max >= 1) return "amber"
+  return "none"
+}
