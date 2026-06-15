@@ -1,4 +1,5 @@
 import { getMemberAge } from "@/lib/age-utils"
+import { dislikedGenresForHardExclusion } from "@/lib/disliked-genres"
 
 export interface MemberPreferences {
   id: string
@@ -71,12 +72,11 @@ export function buildSmartFilterWhere(input: WhereClauseInput): Record<string, a
     where.genres = { hasSome: input.genres }
   }
 
-  // In strict mode, hard-exclude any genre that any selected member dislikes.
-  // The quiz writes "Horreur"/"Thriller" to dislikedGenres, and parents expect
-  // those to be filtered out — not just score-penalised.
+  // In strict mode, hard-exclude mature dislikes only (Horreur, Thriller, Crime…).
+  // Broad tags like Drame/Romance are score-penalised, not SQL-dropped.
   if (input.strictMode) {
-    const blockedGenres = Array.from(
-      new Set(input.members.flatMap(m => m.dislikedGenres))
+    const blockedGenres = dislikedGenresForHardExclusion(
+      Array.from(new Set(input.members.flatMap((m) => m.dislikedGenres))),
     )
     if (blockedGenres.length > 0) {
       where.NOT = [

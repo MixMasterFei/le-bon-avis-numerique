@@ -265,13 +265,12 @@ export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[
     const dislikedMatches = dislikedGenres.filter((g) => mediaSet.has(normalise(g)))
     if (dislikedMatches.length > 0) {
       const isMatureDislike = dislikedMatches.some((g) => MATURE_GENRES.has(normalise(g)))
-      const mediaHasFamilyMarker = mediaGenres.some((g) =>
-        FAMILY_FRIENDLY_GENRE_MARKERS.has(normalise(g)),
-      )
-      if (isMatureDislike || !mediaHasFamilyMarker) {
+      if (isMatureDislike) {
         return 0
       }
-      softDislikePenalty = 0.55
+      // Broad TMDB tags (Drame, Romance, Action…) — down-rank only. Parents mean
+      // "not their vibe", not "ban every title with this secondary tag".
+      softDislikePenalty = Math.max(0.5, 0.75 - dislikedMatches.length * 0.08)
     }
   }
 

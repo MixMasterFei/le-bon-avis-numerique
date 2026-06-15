@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { ArrowLeft, Loader2 } from "lucide-react"
@@ -18,6 +18,8 @@ interface MemberInfo {
 
 export default function QuizPage() {
   const { memberId } = useParams<{ memberId: string }>()
+  const searchParams = useSearchParams()
+  const depth = searchParams.get("depth")
   const { status } = useSession()
   const router = useRouter()
   const [member, setMember] = useState<MemberInfo | null>(null)
@@ -118,6 +120,7 @@ export default function QuizPage() {
           memberEmoji={member.avatarEmoji}
           birthYear={member.birthYear}
           birthMonth={member.birthMonth}
+          initialPhase={depth === "deep" ? "deep" : "light"}
         />
       </div>
     </div>

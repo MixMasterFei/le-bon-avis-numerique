@@ -853,11 +853,21 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     </p>
                   </div>
                 </div>
-                <Button asChild size="sm" variant={member.useCustomSettings && member.favoriteGenres.length > 0 ? "outline" : "default"}>
-                  <Link href={`/profil/quiz/${memberId}`}>
-                    {member.useCustomSettings && member.favoriteGenres.length > 0 ? "Refaire" : "Faire le quiz"}
-                  </Link>
-                </Button>
+                <div className="flex flex-col items-end gap-2">
+                  <Button asChild size="sm" variant={member.useCustomSettings && member.favoriteGenres.length > 0 ? "outline" : "default"}>
+                    <Link href={`/profil/quiz/${memberId}`}>
+                      {member.useCustomSettings && member.favoriteGenres.length > 0 ? "Refaire le quiz" : "Faire le quiz"}
+                    </Link>
+                  </Button>
+                  {member.useCustomSettings && member.favoriteGenres.length > 0 && (
+                    <Link
+                      href={`/profil/quiz/${memberId}?depth=deep`}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Affiner (thèmes, intérêts…)
+                    </Link>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

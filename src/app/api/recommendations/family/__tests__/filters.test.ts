@@ -31,6 +31,15 @@ describe("buildFamilyRecsFilters", () => {
     expect(ageFilter).toEqual({})
   })
 
+  it("does not SQL-exclude soft dislikes like Drame", () => {
+    const { exclusionFilter } = buildFamilyRecsFilters({
+      youngestAge: 12,
+      dislikedGenres: ["Drame", "Horreur"],
+      avoidTopics: [],
+    })
+    expect(exclusionFilter.NOT).toEqual([{ genres: { hasSome: ["Horreur"] } }])
+  })
+
   it("pushes disliked genres into a NOT clause", () => {
     const { exclusionFilter } = buildFamilyRecsFilters({
       youngestAge: 10,

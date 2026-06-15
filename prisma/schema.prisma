@@ -401,6 +401,11 @@ model FamilyMember {
   // Personal interests (dinosaurs, space, princesses, etc.)
   interests String[] @default([]) @map("interests")
 
+  // Display priority on cards (lower = shown first). Parents can reorder so the
+  // members they care about most fill the limited card slots; the rest collapse
+  // into the "+N" overflow. Default 0 = creation-order fallback.
+  displayOrder Int @default(0) @map("display_order")
+
   // Use custom settings or inherit from account defaults
   useCustomSettings Boolean @default(false) @map("use_custom_settings")
 

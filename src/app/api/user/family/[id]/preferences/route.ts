@@ -134,6 +134,7 @@ export async function PUT(
       preferRoleModels,
       preferEducational,
       avoidTopics,
+      interests,
       useCustomSettings,
       preferredTones,
       quizVersion,
@@ -183,6 +184,11 @@ export async function PUT(
         }),
         ...(avoidTopics !== undefined && {
           avoidTopics: Array.isArray(avoidTopics) ? avoidTopics : [],
+        }),
+        ...(interests !== undefined && {
+          interests: Array.isArray(interests)
+            ? interests.map((i: unknown) => String(i).trim()).filter(Boolean).slice(0, 20)
+            : [],
         }),
         ...(useCustomSettings !== undefined && {
           useCustomSettings: Boolean(useCustomSettings),

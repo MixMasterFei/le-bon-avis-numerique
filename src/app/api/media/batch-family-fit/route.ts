@@ -99,7 +99,9 @@ export async function POST(request: NextRequest) {
     // around and the grid was hard to read.
     const familyMembers = await prisma.familyMember.findMany({
       where: { userId: session.user.id },
-      orderBy: { createdAt: "asc" },
+      // Parent-set priority first (lower displayOrder = shown first on cards),
+      // then creation order as a stable tiebreaker.
+      orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
     })
 
     if (familyMembers.length === 0) {
