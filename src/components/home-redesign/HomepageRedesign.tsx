@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { useEffect, useRef, useState } from "react"
+import { FamilyFitProvider, useFamilyFit } from "@/components/home/FamilyFitProvider"
+import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { getMemberAge } from "@/lib/age-utils"
 import { v2FontVars } from "./fonts"
@@ -24,6 +25,39 @@ interface HomepageRedesignProps {
   defaultMaxAge: number
   /** The signed-in family's members (for the "Votre famille" shortcuts). */
   familyMembers: FamilyMemberLite[]
+}
+
+/**
+ * Drives the same top red progress sweep the catalogue shows on filter changes
+ * (TopProgressBar) for the homepage. The homepage filters client-side (no route
+ * transition), so we pulse the bar whenever the age/family selection changes,
+ * and keep it lit while family-fit data is actually being fetched. Must live
+ * inside FamilyFitProvider to read `isLoading`.
+ */
+function HomeFilterProgress({ filterKey }: { filterKey: string }) {
+  const { isLoading } = useFamilyFit()
+  const [pulse, setPulse] = useState(false)
+  const didMount = useRef(false)
+
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true
+      return
+    }
+    // Defer the rising edge out of the effect body (avoids the cascading-render
+    // lint rule); the falling edge is already deferred via setTimeout.
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setPulse(true)
+    })
+    const t = setTimeout(() => setPulse(false), 500)
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [filterKey])
+
+  return <TopProgressBar loading={pulse || isLoading} />
 }
 
 export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers }: HomepageRedesignProps) {
@@ -66,6 +100,7 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
 
   return (
     <FamilyFitProvider>
+      <HomeFilterProgress filterKey={`${selectedKeys.join(",")}|${selectedMemberIds.join(",")}`} />
       <div
         data-home="v2"
         className={`${v2FontVars} flex flex-col overflow-x-hidden`}
