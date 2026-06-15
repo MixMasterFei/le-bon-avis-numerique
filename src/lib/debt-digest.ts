@@ -138,12 +138,17 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
         contentMetrics: { OR: SENS.map((k) => ({ [k]: { gte: 3 } })) },
       },
     }).catch(() => 0),
-    // ≤12 curated with an axis ≥4 — the over-scored cluster the recalibrate cron
-    // is draining. Trends to ~0 over time.
+    // Over-scored cluster the recalibrate cron drains: young (≤10) OR
+    // animation/family titles with an axis ≥4 (legit 12+ live-action violence
+    // is excluded). Not-yet-recalibrated only. Trends to ~0 as the sweep runs.
     prisma.mediaItem.count({
       where: {
-        isEnriched: true, type: SCOPED_NOT, expertAgeRec: { not: null, lte: 12 },
-        contentMetrics: { OR: SENS.map((k) => ({ [k]: { gte: 4 } })) },
+        isEnriched: true, type: SCOPED_NOT,
+        NOT: { contentMetrics: { enrichmentSource: "AI_RECAL" } },
+        AND: [
+          { OR: [{ expertAgeRec: { not: null, lte: 10 } }, { genres: { hasSome: ["Animation", "Familial", "Family"] } }] },
+          { contentMetrics: { OR: SENS.map((k) => ({ [k]: { gte: 4 } })) } },
+        ],
       },
     }).catch(() => 0),
     // Enriched video with every sensibility axis 0 — likely a failed/empty pass.

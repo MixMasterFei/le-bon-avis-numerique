@@ -532,32 +532,42 @@ export async function POST(request: NextRequest) {
     // Build where clause based on mode
     let whereClause
     if (recalibrate) {
-      // Re-enrich already-enriched items whose scores look over-calibrated
-      // under the OLD rubric (no cartoon discount). Targets the cluster the
-      // rating audit flags: curated ≤12 but a sensibility axis still ≥4, OR
-      // every sensibility axis = 0 (likely a failed/empty pass). As items are
-      // re-scored under the new rubric they fall out of this filter, so
-      // repeated batches drain it; oldest-touched first so it terminates.
-      // Staleness guard: skip items touched in the last 3 days so a run (and
-      // the nightly cron) terminates — a freshly re-scored item won't be
-      // re-picked, and a legitimately-high title only re-cycles every few days
-      // at most instead of being re-processed every batch.
-      const recalCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+      // Re-enrich the genuinely over-scored cluster under the new rubric. NOT
+      // every ≤12 title with a high axis — a 12+ live-action film with violence
+      // 4 ("Important") is usually correct. The over-scoring concentrates in:
+      //   • young titles (≤10) with a sensibility axis ≥4 (the Jungle-Cruise
+      //     pattern: family adventure scored like a thriller), and
+      //   • Animation / Famille titles with an axis ≥4 (cartoon peril scored
+      //     like realistic violence — the old rubric had no stylized discount),
+      // plus all-zero rows (likely a failed/empty pass).
+      // Each item is marked `enrichmentSource: "AI_RECAL"` after processing and
+      // excluded here, so repeated batches drain the set once and then no-op —
+      // a clean, terminating sweep (the previous `updatedAt` guard was bumped by
+      // unrelated crons and wrongly blocked most of the set).
       whereClause = {
         ...typeFilter,
         isEnriched: true,
-        updatedAt: { lt: recalCutoff },
+        NOT: { contentMetrics: { enrichmentSource: "AI_RECAL" } },
         OR: [
           {
-            expertAgeRec: { not: null, lte: 12 },
-            contentMetrics: {
-              OR: [
-                { violence: { gte: 4 } },
-                { sexNudity: { gte: 4 } },
-                { language: { gte: 4 } },
-                { substanceUse: { gte: 4 } },
-              ],
-            },
+            AND: [
+              {
+                OR: [
+                  { expertAgeRec: { not: null, lte: 10 } },
+                  { genres: { hasSome: ["Animation", "Familial", "Family"] } },
+                ],
+              },
+              {
+                contentMetrics: {
+                  OR: [
+                    { violence: { gte: 4 } },
+                    { sexNudity: { gte: 4 } },
+                    { language: { gte: 4 } },
+                    { substanceUse: { gte: 4 } },
+                  ],
+                },
+              },
+            ],
           },
           {
             contentMetrics: {
@@ -669,6 +679,10 @@ export async function POST(request: NextRequest) {
           analysis.expertAgeRec,
         )
 
+        // Mark recalibrated rows so the recalibrate sweep processes each once
+        // and then terminates (see the recalibrate whereClause above).
+        const enrichmentSource = recalibrate ? "AI_RECAL" : "AI_BASIC"
+
         // Compute final confidence with heuristic adjustments
         const { score: finalConfidence, needsDeepEnrich } = computeFinalConfidence(
           analysis.confidence,
@@ -705,7 +719,7 @@ export async function POST(request: NextRequest) {
             whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
             // V2 fields
             enrichmentConfidence: finalConfidence,
-            enrichmentSource: "AI_BASIC",
+            enrichmentSource,
             needsDeepEnrich,
             toneTags: analysis.toneTags,
             pacing: analysis.pacing || null,
@@ -727,7 +741,7 @@ export async function POST(request: NextRequest) {
             whatParentsNeedToKnow: analysis.whatParentsNeedToKnow,
             // V2 fields
             enrichmentConfidence: finalConfidence,
-            enrichmentSource: "AI_BASIC",
+            enrichmentSource,
             needsDeepEnrich,
             toneTags: analysis.toneTags,
             pacing: analysis.pacing || null,
