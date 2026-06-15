@@ -87,6 +87,16 @@ jobs:
           # can load the protected preview (no-op for the public prod URL).
           VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
+      # Report-only mobile pass (warnings, never blocks). Gives real phone
+      # LCP/CLS — the desktop run above can't catch mobile regressions.
+      - name: Run Lighthouse CI (mobile, report-only)
+        run: lhci autorun --config=lighthouserc.mobile.js
+        continue-on-error: true
+        env:
+          LHCI_BUILD_CONTEXT__CURRENT_HASH: ${{ github.sha }}
+          LHCI_TARGET_URL: ${{ steps.vercel.outputs.url || github.event.inputs.target_url || 'https://totemavise.com' }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v5
