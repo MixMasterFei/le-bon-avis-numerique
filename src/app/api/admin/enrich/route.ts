@@ -128,30 +128,21 @@ function filterToValidList(values: string[], validList: string[]): string[] {
 }
 
 /**
- * Deterministic safety net beyond the LLM rubric: a title classified for the
- * youngest audiences (CSA "Tous publics"/"-10", PEGI 3/7, BBFC U/G) should not
- * carry high SENSIBILITY scores. If the model still returns >2 on violence /
- * sex / language / substances for such a title, cap it at 2. Conservative —
- * only the clearly-young tiers, and NOT consumerism (microtransactions aren't
- * bounded by an age rating: a PEGI 3 game can be heavily monetized).
+ * Deterministic safety net beyond the LLM rubric: a title curated for young
+ * audiences should not carry high SENSIBILITY scores. We gate on the model's
+ * own `expertAgeRec` (≤ 8) — NOT officialRating, which is unreliable in our DB
+ * ("Tous Publics"/"U" codes sit on clearly-adult films). This matches the
+ * on-card display anchor (≤8 → capped at "Léger"). If a ≤8 title still gets >2
+ * on violence/sex/language/substances, cap it at 2. consumerism is NOT capped
+ * (microtransactions aren't bounded by an age rating).
  */
-function isYoungRating(officialRating?: string | null): boolean {
-  if (!officialRating) return false
-  const r = officialRating.toLowerCase()
-  return (
-    r.includes("tous public") ||
-    r.includes("-10") ||
-    /pegi\s*[37]\b/.test(r) ||
-    r === "u" ||
-    r === "g"
-  )
-}
+const YOUNG_AGE = 8
 
-function clampMetricsByRating(
+function clampMetricsByAge(
   m: ContentAnalysis["contentMetrics"],
-  officialRating?: string | null,
+  expertAge: number | null | undefined,
 ): ContentAnalysis["contentMetrics"] {
-  if (!isYoungRating(officialRating)) return m
+  if (typeof expertAge !== "number" || expertAge > YOUNG_AGE) return m
   const cap = (v: number) => Math.min(v, 2)
   return {
     ...m,
@@ -311,10 +302,12 @@ Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-he
 - Achats integres (jeux): 0=aucun. 1-2=cosmetiques optionnels. 3=microtransactions presentes. 4-5=pay-to-win / loot boxes au coeur du jeu.
 Echelle generale des mots: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense.
 
-ANCRAGE SUR LA CLASSIFICATION OFFICIELLE (plafond de bon sens):
-- "Tous publics", "-10", "PEGI 3", "PEGI 7", "U" : titre familial — ne depasse 2 sur un axe QUE si une scene precise le justifie clairement.
-- "-12" / "PEGI 12" : 3 plausible. "-16" / "PEGI 16" : jusqu'a 4. "-18" / "PEGI 18" : jusqu'a 5.
-- Pas de classification (vide) : aucun plafond officiel — reste prudent en te basant sur les genres (Animation / Famille => plutot bas).
+COHERENCE AGE <-> METRIQUES (essentiel):
+- Tes scores de sensibilite et l'age conseille doivent rester coherents. Un titre que tu juges adapte des 6-8 ans ne doit PAS porter de score > 2 ("Leger") en violence/sexe/langage/substances, sauf scene precise qui le justifie vraiment.
+- Si une scene te pousse vers 3+ sur un axe, demande-toi d'abord s'il faut RELEVER l'age conseille. L'age est le signal principal ; les axes ne sont que des reperes secondaires.
+
+CLASSIFICATION OFFICIELLE (indice FAIBLE):
+- La classification fournie n'est qu'un indice : souvent absente, et parfois imprecise (un meme code peut etre colle a des titres tres differents). Ne la suis jamais aveuglement — ta connaissance du titre et les genres priment.
 
 Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.
 
@@ -628,12 +621,12 @@ export async function POST(request: NextRequest) {
           demographic: item.demographic,
         }, tmdbKeywords)
 
-        // Deterministic guardrail: cap sensibility axes for clearly young-rated
-        // titles (backstop beyond the LLM rubric — fixes mislabeled scores on
-        // the fiche too, not just the card badge).
-        analysis.contentMetrics = clampMetricsByRating(
+        // Deterministic guardrail: cap sensibility axes for titles the model
+        // itself curated as young (≤8). Backstop beyond the LLM rubric — keyed
+        // on expertAgeRec (trustworthy), not officialRating (unreliable here).
+        analysis.contentMetrics = clampMetricsByAge(
           analysis.contentMetrics,
-          item.officialRating,
+          analysis.expertAgeRec,
         )
 
         // Compute final confidence with heuristic adjustments

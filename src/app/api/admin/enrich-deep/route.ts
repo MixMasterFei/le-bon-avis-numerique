@@ -161,7 +161,8 @@ Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-he
 - Langage: 0=aucun. 1-2=quelques mots familiers. 3=insultes regulieres. 4=grossier frequent. 5=tres cru/haineux.
 - Substances: 0=aucune. 1-2=alcool en arriere-plan. 3=consommation montree. 4=abus au coeur du recit. 5=glorifie.
 - Achats integres (jeux): 0=aucun. 1-2=cosmetiques. 3=microtransactions presentes. 4-5=pay-to-win/loot boxes.
-ANCRAGE CLASSIFICATION (plafond): "Tous publics"/"-10"/"PEGI 3"/"PEGI 7"/"U" => rarement >2 sur un axe. "-12"/"PEGI 12"=>3, "-16"/"PEGI 16"=>4, "-18"/"PEGI 18"=>5. Vide => pas de plafond, prudence selon genres.
+COHERENCE AGE <-> METRIQUES: tes scores et l'age conseille doivent rester coherents. Un titre adapte des 6-8 ans ne porte pas de score > 2 sur un axe sauf scene precise ; si un axe te semble a 3+, releve plutot l'age. L'age prime, les axes sont secondaires.
+CLASSIFICATION OFFICIELLE = indice FAIBLE (souvent absente ou imprecise) : ne la suis pas aveuglement, ta connaissance du titre prime.
 
 Reponds UNIQUEMENT avec un JSON valide:
 {
@@ -222,18 +223,18 @@ Reponds UNIQUEMENT avec un JSON valide:
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
     }
 
-    // Deterministic guardrail: young official ratings cap the sensibility axes
-    // at 2 (NOT consumerism — monetization isn't bounded by an age rating).
-    const r = (item.officialRating ?? "").toLowerCase()
-    const young =
-      r.includes("tous public") || r.includes("-10") || /pegi\s*[37]\b/.test(r) || r === "u" || r === "g"
+    // Deterministic guardrail: a title curated young (expertAgeRec ≤ 8) caps
+    // its sensibility axes at 2. Keyed on the model's own age (trustworthy),
+    // NOT officialRating (unreliable in our DB). consumerism is NOT capped.
+    const expertAge = Math.min(18, Math.max(3, parsed.expertAgeRec || 8))
+    const young = expertAge <= 8
     const axis = (v: unknown) => {
       const n = Math.min(5, Math.max(0, (typeof v === "number" ? v : 0)))
       return young ? Math.min(n, 2) : n
     }
 
     return {
-      expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
+      expertAgeRec: expertAge,
       contentMetrics: {
         violence: axis(parsed.contentMetrics?.violence),
         sexNudity: axis(parsed.contentMetrics?.sexNudity),
