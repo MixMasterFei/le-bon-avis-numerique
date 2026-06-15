@@ -133,7 +133,7 @@ export function RedesignCard({
             only, not whole-card hover). Or an honest "à confirmer" for
             unreleased titles, which carry no content scores. */}
         {showTotem ? (
-          <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant={totem} type={media.type} />
+          <TotemRating age={media.expertAgeRec} metrics={media.contentMetrics} variant={totem} type={media.type} genres={media.genres} />
         ) : (
           ageLabel && (
             <div

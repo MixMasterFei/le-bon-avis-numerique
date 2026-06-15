@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { vigilanceAxisLevel, vigilanceMax } from "./totem"
+import { vigilanceAxisLevel, vigilanceMax, vigilanceTone } from "./totem"
 
 describe("vigilanceAxisLevel — cartoon-friendly bucketing + age anchor", () => {
   it("buckets raw scores: ≤2→0, 3→1, 4→2, 5→3 (no age)", () => {
@@ -50,5 +50,33 @@ describe("vigilanceMax — overall = max across axes", () => {
 
   it("returns 0 with no metrics", () => {
     expect(vigilanceMax(null, "MOVIE", 10)).toBe(0)
+  })
+})
+
+describe("vigilanceTone — coarse severity dot", () => {
+  it("red when an axis is high (raw ≥4)", () => {
+    expect(vigilanceTone({ violence: 4 }, "MOVIE", 12, ["Action"])).toBe("red")
+    expect(vigilanceTone({ language: 5 }, "MOVIE", 14, [])).toBe("red")
+  })
+
+  it("red for a mature genre even if the metric is under-scored", () => {
+    // Horror stored at only violence 3 → would be amber by metric, but the
+    // genre floor makes it red.
+    expect(vigilanceTone({ violence: 3 }, "MOVIE", 16, ["Horreur"])).toBe("red")
+    expect(vigilanceTone(null, "MOVIE", 16, ["Thriller"])).toBe("red")
+  })
+
+  it("amber when there are points but nothing high", () => {
+    expect(vigilanceTone({ violence: 3 }, "MOVIE", 10, ["Action"])).toBe("amber")
+  })
+
+  it("none when nothing to flag", () => {
+    expect(vigilanceTone({ violence: 2 }, "MOVIE", 6, ["Animation"])).toBe("none")
+    expect(vigilanceTone(null, "MOVIE", 6, ["Animation"])).toBe("none")
+  })
+
+  it("age cap keeps a young title from going red on metric alone", () => {
+    // raw 5 on a 6+ title is clamped to level 1 → amber, not red (no mature genre).
+    expect(vigilanceTone({ violence: 5 }, "MOVIE", 6, ["Animation"])).toBe("amber")
   })
 })

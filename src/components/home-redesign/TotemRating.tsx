@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import {
   totemAxesFor,
   vigilanceAxisLevel,
+  vigilanceTone,
   type TotemMetrics,
 } from "./totem"
 
@@ -15,6 +16,8 @@ interface TotemRatingProps {
   variant: "compact" | "full"
   /** Media type — selects the axis set (games → violence + achats intégrés). */
   type?: string | null
+  /** Genres — a mature genre (horror/thriller…) makes the badge read red. */
+  genres?: string[] | null
 }
 
 /**
@@ -27,19 +30,21 @@ interface TotemRatingProps {
  * Revealed only by interacting with the badge (hover/focus desktop, tap mobile;
  * the tap is intercepted so it doesn't open the fiche).
  */
-export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
+export function TotemRating({ age, metrics, variant, type, genres }: TotemRatingProps) {
   const [open, setOpen] = useState(false)
   const ageLabel = typeof age === "number" && age > 0 ? `${age}+` : "?"
   const m = metrics ?? {}
   // Categories worth flagging = axes the (age-anchored) coarse level marks ≥1.
   const flagged = totemAxesFor(type).filter((a) => vigilanceAxisLevel(m[a.key], age) >= 1)
-  const hasPoints = flagged.length > 0
+  const tone = vigilanceTone(metrics, type, age, genres)
+  const isRed = tone === "red"
 
-  // Presence dot — one warm marker, no severity claim.
-  const dot = hasPoints && (
+  // Coarse severity dot — amber = points to note, red = strong (high axis or
+  // a mature genre). No precise level claim.
+  const dot = tone !== "none" && (
     <span
       className="inline-block rounded-full"
-      style={{ width: 7, height: 7, background: "var(--gold)", boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
+      style={{ width: 7, height: 7, background: isRed ? "var(--r3)" : "var(--gold)", boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
     />
   )
 
@@ -117,27 +122,38 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
             <>Repères de contenu</>
           )}
         </div>
-        {!hasPoints ? (
-          <div className="py-0.5 text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>
-            Rien à signaler pour cet âge.
-          </div>
-        ) : (
+        {flagged.length > 0 ? (
           <>
             <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#A99C88" }}>
               Points de vigilance
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {flagged.map((a) => (
-                <span
-                  key={a.key}
-                  className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                  style={{ background: "rgba(217,149,36,.16)", color: "#EBC98A", border: "1px solid rgba(217,149,36,.35)" }}
-                >
-                  {a.label}
-                </span>
-              ))}
+              {flagged.map((a) => {
+                const high = vigilanceAxisLevel(m[a.key], age) >= 2
+                return (
+                  <span
+                    key={a.key}
+                    className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                    style={
+                      high
+                        ? { background: "rgba(194,65,42,.18)", color: "#F0B5A6", border: "1px solid rgba(194,65,42,.45)" }
+                        : { background: "rgba(217,149,36,.16)", color: "#EBC98A", border: "1px solid rgba(217,149,36,.35)" }
+                    }
+                  >
+                    {a.label}
+                  </span>
+                )
+              })}
             </div>
           </>
+        ) : isRed ? (
+          <div className="py-0.5 text-[11.5px] font-semibold" style={{ color: "#F0B5A6" }}>
+            Contenu intense (genre sensible).
+          </div>
+        ) : (
+          <div className="py-0.5 text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>
+            Rien à signaler pour cet âge.
+          </div>
         )}
         <div className="mt-2 border-t pt-2 text-[10px] font-semibold" style={{ borderColor: "rgba(255,255,255,.12)", color: "#A99C88" }}>
           Le détail et l&apos;avis par enfant sont sur la fiche →
