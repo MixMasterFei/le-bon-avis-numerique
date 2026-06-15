@@ -80,13 +80,13 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
         </span>
 
         <h1
-          className="mx-auto mt-6 max-w-[14ch] text-[clamp(40px,6vw,76px)] font-bold leading-[1.04]"
+          className="mx-auto mt-6 max-w-[20ch] text-[clamp(36px,5.2vw,68px)] font-bold leading-[1.05]"
           style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
         >
-          Trouvez les <Em tone="pine">bons contenus</Em>, pour votre <Em tone="terra">famille</Em>.
+          Trouvez des films, séries et jeux <Em tone="terra">adaptés à vos enfants</Em>.
         </h1>
-        <p className="mx-auto mt-4 max-w-[46ch] text-[clamp(17px,2vw,20px)]" style={{ color: "var(--ink-2)" }}>
-          Une famille, des goûts, des repères sur-mesure. Voyez en un coup d&apos;œil ce qui convient — et pourquoi.
+        <p className="mx-auto mt-4 max-w-[60ch] text-[clamp(16px,2vw,19px)]" style={{ color: "var(--ink-2)" }}>
+          Âges, goûts, sensibilités, plateformes : Totem Avisé vous aide à choisir en famille, sans mauvaise surprise.
         </p>
 
         {/* Personalization module */}

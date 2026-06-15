@@ -95,13 +95,13 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {selectedMemberIds.length > 0 && (
           <PersonalizedRail memberIds={selectedMemberIds} title={personalizedTitle} maxAge={globalMaxAge} />
         )}
-        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} />
+        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         <UpcomingRail />
-        <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} />
-        <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} />
+        <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         <AgeGridRedesign />
-        <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} />
-        <GamesRail maxAge={globalMaxAge} audience={audienceLabel} />
+        <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        <GamesRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />

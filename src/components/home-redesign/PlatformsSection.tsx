@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Band, Wrap, SectionHead, Em } from "./parts"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
+import { useRankedByFit } from "./useRankedByFit"
 
 interface Provider {
   id: string
@@ -20,7 +21,7 @@ const PROVIDERS: Provider[] = [
   { id: "canal", label: "Canal+", search: "Canal", filter: "Canal+", dot: "#111111" },
 ]
 
-export function PlatformsSection({ maxAge, audience }: { maxAge?: number; audience?: string }) {
+export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const [sel, setSel] = useState<Provider>(PROVIDERS[0])
   const [items, setItems] = useState<RedesignCardMedia[]>([])
   const [total, setTotal] = useState(0)
@@ -29,6 +30,7 @@ export function PlatformsSection({ maxAge, audience }: { maxAge?: number; audien
   // Family-oriented section: default cap 12; when the homepage age filter is
   // active, follow it.
   const cap = typeof maxAge === "number" ? maxAge : 12
+  const ranked = useRankedByFit(items, rankByMemberIds)
 
   useEffect(() => {
     let cancelled = false
@@ -96,7 +98,7 @@ export function PlatformsSection({ maxAge, audience }: { maxAge?: number; audien
         ) : items.length > 0 ? (
           <>
             <div className="v2-row">
-              {items.map((m) => (
+              {ranked.map((m) => (
                 <RedesignCard key={m.id} media={m} totem="compact" showType />
               ))}
             </div>
