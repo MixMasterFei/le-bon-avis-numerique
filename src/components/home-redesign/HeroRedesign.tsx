@@ -103,9 +103,9 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
             <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="lg" />
           </div>
 
-          <form onSubmit={onSubmit} className="mt-[18px] flex items-center gap-3">
-            <label className="flex flex-1 items-center gap-2.5 rounded-full px-[18px] py-[13px]" style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}>
-              <Search className="h-[17px] w-[17px]" style={{ color: "var(--ink-3)" }} />
+          <form onSubmit={onSubmit} className="mt-[18px] flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="flex w-full min-w-0 items-center gap-2.5 rounded-full px-[18px] py-[13px] sm:flex-1" style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}>
+              <Search className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--ink-3)" }} />
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -116,7 +116,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
             </label>
             <a
               href="#weekend"
-              className="whitespace-nowrap rounded-full px-5 py-[13px] text-[14.5px] font-bold text-white"
+              className="w-full shrink-0 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white sm:w-auto"
               style={{ background: "var(--terra)" }}
             >
               Voir la sélection
