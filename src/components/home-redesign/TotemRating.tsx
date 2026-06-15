@@ -3,8 +3,9 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import {
-  totemLevel,
   totemAxesFor,
+  vigilanceAxisLevel,
+  vigilanceMax,
   TOTEM_COLORS,
   TOTEM_WORDS,
   type TotemMetrics,
@@ -19,20 +20,33 @@ interface TotemRatingProps {
   type?: string | null
 }
 
+// Short label shown next to the badge dot per overall vigilance level.
+const VIGILANCE_LABEL = ["", "À noter", "À noter", "Vigilance"] as const
+
 /**
- * The "totem" rating. Renders the age badge (compact or full) PLUS a detail
- * popover, where the popover is revealed only by interacting with the badge
- * itself — NOT by hovering the whole card:
- *   - desktop: hover (or keyboard-focus) the badge → popover.
- *   - mobile: tap the badge → popover (the tap is intercepted so it doesn't
- *     navigate); tapping anywhere else on the card opens the fiche as usual.
- * Self-positioned (absolute, top-right) so the card just drops it in.
+ * The "totem" rating, rendered as a COARSE vigilance indicator (not a precise
+ * per-axis meter). The age stays the headline; a single dot signals whether
+ * there's anything to watch (age-anchored, cartoon-friendly — see totem.ts).
+ * The detail popover lists only the notable axes, in words, and is revealed
+ * only by interacting with the badge itself (hover/focus on desktop, tap on
+ * mobile — the tap is intercepted so it doesn't open the fiche).
  */
 export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
   const [open, setOpen] = useState(false)
   const ageLabel = typeof age === "number" && age > 0 ? `${age}+` : "?"
   const m = metrics ?? {}
   const axes = totemAxesFor(type)
+  const overall = vigilanceMax(metrics, type, age)
+  const notable = axes
+    .map((a) => ({ ...a, level: vigilanceAxisLevel(m[a.key], age) }))
+    .filter((a) => a.level >= 1)
+
+  const dot = overall > 0 && (
+    <span
+      className="inline-block rounded-full"
+      style={{ width: 7, height: 7, background: TOTEM_COLORS[overall], boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
+    />
+  )
 
   const badge =
     variant === "compact" ? (
@@ -43,36 +57,22 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
         <span className="text-[14px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
           {ageLabel}
         </span>
-        <div className="flex gap-0.5">
-          {axes.map((a) => {
-            const lvl = totemLevel(m[a.key])
-            return (
-              <i key={a.key} className="block" style={{ width: 4, height: 11, borderRadius: 1, background: TOTEM_COLORS[lvl], opacity: lvl === 0 ? 0.35 : 1 }} />
-            )
-          })}
-        </div>
+        {dot}
       </div>
     ) : (
       <div
-        className="inline-flex flex-col gap-1.5 rounded-[11px] px-2.5 py-2.5 backdrop-blur-[3px]"
+        className="flex flex-col items-center gap-1 rounded-[11px] px-2.5 py-2 backdrop-blur-[3px]"
         style={{ background: "rgba(15,12,8,.5)", border: "1px solid rgba(255,255,255,.2)" }}
       >
-        <span className="text-center text-[17px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
+        <span className="text-[17px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
           {ageLabel}
         </span>
-        {axes.map((a) => {
-          const lvl = totemLevel(m[a.key])
-          return (
-            <div key={a.key} className="flex items-center gap-1.5 text-[10px] font-bold text-white/90">
-              <span className="w-[11px] opacity-70">{a.short}</span>
-              <span className="flex gap-0.5">
-                {[0, 1, 2].map((i) => (
-                  <i key={i} className="block" style={{ width: 7, height: 7, borderRadius: 2, background: i < lvl ? TOTEM_COLORS[lvl] : "rgba(255,255,255,.18)" }} />
-                ))}
-              </span>
-            </div>
-          )
-        })}
+        {overall > 0 && (
+          <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-white/85">
+            {dot}
+            {VIGILANCE_LABEL[overall]}
+          </span>
+        )}
       </div>
     )
 
@@ -121,27 +121,32 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
         aria-hidden={!open}
       >
         <div className="mb-2 text-[11px] font-semibold leading-snug" style={{ color: "#C9BCA8" }}>
-          Dès <b className="font-bold text-white">{age} ans</b> · ce que contient ce titre
+          {typeof age === "number" && age > 0 ? (
+            <>Dès <b className="font-bold text-white">{age} ans</b> · à surveiller</>
+          ) : (
+            <>Ce qu&apos;il faut surveiller</>
+          )}
         </div>
-        {axes.map((a) => {
-          const lvl = totemLevel(m[a.key])
-          const words = a.words ?? TOTEM_WORDS
-          return (
-            <div key={a.key} className="flex items-center justify-between gap-2.5 py-1">
-              <div className="flex min-w-0 flex-col leading-tight">
+        {notable.length === 0 ? (
+          <div className="py-1 text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>
+            Rien à signaler pour cet âge.
+          </div>
+        ) : (
+          notable.map((a) => {
+            const words = a.words ?? TOTEM_WORDS
+            return (
+              <div key={a.key} className="flex items-center justify-between gap-2.5 py-1">
                 <b className="text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>{a.label}</b>
-                <span className="mt-px text-[9.5px] font-bold" style={{ color: "#A99C88" }}>{words[lvl]}</span>
+                <span className="flex items-center gap-1.5 text-[10.5px] font-bold" style={{ color: "#C9BCA8" }}>
+                  {words[a.level]}
+                  <i className="block rounded-full" style={{ width: 7, height: 7, background: TOTEM_COLORS[a.level] }} />
+                </span>
               </div>
-              <span className="flex flex-none gap-0.5">
-                {[0, 1, 2].map((i) => (
-                  <i key={i} className="block" style={{ width: 8, height: 8, borderRadius: 2, background: i < lvl ? TOTEM_COLORS[lvl] : "rgba(255,255,255,.14)" }} />
-                ))}
-              </span>
-            </div>
-          )
-        })}
-        <div className="mt-2 border-t pt-2 text-[10.5px] font-bold" style={{ borderColor: "rgba(255,255,255,.12)", color: "#D99524" }}>
-          + d&apos;autres repères sur la fiche →
+            )
+          })
+        )}
+        <div className="mt-2 border-t pt-2 text-[10px] font-semibold" style={{ borderColor: "rgba(255,255,255,.12)", color: "#A99C88" }}>
+          Repère indicatif · plus de détails sur la fiche →
         </div>
       </div>
     </>

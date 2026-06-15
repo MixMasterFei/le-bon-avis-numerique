@@ -154,7 +154,14 @@ POINTS A SURVEILLER — "Ce qui peut marquer" (0 a 6 categories, UNIQUEMENT dans
 ${VALID_SENSITIVE_WARNINGS.map((w) => `"${w}"`).join(", ")}
 Reperes de vigilance prudents (categories seulement, jamais de scene precise inventee). Renvoie [] si rien de pertinent.
 
-Echelle des metriques: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense
+ECHELLE DES METRIQUES (0-5) — calibree pour une sensibilite FAMILIALE.
+Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-heros sans consequence reelle) du contenu REALISTE / GRAPHIQUE.
+- Violence: 0=aucune. 1-2=peril leger, slapstick, bagarres cartoon/animees sans sang. 3=bagarres repetees, armes, mort hors-champ. 4=violence realiste, sang, blessures. 5=gore, torture, morts graphiques.
+- Sexe/Sensualite: 0=aucun. 1-2=romance, baisers. 3=sensualite marquee, nudite suggeree. 4=sexe implicite/nudite. 5=explicite.
+- Langage: 0=aucun. 1-2=quelques mots familiers. 3=insultes regulieres. 4=grossier frequent. 5=tres cru/haineux.
+- Substances: 0=aucune. 1-2=alcool en arriere-plan. 3=consommation montree. 4=abus au coeur du recit. 5=glorifie.
+- Achats integres (jeux): 0=aucun. 1-2=cosmetiques. 3=microtransactions presentes. 4-5=pay-to-win/loot boxes.
+ANCRAGE CLASSIFICATION (plafond): "Tous publics"/"-10"/"PEGI 3"/"PEGI 7"/"U" => rarement >2 sur un axe. "-12"/"PEGI 12"=>3, "-16"/"PEGI 16"=>4, "-18"/"PEGI 18"=>5. Vide => pas de plafond, prudence selon genres.
 
 Reponds UNIQUEMENT avec un JSON valide:
 {
@@ -215,14 +222,24 @@ Reponds UNIQUEMENT avec un JSON valide:
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
     }
 
+    // Deterministic guardrail: young official ratings cap the sensibility axes
+    // at 2 (NOT consumerism — monetization isn't bounded by an age rating).
+    const r = (item.officialRating ?? "").toLowerCase()
+    const young =
+      r.includes("tous public") || r.includes("-10") || /pegi\s*[37]\b/.test(r) || r === "u" || r === "g"
+    const axis = (v: unknown) => {
+      const n = Math.min(5, Math.max(0, (typeof v === "number" ? v : 0)))
+      return young ? Math.min(n, 2) : n
+    }
+
     return {
       expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
       contentMetrics: {
-        violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
-        sexNudity: Math.min(5, Math.max(0, parsed.contentMetrics?.sexNudity || 0)),
-        language: Math.min(5, Math.max(0, parsed.contentMetrics?.language || 0)),
+        violence: axis(parsed.contentMetrics?.violence),
+        sexNudity: axis(parsed.contentMetrics?.sexNudity),
+        language: axis(parsed.contentMetrics?.language),
         consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
-        substanceUse: Math.min(5, Math.max(0, parsed.contentMetrics?.substanceUse || 0)),
+        substanceUse: axis(parsed.contentMetrics?.substanceUse),
         positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
         roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
       },
