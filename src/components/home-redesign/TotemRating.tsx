@@ -5,9 +5,6 @@ import { cn } from "@/lib/utils"
 import {
   totemAxesFor,
   vigilanceAxisLevel,
-  vigilanceMax,
-  TOTEM_COLORS,
-  TOTEM_WORDS,
   type TotemMetrics,
 } from "./totem"
 
@@ -20,31 +17,29 @@ interface TotemRatingProps {
   type?: string | null
 }
 
-// Short label shown next to the badge dot per overall vigilance level.
-const VIGILANCE_LABEL = ["", "À noter", "À noter", "Vigilance"] as const
-
 /**
- * The "totem" rating, rendered as a COARSE vigilance indicator (not a precise
- * per-axis meter). The age stays the headline; a single dot signals whether
- * there's anything to watch (age-anchored, cartoon-friendly — see totem.ts).
- * The detail popover lists only the notable axes, in words, and is revealed
- * only by interacting with the badge itself (hover/focus on desktop, tap on
- * mobile — the tap is intercepted so it doesn't open the fiche).
+ * The "totem" rating on a card. The age stays the headline; a small dot signals
+ * that there are content points to watch. We deliberately DO NOT claim a
+ * severity level on the poster icon (calibration is too fragile for that on a
+ * glanceable surface, and a wrong "Léger" on an action film reads worse than no
+ * claim). The popover lists the relevant WARNING CATEGORIES only ("Violence",
+ * "Langage"…) — the precise 0–5 and the per-member verdict live on the fiche.
+ * Revealed only by interacting with the badge (hover/focus desktop, tap mobile;
+ * the tap is intercepted so it doesn't open the fiche).
  */
 export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
   const [open, setOpen] = useState(false)
   const ageLabel = typeof age === "number" && age > 0 ? `${age}+` : "?"
   const m = metrics ?? {}
-  const axes = totemAxesFor(type)
-  const overall = vigilanceMax(metrics, type, age)
-  const notable = axes
-    .map((a) => ({ ...a, level: vigilanceAxisLevel(m[a.key], age) }))
-    .filter((a) => a.level >= 1)
+  // Categories worth flagging = axes the (age-anchored) coarse level marks ≥1.
+  const flagged = totemAxesFor(type).filter((a) => vigilanceAxisLevel(m[a.key], age) >= 1)
+  const hasPoints = flagged.length > 0
 
-  const dot = overall > 0 && (
+  // Presence dot — one warm marker, no severity claim.
+  const dot = hasPoints && (
     <span
       className="inline-block rounded-full"
-      style={{ width: 7, height: 7, background: TOTEM_COLORS[overall], boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
+      style={{ width: 7, height: 7, background: "var(--gold)", boxShadow: "0 0 0 2px rgba(0,0,0,.25)" }}
     />
   )
 
@@ -67,12 +62,7 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
         <span className="text-[17px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
           {ageLabel}
         </span>
-        {overall > 0 && (
-          <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide text-white/85">
-            {dot}
-            {VIGILANCE_LABEL[overall]}
-          </span>
-        )}
+        {dot}
       </div>
     )
 
@@ -85,7 +75,7 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
         role="button"
         tabIndex={0}
         aria-expanded={open}
-        aria-label="Voir le détail du contenu"
+        aria-label="Voir les points de vigilance"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         onFocus={() => setOpen(true)}
@@ -106,7 +96,7 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
         {badge}
       </div>
 
-      {/* Popover — visibility driven by `open` (badge interaction only). */}
+      {/* Popover — categories only, no severity claim. */}
       <div
         className={cn(
           "pointer-events-none absolute bottom-[9px] left-[9px] right-[9px] z-40 rounded-[13px] px-3 py-3 backdrop-blur-[5px] transition-all duration-200",
@@ -122,31 +112,35 @@ export function TotemRating({ age, metrics, variant, type }: TotemRatingProps) {
       >
         <div className="mb-2 text-[11px] font-semibold leading-snug" style={{ color: "#C9BCA8" }}>
           {typeof age === "number" && age > 0 ? (
-            <>Dès <b className="font-bold text-white">{age} ans</b> · à surveiller</>
+            <>Dès <b className="font-bold text-white">{age} ans</b></>
           ) : (
-            <>Ce qu&apos;il faut surveiller</>
+            <>Repères de contenu</>
           )}
         </div>
-        {notable.length === 0 ? (
-          <div className="py-1 text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>
+        {!hasPoints ? (
+          <div className="py-0.5 text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>
             Rien à signaler pour cet âge.
           </div>
         ) : (
-          notable.map((a) => {
-            const words = a.words ?? TOTEM_WORDS
-            return (
-              <div key={a.key} className="flex items-center justify-between gap-2.5 py-1">
-                <b className="text-[11.5px] font-semibold" style={{ color: "#EDE3D2" }}>{a.label}</b>
-                <span className="flex items-center gap-1.5 text-[10.5px] font-bold" style={{ color: "#C9BCA8" }}>
-                  {words[a.level]}
-                  <i className="block rounded-full" style={{ width: 7, height: 7, background: TOTEM_COLORS[a.level] }} />
+          <>
+            <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#A99C88" }}>
+              Points de vigilance
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {flagged.map((a) => (
+                <span
+                  key={a.key}
+                  className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={{ background: "rgba(217,149,36,.16)", color: "#EBC98A", border: "1px solid rgba(217,149,36,.35)" }}
+                >
+                  {a.label}
                 </span>
-              </div>
-            )
-          })
+              ))}
+            </div>
+          </>
         )}
         <div className="mt-2 border-t pt-2 text-[10px] font-semibold" style={{ borderColor: "rgba(255,255,255,.12)", color: "#A99C88" }}>
-          Repère indicatif · plus de détails sur la fiche →
+          Le détail et l&apos;avis par enfant sont sur la fiche →
         </div>
       </div>
     </>
