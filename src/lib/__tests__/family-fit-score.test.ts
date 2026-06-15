@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest"
 import {
   applyFitGuardrails,
+  capCatalogCardFitLevel,
+  capDetailFamilyFitLevel,
   computeAgeScore,
   computeGenreScore,
   computeMatureContentPenalty,
   computeSensitivityScore,
   computeWeightedFitScore,
+  finalizeDetailPageFit,
+  getCatalogCardExclusionReason,
   hasRichProfile,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
+  qualifiesForPositiveContentCopy,
 } from "../family-fit-score"
 
 describe("family fit guardrails", () => {
@@ -578,6 +583,118 @@ describe("computeWeightedFitScore — Phase 2.2 hard gates + personalizedScore",
     const omitted = computeWeightedFitScore(baseline)
     const explicit = computeWeightedFitScore({ ...baseline, personalizedScore: 0.5 })
     expect(omitted).toBe(explicit)
+  })
+})
+
+describe("catalog card family-fit gates", () => {
+  it("excludes a member one year under the expert age on cards", () => {
+    const reason = getCatalogCardExclusionReason({
+      memberAge: 12,
+      expertAgeRec: 13,
+      mediaGenres: ["Crime"],
+      metrics: { violence: 3, sexNudity: 0, toneTags: [] },
+      maturePenaltySeverity: "block",
+    })
+    expect(reason).toContain("en dessous de l'âge conseillé")
+  })
+
+  it("excludes minors on crime titles even when at the expert age", () => {
+    const reason = getCatalogCardExclusionReason({
+      memberAge: 14,
+      expertAgeRec: 13,
+      mediaGenres: ["Crime", "Mystère"],
+      metrics: { violence: 2, sexNudity: 0, toneTags: [] },
+      maturePenaltySeverity: "caution",
+    })
+    expect(reason).toContain("genre mature")
+  })
+
+  it("caps catalogue meters at one segment when violence is high for a tween", () => {
+    const level = capCatalogCardFitLevel("excellent", {
+      memberAge: 12,
+      metrics: { violence: 3, toneTags: [] },
+      maturePenaltySeverity: null,
+      prefPillar: "love",
+    })
+    expect(level).toBe("moderate")
+  })
+})
+
+describe("positive content copy guard", () => {
+  it("rejects the old loose positive claim on dark crime titles", () => {
+    const ok = qualifiesForPositiveContentCopy(
+      0.9,
+      {
+        positiveMessages: 4,
+        roleModels: 4,
+        violence: 2,
+        toneTags: ["Sombre et tendu"],
+      },
+      ["Crime"],
+    )
+    expect(ok).toBe(false)
+  })
+
+  it("allows positive copy only when metrics and tone are genuinely mild", () => {
+    const ok = qualifiesForPositiveContentCopy(
+      0.85,
+      {
+        positiveMessages: 4,
+        roleModels: 4,
+        violence: 1,
+        toneTags: ["Doux et chaleureux"],
+      },
+      ["Animation", "Famille"],
+    )
+    expect(ok).toBe(true)
+  })
+
+  it("caps detail level for a child on dark content without strong positive metrics", () => {
+    const level = capDetailFamilyFitLevel("excellent", {
+      memberAge: 10,
+      metrics: {
+        positiveMessages: 3,
+        roleModels: 3,
+        violence: 2,
+        toneTags: ["Sombre et tendu"],
+      },
+      mediaGenres: ["Science-Fiction & Fantastique", "Mystère"],
+      positiveScore: 0.7,
+      maturePenaltySeverity: null,
+    })
+    expect(level).toBe("good")
+  })
+})
+
+describe("detail page catalog alignment", () => {
+  it("downgrades a member hidden from catalogue cards to Trop tôt on the fiche", () => {
+    const result = finalizeDetailPageFit({
+      level: "good",
+      reason: "Adapté à son âge",
+      memberAge: 12,
+      expertAgeRec: 13,
+      mediaGenres: ["Crime", "Mystère"],
+      metrics: { violence: 3, sexNudity: 0, toneTags: [], positiveMessages: 4, roleModels: 4 },
+      maturePenaltySeverity: "block",
+      positiveScore: 0.9,
+    })
+    expect(result.level).toBe("poor")
+    expect(result.reason).toContain("Recommandé dès 13 ans")
+  })
+
+  it("flags mature genre on the fiche when the card would hide the member", () => {
+    const result = finalizeDetailPageFit({
+      level: "excellent",
+      reason: "Globalement adapté",
+      memberAge: 14,
+      expertAgeRec: 13,
+      mediaGenres: ["Crime"],
+      metrics: { violence: 2, sexNudity: 0, toneTags: [], positiveMessages: 4, roleModels: 4 },
+      maturePenaltySeverity: "caution",
+      positiveScore: 0.85,
+    })
+    expect(result.level).toBe("poor")
+    expect(result.reason).toContain("Pas pour ce profil")
   })
 })
 

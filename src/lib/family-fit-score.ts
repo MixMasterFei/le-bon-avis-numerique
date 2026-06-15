@@ -593,3 +593,226 @@ export function applyFitGuardrails(input: {
   return { score, level, reasonOverride, ageWarning, ageUnknown }
 }
 
+// ---------------------------------------------------------------------------
+// Catalogue card gates + copy guardrails (May 2026)
+//
+// Cards show member avatars as a quick "who is in range" signal. The previous
+// rule kept borderline members (1 year under expertAgeRec) visible with an
+// amber ring — parents read that as endorsement (Mathis 12 on Spider-Noir 13+).
+// Detail-page copy also over-claimed "éducatif/positif" from a loose
+// positiveScore threshold without checking tone, violence, or genre.
+// ---------------------------------------------------------------------------
+
+export interface CatalogCardExclusionInput {
+  memberAge: number | null
+  expertAgeRec: number | null
+  mediaGenres: string[]
+  metrics: Pick<FitMetrics, "violence" | "sexNudity" | "toneTags">
+  maturePenaltySeverity: MatureContentSeverity
+}
+
+export function mediaHasConcerningGenre(mediaGenres: string[]): boolean {
+  return mediaGenres.some((g) => CONCERNING_GENRES.has(normalizeTag(g)))
+}
+
+/** Returns an admin-debug reason string when a member must not appear on catalogue cards. */
+export function getCatalogCardExclusionReason(input: CatalogCardExclusionInput): string | null {
+  const { memberAge, expertAgeRec, mediaGenres, metrics, maturePenaltySeverity } = input
+  if (memberAge == null) return null
+
+  if (expertAgeRec != null && expertAgeRec > memberAge) {
+    return `carte · en dessous de l'âge conseillé (${memberAge} ans · dès ${expertAgeRec})`
+  }
+
+  const concerningGenre = mediaHasConcerningGenre(mediaGenres)
+  if (concerningGenre && (memberAge < 15 || (expertAgeRec != null && memberAge < expertAgeRec))) {
+    return "carte · genre mature / polar"
+  }
+
+  if (metrics.violence >= 3 && memberAge < 13) {
+    return "carte · violence élevée pour un enfant"
+  }
+
+  if (maturePenaltySeverity === "block") {
+    return "carte · contenu mature bloqué"
+  }
+
+  const toneTags = metrics.toneTags ?? []
+  const hasDarkTone = toneTags.some((t) => DARK_TONES.has(t) || CONCERNING_TONES.has(t))
+  if (hasDarkTone && memberAge < 13 && expertAgeRec != null && memberAge >= expertAgeRec) {
+    return "carte · ambiance sombre pour un enfant"
+  }
+
+  return null
+}
+
+export interface CatalogCardLevelCapInput {
+  memberAge: number | null
+  metrics: Pick<FitMetrics, "violence" | "toneTags">
+  maturePenaltySeverity: MatureContentSeverity
+  prefPillar?: "love" | "good" | "check" | "avoid" | "noProfile"
+}
+
+/** Caps the legacy FitLevel used by catalogue meters (max 1 lit segment when cautious). */
+export function capCatalogCardFitLevel(level: FitLevel, input: CatalogCardLevelCapInput): FitLevel {
+  let capped = level
+
+  if (input.maturePenaltySeverity === "caution") {
+    capped = capLevel(capped, "moderate")
+  }
+
+  const toneTags = input.metrics.toneTags ?? []
+  const hasDarkTone = toneTags.some((t) => DARK_TONES.has(t) || CONCERNING_TONES.has(t))
+  if (input.memberAge != null && input.memberAge < 13 && (hasDarkTone || input.metrics.violence >= 3)) {
+    capped = capLevel(capped, "moderate")
+  }
+
+  if (input.memberAge != null && input.memberAge < 16 && input.metrics.violence >= 3) {
+    capped = capLevel(capped, "moderate")
+  }
+
+  // Never show a 3-segment "Très adapté" on cards when preferences are still in check.
+  if (input.prefPillar === "check" || input.prefPillar === "noProfile") {
+    capped = capLevel(capped, "moderate")
+  }
+
+  return capped
+}
+
+export function qualifiesForPositiveContentCopy(
+  positiveScore: number,
+  metrics: Pick<FitMetrics, "positiveMessages" | "roleModels" | "violence" | "toneTags">,
+  mediaGenres: string[],
+): boolean {
+  if (positiveScore < 0.8) return false
+  if (metrics.positiveMessages < 4 || metrics.roleModels < 4) return false
+  if (metrics.violence > 2) return false
+
+  const toneTags = metrics.toneTags ?? []
+  if (toneTags.some((t) => DARK_TONES.has(t) || CONCERNING_TONES.has(t))) return false
+  if (mediaHasConcerningGenre(mediaGenres)) return false
+
+  return true
+}
+
+export interface DetailFitLevelCapInput {
+  memberAge: number | null
+  metrics: Pick<FitMetrics, "positiveMessages" | "roleModels" | "violence" | "toneTags">
+  mediaGenres: string[]
+  positiveScore: number
+  maturePenaltySeverity: MatureContentSeverity
+  contentAnalysisHidden?: boolean
+}
+
+/** Softer cap for the detail-page sidebar — avoids "Très adapté" on dark / violent titles. */
+export function capDetailFamilyFitLevel(level: FitLevel, input: DetailFitLevelCapInput): FitLevel {
+  if (input.contentAnalysisHidden) {
+    return capLevel(level, "moderate")
+  }
+
+  if (input.maturePenaltySeverity === "caution") {
+    return capLevel(level, "moderate")
+  }
+
+  const toneTags = input.metrics.toneTags ?? []
+  const hasDarkTone = toneTags.some((t) => DARK_TONES.has(t) || CONCERNING_TONES.has(t))
+  const concerning = mediaHasConcerningGenre(input.mediaGenres) || hasDarkTone || input.metrics.violence >= 3
+
+  if (input.memberAge != null && input.memberAge <= 12 && concerning) {
+    if (!qualifiesForPositiveContentCopy(input.positiveScore, input.metrics, input.mediaGenres)) {
+      return capLevel(level, "good")
+    }
+  }
+
+  return level
+}
+
+export interface FinalizeDetailPageFitInput {
+  level: FitLevel
+  reason: string
+  memberAge: number | null
+  expertAgeRec: number | null
+  mediaGenres: string[]
+  metrics: Pick<FitMetrics, "violence" | "sexNudity" | "toneTags" | "positiveMessages" | "roleModels">
+  maturePenaltySeverity: MatureContentSeverity
+  positiveScore: number
+  contentAnalysisHidden?: boolean
+}
+
+function detailReasonFromCatalogExclusion(
+  catalogExclusionReason: string,
+  expertAgeRec: number | null,
+): string {
+  if (catalogExclusionReason.includes("en dessous de l'âge conseillé")) {
+    return expertAgeRec != null
+      ? `Recommandé dès ${expertAgeRec} ans — pas adapté pour l'instant`
+      : "Pas adapté à son âge pour l'instant"
+  }
+  if (catalogExclusionReason.includes("genre mature")) {
+    return "Pas pour ce profil — genre mature ou polar"
+  }
+  if (catalogExclusionReason.includes("violence élevée")) {
+    return "Violence marquée — déconseillé pour un enfant"
+  }
+  if (catalogExclusionReason.includes("contenu mature bloqué")) {
+    return "Contenu mature — pas adapté à son âge"
+  }
+  if (catalogExclusionReason.includes("ambiance sombre")) {
+    return "Ambiance sombre ou intense — à valider avec lui avant de proposer"
+  }
+  return "Quelques points à vérifier avant de proposer ce titre"
+}
+
+function detailLevelFromCatalogExclusion(catalogExclusionReason: string): FitLevel {
+  if (
+    catalogExclusionReason.includes("en dessous de l'âge conseillé") ||
+    catalogExclusionReason.includes("genre mature") ||
+    catalogExclusionReason.includes("contenu mature bloqué")
+  ) {
+    return "poor"
+  }
+  return "moderate"
+}
+
+/**
+ * Detail-page sidebar: show every member, but align verdicts with catalogue
+ * card gates so a hidden card avatar never reads "Bon choix" on the fiche.
+ */
+export function finalizeDetailPageFit(input: FinalizeDetailPageFitInput): {
+  level: FitLevel
+  reason: string
+} {
+  if (input.contentAnalysisHidden) {
+    return {
+      level: capLevel(input.level, "moderate"),
+      reason: "Sortie à venir — repère provisoire, à revalider",
+    }
+  }
+
+  const catalogExclusion = getCatalogCardExclusionReason({
+    memberAge: input.memberAge,
+    expertAgeRec: input.expertAgeRec,
+    mediaGenres: input.mediaGenres,
+    metrics: input.metrics,
+    maturePenaltySeverity: input.maturePenaltySeverity,
+  })
+
+  if (catalogExclusion) {
+    return {
+      level: detailLevelFromCatalogExclusion(catalogExclusion),
+      reason: detailReasonFromCatalogExclusion(catalogExclusion, input.expertAgeRec),
+    }
+  }
+
+  return {
+    level: capDetailFamilyFitLevel(input.level, {
+      memberAge: input.memberAge,
+      metrics: input.metrics,
+      mediaGenres: input.mediaGenres,
+      positiveScore: input.positiveScore,
+      maturePenaltySeverity: input.maturePenaltySeverity,
+    }),
+    reason: input.reason,
+  }
+}
+

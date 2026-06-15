@@ -5,6 +5,7 @@ import { COMMUNITY_WARNING_THRESHOLD } from "@/lib/family-warning"
 import { getMemberAge } from "@/lib/age-utils"
 import {
   applyFitGuardrails,
+  capCatalogCardFitLevel,
   clampScore,
   computeAgeScore,
   computeAvoidScore,
@@ -16,12 +17,14 @@ import {
   computeToneScore,
   computeWeightedFitScore,
   DEFAULT_FIT_METRICS,
+  getCatalogCardExclusionReason,
   hasRichProfile,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 import {
   ageVerdictFromAges,
   legacyLevelFromPillars,
@@ -138,6 +141,14 @@ export async function POST(request: NextRequest) {
 
     for (const media of mediaItems) {
       const metrics = media.contentMetrics ?? DEFAULT_FIT_METRICS
+      const toneTags = (metrics.toneTags ?? []) as string[]
+
+      const contentAnalysisHidden = shouldHideContentAnalysis({
+        releaseDate: media.releaseDate,
+        isEnriched: media.isEnriched,
+        expertAgeRec: media.expertAgeRec,
+        releaseStatus: media.releaseStatus,
+      })
 
       // Household-level warning signals. We still compute per-member fits even
       // when these fire — the cards that want to render an orange warning
@@ -159,6 +170,31 @@ export async function POST(request: NextRequest) {
       // Tracks who got filtered and why. Only attached to the response
       // when the requester is admin (drives the homepage debug overlay).
       const excludedForDebug: ExcludedMember[] = []
+
+      // Pre-release / provisional titles: no family avatars on cards until the
+      // content analysis is trustworthy (see release-status.ts).
+      if (contentAnalysisHidden) {
+        if (isAdmin) {
+          excludedForDebug.push({
+            id: "—",
+            name: "Tous",
+            reason: "carte · sortie à venir / analyse provisoire",
+          })
+        }
+        if (familyWarning || (isAdmin && excludedForDebug.length > 0)) {
+          const entry: {
+            members: MemberFit[]
+            familyWarning?: boolean
+            communityFlagged?: boolean
+            _debug?: { excluded: ExcludedMember[] }
+          } = { members: [] }
+          if (familyWarning) entry.familyWarning = true
+          if (communityFlagged) entry.communityFlagged = true
+          if (isAdmin) entry._debug = { excluded: excludedForDebug }
+          result[media.id] = entry
+        }
+        continue
+      }
 
       for (const member of familyMembers) {
         const memberAge = getMemberAge(member.birthYear, member.birthMonth)
@@ -294,17 +330,9 @@ export async function POST(request: NextRequest) {
         else if (guarded.score >= 80) prefPillar = "love"
         else prefPillar = "good"
 
-        // Inclusion rule: every age-appropriate member who hasn't been
-        // explicitly ruled out by their preferences. We allow "borderline"
-        // (gap=1) so a 9-year-old on a 10+ title still appears with an amber
-        // ring — the badge will say "Limite d'âge" rather than hiding them.
-        //
-        // Check order is tuned so the *most semantic* reason wins when
-        // multiple gates fire. Mortal Kombat II (14+) on Eliott 9 and
-        // Mathis 13 — both should read "contenu mature bloqué", not one
-        // reading that and the other "trop tôt". Previously the order was
-        // age → pref, so the younger member got the bare age reason while
-        // the borderline one got the more informative mature-block reason.
+        // Inclusion rule: age-appropriate members who haven't been ruled out by
+        // preferences, then the stricter catalogue gates (getCatalogCardExclusionReason)
+        // which hide anyone under expertAgeRec, mature genres for minors, etc.
         if (maturePenalty.severity === "block") {
           if (isAdmin) {
             excludedForDebug.push({
@@ -342,6 +370,20 @@ export async function POST(request: NextRequest) {
           continue
         }
 
+        const catalogExclusion = getCatalogCardExclusionReason({
+          memberAge,
+          expertAgeRec: media.expertAgeRec,
+          mediaGenres: media.genres,
+          metrics: { violence: metrics.violence, sexNudity: metrics.sexNudity, toneTags },
+          maturePenaltySeverity: maturePenalty.severity,
+        })
+        if (catalogExclusion) {
+          if (isAdmin) {
+            excludedForDebug.push({ id: member.id, name: member.name, reason: catalogExclusion })
+          }
+          continue
+        }
+
         const prefReasons: string[] = []
         if (maturePenalty.reason) {
           prefReasons.push(maturePenalty.reason.charAt(0).toUpperCase() + maturePenalty.reason.slice(1))
@@ -351,6 +393,16 @@ export async function POST(request: NextRequest) {
           label: PREFERENCE_PILLAR_LABELS[prefPillar],
           reasons: prefReasons,
         }
+        const cardLevel = capCatalogCardFitLevel(
+          legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
+          {
+            memberAge,
+            metrics: { violence: metrics.violence, toneTags },
+            maturePenaltySeverity: maturePenalty.severity,
+            prefPillar,
+          },
+        )
+
         fittingMembers.push({
           id: member.id,
           name: member.name,
@@ -359,7 +411,7 @@ export async function POST(request: NextRequest) {
           avatarSeed: member.avatarSeed,
           avatarOptions: member.avatarOptions as Record<string, unknown> | null,
           score: guarded.score,
-          level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
+          level: cardLevel,
           reason: guarded.reasonOverride ?? maturePenalty.reason ?? undefined,
           ageVerdict,
           preferenceVerdict,
