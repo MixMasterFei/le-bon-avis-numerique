@@ -2,7 +2,6 @@
 
 import Link from "next/link"
 import { Plus } from "lucide-react"
-import { getMemberAge } from "@/lib/age-utils"
 import { MemberMonogram } from "./MemberMonogram"
 import { memberColor } from "./family"
 
@@ -53,7 +52,6 @@ export function FamilyChips({
   return (
     <div className={compact ? "flex flex-wrap gap-1.5" : "flex flex-wrap gap-2"}>
       {members.map((m, idx) => {
-        const age = getMemberAge(m.birthYear, m.birthMonth)
         const on = selectedMemberIds.includes(m.id)
         const color = memberColor(idx)
         return (
@@ -70,10 +68,7 @@ export function FamilyChips({
             }}
           >
             <MemberMonogram name={m.name} color={color} size={compact ? 18 : 22} />
-            <span className="whitespace-nowrap">
-              {m.name}
-              {age != null && <span style={{ color: "var(--ink-3)" }}> · {age} ans</span>}
-            </span>
+            <span className="whitespace-nowrap">{m.name}</span>
           </button>
         )
       })}
