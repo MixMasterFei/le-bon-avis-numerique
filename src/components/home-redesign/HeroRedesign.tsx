@@ -39,11 +39,15 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
 
   return (
     <section id="v2-hero" className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--line)" }}>
-      {/* Poster wall — subtle, recognizable, drifting */}
+      {/* Poster wall — subtle, recognizable, drifting. DECORATIVE only, so it's
+          hidden on mobile (`hidden sm:grid`): it rendered ~96 poster <img> tags
+          (8 cols × tripled), which tanked mobile LCP (~18s on slow-4G). The veil
+          gradient below carries the look on phones; the lazy images in this
+          hidden container never fetch on mobile. */}
       {heroPosters.length > 0 && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 z-0 grid grid-cols-8 gap-3.5 px-3.5"
+          className="pointer-events-none absolute inset-0 z-0 hidden grid-cols-8 gap-3.5 px-3.5 sm:grid"
           style={{ transform: "rotate(-8deg) scale(1.5)", transformOrigin: "center", opacity: 0.25, filter: "saturate(.9)" }}
         >
           {columns.map((col, ci) => (
