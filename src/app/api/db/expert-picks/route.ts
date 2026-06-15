@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
   const seed = seedParam ? parseInt(seedParam) : getWeekSeed()
   const tenYearsAgo = new Date()
   tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10)
+  // Curated picks are family-capped at 12; the homepage age filter can lower it.
+  const maxAgeParam = searchParams.get("maxAge")
+  const ageCap = Math.min(12, maxAgeParam ? parseInt(maxAgeParam) : 12)
 
   try {
     // Fetch a large pool — most movies share the same DQS so we need
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
               // face of the aperçu page.
               type: { in: ["MOVIE", "TV"] },
               dataQualityScore: { gte: 70 },
-              expertAgeRec: { not: null, lte: 12 },
+              expertAgeRec: { not: null, lte: ageCap },
               originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt"] },
               tmdbRating: { gte: 7.0 },
               tmdbVoteCount: { gte: 500 },
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
               // aren't stored in tmdbRating, so applying the TMDB filter
               // would wipe every game from the pool.
               type: "GAME",
-              expertAgeRec: { not: null, lte: 12 },
+              expertAgeRec: { not: null, lte: ageCap },
               dataQualityScore: { gte: 75 },
               releaseDate: { not: null, gte: tenYearsAgo },
             },

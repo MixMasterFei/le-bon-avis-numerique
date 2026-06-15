@@ -5,6 +5,7 @@ import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
+import { StickyAgeFilter } from "./StickyAgeFilter"
 import { WeekendRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
 import { PlatformsSection } from "./PlatformsSection"
@@ -25,12 +26,15 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
   const toggleAge = (k: string) =>
     setSelectedKeys((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]))
 
-  // The selected band with the largest maxAge drives the week-end rail.
+  // The selected band with the largest maxAge drives the week-end rail and,
+  // once any band is picked, the WHOLE homepage (all age-filterable rails show
+  // only content for that age and below). No selection → no global filter.
   const selected = APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key))
   const activeBucket = selected.length
     ? selected.reduce((a, b) => (b.maxAge > a.maxAge ? b : a))
     : null
   const weekendMaxAge = activeBucket?.maxAge ?? defaultMaxAge
+  const globalMaxAge = activeBucket?.maxAge // undefined when nothing selected
 
   return (
     <FamilyFitProvider>
@@ -40,13 +44,14 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge }: Hom
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
         <HeroRedesign heroPosters={heroPosters} selectedKeys={selectedKeys} onToggleAge={toggleAge} />
+        <StickyAgeFilter selectedKeys={selectedKeys} onToggleAge={toggleAge} onClear={() => setSelectedKeys([])} />
         <WeekendRail maxAge={weekendMaxAge} />
         <UpcomingRail />
-        <CinemaRail />
-        <CoupsDeCoeurRail />
+        <CinemaRail maxAge={globalMaxAge} />
+        <CoupsDeCoeurRail maxAge={globalMaxAge} />
         <AgeGridRedesign />
-        <PlatformsSection />
-        <GamesRail />
+        <PlatformsSection maxAge={globalMaxAge} />
+        <GamesRail maxAge={globalMaxAge} />
         <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />
