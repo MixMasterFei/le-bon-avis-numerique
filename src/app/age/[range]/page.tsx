@@ -67,47 +67,67 @@ interface AgePageProps {
 }
 
 async function fetchAgeRangeMedia(min: number, max: number, page: number) {
-  const skip = (page - 1) * ITEMS_PER_PAGE
-
   const where: Prisma.MediaItemWhereInput = {
     expertAgeRec: { gte: min, lte: max },
     posterUrl: { not: null, startsWith: "http" },
     isEnriched: true,
+    // Films, séries and games only — mangas/books have their own sections.
+    type: { in: ["MOVIE", "TV", "GAME"] },
     AND: [{ tmdbVoteCount: { gte: 50 } }],
   }
 
-  const [rawItems, total] = await Promise.all([
-    withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where,
-        orderBy: [
-          { expertAgeRec: "asc" },
-          { tmdbRating: { sort: "desc", nulls: "last" } },
-        ],
-        skip,
-        take: ITEMS_PER_PAGE,
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          posterUrl: true,
-          expertAgeRec: true,
-          genres: true,
-          contentMetrics: {
-            select: {
-              violence: true,
-              sexNudity: true,
-              language: true,
-              substanceUse: true,
-            },
+  // The 8+ bands are game-heavy in the catalog, which made these pages read as
+  // a games-only list (films/séries buried). Pull a quality-ordered pool, then
+  // round-robin interleave by media type so every page shows a film/série/jeu
+  // mix. We paginate over the interleaved pool (bounded — plenty for a browse
+  // surface).
+  const POOL_SIZE = 240
+
+  const pool = await withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
+      where,
+      orderBy: [{ tmdbRating: { sort: "desc", nulls: "last" } }],
+      take: POOL_SIZE,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        posterUrl: true,
+        expertAgeRec: true,
+        genres: true,
+        contentMetrics: {
+          select: {
+            violence: true,
+            sexNudity: true,
+            language: true,
+            substanceUse: true,
           },
         },
-      })
-    ),
-    withPrismaRetry(() => prisma.mediaItem.count({ where })).catch(
-      () => skip + ITEMS_PER_PAGE
-    ),
-  ])
+      },
+    }),
+  )
+
+  // Round-robin: MOVIE[i], TV[i], GAME[i], … — keeps each type's quality order
+  // while guaranteeing a mix; a band with only one type just falls back to it.
+  const buckets: Record<string, typeof pool> = { MOVIE: [], TV: [], GAME: [] }
+  for (const it of pool) (buckets[it.type] ??= []).push(it)
+  const TYPE_ORDER = ["MOVIE", "TV", "GAME"] as const
+  const interleaved: typeof pool = []
+  for (let i = 0; interleaved.length < pool.length; i++) {
+    let progressed = false
+    for (const t of TYPE_ORDER) {
+      const b = buckets[t]
+      if (b && b[i]) {
+        interleaved.push(b[i])
+        progressed = true
+      }
+    }
+    if (!progressed) break
+  }
+
+  const total = interleaved.length
+  const pageStart = (page - 1) * ITEMS_PER_PAGE
+  const rawItems = interleaved.slice(pageStart, pageStart + ITEMS_PER_PAGE)
 
   const items: ApercuCardMedia[] = rawItems.map((item) => ({
     id: item.id,
