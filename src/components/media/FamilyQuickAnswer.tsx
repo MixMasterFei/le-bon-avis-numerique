@@ -36,8 +36,10 @@ function Shell({
     <div
       className={`flex-1 rounded-xl p-4 ${className ?? ""}`}
       style={{
-        background: "linear-gradient(135deg, #FFF7F3, var(--color-warm-card))",
-        border: "1px solid #f0cdbe",
+        // Dark-aware warm tokens so the box flips in Soirée mode (the old
+        // #FFF7F3 / #f0cdbe hex stayed light).
+        background: "linear-gradient(135deg, var(--color-warm-bg2), var(--color-warm-card))",
+        border: "1px solid var(--color-warm-line)",
       }}
     >
       <h3
