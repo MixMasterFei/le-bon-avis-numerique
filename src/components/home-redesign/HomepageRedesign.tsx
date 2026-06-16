@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { FamilyFitProvider, useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
+import { DeferUntilVisible } from "./DeferUntilVisible"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { getMemberAge } from "@/lib/age-utils"
 import { v2FontVars } from "./fonts"
@@ -130,13 +131,26 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {selectedMemberIds.length > 0 && (
           <PersonalizedRail memberIds={selectedMemberIds} title={personalizedTitle} maxAge={globalMaxAge} />
         )}
+        {/* First rail stays eager (at/just-below the fold). The rest are heavy
+            data rails (each fetches + renders a poster grid) — deferred until
+            scrolled near, so they don't all mount on load and delay LCP. */}
         <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
-        <UpcomingRail />
-        <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
-        <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        <DeferUntilVisible minHeight={300}>
+          <UpcomingRail />
+        </DeferUntilVisible>
+        <DeferUntilVisible>
+          <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        </DeferUntilVisible>
+        <DeferUntilVisible>
+          <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        </DeferUntilVisible>
         <AgeGridRedesign />
-        <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
-        <GamesRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        <DeferUntilVisible>
+          <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        </DeferUntilVisible>
+        <DeferUntilVisible>
+          <GamesRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        </DeferUntilVisible>
         <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />
