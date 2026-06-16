@@ -43,9 +43,9 @@ describe("vigilanceMax — overall = max across axes", () => {
     expect(vigilanceMax({ violence: 5, language: 4 }, "MOVIE", 6)).toBe(1)
   })
 
-  it("games only consider violence + consumerism", () => {
-    // language 5 is ignored for GAME (not a game axis); consumerism 4 → 2.
-    expect(vigilanceMax({ violence: 0, language: 5, consumerism: 4 }, "GAME", 12)).toBe(2)
+  it("games consider violence, language, consumerism, and substances", () => {
+    expect(vigilanceMax({ violence: 0, language: 5, consumerism: 0, substanceUse: 0 }, "GAME", 12)).toBe(3)
+    expect(vigilanceMax({ violence: 0, language: 0, consumerism: 4, substanceUse: 0 }, "GAME", 12)).toBe(2)
   })
 
   it("returns 0 with no metrics", () => {

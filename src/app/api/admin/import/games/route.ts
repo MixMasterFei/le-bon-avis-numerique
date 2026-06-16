@@ -16,7 +16,7 @@ import {
   getGamesByFranchise,
   getTopRatedGames,
   getIGDBImageUrl,
-  getPegiRating,
+  getPegiInfo,
   normalizePlatforms,
   IGDBGame,
 } from "@/lib/igdb"
@@ -31,7 +31,7 @@ interface ImportStats {
 }
 
 function transformGameToMediaItem(game: IGDBGame) {
-  const pegi = getPegiRating(game.age_ratings)
+  const pegi = getPegiInfo(game.age_ratings)
   const developer = game.involved_companies?.find((c) => c.developer)
 
   return {
@@ -44,8 +44,9 @@ function transformGameToMediaItem(game: IGDBGame) {
       ? new Date(game.first_release_date * 1000)
       : null,
     genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
-    platforms: normalizePlatforms(game.platforms), // Only modern platforms
+    platforms: normalizePlatforms(game.platforms),
     officialRating: pegi?.internal || null,
+    pegiDescriptors: pegi?.descriptors ?? [],
     expertAgeRec: pegi?.age || null,
     director: developer?.company.name || null, // Using director field for developer
     topics: game.themes?.map((t) => t.name) || [],

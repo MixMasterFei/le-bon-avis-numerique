@@ -54,11 +54,12 @@ export const TOTEM_AXES_FILM: TotemAxis[] = [
   { key: "substanceUse", short: "A", label: "Substances" },
 ]
 
-// Games: parents care about violence + microtransactions, not the film
-// axes (which are mostly noise for games). consumerism = in-game purchases.
+// Games: violence, language, in-game purchases, substances — 4 axes like films.
 export const TOTEM_AXES_GAME: TotemAxis[] = [
   { key: "violence", short: "V", label: "Violence" },
+  { key: "language", short: "L", label: "Langage" },
   { key: "consumerism", short: "€", label: "Achats intégrés", words: PURCHASE_WORDS },
+  { key: "substanceUse", short: "A", label: "Substances" },
 ]
 
 /** Default export kept for the generic decoder / back-compat (film axes). */

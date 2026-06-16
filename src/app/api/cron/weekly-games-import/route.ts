@@ -5,7 +5,7 @@ import {
   getRecentGames,
   getPopularGames,
   getIGDBImageUrl,
-  getPegiRating,
+  getPegiInfo,
   normalizePlatforms,
   type IGDBGame,
 } from "@/lib/igdb"
@@ -53,7 +53,7 @@ interface ImportStats {
 }
 
 function transformGame(game: IGDBGame) {
-  const pegi = getPegiRating(game.age_ratings)
+  const pegi = getPegiInfo(game.age_ratings)
   const developer = game.involved_companies?.find((c) => c.developer)
   const ageRec = pegi?.age ?? null
   return {
@@ -68,6 +68,7 @@ function transformGame(game: IGDBGame) {
     genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
     platforms: normalizePlatforms(game.platforms),
     officialRating: pegi?.internal || null,
+    pegiDescriptors: pegi?.descriptors ?? [],
     expertAgeRec: ageRec,
     director: developer?.company.name || null, // IGDB developer → director field (per existing manual import convention)
     topics: game.themes?.map((t) => t.name) || [],
