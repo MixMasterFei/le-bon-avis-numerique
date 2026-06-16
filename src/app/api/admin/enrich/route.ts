@@ -4,6 +4,7 @@ import { logCronRun } from "@/lib/cron-log"
 import { UNRELEASED_TMDB_STATUSES } from "@/lib/release-status"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
+import { floorExpertAgeBySignals } from "@/lib/age-floor"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
@@ -670,6 +671,19 @@ export async function POST(request: NextRequest) {
           tmdbVoteCount: item.tmdbVoteCount,
           demographic: item.demographic,
         }, tmdbKeywords)
+
+        // Deterministic age FLOOR: mature content must be allowed to push the
+        // recommended age above a lenient official rating (independent guidance).
+        // Runs BEFORE the metric clamp so a raised age doesn't then get its axes
+        // capped. The symmetric counterpart to clampMetricsByAge.
+        analysis.expertAgeRec = floorExpertAgeBySignals({
+          expertAgeRec: analysis.expertAgeRec,
+          metrics: analysis.contentMetrics,
+          genres: item.genres,
+          topics: analysis.tags,
+          visualStyle: analysis.visualStyle,
+          type: item.type,
+        })
 
         // Deterministic guardrail: cap sensibility axes for titles the model
         // itself curated as young (≤8). Backstop beyond the LLM rubric — keyed
