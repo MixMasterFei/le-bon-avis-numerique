@@ -9,8 +9,11 @@ import {
   ApercuMediaCard,
   type ApercuCardMedia,
 } from "@/components/home-v2/ApercuMediaCard"
+import { RedesignCard } from "@/components/home-redesign/RedesignCard"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { isAdmin as checkIsAdmin } from "@/lib/auth"
+import { v2Enabled } from "@/lib/v2-flag"
 
 export const revalidate = 1800
 
@@ -153,6 +156,11 @@ export default async function AgePage({
     ageRange.max,
     currentPage
   )
+
+  // Use the V2 card (bars + augmented totem-with-hover + monogram avatars) when
+  // V2 is on, so the age pages match the rest of the site instead of the legacy
+  // apercu card (hearts + plain badge). Follows the master flag → rollback-safe.
+  const v2Cards = v2Enabled(await checkIsAdmin())
 
   const baseUrl = "https://totemavise.com"
 
@@ -317,16 +325,27 @@ export default async function AgePage({
 
             {items.length > 0 ? (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-                  {items.map((item) => (
-                    <ApercuMediaCard
-                      key={item.id}
-                      media={item}
-                      size="sm"
-                      serifClass={serifClass}
-                    />
-                  ))}
-                </div>
+                {v2Cards ? (
+                  <div
+                    data-home="v2"
+                    className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-5 lg:grid-cols-5"
+                  >
+                    {items.map((item) => (
+                      <RedesignCard key={item.id} media={item} totem="compact" showType />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+                    {items.map((item) => (
+                      <ApercuMediaCard
+                        key={item.id}
+                        media={item}
+                        size="sm"
+                        serifClass={serifClass}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {totalPages > 1 && (
                   <nav
