@@ -327,7 +327,11 @@ jobs:
             echo "$response" | jq '{processed, raised, done, sample: (.changes[0:10])}' 2>/dev/null || echo "$response"
             raised=$(echo "$response" | jq -r '.raised // 0' 2>/dev/null || echo 0)
             total_raised=$((total_raised + raised))
-            done_flag=$(echo "$response" | jq -r '.done // true' 2>/dev/null || echo true)
+            # NB: `.done // true` is WRONG — jq's `//` treats boolean false as
+            # absent, so done:false would yield "true" and the loop would stop
+            # after one batch. Use `.done // false` (and fall back to "true" only
+            # on an empty/parse error, to stop safely).
+            done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo true)
             after=$(echo "$response" | jq -r '.lastId // empty' 2>/dev/null || echo "")
             if [ "$done_flag" = "true" ] || [ -z "$after" ]; then break; fi
             sleep 1
