@@ -87,7 +87,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
           className="mx-auto mt-6 max-w-[20ch] text-[clamp(36px,5.2vw,68px)] font-bold leading-[1.05]"
           style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
         >
-          Trouvez des films, séries et jeux <Em tone="terra">adaptés à vos enfants</Em>.
+          Trouvez des films, séries et jeux <Em tone="terra">adaptés à votre famille</Em>.
         </h1>
         <p className="mx-auto mt-4 max-w-[60ch] text-[clamp(16px,2vw,19px)]" style={{ color: "var(--ink-2)" }}>
           Âges, goûts, sensibilités, plateformes : Totem Avisé vous aide à choisir en famille, sans mauvaise surprise.
