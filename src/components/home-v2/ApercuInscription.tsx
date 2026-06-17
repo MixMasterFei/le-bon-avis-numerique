@@ -16,9 +16,6 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [newsletterWeekly, setNewsletterWeekly] = useState<boolean | null>(null)
-  const [newsletterMission, setNewsletterMission] = useState<boolean | null>(null)
-  const [newsletterUpdates, setNewsletterUpdates] = useState<boolean | null>(null)
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [registeredEmail, setRegisteredEmail] = useState("")
@@ -39,9 +36,6 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
     lastName.trim() &&
     email.includes("@") &&
     passwordValid &&
-    newsletterWeekly !== null &&
-    newsletterMission !== null &&
-    newsletterUpdates !== null &&
     acceptTerms
 
   async function onSubmit(e: React.FormEvent) {
@@ -58,11 +52,6 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
           name: `${firstName} ${lastName}`.trim(),
           email,
           password,
-          preferences: {
-            newsletterWeekly,
-            newsletterMission,
-            newsletterUpdates,
-          },
         }),
       })
 
@@ -264,29 +253,6 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                   </ul>
                 </div>
 
-                <div className="pt-1">
-                  <div className="text-xs font-semibold mb-2" style={{ color: p.ink2 }}>
-                    Préférences de communication
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <YesNoRow
-                      label="Newsletter hebdomadaire (sélection famille)"
-                      value={newsletterWeekly}
-                      onChange={setNewsletterWeekly}
-                    />
-                    <YesNoRow
-                      label="Mission éditoriale (1 fois par mois)"
-                      value={newsletterMission}
-                      onChange={setNewsletterMission}
-                    />
-                    <YesNoRow
-                      label="Nouveautés et améliorations du site"
-                      value={newsletterUpdates}
-                      onChange={setNewsletterUpdates}
-                    />
-                  </div>
-                </div>
-
                 <label className="flex items-start gap-2.5 text-sm cursor-pointer mt-2">
                   <input
                     type="checkbox"
@@ -297,7 +263,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
                   <span style={{ color: p.ink2 }}>
                     J&apos;accepte les{" "}
                     <Link href="/mentions-legales" className="underline" style={{ color: p.ink }}>
-                      conditions d&apos;utilisation
+                      mentions légales
                     </Link>{" "}
                     et la{" "}
                     <Link href="/confidentialite" className="underline" style={{ color: p.ink }}>
@@ -400,48 +366,6 @@ function Field({
         className="w-full text-sm rounded-xl px-3.5 py-2.5 outline-none focus:ring-2 focus:ring-offset-1"
         style={{ background: p.bg2, border: `1px solid ${p.line2}`, color: p.ink }}
       />
-    </div>
-  )
-}
-
-function YesNoRow({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: boolean | null
-  onChange: (v: boolean) => void
-}) {
-  const p = APERCU_PALETTE
-  return (
-    <div className="flex items-center justify-between gap-3 py-1.5">
-      <span className="text-sm flex-1" style={{ color: p.ink }}>
-        {label}
-      </span>
-      <div className="flex gap-1.5 flex-shrink-0">
-        {[
-          { val: true, label: "Oui" },
-          { val: false, label: "Non" },
-        ].map((opt) => {
-          const active = value === opt.val
-          return (
-            <button
-              key={String(opt.val)}
-              type="button"
-              onClick={() => onChange(opt.val)}
-              className="px-3 py-1 rounded-full text-xs font-semibold"
-              style={{
-                background: active ? p.ink : "transparent",
-                color: active ? p.bg : p.ink2,
-                border: `1px solid ${active ? p.ink : p.line2}`,
-              }}
-            >
-              {opt.label}
-            </button>
-          )
-        })}
-      </div>
     </div>
   )
 }
