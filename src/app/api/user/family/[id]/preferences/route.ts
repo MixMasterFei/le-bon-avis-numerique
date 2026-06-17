@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { MAX_FAMILY_INTERESTS } from "@/lib/family-constants"
 
 // GET /api/user/family/[id]/preferences - Get member preferences
 export async function GET(
@@ -187,7 +188,7 @@ export async function PUT(
         }),
         ...(interests !== undefined && {
           interests: Array.isArray(interests)
-            ? interests.map((i: unknown) => String(i).trim()).filter(Boolean).slice(0, 20)
+            ? interests.map((i: unknown) => String(i).trim()).filter(Boolean).slice(0, MAX_FAMILY_INTERESTS)
             : [],
         }),
         ...(useCustomSettings !== undefined && {

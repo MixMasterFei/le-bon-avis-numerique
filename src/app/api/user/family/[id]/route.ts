@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sanitizeAvatarInput } from "@/lib/avatar"
+import { MAX_FAMILY_INTERESTS } from "@/lib/family-constants"
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -88,7 +89,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         ...(sanitizedAvatar.avatarOptions !== null && { avatarOptions: sanitizedAvatar.avatarOptions }),
         ...(favoriteGenres !== undefined && { favoriteGenres: Array.isArray(favoriteGenres) ? favoriteGenres : [] }),
         ...(dislikedGenres !== undefined && { dislikedGenres: Array.isArray(dislikedGenres) ? dislikedGenres : [] }),
-        ...(interests !== undefined && { interests: Array.isArray(interests) ? interests.map((i: unknown) => String(i).trim()).filter(Boolean).slice(0, 20) : [] }),
+        ...(interests !== undefined && { interests: Array.isArray(interests) ? interests.map((i: unknown) => String(i).trim()).filter(Boolean).slice(0, MAX_FAMILY_INTERESTS) : [] }),
       },
     })
 

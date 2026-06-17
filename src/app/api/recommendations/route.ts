@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
+import { RECS_THRESHOLDS } from "@/lib/recs-constants"
 
 // GET /api/recommendations?familyMemberId=xxx - Get recommendations for a family member
 export async function GET(request: NextRequest) {
@@ -169,7 +170,7 @@ export async function GET(request: NextRequest) {
         // Must have an age rating AND be appropriate for child's age
         const hasAgeRating = item.expertAgeRec !== null
         const isAgeAppropriate = childAge === null || (hasAgeRating && item.expertAgeRec! <= childAge)
-        const isHighQuality = item.dataQualityScore >= 70 // Only mainstream titles
+        const isHighQuality = item.dataQualityScore >= RECS_THRESHOLDS.qualityFloor // Only mainstream titles
 
         if (hasAgeRating && isAgeAppropriate && isHighQuality) {
           similarItems.set(item.id, { ...item, similarityScore: sim.similarityScore })

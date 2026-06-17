@@ -6,6 +6,7 @@ import { ThumbsUp, ThumbsDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { trackAgeVote } from "@/lib/analytics"
+import { COMMUNITY_CONSENSUS } from "@/lib/sensitive-warnings"
 
 const SAGE = "#5C8A5C"
 
@@ -102,7 +103,10 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
   if (!data) return null
 
   const p = APERCU_PALETTE
-  const showBadge = data.total >= 5 && data.agreePercent !== null && data.agreePercent >= 70
+  const showBadge =
+    data.total >= COMMUNITY_CONSENSUS.minVotes &&
+    data.agreePercent !== null &&
+    data.agreePercent >= COMMUNITY_CONSENSUS.minPercent
 
   return (
     <div className={cn("flex items-center gap-2", className)}>

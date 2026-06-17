@@ -33,10 +33,13 @@ export const VALID_SENSITIVE_WARNINGS = [
 
 export type SensitiveWarning = (typeof VALID_SENSITIVE_WARNINGS)[number]
 
-// Community-consensus rule for Phase 2 trigger votes, mirroring the age-vote
-// threshold (>5 votes & >70% agreement). A category needs at least `minVotes`
-// votes; >= minPercent "present" promotes it to confirmed, <= (100-minPercent)
-// "present" marks it community-rejected. Read by both the API and the UI so the
-// rule never drifts.
-export const TRIGGER_CONSENSUS = { minVotes: 5, minPercent: 70 } as const
+// Community-consensus rule shared by every community vote (age votes AND
+// Phase 2 trigger votes): a claim needs at least `minVotes` votes; >= minPercent
+// agreement promotes it to confirmed, <= (100-minPercent) marks it
+// community-rejected. This is the single source of truth — read by the APIs, the
+// UI badges, and the expectations registry so the rule never drifts.
+export const COMMUNITY_CONSENSUS = { minVotes: 5, minPercent: 70 } as const
+
+/** @deprecated Use {@link COMMUNITY_CONSENSUS}. Kept as an alias for trigger-vote call sites. */
+export const TRIGGER_CONSENSUS = COMMUNITY_CONSENSUS
 

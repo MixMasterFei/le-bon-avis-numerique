@@ -21,9 +21,10 @@ import {
   isAdultLeaningContentForMinor,
 } from "@/lib/family-fit-score"
 import { buildFamilyRecsFilters } from "./filters"
+import { RECS_THRESHOLDS } from "@/lib/recs-constants"
 
 // --- Scoring helpers (aligned with batch-family-fit & single family-fit) ---
-const MIN_MEMBER_FIT_SCORE = 66
+const MIN_MEMBER_FIT_SCORE = RECS_THRESHOLDS.minMemberFit
 
 // GET /api/recommendations/family?memberIds=id1,id2,id3
 // Get recommendations for multiple family members (movie night mode)

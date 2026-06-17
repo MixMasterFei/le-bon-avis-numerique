@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { fetchAdminKpis } from "@/lib/admin-kpis"
 import { sendDebtDigest } from "@/lib/email"
 import { withVerdict } from "@/lib/agent-verdict"
+import { runExpectationChecks } from "@/lib/expectations"
 
 /**
  * Weekly "technical & data debt" digest.
@@ -52,6 +53,8 @@ export type DebtDigestResult = {
   emailSent: boolean
   cronProblems: number
   catalogUnenriched: number
+  /** Number of "invariant" expectations currently broken (should be 0). */
+  expectationFailures: number
 }
 
 function hoursSince(d: Date): number {
@@ -244,6 +247,28 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Documentaires notés très violents (à vérifier) : ${ratingDocViolent}`)
   L.push("")
 
+  // ── Conformité aux attentes (oracle pur, sans DB) ──────────────────
+  // Same registry the CI test asserts. CI already blocks a regression on a
+  // PR; this surfaces it in the weekly mail too (e.g. if someone bypassed CI,
+  // or for the "report"-level soft expectations that CI deliberately doesn't
+  // fail on).
+  const expectationResults = runExpectationChecks()
+  const invariantFailures = expectationResults.filter((r) => r.severity === "invariant" && !r.ok)
+  const reportDivergences = expectationResults.filter((r) => r.severity === "report" && !r.ok)
+
+  L.push("## Conformité aux attentes", "")
+  if (invariantFailures.length === 0 && reportDivergences.length === 0) {
+    L.push(`Toutes les attentes vérifiées sont respectées (${expectationResults.length} contrôles).`)
+  } else {
+    for (const r of invariantFailures) {
+      L.push(`- [INVARIANT] ${r.label} — ${r.detail}`)
+    }
+    for (const r of reportDivergences) {
+      L.push(`- [À DÉCIDER] ${r.label} — ${r.detail}`)
+    }
+  }
+  L.push("")
+
   L.push("## File éditoriale", "")
   L.push(`- Corrections en attente : ${kpis.correctionsPending}`)
   L.push(`- Demandes de contenu : ${kpis.requestsPending}`)
@@ -265,12 +290,21 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   if (actionQueueTotal > 0) {
     todo.push(`${actionQueueTotal} éléments dans la file éditoriale à traiter dans /admin.`)
   }
+  if (invariantFailures.length > 0) {
+    todo.push(`${invariantFailures.length} attente(s) du site rompue(s) — voir "Conformité aux attentes" ci-dessus (régression, CI a peut-être été contournée).`)
+  }
+  if (reportDivergences.length > 0) {
+    todo.push(`${reportDivergences.length} attente(s) "à décider" — arbitrage à faire (cf. section conformité).`)
+  }
   if (todo.length === 0) todo.push("Rien d'urgent. La dette est sous contrôle cette semaine.")
   for (const t of todo) L.push(`- ${t}`)
   L.push("")
 
   L.push("## Action pour l'agent", "")
   const agentTodo: string[] = []
+  if (invariantFailures.length > 0) {
+    agentTodo.push(`RÉGRESSION attentes : ${invariantFailures.map((r) => r.id).join(", ")} — corriger la constante ou le test (src/lib/expectations.ts) après décision.`)
+  }
   if (cronProblems > 0) {
     agentTodo.push("Diagnostiquer chaque job marqué RETARD/ERREUR/JAMAIS ci-dessus (cause racine, pas seulement re-lancer).")
   }
@@ -289,24 +323,39 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   if (agentTodo.length === 0) agentTodo.push("Rien à corriger côté code cette semaine.")
   for (const t of agentTodo) L.push(`- ${t}`)
 
-  // Verdict = jobs en souffrance (the "act this week" signal). Catalogue debt
-  // is slow-moving and informational, so it doesn't trigger an action verdict.
+  // Verdict = "act this week" signal: jobs en souffrance + attentes rompues.
+  // A broken invariant is a regression, so it counts even though catalogue debt
+  // (slow-moving, informational) does not.
+  const actionCount = cronProblems + invariantFailures.length
+  const verdictTop =
+    invariantFailures.length > 0
+      ? `${invariantFailures.length} attente(s) du site rompue(s)${cronProblems > 0 ? ` + ${cronProblems} job(s) en souffrance` : ""}`
+      : cronProblems > 0
+        ? `${cronProblems} job(s) automatique(s) en souffrance`
+        : undefined
   const report = withVerdict(L.join("\n"), {
-    count: cronProblems,
+    count: actionCount,
     kind: "action",
-    top: cronProblems > 0 ? `${cronProblems} job(s) automatique(s) en souffrance` : undefined,
+    top: verdictTop,
   })
 
   let emailSent = false
   if (opts.email !== false) {
+    const expectationTag = invariantFailures.length > 0 ? `⚠ ${invariantFailures.length} attente(s) rompue(s) · ` : ""
     await sendDebtDigest({
       subject: cronProblems > 0
-        ? `Dette Totem — ${cronProblems} job${cronProblems > 1 ? "s" : ""} en souffrance, ${catalogUnenrichedScoped} à enrichir`
-        : `Dette Totem — RAS jobs, ${catalogUnenrichedScoped} à enrichir, ${actionQueueTotal} en file`,
+        ? `Dette Totem — ${expectationTag}${cronProblems} job${cronProblems > 1 ? "s" : ""} en souffrance, ${catalogUnenrichedScoped} à enrichir`
+        : `Dette Totem — ${expectationTag}RAS jobs, ${catalogUnenrichedScoped} à enrichir, ${actionQueueTotal} en file`,
       report,
     })
     emailSent = true
   }
 
-  return { report, emailSent, cronProblems, catalogUnenriched: catalogUnenrichedScoped }
+  return {
+    report,
+    emailSent,
+    cronProblems,
+    catalogUnenriched: catalogUnenrichedScoped,
+    expectationFailures: invariantFailures.length,
+  }
 }

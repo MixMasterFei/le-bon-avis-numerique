@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sanitizeAvatarInput } from "@/lib/avatar"
+import { MAX_FAMILY_MEMBERS } from "@/lib/family-constants"
 
 // GET /api/user/family - Get all family members for the current user
 export async function GET() {
@@ -89,14 +90,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nom requis" }, { status: 400 })
     }
 
-    // Limit to 10 family members per user
+    // Limit the number of family members per user
     const existingCount = await prisma.familyMember.count({
       where: { userId: session.user.id },
     })
 
-    if (existingCount >= 10) {
+    if (existingCount >= MAX_FAMILY_MEMBERS) {
       return NextResponse.json(
-        { error: "Maximum 10 membres de famille autorisés" },
+        { error: `Maximum ${MAX_FAMILY_MEMBERS} membres de famille autorisés` },
         { status: 400 }
       )
     }

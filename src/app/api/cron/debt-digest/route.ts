@@ -22,15 +22,16 @@ export async function GET(req: NextRequest) {
 
     await logCronRun({
       task: "debt-digest",
-      status: result.cronProblems > 0 ? "partial" : "success",
-      summary: `${result.cronProblems} job(s) en souffrance, ${result.catalogUnenriched} à enrichir, email=${result.emailSent ? "oui" : "non"}`,
-      details: { cronProblems: result.cronProblems, catalogUnenriched: result.catalogUnenriched, emailSent: result.emailSent },
+      status: result.cronProblems > 0 || result.expectationFailures > 0 ? "partial" : "success",
+      summary: `${result.cronProblems} job(s) en souffrance, ${result.expectationFailures} attente(s) rompue(s), ${result.catalogUnenriched} à enrichir, email=${result.emailSent ? "oui" : "non"}`,
+      details: { cronProblems: result.cronProblems, expectationFailures: result.expectationFailures, catalogUnenriched: result.catalogUnenriched, emailSent: result.emailSent },
       startTime,
     })
 
     return NextResponse.json({
       success: true,
       cronProblems: result.cronProblems,
+      expectationFailures: result.expectationFailures,
       catalogUnenriched: result.catalogUnenriched,
       emailSent: result.emailSent,
       report: sendEmail ? undefined : result.report,

@@ -292,15 +292,29 @@ Each user can have up to 10 **FamilyMember** profiles. Members accumulate data t
 5. **Age Votes** — Thumbs up/down on expert age recommendations via `AgeVoteButton`. Shows community consensus badge at >5 votes and >70% agreement.
 
 ### Family Fit Scoring (`/api/media/[id]/family-fit`)
-Computes a 0-100 fit score per family member for any media item:
+Computes a 0-100 fit score per family member for any media item. The weights are the **Phase-2 set** (canonical source: `FIT_WEIGHTS` in `src/lib/family-fit-score.ts` — sum = 1.0, pinned by a test):
 ```
-finalScore = (ageScore × 0.40) + (sensitivityScore × 0.35) + (genreScore × 0.10) + (avoidScore × 0.05) + (affinityScore × 0.10)
+finalScore =
+    (ageScore         × 0.28)
+  + (sensitivityScore × 0.22)
+  + (genreScore       × 0.10)
+  + (interestsScore   × 0.08)
+  + (affinityScore    × 0.08)
+  + (toneScore        × 0.05)
+  + (positiveScore    × 0.04)
+  + (avoidScore       × 0.05)
+  + (personalizedScore× 0.10)
 ```
-- **Age:** compares expertAgeRec vs member's age
+- **Age:** compares expertAgeRec vs member's age (dominant signal; mature gates live here)
 - **Sensitivity:** compares media content metrics vs member tolerance
 - **Genre:** overlap between media genres and member favorites
-- **Avoid:** checks media topics against avoidTopics
+- **Interests:** overlap between media topics/themes and member interests
 - **Affinity:** uses `MediaReaction` + `MediaSimilarity` table to find personal connections (e.g., "loved Paw Patrol TV → will love the movie")
+- **Tone / Positive:** tone-tag fit and positive-content (messages, role models, educational) match
+- **Avoid:** checks media topics against avoidTopics
+- **Personalized:** cosine similarity vs the member's behavioral vector (reactions). Starts at 10% — enough to differentiate similar quiz answers, not enough to rescue a disliked-genre title (the hard gate runs first).
+
+> **Hard gates run before the weighted sum:** a disliked genre or avoided topic floors the score (`genreScore === 0 || avoidScore === 0` ⇒ score clamps to ~10), and a mature-content penalty multiplier is applied for minors. The weights only rank candidates that already cleared the gates.
 
 ### Profile Completion Meter
 Displayed on the Member Corner overview tab. Tracks 8 criteria totaling 100%: birth year (10%), custom avatar (5%), quiz completed (25%), sensitivity customized (15%), avoid topics (5%), 3+ reactions (15%), 5+ reactions (10%), interests (15%).
