@@ -41,6 +41,7 @@ import {
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components/ui/AvatarPicker"
 import { toMediaRouteId } from "@/lib/media-route"
+import { hasActionablePreferences } from "@/lib/family-fit-score"
 import type { MediaType } from "@/lib/types"
 import { cn, formatAgeFromBirthYear } from "@/lib/utils"
 
@@ -561,7 +562,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <Card>
               <CardContent className="p-4 text-center">
                 <Sparkles className="h-5 w-5 mx-auto text-amber-400 mb-1" />
-                {member.useCustomSettings && member.favoriteGenres.length > 0 ? (
+                {hasActionablePreferences(member) ? (
                   <>
                     <p className="text-sm font-bold text-emerald-600">Complété</p>
                     <p className="text-xs text-gray-500">Quiz</p>
@@ -830,23 +831,23 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
         {/* ================================================================ */}
         <TabsContent value="preferences" className="space-y-4 mt-4">
           {/* Quiz status */}
-          <Card className={member.useCustomSettings && member.favoriteGenres.length > 0 ? "border-emerald-200 bg-emerald-50/50" : "border-amber-200 bg-amber-50/50"}>
+          <Card className={hasActionablePreferences(member) ? "border-emerald-200 bg-emerald-50/50" : "border-amber-200 bg-amber-50/50"}>
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Sparkles className={cn(
                     "h-5 w-5",
-                    member.useCustomSettings && member.favoriteGenres.length > 0 ? "text-emerald-600" : "text-amber-600"
+                    hasActionablePreferences(member) ? "text-emerald-600" : "text-amber-600"
                   )} />
                   <div>
                     <p className="font-medium text-gray-900">
-                      {member.useCustomSettings && member.favoriteGenres.length > 0
+                      {hasActionablePreferences(member)
                         ? "Quiz de préférences complété"
                         : "Quiz de préférences non complété"
                       }
                     </p>
                     <p className="text-xs text-gray-500">
-                      {member.useCustomSettings && member.favoriteGenres.length > 0
+                      {hasActionablePreferences(member)
                         ? "Les recommandations sont personnalisées"
                         : "Complétez le quiz pour de meilleures recommandations"
                       }
@@ -854,12 +855,12 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <Button asChild size="sm" variant={member.useCustomSettings && member.favoriteGenres.length > 0 ? "outline" : "default"}>
+                  <Button asChild size="sm" variant={hasActionablePreferences(member) ? "outline" : "default"}>
                     <Link href={`/profil/quiz/${memberId}`}>
-                      {member.useCustomSettings && member.favoriteGenres.length > 0 ? "Refaire le quiz" : "Faire le quiz"}
+                      {hasActionablePreferences(member) ? "Refaire le quiz" : "Faire le quiz"}
                     </Link>
                   </Button>
-                  {member.useCustomSettings && member.favoriteGenres.length > 0 && (
+                  {hasActionablePreferences(member) && (
                     <Link
                       href={`/profil/quiz/${memberId}?depth=deep`}
                       className="text-xs text-primary hover:underline"

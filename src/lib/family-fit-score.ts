@@ -6,6 +6,8 @@ export type FitLevel = "excellent" | "good" | "moderate" | "poor"
 export interface FitMemberProfile {
   useCustomSettings?: boolean | null
   favoriteGenres?: string[] | null
+  dislikedGenres?: string[] | null
+  interests?: string[] | null
 }
 
 export interface FitMetrics {
@@ -141,8 +143,33 @@ function capLevel(level: FitLevel, maxLevel: FitLevel): FitLevel {
   return rank[level] > rank[maxLevel] ? maxLevel : level
 }
 
+/**
+ * Does this member have enough signal to deserve a real fit rating (vs. the
+ * cautious "à vérifier / À affiner avec le quiz famille" cap)?
+ *
+ * Deliberately broader than the old quiz-completed check: any curated
+ * preference counts — favorite OR disliked genres, interests, or the
+ * custom-settings flag (which implies tuned sensitivity). Reaction history is
+ * an additional signal the *caller* ORs in (it lives outside the profile).
+ *
+ * NOTE: this is intentionally NOT `useCustomSettings` alone. That flag means
+ * only "override the family sensitivity defaults" and must stay decoupled from
+ * the rating gate — conflating the two is exactly the bug that stranded
+ * configured members (genres set, flag still off) on "à vérifier".
+ */
+export function hasActionablePreferences(member: FitMemberProfile): boolean {
+  return (
+    !!member.useCustomSettings ||
+    (member.favoriteGenres?.length ?? 0) > 0 ||
+    (member.dislikedGenres?.length ?? 0) > 0 ||
+    (member.interests?.length ?? 0) > 0
+  )
+}
+
+/** @deprecated Use {@link hasActionablePreferences}. Kept as an alias so the
+ * scoring routes/tests keep their existing call sites. */
 export function hasRichProfile(member: FitMemberProfile): boolean {
-  return !!member.useCustomSettings && (member.favoriteGenres?.length ?? 0) > 0
+  return hasActionablePreferences(member)
 }
 
 export function getAgeGroup(age: number | null): keyof typeof DEFAULT_GENRES_BY_AGE {

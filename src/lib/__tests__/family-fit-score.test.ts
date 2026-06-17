@@ -9,12 +9,31 @@ import {
   computeSensitivityScore,
   computeWeightedFitScore,
   finalizeDetailPageFit,
+  FIT_WEIGHTS,
   getCatalogCardExclusionReason,
+  hasActionablePreferences,
   hasRichProfile,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   qualifiesForPositiveContentCopy,
 } from "../family-fit-score"
+
+describe("FIT_WEIGHTS invariant", () => {
+  // Drift guard: the weighted fit score is only meaningful if the component
+  // weights form a partition of 1.0. If someone re-tunes a weight, this fails
+  // and forces a conscious update (incl. the CLAUDE.md table).
+  it("sums to exactly 1.0", () => {
+    const total = Object.values(FIT_WEIGHTS).reduce((s, w) => s + w, 0)
+    expect(total).toBeCloseTo(1, 9)
+  })
+
+  it("keeps every weight in [0, 1]", () => {
+    for (const w of Object.values(FIT_WEIGHTS)) {
+      expect(w).toBeGreaterThanOrEqual(0)
+      expect(w).toBeLessThanOrEqual(1)
+    }
+  })
+})
 
 describe("family fit guardrails", () => {
   it("caps a 12-year-old below a 13+ recommendation", () => {
@@ -136,9 +155,19 @@ describe("family fit guardrails", () => {
     expect(penalty.multiplier).toBe(1)
   })
 
-  it("requires explicit custom preferences for a rich profile", () => {
-    expect(hasRichProfile({ useCustomSettings: true, favoriteGenres: ["Animation"] })).toBe(true)
-    expect(hasRichProfile({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(false)
+  it("treats any curated preference as actionable (not just the custom-settings flag)", () => {
+    // Genres alone are enough — even when useCustomSettings was never flipped
+    // (e.g. genres set via the member-edit card). This is the fix for members
+    // stranded on "à vérifier" despite having real preferences.
+    expect(hasActionablePreferences({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(true)
+    expect(hasActionablePreferences({ useCustomSettings: true, favoriteGenres: [] })).toBe(true)
+    expect(hasActionablePreferences({ useCustomSettings: false, dislikedGenres: ["Horreur"] })).toBe(true)
+    expect(hasActionablePreferences({ useCustomSettings: false, interests: ["dinosaures"] })).toBe(true)
+    // Genuinely empty profile stays gated.
+    expect(hasActionablePreferences({ useCustomSettings: false, favoriteGenres: [] })).toBe(false)
+    expect(hasActionablePreferences({})).toBe(false)
+    // hasRichProfile is now a thin alias of the same logic.
+    expect(hasRichProfile({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(true)
   })
 
   it("keeps adult-leaning teen content in review without a youth appeal signal", () => {

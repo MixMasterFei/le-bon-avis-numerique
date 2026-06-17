@@ -6,6 +6,7 @@ import { Target, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { useSession } from "next-auth/react"
+import { hasActionablePreferences } from "@/lib/family-fit-score"
 
 interface FamilyMember {
   id: string
@@ -35,9 +36,7 @@ export function ProfileNudge() {
         if (res.ok) {
           const data = await res.json()
           const members: FamilyMember[] = Array.isArray(data?.members) ? data.members : data
-          const incomplete = members.filter(
-            (m) => !m.useCustomSettings || m.favoriteGenres.length === 0
-          )
+          const incomplete = members.filter((m) => !hasActionablePreferences(m))
           setIncompleteMembers(incomplete)
         }
       } catch {

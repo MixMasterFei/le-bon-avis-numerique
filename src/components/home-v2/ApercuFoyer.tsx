@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Plus, Settings, Sparkles } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { getMemberAge } from "@/lib/age-utils"
+import { hasActionablePreferences } from "@/lib/family-fit-score"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
@@ -572,7 +573,7 @@ function formatRelativeYears(iso: string): string {
 function computeCompletion(member: ApercuFoyerData["members"][number]): number {
   let pct = 0
   if (member.birthYear) pct += 20
-  if (member.useCustomSettings && member.favoriteGenres.length > 0) pct += 40
+  if (hasActionablePreferences(member)) pct += 40
   if (member.reactionCount >= 3) pct += 20
   if (member.interests.length > 0) pct += 20
   return pct

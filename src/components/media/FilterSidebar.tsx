@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { getAgeCategory, getMemberAge } from "@/lib/age-utils"
+import { hasActionablePreferences } from "@/lib/family-fit-score"
 import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
 import { GAME_GENRE_TOPICS } from "@/lib/igdb-genres"
 
@@ -33,7 +34,7 @@ interface FamilyMember {
 function getQuickCompleteness(member: FamilyMember): { percent: number; color: string } {
   let percent = 0
   if (member.birthYear) percent += 20
-  if (member.useCustomSettings && member.favoriteGenres.length > 0) percent += 40
+  if (hasActionablePreferences(member)) percent += 40
   if ((member._count?.reactions ?? 0) >= 3) percent += 20
   if (member.interests.length > 0) percent += 20
   const color = percent >= 80 ? "bg-emerald-500" : percent >= 40 ? "bg-amber-500" : "bg-gray-300"

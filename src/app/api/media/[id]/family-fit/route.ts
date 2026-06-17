@@ -18,7 +18,7 @@ import {
   DEFAULT_FIT_METRICS,
   finalizeDetailPageFit,
   GENTLE_TONES,
-  hasRichProfile,
+  hasActionablePreferences,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   isFamilyWarningContent,
@@ -27,6 +27,7 @@ import {
   type FitMetrics,
 } from "@/lib/family-fit-score"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { resolveEffectivePrefs } from "@/lib/family-prefs"
 import {
   ageVerdictFromAges,
   legacyLevelFromPillars,
@@ -296,6 +297,13 @@ export async function GET(
       return NextResponse.json({ status: "no_family" })
     }
 
+    // Family-level sensitivity defaults. Members who haven't overridden them
+    // (useCustomSettings=false) inherit these instead of being scored on their
+    // stored per-member defaults. See resolveEffectivePrefs.
+    const familySettings = await prisma.familySettings.findUnique({
+      where: { userId: session.user.id },
+    })
+
     // Fetch media item with content metrics
     const media = await prisma.mediaItem.findUnique({
       where: { id },
@@ -373,10 +381,16 @@ export async function GET(
 
     const members: FamilyFitMember[] = familyMembers.map((member) => {
       const memberAge = getMemberAge(member.birthYear, member.birthMonth)
-      const hasPreferences = hasRichProfile(member)
+      // Effective prefs: inherit family sensitivity defaults when the member
+      // hasn't overridden them, so an un-gated member isn't scored on stale
+      // per-member defaults.
+      const eff = resolveEffectivePrefs(member, familySettings)
 
       // --- Compute affinity from watch history ---
       const memberReactions = positiveReactions.filter(r => r.familyMemberId === member.id)
+      // Enough signal for a real rating: any curated preference OR any reaction
+      // history. Mirrors the recommendations gate; not the strict quiz flag.
+      const hasPreferences = hasActionablePreferences(member) || memberReactions.length > 0
       let affinity: AffinityInfo = { hasConnection: false }
 
       // Check for direct connections via MediaSimilarity
@@ -432,10 +446,10 @@ export async function GET(
       const memberVector = (member.memberVector as unknown as MemberVector | null) ?? EMPTY_VECTOR
       const effSens = effectiveSensitivityVector(
         {
-          violence: member.sensitivityViolence,
-          sexual: member.sensitivitySexual,
-          language: member.sensitivityLanguage,
-          substances: member.sensitivitySubstances,
+          violence: eff.sensitivityViolence,
+          sexual: eff.sensitivitySexual,
+          language: eff.sensitivityLanguage,
+          substances: eff.sensitivitySubstances,
         },
         memberVector.observedTolerances,
       )
@@ -551,19 +565,19 @@ export async function GET(
           substanceUse: metrics.substanceUse,
         },
         {
-          sensitivityViolence: member.sensitivityViolence,
-          sensitivitySexual: member.sensitivitySexual,
-          sensitivityLanguage: member.sensitivityLanguage,
-          sensitivitySubstances: member.sensitivitySubstances,
+          sensitivityViolence: eff.sensitivityViolence,
+          sensitivitySexual: eff.sensitivitySexual,
+          sensitivityLanguage: eff.sensitivityLanguage,
+          sensitivitySubstances: eff.sensitivitySubstances,
         }
       )
       const genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
-      const avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
+      const avoidScore = computeAvoidScore(media.topics, eff.avoidTopics)
       const toneScore = computeToneScore(
         (metrics.toneTags ?? []) as string[],
         (metrics.pacing ?? null) as string | null,
         memberAge,
-        member.sensitivityScary
+        eff.sensitivityScary
       )
       const interestsScore = computeInterestsScore(
         media.topics,
@@ -572,7 +586,7 @@ export async function GET(
       )
       const positiveScore = computePositiveContentScore(
         { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
-        { preferPositiveMessages: member.preferPositiveMessages, preferRoleModels: member.preferRoleModels, preferEducational: member.preferEducational },
+        { preferPositiveMessages: eff.preferPositiveMessages, preferRoleModels: eff.preferRoleModels, preferEducational: eff.preferEducational },
         media.topics
       )
       const hasYouthAppeal = hasYouthAppealSignal({

@@ -18,13 +18,14 @@ import {
   computeWeightedFitScore,
   DEFAULT_FIT_METRICS,
   getCatalogCardExclusionReason,
-  hasRichProfile,
+  hasActionablePreferences,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   isFamilyWarningContent,
   type FitLevel,
 } from "@/lib/family-fit-score"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { resolveEffectivePrefs } from "@/lib/family-prefs"
 import {
   ageVerdictFromAges,
   legacyLevelFromPillars,
@@ -107,6 +108,12 @@ export async function POST(request: NextRequest) {
     if (familyMembers.length === 0) {
       return NextResponse.json({})
     }
+
+    // Family-level sensitivity defaults inherited by members who haven't
+    // overridden them (useCustomSettings=false). See resolveEffectivePrefs.
+    const familySettings = await prisma.familySettings.findUnique({
+      where: { userId: session.user.id },
+    })
 
     // Fetch all media items with content metrics in one query
     const mediaItems = await prisma.mediaItem.findMany({
@@ -200,16 +207,19 @@ export async function POST(request: NextRequest) {
 
       for (const member of familyMembers) {
         const memberAge = getMemberAge(member.birthYear, member.birthMonth)
-        const hasPreferences = hasRichProfile(member)
+        const eff = resolveEffectivePrefs(member, familySettings)
 
         // Phase 2: persisted behavioral vector (cold-start = neutral).
         const memberVector = (member.memberVector as unknown as MemberVector | null) ?? EMPTY_VECTOR
+        // Enough signal for a real rating: any curated preference OR recorded
+        // reaction history (evidenceCount > 0). Not the strict quiz flag.
+        const hasPreferences = hasActionablePreferences(member) || memberVector.evidenceCount > 0
         const effSens = effectiveSensitivityVector(
           {
-            violence: member.sensitivityViolence,
-            sexual: member.sensitivitySexual,
-            language: member.sensitivityLanguage,
-            substances: member.sensitivitySubstances,
+            violence: eff.sensitivityViolence,
+            sexual: eff.sensitivitySexual,
+            language: eff.sensitivityLanguage,
+            substances: eff.sensitivitySubstances,
           },
           memberVector.observedTolerances,
         )
@@ -242,14 +252,14 @@ export async function POST(request: NextRequest) {
         } else {
           const sensitivityScore = computeSensitivityScore(
             { violence: metrics.violence, sexNudity: metrics.sexNudity, language: metrics.language, substanceUse: metrics.substanceUse },
-            { sensitivityViolence: member.sensitivityViolence, sensitivitySexual: member.sensitivitySexual, sensitivityLanguage: member.sensitivityLanguage, sensitivitySubstances: member.sensitivitySubstances }
+            { sensitivityViolence: eff.sensitivityViolence, sensitivitySexual: eff.sensitivitySexual, sensitivityLanguage: eff.sensitivityLanguage, sensitivitySubstances: eff.sensitivitySubstances }
           )
           genreScore = computeGenreScore(media.genres, member.favoriteGenres, member.dislikedGenres)
-          avoidScore = computeAvoidScore(media.topics, member.avoidTopics)
+          avoidScore = computeAvoidScore(media.topics, eff.avoidTopics)
           const toneScore = computeToneScore(
             (metrics.toneTags ?? []) as string[],
             (metrics.pacing ?? null) as string | null,
-            memberAge, member.sensitivityScary
+            memberAge, eff.sensitivityScary
           )
           interestsScore = computeInterestsScore(
             media.topics,
@@ -258,7 +268,7 @@ export async function POST(request: NextRequest) {
           )
           positiveScore = computePositiveContentScore(
             { positiveMessages: metrics.positiveMessages, roleModels: metrics.roleModels },
-            { preferPositiveMessages: member.preferPositiveMessages, preferRoleModels: member.preferRoleModels, preferEducational: member.preferEducational },
+            { preferPositiveMessages: eff.preferPositiveMessages, preferRoleModels: eff.preferRoleModels, preferEducational: eff.preferEducational },
             media.topics
           )
 
@@ -362,7 +372,7 @@ export async function POST(request: NextRequest) {
             const mediaGenresLc = media.genres.map(normalise)
             const mediaTopicsLc = media.topics.map(normalise)
             const dislikedHit = member.dislikedGenres.find((g) => mediaGenresLc.includes(normalise(g)))
-            const avoidHit = member.avoidTopics.find((t) => mediaTopicsLc.includes(normalise(t)))
+            const avoidHit = eff.avoidTopics.find((t) => mediaTopicsLc.includes(normalise(t)))
             let why: string
             if (dislikedHit) why = `genre rejeté : ${dislikedHit}`
             else if (avoidHit) why = `sujet à éviter : ${avoidHit}`

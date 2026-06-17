@@ -16,6 +16,7 @@
  */
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
+import { resolveEffectivePrefs } from "@/lib/family-prefs"
 import {
   buildSmartFilterWhere,
   calculateMemberScore,
@@ -107,44 +108,25 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
 
   const familySettings = await prisma.familySettings.findUnique({ where: { userId } })
 
-  // Effective prefs: member overrides, else family defaults.
+  // Effective prefs: member overrides, else family defaults (shared helper).
   const memberPreferences: MemberPreferences[] = familyMembers.map((member) => {
-    if (member.useCustomSettings || !familySettings) {
-      return {
-        id: member.id,
-        name: member.name,
-        birthYear: member.birthYear,
-        birthMonth: member.birthMonth,
-        sensitivityViolence: member.sensitivityViolence,
-        sensitivityScary: member.sensitivityScary,
-        sensitivitySexual: member.sensitivitySexual,
-        sensitivityLanguage: member.sensitivityLanguage,
-        sensitivitySubstances: member.sensitivitySubstances,
-        preferPositiveMessages: member.preferPositiveMessages,
-        preferRoleModels: member.preferRoleModels,
-        preferEducational: member.preferEducational,
-        favoriteGenres: member.favoriteGenres,
-        dislikedGenres: member.dislikedGenres,
-        avoidTopics: [...member.avoidTopics, ...(familySettings?.blockedTopics || [])],
-        interests: member.interests,
-      }
-    }
+    const eff = resolveEffectivePrefs(member, familySettings)
     return {
       id: member.id,
       name: member.name,
       birthYear: member.birthYear,
       birthMonth: member.birthMonth,
-      sensitivityViolence: familySettings.defaultSensitivityViolence,
-      sensitivityScary: familySettings.defaultSensitivityScary,
-      sensitivitySexual: familySettings.defaultSensitivitySexual,
-      sensitivityLanguage: familySettings.defaultSensitivityLanguage,
-      sensitivitySubstances: familySettings.defaultSensitivitySubstances,
-      preferPositiveMessages: familySettings.defaultPreferPositiveMessages,
-      preferRoleModels: familySettings.defaultPreferRoleModels,
-      preferEducational: familySettings.defaultPreferEducational,
+      sensitivityViolence: eff.sensitivityViolence,
+      sensitivityScary: eff.sensitivityScary,
+      sensitivitySexual: eff.sensitivitySexual,
+      sensitivityLanguage: eff.sensitivityLanguage,
+      sensitivitySubstances: eff.sensitivitySubstances,
+      preferPositiveMessages: eff.preferPositiveMessages,
+      preferRoleModels: eff.preferRoleModels,
+      preferEducational: eff.preferEducational,
       favoriteGenres: member.favoriteGenres,
       dislikedGenres: member.dislikedGenres,
-      avoidTopics: [...member.avoidTopics, ...familySettings.blockedTopics],
+      avoidTopics: eff.avoidTopics,
       interests: member.interests,
     }
   })

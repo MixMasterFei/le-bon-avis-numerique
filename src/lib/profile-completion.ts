@@ -1,3 +1,5 @@
+import { hasActionablePreferences } from "@/lib/family-fit-score"
+
 export interface CompletionMember {
   birthYear: number | null
   avatarEmoji: string
@@ -29,7 +31,7 @@ export function getCompletionItems(member: CompletionMember, reactionCount: numb
     member.sensitivitySubstances,
   ]
   const sensitivityCustomized = current.some((v, i) => v !== defaults[i])
-  const hasConfiguredPreferences = member.useCustomSettings && member.favoriteGenres.length > 0
+  const hasConfiguredPreferences = hasActionablePreferences(member)
 
   return [
     { label: "Ajouter l'année de naissance", done: member.birthYear !== null, weight: 10 },
