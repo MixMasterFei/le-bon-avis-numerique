@@ -376,7 +376,7 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
            genres.name, platforms.name, platforms.abbreviation,
            ${IGDB_AGE_RATING_FIELDS},
            total_rating, total_rating_count;
-    where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 50;
+    where age_ratings.organization = 2 & age_ratings.rating_category = (8,9) & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 50;
     sort total_rating desc;
     limit ${safeLimit};
   `
