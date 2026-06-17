@@ -140,9 +140,18 @@ export interface IGDBSearchResult {
 // PEGI RATING MAPPING
 // ============================================
 
-/** Shared IGDB fields fragment for PEGI age + content descriptors. */
+/**
+ * Shared IGDB fields fragment for PEGI age + content descriptors.
+ *
+ * NOTE: `age_ratings.rating_content_descriptions` resolves to IGDB's
+ * AgeRatingContentDescriptionV2 object, which has NO `category` field (only
+ * `description`/`organization`) — requesting `.category` made IGDB reject the
+ * whole query with HTTP 400, breaking every game fetch (import cron, search,
+ * detail). We read the `description` text and map it in `extractPegiDescriptors`.
+ * The legacy `category`/`rating` enum fields are deprecated but still queryable.
+ */
 const IGDB_AGE_RATING_FIELDS =
-  "age_ratings.category, age_ratings.rating, age_ratings.organization, age_ratings.rating_category, age_ratings.rating_content_descriptions.category, age_ratings.rating_content_descriptions.description"
+  "age_ratings.category, age_ratings.rating, age_ratings.organization, age_ratings.rating_category, age_ratings.rating_content_descriptions.description"
 
 // IGDB PEGI rating values (legacy `rating` field when category === 2)
 const PEGI_RATINGS: Record<number, { label: string; age: number; internal: string }> = {
