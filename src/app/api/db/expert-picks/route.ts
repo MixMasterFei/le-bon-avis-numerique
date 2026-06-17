@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
               sexNudity: true,
               language: true,
               substanceUse: true,
+              consumerism: true,
             },
           },
         },
@@ -226,6 +227,7 @@ export async function GET(request: NextRequest) {
             sexNudity: item.contentMetrics.sexNudity,
             language: item.contentMetrics.language,
             substanceUse: item.contentMetrics.substanceUse,
+            consumerism: item.contentMetrics.consumerism,
           }
         : null,
     }))

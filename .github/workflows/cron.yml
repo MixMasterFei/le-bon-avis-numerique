@@ -57,6 +57,7 @@ on:
           - enrich
           - enrich-deep
           - recalibrate-ratings
+          - age-floor
           - quality
           - streaming
           - similarity
@@ -68,6 +69,11 @@ on:
           - supervisor
           - debt-digest
           - seo-striking-distance
+      dry_run:
+        description: "Dry run (age-floor only): report changes without writing"
+        required: false
+        type: boolean
+        default: false
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -291,6 +297,46 @@ jobs:
               break
             fi
           done
+          echo "::endgroup::"
+
+  # ── Manual: deterministic age-floor sweep ────────────────────────
+  # Bumps mature MOVIE/TV titles rated too young (lenient "Tous Publics"
+  # classics — Forrest Gump, war dramas) up to a content-justified age via
+  # floorExpertAgeBySignals. Zero LLM cost, idempotent. Run with dry_run=true
+  # first to review changes, then dry_run=false to apply.
+  age-floor:
+    name: Age Floor Sweep
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 15
+    if: github.event.inputs.task == 'age-floor'
+    steps:
+      - name: Sweep deterministic age floors
+        run: |
+          set +e
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then dryparam="dry=true&"; else dryparam=""; fi
+          echo "::group::Age floor sweep (dry=$dry)"
+          after=""
+          total_raised=0
+          for batch in $(seq 1 30); do
+            url="$SITE_URL/api/admin/age-floor?${dryparam}limit=200"
+            if [ -n "$after" ]; then url="$url&afterId=$after"; fi
+            response=$(curl -sSL --max-time 80 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" "$url" 2>/dev/null)
+            echo "$response" | jq '{processed, raised, done, sample: (.changes[0:10])}' 2>/dev/null || echo "$response"
+            raised=$(echo "$response" | jq -r '.raised // 0' 2>/dev/null || echo 0)
+            total_raised=$((total_raised + raised))
+            # NB: `.done // true` is WRONG — jq's `//` treats boolean false as
+            # absent, so done:false would yield "true" and the loop would stop
+            # after one batch. Use `.done // false` (and fall back to "true" only
+            # on an empty/parse error, to stop safely).
+            done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo true)
+            after=$(echo "$response" | jq -r '.lastId // empty' 2>/dev/null || echo "")
+            if [ "$done_flag" = "true" ] || [ -z "$after" ]; then break; fi
+            sleep 1
+          done
+          echo "Total raised (dry=$dry): $total_raised"
           echo "::endgroup::"
 
   # ── Saturday: TMDB ratings + streaming platforms + similarity ─────

@@ -27,6 +27,7 @@ import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButto
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { TalkToYourKids } from "@/components/media/TalkToYourKids"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
+import { GameMetricsDisplay } from "@/components/media/GameMetricsDisplay"
 import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
@@ -59,6 +60,8 @@ interface MediaPageProps {
 // Extended type for database items with screenshots
 interface DatabaseMediaItem extends MockMediaItem {
   numberOfSeasons?: number | null
+  pegiDescriptors?: string[]
+  gameModes?: string[]
   // Manga-specific (only set when type === "MANGA")
   volumeCount?: number | null
   chapterCount?: number | null
@@ -129,6 +132,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       posterUrl: dbMedia.posterUrl || "/placeholder-poster.jpg",
       synopsisFr: dbMedia.synopsisFr,
       officialRating: dbMedia.officialRating,
+      pegiDescriptors: dbMedia.pegiDescriptors ?? [],
       expertAgeRec: dbMedia.expertAgeRec,
       // Imported with an estimated age but not yet AI-enriched → "âge provisoire".
       isProvisional: !dbMedia.isEnriched && dbMedia.expertAgeRec != null,
@@ -577,12 +581,14 @@ export default async function MediaPage({ params }: MediaPageProps) {
           posterUrl: g.posterUrl,
           synopsisFr: g.synopsisFr,
           officialRating: g.officialRating,
+          pegiDescriptors: g.pegiDescriptors ?? [],
           expertAgeRec: g.expertAgeRec,
           communityAgeRec: null,
           director: g.developer || undefined,
           genres: g.genres,
           platforms: g.platforms,
           topics: g.themes,
+          gameModes: g.gameModes,
           contentMetrics: {
             violence: 0,
             sexNudity: 0,
@@ -872,20 +878,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
           ) : (
             <>
-              {/* Ce que les parents doivent savoir — pas pour les jeux
-                  (ils ont GameInfoCard). */}
-              {media.type !== "GAME" && (
-                <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
-              )}
+              {/* Ce que les parents doivent savoir */}
+              <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
 
-              {/* Ce qui peut marquer — repères de vigilance générés par IA, en
-                  cadrage prudent. Affiché seulement si la confiance IA est
-                  suffisante (>= 0.6) ; sinon masqué (les items peu fiables sont
-                  déjà en file d'attente pour l'enrichissement approfondi). */}
-              {media.type !== "GAME" &&
-                (media.contentMetrics.enrichmentConfidence ?? 0) >= 0.6 && (
-                  <SensitiveWarnings items={media.contentMetrics.sensitiveWarnings ?? []} mediaId={dbId} />
-                )}
+              {/* Ce qui peut marquer — jeux inclus quand l'enrichissement est fiable */}
+              {(media.contentMetrics.enrichmentConfidence ?? 0) >= 0.6 && (
+                <SensitiveWarnings items={media.contentMetrics.sensitiveWarnings ?? []} mediaId={dbId} />
+              )}
 
               {/* Talk to Your Kids — actuellement désactivé (rend null). */}
               <TalkToYourKids
@@ -901,12 +900,21 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   - en base     → DualMetricsDisplay (Totem vs Communauté)
                   - hors base   → ContentGrid (analyse seule, pas de communauté) */}
               {media.type === "GAME" ? (
-                <GameInfoCard
-                  platforms={media.platforms}
-                  genres={media.genres}
-                  consumerism={media.contentMetrics.consumerism}
-                  violence={media.contentMetrics.violence}
-                />
+                <>
+                  <GameInfoCard
+                    platforms={media.platforms}
+                    genres={media.genres}
+                    gameModes={"gameModes" in media ? (media as DatabaseMediaItem).gameModes : undefined}
+                    consumerism={media.contentMetrics.consumerism}
+                    officialRating={media.officialRating}
+                    pegiDescriptors={"pegiDescriptors" in media ? (media as DatabaseMediaItem).pegiDescriptors : []}
+                    expertAgeRec={media.expertAgeRec}
+                  />
+                  <GameMetricsDisplay
+                    expertMetrics={media.contentMetrics}
+                    topics={media.topics}
+                  />
+                </>
               ) : dbId ? (
                 <DualMetricsDisplay
                   mediaId={dbId}

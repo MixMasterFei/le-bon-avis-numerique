@@ -388,8 +388,10 @@ function AgeRecommendationsRow({
         <div
           className="flex items-center gap-4 rounded-xl px-4 py-3"
           style={{
-            background: "linear-gradient(135deg,#FFF6EE,#FFFBF7)",
-            border: "1px solid #FBE9D2",
+            // Dark-aware warm tokens (flip via [data-theme="dark"]) — the old
+            // hardcoded cream hex stayed light in Soirée mode.
+            background: "linear-gradient(135deg, var(--color-warm-bg2), var(--color-warm-card))",
+            border: `1px solid ${WARM_LINE}`,
           }}
         >
           <div

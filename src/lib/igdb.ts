@@ -15,6 +15,7 @@
 
 import { escapeIGDBQuery, sanitizeNumber } from "./security"
 import { normalizeGameGenres } from "./igdb-genres"
+import { extractPegiDescriptors, type IGDBAgeRatingEntry } from "./pegi-descriptors"
 
 const IGDB_BASE_URL = "https://api.igdb.com/v4"
 const TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/token"
@@ -113,11 +114,7 @@ export interface IGDBGame {
   first_release_date?: number // Unix timestamp
   genres?: { id: number; name: string }[]
   platforms?: { id: number; name: string; abbreviation: string }[]
-  age_ratings?: {
-    id: number
-    category: number // 1 = ESRB, 2 = PEGI
-    rating: number
-  }[]
+  age_ratings?: IGDBAgeRatingEntry[]
   involved_companies?: {
     id: number
     company: { id: number; name: string }
@@ -143,7 +140,11 @@ export interface IGDBSearchResult {
 // PEGI RATING MAPPING
 // ============================================
 
-// IGDB PEGI rating values
+/** Shared IGDB fields fragment for PEGI age + content descriptors. */
+const IGDB_AGE_RATING_FIELDS =
+  "age_ratings.category, age_ratings.rating, age_ratings.organization, age_ratings.rating_category, age_ratings.rating_content_descriptions.category, age_ratings.rating_content_descriptions.description"
+
+// IGDB PEGI rating values (legacy `rating` field when category === 2)
 const PEGI_RATINGS: Record<number, { label: string; age: number; internal: string }> = {
   1: { label: "PEGI 3", age: 3, internal: "PEGI_3" },
   2: { label: "PEGI 7", age: 7, internal: "PEGI_7" },
@@ -152,21 +153,55 @@ const PEGI_RATINGS: Record<number, { label: string; age: number; internal: strin
   5: { label: "PEGI 18", age: 18, internal: "PEGI_18" },
 }
 
-/**
- * Extract PEGI rating from age_ratings array
- */
-export function getPegiRating(ageRatings?: IGDBGame["age_ratings"]): {
+function pegiFromEntry(entry: IGDBAgeRatingEntry): {
   label: string
   age: number
   internal: string
 } | null {
-  if (!ageRatings) return null
+  // Legacy: category 2 + rating 1–5
+  if (entry.category === 2 && entry.rating) {
+    return PEGI_RATINGS[entry.rating] ?? null
+  }
+  // v4: organization 2 (PEGI) + rating_category 1–5
+  if (entry.organization === 2 && entry.rating_category) {
+    return PEGI_RATINGS[entry.rating_category] ?? null
+  }
+  return null
+}
 
-  // Category 2 = PEGI
-  const pegi = ageRatings.find((r) => r.category === 2)
-  if (!pegi) return null
+export interface PegiInfo {
+  label: string
+  age: number
+  internal: string
+  descriptors: string[]
+}
 
-  return PEGI_RATINGS[pegi.rating] || null
+/**
+ * Full PEGI info: age band + French content-descriptor labels.
+ */
+export function getPegiInfo(ageRatings?: IGDBAgeRatingEntry[] | null): PegiInfo | null {
+  if (!ageRatings?.length) return null
+  const pegiEntry = ageRatings.find(
+    (r) => r.category === 2 || r.organization === 2,
+  )
+  if (!pegiEntry) return null
+  const base = pegiFromEntry(pegiEntry)
+  if (!base) return null
+  return {
+    ...base,
+    descriptors: extractPegiDescriptors(ageRatings),
+  }
+}
+
+/**
+ * Extract PEGI rating from age_ratings array (age band only).
+ */
+export function getPegiRating(ageRatings?: IGDBAgeRatingEntry[] | null): {
+  label: string
+  age: number
+  internal: string
+} | null {
+  return getPegiInfo(ageRatings)
 }
 
 // ============================================
@@ -244,7 +279,7 @@ export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]
     search "${safeQuery}";
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer,
            total_rating, total_rating_count;
     where platforms = ${ALL_PLATFORM_FILTER};
@@ -271,7 +306,7 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
            first_release_date,
            genres.name,
            platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
            themes.name,
            game_modes.name,
@@ -293,7 +328,7 @@ export async function getPopularGames(limit = 100): Promise<IGDBGame[]> {
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            total_rating, total_rating_count;
     where total_rating_count > ${MIN_RATING_COUNT} & cover != null & platforms = ${CONSOLE_FILTER};
     sort total_rating desc;
@@ -313,7 +348,7 @@ export async function getFamilyGames(limit = 100): Promise<IGDBGame[]> {
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            total_rating, total_rating_count;
     where age_ratings.category = 2 & age_ratings.rating = (1,2) & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 50;
     sort total_rating desc;
@@ -335,7 +370,7 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            total_rating, total_rating_count;
     where first_release_date > ${sixMonthsAgo} & first_release_date < ${now} & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > 20;
     sort first_release_date desc;
@@ -369,7 +404,7 @@ export async function getGamesByPlatform(platformId: number, limit = 100): Promi
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer,
            themes.name,
            total_rating, total_rating_count;
@@ -442,7 +477,7 @@ export async function getGamesByFranchise(franchiseName: string, limit = 100): P
       const gamesBody = `
         fields name, summary, cover.url, cover.image_id, first_release_date,
                genres.name, platforms.name, platforms.abbreviation,
-               age_ratings.category, age_ratings.rating,
+               ${IGDB_AGE_RATING_FIELDS},
                involved_companies.company.name, involved_companies.developer,
                themes.name,
                total_rating, total_rating_count;
@@ -459,7 +494,7 @@ export async function getGamesByFranchise(franchiseName: string, limit = 100): P
       search "${safeName}";
       fields name, summary, cover.url, cover.image_id, first_release_date,
              genres.name, platforms.name, platforms.abbreviation,
-             age_ratings.category, age_ratings.rating,
+             ${IGDB_AGE_RATING_FIELDS},
              involved_companies.company.name, involved_companies.developer,
              themes.name,
              total_rating, total_rating_count;
@@ -484,7 +519,7 @@ export async function getTopRatedGames(limit = 100): Promise<IGDBGame[]> {
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer,
            themes.name,
            total_rating, total_rating_count;
@@ -653,7 +688,7 @@ export async function getGamesByCompany(companyId: number, limit = 50): Promise<
   const body = `
     fields name, summary, cover.url, cover.image_id, first_release_date,
            genres.name, platforms.name, platforms.abbreviation,
-           age_ratings.category, age_ratings.rating,
+           ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
            themes.name,
            total_rating, total_rating_count;
@@ -716,7 +751,7 @@ export function normalizePlatforms(platforms: { name: string }[] | undefined): s
  * Transform IGDB game to our internal format
  */
 export function transformGame(game: IGDBGame) {
-  const pegi = getPegiRating(game.age_ratings)
+  const pegi = getPegiInfo(game.age_ratings)
   const developer = game.involved_companies?.find((c) => c.developer)
   const publisher = game.involved_companies?.find((c) => c.publisher)
 
@@ -731,6 +766,7 @@ export function transformGame(game: IGDBGame) {
       ? new Date(game.first_release_date * 1000).toISOString().split("T")[0]
       : null,
     officialRating: pegi?.internal || null,
+    pegiDescriptors: pegi?.descriptors ?? [],
     expertAgeRec: pegi?.age || null,
     genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
     platforms: normalizePlatforms(game.platforms),

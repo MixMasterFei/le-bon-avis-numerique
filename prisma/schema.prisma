@@ -149,6 +149,8 @@ model MediaItem {
   // without a site-wide rename. See src/lib/seo-autofix.ts (Lever C).
   seoTitle        String?   @map("seo_title")
   officialRating  String?   @map("official_rating")
+  // PEGI content-descriptor labels (FR), from IGDB at import/backfill.
+  pegiDescriptors String[]  @default([]) @map("pegi_descriptors")
   expertAgeRec    Int?      @map("expert_age_rec")
   communityAgeRec Float?    @map("community_age_rec")
   duration        Int? // minutes for movies/shows, null for others

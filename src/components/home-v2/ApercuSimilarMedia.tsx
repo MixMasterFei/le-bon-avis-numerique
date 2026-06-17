@@ -83,25 +83,32 @@ export async function ApercuSimilarMedia({
       },
     })
 
-    similarMedia = similarities.map((sim) => {
-      const other = sim.mediaIdA === mediaId ? sim.mediaB : sim.mediaA
-      return {
-        id: other.id,
-        title: other.title,
-        type: other.type as string,
-        posterUrl: other.posterUrl,
-        expertAgeRec: other.expertAgeRec,
-        genres: other.genres,
-        releaseDate: other.releaseDate,
-        score: sim.similarityScore,
-      }
-    })
+    similarMedia = similarities
+      .map((sim) => {
+        const other = sim.mediaIdA === mediaId ? sim.mediaB : sim.mediaA
+        return {
+          id: other.id,
+          title: other.title,
+          type: other.type as string,
+          posterUrl: other.posterUrl,
+          expertAgeRec: other.expertAgeRec,
+          genres: other.genres,
+          releaseDate: other.releaseDate,
+          score: sim.similarityScore,
+        }
+      })
+      // Same media type only — the precomputed similarity graph can link a game
+      // to a movie, which surfaced cross-type suggestions ("Dans le même genre"
+      // on a game showing films). The genre fallback below tops up if thin.
+      .filter((s) => s.type === mediaType)
 
-    // 2. Fallback: genre-based scoring when no precomputed similarities
-    if (similarMedia.length === 0 && genres.length > 0) {
+    // 2. Fallback / top-up: genre-based SAME-TYPE scoring when we don't have
+    //    enough precomputed same-type similarities.
+    if (similarMedia.length < 6 && genres.length > 0) {
+      const existingIds = new Set<string>([mediaId, ...similarMedia.map((s) => s.id)])
       const fallback = await prisma.mediaItem.findMany({
         where: {
-          id: { not: mediaId },
+          id: { notIn: Array.from(existingIds) },
           type: mediaType as MediaType,
           genres: { hasSome: genres },
           posterUrl: { not: null, startsWith: "http" },
@@ -165,7 +172,10 @@ export async function ApercuSimilarMedia({
       })
 
       scored.sort((a, b) => b.score - a.score)
-      similarMedia.push(...scored.slice(0, 10))
+      for (const s of scored) {
+        if (similarMedia.length >= 10) break
+        similarMedia.push(s)
+      }
     }
   } catch (error) {
     console.error("[ApercuSimilarMedia] Failed to fetch:", error)

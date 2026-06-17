@@ -12,7 +12,7 @@ import {
 import {
   getGameDetails,
   getIGDBImageUrl,
-  getPegiRating,
+  getPegiInfo,
   normalizePlatforms,
 } from "@/lib/igdb"
 import { normalizeGameGenres } from "@/lib/igdb-genres"
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const pegi = getPegiRating(game.age_ratings)
+      const pegi = getPegiInfo(game.age_ratings)
       const developer = game.involved_companies?.find((c) => c.developer)
 
       const id = randomUUID()
@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
           genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
           platforms: normalizePlatforms(game.platforms),
           officialRating: pegi?.internal || null,
+          pegiDescriptors: pegi?.descriptors ?? [],
           expertAgeRec: pegi?.age || null,
           director: developer?.company.name || null,
           topics: game.themes?.map((t) => t.name) || [],

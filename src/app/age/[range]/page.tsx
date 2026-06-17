@@ -9,8 +9,11 @@ import {
   ApercuMediaCard,
   type ApercuCardMedia,
 } from "@/components/home-v2/ApercuMediaCard"
+import { RedesignCard } from "@/components/home-redesign/RedesignCard"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { isAdmin as checkIsAdmin } from "@/lib/auth"
+import { v2Enabled } from "@/lib/v2-flag"
 
 export const revalidate = 1800
 
@@ -64,47 +67,67 @@ interface AgePageProps {
 }
 
 async function fetchAgeRangeMedia(min: number, max: number, page: number) {
-  const skip = (page - 1) * ITEMS_PER_PAGE
-
   const where: Prisma.MediaItemWhereInput = {
     expertAgeRec: { gte: min, lte: max },
     posterUrl: { not: null, startsWith: "http" },
     isEnriched: true,
+    // Films, séries and games only — mangas/books have their own sections.
+    type: { in: ["MOVIE", "TV", "GAME"] },
     AND: [{ tmdbVoteCount: { gte: 50 } }],
   }
 
-  const [rawItems, total] = await Promise.all([
-    withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where,
-        orderBy: [
-          { expertAgeRec: "asc" },
-          { tmdbRating: { sort: "desc", nulls: "last" } },
-        ],
-        skip,
-        take: ITEMS_PER_PAGE,
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          posterUrl: true,
-          expertAgeRec: true,
-          genres: true,
-          contentMetrics: {
-            select: {
-              violence: true,
-              sexNudity: true,
-              language: true,
-              substanceUse: true,
-            },
+  // The 8+ bands are game-heavy in the catalog, which made these pages read as
+  // a games-only list (films/séries buried). Pull a quality-ordered pool, then
+  // round-robin interleave by media type so every page shows a film/série/jeu
+  // mix. We paginate over the interleaved pool (bounded — plenty for a browse
+  // surface).
+  const POOL_SIZE = 240
+
+  const pool = await withPrismaRetry(() =>
+    prisma.mediaItem.findMany({
+      where,
+      orderBy: [{ tmdbRating: { sort: "desc", nulls: "last" } }],
+      take: POOL_SIZE,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        posterUrl: true,
+        expertAgeRec: true,
+        genres: true,
+        contentMetrics: {
+          select: {
+            violence: true,
+            sexNudity: true,
+            language: true,
+            substanceUse: true,
           },
         },
-      })
-    ),
-    withPrismaRetry(() => prisma.mediaItem.count({ where })).catch(
-      () => skip + ITEMS_PER_PAGE
-    ),
-  ])
+      },
+    }),
+  )
+
+  // Round-robin: MOVIE[i], TV[i], GAME[i], … — keeps each type's quality order
+  // while guaranteeing a mix; a band with only one type just falls back to it.
+  const buckets: Record<string, typeof pool> = { MOVIE: [], TV: [], GAME: [] }
+  for (const it of pool) (buckets[it.type] ??= []).push(it)
+  const TYPE_ORDER = ["MOVIE", "TV", "GAME"] as const
+  const interleaved: typeof pool = []
+  for (let i = 0; interleaved.length < pool.length; i++) {
+    let progressed = false
+    for (const t of TYPE_ORDER) {
+      const b = buckets[t]
+      if (b && b[i]) {
+        interleaved.push(b[i])
+        progressed = true
+      }
+    }
+    if (!progressed) break
+  }
+
+  const total = interleaved.length
+  const pageStart = (page - 1) * ITEMS_PER_PAGE
+  const rawItems = interleaved.slice(pageStart, pageStart + ITEMS_PER_PAGE)
 
   const items: ApercuCardMedia[] = rawItems.map((item) => ({
     id: item.id,
@@ -153,6 +176,11 @@ export default async function AgePage({
     ageRange.max,
     currentPage
   )
+
+  // Use the V2 card (bars + augmented totem-with-hover + monogram avatars) when
+  // V2 is on, so the age pages match the rest of the site instead of the legacy
+  // apercu card (hearts + plain badge). Follows the master flag → rollback-safe.
+  const v2Cards = v2Enabled(await checkIsAdmin())
 
   const baseUrl = "https://totemavise.com"
 
@@ -317,16 +345,27 @@ export default async function AgePage({
 
             {items.length > 0 ? (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-                  {items.map((item) => (
-                    <ApercuMediaCard
-                      key={item.id}
-                      media={item}
-                      size="sm"
-                      serifClass={serifClass}
-                    />
-                  ))}
-                </div>
+                {v2Cards ? (
+                  <div
+                    data-home="v2"
+                    className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-5 lg:grid-cols-5"
+                  >
+                    {items.map((item) => (
+                      <RedesignCard key={item.id} media={item} totem="compact" showType />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
+                    {items.map((item) => (
+                      <ApercuMediaCard
+                        key={item.id}
+                        media={item}
+                        size="sm"
+                        serifClass={serifClass}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {totalPages > 1 && (
                   <nav

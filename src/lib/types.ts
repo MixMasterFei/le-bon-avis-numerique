@@ -8,6 +8,7 @@ export interface MediaItem {
   posterUrl: string
   synopsisFr: string | null
   officialRating: string | null
+  pegiDescriptors?: string[]
   expertAgeRec: number | null
   communityAgeRec: number | null
   duration?: number
