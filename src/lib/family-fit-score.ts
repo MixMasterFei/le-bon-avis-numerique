@@ -172,6 +172,20 @@ export function hasRichProfile(member: FitMemberProfile): boolean {
   return hasActionablePreferences(member)
 }
 
+/**
+ * Is the member's profile "fully set up" — curated genres AND tuned sensitivity?
+ *
+ * This is the OLD strict rating gate, repurposed: it no longer decides whether
+ * to rate (that's `hasActionablePreferences`), only whether to still nudge.
+ * Three tiers result on the fiche:
+ *   - no actionable preferences → age-only score + "Faire le quiz"
+ *   - actionable but not complete → real rating + "Compléter le quiz pour affiner"
+ *   - complete → real rating, no nudge
+ */
+export function isProfileComplete(member: FitMemberProfile): boolean {
+  return !!member.useCustomSettings && (member.favoriteGenres?.length ?? 0) > 0
+}
+
 export function getAgeGroup(age: number | null): keyof typeof DEFAULT_GENRES_BY_AGE {
   if (age == null) return "teen"
   if (age <= 9) return "child"

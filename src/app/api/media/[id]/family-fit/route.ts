@@ -19,6 +19,7 @@ import {
   finalizeDetailPageFit,
   GENTLE_TONES,
   hasActionablePreferences,
+  isProfileComplete,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   isFamilyWarningContent,
@@ -73,6 +74,10 @@ interface FamilyFitMember {
   ageVerdict: AgeVerdict
   preferenceVerdict: PreferenceVerdict
   hasPreferences: boolean
+  // "Fully set up" (genres + tuned sensitivity). When false but hasPreferences
+  // is true, the member is partially configured → real rating + a gentle
+  // "complete the quiz" nudge.
+  profileComplete: boolean
   affinity: AffinityInfo
 }
 
@@ -391,6 +396,8 @@ export async function GET(
       // Enough signal for a real rating: any curated preference OR any reaction
       // history. Mirrors the recommendations gate; not the strict quiz flag.
       const hasPreferences = hasActionablePreferences(member) || memberReactions.length > 0
+      // Fully set up (genres + tuned sensitivity) → no "complete the quiz" nudge.
+      const profileComplete = isProfileComplete(member)
       let affinity: AffinityInfo = { hasConnection: false }
 
       // Check for direct connections via MediaSimilarity
@@ -553,6 +560,7 @@ export async function GET(
           ageVerdict: detail.ageVerdict,
           preferenceVerdict: detail.preferenceVerdict,
           hasPreferences,
+          profileComplete,
           affinity,
         }
       }
@@ -725,6 +733,7 @@ export async function GET(
         ageVerdict: detail.ageVerdict,
         preferenceVerdict: detail.preferenceVerdict,
         hasPreferences,
+        profileComplete,
         affinity,
       }
     })

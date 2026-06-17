@@ -29,6 +29,7 @@ export interface FamilyFitMember {
   level: "excellent" | "good" | "moderate" | "poor"
   reason: string
   hasPreferences?: boolean
+  profileComplete?: boolean
   affinity?: AffinityInfo
 }
 

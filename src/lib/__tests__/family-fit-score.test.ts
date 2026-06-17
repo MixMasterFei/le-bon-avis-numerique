@@ -13,6 +13,7 @@ import {
   getCatalogCardExclusionReason,
   hasActionablePreferences,
   hasRichProfile,
+  isProfileComplete,
   hasYouthAppealSignal,
   isAdultLeaningContentForMinor,
   qualifiesForPositiveContentCopy,
@@ -168,6 +169,16 @@ describe("family fit guardrails", () => {
     expect(hasActionablePreferences({})).toBe(false)
     // hasRichProfile is now a thin alias of the same logic.
     expect(hasRichProfile({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(true)
+  })
+
+  it("isProfileComplete is the stricter 'fully set up' check (genres + tuned sensitivity)", () => {
+    // Partial: actionable (genres) but flag off → has a rating, still nudged.
+    expect(isProfileComplete({ useCustomSettings: false, favoriteGenres: ["Animation"] })).toBe(false)
+    expect(isProfileComplete({ useCustomSettings: false, interests: ["dinosaures"] })).toBe(false)
+    // Complete: curated genres AND tuned sensitivity.
+    expect(isProfileComplete({ useCustomSettings: true, favoriteGenres: ["Animation"] })).toBe(true)
+    // Custom settings without genres is not "complete".
+    expect(isProfileComplete({ useCustomSettings: true, favoriteGenres: [] })).toBe(false)
   })
 
   it("keeps adult-leaning teen content in review without a youth appeal signal", () => {

@@ -38,6 +38,7 @@ interface FamilyFitMember {
   ageVerdict?: AgeVerdict
   preferenceVerdict?: PreferenceVerdict
   hasPreferences?: boolean
+  profileComplete?: boolean
   affinity?: AffinityInfo
 }
 
@@ -333,8 +334,8 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
                 </p>
               )}
 
-              {/* Quiz prompt for members without preferences */}
-              {member.hasPreferences === false && (
+              {/* Quiz prompt: empty profiles → do the quiz; partial → finish it */}
+              {member.hasPreferences === false ? (
                 <Link
                   href={`/profil/quiz/${member.id}`}
                   className="text-xs text-indigo-500 pl-8 flex items-center gap-1 hover:text-indigo-700 transition-colors"
@@ -342,7 +343,15 @@ export function FamilyFitCard({ mediaId }: FamilyFitCardProps) {
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
                   Faire le quiz pour affiner cet indice
                 </Link>
-              )}
+              ) : member.profileComplete === false ? (
+                <Link
+                  href={`/profil/quiz/${member.id}`}
+                  className="text-xs text-gray-400 pl-8 flex items-center gap-1 hover:text-gray-600 transition-colors"
+                >
+                  <Sparkles className="h-3 w-3 flex-shrink-0" />
+                  Compléter le quiz pour affiner
+                </Link>
+              ) : null}
             </div>
           )
         })}

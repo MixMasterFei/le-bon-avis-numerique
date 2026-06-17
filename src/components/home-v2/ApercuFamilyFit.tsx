@@ -37,6 +37,7 @@ interface FamilyFitMember {
   level: "excellent" | "good" | "moderate" | "poor"
   reason: string
   hasPreferences?: boolean
+  profileComplete?: boolean
   affinity?: AffinityInfo
 }
 
@@ -349,7 +350,7 @@ export function ApercuFamilyFit({
                 </div>
               )}
 
-              {member.hasPreferences === false && (
+              {member.hasPreferences === false ? (
                 <Link
                   href={`/profil/quiz/${member.id}`}
                   className="pl-10 flex items-center gap-1 text-[12px] transition-opacity hover:opacity-70"
@@ -358,7 +359,16 @@ export function ApercuFamilyFit({
                   <Sparkles className="h-3 w-3 flex-shrink-0" />
                   Faire le quiz pour personnaliser
                 </Link>
-              )}
+              ) : member.profileComplete === false ? (
+                <Link
+                  href={`/profil/quiz/${member.id}`}
+                  className="pl-10 flex items-center gap-1 text-[12px] transition-opacity hover:opacity-70"
+                  style={{ color: p.ink2 }}
+                >
+                  <Sparkles className="h-3 w-3 flex-shrink-0" />
+                  Compléter le quiz pour affiner
+                </Link>
+              ) : null}
             </div>
           )
         })}
