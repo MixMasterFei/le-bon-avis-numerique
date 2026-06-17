@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "Collections — Sélections thématiques pour toute la famille",
-  description: "Découvrez nos collections thématiques : les meilleurs films, séries et jeux pour enfants et ados, sélectionnés et analysés par des experts.",
+  description: "Découvrez nos collections thématiques : les meilleurs films, séries et jeux pour enfants et ados, sélectionnés et analysés pour les familles.",
   alternates: { canonical: "/collections" },
   openGraph: {
     title: "Collections — Sélections thématiques | Totem Avisé",

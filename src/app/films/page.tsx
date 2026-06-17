@@ -72,7 +72,7 @@ export async function generateMetadata({
 
   let title = "Films — Âge conseillé et avis famille"
   let description =
-    "Les meilleurs films pour votre famille : analyses détaillées, violence, langage, messages positifs. Recommandations d'âge par des experts."
+    "Les meilleurs films pour votre famille : analyses détaillées, violence, langage, messages positifs. Repères d'âge indépendants, affinés par les avis des familles."
 
   if (isCinema) {
     title = "Films à l'affiche en France — Repères d'âge"

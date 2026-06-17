@@ -1,6 +1,8 @@
-import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2, BookOpen, BookText, Smartphone } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 export const metadata = {
@@ -38,16 +40,57 @@ const howItWorks = [
   },
 ]
 
-const stats = [
-  { label: "Contenus analysés", value: "8 000+" },
-  { label: "Critères évalués", value: "7" },
-  { label: "Types de médias", value: "4" },
-]
+// Icon + French label per catalogue media type. Order here is the display
+// order in the "Ce que vous pouvez découvrir" grid (only types that actually
+// have content are shown — see byType below).
+const TYPE_META: Record<string, { label: string; icon: LucideIcon }> = {
+  MOVIE: { label: "Films", icon: Film },
+  TV: { label: "Séries", icon: Tv },
+  GAME: { label: "Jeux vidéo", icon: Gamepad2 },
+  BOOK: { label: "Livres", icon: BookOpen },
+  MANGA: { label: "Mangas", icon: BookText },
+  APP: { label: "Applis", icon: Smartphone },
+}
+
+// Order used when we display the type breakdown.
+const TYPE_ORDER = ["MOVIE", "TV", "GAME", "BOOK", "MANGA", "APP"]
+
+// Static fallback so the page never renders empty if the DB read fails.
+const FALLBACK_BY_TYPE = ["MOVIE", "TV", "GAME", "BOOK"].map((type) => ({
+  type,
+  count: null as number | null,
+}))
 
 export default async function AProposPage() {
   const session = await auth()
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
+
+  // Live catalogue counts — replaces the previously hardcoded "8 000+" stat
+  // (and the matching per-type grid) so the headline always reflects reality.
+  const grouped = await prisma.mediaItem
+    .groupBy({ by: ["type"], _count: { _all: true } })
+    .catch(() => [] as { type: string; _count: { _all: number } }[])
+
+  const byType = grouped
+    .map((g) => ({ type: g.type as string, count: g._count._all }))
+    .filter((g) => g.count > 0 && TYPE_META[g.type])
+    .sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type))
+
+  const totalAnalyzed = byType.reduce((sum, g) => sum + g.count, 0)
+  // Floor to the nearest 500 and add "+" so the figure stays stable between
+  // imports and never overstates the catalogue.
+  const totalFloored = Math.floor(totalAnalyzed / 500) * 500
+  const totalLabel =
+    totalFloored > 0 ? `${totalFloored.toLocaleString("fr-FR")}+` : "9 000+"
+
+  const discoverItems = byType.length > 0 ? byType : FALLBACK_BY_TYPE
+
+  const stats = [
+    { label: "Contenus analysés", value: totalLabel },
+    { label: "Dimensions évaluées", value: "8" },
+    { label: "Types de médias", value: String(discoverItems.length) },
+  ]
 
   return (
     <div
@@ -193,21 +236,25 @@ export default async function AProposPage() {
               Ce que vous pouvez découvrir
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { icon: Film, label: "Films" },
-                { icon: Tv, label: "Séries" },
-                { icon: Gamepad2, label: "Jeux vidéo" },
-                { icon: BookOpen, label: "Livres" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl"
-                  style={{ background: p.bg2, color: p.ink }}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </div>
-              ))}
+              {discoverItems.map((item) => {
+                const meta = TYPE_META[item.type]
+                const Icon = meta.icon
+                return (
+                  <div
+                    key={item.type}
+                    className="flex flex-col items-center gap-1.5 p-4 rounded-xl"
+                    style={{ background: p.bg2, color: p.ink }}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="text-sm font-medium">{meta.label}</span>
+                    {item.count != null && (
+                      <span className="text-xs" style={{ color: p.ink2 }}>
+                        {item.count.toLocaleString("fr-FR")}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 
