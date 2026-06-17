@@ -50,9 +50,65 @@ function checkEmailConfig() {
   }
 }
 
+// Presence check for the launch-critical secrets / integration keys. Returns
+// booleans only — never the values. `critical` items gate `ok` (the site can't
+// serve logged-in users without them); the rest are feature/automation keys.
+function checkIntegrations() {
+  const has = (...names: string[]) => names.some((n) => !!process.env[n])
+
+  const items = [
+    {
+      key: "authSecret",
+      label: "AUTH_SECRET (sessions)",
+      set: has("AUTH_SECRET", "NEXTAUTH_SECRET"),
+      critical: true,
+    },
+    {
+      key: "database",
+      label: "Base de données",
+      set: has("DATABASE_URL"),
+      critical: true,
+    },
+    {
+      key: "googleOauth",
+      label: "Google OAuth (connexion)",
+      // Needs BOTH id and secret; either env-var naming is accepted.
+      set:
+        has("AUTH_GOOGLE_ID", "GOOGLE_CLIENT_ID") &&
+        has("AUTH_GOOGLE_SECRET", "GOOGLE_CLIENT_SECRET"),
+      critical: false,
+    },
+    {
+      key: "cronSecret",
+      label: "CRON_SECRET (jobs auto.)",
+      set: has("CRON_SECRET"),
+      critical: false,
+    },
+    {
+      key: "tmdb",
+      label: "TMDB (films/séries)",
+      set: has("TMDB_API_KEY"),
+      critical: false,
+    },
+    {
+      key: "igdb",
+      label: "IGDB (jeux)",
+      // Both client id and secret are required for the token exchange.
+      set: has("IGDB_CLIENT_ID") && has("IGDB_CLIENT_SECRET"),
+      critical: false,
+    },
+  ]
+
+  return {
+    ok: items.filter((i) => i.critical).every((i) => i.set),
+    items,
+  }
+}
+
 export async function GET() {
-  // Computed up front so email diagnostics still return even if the DB query fails.
+  // Computed up front so config diagnostics still return even if the DB query fails.
   const email = checkEmailConfig()
+  const integrations = checkIntegrations()
 
   try {
     const movieTvFilter = { type: { in: ["MOVIE", "TV"] as ("MOVIE" | "TV")[] } }
@@ -95,11 +151,12 @@ export async function GET() {
       streaming: { count: withStreaming, pct: pct(withStreaming) },
       quality: { avg: Math.round(avgQuality._avg.dataQualityScore || 0) },
       email,
+      integrations,
     })
   } catch (error) {
     console.error("Health check error:", error)
     return NextResponse.json(
-      { error: "Failed to fetch health data", email },
+      { error: "Failed to fetch health data", email, integrations },
       { status: 500 }
     )
   }

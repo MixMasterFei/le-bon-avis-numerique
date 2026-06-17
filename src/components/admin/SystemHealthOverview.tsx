@@ -1,8 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Shield, Camera, Brain, Play, BarChart3, Mail } from "lucide-react"
+import { Shield, Camera, Brain, Play, BarChart3, Mail, KeyRound, Check, X } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+
+interface IntegrationsConfig {
+  ok: boolean
+  items: { key: string; label: string; set: boolean; critical: boolean }[]
+}
 
 interface EmailConfig {
   ok: boolean
@@ -25,6 +30,7 @@ interface HealthData {
   streaming: { count: number; pct: number }
   quality: { avg: number }
   email?: EmailConfig
+  integrations?: IntegrationsConfig
 }
 
 function pctColor(pct: number): string {
@@ -193,6 +199,61 @@ export function SystemHealthOverview() {
             ))}
           </ul>
         )}
+      </div>
+    )}
+
+    {/* Launch-critical secrets / integration keys — presence only */}
+    {data.integrations && (
+      <div
+        className={`rounded-lg p-3 mb-6 border ${
+          data.integrations.ok
+            ? "bg-emerald-50 border-emerald-200"
+            : "bg-red-50 border-red-200"
+        }`}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <KeyRound
+            className={`h-4 w-4 ${
+              data.integrations.ok ? "text-emerald-600" : "text-red-600"
+            }`}
+          />
+          <span className="text-sm font-semibold text-gray-700">
+            Secrets &amp; intégrations
+          </span>
+          <span
+            className={`ml-auto text-xs font-bold ${
+              data.integrations.ok ? "text-emerald-700" : "text-red-600"
+            }`}
+          >
+            {data.integrations.ok ? "OK" : "À vérifier"}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+          {data.integrations.items.map((item) => {
+            // Present → green. Missing → red if critical, amber if optional.
+            const color = item.set
+              ? "text-emerald-700"
+              : item.critical
+                ? "text-red-600"
+                : "text-amber-600"
+            return (
+              <div
+                key={item.key}
+                className={`flex items-center gap-1.5 text-xs ${color}`}
+              >
+                {item.set ? (
+                  <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                ) : (
+                  <X className="h-3.5 w-3.5 flex-shrink-0" />
+                )}
+                <span className="truncate">{item.label}</span>
+                {!item.set && !item.critical && (
+                  <span className="text-[10px] text-gray-400">(optionnel)</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
     )}
     </>
