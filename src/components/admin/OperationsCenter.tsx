@@ -425,6 +425,40 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "backfillPegi",
+      endpoint: "/api/admin/backfill-pegi-descriptors",
+      method: "POST",
+      // Re-fetches PEGI age + content descriptors from IGDB for games missing
+      // them (the broken-query era left officialRating null). Cursor-paginated
+      // by id so the loop drains cleanly past games that have no PEGI on IGDB.
+      chunked: true,
+      delayMs: 1000,
+      accumKeys: ["processed", "updated", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.remaining ? (data.processed || 0) + data.remaining : null,
+        updated: data.updated || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        return params
+      },
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.updated || 0} jeux mis à jour (PEGI/descripteurs)${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Backfill PEGI jeux",
+    description: "Récupérer l'âge PEGI + descripteurs manquants depuis IGDB",
+    icon: BadgeCheck,
+    color: "indigo",
+    statLabels: { updated: "mis à jour" },
+  },
+  {
+    config: {
       key: "importCNC",
       endpoint: "/api/admin/import-cnc-ratings",
       method: "POST",
@@ -911,7 +945,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Médias & images",
     description: "Screenshots, migration vers Supabase Storage, covers IGDB",
-    keys: ["importScreenshots", "migrateStorage", "fixGameCovers"],
+    keys: ["importScreenshots", "migrateStorage", "fixGameCovers", "backfillPegi"],
   },
 ]
 

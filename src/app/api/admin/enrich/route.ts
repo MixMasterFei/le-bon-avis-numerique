@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
-import { UNRELEASED_TMDB_STATUSES } from "@/lib/release-status"
+import { notUnreleasedWhere, unenrichedBacklogWhere } from "@/lib/enrich-filter"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
 import { floorExpertAgeBySignals } from "@/lib/age-floor"
@@ -513,22 +513,9 @@ export async function POST(request: NextRequest) {
     // estimate only, badged "à confirmer") until their release date
     // passes, then the cron picks them up. Preserves the documented
     // invariant: provisional ⟹ !isEnriched ⟹ no ContentMetrics.
-    // (null releaseDate = unknown/old catalog item → still eligible.)
-    //
-    // BUT a future title can have a NULL release date (announced sequel with
-    // no date yet, e.g. "Les Indestructibles 3") — the date check alone lets
-    // it through and fabricates content. So we ALSO exclude titles whose TMDB
-    // lifecycle (`releaseStatus`) is a not-yet-released value. We match the
-    // UNRELEASED set (not `== "Released"`) so aired series ("Returning
-    // Series"/"Ended") aren't blocked. See src/lib/release-status.
-    const notUnreleased = {
-      AND: [
-        { OR: [{ releaseDate: null }, { releaseDate: { lte: new Date() } }] },
-        // null-safe: keep rows with no status (old catalog) AND rows whose
-        // status isn't a pre-release value. A bare NOT/in would drop NULLs.
-        { OR: [{ releaseStatus: null }, { releaseStatus: { notIn: [...UNRELEASED_TMDB_STATUSES] } }] },
-      ],
-    }
+    // Shared predicate (also drives the dashboard backlog count) lives in
+    // src/lib/enrich-filter so all three agree on "enrichable". See there.
+    const notUnreleased = notUnreleasedWhere()
 
     // Build where clause based on mode
     let whereClause
@@ -823,11 +810,13 @@ export async function GET() {
   })
 
   // Backlog count = items the cron + manual triggers will actually
-  // pick up. Mirrors the POST onlyMissing filter (isEnriched: false)
-  // so the dashboard, the script preflight, and the actual processing
-  // all agree on what "needs enrichment" means.
+  // pick up. Mirrors the POST onlyMissing filter (isEnriched:false AND
+  // released) so the dashboard, the script preflight, and the actual
+  // processing all agree on what "needs enrichment" means. Unreleased
+  // titles are excluded — enrich skips them, so counting them here would
+  // show a backlog that never drains.
   const withoutMetrics = await prisma.mediaItem.count({
-    where: { isEnriched: false },
+    where: unenrichedBacklogWhere(),
   })
 
   // Also count items missing age recommendation (even if they have empty metrics)

@@ -6,8 +6,17 @@ import { getGameDetails, getPegiInfo } from "@/lib/igdb"
 export const maxDuration = 60
 
 /**
- * Backfill pegi_descriptors[] from IGDB for games that have an igdbId.
- * POST ?limit=30&dry=true
+ * Backfill PEGI age + pegi_descriptors[] from IGDB for games that have an
+ * igdbId but are missing a rating / descriptors. This re-fetches via the
+ * (now-fixed) IGDB age-rating query, so games imported during the broken-query
+ * era finally get their PEGI populated.
+ *
+ * Cursor-paginated: pass ?afterId=<id> to advance through the catalog by id.
+ * Games that genuinely have no PEGI on IGDB keep officialRating=null, so we
+ * MUST advance by cursor rather than always re-selecting the lowest null ids
+ * (otherwise a chunked loop would spin forever on them).
+ *
+ * POST ?limit=30&afterId=<id>&dry=true
  */
 export async function POST(request: NextRequest) {
   const session = await auth()
@@ -17,14 +26,17 @@ export async function POST(request: NextRequest) {
 
   const limit = Math.min(50, parseInt(request.nextUrl.searchParams.get("limit") || "30", 10) || 30)
   const dryRun = request.nextUrl.searchParams.get("dry") === "true"
+  const afterId = request.nextUrl.searchParams.get("afterId") || undefined
 
   const items = await prisma.mediaItem.findMany({
     where: {
       type: "GAME",
       igdbId: { not: null },
       OR: [{ pegiDescriptors: { isEmpty: true } }, { officialRating: null }],
+      ...(afterId ? { id: { gt: afterId } } : {}),
     },
     select: { id: true, title: true, igdbId: true, officialRating: true, pegiDescriptors: true },
+    orderBy: { id: "asc" },
     take: limit,
   })
 
@@ -73,12 +85,28 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Cursor advances by id; we're done once a page comes back short.
+  const lastId = items.length > 0 ? items[items.length - 1].id : null
+  const done = items.length < limit
+
+  const remaining = await prisma.mediaItem.count({
+    where: {
+      type: "GAME",
+      igdbId: { not: null },
+      OR: [{ pegiDescriptors: { isEmpty: true } }, { officialRating: null }],
+      ...(lastId ? { id: { gt: lastId } } : {}),
+    },
+  })
+
   return NextResponse.json({
     success: true,
     dryRun,
     processed: items.length,
     updated,
     errors,
+    lastId,
+    done,
+    remaining,
     changes: changes.slice(0, 40),
   })
 }

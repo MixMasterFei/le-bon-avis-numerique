@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import type { ReactionType } from "@prisma/client"
+import { unenrichedBacklogWhere } from "@/lib/enrich-filter"
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -154,11 +155,16 @@ export async function fetchAdminKpis(): Promise<AdminKpis> {
     cronErrors7d,
   ] = await Promise.all([
     prisma.mediaItem.count(),
-    prisma.mediaItem.count({ where: { isEnriched: false } }),
+    // "œuvres à enrichir" = the ACTIONABLE backlog (released + not enriched),
+    // mirroring what the enrich route actually processes. Counting raw
+    // isEnriched:false here would inflate the number with unreleased titles
+    // (future films, in-production) that enrich deliberately skips — the
+    // "38 à enrichir but enrich does nothing" confusion. See enrich-filter.ts.
+    prisma.mediaItem.count({ where: unenrichedBacklogWhere() }),
     prisma.mediaItem.groupBy({
       by: ["type"],
       _count: { _all: true },
-      where: { isEnriched: false },
+      where: unenrichedBacklogWhere(),
     }),
 
     // User + FamilyMember + MediaReaction + Review + CronLog + MediaItem
