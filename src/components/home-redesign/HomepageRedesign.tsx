@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { FamilyFitProvider, useFamilyFit } from "@/components/home/FamilyFitProvider"
+import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { DeferUntilVisible } from "./DeferUntilVisible"
 import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
@@ -31,12 +31,17 @@ interface HomepageRedesignProps {
 /**
  * Drives the same top red progress sweep the catalogue shows on filter changes
  * (TopProgressBar) for the homepage. The homepage filters client-side (no route
- * transition), so we pulse the bar whenever the age/family selection changes,
- * and keep it lit while family-fit data is actually being fetched. Must live
- * inside FamilyFitProvider to read `isLoading`.
+ * transition), so we pulse the bar whenever the age/family selection changes.
+ *
+ * It is deliberately NOT tied to FamilyFitProvider's `isLoading`: the lower
+ * rails mount lazily (DeferUntilVisible) and each one kicks off its own
+ * family-fit batch as you scroll, so binding the bar to `isLoading` made it
+ * flash repeatedly all the way down the page — reading as lag even though the
+ * fetches are just background hydration of the per-member avatars. The bar now
+ * fires only on an explicit filter change, where the feedback is actually
+ * useful; background hydration stays silent.
  */
 function HomeFilterProgress({ filterKey }: { filterKey: string }) {
-  const { isLoading } = useFamilyFit()
   const [pulse, setPulse] = useState(false)
   const didMount = useRef(false)
 
@@ -58,7 +63,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
     }
   }, [filterKey])
 
-  return <TopProgressBar loading={pulse || isLoading} />
+  return <TopProgressBar loading={pulse} />
 }
 
 export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers }: HomepageRedesignProps) {
