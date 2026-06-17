@@ -153,27 +153,44 @@ export interface IGDBSearchResult {
 const IGDB_AGE_RATING_FIELDS =
   "age_ratings.category, age_ratings.rating, age_ratings.organization, age_ratings.rating_category, age_ratings.rating_content_descriptions.description"
 
-// IGDB PEGI rating values (legacy `rating` field when category === 2)
-const PEGI_RATINGS: Record<number, { label: string; age: number; internal: string }> = {
-  1: { label: "PEGI 3", age: 3, internal: "PEGI_3" },
-  2: { label: "PEGI 7", age: 7, internal: "PEGI_7" },
-  3: { label: "PEGI 12", age: 12, internal: "PEGI_12" },
-  4: { label: "PEGI 16", age: 16, internal: "PEGI_16" },
-  5: { label: "PEGI 18", age: 18, internal: "PEGI_18" },
+type PegiBand = { label: string; age: number; internal: string }
+
+const PEGI_3: PegiBand = { label: "PEGI 3", age: 3, internal: "PEGI_3" }
+const PEGI_7: PegiBand = { label: "PEGI 7", age: 7, internal: "PEGI_7" }
+const PEGI_12: PegiBand = { label: "PEGI 12", age: 12, internal: "PEGI_12" }
+const PEGI_16: PegiBand = { label: "PEGI 16", age: 16, internal: "PEGI_16" }
+const PEGI_18: PegiBand = { label: "PEGI 18", age: 18, internal: "PEGI_18" }
+
+// Legacy `rating` enum (used with the old `category === 2` PEGI marker): 1–5.
+const PEGI_LEGACY_RATING: Record<number, PegiBand> = {
+  1: PEGI_3,
+  2: PEGI_7,
+  3: PEGI_12,
+  4: PEGI_16,
+  5: PEGI_18,
 }
 
-function pegiFromEntry(entry: IGDBAgeRatingEntry): {
-  label: string
-  age: number
-  internal: string
-} | null {
-  // Legacy: category 2 + rating 1–5
+// Post-2025 migration: IGDB replaced the per-org `rating` enum with a GLOBAL
+// `rating_category` (AgeRatingCategory) enum where each organization owns a
+// contiguous block. PEGI's block is 8–12. Verified against live IGDB data
+// (e.g. The Witcher 3 = organization 2 / rating_category 12 = PEGI 18, with
+// ESRB M = 6, USK 18 = 22, CERO Z = 17 all consistent with this layout).
+const PEGI_RATING_CATEGORY: Record<number, PegiBand> = {
+  8: PEGI_3,
+  9: PEGI_7,
+  10: PEGI_12,
+  11: PEGI_16,
+  12: PEGI_18,
+}
+
+function pegiFromEntry(entry: IGDBAgeRatingEntry): PegiBand | null {
+  // Legacy: category 2 (= PEGI org) + rating 1–5
   if (entry.category === 2 && entry.rating) {
-    return PEGI_RATINGS[entry.rating] ?? null
+    return PEGI_LEGACY_RATING[entry.rating] ?? null
   }
-  // v4: organization 2 (PEGI) + rating_category 1–5
+  // v4: organization 2 (PEGI) + rating_category in the global 8–12 PEGI block
   if (entry.organization === 2 && entry.rating_category) {
-    return PEGI_RATINGS[entry.rating_category] ?? null
+    return PEGI_RATING_CATEGORY[entry.rating_category] ?? null
   }
   return null
 }
