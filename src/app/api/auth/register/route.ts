@@ -31,10 +31,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate password strength
-    if (password.length < 8) {
+    // Validate password strength — mirror the signup form's live checklist
+    // (length + upper + lower + digit) so a direct API call can't create a
+    // weaker password than the UI allows.
+    if (
+      typeof password !== "string" ||
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[a-z]/.test(password) ||
+      !/[0-9]/.test(password)
+    ) {
       return NextResponse.json(
-        { error: "Le mot de passe doit contenir au moins 8 caracteres" },
+        {
+          error:
+            "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre",
+        },
         { status: 400 }
       )
     }

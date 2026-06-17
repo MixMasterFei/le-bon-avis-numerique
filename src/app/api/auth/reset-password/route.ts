@@ -37,10 +37,21 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const hashedPassword = await hash(password, 12)
 
+    // Completing a reset proves the user controls this inbox, so treat it as
+    // email verification too — otherwise a user who never verified would reset
+    // their password and still be blocked at login by the unverified-email check.
+    const existing = await prisma.user.findUnique({
+      where: { email: result.email },
+      select: { emailVerified: true },
+    })
+
     // Update user's password
     await prisma.user.update({
       where: { email: result.email },
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        emailVerified: existing?.emailVerified ?? new Date(),
+      },
     })
 
     return NextResponse.json({
