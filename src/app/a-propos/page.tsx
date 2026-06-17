@@ -1,4 +1,4 @@
-import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2, BookOpen, BookText, Smartphone } from "lucide-react"
+import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
@@ -40,23 +40,21 @@ const howItWorks = [
   },
 ]
 
-// Icon + French label per catalogue media type. Order here is the display
-// order in the "Ce que vous pouvez découvrir" grid (only types that actually
-// have content are shown — see byType below).
+// Icon + French label per catalogue media type. Only the media types that are
+// publicly live are listed here — books, mangas and apps exist in the DB but
+// aren't surfaced yet, so they're intentionally excluded from the counts and
+// the "Ce que vous pouvez découvrir" grid.
 const TYPE_META: Record<string, { label: string; icon: LucideIcon }> = {
   MOVIE: { label: "Films", icon: Film },
   TV: { label: "Séries", icon: Tv },
   GAME: { label: "Jeux vidéo", icon: Gamepad2 },
-  BOOK: { label: "Livres", icon: BookOpen },
-  MANGA: { label: "Mangas", icon: BookText },
-  APP: { label: "Applis", icon: Smartphone },
 }
 
 // Order used when we display the type breakdown.
-const TYPE_ORDER = ["MOVIE", "TV", "GAME", "BOOK", "MANGA", "APP"]
+const TYPE_ORDER = ["MOVIE", "TV", "GAME"]
 
 // Static fallback so the page never renders empty if the DB read fails.
-const FALLBACK_BY_TYPE = ["MOVIE", "TV", "GAME", "BOOK"].map((type) => ({
+const FALLBACK_BY_TYPE = TYPE_ORDER.map((type) => ({
   type,
   count: null as number | null,
 }))
