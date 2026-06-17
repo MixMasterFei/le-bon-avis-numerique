@@ -433,12 +433,15 @@ const OPERATIONS: Array<{
       // by id so the loop drains cleanly past games that have no PEGI on IGDB.
       chunked: true,
       delayMs: 1000,
-      accumKeys: ["processed", "updated", "errors"],
+      accumKeys: ["processed", "updated", "errors", "noPegi", "noAgeRatings", "pegiUnchanged"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
         total: data.remaining ? (data.processed || 0) + data.remaining : null,
         updated: data.updated || 0,
         errors: data.errors || 0,
+        noPegi: data.noPegi || 0,
+        noAgeRatings: data.noAgeRatings || 0,
+        pegiUnchanged: data.pegiUnchanged || 0,
       }),
       isDone: (data) => data.done === true,
       getNextParams: (data, params) => {
@@ -448,14 +451,20 @@ const OPERATIONS: Array<{
       },
       buildSummary: (stats) => {
         const errs = stats.errors || 0
-        return `${stats.updated || 0} jeux mis à jour (PEGI/descripteurs)${errs ? `, ${errs} erreurs` : ""}`
+        const noPegi = (stats.noPegi || 0) + (stats.noAgeRatings || 0)
+        return (
+          `${stats.updated || 0} jeux mis à jour` +
+          (noPegi ? `, ${noPegi} sans PEGI sur IGDB` : "") +
+          (stats.pegiUnchanged ? `, ${stats.pegiUnchanged} déjà à jour` : "") +
+          (errs ? `, ${errs} erreurs` : "")
+        )
       },
     },
     label: "Backfill PEGI jeux",
     description: "Récupérer l'âge PEGI + descripteurs manquants depuis IGDB",
     icon: BadgeCheck,
     color: "indigo",
-    statLabels: { updated: "mis à jour" },
+    statLabels: { updated: "mis à jour", noPegi: "sans PEGI", pegiUnchanged: "à jour" },
   },
   {
     config: {
