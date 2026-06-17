@@ -85,13 +85,11 @@ function ConnexionForm() {
         redirect: false,
       })
 
-      if (result?.error) {
-        if (result.error.includes("EMAIL_NOT_VERIFIED")) {
-          setEmailNotVerified(true)
-          setErrorMessage("Votre email n'est pas encore vérifié")
-        } else {
-          setErrorMessage("Email ou mot de passe incorrect")
-        }
+      if (result?.code === "email_not_verified") {
+        setEmailNotVerified(true)
+        setErrorMessage("Votre email n'est pas encore vérifié")
+      } else if (result?.error) {
+        setErrorMessage("Email ou mot de passe incorrect")
       } else {
         router.push(callbackUrl)
         router.refresh()

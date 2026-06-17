@@ -1,10 +1,20 @@
-import NextAuth from "next-auth"
+import NextAuth, { CredentialsSignin } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Credentials from "next-auth/providers/credentials"
 import Google from "next-auth/providers/google"
 import { compare } from "bcryptjs"
 import { prisma } from "./db"
 import type { Adapter } from "next-auth/adapters"
+
+// Custom credentials error whose `code` propagates to the client (Auth.js sets
+// `?code=` on the redirect for any CredentialsSignin subclass). Lets the login
+// page distinguish "email not verified" from a wrong password and offer to
+// resend the verification link. A plain `throw new Error(...)` would surface as
+// a generic CallbackRouteError with the message stripped, so the message never
+// reaches the browser.
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = "email_not_verified"
+}
 
 const googleClientId =
   process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID
@@ -43,16 +53,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
+        // Return null for invalid credentials → Auth.js surfaces the generic
+        // CredentialsSignin error. Only the unverified-email case throws a
+        // typed error so the client can react to it specifically.
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email et mot de passe requis")
+          return null
         }
 
+        // Normalize the email the same way registration does (lowercase +
+        // trim) so a differently-cased login ("John@Example.com") still
+        // matches the stored "john@example.com" row.
+        const email = (credentials.email as string).toLowerCase().trim()
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email },
         })
 
         if (!user || !user.password) {
-          throw new Error("Email ou mot de passe incorrect")
+          return null
         }
 
         const isPasswordValid = await compare(
@@ -61,12 +79,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         )
 
         if (!isPasswordValid) {
-          throw new Error("Email ou mot de passe incorrect")
+          return null
         }
 
         // Check if email is verified
         if (!user.emailVerified) {
-          throw new Error("EMAIL_NOT_VERIFIED")
+          throw new EmailNotVerifiedError()
         }
 
         return {
@@ -107,13 +125,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 id_token: account.id_token,
               },
             })
-            // Update user profile with Google data if missing
-            if (!existingUser.image && user.image) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { image: user.image, emailVerified: new Date() },
-              })
-            }
+            // Google has verified this email, so mark the (possibly still
+            // unverified) credentials account as verified, and backfill the
+            // avatar if we don't have one yet.
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: {
+                emailVerified: existingUser.emailVerified ?? new Date(),
+                ...(!existingUser.image && user.image
+                  ? { image: user.image }
+                  : {}),
+              },
+            })
           }
         }
       }
