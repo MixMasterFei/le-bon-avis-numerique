@@ -36,6 +36,7 @@ import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { buildAgeRationale } from "@/lib/age-rationale"
 import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
   getMovieDetails,
@@ -462,6 +463,10 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
   // buildQuickAnswer). For pre-release/provisional titles the answer stays an
   // honest age estimate with zero content claims (hideContentAnalysis).
   const qa = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // Second Q&A: the age RATIONALE ("pourquoi cet âge ?"). Same wording as the
+  // on-page "Pourquoi cet âge ?" panel (single source via buildAgeRationale),
+  // so answer engines can cite the reasoning, not just the number.
+  const rationale = buildAgeRationale({ ...media, hideContentAnalysis })
   const faqPage = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -471,6 +476,15 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         name: qa.question,
         acceptedAnswer: { "@type": "Answer", text: qa.answer },
       },
+      ...(rationale.show && rationale.faqQuestion
+        ? [
+            {
+              "@type": "Question",
+              name: rationale.faqQuestion,
+              acceptedAnswer: { "@type": "Answer", text: rationale.plainText },
+            },
+          ]
+        : []),
     ],
   }
 
@@ -668,6 +682,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // "Pourquoi cet âge ?" rationale — shown on hover/focus of the age badge in
+  // the hero (MediaHeroEditable) and mirrored into the FAQ JSON-LD so answer
+  // engines can cite the reasoning. Single source: buildAgeRationale.
+  const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis })
 
   // Shared white-card styling for the warm page (cards float on the cream bg).
   const warmCard = {
@@ -780,6 +798,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   originalTitle={media.originalTitle || null}
                   reviews={media.reviews}
                   isProvisional={media.isProvisional}
+                  ageRationale={ageRationale}
                 />
 
                 {/* Platforms for games */}

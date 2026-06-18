@@ -52,9 +52,11 @@ export const methodeSections: MethodeSection[] = [
     title: "D'où viennent nos recommandations d'âge",
     content: [
       "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC/CSA). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
+      "Deux choses font la fiabilité de cette recommandation. D'abord la cohérence : la même grille de lecture est appliquée à tout le catalogue, là où un avis isolé varie d'une personne, et d'une humeur, à l'autre. Ensuite la sécurité : des garde-fous automatiques garantissent qu'un contenu aux signaux sensibles marqués (violence réaliste, scènes explicites, thèmes durs…) ne puisse jamais recevoir un âge trop bas — même quand sa classification officielle est indulgente. La recommandation peut donc être plus prudente que le visa légal, jamais l'inverse par accident.",
       "La recommandation initiale est générée par analyse automatisée (voir « Comment on analyse » ci-dessus). Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
       "Quand les données du CNC sont disponibles, on les affiche en complément. Sur chaque fiche, vous voyez les deux côte à côte : la classification officielle et notre recommandation.",
     ],
+    after: "Sur chaque fiche, le bloc « Pourquoi cet âge ? » détaille en clair les éléments de contenu qui pèsent dans la recommandation — pour que vous ne preniez jamais notre estimation pour argent comptant, mais que vous puissiez juger sur pièces.",
   },
   {
     id: "metriques-contenu",
