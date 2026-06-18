@@ -11,6 +11,7 @@ import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
+import { WhyThisAge } from "@/components/media/WhyThisAge"
 import { SensitiveWarnings } from "@/components/media/SensitiveWarnings"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
@@ -36,6 +37,7 @@ import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { buildAgeRationale } from "@/lib/age-rationale"
 import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
   getMovieDetails,
@@ -462,6 +464,10 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
   // buildQuickAnswer). For pre-release/provisional titles the answer stays an
   // honest age estimate with zero content claims (hideContentAnalysis).
   const qa = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // Second Q&A: the age RATIONALE ("pourquoi cet âge ?"). Same wording as the
+  // on-page "Pourquoi cet âge ?" panel (single source via buildAgeRationale),
+  // so answer engines can cite the reasoning, not just the number.
+  const rationale = buildAgeRationale({ ...media, hideContentAnalysis })
   const faqPage = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -471,6 +477,15 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         name: qa.question,
         acceptedAnswer: { "@type": "Answer", text: qa.answer },
       },
+      ...(rationale.show && rationale.faqQuestion
+        ? [
+            {
+              "@type": "Question",
+              name: rationale.faqQuestion,
+              acceptedAnswer: { "@type": "Answer", text: rationale.plainText },
+            },
+          ]
+        : []),
     ],
   }
 
@@ -668,6 +683,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // Public "Pourquoi cet âge ?" rationale (crawlable trust content). Shown only
+  // when we actually have an analysis — provisional fiches use the "À venir"
+  // card instead.
+  const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis })
 
   // Shared white-card styling for the warm page (cards float on the cream bg).
   const warmCard = {
@@ -878,6 +897,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
           ) : (
             <>
+              {/* Pourquoi cet âge ? — rationale publique, crawlable (SEO/GEO) */}
+              <WhyThisAge rationale={ageRationale} />
+
               {/* Ce que les parents doivent savoir */}
               <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
 
