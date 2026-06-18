@@ -98,6 +98,26 @@ html[data-v2-type="on"] {
 html[data-v2-type="on"] body {
   font-family: var(--font-sans);
 }
+/* `@theme inline` bakes the font VALUE into the .font-sans/.font-serif/
+   .font-heading utility classes, so overriding the --font-* custom properties
+   above does NOT reach elements that use those utility CLASSES — and the rest
+   of the site (apercu/fiche/profile headings) uses `font-serif` (52 files), not
+   var(--font-*). Override the utilities directly so the homepage's typography
+   actually applies everywhere. These rules are unlayered, so they win over
+   Tailwind's utilities layer regardless of specificity. Remapping --font-fraunces
+   also flips any direct var(--font-fraunces) consumer. */
+html[data-v2-type="on"] {
+  --font-fraunces: var(--font-bricolage);
+}
+html[data-v2-type="on"] .font-sans {
+  font-family: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-v2-type="on"] .font-serif {
+  font-family: var(--font-bricolage), ui-serif, Georgia, serif;
+}
+html[data-v2-type="on"] .font-heading {
+  font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+}
 
 /* ─────────────────────────────────────────────────────────────────────
    Dark mode (Soirée) — triggered by [data-theme="dark"] on <html>.
