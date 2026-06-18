@@ -11,7 +11,6 @@ import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ContentGrid } from "@/components/media/ContentGrid"
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { WhatParentsNeedToKnow } from "@/components/media/WhatParentsNeedToKnow"
-import { WhyThisAge } from "@/components/media/WhyThisAge"
 import { SensitiveWarnings } from "@/components/media/SensitiveWarnings"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
@@ -683,9 +682,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
-  // Public "Pourquoi cet âge ?" rationale (crawlable trust content). Shown only
-  // when we actually have an analysis — provisional fiches use the "À venir"
-  // card instead.
+  // "Pourquoi cet âge ?" rationale — shown on hover/focus of the age badge in
+  // the hero (MediaHeroEditable) and mirrored into the FAQ JSON-LD so answer
+  // engines can cite the reasoning. Single source: buildAgeRationale.
   const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis })
 
   // Shared white-card styling for the warm page (cards float on the cream bg).
@@ -799,6 +798,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   originalTitle={media.originalTitle || null}
                   reviews={media.reviews}
                   isProvisional={media.isProvisional}
+                  ageRationale={ageRationale}
                 />
 
                 {/* Platforms for games */}
@@ -897,9 +897,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
           ) : (
             <>
-              {/* Pourquoi cet âge ? — rationale publique, crawlable (SEO/GEO) */}
-              <WhyThisAge rationale={ageRationale} />
-
               {/* Ce que les parents doivent savoir */}
               <WhatParentsNeedToKnow items={media.contentMetrics.whatParentsNeedToKnow} />
 

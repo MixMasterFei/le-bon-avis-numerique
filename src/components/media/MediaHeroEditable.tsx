@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Pencil, Save, X, Loader2, Calendar, Clock } from "lucide-react"
+import Link from "next/link"
 import { AgeVoteButton } from "./AgeVoteButton"
 import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ProvisionalBadge } from "@/components/media/ProvisionalBadge"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { mediaTypeLabels } from "@/lib/utils"
+import type { AgeRationale } from "@/lib/age-rationale"
 
 interface Review {
   role: string
@@ -34,6 +37,8 @@ interface MediaHeroEditableProps {
   originalTitle: string | null | undefined
   reviews?: Review[]
   isProvisional?: boolean
+  /** Server-computed "Pourquoi cet âge ?" rationale, shown on hover of the badge. */
+  ageRationale?: AgeRationale
 }
 
 // Human label for an official CSA / PEGI rating (mirrors OfficialRatingBadge).
@@ -77,6 +82,7 @@ export function MediaHeroEditable({
   originalTitle,
   reviews = [],
   isProvisional = false,
+  ageRationale,
 }: MediaHeroEditableProps) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -301,6 +307,7 @@ export function MediaHeroEditable({
           reviews={reviews}
           mediaId={mediaId}
           isProvisional={isProvisional}
+          ageRationale={ageRationale}
         />
       )}
 
@@ -351,16 +358,64 @@ export function MediaHeroEditable({
 
 // Verdict-first age block: a prominent "Notre recommandation" strip with a
 // big amber badge, plus the community parent/kid averages when they exist.
+// Compact rationale shown on hover/focus of the age bubble. Mirrors the
+// structured-data FAQ wording (single source: buildAgeRationale). Crawlable
+// reasoning lives in the JSON-LD; this is the on-screen, on-demand companion.
+function AgeRationaleTooltip({ rationale }: { rationale: AgeRationale }) {
+  return (
+    <div className="max-w-[20rem] text-left">
+      <p className="font-semibold text-sm mb-1">{rationale.heading}</p>
+      <p className="text-xs leading-relaxed opacity-90">{rationale.lead}</p>
+
+      {rationale.drivers.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {rationale.drivers.map((d) => (
+            <span
+              key={d.key}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-black/5 dark:bg-white/10"
+            >
+              {d.label}
+              <span className="opacity-70">· {d.level}</span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {rationale.positives.length > 0 && (
+        <p className="mt-2 text-xs leading-relaxed opacity-90">
+          <span className="font-medium">Points d&apos;appui :</span>{" "}
+          {rationale.positives.join(", ")}.
+        </p>
+      )}
+
+      {rationale.contextNotes.map((note) => (
+        <p key={note} className="mt-2 text-xs leading-relaxed opacity-90">
+          {note}
+        </p>
+      ))}
+
+      <p className="mt-2 pt-2 border-t border-black/10 dark:border-white/15 text-[11px] leading-relaxed opacity-80">
+        {rationale.trustLine}{" "}
+        <Link href="/notre-methode#recommandations-age" className="font-medium underline">
+          Notre méthode
+        </Link>
+      </p>
+    </div>
+  )
+}
+
 function AgeRecommendationsRow({
   expertAge,
   reviews,
   mediaId,
   isProvisional = false,
+  ageRationale,
 }: {
   expertAge: number | null
   reviews: Review[]
   mediaId: string
   isProvisional?: boolean
+  ageRationale?: AgeRationale
 }) {
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
@@ -394,18 +449,44 @@ function AgeRecommendationsRow({
             border: `1px solid ${WARM_LINE}`,
           }}
         >
-          <div
-            className="flex items-center justify-center rounded-full font-bold text-white shrink-0"
-            style={{
-              width: 62,
-              height: 62,
-              fontSize: 23,
-              background: "radial-gradient(circle at 32% 28%,#F9A23E,#EF8C2A)",
-              boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
-            }}
-          >
-            {expertAge}+
-          </div>
+          {ageRationale?.show ? (
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`${ageRationale.heading} — voir le détail`}
+                    className="flex items-center justify-center rounded-full font-bold text-white shrink-0 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                    style={{
+                      width: 62,
+                      height: 62,
+                      fontSize: 23,
+                      background: "radial-gradient(circle at 32% 28%,#F9A23E,#EF8C2A)",
+                      boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
+                    }}
+                  >
+                    {expertAge}+
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start" className="p-3">
+                  <AgeRationaleTooltip rationale={ageRationale} />
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <div
+              className="flex items-center justify-center rounded-full font-bold text-white shrink-0"
+              style={{
+                width: 62,
+                height: 62,
+                fontSize: 23,
+                background: "radial-gradient(circle at 32% 28%,#F9A23E,#EF8C2A)",
+                boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
+              }}
+            >
+              {expertAge}+
+            </div>
+          )}
           <div className="min-w-0">
             <div className="text-[12px] font-bold uppercase tracking-[0.08em]" style={{ color: "#EF8C2A" }}>
               Notre recommandation
