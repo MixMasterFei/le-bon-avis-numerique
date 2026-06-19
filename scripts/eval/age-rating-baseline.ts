@@ -1,10 +1,9 @@
 /**
- * Plan B — Step 2 baseline (read-only, no LLM / no cost).
+ * Plan B — baseline (read-only, no LLM / no cost).
  *
- * Measures how Totem's current `expertAgeRec` compares to the official answer
- * key (PEGI for games; CSA/CNC for films/TV). This is the "score to beat" for
- * any future Totem Score model, and the same metric will later score a
- * GPT-vs-Mistral A/B (see provider-ab, scaffolded separately).
+ * Measures how Totem's current `expertAgeRec` compares to (a) the official answer
+ * key (PEGI for games; CSA/CNC for films/TV) and (b) the hand-labeled golden set
+ * once it's filled. This is the "score to beat" for any future Totem Score model.
  *
  * IMPORTANT framing: official ratings are a *floor*, not ground truth — Totem
  * intentionally goes stricter than a lenient legal rating (that's the whole
@@ -21,6 +20,7 @@ import { join } from "path"
 import { prisma } from "../../src/lib/prisma"
 import { officialToAge, ratingSystem } from "./rating-map"
 import { computeStats, pct, type Stats } from "./metrics"
+import { loadGoldenSet, GOLDEN_SET_PATH, AXIS_COLUMNS, type AxisKey } from "./golden-set"
 
 const REPORT_DATE = "2026-06-19"
 
@@ -87,8 +87,82 @@ async function main() {
   const aaTo12 = allAudienceFilmTv.filter((a) => a >= 12).length
   const aaSorted = [...aaDist.entries()].sort((a, b) => a[0] - b[0])
 
+  // ── vs Gold (hand-labeled ground truth) ───────────────────
+  // Unlike vs-official, BOTH directions are errors here, and "too lenient"
+  // (Totem below gold) is the family-risk alert — so we relabel direction.
+  const gold = loadGoldenSet()
+  const goldLines: string[] = ["### vs Gold (hand-labeled ground truth)", ""]
+  if (gold.size === 0) {
+    goldLines.push(
+      `_Awaiting labels — fill \`${GOLDEN_SET_PATH}\` (see \`data/golden-set/RUBRIC.md\`). Once rows are filled this scores Totem's current ratings against your hand-labeled family ages + content levels._`,
+      "",
+    )
+  } else {
+    const goldItems = await prisma.mediaItem.findMany({
+      where: { id: { in: [...gold.keys()] } },
+      select: {
+        id: true, type: true, expertAgeRec: true,
+        contentMetrics: {
+          select: {
+            violence: true, sexNudity: true, language: true, substanceUse: true,
+            consumerism: true, positiveMessages: true, roleModels: true,
+          },
+        },
+      },
+    })
+    const ageAll: { pred: number; ref: number }[] = []
+    const ageByType: Record<string, { pred: number; ref: number }[]> = { MOVIE: [], TV: [], GAME: [] }
+    const axisPairs: Record<string, { pred: number; ref: number }[]> = {}
+    for (const it of goldItems) {
+      const g = gold.get(it.id)!
+      if (typeof it.expertAgeRec === "number") {
+        ageAll.push({ pred: it.expertAgeRec, ref: g.age })
+        ageByType[it.type]?.push({ pred: it.expertAgeRec, ref: g.age })
+      }
+      if (it.contentMetrics) {
+        for (const axis of Object.keys(AXIS_COLUMNS) as AxisKey[]) {
+          const gv = g.axes[axis]
+          const pv = (it.contentMetrics as Record<string, number>)[axis]
+          if (typeof gv === "number" && typeof pv === "number") {
+            (axisPairs[axis] ??= []).push({ pred: pv, ref: gv })
+          }
+        }
+      }
+    }
+    const a = computeStats(ageAll)
+    goldLines.push(
+      `Totem's current ratings vs your hand-labeled gold (**${a.n}** labeled of ${gold.size} in the sheet). Unlike the official sections, **both directions are errors**; **too lenient (Totem < gold) is the family-risk signal**.`,
+      "",
+      "**Age — overall**", "",
+      "| Metric | Value |", "|---|---|",
+      `| Labeled items | ${a.n} |`,
+      `| Mean absolute error (years) | ${a.mae} |`,
+      `| Within ±1 year | ${a.within1}% |`,
+      `| Exact | ${a.equal}% |`,
+      `| ⚠ Too lenient (Totem < gold) | ${a.lenient}% |`,
+      `| Too strict (Totem > gold) | ${a.stricter}% |`,
+      "",
+      "**Age — by type**", "",
+      "| Type | n | MAE | within ±1 | ⚠ too lenient |", "|---|---|---|---|---|",
+      ...["MOVIE", "TV", "GAME"].map((t) => {
+        const s = computeStats(ageByType[t])
+        return s.n > 0 ? `| ${t} | ${s.n} | ${s.mae} | ${s.within1}% | ${s.lenient}% |` : null
+      }).filter(Boolean) as string[],
+      "",
+      "**Content axes — Totem vs gold** (per-axis MAE / within ±1 level)", "",
+      "| Axis | n | MAE | within ±1 |", "|---|---|---|---|",
+      ...(Object.keys(AXIS_COLUMNS) as AxisKey[]).map((axis) => {
+        const pairs = axisPairs[axis]
+        if (!pairs || pairs.length === 0) return null
+        const s = computeStats(pairs)
+        return `| ${axis} | ${s.n} | ${s.mae} | ${s.within1}% |`
+      }).filter(Boolean) as string[],
+      "",
+    )
+  }
+
   const report = [
-    `# Plan B — Step 2: age-rating baseline`,
+    `# Plan B — baseline: current ratings vs official + gold`,
     "",
     `_Generated ${REPORT_DATE}. Read-only DB measurement, no LLM calls. Source: \`scripts/eval/age-rating-baseline.ts\`._`,
     "",
@@ -116,6 +190,7 @@ async function main() {
     `|---|---|`,
     ...aaSorted.map(([age, count]) => `| ${age}+ | ${count} |`),
     "",
+    ...goldLines,
     `### Unmapped official ratings`,
     "",
     unmapped.size === 0
@@ -126,7 +201,7 @@ async function main() {
     "",
     `- The games/PEGI numbers show how well the current pipeline already tracks a reliable answer key — the bar a Totem Score model must clear.`,
     `- The films/TV "more lenient than official" percentage is the **risk surface**: ideally near zero (Totem should rarely sit below the legal floor).`,
-    `- Next: hand-label a small **golden set** to define the family-age target (stricter than legal), then this same harness scores the model — and a GPT-vs-Mistral A/B — against it.`,
+    `- The **vs Gold** section above is the real target (family age, not the legal floor). Fill \`${GOLDEN_SET_PATH}\` to populate it; "too lenient vs gold" is the metric that matters most.`,
     "",
   ].join("\n")
 
@@ -136,6 +211,7 @@ async function main() {
   console.log(`GAMES vs PEGI:      MAE ${gamesStats.mae}y | ±1 ${gamesStats.within1}% | ±2 ${gamesStats.within2}% | stricter ${gamesStats.stricter}% / equal ${gamesStats.equal}% / lenient ${gamesStats.lenient}%`)
   console.log(`RATED FILM/TV vs CSA: MAE ${filmStats.mae}y | ±1 ${filmStats.within1}% | ±2 ${filmStats.within2}% | stricter ${filmStats.stricter}% / equal ${filmStats.equal}% / lenient ${filmStats.lenient}%`)
   console.log(`All-audience film/TV: ${aaTo10}/${allAudienceFilmTv.length} at 10+ (${pct(aaTo10, allAudienceFilmTv.length)}%), ${aaTo12} at 12+ (${pct(aaTo12, allAudienceFilmTv.length)}%)`)
+  console.log(`vs GOLD: ${gold.size === 0 ? "awaiting labels (sheet empty/unfilled)" : `${gold.size} rows in sheet, scored above`}`)
   if (unmapped.size > 0) console.log("Unmapped (excluded):", [...unmapped.entries()])
 
   const outDir = join(process.cwd(), "docs", "reports", "eval")

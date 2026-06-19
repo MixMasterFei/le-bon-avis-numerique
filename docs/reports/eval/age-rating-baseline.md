@@ -1,4 +1,4 @@
-# Plan B — Step 2: age-rating baseline
+# Plan B — baseline: current ratings vs official + gold
 
 _Generated 2026-06-19. Read-only DB measurement, no LLM calls. Source: `scripts/eval/age-rating-baseline.ts`._
 
@@ -58,6 +58,10 @@ Totem never assigns 0+, so the useful question is how high it pushes these. Of *
 | 17+ | 1 |
 | 18+ | 1 |
 
+### vs Gold (hand-labeled ground truth)
+
+_Awaiting labels — fill `data/golden-set/golden-set-v1.csv` (see `data/golden-set/RUBRIC.md`). Once rows are filled this scores Totem's current ratings against your hand-labeled family ages + content levels._
+
 ### Unmapped official ratings
 
 - `NR` ×41
@@ -66,4 +70,4 @@ Totem never assigns 0+, so the useful question is how high it pushes these. Of *
 
 - The games/PEGI numbers show how well the current pipeline already tracks a reliable answer key — the bar a Totem Score model must clear.
 - The films/TV "more lenient than official" percentage is the **risk surface**: ideally near zero (Totem should rarely sit below the legal floor).
-- Next: hand-label a small **golden set** to define the family-age target (stricter than legal), then this same harness scores the model — and a GPT-vs-Mistral A/B — against it.
+- The **vs Gold** section above is the real target (family age, not the legal floor). Fill `data/golden-set/golden-set-v1.csv` to populate it; "too lenient vs gold" is the metric that matters most.

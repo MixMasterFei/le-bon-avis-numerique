@@ -22,6 +22,7 @@ import { join } from "path"
 import { prisma } from "../../src/lib/prisma"
 import { officialToAge, ratingSystem } from "./rating-map"
 import { computeStats } from "./metrics"
+import { loadGoldenSet, GOLDEN_SET_PATH } from "./golden-set"
 
 // tsx/Prisma only auto-loads `.env`; load `.env.local` too (where local-only
 // keys like MISTRAL_API_KEY live). First non-empty value wins; real shell env
@@ -206,7 +207,7 @@ async function main() {
   console.log(`Sample: ${sample.length} items. Rating with: ${active.map((p) => p.name).join(", ")}…`)
 
   const lines: string[] = [
-    "# Plan B — Step 2: provider A/B (GPT vs Mistral)",
+    "# Plan B — provider A/B (GPT vs Mistral)",
     "",
     `_Generated ${REPORT_DATE}. Sample of ${sample.length} catalog items; each provider re-rated them from title/genres/synopsis. Scored with the same metric as the baseline, bucketed by type._`,
     "",
@@ -234,6 +235,44 @@ async function main() {
     const t = computeStats(totem)
     console.log(`${p.name}: games vsPEGI MAE ${g.mae}/±2 ${g.within2}% (n${g.n}) | film·TV vsCSA MAE ${f.mae}/±2 ${f.within2}% (n${f.n}) | vsTotem MAE ${t.mae}/±2 ${t.within2}% | failed ${failed}`)
     lines.push(`| ${p.name} | ${g.mae} / ${g.within2}% (n=${g.n}) | ${f.mae} / ${f.within2}% (n=${f.n}) | ${t.mae} / ${t.within2}% | ${failed} |`)
+  }
+
+  // ── vs Gold (age) — the real family-judgment target ───────
+  const gold = loadGoldenSet()
+  if (gold.size === 0) {
+    lines.push(
+      "", "## vs Gold (age)", "",
+      `_Awaiting labels — fill \`${GOLDEN_SET_PATH}\`. Once filled, each provider re-rates the labeled titles and is scored against your hand-labeled family ages (the target that actually matters, not the legal floor)._`,
+    )
+  } else {
+    const goldRows = await prisma.mediaItem.findMany({
+      where: { id: { in: [...gold.keys()] }, synopsisFr: { not: null } },
+      select: { id: true, type: true, title: true, genres: true, synopsisFr: true },
+    })
+    const goldItems: Item[] = goldRows.map((r) => ({
+      id: r.id, type: r.type, title: r.title, genres: r.genres ?? [],
+      synopsisFr: r.synopsisFr, expertAgeRec: 0, official: 0, officialRatingRaw: "",
+    }))
+    console.log(`vs Gold: rating ${goldItems.length} labeled titles per provider…`)
+    lines.push(
+      "", "## vs Gold (age) — providers vs your hand-labeled family ages", "",
+      `Each provider re-rated the **${goldItems.length}** labeled titles. Both directions are errors; **too lenient (provider < gold) is the family-risk signal**.`,
+      "",
+      "| Provider | n | MAE | within ±1 | ⚠ too lenient | too strict | unparseable |",
+      "|---|---|---|---|---|---|---|",
+    )
+    for (const p of active) {
+      const preds = await mapPool(goldItems, 2, 600, (it) => rateItem(p, it))
+      const pairs: { pred: number; ref: number }[] = []
+      let failed = 0
+      preds.forEach((pred, idx) => {
+        if (pred === null) { failed++; return }
+        pairs.push({ pred, ref: gold.get(goldItems[idx].id)!.age })
+      })
+      const s = computeStats(pairs)
+      console.log(`${p.name} vs GOLD: MAE ${s.mae} / ±1 ${s.within1}% / too-lenient ${s.lenient}% (n${s.n}, failed ${failed})`)
+      lines.push(`| ${p.name} | ${s.n} | ${s.mae} | ${s.within1}% | ${s.lenient}% | ${s.stricter}% | ${failed} |`)
+    }
   }
 
   lines.push(
