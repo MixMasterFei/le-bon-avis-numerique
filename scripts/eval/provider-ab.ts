@@ -17,13 +17,37 @@
  * Run: npx tsx scripts/eval/provider-ab.ts
  * Writes: docs/reports/eval/provider-ab.md
  */
-import { writeFileSync, mkdirSync } from "fs"
+import { writeFileSync, mkdirSync, readFileSync } from "fs"
 import { join } from "path"
 import { prisma } from "../../src/lib/prisma"
-import { officialToAge } from "./rating-map"
+import { officialToAge, ratingSystem } from "./rating-map"
 import { computeStats } from "./metrics"
 
+// tsx/Prisma only auto-loads `.env`; load `.env.local` too (where local-only
+// keys like MISTRAL_API_KEY live). First non-empty value wins; real shell env
+// always wins.
+function loadEnvFiles() {
+  for (const f of [".env", ".env.local"]) {
+    try {
+      const txt = readFileSync(join(process.cwd(), f), "utf8")
+      for (const line of txt.split(/\r?\n/)) {
+        const m = line.match(/^\s*(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)$/)
+        if (!m) continue
+        let val = m[2].trim()
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1)
+        }
+        if (val.length > 0 && !process.env[m[1]]) process.env[m[1]] = val
+      }
+    } catch {
+      /* file absent — fine */
+    }
+  }
+}
+loadEnvFiles()
+
 const SAMPLE = parseInt(process.env.EVAL_SAMPLE ?? "60", 10)
+const REPORT_DATE = "2026-06-19"
 
 interface Provider {
   name: string
@@ -55,6 +79,7 @@ interface Item {
   synopsisFr: string | null
   expertAgeRec: number
   official: number
+  officialRatingRaw: string
 }
 
 const SYSTEM_PROMPT =
@@ -88,10 +113,24 @@ async function rateItem(p: Provider, it: Item): Promise<number | null> {
     })
     if (!res.ok) return null
     const data = await res.json()
-    const content = data?.choices?.[0]?.message?.content
+    const content: string | undefined = data?.choices?.[0]?.message?.content
     if (!content) return null
-    const parsed = JSON.parse(content)
-    const age = Number(parsed.age)
+    // Be lenient: some models wrap JSON in prose or a code fence.
+    let parsed: { age?: unknown } | null = null
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      const m = content.match(/\{[\s\S]*?\}/)
+      if (m) {
+        try { parsed = JSON.parse(m[0]) } catch { parsed = null }
+      }
+    }
+    // Last resort: first integer in the text.
+    let age = parsed ? Number(parsed.age) : NaN
+    if (!Number.isFinite(age)) {
+      const n = content.match(/\b(\d{1,2})\b/)
+      age = n ? Number(n[1]) : NaN
+    }
     if (!Number.isFinite(age)) return null
     return Math.max(0, Math.min(18, Math.round(age)))
   } catch {
@@ -99,8 +138,9 @@ async function rateItem(p: Provider, it: Item): Promise<number | null> {
   }
 }
 
-/** Run an async fn over items with bounded concurrency. */
-async function mapPool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+/** Run an async fn over items with bounded concurrency + per-call delay
+ *  (free LLM tiers rate-limit aggressively, so keep this gentle). */
+async function mapPool<T, R>(items: T[], limit: number, delayMs: number, fn: (t: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(items.length)
   let i = 0
   await Promise.all(
@@ -108,6 +148,7 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>
       while (i < items.length) {
         const idx = i++
         out[idx] = await fn(items[idx])
+        if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs))
       }
     }),
   )
@@ -115,11 +156,13 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>
 }
 
 async function main() {
-  const missing = PROVIDERS.filter((p) => !p.apiKey).map((p) => p.name)
-  if (missing.length > 0) {
-    console.log("Cannot run the A/B — missing API key(s) for:", missing.join(", "))
-    console.log("Set OPENAI_API_KEY and MISTRAL_API_KEY (env or .env.local), then re-run.")
-    console.log("This script is the GPT-vs-Mistral comparison for the sovereignty decision; it is intentionally not run without both keys.")
+  const active = PROVIDERS.filter((p) => p.apiKey)
+  const skipped = PROVIDERS.filter((p) => !p.apiKey)
+  if (skipped.length > 0) {
+    console.log("Skipping (no API key set):", skipped.map((p) => p.name).join(", "))
+  }
+  if (active.length === 0) {
+    console.log("No provider keys available — set OPENAI_API_KEY and/or MISTRAL_API_KEY in .env.local and re-run.")
     return
   }
 
@@ -150,39 +193,48 @@ async function main() {
         synopsisFr: r.synopsisFr,
         expertAgeRec: r.expertAgeRec as number,
         official,
+        officialRatingRaw: r.officialRating as string,
       })
     }
   }
-  console.log(`Sample: ${sample.length} items. Rating with ${PROVIDERS.length} providers…`)
+  console.log(`Sample: ${sample.length} items. Rating with: ${active.map((p) => p.name).join(", ")}…`)
 
   const lines: string[] = [
     "# Plan B — Step 2: provider A/B (GPT vs Mistral)",
     "",
-    `_Sample of ${sample.length} catalog items. Each provider re-rated them from title/genres/synopsis; scored vs the official answer key and vs Totem's current ratings._`,
+    `_Generated ${REPORT_DATE}. Sample of ${sample.length} catalog items; each provider re-rated them from title/genres/synopsis. Scored with the same metric as the baseline, bucketed by type._`,
     "",
-    "| Provider | vs Official: MAE | ±2 | vs Totem: MAE | ±2 | unparseable |",
-    "|---|---|---|---|---|---|",
+    skipped.length > 0 ? `> Note: skipped (no key set): ${skipped.map((p) => p.name).join(", ")}.\n` : "",
+    "| Provider | Games vs PEGI: MAE / ±2 | Rated film·TV vs CSA: MAE / ±2 | vs Totem (agreement): MAE / ±2 | unparseable |",
+    "|---|---|---|---|---|",
   ]
 
-  for (const p of PROVIDERS) {
-    const preds = await mapPool(sample, 4, (it) => rateItem(p, it))
-    const okOfficial: { pred: number; ref: number }[] = []
-    const okTotem: { pred: number; ref: number }[] = []
+  for (const p of active) {
+    // Gentle: 2 in flight + 600ms spacing to avoid free-tier 429s.
+    const preds = await mapPool(sample, 2, 600, (it) => rateItem(p, it))
+    const games: { pred: number; ref: number }[] = []
+    const filmtv: { pred: number; ref: number }[] = []
+    const totem: { pred: number; ref: number }[] = []
     let failed = 0
     preds.forEach((pred, idx) => {
       if (pred === null) { failed++; return }
-      okOfficial.push({ pred, ref: sample[idx].official })
-      okTotem.push({ pred, ref: sample[idx].expertAgeRec })
+      const s = sample[idx]
+      totem.push({ pred, ref: s.expertAgeRec })
+      if (s.type === "GAME" && ratingSystem(s.officialRatingRaw) === "PEGI") games.push({ pred, ref: s.official })
+      else if ((s.type === "MOVIE" || s.type === "TV") && s.official > 0) filmtv.push({ pred, ref: s.official })
     })
-    const vsOfficial = computeStats(okOfficial)
-    const vsTotem = computeStats(okTotem)
-    console.log(`${p.name}: vsOfficial MAE ${vsOfficial.mae} ±2 ${vsOfficial.within2}% | vsTotem MAE ${vsTotem.mae} ±2 ${vsTotem.within2}% | failed ${failed}`)
-    lines.push(`| ${p.name} | ${vsOfficial.mae} | ${vsOfficial.within2}% | ${vsTotem.mae} | ${vsTotem.within2}% | ${failed} |`)
+    const g = computeStats(games)
+    const f = computeStats(filmtv)
+    const t = computeStats(totem)
+    console.log(`${p.name}: games vsPEGI MAE ${g.mae}/±2 ${g.within2}% (n${g.n}) | film·TV vsCSA MAE ${f.mae}/±2 ${f.within2}% (n${f.n}) | vsTotem MAE ${t.mae}/±2 ${t.within2}% | failed ${failed}`)
+    lines.push(`| ${p.name} | ${g.mae} / ${g.within2}% (n=${g.n}) | ${f.mae} / ${f.within2}% (n=${f.n}) | ${t.mae} / ${t.within2}% | ${failed} |`)
   }
 
   lines.push(
     "",
-    "**How to read:** lower MAE / higher ±2 vs the official answer key = closer to the legal reference. 'vs Totem' shows how much each provider agrees with the current pipeline. If Mistral matches or beats GPT here, the sovereignty switch is low-risk on quality.",
+    "**Reference — current Totem pipeline (from the baseline):** games vs PEGI MAE 2.09 / ±2 68.5%; rated film·TV vs CSA MAE 1.32 / ±2 81.6%.",
+    "",
+    "**How to read:** lower MAE / higher ±2 vs the answer key = closer to the reference. 'vs Totem' = agreement with the current pipeline. A provider that matches/beats the baseline numbers is a safe swap on quality; if Mistral does, the sovereignty switch is low-risk.",
     "",
   )
 
