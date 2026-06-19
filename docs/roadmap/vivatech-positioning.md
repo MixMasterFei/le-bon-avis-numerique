@@ -82,10 +82,27 @@ story an American competitor can't tell. But stage it deliberately:
 > makes AI recommendations about kids trustworthy — in French, at scale, with the
 > machine showing its work."
 
-## Recommended next step
+## Result — sovereignty A/B (2026-06-19)
 
-Build the **Plan B Step-2 eval harness** (read-only, no cost): measures current
-rating accuracy vs the official answer key **and** doubles as a **GPT-vs-Mistral
-A/B on Totem's own data**. One tool answers both "how good are we?" and "does
-French AI match/beat it?" — real numbers before committing to either Plan B or a
-provider switch.
+Ran the eval harness (`scripts/eval/`, report in
+[docs/reports/eval/provider-ab.md](../reports/eval/provider-ab.md)). Three-way,
+GPT-4o-mini vs Mistral-small vs Mistral-medium, on Totem's own catalog:
+
+- **Mistral-medium is quality-competitive with GPT-4o-mini** — *better* on games
+  vs PEGI (2.04 / ±2 73.9% vs 2.1 / 70%), a hair behind on films/TV, 89% agreement
+  with the current pipeline.
+- **The decisive insight:** every *raw* model trails the current pipeline on
+  films/TV (~2.2–2.6 MAE vs **1.32**). That gap is the **scaffolding** (guardrails,
+  clamps, tuned rubric), not the base model → **the moat is the pipeline + data
+  Totem owns, not the AI vendor.**
+- **→ Sovereignty switch is low-risk on quality.** Swap GPT→Mistral-medium, keep
+  the scaffolding. Main thing to harden: Mistral reliability (free-tier failures →
+  needs paid tier + retries).
+- Caveats: modest sample, single run, official ratings = legal floor (golden set
+  would firm it up).
+
+## Next step
+
+Hand-label a small **golden set** (the family-age target, stricter than the legal
+floor), then re-score both a future Totem Score model and the provider A/B against
+it. That converts "viable" into "decided".
