@@ -11,6 +11,8 @@
 
 Today the rating pipeline leans on a general-purpose LLM for enrichment. That is fast to ship but easy to dismiss ("it's just ChatGPT"). **Plan B** is to build a **proprietary "Totem Score"** model — a family-recommended-age predictor (plus per-axis content metrics) trained on data Totem owns and curates: PEGI/official classifications, a hand-labeled golden set, and the existing enriched catalog as distillation targets. The model becomes a *defensible asset*: a reproducible, auditable, Totem-specific judgment that the LLM merely seeds, rather than the product itself. The deterministic age-floor guardrail (`src/lib/age-floor.ts`) is the embryo of this — a rule layer that already overrides the LLM when it is too lenient. The Totem Score generalizes that idea into a learned model.
 
+> **Step 2 baseline is now measured** (2026-06-19). Eval harness in `scripts/eval/`, results in [docs/reports/eval/age-rating-baseline.md](../reports/eval/age-rating-baseline.md). Headlines: games vs PEGI MAE **2.09y** (±2 68.5%, but **42.5% more lenient than PEGI** — audit-worthy); rated films/TV vs CSA MAE **1.32y** (±2 81.6%, **91.4% stricter-or-equal** to the legal floor); **48.7%** of "tous publics" films pushed to 12+ (guardrail active). The same harness has a ready GPT-vs-Mistral A/B (`provider-ab.ts`) for the sovereignty decision — runs once both API keys are set.
+
 ---
 
 ## 2. Corpus inventory (live counts)
