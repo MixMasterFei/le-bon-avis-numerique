@@ -16,10 +16,11 @@ const ALLOWED_PATTERNS: RegExp[] = [
   // News stories live under /apercudecouverte (not /news or /actualites).
   // Examples: /apercudecouverte/<slug>, /apercudecouverte/actualites
   /^\/apercudecouverte(\/.*)?(\?.*)?$/,
-  // V3 of the news/discovery hub — the canonical landing for the
-  // whole news feed. Individual articles still live at the legacy
-  // /apercudecouverte/<slug> path because V3 has no [slug] route.
-  /^\/apercudecouverte-v3(\/.*)?(\?.*)?$/,
+  // V5 of the news/discovery hub — the canonical landing for the whole
+  // (trusted/official) news feed. Individual articles still live at the
+  // legacy /apercudecouverte/<slug> path because V5 has no [slug] route.
+  // (The old /apercudecouverte-v3 path now 301-redirects here.)
+  /^\/apercudecouverte-v5(\/.*)?(\?.*)?$/,
   // Accepts both the raw id (/media/<uuid>) and the canonical route form
   // (/media/<type>:<uuid>, e.g. /media/movie:abc-123) produced by
   // toMediaRouteId — without the optional "<type>:" prefix the canonical

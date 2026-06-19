@@ -944,6 +944,12 @@ model NewsStory {
   // Null for FALLBACK/STOCK stories (no real publisher photo). Legacy rows are
   // backfilled from imageUrl (mirror) until they age out.
   sourceImageUrl  String?          @map("source_image_url")
+  // True when EVERY contributing source is a government / public-institution
+  // or recognized-nonprofit feed (NewsSource.official in src/lib/news-sources.ts).
+  // Computed strictly at ingestion (a story mixing INSERM + Le Monde is NOT
+  // official). Drives the V5 "trusted sources" feed (officialOnly filter).
+  // Backfilled from the `sources` JSON via /api/admin/news/tag-official.
+  official       Boolean         @default(false)
   publishedAt    DateTime        @map("published_at")
   fetchedAt      DateTime        @default(now()) @map("fetched_at")
   relevanceScore Float           @default(0) @map("relevance_score")
@@ -1014,6 +1020,7 @@ model NewsStory {
   @@index([category, status])
   @@index([region, status])
   @@index([storyType, status])
+  @@index([official, status])
   @@map("news_stories")
 }
 

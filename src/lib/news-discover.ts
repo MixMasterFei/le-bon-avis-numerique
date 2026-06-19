@@ -26,7 +26,7 @@ import { identifyMediaSubjectTerms, verifyCatalogSubjects } from "@/lib/news-sub
 // slip past the synthesis prompt's "adult content" rule.
 const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
-import { NEWS_SOURCES, type NewsSource } from "@/lib/news-sources"
+import { NEWS_SOURCES, isOfficialSourceName, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, isImageLargeEnough, fallbackCard, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
 import { isLowQualityImagePublisher } from "@/lib/news-image-policy"
 import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
@@ -1130,6 +1130,11 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       familyTakeaway: s.familyTakeaway,
       category: s.category,
       sources,
+      // Strict all-official gate for the V5 "Actualités de confiance" feed:
+      // true only when every contributing source is a government / public-
+      // institution / recognized-nonprofit feed. A story mixing INSERM +
+      // Le Monde is NOT official.
+      official: sources.length > 0 && sources.every((src) => isOfficialSourceName(src.name)),
       imageUrl: s.imageUrl,
       imageSourceType: s.imageSourceType,
       imageCredit: s.imageCredit,

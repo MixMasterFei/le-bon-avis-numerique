@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuNewsHeroCard } from "./ApercuNewsHeroCard"
@@ -94,6 +93,10 @@ export interface DecouverteV3Data {
   // and assuming this is just how the site looks. Optional for
   // back-compat with callers that don't pass it (defaults to false).
   isStale?: boolean
+  // Optional notice rendered above the feed. Used by the V5 "trusted
+  // sources" feed to explain a sparse/empty institutional feed instead of
+  // looking broken. Null/undefined hides it. Optional for back-compat.
+  feedNotice?: { title: string; body: string } | null
 }
 
 /**
@@ -149,7 +152,7 @@ export function ApercuDecouverteV3({
                   className="text-[11px] font-semibold uppercase tracking-wide mb-1.5"
                   style={{ color: p.accent }}
                 >
-                  Découverte · Aperçu v3
+                  Découverte · Actualités
                 </div>
                 <h1
                   className={`${serifClass} text-2xl md:text-4xl font-medium leading-[1.05] max-w-2xl text-balance`}
@@ -178,6 +181,26 @@ export function ApercuDecouverteV3({
                     Synthèse du jour en cours — voici les actualités les plus
                     récentes en attendant.
                   </span>
+                </div>
+              )}
+
+              {/* Feed notice — e.g. V5 trusted-sources empty/sparse state. */}
+              {data.feedNotice && (
+                <div
+                  className="px-5 py-4 rounded-xl"
+                  style={{
+                    background: p.bg2,
+                    border: `1px solid ${p.line2}`,
+                    color: p.ink2,
+                  }}
+                >
+                  <div
+                    className="text-sm font-semibold mb-1"
+                    style={{ color: p.ink }}
+                  >
+                    {data.feedNotice.title}
+                  </div>
+                  <div className="text-sm leading-relaxed">{data.feedNotice.body}</div>
                 </div>
               )}
 
@@ -296,22 +319,6 @@ export function ApercuDecouverteV3({
                   </div>
                 </div>
               )}
-
-              {/* "Voir toutes les actualités" — opens the V3 historique,
-                  a paginated archive of every story V3 is allowed to
-                  surface (same category/region matrix). Visually a
-                  continuation of "Plus tôt cette semaine" rather than
-                  the older /apercudecouverte/actualites listing, which
-                  used a different curation lens. */}
-              <div className="mt-8 flex justify-center">
-                <Link
-                  href="/apercudecouverte-v3/historique"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-80"
-                  style={{ background: p.ink, color: p.bg }}
-                >
-                  Voir toutes les actualités <span aria-hidden>→</span>
-                </Link>
-              </div>
 
               {/* Mobile-only: sidebar content inlines AFTER the news
                   feed so the reading flow stays uninterrupted. Xavier's

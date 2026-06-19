@@ -5,7 +5,7 @@ import { canUseTotem, getTotemAccessMode } from "../totem/access"
 
 describe("totem nav-allowlist (isPathAllowed)", () => {
   it("allows core internal pages", () => {
-    for (const p of ["/", "/connexion", "/profil", "/profil/membres/x", "/films", "/films/recherche?q=a", "/recherche", "/blog/mon-article", "/apercudecouverte/une-actu", "/apercudecouverte-v3"]) {
+    for (const p of ["/", "/connexion", "/profil", "/profil/membres/x", "/films", "/films/recherche?q=a", "/recherche", "/blog/mon-article", "/apercudecouverte/une-actu", "/apercudecouverte-v5"]) {
       expect(isPathAllowed(p), p).toBe(true)
     }
   })

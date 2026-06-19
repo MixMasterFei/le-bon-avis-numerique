@@ -385,7 +385,7 @@ GOOGLE_BOOKS_API_KEY              # Books
 OPENAI_API_KEY                    # AI enrichment
 CRON_SECRET                       # Automated job auth
 RESEND_API_KEY                    # Email (optional)
-RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for /apercudecouverte-v3 newsletter signup (optional)
+RESEND_NEWSLETTER_AUDIENCE_ID     # Resend audience ID for the /apercudecouverte-v5 newsletter signup (optional)
 NEWSLETTER_PUBLIC                 # Set to "true" to open newsletter signup to all authenticated users. Default: admin-only beta.
 TOTEM_PUBLIC                      # Set to "true" to expose the Totem Assistant chatbot to all visitors. Default: admin-only alpha (dock + homepage CTA + /api/totem/chat all gated by ADMIN role). Mirrors NEWSLETTER_PUBLIC.
 HOMEPAGE_V2_PUBLIC                # Set to "true" to flip the V2 visual system (home-redesign homepage + catalogue layouts, site-wide V2 typography via [data-v2-type] in globals.css, and the monogram avatars) ON for everyone. Default: admin-only. Single switch with instant rollback — gate lives in src/lib/v2-flag.ts (v2Enabled). Mirrors TOTEM_PUBLIC. `?v=classic` still forces the classic page per-request.

@@ -52,9 +52,10 @@ interface NavItem {
 // partial coverage). Admins reach /mangas via direct URL or the admin
 // dashboard. Add back here when ready for public launch.
 //
-// Actualités is WIP — the news vertical (/apercudecouverte-v3) is
-// being polished. Drop the comingSoon flag and update href to the
-// public route once the cron is stable and quality is judged ready.
+// Actualités is WIP — the news vertical (canonical feed:
+// /apercudecouverte-v5, admin-only) is being polished. Drop the
+// comingSoon flag and update href to the public route once the cron
+// is stable and quality is judged ready.
 const navigation: NavItem[] = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },

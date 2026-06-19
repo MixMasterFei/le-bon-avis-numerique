@@ -1,6 +1,7 @@
-name: E2E — News v3 smoke
+name: E2E — News v5 smoke
 
-# Runs the Playwright smoke for /apercudecouverte-v3 against the live
+# Runs the Playwright smoke for /apercudecouverte-v5 (canonical news feed)
+# against the live
 # production URL. Triggered:
 #   - On every push to main (post-deploy delay handled by retries inside
 #     the test — Playwright config has retries: 1 in CI).
@@ -49,7 +50,7 @@ jobs:
         run: sleep 90
 
       - name: Run smoke
-        run: npx playwright test apercudecouverte-v3.spec.ts --project=chromium
+        run: npx playwright test apercudecouverte-v5.spec.ts --project=chromium
         env:
           PLAYWRIGHT_BASE_URL: https://totemavise.com
           E2E_TEST_USER_EMAIL: ${{ secrets.E2E_TEST_USER_EMAIL }}

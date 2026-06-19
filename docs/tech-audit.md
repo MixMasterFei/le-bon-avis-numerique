@@ -42,7 +42,7 @@
 - **Validation** — Zod on only ~4 routes; the rest rely on manual checks. Prioritise auth / user / `totem/chat` / contact / reviews.
 
 ### P2 — quality / debt
-- God-objects to split: `media/[id]/page.tsx`, `SiteHeader.tsx`, `MemberCorner.tsx`, `apercudecouverte-v3/page.tsx` (~900–1100 lines each).
+- God-objects to split: `media/[id]/page.tsx`, `SiteHeader.tsx`, `MemberCorner.tsx`, `components/home-v2/renderApercuDecouvertePage.tsx` (the shared news-feed renderer extracted from the former v3 route; ~900–1100 lines each).
 - `mock-data.ts` still imported in `media/[id]/page.tsx`.
 - Error boundaries: only a root `error.tsx`; no per-section boundaries.
 - API tests for ~10–15 critical routes (auth, family-fit, recommendations).

@@ -789,6 +789,37 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "newsTagOfficial",
+      endpoint: "/api/admin/news/tag-official",
+      method: "POST",
+      // Recompute NewsStory.official by matching each story's sources against
+      // the official set in news-sources.ts (gouvernement, institutions
+      // publiques FR/UE, asso. reconnues). Powers the V5 "Actualités de
+      // confiance" feed. Date-cursor loop until { done: true }.
+      chunked: true,
+      delayMs: 400,
+      accumKeys: ["scanned", "updated"],
+      extractProgress: (data) => ({
+        processed: data.updated || 0,
+        total: typeof data.total === "number" ? data.total : null,
+        updated: data.updated || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (data.lastTs) params.set("afterTs", String(data.lastTs))
+        if (data.total) params.set("total", String(data.total))
+        return params
+      },
+      buildSummary: (stats) => `${stats.updated || 0} actus retaguées (sources officielles)`,
+    },
+    label: "Taguer sources officielles",
+    description: "Recalculer le flag « source officielle » des actus (fil V5). À relancer après toute modif de la liste des sources dans news-sources.ts.",
+    icon: Shield,
+    color: "emerald",
+    statLabels: { updated: "retaguées" },
+  },
+  {
+    config: {
       key: "newsPrewarmImagesV4",
       endpoint: "/api/admin/news/prewarm-images-v4",
       method: "POST",
@@ -984,7 +1015,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsReimageBacklog", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsReimageBacklog", "newsTagOfficial", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",

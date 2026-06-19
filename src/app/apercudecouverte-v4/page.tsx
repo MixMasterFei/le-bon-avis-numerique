@@ -1,4 +1,4 @@
-import { renderApercuDecouvertePage } from "../apercudecouverte-v3/page"
+import { renderApercuDecouvertePage } from "@/components/home-v2/renderApercuDecouvertePage"
 
 interface SearchParams {
   font?: string

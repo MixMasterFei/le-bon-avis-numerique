@@ -13,6 +13,13 @@ export interface NewsSource {
   // Country code for INTL sources (informational; helps the synthesis
   // prompt write "Aux États-Unis…" / "En Allemagne…" framing).
   country?: string
+  // "Official" = government / public institution (FR + EU) or a recognized
+  // child-welfare nonprofit — content broadly safe to republish with
+  // attribution (Licence Ouverte / public-sector / open reuse). Drives the
+  // V5 "Actualités de confiance" feed: a story is tagged NewsStory.official
+  // only when EVERY contributing source is official. Commercial press is
+  // left undefined (falsy).
+  official?: boolean
 }
 
 // V2 source list — see docs/editorial-sources.md for the research behind
@@ -23,7 +30,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "La Croix Enfants & ados",         url: "https://www.la-croix.com/feeds/rss/Famille/Enfants-et-adolescents.xml",  category: "PARENTHOOD", trustTier: 1 },
   { name: "20 Minutes Famille",              url: "https://www.20minutes.fr/feeds/rss-famille.xml",                         category: "PARENTHOOD", trustTier: 2 },
   { name: "Franceinfo Jeunes",               url: "https://www.franceinfo.fr/l-actu-pour-les-jeunes.rss",                   category: "PARENTHOOD", trustTier: 1 },
-  { name: "Fondation pour l'Enfance",        url: "https://www.fondation-enfance.org/feed/",                                category: "PARENTHOOD", trustTier: 1 },
+  { name: "Fondation pour l'Enfance",        url: "https://www.fondation-enfance.org/feed/",                                category: "PARENTHOOD", trustTier: 1, official: true },
   { name: "France Culture — Être et savoir", url: "https://radiofrance-podcast.net/podcast09/rss_11192.xml",                category: "PARENTHOOD", trustTier: 1 },
   { name: "Sortiraparis Enfant & famille",   url: "https://www.sortiraparis.com/rss/enfant-famille",                        category: "PARENTHOOD", trustTier: 3 },
   // Family magazines — high volume, lifestyle-leaning but mass-market
@@ -36,8 +43,29 @@ export const NEWS_SOURCES: NewsSource[] = [
   // Public-health / research institutions — low volume but each item
   // is gold (cited studies, official recommendations, methodology
   // populates the "Ce que dit la recherche" sidebar)
-  { name: "INSERM Actualités",               url: "https://presse.inserm.fr/feed/",                                         category: "PARENTHOOD", trustTier: 1 },
-  { name: "Santé publique France",           url: "https://www.santepubliquefrance.fr/rss/communiques.xml",                 category: "PARENTHOOD", trustTier: 1 },
+  { name: "INSERM Actualités",               url: "https://presse.inserm.fr/feed/",                                         category: "PARENTHOOD", trustTier: 1, official: true },
+  { name: "Santé publique France",           url: "https://www.santepubliquefrance.fr/rss/communiques.xml",                 category: "PARENTHOOD", trustTier: 1, official: true },
+
+  // ── OFFICIAL / INSTITUTIONAL (powers the V5 "Actualités de confiance"
+  // feed) ─────────────────────────────────────────────────────────────
+  // French government & public bodies + recognized child-welfare nonprofits
+  // + EU/international institutions. Content broadly safe to republish with
+  // attribution. RSS verified live (June 2026). All `official: true`.
+
+  // French gov / public bodies
+  { name: "Arcom",                            url: "https://www.arcom.fr/rss.xml",                                           category: "TECH",       trustTier: 1, official: true },
+  { name: "CNIL",                             url: "https://www.cnil.fr/fr/rss",                                             category: "TECH",       trustTier: 1, official: true },
+  { name: "Défenseur des droits",             url: "https://www.defenseurdesdroits.fr/rss.xml",                              category: "PARENTHOOD", trustTier: 1, official: true },
+  { name: "gouvernement.fr",                  url: "https://www.gouvernement.fr/rss",                                        category: "PARENTHOOD", trustTier: 1, official: true },
+  { name: "Réseau Canopé",                    url: "https://www.reseau-canope.fr/rss.xml",                                   category: "PARENTHOOD", trustTier: 1, official: true },
+  // Recognized child/family nonprofits (public-interest)
+  { name: "e-Enfance / 3018",                 url: "https://e-enfance.org/feed/",                                            category: "TECH",       trustTier: 1, official: true },
+  { name: "UNAF",                             url: "https://www.unaf.fr/feed/",                                              category: "PARENTHOOD", trustTier: 1, official: true },
+  // EU / international institutions (synthesized + translated into French)
+  { name: "Better Internet for Kids (UE)",    url: "https://better-internet-for-kids.europa.eu/en/rss.xml",                  category: "TECH",       trustTier: 1, official: true, region: "INTL", country: "EU" },
+  { name: "Commission européenne — Éducation", url: "https://education.ec.europa.eu/rss.xml",                                category: "PARENTHOOD", trustTier: 1, official: true, region: "INTL", country: "EU" },
+  { name: "Commission européenne — Numérique", url: "https://digital-strategy.ec.europa.eu/en/rss.xml",                      category: "TECH",       trustTier: 1, official: true, region: "INTL", country: "EU" },
+  { name: "OMS",                              url: "https://www.who.int/rss-feeds/news-english.xml",                         category: "PARENTHOOD", trustTier: 1, official: true, region: "INTL", country: "INTL" },
 
   // FILM_TV
   { name: "AlloCiné Cinéma",                 url: "https://www.allocine.fr/rss/news-cine.xml",                              category: "FILM_TV",    trustTier: 1 },
@@ -46,7 +74,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Première",                        url: "https://www.premiere.fr/rss/news.xml",                                   category: "FILM_TV",    trustTier: 2 },
 
   // GAMES
-  { name: "PédaGoJeux",                      url: "https://www.pedagojeux.fr/feed/",                                        category: "GAMES",      trustTier: 1 },
+  { name: "PédaGoJeux",                      url: "https://www.pedagojeux.fr/feed/",                                        category: "GAMES",      trustTier: 1, official: true },
   { name: "Geek Junior",                     url: "https://www.geekjunior.fr/feed/",                                        category: "GAMES",      trustTier: 2 },
   { name: "Nintendo-Master",                 url: "https://www.nintendo-master.com/feed/",                                  category: "GAMES",      trustTier: 2 },
   { name: "Numerama Pop",                    url: "https://www.numerama.com/pop-culture/feed/",                             category: "GAMES",      trustTier: 1 },
@@ -58,7 +86,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   // each broad-tech feed to family-relevant items via the editorial
   // line. Distinct from GAMES (video game industry / releases).
   { name: "Numerama Tech",                   url: "https://www.numerama.com/tech/feed/",                                    category: "TECH",       trustTier: 1 },
-  { name: "CLEMI",                            url: "https://www.clemi.fr/rss.xml",                                           category: "TECH",       trustTier: 1 },
+  { name: "CLEMI",                            url: "https://www.clemi.fr/rss.xml",                                           category: "TECH",       trustTier: 1, official: true },
   { name: "Frandroid",                       url: "https://www.frandroid.com/feed",                                         category: "TECH",       trustTier: 2 },
   { name: "Le Monde Pixels",                 url: "https://www.lemonde.fr/pixels/rss_full.xml",                             category: "TECH",       trustTier: 1 },
   { name: "01net",                           url: "https://www.01net.com/actualites/feed/",                                 category: "TECH",       trustTier: 2 },
@@ -125,3 +153,17 @@ export const NEWS_SOURCES: NewsSource[] = [
   // UK children's books
   { name: "Books for Keeps",                  url: "https://booksforkeeps.co.uk/feed/",                                       category: "READING",    trustTier: 1, region: "INTL", country: "UK" },
 ]
+
+// Names of the official / safe-to-republish sources, derived from the list
+// above. Used to tag stories (NewsStory.official) and power the V5 feed. The
+// match is by exact source name — renaming a source here means re-running the
+// backfill (POST /api/admin/news/tag-official) to retag existing stories.
+export const OFFICIAL_SOURCE_NAMES: ReadonlySet<string> = new Set(
+  NEWS_SOURCES.filter((s) => s.official).map((s) => s.name),
+)
+
+/** True when `name` matches an official (gov / public-institution / recognized
+ *  nonprofit) source. Drives the strict all-official gate for the V5 feed. */
+export function isOfficialSourceName(name: string | null | undefined): boolean {
+  return typeof name === "string" && OFFICIAL_SOURCE_NAMES.has(name)
+}

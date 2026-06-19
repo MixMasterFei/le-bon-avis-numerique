@@ -1,0 +1,939 @@
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
+import { HydrationDebugBoundary } from "@/components/providers/HydrationDebugBoundary"
+import { getNextHoliday, getHolidayCalendar, holidayToSerializable, type CalendarHoliday } from "@/lib/school-holidays"
+import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
+import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
+import { getAirQualityForCity } from "@/lib/air-quality"
+import { getCinemaTendances } from "@/lib/news-cinema-tendances"
+import { getUpcomingNotableDates, type NotableDateInstance } from "@/lib/notable-dates"
+import { getUpcomingDeadlines, type DeadlineInstance } from "@/lib/family-deadlines"
+import type { EtudeRef } from "@/components/home-v2/EtudesRecentesCard"
+import { fraunces } from "@/components/home-v2/apercuFont"
+import { isFraunces } from "@/components/home-v2/apercuTheme"
+import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
+import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
+import type { StoryResearch } from "@/components/home-v2/ApercuDecouverteStory"
+import { Prisma, type ImageSourceType } from "@prisma/client"
+import { isBlockedHotlinkImageUrl, hasTrustedPublisherSource, normalizedPublisherName } from "@/lib/news-image-policy"
+import { editorialVisualCard, fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
+import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
+import {
+  batchLoadApprovedDiscoveryV4Images,
+  batchLoadCatalogPosters,
+  batchResolveCatalogPostersByTitle,
+  primaryRelatedMediaId,
+  type PreparedNewsImage,
+} from "@/lib/news-image-assets"
+
+// Shared renderer for the Aperçu "Découverte" news feeds (V4 broad, V5
+// official). Extracted from the former /apercudecouverte-v3 route so the
+// route could be decommissioned (now a redirect → V5). Consuming page
+// files declare `dynamic = "force-dynamic"` themselves; every render is
+// per-request (cron writes news to the DB, the page reads it on each
+// visit — auth-gated, low traffic).
+
+const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
+
+interface SearchParams {
+  font?: string
+}
+
+type NewsImagePolicy = "asStored" | "safeFallback" | "stockThenFallback" | "directSource"
+
+function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
+  if (!Array.isArray(raw)) return []
+  // Dedup by publisher name at render time (older dossiers in DB
+  // were aggregated with URL-based dedup → multiple pills per
+  // publisher when several articles from the same source were cited).
+  const seen = new Set<string>()
+  return raw.flatMap((entry): NewsSourceRef[] => {
+    if (typeof entry !== "object" || entry === null) return []
+    const e = entry as Record<string, unknown>
+    const name = typeof e.name === "string" ? e.name : ""
+    const url = typeof e.url === "string" ? e.url : ""
+    if (!name || !url || seen.has(name)) return []
+    seen.add(name)
+    return [
+      {
+        name,
+        url,
+        favicon: typeof e.favicon === "string" ? e.favicon : undefined,
+        headline: typeof e.headline === "string" ? e.headline : undefined,
+        country: typeof e.country === "string" ? e.country : undefined,
+      },
+    ]
+  })
+}
+
+function toResearch(raw: Prisma.JsonValue | null): StoryResearch | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null
+  const r = raw as Record<string, unknown>
+  if (
+    typeof r.studyTitle !== "string" ||
+    typeof r.organization !== "string" ||
+    typeof r.methodology !== "string" ||
+    typeof r.keyFinding !== "string"
+  ) {
+    return null
+  }
+  return {
+    studyTitle: r.studyTitle,
+    organization: r.organization,
+    year: typeof r.year === "number" ? r.year : null,
+    methodology: r.methodology,
+    keyFinding: r.keyFinding,
+    caveat: typeof r.caveat === "string" ? r.caveat : undefined,
+    sourceUrl: typeof r.sourceUrl === "string" ? r.sourceUrl : undefined,
+  }
+}
+
+type StoryRow = {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  body: string
+  imageUrl: string
+  imageCredit: string | null
+  imageLicenseUrl: string | null
+  imageSourceType: ImageSourceType | null
+  /** Raw publisher photo (pre-mirror) — used as-is by the V4 directSource feed. */
+  sourceImageUrl: string | null
+  category: ApercuNewsCardData["category"]
+  publishedAt: Date
+  relevanceScore: number
+  sources: Prisma.JsonValue
+  relatedMediaId?: string | null
+  relatedMediaIds?: string[] | null
+  /** Set by news-editorial-judge after synthesis; nullable on legacy
+   *  rows. Read by the balancer to avoid stacking heavy stories. */
+  editorialTone?: string | null
+  topicCluster?: string | null
+}
+
+type V4ImageMaps = {
+  v4AssetsMap: Map<string, PreparedNewsImage>
+  catalogPosterMap: Map<string, PreparedNewsImage>
+  storyCatalogMap: Map<string, PreparedNewsImage>
+}
+
+const STORY_CARD_SELECT = {
+  id: true, slug: true, title: true, summary: true, body: true,
+  imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
+  sourceImageUrl: true,
+  category: true, publishedAt: true, relevanceScore: true, sources: true,
+  relatedMediaId: true, relatedMediaIds: true,
+} as const
+
+function isSafeStoredImage(row: StoryRow): boolean {
+  return (
+    row.imageSourceType === "STOCK" ||
+    row.imageSourceType === "AGENCY" ||
+    row.imageSourceType === "PUBLISHER_RSS" ||
+    row.imageSourceType === "FALLBACK" ||
+    isFallbackCardUrl(row.imageUrl)
+  )
+}
+
+function isSafeDiscoveryV4Image(row: StoryRow): boolean {
+  if (
+    row.imageSourceType === "STOCK" ||
+    row.imageSourceType === "AGENCY" ||
+    row.imageSourceType === "FALLBACK" ||
+    isFallbackCardUrl(row.imageUrl)
+  ) {
+    return true
+  }
+  if (
+    row.imageSourceType === "PUBLISHER_RSS" &&
+    (row.category === "FILM_TV" || row.category === "GAMES") &&
+    hasTrustedPublisherSource(row.sources) &&
+    Boolean(row.imageUrl && !isBlockedHotlinkImageUrl(row.imageUrl))
+  ) {
+    return true
+  }
+  return false
+}
+
+function canUseStoredImageWhileV4Warms(row: StoryRow): boolean {
+  return canUseDirectStoredImage(row)
+}
+
+function canUseDirectStoredImage(row: StoryRow): boolean {
+  return Boolean(row.imageUrl && !isFallbackCardUrl(row.imageUrl) && !isBlockedHotlinkImageUrl(row.imageUrl))
+}
+
+function rowsForImagePolicy(rows: StoryRow[], imagePolicy: NewsImagePolicy): StoryRow[] {
+  if (imagePolicy !== "asStored") return rows
+  return rows.filter(canUseDirectStoredImage)
+}
+
+function rowForImagePolicy(row: StoryRow | null, imagePolicy: NewsImagePolicy): StoryRow | null {
+  if (!row || imagePolicy !== "asStored") return row
+  return canUseDirectStoredImage(row) ? row : null
+}
+
+function shouldTryStockImage(row: StoryRow, imagePolicy: NewsImagePolicy): boolean {
+  return (
+    imagePolicy === "stockThenFallback" &&
+    (row.imageSourceType === "FALLBACK" ||
+      isFallbackCardUrl(row.imageUrl) ||
+      !isSafeDiscoveryV4Image(row))
+  )
+}
+
+function isValidWeatherCity(city: WeatherCity): boolean {
+  return (
+    city.name.trim().length > 0 &&
+    Number.isFinite(city.lat) &&
+    Number.isFinite(city.lon) &&
+    Math.abs(city.lat) <= 90 &&
+    Math.abs(city.lon) <= 180
+  )
+}
+
+async function rowToCard(
+  row: StoryRow,
+  imagePolicy: NewsImagePolicy = "asStored",
+  maps?: V4ImageMaps,
+): Promise<ApercuNewsCardData> {
+  // V4 Actualités: render the raw publisher photo straight from the feed
+  // (no stock/official-press/catalog/editorial substitution, no Supabase
+  // re-host). Branded category card only when there is no real photo. The
+  // branded URL is always passed as `fallbackImageUrl` so the client can
+  // degrade gracefully when a hotlinked publisher image 403s on the browser.
+  if (imagePolicy === "directSource") {
+    const fb = fallbackCard(row.category, row.title)
+    const hasPhoto = Boolean(
+      row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl),
+    )
+    return {
+      slug: row.slug,
+      title: row.title,
+      summary: row.summary,
+      imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
+      fallbackImageUrl: fb.url,
+      imageCredit: hasPhoto ? row.imageCredit : fb.credit,
+      imageLicenseUrl: hasPhoto ? null : fb.licenseUrl,
+      category: row.category,
+      publishedAt: row.publishedAt,
+      sources: toSources(row.sources),
+    }
+  }
+
+  if (shouldTryStockImage(row, imagePolicy)) {
+    const prepared = maps?.v4AssetsMap.get(row.id) ?? null
+    if (prepared) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: prepared.url,
+        imageCredit: prepared.credit,
+        imageLicenseUrl: prepared.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const relatedId = primaryRelatedMediaId(row)
+    const catalogPoster =
+      (relatedId ? maps?.catalogPosterMap.get(relatedId) : undefined) ??
+      maps?.storyCatalogMap?.get(row.id)
+    if (catalogPoster) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: catalogPoster.url,
+        imageCredit: catalogPoster.credit,
+        imageLicenseUrl: catalogPoster.licenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    const hasTrustedPublisherImage =
+      row.imageSourceType === "PUBLISHER_RSS" &&
+      (row.category === "FILM_TV" || row.category === "GAMES") &&
+      hasTrustedPublisherSource(row.sources) &&
+      canUseStoredImageWhileV4Warms(row)
+
+    if (hasTrustedPublisherImage) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: row.imageUrl,
+        imageCredit: row.imageCredit,
+        imageLicenseUrl: row.imageLicenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+
+    if (!catalogPoster) {
+      const editorialVisual = editorialVisualCard(row)
+      if (editorialVisual) {
+        return {
+          slug: row.slug,
+          title: row.title,
+          summary: row.summary,
+          imageUrl: editorialVisual.url,
+          imageCredit: editorialVisual.credit,
+          imageLicenseUrl: editorialVisual.licenseUrl,
+          category: row.category,
+          publishedAt: row.publishedAt,
+          sources: toSources(row.sources),
+        }
+      }
+    }
+
+    // V4 is cache-first, not blank-first: until the backend prewarm has
+    // approved and mirrored a legal stock asset, keep the existing stored
+    // image if it is renderable. This prevents the whole page from falling
+    // back to Totem cards while storage/Pexels diagnostics are being fixed.
+    if (canUseStoredImageWhileV4Warms(row)) {
+      return {
+        slug: row.slug,
+        title: row.title,
+        summary: row.summary,
+        imageUrl: row.imageUrl,
+        imageCredit: row.imageCredit,
+        imageLicenseUrl: row.imageLicenseUrl,
+        category: row.category,
+        publishedAt: row.publishedAt,
+        sources: toSources(row.sources),
+      }
+    }
+  }
+
+  const safeFallback =
+    ((imagePolicy === "stockThenFallback" && !isSafeDiscoveryV4Image(row)) ||
+      (imagePolicy !== "asStored" && imagePolicy !== "stockThenFallback" && !isSafeStoredImage(row)))
+      ? fallbackCard(row.category, row.title)
+      : null
+
+  return {
+    slug: row.slug,
+    title: row.title,
+    summary: row.summary,
+    imageUrl: safeFallback?.url ?? row.imageUrl,
+    imageCredit: safeFallback?.credit ?? row.imageCredit,
+    imageLicenseUrl: safeFallback?.licenseUrl ?? row.imageLicenseUrl,
+    category: row.category,
+    publishedAt: row.publishedAt,
+    sources: toSources(row.sources),
+  }
+}
+
+function sourceCount(r: StoryRow): number {
+  if (!Array.isArray(r.sources)) return 0
+  const publishers = new Set<string>()
+  for (const source of r.sources) {
+    if (typeof source !== "object" || source === null) continue
+    const name = (source as { name?: unknown }).name
+    if (typeof name === "string" && name.trim()) {
+      publishers.add(normalizedPublisherName(name))
+    }
+  }
+  return publishers.size
+}
+
+function hoursSincePublished(row: StoryRow): number {
+  return Math.max(0, (Date.now() - new Date(row.publishedAt).getTime()) / (60 * 60 * 1000))
+}
+
+function compareByFreshness(rows: StoryRow[]) {
+  return (a: StoryRow, b: StoryRow) => {
+    const freshnessDelta = new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    if (freshnessDelta !== 0) return freshnessDelta
+
+    // Tie-break only: if two stories share the same timestamp, use the
+    // family relevance and independent-source signal without letting
+    // them override freshness.
+    const relevanceDelta = b.relevanceScore - a.relevanceScore
+    if (Math.abs(relevanceDelta) > 0.001) return relevanceDelta
+
+    const sourceDelta = sourceCount(b) - sourceCount(a)
+    if (sourceDelta !== 0) return sourceDelta
+
+    return rows.findIndex((row) => row.id === a.id) - rows.findIndex((row) => row.id === b.id)
+  }
+}
+
+function isExceptionalGameLead(row: StoryRow): boolean {
+  if (row.category !== "GAMES") return true
+
+  // Games can lead only when the signal is unusually strong for parents:
+  // high family relevance plus genuinely independent coverage. This
+  // keeps standard product/licence announcements from dominating the
+  // first screen while still allowing a major family-safety or budget
+  // story to surface.
+  return row.relevanceScore >= 0.9 && sourceCount(row) >= 2
+}
+
+const LEAD_FRESHNESS_HOURS = 72
+const SECTION_CARD_TARGET = 6
+const SECTION_BACKFILL_POOL = 24
+
+function splitFreshLeadRows(rows: StoryRow[]): { fresh: StoryRow[]; fallback: StoryRow[] } {
+  const fresh: StoryRow[] = []
+  const fallback: StoryRow[] = []
+
+  for (const row of rows) {
+    if (hoursSincePublished(row) <= LEAD_FRESHNESS_HOURS) fresh.push(row)
+    else fallback.push(row)
+  }
+
+  return { fresh, fallback }
+}
+
+function pickFrenchHero(rows: StoryRow[]): StoryRow | undefined {
+  if (rows.length === 0) return undefined
+
+  const compare = compareByFreshness(rows)
+  const { fresh } = splitFreshLeadRows(rows)
+  const pool = fresh.length > 0 ? fresh : rows
+  const parentFirst = pool.filter(isExceptionalGameLead)
+  return [...(parentFirst.length > 0 ? parentFirst : pool)].sort(compare)[0]
+}
+
+function canUseInTopBriefs(row: StoryRow, hero: StoryRow | undefined, picked: StoryRow[]): boolean {
+  if (row.category !== "GAMES") return true
+
+  const gamesAlreadyVisible =
+    (hero?.category === "GAMES" ? 1 : 0) +
+    picked.filter((s) => s.category === "GAMES").length
+
+  return gamesAlreadyVisible < 1 || isExceptionalGameLead(row)
+}
+
+function pickTopRows(rows: StoryRow[], hero: StoryRow | undefined, target: number): StoryRow[] {
+  const { fresh, fallback } = splitFreshLeadRows(rows)
+  const picked: StoryRow[] = []
+  const deferredFresh: StoryRow[] = []
+
+  for (const row of fresh.sort(compareByFreshness(rows))) {
+    if (picked.length >= target) break
+    if (canUseInTopBriefs(row, hero, picked)) {
+      picked.push(row)
+    } else {
+      deferredFresh.push(row)
+    }
+  }
+
+  // Freshness is the top priority: never pull an older fallback story
+  // above a fresh story just to satisfy the games diversity guardrail.
+  for (const row of deferredFresh) {
+    if (picked.length >= target) break
+    picked.push(row)
+  }
+
+  for (const row of fallback.sort(compareByFreshness(rows))) {
+    if (picked.length >= target) break
+    if (canUseInTopBriefs(row, hero, picked)) picked.push(row)
+  }
+
+  return picked.sort(compareByFreshness(rows))
+}
+
+/**
+ * Pulls a "phrase du jour" candidate from a recent story body. Picks
+ * the longest sentence under 220 chars from the most recent FR brief
+ * — long enough to be substantive, short enough to render large.
+ *
+ * This is the Aperçu's quick-and-dirty source. The live cutover will
+ * replace this with a daily LLM agent that picks more carefully.
+ */
+function extractPhrase(rows: StoryRow[]): { quote: string; storyTitle: string; storySlug: string } | null {
+  for (const row of rows) {
+    // Strip markdown: headings, lists, AND inline links — bodies are
+    // now linkified (catalog titles get [text](/media/<id>) syntax),
+    // and the phrase widget renders plain text, so the brackets and
+    // url would otherwise leak through visibly.
+    const cleaned = row.body
+      .replace(/^#+ .*$/gm, "")
+      .replace(/^\s*[-*]\s+/gm, "")
+      // Inline link: [text](url) → text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Bold/italic markers (just in case the LLM emits any)
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\s+/g, " ")
+      .trim()
+    const sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-Z«ÀÂÉÈÊËÎÏÔÙÛÜÇ])/)
+    const candidates = sentences
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 60 && s.length <= 220 && !s.includes("**"))
+      .sort((a, b) => b.length - a.length) // prefer longer (more substantive)
+    if (candidates[0]) {
+      return {
+        quote: candidates[0].replace(/^[«"]|[»"]$/g, "").trim(),
+        storyTitle: row.title,
+        storySlug: row.slug,
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Curated list of recent scientific / institutional studies relevant
+ * to French families. Aperçu uses a hand-picked list to validate the
+ * UX; live cutover will source these from an RSS/Atom feed of Pew /
+ * INSERM / Cairn / Common Sense Media research releases.
+ */
+const CURATED_ETUDES: EtudeRef[] = [
+  {
+    organization: "Pew Research Center",
+    title: "Teens, Social Media and Technology 2024",
+    url: "https://www.pewresearch.org/internet/2024/12/12/teens-social-media-and-technology-2024/",
+    date: "déc. 2024",
+  },
+  {
+    organization: "INSERM",
+    title: "Effets des écrans sur le sommeil des adolescents",
+    url: "https://www.inserm.fr/dossier/sommeil/",
+    date: "2024",
+  },
+  {
+    organization: "Common Sense Media",
+    title: "The Common Sense Census: Media Use by Tweens and Teens",
+    url: "https://www.commonsensemedia.org/research/the-common-sense-census-media-use-by-tweens-and-teens-2021",
+    date: "2021",
+  },
+  {
+    organization: "Santé publique France",
+    title: "Santé mentale des jeunes — chiffres clés",
+    url: "https://www.santepubliquefrance.fr/maladies-et-traumatismes/sante-mentale",
+    date: "2024",
+  },
+]
+
+export async function renderApercuDecouvertePage(props: {
+  searchParams?: Promise<SearchParams>
+}, options: { imagePolicy?: NewsImagePolicy; callbackUrl?: string; officialOnly?: boolean } = {}) {
+  const callbackUrl = options.callbackUrl ?? "/apercudecouverte-v5"
+  // V5 "trusted sources" feed: restrict every news query to stories whose
+  // every contributing source is official (gov / public institution /
+  // recognized nonprofit — see NewsStory.official). Spread into each where
+  // clause below; an empty object leaves V4 (broad feed) unfiltered.
+  const officialWhere = options.officialOnly ? { official: true as const } : {}
+  // Hybrid image policy ("safeFallback"): show a story's real publisher
+  // photo when it has one, and a branded category card otherwise — never
+  // hide a story. The old "asStored" (direct-photo-only) policy filtered
+  // out every fallback-card row, which starved the page to ~0 visible
+  // stories once sourcing degraded: ~half of RSS items carry no image,
+  // and many that do are hotlink-protected (200 to a server HEAD, 403 to
+  // the browser). "safeFallback" keeps the feed fresh regardless, while
+  // real-photo coverage improves separately via the discover-time image
+  // mirror to Supabase. See docs/tech-audit.md (news-image section).
+  const imagePolicy = options.imagePolicy ?? "safeFallback"
+  let session
+  try {
+    session = await auth()
+  } catch {
+    redirect(`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+  }
+  if (!session?.user?.id) {
+    redirect(`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`)
+  }
+
+  const searchParams = await props.searchParams
+
+  // ── Pull data in parallel ──────────────────────────────────────
+  // Each fetch is individually fail-safe: any single failure logs a
+  // warning and falls back to a safe empty value rather than taking
+  // down the whole page. The page is rendered as a feed, so missing
+  // a sidebar widget or a brief category degrades gracefully.
+  const safe = <T,>(label: string, fallback: T) => (err: unknown): T => {
+    console.warn(`[apercu-decouverte] ${label} failed:`, err)
+    return fallback
+  }
+
+  // Resolve the user's saved weather city, then fetch the snapshot.
+  // Wrapped together so the page-level Promise.all kicks off the
+  // user lookup + weather fetch as a single dependent chain rather
+  // than serially after the Promise.all completes.
+  const userId = session.user.id
+  // Resolve the saved city once, then fan out to weather + air quality.
+  // Also surfaces a hasUserCity flag so the client widget can decide
+  // whether to prompt for geolocation (only when the user is still on
+  // the Paris default — never re-prompt someone who already picked).
+  let hasUserCity = false
+  const cityFlow = (async () => {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { weatherCityName: true, weatherCityLat: true, weatherCityLon: true },
+    })
+    if (u?.weatherCityName && u.weatherCityLat !== null && u.weatherCityLon !== null) {
+      const city = { name: u.weatherCityName, lat: u.weatherCityLat, lon: u.weatherCityLon } satisfies WeatherCity
+      if (isValidWeatherCity(city)) {
+        hasUserCity = true
+        return city
+      }
+    }
+    return DEFAULT_CITY
+  })()
+  const weatherFlow = cityFlow.then(async (city) => {
+    const snapshot = await getWeatherForCity(city)
+    if (snapshot?.current) return snapshot
+    if (city.name !== DEFAULT_CITY.name || city.lat !== DEFAULT_CITY.lat || city.lon !== DEFAULT_CITY.lon) {
+      const fallback = await getWeatherForCity(DEFAULT_CITY)
+      if (fallback?.current) return fallback
+    }
+    return { city: DEFAULT_CITY, current: null, daily: [] }
+  })
+  const airQualityFlow = cityFlow.then(getAirQualityForCity)
+
+  const [
+    frenchRows,
+    intlRows,
+    techRows,
+    dossierRow,
+    researchRow,
+    holidayB,
+    holidayA,
+    holidayC,
+    holidayCalendar,
+    anniversary,
+    weather,
+    airQuality,
+    cinemaTendances,
+    notableDates,
+    deadlines,
+  ] = await Promise.all([
+    // Top 18 French briefs in the 4 main categories, ordered by
+    // recency. We pull more than the 4 visible slots (hero + 3 top)
+    // so the page-level image-dedup has room to backfill if the
+    // first picks collide on imageUrl. The hero pick downstream
+    // selects the most-recent multi-source story (sources.length >= 3)
+    // — recency-first ordering means the hero is also the freshest
+    // serious news, not just the highest-relevance ever. TECH excluded
+    // — it has its own 'Tech & IA' section below.
+    prisma.newsStory.findMany({
+      where: {
+        status: "PUBLISHED",
+        storyType: "BRIEF",
+        region: "FR",
+        category: { in: ["PARENTHOOD", "FILM_TV", "GAMES", "READING"] },
+        ...officialWhere,
+      },
+      orderBy: { publishedAt: "desc" },
+      take: 18,
+      select: {
+        ...STORY_CARD_SELECT,
+        // Editorial supervision tags — fed into balanceNewsForFeed
+        // below so the hero is never a grave story and we never stack
+        // two stories from the same topicCluster (e.g. two teen-suicide
+        // pieces side-by-side, the original failure mode that started
+        // this work).
+        editorialTone: true, topicCluster: true,
+      },
+    }).catch(safe("frenchRows", [] as StoryRow[])),
+    // 6 most recent international briefs in PARENTHOOD only.
+    // Editorial choice (Xavier, May 2026): "Ce qu'on lit ailleurs" is
+    // for world news about kids, family policy, screen-time studies,
+    // education debates, society issues that touch families — NOT
+    // international entertainment industry news. GAMES, FILM_TV and
+    // TECH already get their own treatment elsewhere on the page, so
+    // mixing them in here just dilutes the section. Restricting to
+    // PARENTHOOD keeps the strand on-point.
+    prisma.newsStory.findMany({
+      where: {
+        status: "PUBLISHED",
+        storyType: "BRIEF",
+        region: "INTL",
+        category: "PARENTHOOD",
+        ...officialWhere,
+      },
+      orderBy: { publishedAt: "desc" },
+      take: SECTION_BACKFILL_POOL,
+      select: {
+        ...STORY_CARD_SELECT,
+        editorialTone: true, topicCluster: true,
+      },
+    }).catch(safe("intlRows", [] as StoryRow[])),
+    // 6 most recent TECH briefs (FR + INTL mixed). Renders as a
+    // dedicated "Tech & IA" section between the main French grid and
+    // the dossier — Xavier's call: families need to be way more aware
+    // of generative AI / parental tech / online safety.
+    prisma.newsStory.findMany({
+      where: { status: "PUBLISHED", storyType: "BRIEF", category: "TECH", ...officialWhere },
+      orderBy: { publishedAt: "desc" },
+      take: SECTION_BACKFILL_POOL,
+      select: STORY_CARD_SELECT,
+    }).catch(safe("techRows", [] as StoryRow[])),
+    // Latest dossier (past 5 days). Sized for the Tue/Fri cadence:
+    // the most recent dossier is always within 4 days; if a cron run
+    // failed and the latest is older than 5 days, the page hides the
+    // dossier section rather than showing stale content.
+    prisma.newsStory.findFirst({
+      where: {
+        status: "PUBLISHED",
+        storyType: "DOSSIER",
+        publishedAt: { gte: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+        ...officialWhere,
+      },
+      orderBy: { publishedAt: "desc" },
+      select: STORY_CARD_SELECT,
+    }).catch(safe<StoryRow | null>("dossierRow", null)),
+    // Latest story carrying a populated research sidebar.
+    prisma.newsStory.findFirst({
+      where: { status: "PUBLISHED", research: { not: Prisma.JsonNull }, ...officialWhere },
+      orderBy: { publishedAt: "desc" },
+      select: {
+        id: true, slug: true, title: true, research: true,
+      },
+    }).catch(safe<{ id: string; slug: string; title: string; research: Prisma.JsonValue | null } | null>("researchRow", null)),
+    // Sidebar widgets — wrapped defensively so an external API blip
+    // (data.education.gouv.fr, open-meteo) or a transient DB error in
+    // the catalog query can't surface as a server-render failure.
+    getNextHoliday("B").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayB", null)),
+    getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
+    getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
+    getHolidayCalendar().catch(safe<CalendarHoliday[]>("holidayCalendar", [])),
+    getCatalogAnniversary().catch(safe<Awaited<ReturnType<typeof getCatalogAnniversary>>>("anniversary", null)),
+    weatherFlow.catch(
+      safe<{ city: WeatherCity; current: null; daily: [] }>("weather", {
+        city: DEFAULT_CITY,
+        current: null,
+        daily: [],
+      }),
+    ),
+    airQualityFlow.catch(safe<Awaited<typeof airQualityFlow>>("airQuality", null)),
+    getCinemaTendances().catch(safe<Awaited<ReturnType<typeof getCinemaTendances>>>("cinemaTendances", [])),
+    // Curated lists — pure JS, fail-open shouldn't be needed but the
+    // safe wrapper keeps the failure-mode pattern consistent.
+    Promise.resolve(getUpcomingNotableDates()).catch(safe<NotableDateInstance[]>("notableDates", [])),
+    Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
+  ])
+
+  // Editorial supervision pass — invisible to the reader. Rebalances
+  // the top 6 of the recency-sorted feed so the hero is never a
+  // "grave" story and no two consecutive cards share the same
+  // topicCluster (e.g. two teen-suicide pieces side-by-side, the
+  // failure mode that started this work). The tail of the feed is
+  // untouched. Falls back to identity for rows that pre-date the
+  // editorial-judge backfill (null tone → treated as neutral).
+  const pageFrenchRows = rowsForImagePolicy(frenchRows, imagePolicy)
+  const pageIntlRows = rowsForImagePolicy(intlRows, imagePolicy)
+  const pageTechRows = rowsForImagePolicy(techRows, imagePolicy)
+  const pageDossierRow = rowForImagePolicy(dossierRow, imagePolicy)
+
+  const balancedFrenchRows = balanceNewsForFeed(pageFrenchRows, 6)
+
+  // Hero pick — freshness first, with a parent-first guardrail. The
+  // newest suitable story leads, but standard game/product/licence
+  // announcements cannot set the tone of the whole page unless their
+  // family signal is exceptional.
+  const frenchHero = pickFrenchHero(balancedFrenchRows)
+  const frenchRest = frenchHero
+    ? balancedFrenchRows.filter((row) => row.id !== frenchHero.id)
+    : balancedFrenchRows
+
+  // Batch-load V4 image assets and catalog posters once for all cards
+  // on this page — avoids 60-150 sequential DB round trips in rowToCard.
+  const allImageRows: StoryRow[] = [
+    ...balancedFrenchRows,
+    ...(pageDossierRow ? [pageDossierRow] : []),
+    ...pageIntlRows,
+    ...pageTechRows,
+  ]
+  const storyIds = allImageRows.map((row) => row.id)
+  const relatedMediaIds = allImageRows
+    .map((row) => primaryRelatedMediaId(row))
+    .filter((id): id is string => Boolean(id))
+
+  const [v4AssetsMap, catalogPosterMap, storyCatalogMap]: [
+    Map<string, PreparedNewsImage>,
+    Map<string, PreparedNewsImage>,
+    Map<string, PreparedNewsImage>,
+  ] =
+    imagePolicy === "stockThenFallback"
+      ? await Promise.all([
+          batchLoadApprovedDiscoveryV4Images(storyIds),
+          batchLoadCatalogPosters(relatedMediaIds),
+          batchResolveCatalogPostersByTitle(allImageRows),
+        ])
+      : [new Map(), new Map(), new Map()]
+
+  const imageMaps: V4ImageMaps = { v4AssetsMap, catalogPosterMap, storyCatalogMap }
+
+  // Page-level image dedup: dossier wins (it's the editorial centerpiece),
+  // then hero, then top briefs, then INTL, then older. Any later card
+  // sharing an already-claimed imageUrl is filtered out so the same
+  // photo never appears twice on the same page render. Particularly
+  // matters when a dossier and a brief both pull from the same source
+  // (la-croix.com publishes one photo for an entire event sequence).
+  const seenImages = new Set<string>()
+  const claim = <T extends { imageUrl?: string | null }>(card: T): T | null => {
+    if (!card.imageUrl) return null
+    if (isBlockedHotlinkImageUrl(card.imageUrl)) return null
+    // Branded category fallback cards (/api/news/fallback-card?cat=…)
+    // are shared by design — multiple image-less stories in the same
+    // category use the same URL — so they're exempt from cross-story
+    // dedup. Without this exemption, the second PARENTHOOD fallback
+    // on the page would be silently dropped, leaving an empty slot
+    // in the 3-up grid.
+    if (isFallbackCardUrl(card.imageUrl)) return card
+    if (seenImages.has(card.imageUrl)) return null
+    seenImages.add(card.imageUrl)
+    return card
+  }
+
+  const rowsForCards: StoryRow[] = []
+  const seenRowIds = new Set<string>()
+  const pushRow = (row: StoryRow | null | undefined) => {
+    if (!row || seenRowIds.has(row.id)) return
+    seenRowIds.add(row.id)
+    rowsForCards.push(row)
+  }
+  pushRow(pageDossierRow)
+  pushRow(frenchHero)
+  for (const row of frenchRest) pushRow(row)
+  for (const row of pageIntlRows) pushRow(row)
+  for (const row of pageTechRows) pushRow(row)
+
+  const cardByStoryId = new Map<string, ApercuNewsCardData>(
+    await Promise.all(
+      rowsForCards.map(async (row) => [row.id, await rowToCard(row, imagePolicy, imageMaps)] as const),
+    ),
+  )
+  const cardFor = (row: StoryRow): ApercuNewsCardData => cardByStoryId.get(row.id)!
+
+  const claimSectionRows = (
+    rows: StoryRow[],
+    target = SECTION_CARD_TARGET,
+  ): ApercuNewsCardData[] => {
+    const cards: ApercuNewsCardData[] = []
+    for (const row of rows) {
+      if (cards.length >= target) break
+      const card = claim(cardFor(row))
+      if (card) cards.push(card)
+    }
+    return cards
+  }
+
+  const dossierCard = pageDossierRow ? claim(cardFor(pageDossierRow)) : null
+  const heroCard = frenchHero ? claim(cardFor(frenchHero)) : null
+
+  // Backfill loop: walk frenchRest in chronological order, accumulate
+  // up to 3 surviving (post-dedup) cards into topCards, then push the
+  // rest into olderCards. Guarantees the "L'actualité qui compte" 3-up
+  // grid is always full as long as enough French briefs exist after
+  // dedup — no more visible empty slots when an image collides with
+  // the hero or dossier.
+  //
+  // We over-pick from pickTopRows (TOP_TARGET + 6) so that if claim()
+  // rejects a candidate (image collision with hero/dossier, hotlink
+  // block), the loop has fresh fallbacks ready instead of just
+  // skipping the slot.
+  const TOP_TARGET = 3
+  const topCards: ApercuNewsCardData[] = []
+  const olderCards: ApercuNewsCardData[] = []
+  const topPickedIds = new Set<string>()
+  for (const row of pickTopRows(frenchRest, frenchHero, TOP_TARGET + 6)) {
+    if (topCards.length >= TOP_TARGET) break
+    const card = claim(cardFor(row))
+    if (!card) continue
+    topCards.push(card)
+    topPickedIds.add(row.id)
+  }
+
+  for (const row of frenchRest) {
+    if (topPickedIds.has(row.id)) continue
+    const card = claim(cardFor(row))
+    if (!card) continue
+    olderCards.push(card)
+  }
+
+  const intlCards = claimSectionRows(pageIntlRows)
+  const techCards = claimSectionRows(pageTechRows)
+
+  // Freshness flag — true when the chosen hero is older than 36h.
+  // Surfaces a small banner on the page so a stale state (cron stuck,
+  // synthesis returning 0 stories) is visible to visitors instead of
+  // looking like a working page with old content. 36h is a deliberately
+  // generous window so a single missed cron tick doesn't trigger the
+  // banner (cron fires 4× daily — worst-case tick interval is 6h).
+  const STALE_THRESHOLD_MS = 36 * 60 * 60 * 1000
+  const isStale =
+    !!frenchHero &&
+    Date.now() - new Date(frenchHero.publishedAt).getTime() > STALE_THRESHOLD_MS
+
+  const data: DecouverteV3Data = {
+    frenchHero: heroCard,
+    frenchTop: topCards,
+    internationalTop: intlCards,
+    techTop: techCards,
+    dossier: dossierCard,
+    olderBriefs: olderCards,
+    isStale,
+    // V5 trusted-sources feed can legitimately be sparse (institutional
+    // feeds are low-volume + the official gate is strict). Show an explicit
+    // notice when it renders empty so it reads as "by design", not broken.
+    feedNotice:
+      options.officialOnly &&
+      !heroCard &&
+      topCards.length === 0 &&
+      techCards.length === 0 &&
+      intlCards.length === 0 &&
+      !dossierCard &&
+      olderCards.length === 0
+        ? {
+            title: "Fil institutionnel — contenu limité mais vérifié",
+            body: "Ce fil ne reprend que des sources officielles (institutions publiques françaises et européennes, organismes reconnus). De nouvelles actualités apparaîtront au fil de leurs publications.",
+          }
+        : null,
+    phrase: extractPhrase(frenchRows),
+    research: researchRow
+      ? (() => {
+          const r = toResearch((researchRow as { research?: Prisma.JsonValue | null }).research ?? null)
+          return r
+            ? { research: r, storyTitle: researchRow.title, storySlug: researchRow.slug }
+            : null
+        })()
+      : null,
+    etudes: CURATED_ETUDES,
+    cinemaTendances,
+    holidayB: holidayToSerializable(holidayB),
+    holidayA: holidayToSerializable(holidayA),
+    holidayC: holidayToSerializable(holidayC),
+    holidayCalendar,
+    anniversary,
+    weather,
+    hasUserCity,
+    airQuality,
+    notableDates,
+    deadlines,
+    // Newsletter signup is admin-only until Xavier validates the
+    // digest format + cron automation. Flip NEWSLETTER_PUBLIC=true
+    // on Vercel to open it to all authenticated users.
+    canSubscribe:
+      session.user.role === "ADMIN" || process.env.NEWSLETTER_PUBLIC === "true",
+  }
+
+  const useFraunces = isFraunces(searchParams?.font)
+  const serifClass = useFraunces
+    ? fraunces.className
+    : "font-[var(--font-heading)]"
+
+  return (
+    <div className={useFraunces ? fraunces.variable : undefined}>
+      {hydrationDebugEnabled ? (
+        <HydrationDebugBoundary>
+          <ApercuDecouverteV3 data={data} serifClass={serifClass} />
+        </HydrationDebugBoundary>
+      ) : (
+        <ApercuDecouverteV3 data={data} serifClass={serifClass} />
+      )}
+    </div>
+  )
+}

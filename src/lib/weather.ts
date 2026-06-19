@@ -1,6 +1,7 @@
 /**
- * Weather lookup for the "Météo famille" sidebar widget on
- * /apercudecouverte-v3. Open-Meteo (no key, no rate-limit headaches
+ * Weather lookup for the "Météo famille" sidebar widget on the news
+ * feeds (/apercudecouverte-v4, /apercudecouverte-v5). Open-Meteo (no
+ * key, no rate-limit headaches
  * at our scale) provides the forecast; this lib stitches together
  * current conditions + 5-day outlook + sunset for tonight.
  *

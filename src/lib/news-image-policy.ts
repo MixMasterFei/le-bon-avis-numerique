@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client"
 
 // Image hosts that reliably block browser hotlinking. Keeping them out
 // of rendered news cards avoids noisy 403s and hydration-era image churn
-// on /apercudecouverte-v3.
+// on the news feeds (/apercudecouverte-v4, /apercudecouverte-v5).
 const BLOCKED_HOTLINK_IMAGE_HOSTS = ["cdn.sortiraparis.com"]
 
 // French publishers whose RSS/OG images are editorially safe for V4
