@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
-import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { getBestPosterPath } from "@/lib/tmdb"
 import { logCronRun } from "@/lib/cron-log"
 import type { Prisma } from "@prisma/client"
 
@@ -56,12 +56,10 @@ export async function POST(req: NextRequest) {
   for (let i = 0; i < items.length; i++) {
     const item = items[i]
     try {
-      let newPosterPath: string | null = null
-      if (item.type === "MOVIE") {
-        newPosterPath = (await getMovieDetails(item.tmdbId!)).poster_path
-      } else if (item.type === "TV") {
-        newPosterPath = (await getTVDetails(item.tmdbId!)).poster_path
-      }
+      // Use the full image set (fr,en,null), NOT the localized details poster —
+      // the latter is null for films without a FR-tagged poster, which falsely
+      // reads as "no poster on TMDB".
+      const newPosterPath = await getBestPosterPath(item.tmdbId!, item.type as "MOVIE" | "TV")
 
       const newPosterUrl = newPosterPath
         ? `https://image.tmdb.org/t/p/w500${newPosterPath}`
