@@ -817,6 +817,34 @@ export async function getTVImages(tvId: number, limit = 6): Promise<TMDBImage[]>
 }
 
 /**
+ * Best available POSTER path for a movie/TV, independent of the UI language.
+ *
+ * Why this exists: the localized details endpoint (`/movie/{id}` with
+ * `language=fr-FR`) returns `poster_path: null` whenever TMDB has no
+ * French-tagged poster — even when a perfectly good English/no-language poster
+ * exists. Relying on it made ~88% of poster-less films look like "no poster on
+ * TMDB". This pulls the full poster set (`fr,en,null`) and picks the best by
+ * language preference (fr → en → language-neutral) then community rating.
+ */
+export async function getBestPosterPath(
+  id: number,
+  type: "MOVIE" | "TV",
+): Promise<string | null> {
+  const path = type === "TV" ? `/tv/${id}/images` : `/movie/${id}/images`
+  const response = await tmdbFetch<TMDBImagesResponse>(path, {
+    include_image_language: "fr,en,null",
+  })
+  const posters = response.posters || []
+  if (posters.length === 0) return null
+  const langRank = (lang?: string | null) =>
+    lang === "fr" ? 0 : lang === "en" ? 1 : lang == null || lang === "" ? 2 : 3
+  const best = [...posters].sort(
+    (a, b) => langRank(a.iso_639_1) - langRank(b.iso_639_1) || b.vote_average - a.vote_average,
+  )[0]
+  return best?.file_path ?? null
+}
+
+/**
  * Get backdrop URL with size
  */
 export function getBackdropUrl(path: string | null, size: keyof typeof ImageSize.backdrop = "medium"): string {
