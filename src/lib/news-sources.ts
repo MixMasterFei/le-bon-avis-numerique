@@ -44,7 +44,7 @@ export const NEWS_SOURCES: NewsSource[] = [
   // is gold (cited studies, official recommendations, methodology
   // populates the "Ce que dit la recherche" sidebar)
   { name: "INSERM Actualités",               url: "https://presse.inserm.fr/feed/",                                         category: "PARENTHOOD", trustTier: 1, official: true },
-  { name: "Santé publique France",           url: "https://www.santepubliquefrance.fr/rss/communiques.xml",                 category: "PARENTHOOD", trustTier: 1, official: true },
+  { name: "Santé publique France",           url: "https://www.santepubliquefrance.fr/rss.xml",                             category: "PARENTHOOD", trustTier: 1, official: true },
 
   // ── OFFICIAL / INSTITUTIONAL (powers the V5 "Actualités de confiance"
   // feed) ─────────────────────────────────────────────────────────────
@@ -56,8 +56,11 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Arcom",                            url: "https://www.arcom.fr/rss.xml",                                           category: "TECH",       trustTier: 1, official: true },
   { name: "CNIL",                             url: "https://www.cnil.fr/fr/rss",                                             category: "TECH",       trustTier: 1, official: true },
   { name: "Défenseur des droits",             url: "https://www.defenseurdesdroits.fr/rss.xml",                              category: "PARENTHOOD", trustTier: 1, official: true },
-  { name: "gouvernement.fr",                  url: "https://www.gouvernement.fr/rss",                                        category: "PARENTHOOD", trustTier: 1, official: true },
-  { name: "Réseau Canopé",                    url: "https://www.reseau-canope.fr/rss.xml",                                   category: "PARENTHOOD", trustTier: 1, official: true },
+  // (gouvernement.fr dropped — its WAF TLS-fingerprint-blocks the Node/undici
+  // runtime: 200 to curl, 403 to fetch()/rss-parser from Vercel, regardless of
+  // UA/headers. The other gov/EU/institution feeds cover the policy space.)
+  // (Réseau Canopé dropped — its rss.xml is behind a CAS login gateway with no
+  // public feed. CLEMI, which is part of Réseau Canopé, already covers it.)
   // Recognized child/family nonprofits (public-interest)
   { name: "e-Enfance / 3018",                 url: "https://e-enfance.org/feed/",                                            category: "TECH",       trustTier: 1, official: true },
   { name: "UNAF",                             url: "https://www.unaf.fr/feed/",                                              category: "PARENTHOOD", trustTier: 1, official: true },
