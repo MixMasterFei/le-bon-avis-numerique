@@ -72,6 +72,13 @@ async function tmdbFetch<T>(
     url.searchParams.set(key, value)
   })
 
+  // Let callers opt OUT of the language filter (e.g. to fetch images in ANY
+  // language) by passing language:"" — without this it would send an empty
+  // param. Used by getBestPosterPath's last-resort fallback.
+  if (params.language === "") {
+    url.searchParams.delete("language")
+  }
+
   // Retry logic for rate limits (429)
   const maxRetries = 2
 
@@ -831,10 +838,16 @@ export async function getBestPosterPath(
   type: "MOVIE" | "TV",
 ): Promise<string | null> {
   const path = type === "TV" ? `/tv/${id}/images` : `/movie/${id}/images`
-  const response = await tmdbFetch<TMDBImagesResponse>(path, {
-    include_image_language: "fr,en,null",
-  })
-  const posters = response.posters || []
+  // 1) Preferred: French, English, or language-neutral posters.
+  let posters = (
+    await tmdbFetch<TMDBImagesResponse>(path, { include_image_language: "fr,en,null" })
+  ).posters || []
+  // 2) Last resort: ANY language. Obscure foreign titles (e.g. a Czech short)
+  //    often only have a poster tagged in their original language, which the
+  //    fr/en/null filter drops — better a native-language poster than none.
+  if (posters.length === 0) {
+    posters = (await tmdbFetch<TMDBImagesResponse>(path, { language: "" })).posters || []
+  }
   if (posters.length === 0) return null
   const langRank = (lang?: string | null) =>
     lang === "fr" ? 0 : lang === "en" ? 1 : lang == null || lang === "" ? 2 : 3
