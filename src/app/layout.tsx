@@ -138,11 +138,6 @@ export default async function RootLayout({
               url: "https://totemavise.com",
               logo: "https://totemavise.com/icon.png",
               description: "Moteur de recommandation de films, séries et jeux pour les familles françaises. Recommandations personnalisées par âge, goûts et sensibilités.",
-              sameAs: [
-                "https://www.instagram.com/totemavise",
-                "https://www.tiktok.com/@totemavise",
-                "https://www.facebook.com/totemavise",
-              ],
               contactPoint: {
                 "@type": "ContactPoint",
                 email: "contact@totemavise.com",

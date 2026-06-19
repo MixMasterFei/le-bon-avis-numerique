@@ -268,7 +268,6 @@ export function SiteHeader() {
     { value: "MOVIE", label: "Films" },
     { value: "TV", label: "Séries" },
     { value: "GAME", label: "Jeux" },
-    { value: "BOOK", label: "Livres" },
   ]
 
   const handleSearch = (e: React.FormEvent) => {
