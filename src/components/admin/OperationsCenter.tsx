@@ -21,6 +21,7 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  Image as ImageIcon,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -422,6 +423,37 @@ const OPERATIONS: Array<{
     icon: Gamepad2,
     color: "indigo",
     statLabels: { updated: "upgradees" },
+  },
+  {
+    config: {
+      key: "fixPosters",
+      endpoint: "/api/admin/fix-posters",
+      method: "POST",
+      chunked: true,
+      delayMs: 800,
+      accumKeys: ["processed", "updated", "skipped", "errors"],
+      extractProgress: (data) => ({
+        processed: data.processed || 0,
+        total: data.total || null,
+        updated: data.updated || 0,
+        skipped: data.skipped || 0,
+        errors: data.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (!data.lastId) return null
+        params.set("afterId", data.lastId)
+        if (data.total) params.set("total", String(data.total))
+        return params
+      },
+      buildSummary: (stats) =>
+        `${stats.updated || 0} affiches corrigees${stats.skipped ? `, ${stats.skipped} sans affiche TMDB` : ""}${stats.errors ? `, ${stats.errors} erreurs` : ""}`,
+    },
+    label: "Reparer les affiches",
+    description: "Re-recuperer les affiches manquantes (films/series) via TMDB",
+    icon: ImageIcon,
+    color: "cyan",
+    statLabels: { updated: "corrigees", skipped: "sans affiche" },
   },
   {
     config: {
@@ -954,7 +986,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Médias & images",
     description: "Screenshots, migration vers Supabase Storage, covers IGDB",
-    keys: ["importScreenshots", "migrateStorage", "fixGameCovers", "backfillPegi"],
+    keys: ["importScreenshots", "migrateStorage", "fixGameCovers", "fixPosters", "backfillPegi"],
   },
 ]
 
