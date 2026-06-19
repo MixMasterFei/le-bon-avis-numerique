@@ -19,10 +19,19 @@ export function ApercuNewsHeroCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
+  const [src, setSrc] = useState(story.imageUrl)
   const [imageBroken, setImageBroken] = useState(false)
-  // Hide the hero entirely on broken image — better empty than a giant
-  // grey placeholder above the fold (matches ApercuNewsCard behavior).
-  if (imageBroken || isBlockedHotlinkImageUrl(story.imageUrl)) return null
+  // On error, degrade to the branded fallback card (mandatory on the hero —
+  // the most visible slot — so a 403'd hotlink never leaves a grey hole);
+  // only hide if even the fallback fails or there is none.
+  const handleImageError = () => {
+    if (story.fallbackImageUrl && src !== story.fallbackImageUrl) {
+      setSrc(story.fallbackImageUrl)
+    } else {
+      setImageBroken(true)
+    }
+  }
+  if (imageBroken || isBlockedHotlinkImageUrl(src)) return null
   const href = `/apercudecouverte/${story.slug}`
 
   return (
@@ -76,13 +85,13 @@ export function ApercuNewsHeroCard({
       >
         <Link href={href} aria-label={`Lire l'actualité : ${story.title}`} className="block absolute inset-0">
           <Image
-            src={story.imageUrl}
+            src={src}
             alt={story.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             sizes="(max-width: 768px) 100vw, 55vw"
             priority
-            onError={() => setImageBroken(true)}
+            onError={handleImageError}
           />
         </Link>
         <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />

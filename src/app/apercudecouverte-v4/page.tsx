@@ -4,8 +4,10 @@ interface SearchParams {
   font?: string
 }
 
-// V4 is intentionally a visual A/B variant of V3: same component tree,
-// same layout, but fallback media cards try contextual legal stock first.
+// V4 "Actualités": the clean feed. Renders each story's raw publisher image
+// straight from the RSS feed (no stock/official-press/catalog/editorial
+// substitution, no Supabase re-host), with a branded category card only when
+// a story has no real photo. See the "directSource" policy in rowToCard.
 export const dynamic = "force-dynamic"
 
 export default async function ApercuDecouverteV4Page(props: {
@@ -13,6 +15,6 @@ export default async function ApercuDecouverteV4Page(props: {
 }) {
   return renderApercuDecouvertePage(props, {
     callbackUrl: "/apercudecouverte-v4",
-    imagePolicy: "stockThenFallback",
+    imagePolicy: "directSource",
   })
 }

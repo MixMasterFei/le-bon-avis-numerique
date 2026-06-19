@@ -39,7 +39,7 @@ interface SearchParams {
   font?: string
 }
 
-type NewsImagePolicy = "asStored" | "safeFallback" | "stockThenFallback"
+type NewsImagePolicy = "asStored" | "safeFallback" | "stockThenFallback" | "directSource"
 
 function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   if (!Array.isArray(raw)) return []
@@ -98,6 +98,8 @@ type StoryRow = {
   imageCredit: string | null
   imageLicenseUrl: string | null
   imageSourceType: ImageSourceType | null
+  /** Raw publisher photo (pre-mirror) — used as-is by the V4 directSource feed. */
+  sourceImageUrl: string | null
   category: ApercuNewsCardData["category"]
   publishedAt: Date
   relevanceScore: number
@@ -119,6 +121,7 @@ type V4ImageMaps = {
 const STORY_CARD_SELECT = {
   id: true, slug: true, title: true, summary: true, body: true,
   imageUrl: true, imageCredit: true, imageLicenseUrl: true, imageSourceType: true,
+  sourceImageUrl: true,
   category: true, publishedAt: true, relevanceScore: true, sources: true,
   relatedMediaId: true, relatedMediaIds: true,
 } as const
@@ -201,6 +204,30 @@ async function rowToCard(
   imagePolicy: NewsImagePolicy = "asStored",
   maps?: V4ImageMaps,
 ): Promise<ApercuNewsCardData> {
+  // V4 Actualités: render the raw publisher photo straight from the feed
+  // (no stock/official-press/catalog/editorial substitution, no Supabase
+  // re-host). Branded category card only when there is no real photo. The
+  // branded URL is always passed as `fallbackImageUrl` so the client can
+  // degrade gracefully when a hotlinked publisher image 403s on the browser.
+  if (imagePolicy === "directSource") {
+    const fb = fallbackCard(row.category, row.title)
+    const hasPhoto = Boolean(
+      row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl),
+    )
+    return {
+      slug: row.slug,
+      title: row.title,
+      summary: row.summary,
+      imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
+      fallbackImageUrl: fb.url,
+      imageCredit: hasPhoto ? row.imageCredit : fb.credit,
+      imageLicenseUrl: hasPhoto ? null : fb.licenseUrl,
+      category: row.category,
+      publishedAt: row.publishedAt,
+      sources: toSources(row.sources),
+    }
+  }
+
   if (shouldTryStockImage(row, imagePolicy)) {
     const prepared = maps?.v4AssetsMap.get(row.id) ?? null
     if (prepared) {

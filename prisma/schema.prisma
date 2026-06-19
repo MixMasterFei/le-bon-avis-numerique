@@ -938,6 +938,12 @@ model NewsStory {
   imageSourceType ImageSourceType? @map("image_source_type")
   imageCredit     String?          @map("image_credit")        // e.g. "Reuters" or "Marc Dupont / Pexels"
   imageLicenseUrl String?          @map("image_license_url")   // STOCK only — links back to source page (Pexels/Unsplash require attribution)
+  // Original publisher image URL, captured at ingestion BEFORE the Supabase
+  // mirror. `imageUrl` may be our re-hosted mirror; this is the raw publisher
+  // photo. The V4 "directSource" feed hotlinks this as-is (no re-processing).
+  // Null for FALLBACK/STOCK stories (no real publisher photo). Legacy rows are
+  // backfilled from imageUrl (mirror) until they age out.
+  sourceImageUrl  String?          @map("source_image_url")
   publishedAt    DateTime        @map("published_at")
   fetchedAt      DateTime        @default(now()) @map("fetched_at")
   relevanceScore Float           @default(0) @map("relevance_score")
