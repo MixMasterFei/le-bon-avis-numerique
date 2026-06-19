@@ -69,6 +69,12 @@ const PROVIDERS: Provider[] = [
     model: "mistral-small-latest",
     apiKey: process.env.MISTRAL_API_KEY,
   },
+  {
+    name: "Mistral (mistral-medium-latest)",
+    url: "https://api.mistral.ai/v1/chat/completions",
+    model: "mistral-medium-latest",
+    apiKey: process.env.MISTRAL_API_KEY,
+  },
 ]
 
 interface Item {
