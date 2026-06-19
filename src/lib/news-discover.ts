@@ -188,8 +188,8 @@ const INTL_BUDGET = 8
 // substantive official item into its own standalone, all-official story —
 // otherwise they'd be merged into commercial clusters (failing the strict
 // official gate) or dropped entirely.
-const OFFICIAL_BUDGET = 20
-const OFFICIAL_MAX_TOKENS = 8000
+const OFFICIAL_BUDGET = 14
+const OFFICIAL_MAX_TOKENS = 6000
 
 function makeParser(): RssParser {
   return new Parser({
@@ -660,7 +660,7 @@ function buildOfficialPrompt(
 Voici ${officialIdx.length} articles issus de ces sources officielles, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
 
 ## TA MISSION
-Pour CHAQUE article qui a un intérêt réel pour les familles (parentalité, éducation, santé de l'enfant, écrans, numérique des jeunes, protection en ligne, culture jeunesse), produis UNE histoire dédiée. Contrairement au fil principal, tu n'as PAS de limite basse : retiens autant d'histoires qu'il y a d'articles officiels pertinents (jusqu'à ${officialIdx.length}).
+Produis UNE histoire dédiée par article qui a un intérêt réel pour les familles (parentalité, éducation, santé de l'enfant, écrans, numérique des jeunes, protection en ligne, culture jeunesse). Priorise les plus utiles : **vise 4 à 8 histoires** parmi les ${officialIdx.length} articles fournis (n'en fabrique pas de faibles pour atteindre 8 ; mieux vaut 4 solides). Une seule limite basse : la pertinence famille.
 
 RÈGLES SPÉCIFIQUES À CE FIL :
 - **Une source officielle seule suffit** — pas besoin qu'une autre rédaction relaie l'info. C'est même la norme ici.
@@ -920,28 +920,25 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   const synthStart = Date.now()
   const existingTitles = existingStories.map((s) => s.title)
 
-  // Main pass: the broad feed (V4). Compact 2-3 story target; 7k output cap
-  // keeps generations under the per-call timeout.
-  const mainRaw = await callSynthesis(
-    buildPrompt(unique, existingTitles, recentImageUrls),
-    7000,
-    "main",
-  )
-
-  // Official pass: dedicated lane that turns each substantive official-source
-  // item into its own all-official story for the V5 "Actualités de confiance"
-  // feed (otherwise low-volume institutional items get crowded out or merged
-  // into commercial clusters). Runs only when official items are present;
-  // both passes index into the same `unique` array, so their stories merge
-  // cleanly into one list below.
-  const officialRaw =
+  // Two synthesis passes, run in PARALLEL so wall-clock is max(main, official)
+  // rather than the sum — keeps the cron well under the function ceiling even
+  // though each call carries its own 180s budget:
+  //   - main: the broad feed (V4). Compact 2-3 story target, 7k output cap.
+  //   - official: dedicated lane turning substantive official-source items into
+  //     their own all-official stories for the V5 "Actualités de confiance"
+  //     feed (otherwise low-volume institutional items get crowded out or
+  //     merged into commercial clusters). Both passes index into the same
+  //     `unique` array, so their stories merge cleanly into one list below.
+  const [mainRaw, officialRaw] = await Promise.all([
+    callSynthesis(buildPrompt(unique, existingTitles, recentImageUrls), 7000, "main"),
     officialIdx.length > 0
-      ? await callSynthesis(
+      ? callSynthesis(
           buildOfficialPrompt(unique, officialIdx, existingTitles, recentImageUrls),
           OFFICIAL_MAX_TOKENS,
           "official",
         )
-      : []
+      : Promise.resolve([] as unknown[]),
+  ])
 
   const rawStories = [...mainRaw, ...officialRaw]
 
