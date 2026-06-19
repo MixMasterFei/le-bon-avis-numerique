@@ -759,6 +759,36 @@ const OPERATIONS: Array<{
   },
   {
     config: {
+      key: "newsReimageBacklog",
+      endpoint: "/api/admin/news/reimage-backlog",
+      method: "POST",
+      // Re-fetches the live RSS feeds and stamps sourceImageUrl on recent
+      // carded stories (V4 directSource). Chunked loop until { done: true };
+      // re-queries sourceImageUrl IS NULL each call, so no cursor needed.
+      chunked: true,
+      delayMs: 1000,
+      accumKeys: ["scanned", "updated"],
+      extractProgress: (data) => ({
+        processed: data.updated || 0,
+        total: typeof data.total === "number" ? data.total : null,
+        updated: data.updated || 0,
+      }),
+      isDone: (data) => data.done === true,
+      getNextParams: (data, params) => {
+        if (data.lastTs) params.set("afterTs", String(data.lastTs))
+        if (data.total) params.set("total", String(data.total))
+        return params
+      },
+      buildSummary: (stats) => `${stats.updated || 0} actus réimagées`,
+    },
+    label: "Réimager backlog actus",
+    description: "Récupérer l'image RSS d'origine des actus récentes affichées en carte (V4)",
+    icon: ImageIcon,
+    color: "cyan",
+    statLabels: { updated: "réimagées" },
+  },
+  {
+    config: {
       key: "newsPrewarmImagesV4",
       endpoint: "/api/admin/news/prewarm-images-v4",
       method: "POST",
@@ -954,7 +984,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsReimageBacklog", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",
