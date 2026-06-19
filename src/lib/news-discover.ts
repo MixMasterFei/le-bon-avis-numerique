@@ -979,13 +979,16 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     console.warn(
       `[news-discover] image mirror failed; using fallback card for "${s.title.slice(0, 80)}"`,
     )
+    // Mirror failed → V3 (imageUrl) shows the branded card, but KEEP the raw
+    // publisher URL in sourceImageUrl: the V4 directSource feed hotlinks it and
+    // doesn't need our mirror. (Nulling it here was the bug that left V4 100%
+    // fallback while the Supabase mirror was down.) `...s` carries sourceImageUrl.
     liveStories.push({
       ...s,
       imageUrl: fallback.url,
       imageSourceType: fallback.sourceType,
       imageCredit: fallback.credit,
       imageLicenseUrl: fallback.licenseUrl,
-      sourceImageUrl: null,
     })
   })
 
