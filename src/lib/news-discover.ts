@@ -180,6 +180,16 @@ const MAX_ITEMS_PER_SOURCE = 5
 // than a richer prompt that regularly produces 0 stories.
 const FR_BUDGET = 18
 const INTL_BUDGET = 8
+// Official sources (gov / public institution / recognized nonprofit — see
+// NewsSource.official) are low-volume and get crowded out of the recency-
+// sorted FR/INTL budgets by the commercial firehose. They power the V5
+// "Actualités de confiance" feed, so we reserve a slice for them and run a
+// SECOND synthesis pass (buildOfficialPrompt) dedicated to turning each
+// substantive official item into its own standalone, all-official story —
+// otherwise they'd be merged into commercial clusters (failing the strict
+// official gate) or dropped entirely.
+const OFFICIAL_BUDGET = 20
+const OFFICIAL_MAX_TOKENS = 8000
 
 function makeParser(): RssParser {
   return new Parser({
@@ -613,6 +623,131 @@ export interface DiscoverStats {
   }
 }
 
+// Dedicated synthesis prompt for the official ("Actualités de confiance")
+// lane. Lists ONLY official-source items, but preserves their GLOBAL index
+// into `unique` so coerceStory(raw, unique.length, unique) needs no remap.
+// Unlike the main prompt, it asks for ONE standalone story per substantive
+// official item (single official source is enough; never merge), so a CNIL /
+// Arcom / EU / WHO / CLEMI item becomes its own brief instead of being
+// crowded out or absorbed into a commercial cluster.
+function buildOfficialPrompt(
+  items: HydratedItem[],
+  officialIdx: number[],
+  existingTitles: string[],
+  recentImageUrls: string[],
+): string {
+  const list = officialIdx
+    .map((gi) => {
+      const it = items[gi]
+      const summary = (it.summary ?? "").slice(0, 400).replace(/\s+/g, " ")
+      const regionTag =
+        it.sourceRegion === "INTL" ? ` · INTL${it.sourceCountry ? "/" + it.sourceCountry : ""}` : ""
+      return `[${gi}] (${it.sourceName} · ${it.sourceCategory}${regionTag}) ${it.title}\n  URL: ${it.link}\n  IMG: ${it.imageUrl}\n  ${summary}`
+    })
+    .join("\n\n")
+
+  const alreadyPublished =
+    existingTitles.length > 0
+      ? `\n\n## Déjà publié (à ÉCARTER)\nN'émets aucune histoire sur ces sujets déjà couverts ces 72h :\n${existingTitles.map((t) => `- "${t}"`).join("\n")}\n`
+      : ""
+  const recentImagesNote =
+    recentImageUrls.length > 0
+      ? `\n\n## Images déjà utilisées (à ÉCARTER)\nNe choisis pas ces URLs comme imageUrl :\n${recentImageUrls.map((u) => `- ${u}`).join("\n")}\n`
+      : ""
+
+  return `Tu es l'éditeur de Totem Avisé, guide d'actualité pour les foyers français. Cette tâche alimente le fil « Actualités de confiance » : uniquement des sources officielles (gouvernement, institutions publiques françaises et européennes, OMS, autorités comme la CNIL ou l'Arcom, associations reconnues d'utilité publique).
+
+Voici ${officialIdx.length} articles issus de ces sources officielles, chacun avec un index, une source, une catégorie, un titre, une URL, une image et un résumé.
+
+## TA MISSION
+Pour CHAQUE article qui a un intérêt réel pour les familles (parentalité, éducation, santé de l'enfant, écrans, numérique des jeunes, protection en ligne, culture jeunesse), produis UNE histoire dédiée. Contrairement au fil principal, tu n'as PAS de limite basse : retiens autant d'histoires qu'il y a d'articles officiels pertinents (jusqu'à ${officialIdx.length}).
+
+RÈGLES SPÉCIFIQUES À CE FIL :
+- **Une source officielle seule suffit** — pas besoin qu'une autre rédaction relaie l'info. C'est même la norme ici.
+- **Ne fusionne JAMAIS** deux articles en une seule histoire, et n'ajoute jamais de source non listée. Chaque histoire cite UN seul index (ou plusieurs uniquement s'ils traitent exactement le même événement officiel).
+- **Écarte** les communiqués purement administratifs sans angle famille (nominations, marchés publics, agenda interne), la politique partisane, et tout sujet sans lien avec enfants / éducation / numérique des jeunes.
+- Pour une source internationale (étiquetée · INTL/UE ou /INTL) : traduis intégralement en français et situe l'origine en para 1 ("La Commission européenne…", "L'OMS…").
+
+## FORMAT DE SORTIE (par histoire)
+- "title" : titre factuel, neutre, sans qualificatif éditorial.
+- "summary" : 1-2 phrases.
+- "body" : **300-450 mots**, structuré en lede + **exactement 2 sections ## H2** (titres descriptifs). Voix neutre : attribue chaque affirmation forte ("Selon la CNIL…", "L'OMS recommande…"). Au moins une citation directe en « » si la source en fournit. Ne commence pas par "Pour les parents…" et ne termine pas par une exhortation. **N'utilise jamais le guillemet ASCII " — uniquement « ».** Un body sous 220 mots sera rejeté.
+- "familyTakeaway" : 60-120 mots, plain text — c'est le SEUL endroit pour le cadrage famille concret ("Ce que ça change pour vous…").
+- "category" : PARENTHOOD | FILM_TV | GAMES | READING | TECH.
+- "relevanceScore" : 0.0-1.0 (utilité famille).
+- "imageUrl" : l'URL exacte du champ IMG de l'article cité (souvent une carte de catégorie générique — c'est attendu et acceptable).
+- "sourceIndexes" : le ou les index EXACTS affichés entre crochets ci-dessus (entiers).${alreadyPublished}${recentImagesNote}
+
+## ARTICLES OFFICIELS
+${list}`
+}
+
+// One synthesis LLM call (Claude Sonnet 4.6) → parsed raw stories. Used by
+// both the main pass and the official pass. Fails soft: timeout/error/parse
+// failure returns [] so the cron reports "0 synthesized" instead of 500.
+async function callSynthesis(prompt: string, maxTokens: number, label: string): Promise<unknown[]> {
+  const SYNTHESIS_TIMEOUT_MS = 180_000
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), SYNTHESIS_TIMEOUT_MS)
+  const startedAt = Date.now()
+  let rawText = ""
+  let rawStories: unknown[] = []
+  try {
+    const anthropic = getAnthropic()
+    const response = await anthropic.messages.create(
+      {
+        model: SYNTHESIS_ANTHROPIC_MODEL,
+        max_tokens: maxTokens,
+        temperature: 0.2,
+        system:
+          "You are a strict extraction API. Do not explain your reasoning. Use the provided tool exactly once with the selected stories.",
+        tools: [EMIT_NEWS_STORIES_TOOL],
+        tool_choice: { type: "tool", name: "emit_news_stories" },
+        messages: [{ role: "user", content: prompt }],
+      },
+      { signal: controller.signal },
+    )
+    const toolBlock = response.content.find(
+      (c) => c.type === "tool_use" && "name" in c && c.name === "emit_news_stories",
+    )
+    if (toolBlock && "input" in toolBlock) {
+      const candidate = (toolBlock.input as { stories?: unknown }).stories
+      if (Array.isArray(candidate)) rawStories = candidate
+    }
+    rawText = response.content
+      .filter((c) => c.type === "text" && "text" in c)
+      .map((c) => (c as { text: string }).text)
+      .join("")
+  } catch (err) {
+    const aborted = controller.signal.aborted
+    console.warn(
+      `[news-discover] synthesis(${label}) ${aborted ? "aborted on timeout" : "errored"} after ${Math.round((Date.now() - startedAt) / 1000)}s. ${err instanceof Error ? err.message : ""}`,
+    )
+    rawText = ""
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (rawStories.length > 0) return rawStories
+  // Tool-use returned nothing usable → try to recover a JSON object from any
+  // text the model emitted despite the forced-tool instruction.
+  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "")
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
+  if (!jsonMatch) {
+    if (rawText) console.warn(`[news-discover] synthesis(${label}) returned no JSON. head=${rawText.slice(0, 200)}`)
+    return []
+  }
+  try {
+    const parsed = JSON.parse(jsonMatch[0]) as { stories?: unknown[] }
+    return Array.isArray(parsed?.stories) ? parsed.stories : []
+  } catch (e) {
+    console.warn(
+      `[news-discover] synthesis(${label}) malformed JSON: ${e instanceof Error ? e.message : "unknown"}. head=${jsonMatch[0].slice(0, 300)}`,
+    )
+    return []
+  }
+}
+
 export async function runNewsDiscover(): Promise<DiscoverStats> {
   const started = Date.now()
   const parser = makeParser()
@@ -696,7 +831,20 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
   const fr = sortedRecent.filter((h) => h.sourceRegion !== "INTL").slice(0, FR_BUDGET)
   const intl = sortedRecent.filter((h) => h.sourceRegion === "INTL").slice(0, INTL_BUDGET)
-  const unique = [...fr, ...intl]
+  // Guarantee official items make it into the pool even if the recency
+  // budgets didn't pick them — the dedicated official synthesis pass below
+  // needs them present (indexes reference this same `unique` array).
+  const baseUnique = [...fr, ...intl]
+  const includedLinks = new Set(baseUnique.map((h) => h.link))
+  const extraOfficial = sortedRecent
+    .filter((h) => isOfficialSourceName(h.sourceName) && !includedLinks.has(h.link))
+    .slice(0, OFFICIAL_BUDGET)
+  const unique = [...baseUnique, ...extraOfficial]
+  // Indexes (into `unique`) of every official-source item — the focus set
+  // for the second synthesis pass.
+  const officialIdx = unique
+    .map((h, i) => (isOfficialSourceName(h.sourceName) ? i : -1))
+    .filter((i) => i >= 0)
   const resolveImagesMs = Date.now() - imageStart
 
   if (unique.length === 0) {
@@ -770,95 +918,32 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   // delta at 4 runs/day × ~30 stories is negligible (single-digit
   // dollars per month) and reliability matters more.
   const synthStart = Date.now()
-  const provider = "anthropic" as const
-  const prompt = buildPrompt(
-    unique,
-    existingStories.map((s) => s.title),
-    recentImageUrls,
+  const existingTitles = existingStories.map((s) => s.title)
+
+  // Main pass: the broad feed (V4). Compact 2-3 story target; 7k output cap
+  // keeps generations under the per-call timeout.
+  const mainRaw = await callSynthesis(
+    buildPrompt(unique, existingTitles, recentImageUrls),
+    7000,
+    "main",
   )
 
-  // Keep the response budget aligned with the compact 2-3 story target.
-  // The previous 14k output cap encouraged long generations that often
-  // reached our 180s abort window before returning any JSON.
-  const MAX_TOKENS = 7000
+  // Official pass: dedicated lane that turns each substantive official-source
+  // item into its own all-official story for the V5 "Actualités de confiance"
+  // feed (otherwise low-volume institutional items get crowded out or merged
+  // into commercial clusters). Runs only when official items are present;
+  // both passes index into the same `unique` array, so their stories merge
+  // cleanly into one list below.
+  const officialRaw =
+    officialIdx.length > 0
+      ? await callSynthesis(
+          buildOfficialPrompt(unique, officialIdx, existingTitles, recentImageUrls),
+          OFFICIAL_MAX_TOKENS,
+          "official",
+        )
+      : []
 
-  // Per-call timeout on the synthesis LLM call. Anthropic typically
-  // returns in 30-90s for our prompt size; 180s leaves slack for
-  // tail-latency events without exhausting the 300s function ceiling.
-  // If we abort, the run returns "0 synthesized" cleanly (200 OK) —
-  // but the route now treats that as `error` status if we collected
-  // items, so the GH Actions job goes red instead of silently green.
-  const SYNTHESIS_TIMEOUT_MS = 180_000
-  const synthesisController = new AbortController()
-  const synthesisTimer = setTimeout(() => synthesisController.abort(), SYNTHESIS_TIMEOUT_MS)
-
-  let rawText = ""
-  let rawStories: unknown[] = []
-  try {
-    const anthropic = getAnthropic()
-    const response = await anthropic.messages.create(
-      {
-        model: SYNTHESIS_ANTHROPIC_MODEL,
-        max_tokens: MAX_TOKENS,
-        temperature: 0.2,
-        system:
-          "You are a strict extraction API. Do not explain your reasoning. Use the provided tool exactly once with the selected stories.",
-        tools: [EMIT_NEWS_STORIES_TOOL],
-        tool_choice: { type: "tool", name: "emit_news_stories" },
-        messages: [{ role: "user", content: prompt }],
-      },
-      { signal: synthesisController.signal },
-    )
-    const toolBlock = response.content.find(
-      (c) => c.type === "tool_use" && "name" in c && c.name === "emit_news_stories",
-    )
-    if (toolBlock && "input" in toolBlock) {
-      const candidate = (toolBlock.input as { stories?: unknown }).stories
-      if (Array.isArray(candidate)) rawStories = candidate
-    }
-    const continuation = response.content
-      .filter((c) => c.type === "text" && "text" in c)
-      .map((c) => (c as { text: string }).text)
-      .join("")
-    rawText = continuation
-  } catch (err) {
-    const aborted = synthesisController.signal.aborted
-    console.warn(
-      `[news-discover] synthesis ${aborted ? "aborted on timeout" : "errored"} after ${Math.round((Date.now() - synthStart) / 1000)}s — returning 0 stories. ${err instanceof Error ? err.message : ""}`,
-    )
-    rawText = ""
-  } finally {
-    clearTimeout(synthesisTimer)
-  }
-
-  // Strip markdown code fences (```json … ```) before extracting the
-  // outer JSON object — DeepSeek occasionally wraps responses despite
-  // the "no markdown" instruction. Then parse leniently: if extraction
-  // or parse fails, log the head and continue with an empty story
-  // list so the cron returns "0 synthesized" rather than a 500.
-  const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "")
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-  if (rawStories.length > 0) {
-    // Tool-use path succeeded; no text JSON parsing needed.
-  } else if (!jsonMatch) {
-    console.warn(`[news-discover] ${provider} did not return JSON. head=${rawText.slice(0, 200)}`)
-  } else {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]) as { stories?: unknown[] }
-      const candidate = parsed?.stories
-      if (Array.isArray(candidate)) {
-        rawStories = candidate
-      } else {
-        console.warn(`[news-discover] ${provider} returned no stories array (type=${typeof candidate})`)
-      }
-    } catch (e) {
-      // Most common cause: unescaped " inside a body string.
-      const msg = e instanceof Error ? e.message : "unknown"
-      console.warn(
-        `[news-discover] ${provider} returned malformed JSON: ${msg}. head=${jsonMatch[0].slice(0, 300)}`,
-      )
-    }
-  }
+  const rawStories = [...mainRaw, ...officialRaw]
 
   const allowedImages = new Set(unique.map((u) => u.imageUrl))
   // Defensive belt for the cross-story image dedup rule in the prompt.
@@ -917,11 +1002,17 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     const distinctNames = new Set(story.sourceIndexes.map((i) => unique[i].sourceName))
     const isMultiSource = distinctNames.size >= 2
     const isIntlOnly = story.sourceIndexes.every((i) => unique[i].sourceRegion === "INTL")
-    const minRelevance = isMultiSource ? 0.55 : isIntlOnly ? 0.65 : 0.7
+    // Official (all-source-official) stories get a lower bar: the source is
+    // authoritative by definition, and single-source is the norm for this
+    // lane (a CNIL recommendation rarely needs a second outlet to matter).
+    const isOfficial =
+      story.sourceIndexes.length > 0 &&
+      story.sourceIndexes.every((i) => isOfficialSourceName(unique[i].sourceName))
+    const minRelevance = isOfficial ? 0.5 : isMultiSource ? 0.55 : isIntlOnly ? 0.65 : 0.7
     if (story.relevanceScore < minRelevance) {
       droppedInvalid++
       console.warn(
-        `[news-discover] dropped low-relevance: "${story.title.slice(0, 80)}" score=${story.relevanceScore} min=${minRelevance} ${isMultiSource ? "multi" : isIntlOnly ? "intl-single" : "single"}`,
+        `[news-discover] dropped low-relevance: "${story.title.slice(0, 80)}" score=${story.relevanceScore} min=${minRelevance} ${isOfficial ? "official" : isMultiSource ? "multi" : isIntlOnly ? "intl-single" : "single"}`,
       )
       continue
     }
