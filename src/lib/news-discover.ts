@@ -122,6 +122,10 @@ interface HydratedItem {
   imageSourceType: ImageSourceType
   imageCredit: string
   imageLicenseUrl?: string
+  // The raw publisher image URL captured BEFORE the dimension gate may
+  // replace `imageUrl` with a branded fallback card. The V4 directSource feed
+  // hotlinks this (rendered full-size by the browser, unlike the server probe).
+  sourceImageUrl: string | null
   publishedAt: Date
 }
 
@@ -555,14 +559,17 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
   const imageCredit = owner?.imageCredit ?? fallbackOwner?.sourceName ?? "Source"
   const imageLicenseUrl = owner?.imageLicenseUrl
 
-  // Raw publisher photo for the V4 directSource feed: only real-photo tiers,
-  // captured here while `imageUrl` is still the original (pre-mirror) URL.
+  // Raw publisher photo for the V4 directSource feed. Use the chosen item's
+  // pre-gate URL; if the LLM picked an item the dimension gate had already
+  // carded, recover the first clustered item that does have a real photo. This
+  // is what makes V4 image-rich even though the server-side dimension gate
+  // (isImageLargeEnough) cards most images for the V3/imageUrl path.
   const sourceImageUrl =
-    imageSourceType === "AGENCY" ||
-    imageSourceType === "PUBLISHER_RSS" ||
-    imageSourceType === "PUBLISHER_OG"
-      ? imageUrl
-      : null
+    owner?.sourceImageUrl ??
+    sourceIndexes
+      .map((i) => items[i]?.sourceImageUrl)
+      .find((u): u is string => Boolean(u)) ??
+    null
 
   return {
     slug: slugify(title),
@@ -647,11 +654,14 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       sourceName: source.name,
       category: source.category,
     })
+    // Keep the real publisher image URL BEFORE the dimension gate can swap it
+    // for a branded card. The V4 directSource feed hotlinks this regardless of
+    // the server-side size probe (which under-reads many publisher CDNs from
+    // the datacenter IP) — the browser renders the full-size image.
+    const rawPublisherImage = resolved ? resolved.url : null
     // No publisher image, a blocked-hotlink image, or only a thumbnail
     // too small to render as a 16:9 hero → use the branded category
-    // card. (The dimension gate stops the visibly-upscaled portrait
-    // look Xavier flagged on the old Café Pédagogique brief; fails open
-    // on probe errors so a transient blip doesn't force a fallback.)
+    // card for the V3/imageUrl path. (Fails open on probe errors.)
     if (!resolved || !(await isImageLargeEnough(resolved.url))) {
       resolved = fallbackCard(source.category, item.title)
       fellBackToCard++
@@ -668,6 +678,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       imageSourceType: resolved.sourceType,
       imageCredit: resolved.credit,
       imageLicenseUrl: resolved.licenseUrl,
+      sourceImageUrl: rawPublisherImage,
       publishedAt: new Date(iso),
     })
   })
