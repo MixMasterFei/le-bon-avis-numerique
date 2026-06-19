@@ -103,7 +103,8 @@ const KNOWN_CRON_TASKS = [
   "streaming",
   "similarity",
   "news-discover",
-  "news.prewarmImagesV4",   // 4×/day — V4 image prewarm runs after news-discover
+  // news.prewarmImagesV4 removed — V4 Actualités now uses raw RSS images
+  // (directSource); the prewarm route is a no-op (re-enable via NEWS_V4_PREWARM).
   "news.pressKitScout",     // 4×/day — detects official press-kit candidates from news brands
   "weekly-dossier",         // Tue + Fri — long-read synthesis
   "family-content-agent",   // Monday — editorial priorities email

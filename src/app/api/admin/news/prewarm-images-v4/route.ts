@@ -61,6 +61,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 })
   }
 
+  // Disabled by policy: the V4 "Actualités" feed now renders the raw publisher
+  // image straight from the RSS feed ("directSource"), so prewarming stock /
+  // official-press / catalog / editorial assets is dead weight (LLM + API
+  // cost). Kept dormant — re-enable with NEWS_V4_PREWARM=on if the curated
+  // image strategy ever returns. No cron_logs entry is written, so it's also
+  // removed from the supervisor's EXPECTED_TASKS to avoid false "stale" alerts.
+  if (process.env.NEWS_V4_PREWARM !== "on") {
+    return NextResponse.json({
+      disabled: true,
+      note: "V4 image prewarm is disabled — Actualités uses raw RSS images (directSource).",
+    })
+  }
+
   const startTime = Date.now()
   const body = await readBody(req)
   const search = req.nextUrl.searchParams

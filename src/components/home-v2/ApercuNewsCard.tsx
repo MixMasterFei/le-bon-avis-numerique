@@ -22,6 +22,10 @@ export interface ApercuNewsCardData {
   // /api/admin/news/reprocess-images backfill stamps them.
   imageCredit?: string | null
   imageLicenseUrl?: string | null
+  // Branded category-card URL to fall back to if the primary (often a raw
+  // hotlinked publisher) image fails to load — e.g. a Referer 403. Lets the
+  // directSource feed degrade to the clean card instead of hiding the story.
+  fallbackImageUrl?: string | null
 }
 
 export function ApercuNewsCard({
@@ -32,13 +36,20 @@ export function ApercuNewsCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
+  const [src, setSrc] = useState(story.imageUrl)
   const [imageBroken, setImageBroken] = useState(false)
 
-  // Hide the entire card when the image fails to load — a broken
-  // placeholder card looks worse than missing card. Server-side already
-  // tries to drop image-less stories at synth time; this catches the
-  // remainder (legacy rows with stale URLs, mirrored files that 404).
-  if (imageBroken || isBlockedHotlinkImageUrl(story.imageUrl)) return null
+  // On image error: first try the branded fallback card (directSource feed —
+  // a hotlinked publisher image may 403 on the browser); only hide the card
+  // if even the fallback fails or there is none (V3 keeps the old behavior).
+  const handleImageError = () => {
+    if (story.fallbackImageUrl && src !== story.fallbackImageUrl) {
+      setSrc(story.fallbackImageUrl)
+    } else {
+      setImageBroken(true)
+    }
+  }
+  if (imageBroken || isBlockedHotlinkImageUrl(src)) return null
 
   const href = `/apercudecouverte/${story.slug}`
 
@@ -50,12 +61,12 @@ export function ApercuNewsCard({
       <div className="relative aspect-[16/9] overflow-hidden" style={{ background: p.placeholder }}>
         <Link href={href} aria-label={`Lire l'actualité : ${story.title}`} className="block absolute inset-0">
           <Image
-            src={story.imageUrl}
+            src={src}
             alt={story.title}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 768px) 100vw, 33vw"
-            onError={() => setImageBroken(true)}
+            onError={handleImageError}
           />
         </Link>
         <div

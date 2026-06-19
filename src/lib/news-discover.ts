@@ -143,6 +143,9 @@ interface SynthesizedStory {
   imageSourceType: ImageSourceType
   imageCredit: string
   imageLicenseUrl?: string
+  // Raw publisher image URL (pre-mirror) for the V4 directSource feed. Null
+  // when the chosen image is a branded fallback card or has no real photo.
+  sourceImageUrl: string | null
   sourceIndexes: number[]
   // "FR" = synthesized from at least one French source. "INTL" = all
   // sources are international (Vu d'ailleurs tab). Computed at persist
@@ -552,6 +555,15 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
   const imageCredit = owner?.imageCredit ?? fallbackOwner?.sourceName ?? "Source"
   const imageLicenseUrl = owner?.imageLicenseUrl
 
+  // Raw publisher photo for the V4 directSource feed: only real-photo tiers,
+  // captured here while `imageUrl` is still the original (pre-mirror) URL.
+  const sourceImageUrl =
+    imageSourceType === "AGENCY" ||
+    imageSourceType === "PUBLISHER_RSS" ||
+    imageSourceType === "PUBLISHER_OG"
+      ? imageUrl
+      : null
+
   return {
     slug: slugify(title),
     title,
@@ -564,6 +576,7 @@ function coerceStory(raw: unknown, itemCount: number, items: HydratedItem[]): Sy
     imageSourceType,
     imageCredit,
     imageLicenseUrl,
+    sourceImageUrl,
     sourceIndexes,
     region: allIntl ? "INTL" : "FR",
   }
@@ -972,6 +985,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       imageSourceType: fallback.sourceType,
       imageCredit: fallback.credit,
       imageLicenseUrl: fallback.licenseUrl,
+      sourceImageUrl: null,
     })
   })
 
@@ -1106,6 +1120,7 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
       imageSourceType: s.imageSourceType,
       imageCredit: s.imageCredit,
       imageLicenseUrl: s.imageLicenseUrl ?? null,
+      sourceImageUrl: s.sourceImageUrl ?? null,
       publishedAt,
       relevanceScore: s.relevanceScore,
       status: isAdultMatch ? ("PENDING_REVIEW" as const) : ("PUBLISHED" as const),
