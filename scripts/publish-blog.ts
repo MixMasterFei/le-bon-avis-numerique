@@ -164,9 +164,22 @@ function main() {
 
   const client = createClient({ projectId, dataset, apiVersion, token, useCdn: false })
   ;(async () => {
+    // Preserve anything the owner set in Studio (photos, adjusted dates): re-running
+    // syncs text/body from the .md but never clobbers an existing mainImage/publishedAt.
+    const ids = docs.map((d) => d._id)
+    const existing: { _id: string; publishedAt?: string; mainImage?: unknown }[] = await client.fetch(
+      `*[_id in $ids]{ _id, publishedAt, mainImage }`,
+      { ids },
+    )
+    const prior = new Map(existing.map((e) => [e._id, e]))
+
     for (const doc of docs) {
+      const before = prior.get(doc._id)
+      if (before?.mainImage) (doc as Record<string, unknown>).mainImage = before.mainImage
+      if (before?.publishedAt) doc.publishedAt = before.publishedAt
       await client.createOrReplace(doc)
-      console.log(`  ${PUBLISH ? "published" : "staged"} ${doc._id}`)
+      const kept = [before?.mainImage ? "image conservée" : null, before?.publishedAt ? "date conservée" : null].filter(Boolean).join(", ")
+      console.log(`  ${PUBLISH ? "published" : "staged"} ${doc._id}${kept ? ` (${kept})` : ""}`)
     }
     console.log(
       PUBLISH
