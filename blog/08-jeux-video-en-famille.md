@@ -1,11 +1,11 @@
 ---
-title: "Jeux video en famille : comment reconnaitre un jeu qui fait vraiment du bien"
+title: "Jeux vidéo en famille : comment reconnaître un jeu qui fait vraiment du bien"
 slug: "jeux-video-en-famille"
-author: "L'equipe Totem Avise"
+author: "L'équipe Totem Avisé"
 category: "jeux-video"
-excerpt: "Tous les jeux video ne se valent pas. Cooperation, creativite, frustration, achats, jeu en ligne : les criteres a regarder avant de dire oui."
-seoTitle: "Jeux video en famille : comment bien choisir"
-seoDescription: "Jeux video en famille : criteres simples pour choisir un jeu adapte, cooperatif, creatif et vraiment plaisant."
+excerpt: "Tous les jeux vidéo ne se valent pas. Coopération, créativité, frustration, achats, jeu en ligne : les critères à regarder avant de dire oui."
+seoTitle: "Jeux vidéo en famille : comment bien choisir"
+seoDescription: "Jeux vidéo en famille : critères simples pour choisir un jeu adapté, coopératif, créatif et vraiment plaisant."
 internalLinks:
   - "/jeux"
   - "/collections"
@@ -17,121 +17,63 @@ sourceLinks:
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
 ---
 
-# Jeux video en famille : comment reconnaitre un jeu qui fait vraiment du bien
+# Jeux vidéo en famille : comment reconnaître un jeu qui fait vraiment du bien
 
-Dans beaucoup de familles, les jeux video sont encore ranges dans deux cases trop simples : soit "ca rend accro", soit "ce n'est qu'un loisir comme un autre". La realite est plus interessante. Un jeu peut etre un moment de cooperation, de rire, de strategie, de creativite, de coordination. Il peut aussi devenir une source de tension, de frustration, d'achats, de disputes ou d'exposition a des inconnus.
+Dans beaucoup de foyers, le jeu vidéo reste rangé dans deux cases un peu trop simples. D'un côté « ça rend accro », de l'autre « c'est un loisir comme un autre ». La réalité, on la trouve plus intéressante. Un même jeu peut être un moment de coopération, de fous rires, de stratégie ou de coordination, et devenir, quelques jours plus tard, une source de tensions, de frustration, d'achats répétés ou de contacts avec des inconnus.
 
-La question n'est donc pas : "Les jeux video sont-ils bons ou mauvais ?" La question est : **quel jeu, pour quel enfant, dans quel cadre ?**
+Ce qui compte, ce n'est donc pas de trancher entre le bon et le mauvais jeu dans l'absolu. C'est de savoir lequel convient à votre enfant, à son âge, et au cadre que vous posez à la maison. Un jeu qui fait du bien n'est pas forcément un jeu éducatif au sens scolaire. C'est souvent un jeu qui respecte l'âge, qui donne envie d'essayer et de recommencer sans exploser, et qui laisse l'enfant capable de passer à autre chose une fois la console éteinte.
 
-Un jeu qui fait du bien n'est pas forcement un jeu educatif au sens scolaire. C'est un jeu qui respecte l'age, qui donne envie d'essayer, de comprendre, de collaborer, de recommencer sans exploser, et qui laisse l'enfant capable de revenir a autre chose.
+## Ce qui se passe après la partie
 
-## Le premier critere : ce qui se passe apres la partie
+On a tendance à juger un jeu pendant qu'il est allumé. Pourtant, le meilleur indicateur arrive après. Un enfant qui éteint sans crise, qui raconte ce qu'il a fait, qui veut vous montrer une construction ou un niveau réussi, vit autre chose que celui qui ressort irritable, obsédé par la revanche, incapable de venir à table.
 
-On juge souvent un jeu pendant qu'il est allume. Pourtant, l'apres-partie dit beaucoup.
+Un bon jeu peut frustrer, et c'est parfois utile. Mais la frustration doit rester traversable. Si chaque session se termine en explosion, le problème n'est pas forcément l'enfant : c'est peut-être le mauvais mode, le mauvais moment de la journée, ou une durée trop longue. Observer l'humeur d'après en dit souvent plus long qu'un grand débat de principe sur les écrans.
 
-L'enfant est-il content, excite mais disponible, capable de raconter ce qu'il a fait ? Peut-il eteindre sans crise majeure ? A-t-il envie de montrer une construction, une strategie, un niveau reussi ? Ou bien est-il irritable, furieux, obsede par la revanche, incapable de passer a table ?
+## Coopération ou compétition : ça change tout
 
-Un bon jeu peut frustrer. C'est meme parfois utile. Mais la frustration doit rester traversable. Si chaque session finit en explosion, ce n'est peut-etre pas le bon jeu, pas le bon mode, pas le bon moment, ou pas la bonne duree.
+Les jeux coopératifs s'intègrent plus facilement à une vie de famille. On avance ensemble, on se répartit les rôles, le plus grand aide le plus jeune, et un parent peut participer sans rien y connaître. Des titres comme *Overcooked* ou *It Takes Two* fonctionnent justement parce qu'on échoue et on rit ensemble plutôt que les uns contre les autres.
 
-Le comportement apres l'ecran est un indicateur tres concret. Il vaut parfois mieux qu'un grand debat abstrait.
+Les jeux compétitifs ne sont pas à bannir pour autant. Ils apprennent à perdre, à se concentrer, à progresser. Mais ils demandent un peu plus de maturité : certains enfants vivent très mal la défaite, d'autres deviennent durs avec eux-mêmes ou avec leurs frères et sœurs. Avant de choisir, le bon réflexe est de regarder si le jeu se joue ensemble ou les uns contre les autres, si un adulte peut rejoindre une partie sans s'entraîner pendant des heures, et si la difficulté s'ajuste pour qu'un joueur plus fort n'écrase pas systématiquement les autres. Un jeu vraiment familial, c'est un jeu où plusieurs âges cohabitent sans que l'un s'ennuie pendant que l'autre subit.
 
-## Cooperation ou competition : tout change
+## Quand le « gratuit » n'est pas vraiment gratuit
 
-Les jeux cooperatifs sont souvent plus faciles a integrer dans une vie familiale. On avance ensemble, on se repartit les roles, on apprend a aider le plus jeune, on rit des erreurs. Le parent peut participer sans etre expert.
+Un jeu téléchargé sans frais n'est pas forcément un jeu simple. Beaucoup contiennent des achats intégrés, des récompenses quotidiennes, des passes de saison, des monnaies virtuelles ou des coffres à ouvrir. Pour un enfant, la frontière entre « jouer » et « payer pour avancer » n'a rien d'évident. Les petites sommes, les skins et les offres à durée limitée créent une pression réelle, et on peut très bien aimer un jeu tout en refusant son modèle économique.
 
-Les jeux competitifs ne sont pas mauvais en soi. Ils peuvent apprendre a perdre, a se concentrer, a progresser. Mais ils demandent plus de maturite. Certains enfants vivent tres mal la defaite. D'autres deviennent durs avec eux-memes ou avec leurs freres et soeurs.
+Avant d'installer, regardez s'il y a des achats dans l'application, si on peut les bloquer techniquement, et si l'enfant peut progresser sans dépenser. Une règle simple aide beaucoup : aucun achat sans validation d'un adulte, même avec de l'argent de poche. Pas pour contrôler chaque plaisir, mais pour faire comprendre que le numérique est aussi un espace commercial.
 
-Avant de choisir, demandez :
+## Le jeu en ligne, une vraie étape d'autonomie
 
-- Est-ce que le jeu se joue ensemble ou les uns contre les autres ?
-- Est-ce qu'un adulte peut rejoindre facilement ?
-- Est-ce qu'un joueur plus fort ecrase les autres ?
-- Est-ce qu'on peut ajuster la difficulte ?
-- Est-ce que la partie a une fin claire ?
+Jouer seul à une aventure n'a rien à voir avec jouer en ligne face à des inconnus. Le multijoueur ajoute des voix, des messages, des équipes, parfois une pression sociale forte. C'est souvent là que les difficultés apparaissent : insultes, exclusion, demandes d'ajout, contenus partagés, voire harcèlement.
 
-Un jeu familial n'est pas seulement un jeu "pour enfants". C'est un jeu ou plusieurs ages peuvent cohabiter sans que l'un s'ennuie et l'autre subisse.
+Pour les plus jeunes, on conseille de commencer par le jeu local, sur le même canapé, ou en ligne uniquement avec des amis déjà connus, chat désactivé et pseudo qui ne dévoile pas l'identité. Le « en ligne avec n'importe qui » n'est pas interdit pour toujours. C'est simplement une étape qui peut attendre que l'enfant soit prêt, un peu comme on n'envoie pas un débutant seul sur une route fréquentée.
 
-## Le piege du jeu gratuit
+## Les jeux créatifs : un beau potentiel, à encadrer quand même
 
-Un jeu gratuit n'est pas toujours un jeu simple. Il peut contenir des achats integres, des recompenses quotidiennes, des passes de saison, des monnaies virtuelles, des publicites ou des mecanismes de rarete.
+Certains jeux laissent construire, inventer, explorer, résoudre. Les jeux de construction, de programmation simple, de simulation ou de dessin peuvent être formidables. *Minecraft* en mode créatif en est l'exemple le plus connu : un enfant peut y passer des heures à bâtir, démolir, recommencer.
 
-Pour un enfant, la difference entre "jouer" et "acheter pour avancer" n'est pas toujours evidente. Les petites sommes, les skins, les coffres et les offres temporaires creent de la pression. On peut aimer un jeu et refuser son modele economique.
+Mais la créativité ne supprime pas le besoin de cadre. Un jeu ouvert peut aussi devenir compulsif quand l'enfant n'arrive plus à s'arrêter, ou quand un serveur en ligne ajoute sa propre pression sociale. Le bon signe, c'est quand l'enfant parle de ce qu'il a fait : il montre, explique, modifie. Quelques questions suffisent à nourrir ça sans transformer le jeu en devoir : « Qu'est-ce que tu as construit ? », « Comment tu as trouvé cette solution ? », « Tu me montres ? »
 
-Avant de dire oui, regardez :
+## Ce que disent (et ne disent pas) les classifications
 
-- y a-t-il des achats dans l'application ?
-- peut-on les bloquer techniquement ?
-- le jeu pousse-t-il a revenir tous les jours ?
-- l'enfant peut-il progresser sans payer ?
-- les recompenses sont-elles liees a des horaires ou a des evenements limites ?
+Les classifications par âge sont utiles, mais elles ne racontent pas tout. Un jeu peut être correct côté contenu et rester trop difficile, trop rapide ou trop social pour un enfant donné. À l'inverse, un titre conseillé un peu plus haut peut convenir s'il est accompagné et si les éléments sensibles restent faibles.
 
-Une bonne regle familiale : aucun achat sans validation adulte, meme avec de l'argent de poche. Non pas pour controler chaque plaisir, mais pour apprendre que le numerique est aussi un espace commercial.
+Sur Totem Avisé, la page [Jeux vidéo](/jeux) permet de regarder un titre avec des repères familiaux, et nos [collections](/collections) rassemblent des sélections par envie ou par âge. Notre [méthode](/notre-methode) tient compte de plusieurs dimensions à la fois : violence, langage, peur, achats possibles, interactions en ligne, mais aussi valeur éducative, coopération et présence de modèles positifs. L'idée n'est pas de dénicher le jeu parfait, mais de savoir précisément ce qu'on choisit avant de dire oui.
 
-## Jeu en ligne : la vraie marche d'autonomie
+## Accompagner même quand on n'aime pas jouer
 
-Jouer seul a un jeu d'aventure n'a rien a voir avec jouer en ligne avec inconnus. Le jeu en ligne ajoute des voix, des messages, des equipes, des clans, parfois de la pression sociale. C'est souvent la que les problemes apparaissent : insultes, exclusion, demandes d'ajout, contenus partages, cyberharcelement, achats influences par le groupe.
+« Je ne comprends rien aux jeux vidéo » revient souvent dans la bouche des parents. C'est parfaitement normal, et ce n'est pas un obstacle. Accompagner ne veut pas dire être bon manette en main.
 
-Pour les plus jeunes, mieux vaut privilegier :
+Vous pouvez vous asseoir dix minutes, demander les commandes, laisser l'enfant expliquer, jouer un niveau facile, rire de votre maladresse. Cette présence change déjà beaucoup de choses. Elle vous laisse percevoir le ton du jeu, le niveau de frustration, le vocabulaire, les interactions, les sollicitations d'achat. Et elle montre à l'enfant que ce qu'il fait à l'écran n'est pas un monde fermé dont vous seriez exclu.
 
-- le mode hors ligne ;
-- le jeu local sur le meme canape ;
-- les parties avec amis connus ;
-- les chats desactives ;
-- les pseudos non identifiants ;
-- les invitations limitees.
+## Concrètement, avant d'installer un jeu
 
-La marche "online avec inconnus" peut attendre. Ce n'est pas une punition. C'est une progression.
+Pas besoin d'une grille d'évaluation compliquée. Quelques minutes à regarder une fiche, une bande-annonce ou la page du jeu suffisent en général à répondre à l'essentiel : l'âge conseillé, la possibilité de jouer hors ligne, la présence d'un chat ou d'inconnus, l'existence d'achats, et la facilité à arrêter une partie. La dernière question est la plus parlante : qu'est-ce que ce jeu apporte vraiment, de la coopération, de la stratégie, de la créativité, de la détente ou simplement du rire partagé ? Si vous séchez sur l'une ou l'autre, ce n'est pas grave. C'est même la meilleure raison de jeter un œil avant d'installer.
 
-## Les jeux creatifs : un potentiel enorme, mais pas magique
+Le jeu vidéo peut être un excellent loisir de famille. Il fait rire, réfléchir, coopérer, échouer et recommencer, et il rapproche parfois un parent et un enfant quand l'adulte accepte d'entrer un peu dans son univers. Ce qu'on surveille, au fond, c'est simplement qu'il garde sa place : qu'il n'avale ni le sommeil, ni les repas, ni les devoirs, ni l'humeur de la maison une fois la console éteinte.
 
-Certains jeux permettent de construire, inventer, explorer, resoudre des problemes. Ils peuvent etre formidables. On pense aux jeux de construction, de programmation simple, de simulation, de musique, de dessin, d'aventure ouverte.
-
-Mais un jeu creatif peut aussi devenir compulsif si l'enfant n'arrive plus a s'arreter ou si le serveur en ligne cree une pression sociale. La creativite ne supprime pas le besoin de cadre.
-
-Le bon signe : l'enfant parle de ce qu'il a cree. Il montre, explique, modifie, recommence. Le jeu devient un support d'expression, pas seulement une boucle de recompenses.
-
-Vous pouvez demander : "Qu'est-ce que tu as construit ?" "Comment tu as trouve cette solution ?" "Tu peux me montrer ?" Ces questions valorisent l'effort sans transformer le jeu en devoir.
-
-## Le role des classifications et des fiches parents
-
-Les classifications par age sont utiles, mais elles ne disent pas tout. Un jeu peut etre adapte en contenu, mais trop difficile, trop frustrant, trop rapide ou trop social pour un enfant donne. A l'inverse, un jeu conseille a un age un peu plus eleve peut convenir si l'enfant est accompagne et si les elements sensibles sont faibles.
-
-Sur Totem Avisé, la page [Jeux video](/jeux) permet de regarder les jeux avec des reperes familiaux. Notre [methode](/notre-methode) prend en compte plusieurs dimensions : violence, langage, peur, achats possibles, interactions, mais aussi valeur educative, cooperation et modeles positifs quand ils existent.
-
-Le but n'est pas de trouver des jeux "parfaits". Le but est de savoir ce qu'on choisit.
-
-## Comment jouer avec son enfant quand on n'aime pas jouer
-
-Beaucoup de parents disent : "Je ne comprends rien aux jeux video." C'est normal. Mais accompagner ne veut pas toujours dire etre bon.
-
-Vous pouvez vous asseoir dix minutes et regarder. Demander les commandes. Laisser l'enfant expliquer. Jouer un niveau simple. Rire de votre maladresse. Observer ce qui le passionne.
-
-Cette presence change deja beaucoup. Elle permet de voir le ton du jeu, la frustration, les interactions, les achats, le vocabulaire, la difficulte. Elle montre aussi que le jeu n'est pas un monde cache.
-
-Vous n'avez pas besoin de devenir gamer. Vous avez besoin de devenir curieux.
-
-## Les bonnes questions avant de dire oui
-
-Avant d'installer un jeu, posez six questions :
-
-1. Quel age est recommande ?
-2. Peut-on jouer hors ligne ?
-3. Y a-t-il un chat ou des inconnus ?
-4. Y a-t-il des achats ?
-5. La partie peut-elle s'arreter facilement ?
-6. Qu'est-ce que ce jeu apporte : cooperation, strategie, creativite, detente, rire ?
-
-Si vous ne savez pas repondre, ce n'est pas grave. Prenez cinq minutes pour regarder une fiche, une bande-annonce, un test parental, ou la page du jeu.
-
-## Un bon jeu est un jeu qui retrouve sa place
-
-Le jeu video peut etre un tres bon loisir familial. Il peut faire rire, reflechir, cooperer, echouer, recommencer. Il peut meme rapprocher un parent et un enfant quand l'adulte accepte d'entrer un peu dans son univers.
-
-Mais un bon jeu doit retrouver sa place quand la console s'eteint. Il ne doit pas avaler le sommeil, les repas, les devoirs, les amis, l'humeur et toute la conversation familiale.
-
-Pour approfondir, vous pouvez lire notre article sur la [qualite du contenu plutot que le chronometre](/blog/qualite-contenu-plus-que-chronometre), explorer les [jeux video](/jeux) analyses sur Totem, ou creer un [profil famille](/inscription) pour obtenir des reperes par enfant.
+Pour aller plus loin, vous pouvez lire notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre), explorer les [jeux vidéo](/jeux) analysés sur Totem, ou créer un [profil famille](/inscription) pour obtenir des repères adaptés à chaque enfant.
 
 ## Sources
 
-- Ameli, ["Ecrans et sante des enfants et des adolescents"](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
-- Education nationale, ["Bien grandir avec les ecrans : des reperes pour chaque age"](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
+- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).

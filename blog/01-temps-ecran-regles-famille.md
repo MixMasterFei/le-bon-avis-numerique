@@ -1,11 +1,11 @@
 ---
-title: "Temps d'ecran : comment fixer des regles sans transformer la maison en tribunal"
+title: "Temps d'écran : comment fixer des règles sans transformer la maison en tribunal"
 slug: "temps-ecran-regles-famille"
-author: "L'equipe Totem Avise"
+author: "L'équipe Totem Avisé"
 category: "temps-ecran"
-excerpt: "Comment poser un cadre d'ecrans clair, realiste et tenable sans culpabiliser les enfants ni epuiser les parents."
-seoTitle: "Temps d'ecran enfant : 5 regles familiales simples"
-seoDescription: "Temps d'ecran enfant : comment fixer des regles simples, realistes et non culpabilisantes pour toute la famille."
+excerpt: "Comment poser un cadre d'écrans clair, réaliste et tenable, sans culpabiliser les enfants ni épuiser les parents."
+seoTitle: "Temps d'écran enfant : 5 règles familiales simples"
+seoDescription: "Temps d'écran enfant : comment fixer des règles simples, réalistes et non culpabilisantes pour toute la famille."
 internalLinks:
   - "/guides"
   - "/notre-methode"
@@ -18,98 +18,70 @@ sourceLinks:
   - "https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique"
 ---
 
-# Temps d'ecran : comment fixer des regles sans transformer la maison en tribunal
+# Temps d'écran : comment fixer des règles sans transformer la maison en tribunal
 
-Soyons honnetes : dans beaucoup de familles, le temps d'ecran n'est pas seulement une question de minutes. C'est une question de fatigue, de devoirs a finir, de repas a preparer, de copains qui ont deja un telephone, de frere ou soeur qui negocie mieux que les autres, et de parents qui aimeraient parfois juste cinq minutes de calme.
+Le scénario est familier dans beaucoup de foyers. Il est 19 h, un mardi. Il reste un exercice de maths à finir, une douche à prendre, un cartable à préparer pour demain, et quelqu'un réclame « juste un épisode ». La discussion sur les écrans ne commence presque jamais au calme. Elle commence fatiguée, pressée, au pire moment de la journée.
 
-On lit souvent des conseils tres nets : pas d'ecran ici, une heure la, jamais avant tel age, toujours accompagne. Ces reperes sont utiles. Mais au quotidien, la vraie difficulte n'est pas de connaitre la regle ideale. C'est de tenir un cadre qui ne transforme pas chaque soir en debat parlementaire.
+C'est pour cette raison que les conseils parfaits (pas d'écran avant tel âge, une heure maximum, toujours accompagné) aident moins qu'on ne l'espère. La difficulté n'est pas de connaître la bonne règle. C'est de tenir une règle un soir où plus personne n'a l'énergie de négocier.
 
-La bonne nouvelle, c'est qu'un cadre familial peut etre simple. Il n'a pas besoin d'etre parfait. Il doit etre clair, stable, explique, et adapte a votre foyer. Chez Totem Avise, on part toujours de cette idee : le sujet n'est pas seulement "combien de temps ?", mais aussi **quel contenu, pour quel enfant, a quel moment**.
+Un cadre familial n'a pourtant pas besoin d'être parfait pour fonctionner. Il a besoin d'être clair, stable et compris par tout le monde. Et il gagne à poser une question que le minuteur ignore : pas seulement « combien de temps ? », mais **quel contenu, pour quel enfant, à quel moment**.
 
-## Le piege : croire que tout se resume au chronometre
+## Ce que le minuteur ne dit pas
 
-Le temps compte, bien sur. Un enfant qui enchaine les videos tard le soir ne vit pas la meme chose qu'un enfant qui regarde un film le dimanche apres-midi avec ses parents. Mais deux heures d'ecran ne veulent pas toujours dire la meme chose.
+Le temps compte, évidemment. Un enfant qui enchaîne des vidéos tard le soir ne vit pas la même chose qu'un enfant qui regarde un film le dimanche après-midi avec ses parents. Mais « deux heures d'écran » peut recouvrir des réalités très différentes : un film choisi en famille, une partie de jeu coopératif, une recherche pour un exposé, ou une heure de vidéos courtes qui défilent toutes seules.
 
-Il y a une difference entre :
+C'est pourquoi les repères officiels insistent moins sur le chronomètre que sur le contexte. L'Éducation nationale rappelle quelques principes simples, valables à tout âge : pas d'écran le matin avant l'école, pas pendant les repas, pas dans la chambre, pas avant de dormir. Leur intérêt : ils ne demandent pas de compter chaque minute, ils protègent les moments les plus sensibles de la journée.
 
-- regarder un film adapte a son age en famille ;
-- jouer a un jeu cooperatif avec un parent ;
-- faire une recherche pour un expose ;
-- scroller seul des videos courtes pendant une heure ;
-- regarder une serie trop intense juste avant de dormir.
+Avant de regarder la durée, il vaut donc la peine de regarder ce que l'écran remplace. S'il prend la place du sommeil, du jeu libre, du sport ou des discussions, le nombre de minutes devient secondaire.
 
-C'est pour cela que les recommandations recentes insistent sur le caractere progressif, accompagne et contextualise des usages. Le ministere de l'Education nationale rappelle par exemple des reperes simples valables a tous les ages : pas d'ecran le matin avant l'ecole, pas d'ecran pendant les repas, pas d'ecran dans la chambre, pas d'ecran avant le coucher. Ces principes ont un avantage : ils ne demandent pas de compter chaque minute. Ils protegent les moments les plus sensibles de la journee.
+## Trois moments à protéger avant de compter les minutes
 
-Le chronometre reste utile, mais il ne suffit pas. Une famille a aussi besoin de regarder la qualite du contenu, l'etat de fatigue de l'enfant, le moment de la journee et ce que l'ecran remplace. S'il remplace le sommeil, le jeu libre, le sport ou les discussions, le probleme n'est plus seulement la duree.
+Beaucoup de familles gagnent en tranquillité en posant d'abord trois limites de bon sens, plus faciles à tenir qu'un grand contrat familial que personne ne relit.
 
-## Commencer par trois zones rouges
+Le premier, ce sont **les repas**. Pour les enfants comme pour les adultes, autant que possible. C'est souvent l'un des rares moments où tout le monde se croise vraiment ; même court, même imparfait, il vaut qu'on le préserve.
 
-Avant meme de fixer un nombre de minutes, beaucoup de familles gagnent en paix avec trois zones rouges. Elles sont simples a comprendre et souvent plus efficaces qu'un grand contrat familial impossible a suivre.
+Le deuxième, c'est **la chambre, la nuit**. Le sommeil est presque toujours le premier à trinquer. La solution la plus simple n'est pas une surveillance de tous les instants, mais une station de charge commune dans le salon ou l'entrée, où les appareils passent la nuit.
 
-**Pas d'ecran pendant les repas.** Pas seulement pour les enfants. Pour les adultes aussi, autant que possible. Le repas est l'un des rares moments ou tout le monde se croise. Meme s'il est court, meme s'il est imparfait, il vaut cher.
+Le troisième, c'est **le dernier quart d'heure avant le coucher**. Pour certains enfants, vingt minutes de dessin animé calme ne changent rien. Pour d'autres, une vidéo rapide suffit à relancer la machine. Dans le doute, on garde la fin de soirée pour quelque chose de plus doux : une lecture, un peu de musique, la préparation du sac.
 
-**Pas d'ecran dans la chambre la nuit.** Le sommeil est souvent le premier dommage collateral. Le plus simple est de creer une station de charge familiale dans le salon ou l'entree. Ce n'est pas une punition : c'est une regle d'hygiene familiale.
+Ces trois repères ont un autre mérite : ils coupent court à la négociation permanente. On ne rediscute pas chaque soir de savoir si « aujourd'hui, ça compte ou pas ». La règle existe parce qu'elle protège le sommeil, l'attention et les moments communs, pas parce que l'écran serait mauvais en soi.
 
-**Pas d'ecran juste avant de dormir.** Pour certains enfants, vingt minutes de dessin anime calme ne changent pas grand-chose. Pour d'autres, une video rapide ou un jeu excitant suffit a relancer la machine. Dans le doute, on garde le dernier quart d'heure pour quelque chose de plus doux : lecture, musique, discussion, preparation du sac.
+## Cinq règles qui tiennent un mardi soir
 
-Ces trois regles ont un autre avantage : elles evitent la negociation permanente. On ne discute pas tous les soirs de savoir si "aujourd'hui ca compte ou pas". La regle existe parce qu'elle protege le sommeil, l'attention et les moments communs.
+Une règle familiale efficace tient en une phrase. Si elle a besoin d'un mode d'emploi, elle ne survivra pas à la semaine.
 
-## Les 5 regles qui tiennent vraiment
+**1. L'écran vient après l'essentiel.** Devoirs raisonnablement avancés, repas, douche, un peu de mouvement, un vrai temps sans écran : l'écran reprend sa place d'activité parmi d'autres, au lieu d'être celle qui avale tout le reste.
 
-Une bonne regle familiale doit tenir en une phrase. Sinon, elle risque de mourir au bout de trois jours.
+**2. On valide le contenu avant la durée.** Un enfant peut ne regarder « qu'une seule vidéo » et tomber sur quelque chose de trop violent ou trop anxiogène. À l'inverse, un film bien choisi peut devenir un beau moment. Avant de parler de minutes, on se demande : est-ce de son âge ? Est-ce que je sais de quoi ça parle ? Est-ce que ça risque de lui faire peur ? Sur les pages [Films](/films), [Séries](/series) et [Jeux vidéo](/jeux), l'âge conseillé et les points sensibles sont indiqués avant de dire oui.
 
-### 1. Les ecrans viennent apres les besoins de base
+**3. Une vidéo courte n'est pas un film.** Beaucoup d'enfants acceptent mieux une limite quand on nomme les choses. Une heure de film en famille et une heure de vidéos courtes qui s'enchaînent automatiquement n'ont pas le même effet : les formats courts sont conçus pour retenir l'attention sans pause naturelle. Les contenus choisis se discutent ; les flux qui défilent demandent plus de cadre.
 
-Avant l'ecran : devoirs raisonnablement avances, repas, douche, sac, un peu de mouvement, un vrai temps sans ecran. L'idee n'est pas de faire de l'ecran une recompense magique, mais de le remettre a sa place : une activite parmi d'autres, pas l'activite qui avale tout.
+**4. La règle vaut aussi pour les adultes.** C'est la partie la plus inconfortable. Difficile de demander à un enfant de poser sa tablette pendant qu'un parent répond à ses messages à table. On ne sera pas toujours exemplaire, surtout quand le travail passe par le téléphone, mais on peut au moins nommer l'exception : « Je réponds à un message important, puis je le pose. » Cette phrase suffit déjà à rendre l'écran visible plutôt qu'automatique.
 
-### 2. Le contenu doit etre valide avant la duree
+**5. On rediscute les règles une fois par mois, pas tous les soirs.** Si l'enfant peut renégocier chaque jour, les parents s'épuisent. Mieux vaut un rendez-vous fixe : « On teste cette règle deux semaines, et on en reparle dimanche. » Cela laisse une porte de sortie sans ouvrir une brèche permanente.
 
-Un enfant peut regarder "une seule video" et tomber sur quelque chose de trop violent, trop anxiogene ou trop addictif. A l'inverse, un film bien choisi peut devenir un moment familial riche. Avant de discuter de la duree, demandez : est-ce adapte a son age ? Est-ce que je sais de quoi ca parle ? Est-ce que ca risque de lui faire peur ? Est-ce que ca nourrit quelque chose ?
+## S'adapter à l'âge, sans copier-coller
 
-Sur les pages [Films](/films), [Series](/series) et [Jeux video](/jeux), vous pouvez regarder l'age conseille, les points sensibles et les dimensions positives avant de dire oui.
+Les repères par âge sont utiles, mais ils ne remplacent pas votre connaissance de votre enfant. Avant 3 ans, les recommandations restent très prudentes. Entre 3 et 6 ans, l'écran gagne à rester exceptionnel, accompagné, avec des contenus très choisis. Entre 6 et 9 ans, l'enfant comprend des règles simples mais ne gère pas seul internet. Entre 9 et 12 ans, le dialogue prend le dessus : ce qu'il regarde, ce qu'il aime, ce qui le met mal à l'aise. À l'adolescence, l'enjeu glisse peu à peu vers l'autonomie et l'esprit critique.
 
-### 3. Les videos courtes ne comptent pas comme un film
+Surtout, deux enfants du même âge peuvent réagir très différemment au même film. L'un sera marqué par une scène de séparation, l'autre par le bruit ou l'injustice. C'est précisément ce que notre [méthode](/notre-methode) essaie de prendre en compte : au-delà d'une classification officielle, elle regarde plusieurs dimensions : violence, langage, peur, mais aussi messages positifs, modèles et valeur éducative.
 
-Beaucoup d'enfants acceptent mieux une limite quand on nomme les choses. Une heure de film en famille n'a pas le meme effet qu'une heure de videos courtes qui s'enchainent automatiquement. Les formats courts sont souvent concus pour retenir l'attention sans pause naturelle.
+Le bon cadre ressemble donc moins à « à 10 ans, X minutes » qu'à une habitude de maison : on choisit les contenus, on protège le sommeil, on évite les écrans seuls trop tard, et on parle de ce qu'on regarde.
 
-Vous pouvez donc distinguer les contenus choisis et les contenus qui defilent. Les premiers se discutent. Les seconds demandent plus de cadre.
+## Quand ça dérape (et ça dérapera)
 
-### 4. La regle vaut aussi pour les adultes
+Il y aura des soirs ratés. Un épisode lancé sans demander, une partie qui s'étire, un « encore cinq minutes » qui en fait trente. Ce n'est pas un échec éducatif, c'est la vie d'une famille.
 
-C'est probablement la partie la plus difficile. Un enfant accepte mal qu'on lui demande de poser sa tablette pendant qu'un adulte repond a ses messages a table. On ne peut pas toujours etre exemplaire, surtout quand le travail passe par le telephone. Mais on peut nommer les exceptions.
+Ce qui compte, c'est ce qui suit. Une phrase courte suffit : « La règle n'a pas été tenue, on coupe maintenant ; demain, on reprend normalement. » Pas besoin d'un discours de vingt minutes ni d'une sanction démesurée : plus la conséquence est simple, plus elle est applicable. Et si une règle dérape sans arrêt, c'est souvent qu'elle est trop floue ou trop ambitieuse pour votre organisation du moment. Une bonne règle doit survivre à un mardi soir fatigué.
 
-"Je reponds a un message important, puis je le pose." Cette phrase change deja quelque chose. Elle montre que l'ecran n'est pas un reflexe invisible.
+## Un cadre, pas une bataille
 
-### 5. On revoit les regles tous les mois, pas tous les soirs
+Les écrans ne vont pas disparaître : ils sont à l'école, dans les loisirs, dans les films, les jeux, parfois dans les liens familiaux à distance. L'objectif n'est pas d'élever des enfants à l'écart du numérique, mais de les aider à y entrer avec des repères.
 
-Si l'enfant peut renegocier tous les jours, les parents s'epuisent. A la place, proposez un point fixe : "On teste cette regle pendant deux semaines, puis on en reparle dimanche." Cela donne une porte de sortie sans ouvrir une breche permanente.
-
-## Adapter selon l'age sans faire du copier-coller
-
-Les reperes par age sont utiles, mais ils ne remplacent pas votre connaissance de l'enfant. Avant 3 ans, les recommandations institutionnelles restent tres prudentes. Entre 3 et 6 ans, l'ecran doit rester exceptionnel, accompagne, avec des contenus tres choisis. Entre 6 et 9 ans, l'enfant peut commencer a comprendre des regles simples, mais pas gerer seul internet. Entre 9 et 12 ans, le dialogue devient central : ce qu'il regarde, ce qu'il aime, ce qui le met mal a l'aise. A l'adolescence, l'enjeu devient progressivement l'autonomie, l'esprit critique et la responsabilite.
-
-Mais deux enfants du meme age peuvent reagir tres differemment. L'un sera impressionne par une scene de separation. L'autre sera surtout sensible au bruit, a la violence ou a l'injustice. C'est pour cela que Totem Avisé ne se limite pas a une classification officielle. Notre [methode](/notre-methode) regarde plusieurs dimensions : violence, langage, peur, substances, mais aussi messages positifs, modeles et valeur educative.
-
-Le bon cadre n'est donc pas seulement "a 10 ans, on a droit a X minutes". Il ressemble plutot a : "Dans notre famille, on choisit les contenus, on protege le sommeil, on evite les ecrans seuls trop tard, et on parle de ce qu'on regarde."
-
-## Quand la regle derape, eviter la grande scene
-
-Il y aura des derapages. Un episode lance sans demander. Une partie qui dure trop longtemps. Un "encore cinq minutes" qui devient trente. Ce n'est pas un echec educatif. C'est la vie.
-
-Ce qui compte, c'est la reparation. On peut dire : "La regle n'a pas ete respectee. On coupe maintenant. Demain, on reprend normalement." Pas besoin d'un discours de vingt minutes. Pas besoin non plus de transformer chaque incident en sanction enorme. Plus la consequence est simple, plus elle est applicable.
-
-Si la regle derape tout le temps, elle est peut-etre trop floue, trop ambitieuse ou impossible a tenir dans l'organisation familiale actuelle. Une bonne regle doit rester applicable meme un mardi soir fatigue.
-
-## Un cadre, pas une guerre
-
-Les ecrans ne vont pas disparaitre. Ils sont dans l'ecole, les loisirs, les conversations, les films, les jeux, les devoirs, parfois meme dans les liens familiaux a distance. L'objectif n'est donc pas d'elever des enfants hors du monde numerique. L'objectif est de les aider a y entrer avec des reperes.
-
-Vous pouvez commencer petit : un repas sans telephone, une chambre sans ecran la nuit, un film choisi ensemble le week-end, une discussion apres un jeu. C'est deja beaucoup.
-
-Pour choisir des contenus avec plus de confiance, explorez les [guides parents](/guides) ou les fiches Totem par age et par type de contenu. Le temps d'ecran compte. Mais le contenu, le contexte et l'accompagnement comptent tout autant.
+On peut commencer petit : un repas sans téléphone, une chambre sans écran la nuit, un film choisi ensemble le week-end, une discussion après une partie. C'est déjà beaucoup. Pour choisir avec un peu plus de confiance, nos [guides parents](/guides) et les fiches Totem par âge sont là pour ça. Le temps d'écran compte, mais le contenu, le contexte et l'accompagnement comptent tout autant.
 
 ## Sources
 
-- Education nationale, ["Bien grandir avec les ecrans : des reperes pour chaque age"](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Ameli, ["Ecrans : definition et chiffres cles"](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres).
-- Ministere des Solidarites, ["Actions en faveur de la parentalite numerique"](https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique).
+- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- Ameli, [« Écrans : définition et chiffres clés »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres).
+- Ministère des Solidarités, [« Les défis de la parentalité numérique »](https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique).
