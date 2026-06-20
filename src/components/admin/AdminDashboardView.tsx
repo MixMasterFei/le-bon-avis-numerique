@@ -3,7 +3,7 @@
 import type { ComponentType } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { LayoutDashboard, RefreshCw, Settings, Bot, Sparkles } from "lucide-react"
+import { LayoutDashboard, RefreshCw, Settings, Bot, Sparkles, Newspaper } from "lucide-react"
 import { formatRelativeTimeFr } from "@/lib/utils"
 import type { SerializedAdminKpis } from "@/lib/admin-kpis"
 import { AdminShell } from "./shared/AdminShell"
@@ -127,6 +127,7 @@ export function AdminDashboardView({
         <QuickLink href="/admin/operations" icon={Settings} label="Outils & import" primary />
         <QuickLink href="/admin/totem" icon={Bot} label="Assistant Totem" />
         <QuickLink href="/admin/operations#enrich" icon={Sparkles} label="Enrichir" />
+        <QuickLink href="/admin/apercu-blog" icon={Newspaper} label="Aperçu du blog" />
       </div>
     </AdminShell>
   )
