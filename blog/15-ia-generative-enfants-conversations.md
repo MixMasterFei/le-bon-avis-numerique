@@ -34,15 +34,13 @@ Le mieux est de le montrer plutôt que de le dire. Posez ensemble une question d
 
 ## Ce qu'on tape dans une IA peut nous échapper
 
-La deuxième chose touche aux données. Les ados ont vite fait de coller dans une conversation tout ce qui leur passe sous la main : un message reçu d'un ami, une photo de classe, un document scolaire, un souci personnel un peu intime. Ils ne réalisent pas toujours que ce qui est saisi quelque part peut être conservé, relu, réutilisé.
+La deuxième chose touche aux données. Les ados ont vite fait de coller dans une conversation tout ce qui leur passe sous la main : un message reçu d'un ami, une photo de classe, un document scolaire, un souci personnel un peu intime. Ils ne réalisent pas toujours que ce que l'on saisit dans un outil d'IA grand public peut être traité et conservé selon les règles du service, qui varient d'une application et d'un compte à l'autre.
 
 La règle de base se dit en une phrase : pas d'information personnelle qui n'a rien à faire là. Pas de nom complet, d'adresse, de numéro, d'établissement, de photo d'un camarade, de secret de famille. La CNIL a d'ailleurs fait des mineurs et de l'IA deux de ses priorités affichées dans son plan stratégique 2025-2028, en insistant sur le dialogue avec les enfants, les parents et les enseignants. À la maison, ça se traduit beaucoup plus simplement : ce que tu ne donnerais pas à un inconnu dans la rue, ne le donne pas non plus à une IA.
 
 ## Se faire aider, ce n'est pas se faire remplacer
 
-Vient ensuite la question des devoirs, celle qui inquiète le plus de parents. Une IA peut expliquer une règle de grammaire, faire réviser, poser des questions, repérer une faute de raisonnement. Tout cela aide vraiment à apprendre. Le basculement se produit quand l'outil rend le travail à la place de l'enfant : là, l'apprentissage disparaît, et il ne reste qu'un texte que l'élève serait incapable de défendre à l'oral.
-
-La frontière est assez nette dans la pratique. Demander « explique-moi pourquoi je me trompe ici » ou « interroge-moi sur ce chapitre » reste du côté utile. Demander « écris ma rédaction » ou « donne-moi la réponse sans détailler » bascule de l'autre côté. Le test que nous trouvons le plus fiable tient en une question, et c'est aussi celui qu'utilisent beaucoup d'enseignants : l'enfant est-il capable d'expliquer, avec ses mots, ce qu'il vient de rendre ? Notre article sur [ChatGPT et les devoirs](/blog/chatgpt-devoirs-parents) entre dans le détail de ce partage.
+Vient ensuite la question des devoirs, celle qui inquiète le plus de parents. La règle tient en une phrase : l'IA peut expliquer, faire réviser, interroger, mais elle ne rend pas le travail à la place de l'enfant. Le meilleur test, utilisé aussi par beaucoup d'enseignants, c'est de pouvoir expliquer avec ses mots ce qu'on vient de rendre. L'Éducation nationale a d'ailleurs posé un cadre clair : l'usage pédagogique des IA génératives par les élèves, accompagné par un enseignant, est autorisé à partir de la 4e, et se faire faire un devoir par une IA sans autorisation ni travail personnel d'appropriation est considéré comme une fraude. Comme ce sujet mérite mieux qu'un paragraphe, nous lui consacrons un article entier, [ChatGPT et les devoirs](/blog/chatgpt-devoirs-parents).
 
 ## Une image générée peut mentir très bien
 
@@ -66,7 +64,7 @@ Ce cadre se desserre avec l'âge. Un collégien et un lycéen n'ont pas la même
 
 ## Un sujet de culture générale, pas une affaire d'experts
 
-L'école avance, elle aussi. Le ministère de l'Éducation nationale déploie le parcours Pix IA, d'abord expérimenté puis étendu à partir de début 2026 aux élèves de collège et de lycée, pour les aider à utiliser l'IA générative de façon avertie. Cela dit quelque chose d'utile aux parents : l'IA n'est pas un sujet réservé aux passionnés de technologie, c'est devenu une compétence numérique de base, au même titre que reconnaître une publicité ou protéger un mot de passe.
+L'école avance, elle aussi. Le ministère de l'Éducation nationale déploie le parcours Pix IA, expérimenté depuis 2025 puis généralisé à partir de 2026 pour certains niveaux (4e, 2nde et première année de CAP), avec une mise en œuvre qui s'étale sur les années scolaires 2025-2026 et 2026-2027. Cela dit quelque chose d'utile aux parents : l'IA n'est pas un sujet réservé aux passionnés de technologie, c'est devenu une compétence numérique de base, au même titre que reconnaître une publicité ou protéger un mot de passe.
 
 Chez Totem Avisé, notre [mission](/objectif) est d'aider les familles à comprendre les contenus et les outils qui traversent le quotidien des enfants. L'IA générative en fait partie, au même rang que les algorithmes de recommandation ou les réseaux sociaux. D'ailleurs, notre article sur les [algorithmes et l'attention](/blog/algorithmes-enfants-attention) raconte un peu la même histoire sous un autre angle : apprendre à se servir d'un outil sans lui abandonner son propre jugement. Nos [guides parents](/guides) sont là pour creuser chaque sujet sans prérequis technique.
 
@@ -76,4 +74,5 @@ La meilleure manière d'aborder tout ça reste de partir d'exemples. Demandez à
 
 - Éducation nationale, [« Création du comité d'anticipation en éducation et déploiement du parcours Pix IA »](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899).
 - Éduscol, [« Les intelligences artificielles et leurs usages en éducation »](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education).
+- Éducation nationale, [« Cadre d'usage de l'IA en éducation »](https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647).
 - CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).

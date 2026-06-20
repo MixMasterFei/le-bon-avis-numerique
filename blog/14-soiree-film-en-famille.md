@@ -19,7 +19,7 @@ sourceLinks:
 
 # Soirée film en famille : choisir un contenu qui plaît à tout le monde
 
-Le scénario est familier. Un vendredi soir, l'intention est bonne : on veut se poser ensemble, partager un moment, trouver quelque chose qui fasse rire le petit, intéresse l'ado et ne déclenche pas de cauchemars. Dix minutes plus tard, chacun a proposé un titre différent, personne n'est d'accord, et quelqu'un a déjà quitté le canapé. La soirée censée rassembler a viré au tribunal des goûts.
+« On regarde quoi ? » La question, lancée un vendredi soir, paraît innocente. L'intention est bonne : se poser ensemble, partager un moment, trouver quelque chose qui fasse rire le petit, intéresse l'ado et ne déclenche pas de cauchemars. Dix minutes plus tard, chacun a proposé un titre différent, personne n'est d'accord, et quelqu'un a déjà quitté le canapé. La soirée censée rassembler a viré au tribunal des goûts.
 
 Le problème n'est pas le manque de films. Une plateforme en propose des milliers. Le problème, c'est qu'une vraie soirée familiale doit composer avec les âges, les humeurs, la fatigue du jour, les sensibilités de chacun et le temps disponible. Taper « film famille » dans une barre de recherche ne règle rien de tout ça. Un peu de méthode, en revanche, change presque tout, et l'essentiel se joue avant même d'allumer la télé.
 
@@ -74,6 +74,12 @@ Après, inutile de disséquer le film. Une seule question relance la discussion 
 ## Totem comme arbitre tranquille
 
 Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le choix moins bruyant. Notre [méthode](/notre-methode) regarde l'âge conseillé, les contenus sensibles, les messages positifs et la compatibilité avec votre foyer. Avec un [profil famille](/inscription), vous voyez plus vite, pour chaque membre, quel film est très adapté, correct, à vérifier ou trop tôt.
+
+**La méthode Totem en 3 minutes :**
+
+- Indiquez les enfants présents ce soir.
+- Choisissez l'envie du moment : rire, aventure, douceur, frisson léger.
+- Comparez les films compatibles avec toute la famille, puis tranchez.
 
 Et si vous hésitez sur la limite d'âge, notre article sur le [bon âge pour un film](/blog/bon-age-film-enfant) revient sur une réalité simple : deux enfants du même âge ne vivent pas toujours la même histoire. Un film bien choisi, à la bonne heure, regardé ensemble : c'est déjà une bonne soirée.
 
