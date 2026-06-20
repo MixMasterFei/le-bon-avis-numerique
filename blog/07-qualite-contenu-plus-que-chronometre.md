@@ -1,10 +1,10 @@
 ---
-title: "YouTube, TikTok, Netflix : pourquoi la qualité du contenu compte plus que le chronomètre"
+title: "YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas"
 slug: "qualite-contenu-plus-que-chronometre"
 author: "L'équipe Totem Avisé"
 category: "temps-ecran"
 excerpt: "Deux heures d'écran ne se valent pas toujours. Le contenu, le contexte, le moment et l'accompagnement changent tout."
-seoTitle: "Temps d'écran : la qualité du contenu compte aussi"
+seoTitle: "Temps d'écran : pourquoi le chronomètre ne suffit pas"
 seoDescription: "YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas et comment regarder la qualité des contenus."
 internalLinks:
   - "/guides"
@@ -18,7 +18,7 @@ sourceLinks:
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
 ---
 
-# YouTube, TikTok, Netflix : pourquoi la qualité du contenu compte plus que le chronomètre
+# YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas
 
 Quand on s'inquiète des écrans à la maison, la première question qui vient est presque toujours la même : combien de temps ? C'est compréhensible. Le temps se voit, se mesure, se négocie. Une demi-heure, une heure, deux heures. On peut régler une alarme, couper le wifi, afficher un planning sur le frigo.
 
@@ -72,9 +72,7 @@ Pour s'y retrouver, mieux vaut regarder le type de jeu, la présence ou non d'un
 
 ## Protéger d'abord les moments fragiles
 
-Plutôt que de tout chronométrer, nous conseillons de commencer par mettre à l'abri les moments où les écrans font le plus de dégâts. Le matin avant l'école, les repas, le temps des devoirs, la chambre la nuit, le dernier quart d'heure avant le coucher, et ces rares instants où toute la famille se retrouve vraiment.
-
-Cela rejoint les recommandations institutionnelles et rend le cadre beaucoup plus lisible pour l'enfant. Il comprend que l'écran n'est pas interdit parce qu'il serait mauvais en soi, mais qu'il est mis de côté parce que certains moments ont besoin d'autre chose.
+Regarder la qualité d'un contenu ne dispense pas de protéger certains moments de la journée : le matin avant l'école, les repas, la nuit, le dernier quart d'heure avant le coucher. Ce cadre horaire, nous le détaillons dans notre article sur les [règles d'écran en famille](/blog/temps-ecran-regles-famille). Ici, l'essentiel est qu'il se combine avec le regard sur le contenu : bien choisir ce qu'on regarde et préserver les bons moments ne s'opposent pas, les deux avancent ensemble.
 
 ## Installer une culture du choix
 

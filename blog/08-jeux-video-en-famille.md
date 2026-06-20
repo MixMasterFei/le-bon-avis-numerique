@@ -31,7 +31,7 @@ Un bon jeu peut frustrer, et c'est parfois utile. Mais la frustration doit reste
 
 ## Coopération ou compétition : ça change tout
 
-Les jeux coopératifs s'intègrent plus facilement à une vie de famille. On avance ensemble, on se répartit les rôles, le plus grand aide le plus jeune, et un parent peut participer sans rien y connaître. Des titres comme *Overcooked* ou *It Takes Two* fonctionnent justement parce qu'on échoue et on rit ensemble plutôt que les uns contre les autres.
+Les jeux coopératifs s'intègrent plus facilement à une vie de famille. On avance ensemble, on se répartit les rôles, le plus grand aide le plus jeune, et un parent peut participer sans rien y connaître. Un titre comme *Overcooked*, accessible aux plus jeunes, repose justement sur l'entraide : on échoue et on rit ensemble plutôt que les uns contre les autres. D'autres jeux très coopératifs, comme *It Takes Two*, s'adressent à des joueurs plus grands. Là encore, mieux vaut vérifier l'âge conseillé et les thèmes abordés avant de se lancer : un bon jeu de coopération n'est pas forcément adapté à tous les âges.
 
 Les jeux compétitifs ne sont pas à bannir pour autant. Ils apprennent à perdre, à se concentrer, à progresser. Mais ils demandent un peu plus de maturité : certains enfants vivent très mal la défaite, d'autres deviennent durs avec eux-mêmes ou avec leurs frères et sœurs. Avant de choisir, le bon réflexe est de regarder si le jeu se joue ensemble ou les uns contre les autres, si un adulte peut rejoindre une partie sans s'entraîner pendant des heures, et si la difficulté s'ajuste pour qu'un joueur plus fort n'écrase pas systématiquement les autres. Un jeu vraiment familial, c'est un jeu où plusieurs âges cohabitent sans que l'un s'ennuie pendant que l'autre subit.
 
@@ -67,7 +67,17 @@ Vous pouvez vous asseoir dix minutes, demander les commandes, laisser l'enfant e
 
 ## Concrètement, avant d'installer un jeu
 
-Pas besoin d'une grille d'évaluation compliquée. Quelques minutes à regarder une fiche, une bande-annonce ou la page du jeu suffisent en général à répondre à l'essentiel : l'âge conseillé, la possibilité de jouer hors ligne, la présence d'un chat ou d'inconnus, l'existence d'achats, et la facilité à arrêter une partie. La dernière question est la plus parlante : qu'est-ce que ce jeu apporte vraiment, de la coopération, de la stratégie, de la créativité, de la détente ou simplement du rire partagé ? Si vous séchez sur l'une ou l'autre, ce n'est pas grave. C'est même la meilleure raison de jeter un œil avant d'installer.
+Pas besoin d'une grille d'évaluation compliquée. Quelques minutes à regarder une fiche, une bande-annonce ou la page du jeu suffisent en général. Sept points couvrent l'essentiel, et ce sont aussi les repères que nous affichons sur chaque fiche [Jeux vidéo](/jeux) :
+
+- **Âge PEGI**, et l'écart éventuel avec l'âge réel de votre enfant.
+- **Violence** et intensité des scènes.
+- **Chat en ligne** et présence d'inconnus.
+- **Achats intégrés**, et possibilité de les bloquer.
+- **Jeu local** possible, à plusieurs sur le même canapé.
+- **Difficulté** ajustable, pour que plusieurs âges cohabitent.
+- **Facilité à s'arrêter** une fois la partie terminée.
+
+La dernière question est la plus parlante : qu'est-ce que ce jeu apporte vraiment, de la coopération, de la stratégie, de la créativité, de la détente ou simplement du rire partagé ? Si vous séchez sur l'un ou l'autre point, ce n'est pas grave. C'est même la meilleure raison de jeter un œil avant d'installer.
 
 Le jeu vidéo peut être un excellent loisir de famille. Il fait rire, réfléchir, coopérer, échouer et recommencer, et il rapproche parfois un parent et un enfant quand l'adulte accepte d'entrer un peu dans son univers. Ce qu'on surveille, au fond, c'est simplement qu'il garde sa place : qu'il n'avale ni le sommeil, ni les repas, ni les devoirs, ni l'humeur de la maison une fois la console éteinte.
 

@@ -15,7 +15,7 @@ internalLinks:
 sourceLinks:
   - "https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181"
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
-  - "https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028"
+  - "https://jeprotegemonenfant.gouv.fr/"
 ---
 
 # Le premier smartphone : à quel âge, avec quelles règles, et quelles alternatives ?
@@ -34,11 +34,17 @@ Cela ne veut pas dire qu'il faut le diaboliser. Cela veut dire qu'il faut nommer
 
 Avant l'achat, il peut être utile de séparer les besoins. Pouvoir appeler ou envoyer un message, être localisable, gérer un trajet en bus, rejoindre le groupe de classe : ce sont des besoins concrets, et plutôt modestes. L'envie de jeux, de vidéos ou de réseaux sociaux, elle, relève d'autre chose. Or tous ces besoins ne réclament pas le même appareil. Un téléphone simple, une montre connectée encadrée, un smartphone sans réseaux sociaux, un appareil familial partagé : les solutions intermédiaires existent, et on les oublie souvent dans le feu de la discussion.
 
+Pour s'y retrouver, il aide de partir du besoin réel plutôt que de l'objet :
+
+- Besoin d'appeler ou d'être joint après l'école → un téléphone basique ou une montre encadrée suffisent souvent.
+- Besoin de gérer des trajets en autonomie (itinéraire, messages) → un smartphone aux fonctions limitées, sans réseaux sociaux.
+- Envie d'applications sociales → c'est une décision à part, à prendre plus tard, avec ses propres règles.
+
 ## L'âge : un repère, pas un feu vert automatique
 
 Il n'existe pas d'âge magique. Certains enfants de 12 ans sont très prudents ; d'autres, à 15 ans, ont encore besoin d'un cadre ferme. Les repères publics, eux, vont clairement dans le sens d'une entrée progressive.
 
-À l'école et au collège, l'usage du téléphone portable est interdit depuis la loi de 2018. Cette interdiction a été renforcée par le dispositif « portable en pause » : expérimenté dès la rentrée 2024 dans près de 180 établissements, il a été généralisé à l'ensemble des collèges à la rentrée 2025. Concrètement, l'appareil ne doit plus seulement rester éteint dans le sac, il est mis physiquement à l'écart pendant la journée (pochette, casier ou boîte selon l'établissement). Les pouvoirs publics mettent en avant les bénéfices observés sur le climat scolaire, la concentration et le sommeil.
+À l'école et au collège, l'usage du téléphone portable est interdit depuis la loi de 2018. Cette interdiction a été renforcée par le dispositif « portable en pause » : expérimenté dès la rentrée 2024, il a été généralisé à l'ensemble des collèges à la rentrée 2025, chaque établissement choisissant sa propre modalité de mise à l'écart (pochette, casier ou boîte). Concrètement, l'appareil ne doit plus seulement rester éteint dans le sac, il est mis physiquement de côté pendant la journée. Les retours de l'expérimentation mettent notamment en avant un meilleur climat scolaire, une concentration renforcée et un bien-être général amélioré.
 
 Pour une famille, on peut raisonner par paliers, sans en faire une grille rigide.
 
@@ -100,4 +106,4 @@ Ces observations vous renseigneront mieux qu'un long discours. Elles permettent 
 
 - Éducation nationale, [« Interdiction du téléphone portable dans les écoles et les collèges et pause numérique »](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181).
 - Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).
+- Je protège mon enfant, [« Accompagner son enfant dans le numérique »](https://jeprotegemonenfant.gouv.fr/).

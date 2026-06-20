@@ -13,9 +13,9 @@ internalLinks:
   - "/blog/temps-ecran-regles-famille"
   - "/inscription"
 sourceLinks:
-  - "https://www.caf.fr/allocataires/vies-de-famille/articles/3018-le-numero-d-e-enfance-une-aide-concrete-contre-le-cyberharcelement-et-les-violences-en-ligne"
+  - "https://www.3018.fr/"
+  - "https://www.service-public.gouv.fr/particuliers/vosdroits/F32239"
   - "https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement"
-  - "https://solidarites.gouv.fr/agressions-cyberharcelement-violences-si-tu-besoin-daide-des-numeros-existent"
 ---
 
 # Cyberharcèlement : les signaux faibles que les parents repèrent souvent trop tard
@@ -60,6 +60,13 @@ Ces phrases ne règlent rien à elles seules. Mais elles déplacent le cadre. El
 
 ## Si l'enfant se confie
 
+**À faire maintenant, dans l'ordre :**
+
+- Écouter et croire l'enfant, sans paniquer devant lui.
+- Conserver les preuves : captures d'écran datées, pseudos, liens, noms de groupes.
+- Ne pas répondre à chaud, et ne pas confronter directement le ou les auteurs présumés.
+- Contacter l'établissement scolaire et, si besoin, le 3018 (gratuit, tous les jours de 9 h à 23 h).
+
 Le premier réflexe, c'est de respirer. Même si ce que vous entendez vous choque. Même si vous avez envie d'appeler la terre entière dans la seconde. L'enfant scrute votre visage, et s'il vous voit paniquer, il peut regretter d'avoir parlé.
 
 Vient ensuite la question des preuves. Gardez tout ce que vous pouvez : captures d'écran, pseudos, dates et heures, liens, noms de groupes, messages vocaux. Ne répondez surtout pas à chaud, sous le coup de la colère, et n'effacez rien trop vite. Ces éléments serviront peut-être à l'établissement scolaire, à une plateforme ou à un signalement officiel.
@@ -72,7 +79,7 @@ Enfin, si des camarades sont impliqués, contactez l'établissement. Même quand
 
 En France, le 3018 est le numéro national gratuit, anonyme et confidentiel pour les jeunes victimes de violences numériques. Porté par l'association e-Enfance, il est joignable 7 jours sur 7, de 9 h à 23 h, par téléphone, par tchat et via une application. L'équipe réunit des juristes, des psychologues et des spécialistes du numérique.
 
-Concrètement, le 3018 accompagne aussi bien les jeunes que les parents et les professionnels. Il conseille sur les démarches, aide à conserver les preuves et dispose de procédures accélérées pour faire retirer en quelques heures des comptes ou des contenus nuisibles, auprès d'une vingtaine de plateformes et de messageries. Depuis le 1er janvier 2024, c'est aussi le point d'entrée unique pour signaler une situation de harcèlement entre élèves.
+Concrètement, le 3018 accompagne aussi bien les jeunes que les parents et les professionnels. Il conseille sur les démarches, aide à conserver les preuves et dispose de procédures accélérées pour faire retirer en quelques heures des comptes ou des contenus nuisibles, auprès des principales plateformes et messageries. Depuis le 1er janvier 2024, c'est aussi le point d'entrée unique pour signaler une situation de harcèlement entre élèves.
 
 Inutile d'attendre que la situation soit « assez grave » pour s'y intéresser. Un simple appel, ou un coup d'œil aux ressources de l'application, peut déjà clarifier les prochaines étapes. Vous pouvez d'ailleurs présenter ce numéro à votre enfant en amont, sans dramatiser : « Si un jour quelque chose se passe en ligne et que tu n'oses pas m'en parler tout de suite, il existe aussi des adultes formés pour aider. »
 
@@ -104,6 +111,6 @@ Et si un doute sérieux s'installe, n'attendez pas la certitude. Parlez-en, docu
 
 ## Sources
 
-- CAF, [« 3018, le numéro d'e-Enfance : une aide concrète contre le cyberharcèlement et les violences en ligne »](https://www.caf.fr/allocataires/vies-de-famille/articles/3018-le-numero-d-e-enfance-une-aide-concrete-contre-le-cyberharcelement-et-les-violences-en-ligne).
+- e-Enfance / 3018, [« 3018, le numéro national contre les violences numériques »](https://www.3018.fr/).
+- Service-Public, [« Cyberharcèlement »](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239).
 - Ma Sécurité, [« Cyberharcèlement des enfants et adolescents »](https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement).
-- Ministère des Solidarités, [« 3018, le numéro de protection des mineurs sur internet »](https://solidarites.gouv.fr/agressions-cyberharcelement-violences-si-tu-besoin-daide-des-numeros-existent).
