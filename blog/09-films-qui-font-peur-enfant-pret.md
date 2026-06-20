@@ -19,7 +19,7 @@ sourceLinks:
 
 # Films qui font peur : comment savoir si un enfant est prêt ?
 
-Le scénario est familier. Un enfant adore se cacher sous un plaid et réclame « encore ». Un autre jure qu'il est prêt, puis dort mal pendant trois nuits. Il y a aussi les films « pour enfants » qui glissent une scène bien plus intense que prévu, les bandes-annonces qui en montrent trop, les grands frères qui promettent que « ça ne fait pas peur du tout ». Et au milieu, des parents qui se demandent s'ils en font trop, ou pas assez.
+La peur, au cinéma, n'a pas le même visage d'un enfant à l'autre. L'un adore se cacher sous un plaid et réclame « encore » ; l'autre jure qu'il est prêt, puis dort mal pendant trois nuits. S'y ajoutent les films « pour enfants » qui glissent une scène bien plus intense que prévu, les bandes-annonces qui en montrent trop, les grands frères qui promettent que « ça ne fait pas peur du tout ». Et au milieu, des parents qui se demandent s'ils en font trop, ou pas assez.
 
 La peur au cinéma n'est pas forcément une mauvaise chose. Elle peut être un jeu, une émotion qu'on apprend à apprivoiser, une façon de grandir un peu. Mais elle peut aussi déborder un enfant, surtout quand l'image arrive trop tôt, trop fort, et qu'aucun adulte n'est vraiment disponible pour l'aider à la digérer ensuite.
 
@@ -35,11 +35,9 @@ Il vaut donc la peine de regarder le ressort de la peur plutôt que sa simple in
 
 ## L'âge aide, mais il ne suffit pas
 
-Les classifications officielles et les recommandations d'âge restent utiles. Elles évitent beaucoup d'erreurs et donnent un premier repère solide. Mais elles ne connaissent pas votre enfant.
+Les classifications officielles et les recommandations d'âge restent un premier repère solide. Mais elles ne connaissent pas votre enfant : à neuf ans, l'un est parfaitement à l'aise avec le suspense quand l'autre se crispe devant les images sombres ou un héros laissé seul face au danger. Le vécu pèse aussi, une séparation récente, un deuil ou un sommeil fragile rendant tel film plus difficile à traverser.
 
-Un enfant de neuf ans peut être parfaitement à l'aise avec l'aventure et le suspense, quand un autre du même âge se crispe devant les images sombres, les personnages menaçants ou un héros laissé seul face au danger. Le vécu compte aussi : une séparation récente, un deuil, une période d'anxiété ou un sommeil fragile peuvent rendre tel film bien plus difficile à traverser qu'il ne le serait en temps normal.
-
-C'est exactement pour cette raison que nous ne nous arrêtons pas à l'âge chez Totem Avisé. Notre [méthode](/notre-methode) regarde aussi la violence, l'ambiance, les thèmes abordés, l'intensité de la peur, les messages positifs, et la compatibilité avec chaque membre du foyer.
+Nous développons cette idée dans notre article [« le bon âge n'existe pas vraiment »](/blog/bon-age-film-enfant). Pour la peur en particulier, retenez surtout que l'intensité ressentie dépend autant de l'enfant que du film. C'est pourquoi notre [méthode](/notre-methode) regarde aussi l'ambiance, les thèmes abordés et l'intensité de la peur, pas seulement l'âge.
 
 ## Les signes qu'un enfant n'est pas encore prêt
 
@@ -71,7 +69,15 @@ Le soir, ramenez du calme avec une lecture, une lumière douce, une présence ra
 
 ## Quelques questions à se poser avant de lancer
 
-Avant un film qui risque de faire peur, un rapide tour d'horizon suffit souvent à trancher. Demandez-vous quelle est la scène la plus intense, et si la peur en jeu est plutôt fantastique ou bien réaliste. Vérifiez que l'enfant pourra arrêter sans perdre la face, que l'heure laisse le temps de redescendre avant la nuit, et que vous serez disponible juste après. Posez-vous enfin la question la plus simple : ce film correspond-il à son envie à lui, ou à la pression des autres ?
+Avant un film qui risque de faire peur, un rapide tour d'horizon suffit souvent à trancher.
+
+**Avant d'appuyer sur lecture :**
+
+- La peur en jeu est-elle plutôt fantastique ou réaliste ?
+- Est-on loin du moment du coucher ?
+- L'enfant pourra-t-il arrêter sans avoir honte ?
+- Serez-vous disponible juste après pour en parler ?
+- Ce film correspond-il à son envie à lui, ou à la pression des autres ?
 
 Si plusieurs réponses restent floues, attendez. Ce n'est pas rater une expérience, c'est la garder pour un moment plus juste.
 

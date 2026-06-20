@@ -26,9 +26,9 @@ Pour les 3-6 ans, la vraie question n'est presque jamais « dessin animé ou pas
 
 ## Avant 3 ans : la consigne est désormais écrite noir sur blanc
 
-Depuis janvier 2025, le carnet de santé remis à chaque naissance intègre une recommandation devenue très explicite : avant 3 ans, on n'expose pas l'enfant aux écrans, y compris en fond sonore. La logique tient en une phrase : à cet âge, on apprend par le corps, la voix, le visage, le jeu, l'imitation, et l'écran ne remplace aucune de ces interactions. Une note de Santé publique France de 2020 chiffrait même le risque, en associant une exposition aux écrans avant l'école à une probabilité plus élevée de troubles primaires du langage.
+Depuis janvier 2025, le carnet de santé remis à chaque naissance intègre une recommandation devenue très explicite : avant 3 ans, on n'expose pas l'enfant aux écrans, y compris en fond sonore. La logique tient en une phrase : à cet âge, on apprend par le corps, la voix, le visage, le jeu, l'imitation, et l'écran ne remplace aucune de ces interactions. Une étude française menée en Ille-et-Vilaine a observé une association entre certaines habitudes d'exposition aux écrans, notamment le matin avant l'école et sans échange sur ce qui est regardé, et des troubles primaires du langage. Elle ne permet toutefois pas, à elle seule, d'établir un lien de cause à effet.
 
-La consigne s'est aussi traduite dans les faits collectifs : un arrêté du 2 juillet 2025 interdit l'exposition des moins de 3 ans aux écrans dans les lieux d'accueil du jeune enfant. On n'est donc plus dans le registre du conseil flou mais d'une règle posée par les pouvoirs publics.
+La consigne s'est aussi traduite dans les faits collectifs : depuis un arrêté du 27 juin 2025, l'exposition des moins de 3 ans aux écrans est interdite dans les lieux d'accueil du jeune enfant, crèches et assistantes maternelles comprises. Cette interdiction vise les structures et les professionnels, pas les familles à la maison ; pour les parents, le carnet de santé reste une recommandation forte, pas une obligation légale.
 
 Cela ne veut pas dire qu'un appel vidéo avec une grand-mère ou une exception un jour de maladie va tout abîmer. Le message est ailleurs : l'écran ne devrait pas devenir le réflexe d'apaisement des tout-petits. À partir de 3 ans, on peut introduire certains contenus, mais avec mesure, en choisissant court, calme et accompagné.
 
@@ -42,7 +42,7 @@ Le test le plus simple reste de regarder deux minutes vous-même, avec le son. S
 
 ## Ce qui apaise, ce qui excite
 
-Les dessins animés qui passent bien chez les 3-6 ans se ressemblent souvent. Ils racontent une histoire simple, un problème, une émotion, une résolution, sans intrigue alambiquée. Ils s'appuient sur des personnages stables : retrouver les mêmes héros rassure, l'enfant anticipe et se sent en terrain connu. Ils gardent les menaces à un niveau supportable, un petit conflit plutôt qu'une terreur qui s'installe. Ils restent courts, un épisode de sept minutes valant souvent mieux qu'un tunnel d'une heure. Et surtout, ils donnent envie de parler ou de jouer ensuite. Un dessin animé apaisant ne cherche pas à « hypnotiser » l'enfant ; il le laisse ressortir encore disponible.
+Les dessins animés qui passent bien chez les 3-6 ans se ressemblent souvent. Ils racontent une histoire simple, un problème, une émotion, une résolution, sans intrigue alambiquée. Ils s'appuient sur des personnages stables : retrouver les mêmes héros rassure, l'enfant anticipe et se sent en terrain connu. Ils gardent les menaces à un niveau supportable, un petit conflit plutôt qu'une terreur qui s'installe. Ils restent courts, un épisode de sept minutes valant souvent mieux qu'un tunnel d'une heure. Et surtout, ils donnent envie de parler ou de jouer ensuite. Un dessin animé apaisant ne cherche pas à capter l'enfant à tout prix ; il le laisse ressortir encore disponible.
 
 À l'inverse, ce qui excite trop se repère moins pendant le visionnage qu'après. L'enfant saute partout, crie, refuse de couper, réclame aussitôt un autre épisode, devient irritable, n'arrive plus à jouer seul, ou se met à rejouer des gestes agressifs. Cela ne signifie pas que le contenu est « mauvais ». Cela veut souvent dire qu'il ne convient pas à cet enfant, à ce moment précis. Quelques ingrédients reviennent dans les programmes qui surchauffent : beaucoup de cris, un montage très rapide, des poursuites permanentes, un humour fondé sur la chute ou la moquerie, des personnages sans cesse en conflit, une musique qui ne s'arrête jamais, et des fins suspendues qui poussent à enchaîner. Plus l'enfant est fatigué, plus ces éléments pèsent.
 
@@ -56,7 +56,7 @@ Si vous tenez à un dessin animé en fin de journée, prenez le plus calme possi
 
 On ne peut évidemment pas s'asseoir à chaque épisode. Mais le faire régulièrement change beaucoup de choses. On voit ce qui fait rire, ce qui inquiète, ce qui n'est pas compris. On peut nommer ce qui se passe à l'écran : « Il est fâché », « Elle a eu peur », « Ils se sont réconciliés. » Ces petites phrases transforment le visionnage en apprentissage du langage et des émotions, et elles aident à repérer vite les contenus qui passent mal.
 
-Après l'épisode, une seule question suffit, du genre « Tu as préféré quel moment ? », « Il était triste ou en colère ? », « Tu veux rejouer l'histoire ? ». Si l'enfant ne veut jamais en parler et réclame seulement « encore », c'est souvent le signe d'un contenu très consommable et peu appropriable.
+Après l'épisode, une seule question suffit, du genre « Tu as préféré quel moment ? », « Il était triste ou en colère ? », « Tu veux rejouer l'histoire ? ». Si l'enfant réclame surtout « encore » sans rien vouloir en dire, cela peut être un signal à observer, surtout si la coupure devient régulièrement conflictuelle.
 
 ## La coupure se prépare avant, pas pendant
 
@@ -77,5 +77,3 @@ Un bon dessin animé pour un petit ne se mesure donc pas à sa capacité à le f
 - Ameli, [« Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age).
 - Ameli, [« Sommeil de l'enfant : ses étapes, sa durée et ses troubles »](https://www.ameli.fr/assure/sante/themes/troubles-sommeil-enfant/sommeil-enfant-evolution-etapes).
 - Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-</content>
-</invoke>

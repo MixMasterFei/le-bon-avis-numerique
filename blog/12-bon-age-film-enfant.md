@@ -4,7 +4,7 @@ slug: "bon-age-film-enfant"
 author: "L'équipe Totem Avisé"
 category: "films-series"
 excerpt: "Deux enfants du même âge peuvent réagir très différemment au même film. Âge, sensibilité, contexte et maturité comptent ensemble."
-seoTitle: "Âge conseillé film enfant : pourquoi cela dépend"
+seoTitle: "À quel âge voir ce film ? Pourquoi l'âge ne suffit pas"
 seoDescription: "Âge conseillé pour un film enfant : pourquoi deux enfants du même âge peuvent vivre une œuvre très différemment."
 internalLinks:
   - "/notre-methode"
@@ -75,7 +75,7 @@ Ces phrases respectent l'enfant. Elles montrent que le refus n'est pas arbitrair
 
 ## La méthode Totem : passer du chiffre au profil
 
-Totem Avisé est né de cette nuance précise : un âge seul ne suffit pas à décider. Notre [méthode](/notre-methode) croise l'âge, les contenus sensibles, les messages positifs, la valeur éducative, les goûts et les sensibilités de chacun. Avec un [profil famille](/inscription), un même film peut s'afficher « Bon choix » pour un membre, « À vérifier » pour un autre, et « Trop tôt » pour le plus jeune.
+Totem Avisé est né de cette nuance précise : un âge seul ne suffit pas à décider. Notre [méthode](/notre-methode) croise l'âge, les contenus sensibles, les messages positifs, la valeur éducative, les goûts et les sensibilités de chacun. Avec un [profil famille](/inscription), un même film peut s'afficher « Bon choix » pour un membre, « À vérifier » pour un autre, et « Trop tôt » pour le plus jeune. Concrètement, un film d'aventure traversé par une scène de deuil peut très bien s'afficher « Bon choix » pour l'aînée de 12 ans, « À vérifier » pour un garçon de 9 ans sensible aux séparations, et « Trop tôt » pour la dernière de 6 ans, dans une seule et même fratrie.
 
 C'est ce qui colle le mieux à la réalité d'une fratrie. Tout le monde sait qu'un seul chiffre imprimé sur une affiche ne règle pas le cas de trois enfants d'âges et de tempéraments différents. Et l'objectif derrière cette approche n'est pas de transformer les parents en censeurs fatigués, mais de rendre le choix plus fin. Vous pouvez le dire à l'enfant : « On cherche un film qui te plaira et que tu pourras vraiment apprécier. » La conversation change aussitôt de ton.
 

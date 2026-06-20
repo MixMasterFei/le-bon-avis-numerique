@@ -19,7 +19,7 @@ sourceLinks:
 
 # Jeux vidéo en famille : comment reconnaître un jeu qui fait vraiment du bien
 
-Dans beaucoup de foyers, le jeu vidéo reste rangé dans deux cases un peu trop simples. D'un côté « ça rend accro », de l'autre « c'est un loisir comme un autre ». La réalité, on la trouve plus intéressante. Un même jeu peut être un moment de coopération, de fous rires, de stratégie ou de coordination, et devenir, quelques jours plus tard, une source de tensions, de frustration, d'achats répétés ou de contacts avec des inconnus.
+« Tu éteins dans cinq minutes. » La phrase, et la négociation qui suit, sont familières à presque tous les parents. Peu de loisirs cristallisent autant de tensions que le jeu vidéo, sans doute parce qu'on le juge encore en bloc : d'un côté « ça rend accro », de l'autre « c'est un loisir comme un autre ». La réalité est plus intéressante. Un même jeu peut être un moment de coopération, de fous rires, de stratégie ou de coordination, et devenir, quelques jours plus tard, une source de tensions, de frustration, d'achats répétés ou de contacts avec des inconnus.
 
 Ce qui compte, ce n'est donc pas de trancher entre le bon et le mauvais jeu dans l'absolu. C'est de savoir lequel convient à votre enfant, à son âge, et au cadre que vous posez à la maison. Un jeu qui fait du bien n'est pas forcément un jeu éducatif au sens scolaire. C'est souvent un jeu qui respecte l'âge, qui donne envie d'essayer et de recommencer sans exploser, et qui laisse l'enfant capable de passer à autre chose une fois la console éteinte.
 

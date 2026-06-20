@@ -20,7 +20,7 @@ sourceLinks:
 
 # ChatGPT et devoirs : aide précieuse ou raccourci qui appauvrit l'apprentissage ?
 
-La scène se répète dans beaucoup de foyers. Un devoir de français à rendre, un exposé à préparer, une question de maths qui bloque. L'enfant ouvre un outil d'intelligence artificielle, tape deux phrases, et une réponse propre apparaît en quelques secondes. Côté parent, le ressenti est rarement simple : un peu de soulagement, beaucoup de questions, parfois une vraie inquiétude.
+Pour les parents d'aujourd'hui, l'intelligence artificielle a fait irruption dans les devoirs sans vraiment prévenir. En quelques mois, des millions d'élèves ont pris l'habitude de lui demander de reformuler une consigne, corriger une dictée ou expliquer un théorème récalcitrant. Beaucoup d'adultes, eux, n'ont pas encore tranché : aide formidable, ou machine à contourner l'effort ? Le ressenti oscille souvent entre soulagement et inquiétude, parfois dans la même soirée.
 
 Est-ce que c'est tricher ? Est-ce une aide comme l'a été la calculatrice avant elle ? Ou une compétence qu'il faut désormais apprendre, puisque l'école elle-même s'y met ? La réponse honnête est moins tranchée qu'on aimerait : tout dépend de la manière dont l'outil est utilisé.
 

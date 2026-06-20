@@ -89,5 +89,3 @@ Pour rendre tout cela concret, un petit exercice fonctionne bien de temps en tem
 - Arcom, [« Référentiel des usages numériques 2025 »](https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025).
 - CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).
 - Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
-</content>
-</invoke>

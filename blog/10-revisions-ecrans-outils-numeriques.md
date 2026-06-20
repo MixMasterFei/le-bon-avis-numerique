@@ -20,7 +20,7 @@ sourceLinks:
 
 # Révisions et écrans : les bons outils numériques sans tomber dans la distraction
 
-La scène se répète dans beaucoup de foyers à l'approche d'un contrôle. L'enfant ouvre son ordinateur « pour réviser », et trois quarts d'heure plus tard, on ne sait plus très bien ce qui a été appris. Une vidéo en a appelé une autre, une notification a coupé l'élan, une recherche de définition a fini sur tout autre chose. Personne n'a triché, le travail a juste fondu sans laisser de trace.
+À l'approche d'un contrôle, le même ordinateur ouvert « pour réviser » peut produire deux soirées radicalement différentes. Parfois, trois quarts d'heure plus tard, on ne sait plus très bien ce qui a été appris : une vidéo en a appelé une autre, une notification a coupé l'élan, une recherche de définition a fini sur tout autre chose. Personne n'a triché, le travail a juste fondu sans laisser de trace.
 
 Pourtant, le même écran peut sauver une session. Une vidéo explique enfin une notion qui résistait depuis deux semaines. Une application fait mémoriser du vocabulaire mieux qu'une liste recopiée. Un minuteur transforme une montagne floue en vingt minutes concrètes. Une IA reformule une consigne incompréhensible. Le numérique n'est ni le héros ni le coupable de l'histoire. Tout dépend du cadre qu'on lui donne.
 
@@ -50,7 +50,7 @@ Ce dernier point compte plus qu'il n'en a l'air. Un enfant peut rester assis lon
 
 ## L'IA peut réviser avec l'enfant, pas à sa place
 
-L'intelligence artificielle est entrée à l'école, et plutôt par la grande porte. Depuis janvier 2026, un parcours de sensibilisation « Pix IA » est obligatoire pour les élèves de 4e, de 2nde générale et technologique et de première année de CAP ; il a été ouvert plus largement aux collégiens et lycéens volontaires au printemps 2026. Autrement dit, vos enfants vont apprendre à utiliser ces outils dans un cadre scolaire. Autant que la maison parle le même langage.
+L'intelligence artificielle est entrée à l'école, et plutôt par la grande porte. Depuis janvier 2026, les parcours Pix consacrés à l'IA sont généralisés pour les élèves de 4e, de 2nde et de première année de CAP, leur mise en œuvre obligatoire s'étalant progressivement sur les années scolaires 2025-2026 et 2026-2027. Autrement dit, vos enfants vont apprendre à utiliser ces outils dans un cadre scolaire. Autant que la maison parle le même langage.
 
 Pour réviser, l'IA peut beaucoup : expliquer une notion autrement, proposer un quiz, corriger une phrase en montrant l'erreur, faire répéter un oral. Elle peut aussi rédiger le devoir entier, et c'est là que tout se joue. La différence tient à la consigne qu'on lui donne.
 
@@ -78,7 +78,7 @@ Travailler en groupe peut motiver. Mais un groupe de révision sur une messageri
 
 ## Le sommeil fait partie des révisions
 
-On l'oublie souvent, mais réviser tard sur écran donne l'illusion de travailler plus alors que cela rogne la mémorisation et l'attention du lendemain. Ameli rappelle que le sommeil de l'adolescent est particulièrement fragile, et qu'il pèse sur la mémoire, la régulation des émotions et la santé mentale. Avant un contrôle ou un examen, le meilleur outil numérique est parfois celui qu'on referme à temps.
+On l'oublie souvent, mais réviser tard sur écran peut repousser le coucher et réduire la qualité de l'attention le lendemain. Ameli rappelle que le sommeil de l'adolescent est particulièrement fragile, et qu'il pèse sur la mémoire, la régulation des émotions et la santé mentale. Avant un contrôle ou un examen, le meilleur outil numérique est parfois celui qu'on referme à temps.
 
 Une habitude de maison aide bien : pas de révision sur écran dans le lit. Si une dernière relecture s'impose, une fiche papier et une lecture courte font le travail, puis on dort.
 
@@ -95,5 +95,3 @@ Chez Totem Avisé, nous ne sommes pas anti-écrans. Nous défendons un usage qui
 - Éduscol, [« Les intelligences artificielles et leurs usages en éducation »](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education).
 - Éducation nationale, [« Création du comité d'anticipation en éducation et déploiement du parcours Pix IA »](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899).
 - Ameli, [« Sommeil de l'adolescent : quelles particularités ? »](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites).
-</content>
-</invoke>

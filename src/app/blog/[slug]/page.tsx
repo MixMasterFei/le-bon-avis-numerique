@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, BookOpen, Calendar, Clock, MessagesSquare, User } from "lucide-react"
+import { ArrowLeft, BookOpen, Calendar, Clock, History, MessagesSquare, User } from "lucide-react"
 import { PortableText, type PortableTextBlock } from "@portabletext/react"
 import { Badge } from "@/components/ui/badge"
 import { sanityClient } from "@/sanity/client"
@@ -138,6 +138,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     year: "numeric",
   })
 
+  // Show an "updated on" date only when the post was meaningfully edited after publishing.
+  const updatedAt = post._updatedAt ? new Date(post._updatedAt) : null
+  const showUpdated =
+    !!updatedAt && updatedAt.getTime() - new Date(post.publishedAt).getTime() > 24 * 60 * 60 * 1000
+  const updatedDate = updatedAt
+    ? updatedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : null
+
   const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
   const readingMinutes = getReadingMinutes(post.body || [])
 
@@ -243,6 +251,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Clock className="h-4 w-4" />
               {readingMinutes} min de lecture
             </span>
+            {showUpdated && (
+              <span className="flex items-center gap-1.5 font-medium" style={{ color: "var(--color-accent)" }}>
+                <History className="h-4 w-4" />
+                Mis à jour le {updatedDate}
+              </span>
+            )}
           </div>
         </header>
 
@@ -268,6 +282,24 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <div className="max-w-none">
           <PortableText value={post.body} components={portableTextComponents} />
         </div>
+
+        {/* Editorial note — author + sourcing + method (identity & trust signal) */}
+        <aside
+          className="mt-10 rounded-2xl p-5 md:p-6"
+          style={{ background: "var(--color-bg2)", border: "1px solid var(--color-line)" }}
+        >
+          <div className="font-serif text-base font-medium" style={{ color: "var(--color-ink)" }}>
+            {post.author}
+          </div>
+          <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+            Article rédigé par notre équipe éditoriale, à partir de sources officielles (Éducation nationale,
+            CNIL, e-Enfance, santé publique) et vérifié avant publication selon{" "}
+            <Link href="/notre-methode" className="underline" style={{ color: "var(--color-accent)" }}>
+              notre méthode
+            </Link>
+            . {showUpdated ? `Dernière mise à jour le ${updatedDate}.` : `Publié le ${date}.`}
+          </p>
+        </aside>
 
         <aside
           className="mt-12 rounded-2xl p-5 md:p-6"
