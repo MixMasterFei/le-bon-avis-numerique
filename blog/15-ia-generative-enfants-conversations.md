@@ -70,9 +70,9 @@ Chez Totem Avisé, notre [mission](/objectif) est d'aider les familles à compre
 
 La meilleure manière d'aborder tout ça reste de partir d'exemples. Demandez à l'IA de résumer un texte, puis cherchez ensemble ce qu'elle a oublié. Faites-lui inventer une image, puis discutez de ce qui sonne faux. Posez-lui une question sur un domaine que votre ado maîtrise bien, et laissez-le repérer les approximations. Trois petites expériences faites côte à côte rendent l'outil moins magique, et bien plus facile à manier seul ensuite. C'est largement plus efficace qu'une interdiction que personne ne tiendra.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Création du comité d'anticipation en éducation et déploiement du parcours Pix IA »](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899).
-- Éduscol, [« Les intelligences artificielles et leurs usages en éducation »](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education).
-- Éducation nationale, [« Cadre d'usage de l'IA en éducation »](https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647).
-- CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).
+- [Création du comité d'anticipation en éducation et déploiement du parcours Pix IA (Éducation nationale)](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899)
+- [Les intelligences artificielles et leurs usages en éducation (Éduscol)](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education)
+- [Cadre d'usage de l'IA en éducation (Éducation nationale)](https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647)
+- [IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 (CNIL)](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028)

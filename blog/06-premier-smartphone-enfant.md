@@ -102,8 +102,8 @@ Les premiers jours valent toutes les promesses. C'est le moment d'observer, sans
 
 Ces observations vous renseigneront mieux qu'un long discours. Elles permettent d'ajuster vite : retirer une application, avancer l'heure de coupure, garder l'appareil hors de la chambre, ou au contraire desserrer un peu le cadre si tout est respecté. Le smartphone n'a pas besoin d'être parfait dès le départ. Il a surtout besoin de rester discutable.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Interdiction du téléphone portable dans les écoles et les collèges et pause numérique »](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Je protège mon enfant, [« Accompagner son enfant dans le numérique »](https://jeprotegemonenfant.gouv.fr/).
+- [Interdiction du téléphone portable dans les écoles et les collèges et pause numérique (Éducation nationale)](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Accompagner son enfant dans le numérique (Je protège mon enfant)](https://jeprotegemonenfant.gouv.fr/)

@@ -89,7 +89,7 @@ Mieux vaut donc revoir les repères de temps en temps. Tous les deux ou trois mo
 
 Au fond, l'âge ouvre la porte et le profil reste vivant derrière. Pour la plupart des familles, c'est cette attention au bon moment et au bon contexte qui sépare un contenu juste subi d'un vrai souvenir partagé.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Ameli, [« Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age).
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)

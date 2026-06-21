@@ -77,7 +77,7 @@ Le film « éducatif » parfait n'existe pas. Il existe un film qui tombe bien p
 
 C'est précisément ce que notre [méthode](/notre-methode) essaie de croiser : l'âge, les contenus sensibles, les dimensions positives et le profil de la famille. En créant un [profil famille](/inscription), vous pouvez voir d'un coup d'œil quel film semble « très adapté », « bon choix », « à vérifier » ou « trop tôt » pour chacun de vos enfants. Et si vous voulez aller plus loin dans le choix au quotidien, nos [guides parents](/guides) sont là pour ça. Un bon film ne donne pas seulement une leçon. Il aide un enfant à grandir un peu, à son rythme.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Ameli, [« Écrans : définition et chiffres clés »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres).
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Écrans : définition et chiffres clés (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres)

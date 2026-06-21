@@ -109,8 +109,8 @@ L'objectif n'est pas que votre enfant vous raconte tout, aucun ado ne le fera ja
 
 Et si un doute sérieux s'installe, n'attendez pas la certitude. Parlez-en, documentez, contactez l'établissement si besoin, et gardez le 3018 à portée de main.
 
-## Sources
+## Pour aller plus loin
 
-- e-Enfance / 3018, [« 3018, le numéro national contre les violences numériques »](https://www.3018.fr/).
-- Service-Public, [« Cyberharcèlement »](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239).
-- Ma Sécurité, [« Cyberharcèlement des enfants et adolescents »](https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement).
+- [3018, le numéro national contre les violences numériques (e-Enfance / 3018)](https://www.3018.fr/)
+- [Cyberharcèlement (Service-Public)](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239)
+- [Cyberharcèlement des enfants et adolescents (Ma Sécurité)](https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement)

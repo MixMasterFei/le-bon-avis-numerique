@@ -82,8 +82,8 @@ C'est l'idée qui guide notre [méthode](/notre-methode) : regarder les contenus
 
 Si vous voulez vous lancer sans tout révolutionner, choisissez une soirée par semaine où le contenu se décide ensemble. Un film adapté, un épisode choisi, une partie en famille, puis quelques minutes pour en parler. Vous verrez vite que la conversation glisse du « combien de temps » vers le « qu'est-ce qu'on a aimé ». Pour aller plus loin sur le cadre général, vous pouvez aussi lire notre guide sur le [temps d'écran et les règles familiales](/blog/temps-ecran-regles-famille), et garder sous la main nos [guides parents](/guides) au moment de choisir.
 
-## Sources
+## Pour aller plus loin
 
-- Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
-- Ameli, [« Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)
+- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)

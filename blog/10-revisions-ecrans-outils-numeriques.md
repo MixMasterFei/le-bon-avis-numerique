@@ -90,8 +90,8 @@ Cette dernière déplace l'attention du temps passé vers le progrès réel. Un 
 
 Chez Totem Avisé, nous ne sommes pas anti-écrans. Nous défendons un usage qui garde l'enfant acteur, exactement comme pour les films, les séries ou les jeux, où la [qualité du contenu](/blog/qualite-contenu-plus-que-chronometre), le contexte et l'accompagnement comptent plus que le chronomètre. Pour aller plus loin, nos [guides parents](/guides) et notre [objectif](/objectif) précisent cette approche. Le numérique peut être un très bon compagnon de révision : une intention claire, un outil choisi, une sortie prévue, et il reste à sa place.
 
-## Sources
+## Pour aller plus loin
 
-- Éduscol, [« Les intelligences artificielles et leurs usages en éducation »](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education).
-- Éducation nationale, [« Création du comité d'anticipation en éducation et déploiement du parcours Pix IA »](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899).
-- Ameli, [« Sommeil de l'adolescent : quelles particularités ? »](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites).
+- [Les intelligences artificielles et leurs usages en éducation (Éduscol)](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education)
+- [Création du comité d'anticipation en éducation et déploiement du parcours Pix IA (Éducation nationale)](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899)
+- [Sommeil de l'adolescent : quelles particularités ? (Ameli)](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites)

@@ -83,7 +83,7 @@ Si plusieurs réponses restent floues, attendez. Ce n'est pas rater une expérie
 
 Sur Totem Avisé, vous pouvez explorer les [films](/films) et [séries](/series) avec les repères d'âge, les points sensibles et les signaux « Trop tôt » ou « À vérifier » selon votre profil de famille. Notre article sur les [films vraiment éducatifs](/blog/films-vraiment-educatifs-enfants) rappelle d'ailleurs qu'un film peut faire grandir un enfant sans avoir besoin de le bousculer trop fort.
 
-## Sources
+## Pour aller plus loin
 
-- Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)

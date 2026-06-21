@@ -83,7 +83,7 @@ Le jeu vidéo peut être un excellent loisir de famille. Il fait rire, réfléch
 
 Pour aller plus loin, vous pouvez lire notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre), explorer les [jeux vidéo](/jeux) analysés sur Totem, ou créer un [profil famille](/inscription) pour obtenir des repères adaptés à chaque enfant.
 
-## Sources
+## Pour aller plus loin
 
-- Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)

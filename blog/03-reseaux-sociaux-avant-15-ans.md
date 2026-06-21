@@ -80,8 +80,8 @@ C'est pour cette raison que Totem Avisé regarde l'ensemble des contenus : films
 
 Le numérique n'est pas qu'un risque à contenir. C'est aussi un espace culturel, relationnel et créatif où nos enfants vont grandir. Le travail des parents n'est pas de les en tenir éloignés, mais de les y faire entrer pas à pas, avec quelqu'un à côté au début. Si vous deviez retenir une seule chose ce soir : choisissez la prochaine conversation à avoir, et fixez la date de votre premier point mensuel.
 
-## Sources
+## Pour aller plus loin
 
-- Parents.fr / AFP, [« Le gouvernement veut interdire les réseaux sociaux aux moins de 15 ans et le portable au lycée dès la rentrée 2026 »](https://www.parents.fr/actualites/etre-parent/le-gouvernement-veut-interdire-les-reseaux-sociaux-aux-moins-de-15-ans-et-le-portable-au-lycee-des-la-rentree-2026-1145316).
-- Éducation nationale, [« Interdiction du téléphone portable dans les écoles et les collèges et pause numérique »](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- [Le gouvernement veut interdire les réseaux sociaux aux moins de 15 ans et le portable au lycée dès la rentrée 2026 (Parents.fr / AFP)](https://www.parents.fr/actualites/etre-parent/le-gouvernement-veut-interdire-les-reseaux-sociaux-aux-moins-de-15-ans-et-le-portable-au-lycee-des-la-rentree-2026-1145316)
+- [Interdiction du téléphone portable dans les écoles et les collèges et pause numérique (Éducation nationale)](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)

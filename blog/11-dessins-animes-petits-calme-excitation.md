@@ -72,8 +72,8 @@ C'est exactement ce travail de nuance que nous essayons de faciliter. Sur les fi
 
 Un bon dessin animé pour un petit ne se mesure donc pas à sa capacité à le faire taire. On le reconnaît plutôt à ce qu'il respecte son rythme, ses peurs et son sommeil, et le laisse revenir tranquillement au reste de la journée.
 
-## Sources
+## Pour aller plus loin
 
-- Ameli, [« Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age).
-- Ameli, [« Sommeil de l'enfant : ses étapes, sa durée et ses troubles »](https://www.ameli.fr/assure/sante/themes/troubles-sommeil-enfant/sommeil-enfant-evolution-etapes).
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
+- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
+- [Sommeil de l'enfant : ses étapes, sa durée et ses troubles (Ameli)](https://www.ameli.fr/assure/sante/themes/troubles-sommeil-enfant/sommeil-enfant-evolution-etapes)
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)

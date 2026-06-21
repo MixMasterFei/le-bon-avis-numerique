@@ -84,8 +84,8 @@ C'est tout le sens de notre [mission](/objectif) : aider les familles à choisir
 
 Pour rendre tout cela concret, un petit exercice fonctionne bien de temps en temps. Après dix minutes de vidéos, demandez : « Quelle était la toute première chose que tu voulais voir ? », puis « Qu'est-ce qui t'a fait cliquer ensuite ? ». L'enfant reconstitue alors la chaîne : une miniature, une musique, un titre, une émotion, une curiosité. Il voit que son attention a suivi un parcours, et qu'il peut mieux le choisir la prochaine fois. Faites-le parfois avec un adulte aussi, personne n'échappe complètement à ces mécanismes. À condition de rester rare et court : trop de leçons abîment la confiance, alors qu'une bonne question posée au bon moment suffit souvent.
 
-## Sources
+## Pour aller plus loin
 
-- Arcom, [« Référentiel des usages numériques 2025 »](https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025).
-- CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).
-- Ameli, [« Écrans et santé des enfants et des adolescents »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent).
+- [Référentiel des usages numériques 2025 (Arcom)](https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025)
+- [IA, mineurs, cybersécurité, quotidien numérique : plan stratégique 2025-2028 (CNIL)](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028)
+- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)

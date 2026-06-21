@@ -92,8 +92,8 @@ C'est tout l'esprit de la [mission Totem Avisé](/objectif) : aider les familles
 
 Pour creuser le sujet, nos [guides parents](/guides) et notre [méthode d'évaluation](/notre-methode) donnent des repères concrets, et nous suivons l'actualité famille et numérique sur [Aperçu Découverte](/apercudecouverte). L'IA n'est pas une parenthèse qui va passer. C'est un nouveau terrain d'apprentissage, et il vaut mieux y accompagner ses enfants que les y laisser seuls.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Création du comité d'anticipation en éducation et déploiement du parcours Pix IA »](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899).
-- Éduscol, [« Les intelligences artificielles et leurs usages en éducation »](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education).
-- CNIL, [« IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 »](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028).
+- [Création du comité d'anticipation en éducation et déploiement du parcours Pix IA (Éducation nationale)](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899)
+- [Les intelligences artificielles et leurs usages en éducation (Éduscol)](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education)
+- [IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 (CNIL)](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028)

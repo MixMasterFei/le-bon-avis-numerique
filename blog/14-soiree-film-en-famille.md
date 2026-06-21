@@ -83,7 +83,7 @@ Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le 
 
 Et si vous hésitez sur la limite d'âge, notre article sur le [bon âge pour un film](/blog/bon-age-film-enfant) revient sur une réalité simple : deux enfants du même âge ne vivent pas toujours la même histoire. Un film bien choisi, à la bonne heure, regardé ensemble : c'est déjà une bonne soirée.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Ameli, [« Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age).
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)

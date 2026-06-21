@@ -80,8 +80,8 @@ Les écrans ne vont pas disparaître : ils sont à l'école, dans les loisirs, d
 
 On peut commencer petit : un repas sans téléphone, une chambre sans écran la nuit, un film choisi ensemble le week-end, une discussion après une partie. C'est déjà beaucoup. Pour choisir avec un peu plus de confiance, nos [guides parents](/guides) et les fiches Totem par âge sont là pour ça. Le temps d'écran compte, mais le contenu, le contexte et l'accompagnement comptent tout autant.
 
-## Sources
+## Pour aller plus loin
 
-- Éducation nationale, [« Bien grandir avec les écrans : des repères pour chaque âge »](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121).
-- Ameli, [« Écrans : définition et chiffres clés »](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres).
-- Ministère des Solidarités, [« Les défis de la parentalité numérique »](https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique).
+- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Écrans : définition et chiffres clés (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres)
+- [Les défis de la parentalité numérique (Ministère des Solidarités)](https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique)
