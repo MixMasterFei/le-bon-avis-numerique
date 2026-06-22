@@ -48,6 +48,34 @@ function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
 // and a module-scoped cache survives remounts within the session.
 const RAIL_CACHE = new Map<string, RedesignCardMedia[]>()
 
+// SWR-style persistence: a full page refresh paints rails from the previous
+// session's sessionStorage snapshot (no spinner, no full re-fetch), then quietly
+// revalidates. sessionStorage survives reloads in the same tab and clears when
+// the tab closes — so data is never more than a session stale.
+const PERSIST_TTL_MS = 6 * 60 * 60 * 1000 // 6h hard cap
+
+function persistGet<T>(key: string): T | null {
+  if (typeof window === "undefined") return null
+  try {
+    const raw = window.sessionStorage.getItem(`totem:rail:v1:${key}`)
+    if (!raw) return null
+    const o = JSON.parse(raw) as { t: number; v: T }
+    if (!o || typeof o.t !== "number" || Date.now() - o.t > PERSIST_TTL_MS) return null
+    return o.v
+  } catch {
+    return null
+  }
+}
+
+function persistSet<T>(key: string, value: T): void {
+  if (typeof window === "undefined") return
+  try {
+    window.sessionStorage.setItem(`totem:rail:v1:${key}`, JSON.stringify({ t: Date.now(), v: value }))
+  } catch {
+    /* quota exceeded or storage disabled — ignore */
+  }
+}
+
 function useRail(url: string, key: string, fallbackType: CardType) {
   const cacheKey = `${key}@${url}`
   const [items, setItems] = useState<RedesignCardMedia[]>(() => RAIL_CACHE.get(cacheKey) ?? [])
@@ -57,20 +85,26 @@ function useRail(url: string, key: string, fallbackType: CardType) {
   const didInit = useRef(RAIL_CACHE.has(cacheKey))
 
   useEffect(() => {
+    let cancelled = false
     const cached = RAIL_CACHE.get(cacheKey)
     if (cached) {
-      // Instant: serve from cache (deferred to avoid a synchronous cascade).
+      // Already validated this session: serve from memory, no refetch.
       didInit.current = true
       queueMicrotask(() => {
+        if (cancelled) return
         setItems(cached)
         setLoading(false)
       })
-      return
+      return () => { cancelled = true }
     }
-    // Not cached: keep the current cards visible while fetching (loading is
-    // already true on the very first load via useState; we don't re-raise it
-    // on filter changes, so there's no empty skeleton flash).
-    let cancelled = false
+    // No in-memory copy (e.g. a fresh page load): paint instantly from the
+    // previous session's sessionStorage snapshot, then revalidate once.
+    const persisted = persistGet<RedesignCardMedia[]>(cacheKey)
+    if (persisted && persisted.length) {
+      didInit.current = true
+      setItems(persisted)
+      setLoading(false)
+    }
     fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -78,6 +112,7 @@ function useRail(url: string, key: string, fallbackType: CardType) {
         const arr = Array.isArray(data?.[key]) ? (data[key] as ApiMedia[]) : []
         const mapped = arr.map((m) => toCard(m, fallbackType))
         RAIL_CACHE.set(cacheKey, mapped)
+        persistSet(cacheKey, mapped)
         setItems(mapped)
         didInit.current = true
       })
@@ -124,6 +159,13 @@ function useTopPicks(maxAge: number) {
 
   useEffect(() => {
     let cancelled = false
+    const ckey = `toppicks:age=${maxAge}`
+    // Instant paint from the previous session's snapshot, then revalidate.
+    const persisted = persistGet<TopPools>(ckey)
+    if (persisted) {
+      setPools(persisted)
+      setLoading(false)
+    }
     const age = `maxAge=${maxAge}`
     const month = new Date().getMonth()
     const inSeason = (m: ApiMedia) => !isOutOfSeason(m, month)
@@ -143,12 +185,14 @@ function useTopPicks(maxAge: number) {
       .then(([cin, fq, ff, tv, gm]) => {
         if (cancelled) return
         const films = [...list(fq, "items"), ...list(ff, "items")].filter(inSeason).map((m) => toCard(m, "MOVIE"))
-        setPools({
+        const next: TopPools = {
           cinema: list(cin, "movies").filter(inSeason).map((m) => toCard(m, "MOVIE")),
           films,
           series: list(tv, "items").filter(inSeason).map((m) => toCard(m, "TV")),
           games: list(gm, "games").filter(inSeason).map((m) => toCard(m, "GAME")),
-        })
+        }
+        setPools(next)
+        persistSet(ckey, next)
       })
       .finally(() => { if (!cancelled) setLoading(false) })
 
