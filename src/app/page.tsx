@@ -8,11 +8,7 @@ import { HomepageApercu } from "@/components/home-v2/HomepageApercu"
 import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
 import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggle"
 import { v2Enabled } from "@/lib/v2-flag"
-import {
-  resolveHomepageTimeContext,
-  homepageRailLabel,
-  type HomepageState,
-} from "@/lib/homepage-time-context"
+import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-time-context"
 import { getHolidayCalendar } from "@/lib/school-holidays"
 
 // V2 redesign is admin-only and dynamically imported so its chunk + the
@@ -133,7 +129,7 @@ export default async function HomePage({
           heroPosters={heroPosters}
           defaultMaxAge={maxAgeCap ?? 12}
           familyMembers={familyMembers}
-          railLabel={homepageRailLabel(homepageState)}
+          homepageState={homepageState}
         />
         <AdminVariantToggle variant="v2" />
       </>

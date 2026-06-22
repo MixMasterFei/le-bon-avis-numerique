@@ -10,14 +10,14 @@ import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
 import { StickyAgeFilter } from "./StickyAgeFilter"
 import { PersonalizedRail } from "./PersonalizedRail"
-import { WeekendRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
+import { TopPicksRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } from "./rails"
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
 import { PlatformsSection } from "./PlatformsSection"
 import { MethodeBand } from "./MethodeBand"
 import { FamilyNudge } from "./FamilyNudge"
 
 import type { FamilyMemberLite } from "./FamilyChips"
-import type { HomepageRailLabel } from "@/lib/homepage-time-context"
+import type { HomepageState } from "@/lib/homepage-time-context"
 
 interface HomepageRedesignProps {
   isLoggedIn: boolean
@@ -27,8 +27,8 @@ interface HomepageRedesignProps {
   defaultMaxAge: number
   /** The signed-in family's members (for the "Votre famille" shortcuts). */
   familyMembers: FamilyMemberLite[]
-  /** Time-aware label for the first rail (tonight / weekend / holidays / day). */
-  railLabel: HomepageRailLabel
+  /** Paris-time moment for the first rail (tonight / weekend / holidays / day). */
+  homepageState: HomepageState
 }
 
 /**
@@ -69,7 +69,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
   return <TopProgressBar loading={pulse} />
 }
 
-export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers, railLabel }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers, homepageState }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
@@ -142,7 +142,7 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {/* First rail stays eager (at/just-below the fold). The rest are heavy
             data rails (each fetches + renders a poster grid) — deferred until
             scrolled near, so they don't all mount on load and delay LCP. */}
-        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} label={railLabel} />
+        <TopPicksRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} state={homepageState} />
         <DeferUntilVisible minHeight={300}>
           <UpcomingRail />
         </DeferUntilVisible>

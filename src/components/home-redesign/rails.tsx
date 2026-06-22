@@ -5,7 +5,7 @@ import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
-import type { HomepageRailLabel } from "@/lib/homepage-time-context"
+import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -16,6 +16,7 @@ interface ApiMedia {
   posterUrl: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
+  topics?: string[] | null
   contentMetrics?: RedesignCardMedia["contentMetrics"]
   cinemaReleaseBucket?: string
   releaseDate?: string | null
@@ -87,82 +88,115 @@ function useRail(url: string, key: string, fallbackType: CardType) {
   return { items, loading }
 }
 
-// ── Pour ce week-end — age-chip driven, with a "Recharger" reshuffle ──
+// ── Top picks — time-aware, quality, in-season ("Pour ce soir / ce week-end…") ──
 //
-// The hero selection must be MIXED media (films + séries + jeux) and read as
-// attractive to a newcomer: roughly half fresh releases + half recognizable,
-// quality titles. We blend two pools from the unified /api/db/media endpoint:
-//   - quality : sort=popularity + a tmdbVoteCount floor → well-known films/TV
-//     (games carry no tmdb votes, so they naturally come from the fresh pool).
-//   - fresh   : sort=newest → recent mixed media incl. séries + jeux.
-// Both are age-gated (expertAgeRec ≤ the selected family age) and vetted by the
-// endpoint's public quality floor. We then weekly-seed-shuffle the blend so the
-// row rotates each Monday; "Recharger" reshuffles on demand.
-interface MediaApiItem {
-  id: string
-  type?: string
-  title: string
-  posterUrl: string | null
-  expertAgeRec?: number | null
-  genres?: string[] | null
-  contentMetrics?: RedesignCardMedia["contentMetrics"]
+// Leads with current theatrical releases (so a big drop surfaces here the week
+// it lands, not only in the cinema rail), then fills with quality titles whose
+// MIX shifts by moment: the weekend leans films, weeknights lean séries + jeux.
+// Everything is age-gated and passes each endpoint's public quality floor, and
+// out-of-season holiday titles (no Noël in June) are filtered out.
+
+const SEASONAL = {
+  christmas: /(no[eë]l|christmas|santa|p[eè]re no[eë]l)/,
+  halloween: /halloween/,
 }
 
-function mapMedia(items: unknown): RedesignCardMedia[] {
-  if (!Array.isArray(items)) return []
-  return (items as MediaApiItem[])
-    .filter((it) => it.type === "MOVIE" || it.type === "TV" || it.type === "GAME")
-    .map((it) => toCard(it, "MOVIE"))
+/** Drop holiday-themed titles when we're not in their season. */
+function isOutOfSeason(m: ApiMedia, month0: number): boolean {
+  const hay = `${m.title} ${(m.genres ?? []).join(" ")} ${(m.topics ?? []).join(" ")}`.toLowerCase()
+  const decSeason = month0 === 10 || month0 === 11 // nov–déc
+  const octSeason = month0 === 9 // oct
+  if (!decSeason && SEASONAL.christmas.test(hay)) return true
+  if (!octSeason && SEASONAL.halloween.test(hay)) return true
+  return false
 }
 
-function useWeekend(maxAge: number) {
-  const [quality, setQuality] = useState<RedesignCardMedia[]>([])
-  const [fresh, setFresh] = useState<RedesignCardMedia[]>([])
+interface TopPools {
+  cinema: RedesignCardMedia[]
+  films: RedesignCardMedia[]
+  series: RedesignCardMedia[]
+  games: RedesignCardMedia[]
+}
+
+function useTopPicks(maxAge: number) {
+  const [pools, setPools] = useState<TopPools>({ cinema: [], films: [], series: [], games: [] })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     const age = `maxAge=${maxAge}`
+    const month = new Date().getMonth()
+    const inSeason = (m: ApiMedia) => !isOutOfSeason(m, month)
+    const getJson = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    const list = (data: unknown, key: string): ApiMedia[] => {
+      const d = data as Record<string, unknown> | null
+      return d && Array.isArray(d[key]) ? (d[key] as ApiMedia[]) : []
+    }
+
     Promise.all([
-      fetch(`/api/db/media?sort=popularity&minVotes=200&${age}&limit=40`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-      fetch(`/api/db/media?sort=newest&${age}&limit=40`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      getJson(`/api/cinema?${age}`),
+      getJson(`/api/db/media?type=MOVIE&sort=popularity&minVotes=200&${age}&limit=30`),
+      getJson(`/api/db/media?type=MOVIE&sort=newest&minVotes=80&${age}&limit=30`),
+      getJson(`/api/db/media?type=TV&sort=popularity&minVotes=80&${age}&limit=30`),
+      getJson(`/api/db/games?sortBy=releaseDate&minVoteCount=20&requirePoster=true&${age}&limit=20`),
     ])
-      .then(([q, f]) => {
+      .then(([cin, fq, ff, tv, gm]) => {
         if (cancelled) return
-        setQuality(mapMedia(q?.items))
-        setFresh(mapMedia(f?.items))
+        const films = [...list(fq, "items"), ...list(ff, "items")].filter(inSeason).map((m) => toCard(m, "MOVIE"))
+        setPools({
+          cinema: list(cin, "movies").filter(inSeason).map((m) => toCard(m, "MOVIE")),
+          films,
+          series: list(tv, "items").filter(inSeason).map((m) => toCard(m, "TV")),
+          games: list(gm, "games").filter(inSeason).map((m) => toCard(m, "GAME")),
+        })
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
     return () => { cancelled = true }
   }, [maxAge])
 
-  return { quality, fresh, loading }
+  return { pools, loading }
 }
 
-export function WeekendRail({ maxAge, audience, rankByMemberIds, label }: { maxAge: number; audience?: string; rankByMemberIds?: string[]; label: HomepageRailLabel }) {
-  const { quality, fresh, loading } = useWeekend(maxAge)
+// How many of each type to show, by moment. Cinema always leads (1–2) so a big
+// new release surfaces first; the rest is the quality fill.
+const TOP_MIX: Record<HomepageState, { cinema: number; films: number; series: number; games: number }> = {
+  weekend: { cinema: 2, films: 6, series: 1, games: 1 },
+  holidays: { cinema: 2, films: 4, series: 3, games: 3 },
+  tonight: { cinema: 1, films: 3, series: 4, games: 3 },
+  default: { cinema: 1, films: 4, series: 3, games: 2 },
+}
+
+export function TopPicksRail({ maxAge, audience, rankByMemberIds, state }: { maxAge: number; audience?: string; rankByMemberIds?: string[]; state: HomepageState }) {
+  const { pools, loading } = useTopPicks(maxAge)
   const [nonce, setNonce] = useState(0)
+  const label = homepageRailLabel(state)
 
   const shown = useMemo(() => {
     const seed = getWeekSeed() + nonce
+    const mix = TOP_MIX[state]
+    const pick = (arr: RedesignCardMedia[], n: number, s: number) => seededShuffle(arr, s).slice(0, n)
+    // Cinema leads (big new releases first); the rest is shuffled together so
+    // films / séries / jeux interleave instead of sitting in type blocks.
+    const lead = pools.cinema.slice(0, mix.cinema)
+    const rest = seededShuffle(
+      [
+        ...pick(pools.films, mix.films, seed),
+        ...pick(pools.series, mix.series, seed + 1),
+        ...pick(pools.games, mix.games, seed + 2),
+      ],
+      seed + 3,
+    )
     const seen = new Set<string>()
-    const take = (arr: RedesignCardMedia[], n: number, s: number) => {
-      const out: RedesignCardMedia[] = []
-      for (const m of seededShuffle(arr, s)) {
-        if (seen.has(m.id)) continue
-        seen.add(m.id)
-        out.push(m)
-        if (out.length >= n) break
+    const out: RedesignCardMedia[] = []
+    for (const c of [...lead, ...rest]) {
+      if (c && !seen.has(c.id)) {
+        seen.add(c.id)
+        out.push(c)
       }
-      return out
     }
-    // ~half fresh, ~half quality, then blend so types/sources interleave.
-    const freshHalf = take(fresh, 5, seed)
-    const qualityHalf = take(quality, 5, seed + 1)
-    return seededShuffle([...freshHalf, ...qualityHalf], seed + 2)
-  }, [fresh, quality, nonce])
+    return out.slice(0, 12)
+  }, [pools, state, nonce])
 
   return (
     <CardRailSection
