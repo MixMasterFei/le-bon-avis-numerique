@@ -162,3 +162,52 @@ export function resolveHomepageTimeContext(
     parisIsoDay: isoDay,
   }
 }
+
+export interface HomepageRailLabel {
+  eyebrow: string
+  prefix: string
+  emphasis: string
+  suffix: string
+  lead: string
+}
+
+/**
+ * Time-aware label for the homepage's first content rail, so it never reads
+ * "ce week-end" on a Monday. Mirrors the states of resolveHomepageTimeContext.
+ */
+export function homepageRailLabel(state: HomepageState): HomepageRailLabel {
+  switch (state) {
+    case "holidays":
+      return {
+        eyebrow: "Pendant les vacances",
+        prefix: "Pour ",
+        emphasis: "les vacances",
+        suffix: " en famille",
+        lead: "De quoi occuper petits et grands pendant les vacances, prêt à lancer.",
+      }
+    case "weekend":
+      return {
+        eyebrow: "Ce week-end",
+        prefix: "Pour ",
+        emphasis: "ce week-end",
+        suffix: " en famille",
+        lead: "Un mélange de nouveautés et de valeurs sûres, prêtes à lancer.",
+      }
+    case "tonight":
+      return {
+        eyebrow: "Ce soir",
+        prefix: "Pour ",
+        emphasis: "ce soir",
+        suffix: " en famille",
+        lead: "Des idées prêtes à lancer pour la soirée, sans hésiter pendant le dîner.",
+      }
+    default:
+      return {
+        eyebrow: "Aujourd'hui",
+        prefix: "À regarder ",
+        emphasis: "aujourd'hui",
+        suffix: " en famille",
+        lead: "Notre sélection du moment, à regarder ensemble.",
+      }
+  }
+}

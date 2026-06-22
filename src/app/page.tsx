@@ -8,6 +8,12 @@ import { HomepageApercu } from "@/components/home-v2/HomepageApercu"
 import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
 import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggle"
 import { v2Enabled } from "@/lib/v2-flag"
+import {
+  resolveHomepageTimeContext,
+  homepageRailLabel,
+  type HomepageState,
+} from "@/lib/homepage-time-context"
+import { getHolidayCalendar } from "@/lib/school-holidays"
 
 // V2 redesign is admin-only and dynamically imported so its chunk + the
 // three design fonts never ship to anonymous visitors.
@@ -71,6 +77,20 @@ async function resolveFamilyAgeCap(userId: string): Promise<number | null> {
   }
 }
 
+/**
+ * Paris-time homepage state (tonight / weekend / holidays / default), used to
+ * label the first content rail. Resolved per request — the page is already
+ * dynamic (auth() reads cookies) — so it never goes stale.
+ */
+async function resolveHomepageState(): Promise<HomepageState> {
+  try {
+    const holidays = await getHolidayCalendar()
+    return resolveHomepageTimeContext(new Date(), holidays).state
+  } catch {
+    return resolveHomepageTimeContext(new Date()).state
+  }
+}
+
 /** Family members for the V2 hero "Votre famille sur mesure" shortcuts. */
 async function getFamilyMembersLite(userId: string) {
   try {
@@ -101,9 +121,10 @@ export default async function HomePage({
   const showV2 = v2Enabled(isAdmin) && sp.v !== "classic"
 
   if (showV2) {
-    const [heroPosters, familyMembers] = await Promise.all([
+    const [heroPosters, familyMembers, homepageState] = await Promise.all([
       getHeroWallPosters(getWeekSeed()),
       session?.user?.id ? getFamilyMembersLite(session.user.id) : Promise.resolve([]),
+      resolveHomepageState(),
     ])
     return (
       <>
@@ -112,6 +133,7 @@ export default async function HomePage({
           heroPosters={heroPosters}
           defaultMaxAge={maxAgeCap ?? 12}
           familyMembers={familyMembers}
+          railLabel={homepageRailLabel(homepageState)}
         />
         <AdminVariantToggle variant="v2" />
       </>

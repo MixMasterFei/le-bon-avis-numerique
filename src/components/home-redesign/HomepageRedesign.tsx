@@ -17,6 +17,7 @@ import { MethodeBand } from "./MethodeBand"
 import { FamilyNudge } from "./FamilyNudge"
 
 import type { FamilyMemberLite } from "./FamilyChips"
+import type { HomepageRailLabel } from "@/lib/homepage-time-context"
 
 interface HomepageRedesignProps {
   isLoggedIn: boolean
@@ -26,6 +27,8 @@ interface HomepageRedesignProps {
   defaultMaxAge: number
   /** The signed-in family's members (for the "Votre famille" shortcuts). */
   familyMembers: FamilyMemberLite[]
+  /** Time-aware label for the first rail (tonight / weekend / holidays / day). */
+  railLabel: HomepageRailLabel
 }
 
 /**
@@ -66,7 +69,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
   return <TopProgressBar loading={pulse} />
 }
 
-export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, familyMembers, railLabel }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
@@ -139,7 +142,7 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {/* First rail stays eager (at/just-below the fold). The rest are heavy
             data rails (each fetches + renders a poster grid) — deferred until
             scrolled near, so they don't all mount on load and delay LCP. */}
-        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+        <WeekendRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} label={railLabel} />
         <DeferUntilVisible minHeight={300}>
           <UpcomingRail />
         </DeferUntilVisible>

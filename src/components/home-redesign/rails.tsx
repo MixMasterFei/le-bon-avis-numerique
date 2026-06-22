@@ -5,6 +5,7 @@ import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
+import type { HomepageRailLabel } from "@/lib/homepage-time-context"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -140,7 +141,7 @@ function useWeekend(maxAge: number) {
   return { quality, fresh, loading }
 }
 
-export function WeekendRail({ maxAge, audience, rankByMemberIds }: { maxAge: number; audience?: string; rankByMemberIds?: string[] }) {
+export function WeekendRail({ maxAge, audience, rankByMemberIds, label }: { maxAge: number; audience?: string; rankByMemberIds?: string[]; label: HomepageRailLabel }) {
   const { quality, fresh, loading } = useWeekend(maxAge)
   const [nonce, setNonce] = useState(0)
 
@@ -166,9 +167,9 @@ export function WeekendRail({ maxAge, audience, rankByMemberIds }: { maxAge: num
   return (
     <CardRailSection
       id="weekend"
-      eyebrow="Ce week-end"
-      title={<>Pour <Em tone="terra">ce week-end</Em> en famille</>}
-      lead="Un mélange de nouveautés et de valeurs sûres, prêtes à lancer. Ajustez les âges plus haut pour personnaliser."
+      eyebrow={label.eyebrow}
+      title={<>{label.prefix}<Em tone="terra">{label.emphasis}</Em>{label.suffix}</>}
+      lead={`${label.lead} Ajustez les âges plus haut pour personnaliser.`}
       items={shown}
       loading={loading}
       totem="full"
