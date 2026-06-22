@@ -6,8 +6,15 @@ import { getMemberAge } from "@/lib/age-utils"
 import { runSmartFilter } from "@/lib/smart-filter"
 import { v2Enabled } from "@/lib/v2-flag"
 import { FilmsRechercheLegacy } from "./FilmsRechercheLegacy"
+import type { Metadata } from "next"
 
 export const revalidate = 300
+
+// Filter/search results: don't index (endless param combinations are thin/duplicate)
+// but follow links. Also stops this page inheriting the root layout's canonical "/".
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+}
 
 const DEFAULT_MIN_AGE = 2
 const DEFAULT_MAX_AGE = 18
