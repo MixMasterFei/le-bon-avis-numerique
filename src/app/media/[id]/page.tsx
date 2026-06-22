@@ -241,6 +241,11 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     }
   }
 
+  // Canonical route id is always the normalized `<type>:<id>` form, so every
+  // URL-encoding variant (movie:603 vs movie%3A603) resolves to ONE canonical
+  // and Google stops reporting "duplicate without user-selected canonical".
+  const routeId = toMediaRouteId(media.type, media.id)
+
   // Pre-release/provisional: the age is an estimate, so the SERP wording must
   // not assert a definitive verdict. See @/lib/release-status.
   const hide = shouldHideContentAnalysis({
@@ -294,8 +299,8 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     title,
     description,
     alternates: {
-      canonical: `/media/${id}`,
-      types: { "text/markdown": `/md/media/${id}` },
+      canonical: `/media/${routeId}`,
+      types: { "text/markdown": `/md/media/${routeId}` },
     },
     keywords: [
       ...media.genres.slice(0, 5),
@@ -680,7 +685,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   })
 
   // JSON-LD structured data
-  const jsonLd = buildJsonLd(media, id, hideContentAnalysis)
+  const jsonLd = buildJsonLd(media, toMediaRouteId(media.type, media.id), hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
   // "Pourquoi cet âge ?" rationale — shown on hover/focus of the age badge in
   // the hero (MediaHeroEditable) and mirrored into the FAQ JSON-LD so answer
