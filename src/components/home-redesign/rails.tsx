@@ -17,6 +17,7 @@ interface ApiMedia {
   expertAgeRec?: number | null
   genres?: string[] | null
   topics?: string[] | null
+  platforms?: string[] | null
   contentMetrics?: RedesignCardMedia["contentMetrics"]
   cinemaReleaseBucket?: string
   releaseDate?: string | null
@@ -169,6 +170,11 @@ function useTopPicks(maxAge: number) {
     const age = `maxAge=${maxAge}`
     const month = new Date().getMonth()
     const inSeason = (m: ApiMedia) => !isOutOfSeason(m, month)
+    // Watchable in France right now = has FR streaming providers. Drops globally
+    // popular but France-unavailable titles (e.g. an Italy-only release that
+    // rides its huge home-country vote count into the popularity pool).
+    const inFrance = (m: ApiMedia) => Array.isArray(m.platforms) && m.platforms.length > 0
+    const relevant = (m: ApiMedia) => inSeason(m) && inFrance(m)
     const getJson = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     const list = (data: unknown, key: string): ApiMedia[] => {
       const d = data as Record<string, unknown> | null
@@ -184,11 +190,13 @@ function useTopPicks(maxAge: number) {
     ])
       .then(([cin, fq, ff, tv, gm]) => {
         if (cancelled) return
-        const films = [...list(fq, "items"), ...list(ff, "items")].filter(inSeason).map((m) => toCard(m, "MOVIE"))
+        const films = [...list(fq, "items"), ...list(ff, "items")].filter(relevant).map((m) => toCard(m, "MOVIE"))
         const next: TopPools = {
+          // Cinema = TMDB now_playing region=FR (already French theatrical), games
+          // have no streaming providers — so neither gets the FR-availability gate.
           cinema: list(cin, "movies").filter(inSeason).map((m) => toCard(m, "MOVIE")),
           films,
-          series: list(tv, "items").filter(inSeason).map((m) => toCard(m, "TV")),
+          series: list(tv, "items").filter(relevant).map((m) => toCard(m, "TV")),
           games: list(gm, "games").filter(inSeason).map((m) => toCard(m, "GAME")),
         }
         setPools(next)
