@@ -103,8 +103,11 @@ function useRail(url: string, key: string, fallbackType: CardType) {
     const persisted = persistGet<RedesignCardMedia[]>(cacheKey)
     if (persisted && persisted.length) {
       didInit.current = true
-      setItems(persisted)
-      setLoading(false)
+      queueMicrotask(() => {
+        if (cancelled) return
+        setItems(persisted)
+        setLoading(false)
+      })
     }
     fetch(url)
       .then((r) => (r.ok ? r.json() : null))
@@ -164,8 +167,11 @@ function useTopPicks(maxAge: number) {
     // Instant paint from the previous session's snapshot, then revalidate.
     const persisted = persistGet<TopPools>(ckey)
     if (persisted) {
-      setPools(persisted)
-      setLoading(false)
+      queueMicrotask(() => {
+        if (cancelled) return
+        setPools(persisted)
+        setLoading(false)
+      })
     }
     const age = `maxAge=${maxAge}`
     const month = new Date().getMonth()
