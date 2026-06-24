@@ -21,12 +21,14 @@ export function FamilyNudge({ selectedKeys, isLoggedIn }: { selectedKeys: string
     if (selectedKeys.length > 0) queueMicrotask(() => setShown(true))
   }, [selectedKeys.length])
 
+  // Reliable fallback so the nudge appears for logged-out visitors even when
+  // they never pick an age. The previous trigger observed #bientot, but that
+  // section mounts lazily (DeferUntilVisible), so the element didn't exist when
+  // this effect ran and the observer never attached. A short delay is simple
+  // and dependable; the age-chip effect above still reveals it immediately.
   useEffect(() => {
-    const el = document.getElementById("bientot")
-    if (!el) return
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) setShown(true) }, { threshold: 0.35 })
-    io.observe(el)
-    return () => io.disconnect()
+    const t = setTimeout(() => setShown(true), 2500)
+    return () => clearTimeout(t)
   }, [])
 
   useEffect(() => {
