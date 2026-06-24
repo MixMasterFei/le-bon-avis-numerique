@@ -9,8 +9,9 @@ import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 /**
  * Conversion nudge for logged-out visitors. Appears after the user picks an
  * age (or scrolls to "Bientôt"); the × collapses it into a glowing totem
- * launcher (state persisted). Bottom-LEFT to avoid the global Totem dock
- * (bottom-right). Uses the real logo.
+ * launcher (state persisted). Bottom-RIGHT: the Totem dock (also bottom-right)
+ * is logged-in only and not shipped yet, while this nudge is logged-out only,
+ * so the two never appear at the same time. Uses the real logo.
  */
 export function FamilyNudge({ selectedKeys, isLoggedIn }: { selectedKeys: string[]; isLoggedIn: boolean }) {
   const [shown, setShown] = useState(false)
@@ -52,7 +53,7 @@ export function FamilyNudge({ selectedKeys, isLoggedIn }: { selectedKeys: string
       <button
         onClick={expand}
         aria-label="Reprendre la création de votre famille"
-        className="fixed bottom-6 left-6 z-[60] grid h-[62px] w-[62px] place-items-center rounded-full"
+        className="fixed bottom-6 right-6 z-[60] grid h-[62px] w-[62px] place-items-center rounded-full"
         style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "0 16px 34px -12px rgba(40,28,12,.5)" }}
       >
         <span
@@ -67,7 +68,7 @@ export function FamilyNudge({ selectedKeys, isLoggedIn }: { selectedKeys: string
 
   return (
     <aside
-      className="fixed bottom-6 left-6 z-[60] w-[332px] max-w-[calc(100vw-3rem)] rounded-[20px] p-[18px]"
+      className="fixed bottom-6 right-6 z-[60] w-[332px] max-w-[calc(100vw-3rem)] rounded-[20px] p-[18px]"
       style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "0 26px 64px -22px rgba(40,28,12,.55)" }}
     >
       <button onClick={collapse} aria-label="Réduire" className="absolute right-2.5 top-2.5 grid h-7 w-7 place-items-center rounded-full" style={{ color: "var(--ink-3)" }}>

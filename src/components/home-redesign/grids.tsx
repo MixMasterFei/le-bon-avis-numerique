@@ -141,10 +141,7 @@ export function FinalCTARedesign({ isLoggedIn }: { isLoggedIn: boolean }) {
               <CtaLink href="/films">Parcourir le catalogue</CtaLink>
             </>
           ) : (
-            <>
-              <CtaLink href="/inscription" primary>Créer ma famille gratuitement</CtaLink>
-              <CtaLink href="/recherche">Découvrir sans compte</CtaLink>
-            </>
+            <CtaLink href="/inscription" primary>Créer ma famille gratuitement</CtaLink>
           )}
         </div>
       </Wrap>
