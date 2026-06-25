@@ -70,16 +70,41 @@ export function significantTokens(query: string): string[] {
     .filter((t) => t.length > 1 && !STOPWORDS.has(t))
 }
 
+// Media-format words. They describe what the page *is*, not information to cram
+// into the copy: a fiche needn't write "film" in its synopsis to rank for
+// "<titre> film age". Required-token matching ignores them, so a natural
+// description isn't rejected just for omitting the format noun.
+const GENERIC_TOKENS = new Set([
+  "film", "films", "serie", "series", "saison", "saisons", "episode", "episodes",
+  "jeu", "jeux", "video", "videos", "manga", "mangas", "livre", "livres",
+  "anime", "animes", "bd", "emission", "emissions",
+])
+
+// Age-intent is the single most common striking-query shape ("<titre> à partir
+// de quel âge", "âge minimum"). A natural answer reads "dès 14 ans" — which
+// carries no literal "âge" token — so the "age" requirement is satisfied by any
+// of these equivalents. Matched on whole words to avoid "dans"/"sans" → "ans".
+const AGE_EQUIV = new Set(["age", "ages", "ans"])
+
+function tokenCovered(token: string, haystack: string, haystackWords: Set<string>): boolean {
+  if (AGE_EQUIV.has(token)) return [...AGE_EQUIV].some((w) => haystackWords.has(w))
+  return haystack.includes(token)
+}
+
 /**
- * True when every significant token of the query already appears in the page
+ * True when the query's *informative* tokens are already covered by the page
  * copy. Token-based (not raw-string) so "roméo + juliette âge conseillé" is
- * matched against ["romeo","juliette","age","conseille"] individually.
+ * matched against ["romeo","juliette","age","conseille"] individually. Two
+ * relaxations keep natural copy from being falsely rejected: media-format words
+ * ("film", "série", "jeu"…) are not required, and the age intent ("age") is
+ * satisfied by an explicit age phrasing ("dès 14 ans").
  */
 export function keywordPresent(query: string, ...texts: (string | null | undefined)[]): boolean {
-  const tokens = significantTokens(query)
+  const tokens = significantTokens(query).filter((t) => !GENERIC_TOKENS.has(t))
   if (tokens.length === 0) return true // nothing meaningful to add
   const haystack = normalize(texts.filter(Boolean).join(" "))
-  return tokens.every((t) => haystack.includes(t))
+  const haystackWords = new Set(haystack.split(" ").filter(Boolean))
+  return tokens.every((t) => tokenCovered(t, haystack, haystackWords))
 }
 
 // Navigational / piracy / streaming-intent queries: never the right trigger for a
@@ -251,10 +276,14 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
     "",
     `Des familles cherchent ce contenu via la requête : « ${query} ».`,
     "Réécris le synopsis pour qu'il réponde NATURELLEMENT à cette intention,",
-    "en intégrant les mots-clés pertinents là où ils ont du sens.",
+    "en intégrant les mots-clés pertinents là où ils ont du sens, et donne envie",
+    "de lire la fiche (pas juste de répondre puis partir).",
     "Contraintes STRICTES :",
     "- Français, 2 à 3 phrases, 400 caractères MAXIMUM.",
     "- N'invente AUCUN fait : reste fidèle au synopsis actuel et au titre.",
+    "- Si la requête porte sur l'âge, réponds avec une formulation naturelle",
+    "  (« dès 12 ans », « déconseillé avant 14 ans ») — le mot « âge » n'est pas obligatoire.",
+    "- Inutile de répéter le format (« film », « série », « jeu ») : la page l'indique déjà.",
     "- Pas de bourrage de mots-clés, pas de la requête recopiée telle quelle.",
     "- Ton informatif et sobre, destiné aux parents.",
     'Réponds en JSON valide uniquement : {"synopsis": "..."}',
@@ -322,6 +351,8 @@ function buildTitlePrompt(target: TargetItem, query: string): string {
     `- Français, ${SEO_TITLE_MAX} caractères MAXIMUM.`,
     `- DOIT commencer par « ${target.title} ».`,
     "- Intègre naturellement le mot-clé de la requête (ex. « à partir de quel âge », « âge minimum »).",
+    "  Pour une intention d'âge, le mot « âge » ou une tranche (« dès 12 ans ») suffit.",
+    "- Inutile de répéter le format (« film », « série », « jeu ») : ça gaspille des caractères.",
     "- N'invente aucun fait. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
     'Réponds en JSON valide uniquement : {"title": "..."}',
   ].filter(Boolean).join("\n")

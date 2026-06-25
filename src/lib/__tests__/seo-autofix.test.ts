@@ -41,6 +41,27 @@ describe("keywordPresent", () => {
   it("treats a query with only stopwords as covered (nothing to add)", () => {
     expect(keywordPresent("le la les", "n'importe quoi")).toBe(true)
   })
+
+  it("does not require media-format words (film/série/jeu) in the copy", () => {
+    // "backrooms film age" — natural copy answers the age, never says "film".
+    expect(
+      keywordPresent("backrooms film age", "Backrooms : exploration angoissante, déconseillé avant 14 ans."),
+    ).toBe(true)
+  })
+
+  it("treats an age intent as covered by an explicit age phrasing", () => {
+    expect(keywordPresent("toy story 5 age", "Toy Story 5 — aventure familiale dès 6 ans.")).toBe(true)
+    expect(keywordPresent("toy story 5 age", "Toy Story 5 — aventure familiale réussie.")).toBe(false)
+  })
+
+  it("does not let 'dans'/'sans' masquerade as an age answer", () => {
+    // "ans" must be a whole word, not a substring of dans/sans.
+    expect(keywordPresent("backrooms age", "Backrooms se déroule dans des couloirs sans fin.")).toBe(false)
+  })
+
+  it("still requires the genuine ranking keyword (not just the title)", () => {
+    expect(keywordPresent("backrooms age minimum", "Backrooms : couloirs infinis.")).toBe(false)
+  })
 })
 
 describe("isJunkQuery", () => {
