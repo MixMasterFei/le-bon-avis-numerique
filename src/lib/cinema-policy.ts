@@ -39,3 +39,37 @@ export function cinemaReleaseBucketPriority(bucket: CinemaReleaseBucket): number
   return 4
 }
 
+// Languages we surface on the French cinema rails. Kept here (prisma-free) so
+// the upcoming selection below stays unit-testable.
+export const EUROPEAN_LANGUAGES = new Set([
+  "fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no",
+  "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru",
+])
+
+/**
+ * Pick the genuinely-upcoming French theatrical releases from a TMDB list.
+ *
+ * Authoritative inputs only — never the stored primary `release_date`, which can
+ * sit in the future for a film already in cinemas (a later digital/foreign date):
+ *   - keep European-language titles, de-duplicated by TMDB id,
+ *   - DROP anything currently in `now_playing` (already in theaters by definition),
+ *   - keep only titles whose date is strictly in the future ("upcoming" bucket).
+ * Sorted soonest-first. Generic over the movie shape so callers keep their full
+ * TMDB object (poster, genre_ids…) for downstream mapping.
+ */
+export function selectUpcomingCinema<
+  T extends { id: number; original_language: string; release_date?: string | null },
+>(movies: T[], nowPlayingIds: Set<number>, now = new Date()): T[] {
+  const seen = new Set<number>()
+  return movies
+    .filter((m) => EUROPEAN_LANGUAGES.has(m.original_language))
+    .filter((m) => {
+      if (seen.has(m.id)) return false
+      seen.add(m.id)
+      return true
+    })
+    .filter((m) => !nowPlayingIds.has(m.id))
+    .filter((m) => getCinemaReleaseBucket(m.release_date, now) === "upcoming")
+    .sort((a, b) => (a.release_date || "").localeCompare(b.release_date || ""))
+}
+
