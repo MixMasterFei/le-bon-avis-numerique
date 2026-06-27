@@ -1,18 +1,15 @@
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
-import { getNowPlayingMovies, getImageUrl, ImageSize, type TMDBMovie } from "@/lib/tmdb"
+import { getNowPlayingMovies, getUpcomingMovies, getImageUrl, ImageSize, type TMDBMovie } from "@/lib/tmdb"
 import { estimateAgeFromTmdbGenreIds } from "@/lib/import-helpers"
 import {
   CINEMA_TMDB_PAGES,
+  EUROPEAN_LANGUAGES,
   cinemaReleaseBucketPriority,
   getCinemaReleaseBucket,
+  selectUpcomingCinema,
   type CinemaReleaseBucket,
 } from "@/lib/cinema-policy"
-
-const EUROPEAN_LANGUAGES = new Set([
-  "fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no",
-  "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru",
-])
 
 export interface CinemaMovie {
   id: string
@@ -218,4 +215,85 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
     // technically "now playing" but read as obscure on a mainstream cinema rail.
     .filter((movie) => movie.cinemaReleaseBucket !== "reissue")
     .filter((movie) => matchesAgeFilter(movie, filters))
+}
+
+export interface UpcomingCinemaMovie {
+  id: string
+  type: "MOVIE"
+  title: string
+  posterUrl: string | null
+  expertAgeRec: number | null
+  genres: string[]
+  releaseDate: string | null // FR theatrical date, YYYY-MM-DD
+}
+
+/**
+ * Genuinely-upcoming French theatrical releases for the homepage "Bientôt" rail.
+ *
+ * Source of truth is TMDB `/movie/upcoming?region=FR` (the symmetric counterpart
+ * of the now_playing rail), NOT the stored primary `release_date` — which can be
+ * a future digital/foreign date for a film already in cinemas (e.g. "De Gaulle"
+ * showing now but carrying a July re-release date). We additionally subtract
+ * what's currently now-playing, then intersect with our DB so every card links
+ * to a real fiche (and carries a real, not provisional, age when enriched).
+ */
+export async function getUpcomingCinemaMovies(limit = 12): Promise<UpcomingCinemaMovie[]> {
+  let upcoming: TMDBMovie[]
+  let nowPlayingIds: Set<number>
+  try {
+    const [pages, playing] = await Promise.all([
+      Promise.all(CINEMA_TMDB_PAGES.map((page) => getUpcomingMovies(page))),
+      getNowPlayingTmdbIds(),
+    ])
+    upcoming = pages.flatMap((page) => page.results || [])
+    nowPlayingIds = playing
+  } catch {
+    return []
+  }
+
+  const candidates = selectUpcomingCinema(upcoming, nowPlayingIds)
+  if (candidates.length === 0) return []
+
+  const tmdbIds = candidates.map((m) => m.id)
+  let dbMovies: Array<{
+    tmdbId: number | null
+    id: string
+    title: string
+    posterUrl: string | null
+    expertAgeRec: number | null
+    genres: string[]
+  }> = []
+  try {
+    dbMovies = await withPrismaRetry(() =>
+      prisma.mediaItem.findMany({
+        where: { tmdbId: { in: tmdbIds }, type: "MOVIE" },
+        select: { tmdbId: true, id: true, title: true, posterUrl: true, expertAgeRec: true, genres: true },
+      }),
+    )
+  } catch {
+    return []
+  }
+
+  const dbByTmdbId = new Map(
+    dbMovies.filter((m) => m.tmdbId !== null).map((m) => [m.tmdbId!, m]),
+  )
+
+  // Keep only titles we actually have a fiche for — the card links to /media/[id],
+  // so an out-of-DB id would 404. `candidates` is already soonest-first.
+  const items: UpcomingCinemaMovie[] = []
+  for (const tmdb of candidates) {
+    const db = dbByTmdbId.get(tmdb.id)
+    if (!db) continue
+    items.push({
+      id: db.id,
+      type: "MOVIE",
+      title: db.title,
+      posterUrl: db.posterUrl || getImageUrl(tmdb.poster_path, ImageSize.poster.medium),
+      expertAgeRec: db.expertAgeRec ?? estimateAgeFromTmdbGenreIds(tmdb.genre_ids ?? []),
+      genres: db.genres ?? [],
+      releaseDate: tmdb.release_date || null,
+    })
+    if (items.length >= limit) break
+  }
+  return items
 }
