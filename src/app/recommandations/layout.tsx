@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Recommandations personnalisées | Totem Avisé",
     description: "Trouvez des films, séries et jeux adaptés à l'âge et aux sensibilités de votre famille.",
-    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Totem Avisé" }],
   },
 }
 

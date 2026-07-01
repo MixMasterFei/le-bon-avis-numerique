@@ -84,7 +84,7 @@ export async function generateMetadata({
     openGraph: {
       title: `${title} | Totem Avisé`,
       description,
-      images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+      images: [{ url: "/api/og", width: 1200, height: 630, alt: "Totem Avisé" }],
     },
   }
 }

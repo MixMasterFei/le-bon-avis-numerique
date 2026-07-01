@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Collections — Sélections thématiques | Totem Avisé",
     description: "Découvrez nos collections thématiques : les meilleurs films, séries et jeux pour enfants et ados.",
-    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Totem Avisé" }],
   },
 }
 
