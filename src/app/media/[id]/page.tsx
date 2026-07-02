@@ -51,7 +51,6 @@ import {
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
-import { isAdmin as checkIsAdmin } from "@/lib/auth"
 import type { MediaItem as MockMediaItem } from "@/lib/types"
 
 interface MediaPageProps {
@@ -672,7 +671,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // Watch providers and trailer are now fetched client-side via /api/media/[id]/extras
   // This eliminates the 1-5s TMDB blocking from server render
 
-  const adminUser = await checkIsAdmin()
+  // Admin status is resolved client-side (useSession) inside the components
+  // that need it — a server-side auth() read here would read cookies and opt
+  // the whole route out of ISR (revalidate above would be inert).
 
   // Pre-release / provisional fiches: we have NOT evaluated the title, so
   // every content-analysis surface (réponse rapide, metric bars, parent
@@ -789,7 +790,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
               {/* Main column */}
               <div className="min-w-0" style={{ color: "var(--color-warm-ink)" }}>
                 <MediaHeroEditable
-                  isAdmin={adminUser}
                   mediaId={media.id}
                   type={media.type}
                   officialRating={media.officialRating}
@@ -1084,7 +1084,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
             <AdminScreenshotsWrapper
               screenshots={media.screenshots}
               title={media.title}
-              isAdmin={adminUser}
             />
           )}
 

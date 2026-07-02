@@ -1,7 +1,7 @@
 "use client"
 
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
-import { ApercuHero } from "./ApercuHero"
+import { ApercuHero, type HeroPick } from "./ApercuHero"
 import { ApercuExpertPicks } from "./ApercuExpertPicks"
 import { ApercuNowInCinema } from "./ApercuNowInCinema"
 import { ApercuStreaming } from "./ApercuStreaming"
@@ -25,9 +25,23 @@ interface HomepageApercuProps {
    * since this file is "use client").
    */
   topSlot?: React.ReactNode
+  /**
+   * Server-fetched hero showcase (5 poster cards + catalog count for the
+   * stats badge). Rendered into the initial HTML — the poster stack is the
+   * desktop LCP element, so it must not wait for a client-side fetch.
+   */
+  heroPicks?: HeroPick[]
+  heroCatalogCount?: number | null
 }
 
-export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false, topSlot }: HomepageApercuProps) {
+export function HomepageApercu({
+  isLoggedIn,
+  serifClass,
+  isAdmin = false,
+  topSlot,
+  heroPicks = [],
+  heroCatalogCount = null,
+}: HomepageApercuProps) {
   const p = APERCU_PALETTE
 
   return (
@@ -36,7 +50,12 @@ export function HomepageApercu({ isLoggedIn, serifClass, isAdmin = false, topSlo
         className="flex flex-col overflow-x-hidden"
         style={{ background: p.bg, color: p.ink }}
       >
-        <ApercuHero serifClass={serifClass} isLoggedIn={isLoggedIn} />
+        <ApercuHero
+          serifClass={serifClass}
+          isLoggedIn={isLoggedIn}
+          picks={heroPicks}
+          totalCatalog={heroCatalogCount}
+        />
 
         {topSlot}
 

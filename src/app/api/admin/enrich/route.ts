@@ -670,6 +670,7 @@ export async function POST(request: NextRequest) {
           topics: analysis.tags,
           visualStyle: analysis.visualStyle,
           type: item.type,
+          officialRating: item.officialRating,
         })
 
         // Deterministic guardrail: cap sensibility axes for titles the model
