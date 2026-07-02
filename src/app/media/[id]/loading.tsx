@@ -1,52 +1,96 @@
+// Route-level skeleton shown instantly while the fiche renders. Mirrors the
+// warm redesign of page.tsx (cream background, contained white hero card,
+// poster left / main column / family panel right) so the transition to the
+// real page is a fade-in, not a theme swap — the previous skeleton still
+// mimicked the retired dark hero and flashed navy before every fiche.
+
+const warmCard = {
+  background: "var(--color-warm-card)",
+  border: "1px solid var(--color-warm-line)",
+  boxShadow:
+    "0 1px 2px rgba(58,46,34,.05), 0 14px 34px -18px rgba(58,46,34,.18)",
+} as const
+
+function Bar({ className }: { className: string }) {
+  return (
+    <div
+      className={`rounded animate-pulse ${className}`}
+      style={{ background: "var(--color-warm-placeholder)" }}
+    />
+  )
+}
+
 export default function MediaDetailLoading() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero skeleton — matches actual dark hero layout */}
-      <div className="relative bg-gradient-to-b from-gray-900 to-gray-800">
-        <div className="container mx-auto px-4 py-8">
-          {/* Back button */}
-          <div className="h-10 w-24 bg-white/10 rounded-full mb-8 animate-pulse" />
+    <div className="min-h-screen" style={{ background: "var(--color-warm-bg)" }}>
+      <div className="container mx-auto px-4 pt-6 pb-10">
+        {/* Back link */}
+        <Bar className="h-6 w-24 mb-6" />
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-            {/* Poster skeleton */}
-            <div className="lg:w-1/4 shrink-0">
-              <div className="aspect-[2/3] rounded-xl bg-white/10 animate-pulse" />
+        {/* Hero card */}
+        <div className="rounded-2xl p-5 sm:p-7" style={warmCard}>
+          <div className="grid gap-6 lg:gap-7 lg:grid-cols-[200px_minmax(0,1fr)] xl:grid-cols-[210px_minmax(0,1fr)_320px] lg:items-start">
+            {/* Poster */}
+            <div className="mx-auto w-40 sm:w-48 lg:mx-0 lg:w-full">
+              <div
+                className="aspect-[2/3] rounded-xl animate-pulse"
+                style={{ background: "var(--color-warm-placeholder)" }}
+              />
             </div>
 
-            {/* Info skeleton */}
-            <div className="flex-1 space-y-4">
-              {/* Badges */}
-              <div className="flex gap-3">
-                <div className="h-6 w-16 bg-white/10 rounded-full animate-pulse" />
-                <div className="h-6 w-20 bg-white/10 rounded-full animate-pulse" />
+            {/* Main column */}
+            <div className="min-w-0 space-y-4">
+              {/* Badge pills */}
+              <div className="flex gap-2">
+                <Bar className="h-6 w-16 !rounded-full" />
+                <Bar className="h-6 w-20 !rounded-full" />
+                <Bar className="h-6 w-28 !rounded-full" />
               </div>
-              {/* Title */}
-              <div className="h-8 w-3/4 bg-white/10 rounded animate-pulse" />
-              {/* Meta line */}
-              <div className="h-5 w-1/2 bg-white/10 rounded animate-pulse" />
+              {/* Title + original title */}
+              <Bar className="h-9 w-3/4" />
+              <Bar className="h-5 w-1/3" />
+              {/* Age recommendation card */}
+              <div
+                className="h-24 w-full rounded-xl animate-pulse"
+                style={{ background: "var(--color-warm-bg2)" }}
+              />
               {/* Synopsis lines */}
-              <div className="space-y-2 pt-2">
-                <div className="h-4 w-full bg-white/10 rounded animate-pulse" />
-                <div className="h-4 w-5/6 bg-white/10 rounded animate-pulse" />
-                <div className="h-4 w-2/3 bg-white/10 rounded animate-pulse" />
+              <div className="space-y-2 pt-1">
+                <Bar className="h-4 w-full" />
+                <Bar className="h-4 w-5/6" />
+                <Bar className="h-4 w-2/3" />
               </div>
-              {/* Rating bar */}
-              <div className="h-16 w-full bg-white/10 rounded-xl animate-pulse mt-4" />
+              {/* Action buttons row */}
+              <div className="flex gap-2 pt-1">
+                <Bar className="h-10 w-36 !rounded-full" />
+                <Bar className="h-10 w-24 !rounded-full" />
+                <Bar className="h-10 w-24 !rounded-full" />
+              </div>
+            </div>
+
+            {/* Family panel (desktop only) */}
+            <div
+              className="hidden xl:block rounded-xl p-5 space-y-3"
+              style={{ background: "var(--color-warm-bg2)" }}
+            >
+              <Bar className="h-5 w-2/3" />
+              <Bar className="h-4 w-full" />
+              <Bar className="h-4 w-5/6" />
+              <Bar className="h-10 w-full !rounded-full mt-2" />
+              <Bar className="h-10 w-full !rounded-full" />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content skeleton */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            <div className="h-48 bg-gray-100 rounded-xl animate-pulse" />
-            <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />
+        {/* Content cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="h-48 rounded-2xl animate-pulse" style={warmCard} />
+            <div className="h-64 rounded-2xl animate-pulse" style={warmCard} />
           </div>
           <div className="space-y-6">
-            <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
-            <div className="h-60 bg-gray-100 rounded-xl animate-pulse" />
+            <div className="h-40 rounded-2xl animate-pulse" style={warmCard} />
+            <div className="h-60 rounded-2xl animate-pulse" style={warmCard} />
           </div>
         </div>
       </div>
