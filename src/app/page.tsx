@@ -10,6 +10,7 @@ import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggl
 import { v2Enabled } from "@/lib/v2-flag"
 import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-time-context"
 import { getHolidayCalendar } from "@/lib/school-holidays"
+import { getExpertPicks } from "@/lib/expert-picks"
 
 // V2 redesign is admin-only and dynamically imported so its chunk + the
 // three design fonts never ship to anonymous visitors.
@@ -43,6 +44,43 @@ const getHeroWallPosters = unstable_cache(
   },
   ["home-v2-hero-wall"],
   { revalidate: 86400 },
+)
+
+/**
+ * Hero showcase (5 tilted poster cards + catalog-count badge), fetched
+ * server-side and passed down as props so the posters ship in the initial
+ * HTML. This stack is the desktop LCP element — when it was fetched client-
+ * side (post-hydration useEffect), the homepage's desktop LCP score sat in
+ * the "Poor" band while the rest of the site scored green.
+ */
+const getHeroShowcase = unstable_cache(
+  async (_weekSeed: number) => {
+    const [picks, movies, series, games] = await Promise.all([
+      getExpertPicks({ limit: 8, seed: _weekSeed }),
+      prisma.mediaItem.count({ where: { type: "MOVIE" } }),
+      prisma.mediaItem.count({ where: { type: "TV" } }),
+      prisma.mediaItem.count({ where: { type: "GAME" } }),
+    ])
+    return {
+      picks: picks
+        .filter((p) => p.posterUrl)
+        .slice(0, 5)
+        .map((p) => ({
+          id: p.id,
+          type: (p.type === "TV" || p.type === "GAME" ? p.type : "MOVIE") as
+            | "MOVIE"
+            | "TV"
+            | "GAME",
+          title: p.title,
+          posterUrl: p.posterUrl,
+          expertAgeRec: p.expertAgeRec,
+          genres: p.genres,
+        })),
+      totalCatalog: movies + series + games,
+    }
+  },
+  ["home-hero-showcase"],
+  { revalidate: 1800 },
 )
 
 /**
@@ -141,6 +179,8 @@ export default async function HomePage({
   // can't be imported there directly — only composed in via prop.
   const topSlot = <ApercuTimeAwareHero serifClass="font-serif" maxAgeCap={maxAgeCap} />
 
+  const heroShowcase = await getHeroShowcase(getWeekSeed())
+
   return (
     <>
       <HomepageApercu
@@ -148,6 +188,8 @@ export default async function HomePage({
         isAdmin={isAdmin}
         serifClass="font-serif"
         topSlot={topSlot}
+        heroPicks={heroShowcase.picks}
+        heroCatalogCount={heroShowcase.totalCatalog}
       />
       {isAdmin && <AdminVariantToggle variant="classic" />}
     </>

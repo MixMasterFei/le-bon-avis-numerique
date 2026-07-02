@@ -1,30 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import { APERCU_PALETTE } from "./apercuTheme"
 
-interface HeroPick {
+export interface HeroPick {
   id: string
   type: "MOVIE" | "TV" | "GAME"
   title: string
   posterUrl: string | null
   expertAgeRec: number | null
   genres: string[]
-}
-
-interface StatsShape {
-  counts: {
-    movies: number
-    series: number
-    games: number
-    families: number
-    reactions: number
-    reviews: number
-  }
 }
 
 // Editorial tone labels rotate per card index so the showcase stays coherent
@@ -57,32 +45,18 @@ const STAGE_HEIGHT = Math.max(...CARDS.map((c) => c.top)) + CARD_HEIGHT + 20
 
 export function ApercuHero({
   serifClass,
+  picks = [],
+  totalCatalog = null,
 }: {
   serifClass: string
   isLoggedIn?: boolean
+  /** Server-fetched showcase cards — rendered in the initial HTML so the
+   *  poster stack (the desktop LCP element) never waits on a client fetch. */
+  picks?: HeroPick[]
+  /** Server-fetched catalog count for the floating stats badge. */
+  totalCatalog?: number | null
 }) {
-  const [picks, setPicks] = useState<HeroPick[]>([])
-  const [stats, setStats] = useState<StatsShape | null>(null)
   const p = APERCU_PALETTE
-
-  useEffect(() => {
-    fetch("/api/db/expert-picks?limit=8")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (Array.isArray(data?.items)) {
-          setPicks(data.items.filter((i: HeroPick) => i.posterUrl).slice(0, 5))
-        }
-      })
-      .catch(() => {})
-    fetch("/api/stats/public")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => data && setStats(data))
-      .catch(() => {})
-  }, [])
-
-  const totalCatalog = stats
-    ? stats.counts.movies + stats.counts.series + stats.counts.games
-    : null
 
   return (
     <section
@@ -248,6 +222,9 @@ function HeroPosterCard({
               src={pick.posterUrl}
               alt={pick.title}
               fill
+              // Above-the-fold on desktop and the page's LCP candidate —
+              // eager-load instead of the next/image lazy default.
+              priority
               className="object-cover"
               sizes={`${CARD_WIDTH}px`}
             />
