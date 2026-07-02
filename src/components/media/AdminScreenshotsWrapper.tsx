@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { MediaScreenshots } from "./MediaScreenshots"
 
 interface Screenshot {
@@ -14,15 +15,18 @@ interface Screenshot {
 interface AdminScreenshotsWrapperProps {
   screenshots: Screenshot[]
   title: string
-  isAdmin: boolean
 }
 
 export function AdminScreenshotsWrapper({
   screenshots: initial,
   title,
-  isAdmin,
 }: AdminScreenshotsWrapperProps) {
   const [screenshots, setScreenshots] = useState(initial)
+  // Admin status is resolved client-side so the fiche page can stay
+  // statically rendered (a server-side auth() read would opt the whole
+  // route out of ISR).
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === "ADMIN"
 
   const handleDelete = async (id: string) => {
     const prev = screenshots

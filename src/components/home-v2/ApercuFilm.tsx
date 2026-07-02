@@ -86,11 +86,9 @@ interface ApercuFilmMedia {
 export function ApercuFilm({
   media,
   serifClass,
-  isAdmin,
 }: {
   media: ApercuFilmMedia
   serifClass: string
-  isAdmin: boolean
 }) {
   const p = APERCU_PALETTE
 
@@ -150,7 +148,6 @@ export function ApercuFilm({
                         <AdminScreenshotsWrapper
                           screenshots={media.screenshots}
                           title={media.title}
-                          isAdmin={isAdmin}
                         />
                       </div>
                     </WarmCard>

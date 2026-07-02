@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { auth, isAdmin as checkIsAdmin } from "@/lib/auth"
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuFilm } from "@/components/home-v2/ApercuFilm"
 import { fraunces } from "@/components/home-v2/apercuFont"
@@ -67,7 +67,6 @@ export default async function ApercuFilmPage(props: {
     redirect("/apercu")
   }
 
-  const isAdmin = await checkIsAdmin()
   const searchParams = await props.searchParams
   const useFraunces = isFraunces(searchParams?.font)
   const serifClass = useFraunces
@@ -146,7 +145,6 @@ export default async function ApercuFilmPage(props: {
       <ApercuFilm
         media={mediaForClient}
         serifClass={serifClass}
-        isAdmin={isAdmin}
       />
     </div>
   )

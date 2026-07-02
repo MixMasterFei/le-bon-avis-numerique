@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +24,6 @@ interface Review {
 type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
 
 interface MediaHeroEditableProps {
-  isAdmin: boolean
   mediaId: string
   type: MediaType
   officialRating: string | null
@@ -68,7 +68,6 @@ function officialRatingLabel(rating: string | null, type: MediaType): string {
 }
 
 export function MediaHeroEditable({
-  isAdmin,
   mediaId,
   type,
   officialRating,
@@ -85,6 +84,11 @@ export function MediaHeroEditable({
   ageRationale,
 }: MediaHeroEditableProps) {
   const router = useRouter()
+  // Admin status is resolved client-side so the fiche page can stay
+  // statically rendered (a server-side auth() read would opt the whole
+  // route out of ISR).
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === "ADMIN"
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
