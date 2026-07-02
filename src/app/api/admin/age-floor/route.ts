@@ -9,9 +9,12 @@ export const maxDuration = 60
 /**
  * Deterministic age-floor sweep.
  *
- * Applies `floorExpertAgeBySignals` to already-enriched MOVIE/TV titles so
- * mature content rated too young (a "Tous Publics" classic sitting in an 8-12
- * band — Forrest Gump, war dramas…) is bumped up to a content-justified age.
+ * Applies `floorExpertAgeBySignals` to already-enriched titles so content
+ * rated too young is bumped up:
+ *  - MOVIE/TV: content-justified floor (a "Tous Publics" classic sitting in
+ *    an 8-12 band — Forrest Gump, war dramas…).
+ *  - GAME: PEGI legal-minimum floor (the June 2026 baseline showed ~42% of
+ *    games rated below their PEGI age).
  * Zero LLM cost, deterministic, idempotent (the floor only ever raises, and a
  * raised title leaves the candidate window). Cursor-paginated by id so the
  * GitHub Action can loop it.
@@ -31,16 +34,26 @@ async function run(req: NextRequest) {
   const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get("limit") || "200")))
   const afterId = url.searchParams.get("afterId") || undefined
 
-  // Candidate window: enriched films/séries currently in the young/teen bands
-  // (≤13) — those are the only ones a content floor could raise. Already-mature
-  // titles are skipped (the floor never lowers).
+  // Candidate window — only titles a floor could raise (the floor never
+  // lowers, so already-mature titles are skipped):
+  //  - films/séries in the young/teen bands (≤13, the content floor's max is 14)
+  //  - PEGI-rated games below 18 (a PEGI 18 floor can raise anything under it)
   const items = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where: {
-        type: { in: ["MOVIE", "TV"] },
         isEnriched: true,
-        expertAgeRec: { not: null, lte: 13 },
-        contentMetrics: { isNot: null },
+        OR: [
+          {
+            type: { in: ["MOVIE", "TV"] },
+            expertAgeRec: { not: null, lte: 13 },
+            contentMetrics: { isNot: null },
+          },
+          {
+            type: "GAME",
+            expertAgeRec: { not: null, lte: 17 },
+            officialRating: { startsWith: "PEGI_" },
+          },
+        ],
         ...(afterId ? { id: { gt: afterId } } : {}),
       },
       orderBy: { id: "asc" },
@@ -52,6 +65,7 @@ async function run(req: NextRequest) {
         genres: true,
         topics: true,
         expertAgeRec: true,
+        officialRating: true,
         contentMetrics: {
           select: {
             violence: true,
@@ -77,6 +91,7 @@ async function run(req: NextRequest) {
       topics: item.topics,
       visualStyle: item.contentMetrics?.visualStyle ?? null,
       type: item.type,
+      officialRating: item.officialRating,
     })
     if (floored > item.expertAgeRec) {
       raised++

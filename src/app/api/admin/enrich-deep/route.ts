@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { floorExpertAgeBySignals } from "@/lib/age-floor"
 import OpenAI from "openai"
 
 // Each item runs a web-search-enabled gpt-4o call (~15-30 s) plus Prisma
@@ -223,10 +224,30 @@ Reponds UNIQUEMENT avec un JSON valide:
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
     }
 
+    // Deterministic age FLOOR (same order as the basic enrich route: floor
+    // first, on the RAW axes, then the young-age metric cap uses the floored
+    // age). For games this enforces the PEGI legal minimum.
+    const rawAxis = (v: unknown) =>
+      Math.min(5, Math.max(0, typeof v === "number" ? v : 0))
+    const flooredAge = floorExpertAgeBySignals({
+      expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
+      metrics: {
+        violence: rawAxis(parsed.contentMetrics?.violence),
+        sexNudity: rawAxis(parsed.contentMetrics?.sexNudity),
+        language: rawAxis(parsed.contentMetrics?.language),
+        substanceUse: rawAxis(parsed.contentMetrics?.substanceUse),
+      },
+      genres: item.genres,
+      topics: Array.isArray(parsed.tags) ? parsed.tags : [],
+      visualStyle: typeof parsed.visualStyle === "string" ? parsed.visualStyle : null,
+      type: item.type,
+      officialRating: item.officialRating,
+    })
+
     // Deterministic guardrail: a title curated young (expertAgeRec ≤ 8) caps
     // its sensibility axes at 2. Keyed on the model's own age (trustworthy),
     // NOT officialRating (unreliable in our DB). consumerism is NOT capped.
-    const expertAge = Math.min(18, Math.max(3, parsed.expertAgeRec || 8))
+    const expertAge = Math.min(18, flooredAge)
     const young = expertAge <= 8
     const axis = (v: unknown) => {
       const n = Math.min(5, Math.max(0, (typeof v === "number" ? v : 0)))

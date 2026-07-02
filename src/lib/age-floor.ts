@@ -16,9 +16,15 @@
  *  - Animation discount: stylized peril reads softer than live action.
  *  - War/WWII/Resistance themes get a pre-teen floor even when raw metrics read
  *    moderate (the Forrest Gump / war-drama case).
- *  - Games are left to their PEGI mapping (different, more reliable pipeline).
- *  - officialRating is intentionally NOT an input — it can never lower the floor.
+ *  - Games/apps are floored at their PEGI age. Unlike CNC/CSA (a lenient
+ *    editorial signal), PEGI is a reliable legal *minimum* — the June 2026
+ *    baseline eval showed the LLM rating games younger than PEGI 42.5% of the
+ *    time, which is the worst failure mode for a family-trust product.
+ *  - For films/TV, officialRating is intentionally ignored — a lenient CSA
+ *    rating can never lower the floor.
  */
+
+import { pegiAgeFromOfficialRating } from "./pegi-descriptors"
 
 export interface AgeFloorInput {
   expertAgeRec: number
@@ -32,6 +38,9 @@ export interface AgeFloorInput {
   topics?: string[] | null
   visualStyle?: string | null
   type?: string | null
+  /** Internal official rating code (e.g. "PEGI_12"). Only PEGI codes are read
+   *  — they floor games/apps. CSA/CNC codes never influence the floor. */
+  officialRating?: string | null
 }
 
 const ANIMATION_STYLES = new Set([
@@ -59,8 +68,13 @@ export function isAnimationStyle(
 export function floorExpertAgeBySignals(input: AgeFloorInput): number {
   const age = input.expertAgeRec
   if (typeof age !== "number") return age
-  // Games map age from PEGI in their own pipeline — don't second-guess it here.
-  if (input.type === "GAME") return age
+  // Games/apps: the recommended age can never sit below the PEGI legal
+  // minimum. Content axes use a different rubric for games, so PEGI is the
+  // only floor applied here.
+  if (input.type === "GAME" || input.type === "APP") {
+    const pegiAge = pegiAgeFromOfficialRating(input.officialRating)
+    return pegiAge !== null ? Math.max(age, pegiAge) : age
+  }
 
   const m = input.metrics ?? {}
   const n = (x?: number | null) => (typeof x === "number" ? x : 0)
