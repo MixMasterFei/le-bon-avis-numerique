@@ -86,14 +86,14 @@ export function MediaDashboard({
   return (
     <div className="min-h-screen" style={{ background: C.page }}>
       <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
-        <BackButton className="mb-4" />
+        <BackButton className="mb-4 text-[#8A8072] hover:text-[#2A251F]" />
 
         {/* ===== Scoreboard hero ===== */}
         <div className="mb-[13px] overflow-hidden rounded-2xl" style={cardStyle}>
           <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:gap-5 sm:px-6">
             {/* poster */}
             <div
-              className="relative h-[138px] w-[92px] flex-none overflow-hidden rounded-[11px] sm:h-[162px] sm:w-[108px]"
+              className="relative h-[160px] w-[106px] flex-none overflow-hidden rounded-[12px] sm:h-[188px] sm:w-[126px]"
               style={{ boxShadow: "0 6px 20px rgba(42,37,31,.28)" }}
             >
               <BlurredPoster
