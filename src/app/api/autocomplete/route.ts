@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery } from "@/lib/security"
 import { PUBLIC_MEDIA_QUALITY_FLOOR } from "@/lib/media-route"
+import { escapeLike } from "@/lib/search-normalize"
 
 // Optional ?type= filter — restricts results to a single MediaType.
 // Anything else (or absent) returns all eligible types.
@@ -23,91 +24,44 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Strip non-alphanumeric chars for fuzzy matching (e.g. "wall-e" matches "WALL·E")
-    const normalizedQuery = query.replace(/[^a-zA-Z0-9\s]/g, "").toLowerCase()
+    // Accent- and case-insensitive title match via the Postgres `unaccent`
+    // extension, so "amelie" suggests "Amélie" and "wall-e" still matches
+    // "WALL·E" (the % wildcards survive unaccent; accents don't). Ordered by
+    // popularity so the best-known title surfaces first.
+    // `scopedType` is validated against a closed allowlist above, so
+    // interpolating it into the type clause is safe.
+    const pattern = "%" + escapeLike(query) + "%"
+    const typeClause = scopedType
+      ? `type = '${scopedType}'`
+      : `type != 'MANGA'`
 
-    // First: standard Prisma contains search.
-    // Type filter takes precedence — when the user picked a single
-    // type from the search-box dropdown, MANGA exclusion still applies
-    // because the picker only exposes MOVIE/TV/GAME/BOOK.
-    const typeWhere = scopedType
-      ? { type: scopedType as "MOVIE" | "TV" | "GAME" | "BOOK" }
-      : { type: { not: "MANGA" as const } }
+    const rows = await prisma.$queryRawUnsafe<Array<{
+      id: string
+      title: string
+      type: string
+      poster_url: string | null
+      release_date: Date | null
+      expert_age_rec: number | null
+    }>>(
+      `SELECT id, title, type, poster_url, release_date, expert_age_rec
+       FROM media_items
+       WHERE ${typeClause}
+         AND poster_url IS NOT NULL
+         AND data_quality_score >= ${PUBLIC_MEDIA_QUALITY_FLOOR}
+         AND (unaccent(lower(title)) LIKE unaccent(lower($1)) ESCAPE '\\'
+           OR unaccent(lower(coalesce(original_title, ''))) LIKE unaccent(lower($1)) ESCAPE '\\')
+       ORDER BY tmdb_vote_count DESC NULLS LAST
+       LIMIT 8`,
+      pattern,
+    )
 
-    const results = await prisma.mediaItem.findMany({
-      where: {
-        ...typeWhere,
-        // Public gate (same bar as the sitemap/browse): never suggest
-        // posterless or sub-quality fiches — they'd lead to thin pages.
-        posterUrl: { not: null },
-        dataQualityScore: { gte: PUBLIC_MEDIA_QUALITY_FLOOR },
-        OR: [
-          { title: { contains: query, mode: "insensitive" } },
-          { originalTitle: { contains: query, mode: "insensitive" } },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        posterUrl: true,
-        releaseDate: true,
-        expertAgeRec: true,
-      },
-      take: 8,
-      orderBy: { title: "asc" },
-    })
-
-    // Second: if few results, try normalized search via raw SQL
-    // This catches cases like "wall-e" → "WALL·E" where special chars differ
-    if (results.length < 4 && normalizedQuery.length >= 2) {
-      // Apply the same type scoping to the raw SQL fallback. Using
-      // string interpolation here is safe because scopedType is
-      // validated against ALLOWED_TYPES above (closed allowlist).
-      const typeClause = scopedType
-        ? `type = '${scopedType}'`
-        : `type != 'MANGA'`
-      const fuzzyResults = await prisma.$queryRawUnsafe<Array<{
-        id: string
-        title: string
-        type: string
-        poster_url: string | null
-        release_date: Date | null
-        expert_age_rec: number | null
-      }>>(
-        `SELECT id, title, type, poster_url, release_date, expert_age_rec
-         FROM media_items
-         WHERE ${typeClause}
-           AND poster_url IS NOT NULL
-           AND data_quality_score >= ${PUBLIC_MEDIA_QUALITY_FLOOR}
-           AND (LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1
-             OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE $1)
-         LIMIT 8`,
-        '%' + normalizedQuery + '%',
-      )
-
-      const existingIds = new Set(results.map(r => r.id))
-      for (const row of fuzzyResults) {
-        if (!existingIds.has(row.id)) {
-          results.push({
-            id: row.id,
-            title: row.title,
-            type: row.type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA",
-            posterUrl: row.poster_url,
-            releaseDate: row.release_date,
-            expertAgeRec: row.expert_age_rec,
-          })
-        }
-      }
-    }
-
-    const suggestions = results.map((item) => ({
-      id: item.id,
-      title: item.title,
-      type: item.type,
-      posterUrl: item.posterUrl,
-      year: item.releaseDate ? new Date(item.releaseDate).getFullYear() : null,
-      ageRec: item.expertAgeRec,
+    const suggestions = rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      type: row.type,
+      posterUrl: row.poster_url,
+      year: row.release_date ? new Date(row.release_date).getFullYear() : null,
+      ageRec: row.expert_age_rec,
     }))
 
     return NextResponse.json({ suggestions })

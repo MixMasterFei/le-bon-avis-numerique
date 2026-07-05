@@ -502,10 +502,14 @@ export function SiteHeader() {
                       area, instead of doing absolute math against the
                       whole row. */}
                   <div className="relative flex-1 flex items-center">
-                    <Search
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
+                    <button
+                      type="submit"
+                      aria-label="Rechercher"
+                      className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center p-1 rounded-full transition-opacity hover:opacity-70"
                       style={{ color: p.ink2 }}
-                    />
+                    >
+                      <Search className="h-4 w-4" />
+                    </button>
                     {searchLoading && (
                       <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin opacity-60" />
                     )}
@@ -817,10 +821,14 @@ export function SiteHeader() {
 
         <form onSubmit={handleSearch} className="md:hidden pb-2">
           <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+            <button
+              type="submit"
+              aria-label="Rechercher"
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center p-1 rounded-full transition-opacity hover:opacity-70"
               style={{ color: p.ink2 }}
-            />
+            >
+              <Search className="h-4 w-4" />
+            </button>
             <input
               type="search"
               placeholder="Rechercher..."

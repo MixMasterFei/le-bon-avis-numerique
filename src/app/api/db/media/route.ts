@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { publicMediaWhere } from "@/lib/media-route"
+import { matchMediaIdsByTitle } from "@/lib/search-normalize"
 import { Prisma } from "@prisma/client"
 
 // Unified media endpoint - fetches all types with filtering
@@ -18,6 +19,14 @@ export async function GET(request: NextRequest) {
   const minVotes = searchParams.get("minVotes") // minimum tmdbVoteCount
 
   const skip = (page - 1) * limit
+
+  // Resolve a title search up-front to accent-insensitive ids so "Amelie"
+  // matches "Amélie". Done outside the where builder because it needs the
+  // Postgres `unaccent` extension, which Prisma's `contains` can't call.
+  let searchIds: string[] | null = null
+  if (search && search.trim().length >= 1) {
+    searchIds = await matchMediaIdsByTitle(search, { limit: 200 })
+  }
 
   try {
     // Public gate: poster + quality floor (≥30) + no manga — the SAME bar as
@@ -51,12 +60,11 @@ export async function GET(request: NextRequest) {
       where.genres = { has: genre }
     }
 
-    // Search by title
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: "insensitive" } },
-        { originalTitle: { contains: search, mode: "insensitive" } },
-      ]
+    // Search by title — accent-insensitive via pre-resolved ids (see above).
+    // An empty set (no match, or search failed) yields no rows, which is the
+    // correct answer for a title that genuinely isn't in the catalog.
+    if (searchIds !== null) {
+      where.id = { in: searchIds }
     }
 
     // Filter by minimum vote count (surfaces well-known titles)

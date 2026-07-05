@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery, getClientIdentifier, checkRateLimit, RATE_LIMITS, rateLimitHeaders } from "@/lib/security"
+import { escapeLike } from "@/lib/search-normalize"
 
 type MediaType = "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" | "MANGA"
 
@@ -86,9 +87,10 @@ export async function GET(request: NextRequest) {
     calls.push(fetch(`${request.nextUrl.origin}/api/books/search?q=${encodeURIComponent(query)}`))
   }
 
-  // Also search local DB with normalized matching (handles special chars like WALL·E)
-  const normalizedQuery = query.replace(/[^a-zA-Z0-9\s]/g, "").toLowerCase()
-  const dbPromise = normalizedQuery.length >= 2
+  // Also search local DB, accent-insensitive via the `unaccent` extension so
+  // "amelie" matches "Amélie" and "wall-e" still matches "WALL·E".
+  const dbPattern = "%" + escapeLike(query) + "%"
+  const dbPromise = query.trim().length >= 2
     ? prisma.$queryRaw<Array<{
         id: string
         title: string
@@ -99,9 +101,9 @@ export async function GET(request: NextRequest) {
       }>>`
         SELECT id, title, type, synopsis_fr, poster_url, release_date
         FROM media_items
-        WHERE LOWER(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
-           OR LOWER(REGEXP_REPLACE(COALESCE(original_title, ''), '[^a-zA-Z0-9 ]', '', 'g')) LIKE ${'%' + normalizedQuery + '%'}
-           OR title ILIKE ${'%' + query + '%'}
+        WHERE unaccent(lower(title)) LIKE unaccent(lower(${dbPattern})) ESCAPE '\\'
+           OR unaccent(lower(coalesce(original_title, ''))) LIKE unaccent(lower(${dbPattern})) ESCAPE '\\'
+        ORDER BY tmdb_vote_count DESC NULLS LAST
         LIMIT 10
       `.catch(() => [])
     : Promise.resolve([])
