@@ -3,13 +3,13 @@ import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
-import { FamilyFitHero } from "@/components/media/FamilyFitHero"
-import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
-import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
-import { DashboardKpiStrip } from "./DashboardKpiStrip"
+import { DashboardScoreboard } from "./DashboardScoreboard"
 import { DashboardTrailerButton } from "./DashboardTrailerButton"
+import { DashboardFamilyPanel } from "./DashboardFamilyPanel"
+import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
+import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
 
 // Handoff palette (already matches the site's warm art direction).
@@ -164,20 +164,27 @@ export function MediaDashboard({
             </div>
           </div>
 
-          {/* KPI strip (hidden when we haven't evaluated the content) */}
-          {!hideAnalysis && media.metrics && <DashboardKpiStrip metrics={media.metrics} />}
-        </div>
-
-        {/* ===== global actions (favori · à voir · avis · partager) ===== */}
-        <div className="mb-[13px] rounded-2xl px-5 py-3 sm:px-6" style={cardStyle}>
-          <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions />
+          {/* Actions + Totem/Communauté toggle + KPI strip. Hidden metrics
+              (pre-release) fall back to just the actions row. */}
+          {!hideAnalysis && media.metrics ? (
+            <DashboardScoreboard
+              mediaId={media.id}
+              mediaTitle={media.title}
+              expertMetrics={media.metrics}
+              topics={media.topics}
+            />
+          ) : (
+            <div className="px-5 py-3 sm:px-6" style={{ borderTop: "1px solid #EFE6D6" }}>
+              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions />
+            </div>
+          )}
         </div>
 
         {/* ===== three-column row ===== */}
         <div className="mb-[13px] grid gap-[13px] lg:grid-cols-[1fr_1.25fr_1fr]">
           {/* Pour ma famille */}
           {!hideAnalysis ? (
-            <FamilyFitHero mediaId={dbId} />
+            <DashboardFamilyPanel mediaId={dbId} recommendedAge={media.expertAgeRec} />
           ) : (
             <div className="rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
               <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
@@ -229,19 +236,23 @@ export function MediaDashboard({
             )}
           </div>
 
-          {/* Où regarder / plateformes */}
+          {/* Où regarder (film/TV, segmented) / plateformes (jeux) */}
           <div className="rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
-            <div className={`${SECTION_LABEL} mb-2.5`} style={{ color: C.faint }}>
-              {isFilmOrTv ? "Où regarder" : "Plateformes"}
-            </div>
             {isFilmOrTv ? (
-              <WatchProvidersClient mediaId={dbId} mediaType={media.type} />
-            ) : media.platforms.length > 0 ? (
-              <PlatformIcons platforms={media.platforms} variant="hero" />
+              <DashboardWhereToWatch mediaId={dbId} mediaType={media.type} />
             ) : (
-              <p className="text-[12.5px]" style={{ color: C.muted }}>
-                Disponibilités bientôt.
-              </p>
+              <>
+                <div className={`${SECTION_LABEL} mb-2.5`} style={{ color: C.faint }}>
+                  Plateformes
+                </div>
+                {media.platforms.length > 0 ? (
+                  <PlatformIcons platforms={media.platforms} variant="hero" />
+                ) : (
+                  <p className="text-[12.5px]" style={{ color: C.muted }}>
+                    Disponibilités bientôt.
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -262,11 +273,11 @@ export function MediaDashboard({
           </div>
         )}
 
-        {/* ===== similar titles ===== */}
+        {/* ===== similar titles — compact single row ===== */}
         <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
           <div className="mb-3 flex items-baseline justify-between">
             <div className={SECTION_LABEL} style={{ color: C.faint }}>
-              Titres similaires
+              Dans le même genre
             </div>
             <Link href={seeAllHref} className="text-[11px] font-semibold" style={{ color: C.accent }}>
               Tout voir →
@@ -274,19 +285,18 @@ export function MediaDashboard({
           </div>
           <Suspense
             fallback={
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+              <div className="flex gap-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="aspect-[2/3] animate-pulse rounded-lg" style={{ background: C.page }} />
+                  <div key={i} className="h-14 flex-1 animate-pulse rounded-md" style={{ background: C.page }} />
                 ))}
               </div>
             }
           >
-            <ApercuSimilarMedia
+            <DashboardSimilar
               mediaId={dbId}
               mediaType={media.type}
               genres={media.genres}
               topics={media.topics}
-              serifClass="font-serif"
             />
           </Suspense>
         </div>
