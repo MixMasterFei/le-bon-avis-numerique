@@ -9,6 +9,7 @@ import { DashboardScoreboard } from "./DashboardScoreboard"
 import { DashboardTrailerButton } from "./DashboardTrailerButton"
 import { DashboardFamilyPanel } from "./DashboardFamilyPanel"
 import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
+import { DashboardFamilyFeedback } from "./DashboardFamilyFeedback"
 import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
 
@@ -272,6 +273,9 @@ export function MediaDashboard({
             </div>
           </div>
         )}
+
+        {/* ===== Vous l'avez vu ? — reactions + written avis (collapsible) ===== */}
+        <DashboardFamilyFeedback mediaId={dbId} mediaTitle={media.title} reviews={media.reviews} />
 
         {/* ===== similar titles — compact single row ===== */}
         <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>

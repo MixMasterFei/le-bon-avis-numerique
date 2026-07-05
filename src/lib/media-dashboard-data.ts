@@ -2,6 +2,18 @@ import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import type { MediaType } from "@/lib/media-route"
 
+export interface DashboardReview {
+  id: string
+  role: "PARENT" | "KID" | "EDUCATOR"
+  rating: number
+  ageSuggestion: number
+  comment: string
+  createdAt?: string
+  editedAt?: string | null
+  user?: { id: string; name: string | null; image: string | null }
+  familyMember?: { id: string; name: string; avatarEmoji: string } | null
+}
+
 /**
  * Focused data fetch for the V3 dashboard fiche (`/media/[id]/apercu`).
  *
@@ -44,6 +56,7 @@ export interface DashboardMedia {
     enrichmentConfidence: number | null
   } | null
   screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[]
+  reviews: DashboardReview[]
   reviewCount: number
 }
 
@@ -54,6 +67,11 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
     const include = {
       contentMetrics: true,
       screenshots: { orderBy: { order: "asc" as const }, take: 8 },
+      reviews: {
+        include: { user: { select: { id: true, name: true, image: true } } },
+        orderBy: { createdAt: "desc" as const },
+        take: 10,
+      },
       _count: { select: { reviews: true } },
     }
 
@@ -113,6 +131,20 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
           height: s.height,
           order: s.order,
         })) ?? [],
+      reviews: (row.reviews ?? []).map((r) => {
+        const ext = r as unknown as { editedAt?: Date }
+        return {
+          id: r.id,
+          role: r.role as "PARENT" | "KID" | "EDUCATOR",
+          rating: r.rating,
+          ageSuggestion: r.ageSuggestion ?? 0,
+          comment: r.comment ?? "",
+          createdAt: r.createdAt.toISOString(),
+          editedAt: ext.editedAt?.toISOString() ?? null,
+          user: r.user ? { id: r.user.id, name: r.user.name, image: r.user.image } : undefined,
+          familyMember: null,
+        }
+      }),
       reviewCount: (row as unknown as { _count?: { reviews: number } })._count?.reviews ?? 0,
     }
   } catch (error) {
