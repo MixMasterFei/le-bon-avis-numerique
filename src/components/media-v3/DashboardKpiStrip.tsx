@@ -15,6 +15,12 @@ import { deriveEducationalValue } from "@/lib/educational-value"
 
 const EMPTY_DOT = "#E4DAC8"
 
+// Vigilance (negative) severity ramp — indexed by value 0-5, grey at 0 then
+// graduating from amber to dark orange so a 4/5 reads clearly hotter than a
+// 2/5 and a 5/5 hotter still. Positive dims are all green.
+const NEG_RAMP = ["#9A9082", "#C89A4A", "#C98A2E", "#C46E2A", "#C0512E", "#9E3418"]
+const POS_GREEN = "#3E8158"
+
 export interface MetricsLike {
   violence: number
   sexNudity: number
@@ -66,17 +72,18 @@ function Dots({ value, filled }: { value: number | null; filled: string }) {
 
 function Cell({ cell, last }: { cell: ScoreCell; last: boolean }) {
   const { label, value, positive } = cell
-  const numberColor = value == null ? "#9A9082" : positive ? "#C0512E" : value === 0 ? "#9A9082" : "#6E6752"
-  const filled = positive ? "#C0512E" : "#6E6752"
-  const suffixColor = positive ? "#DCA284" : "#C4B8A0"
+  const severity = value == null ? "#9A9082" : NEG_RAMP[Math.max(0, Math.min(5, value))]
+  const numberColor = value == null ? "#9A9082" : positive ? POS_GREEN : severity
+  const filled = positive ? POS_GREEN : severity
+  const suffixColor = positive ? "#9DBCA6" : "#C4B8A0"
   return (
     <div
       className="px-2.5 py-[13px] text-center"
-      style={{ borderRight: last ? "none" : "1px solid #EFE6D6", background: positive ? "#F8EFE4" : "transparent" }}
+      style={{ borderRight: last ? "none" : "1px solid #EFE6D6", background: positive ? "#E7F1E5" : "transparent" }}
     >
       <div
         className="mb-[5px] text-[9.5px] font-bold uppercase leading-tight"
-        style={{ letterSpacing: ".08em", color: positive ? "#A8431F" : "#8A8072" }}
+        style={{ letterSpacing: ".08em", color: positive ? "#2E6B47" : "#8A8072" }}
       >
         {label}
       </div>
