@@ -4,6 +4,8 @@ import { BackButton } from "@/components/ui/BackButton"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
+import { GameInfoCard } from "@/components/media/GameInfoCard"
+import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { DashboardScoreboard } from "./DashboardScoreboard"
 import { DashboardTrailerButton } from "./DashboardTrailerButton"
@@ -88,7 +90,7 @@ export function MediaDashboard({
 
         {/* ===== Scoreboard hero ===== */}
         <div className="mb-[13px] overflow-hidden rounded-2xl" style={cardStyle}>
-          <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+          <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:gap-5 sm:px-6">
             {/* poster */}
             <div
               className="relative h-[138px] w-[92px] flex-none overflow-hidden rounded-[11px] sm:h-[162px] sm:w-[108px]"
@@ -140,6 +142,14 @@ export function MediaDashboard({
                 <div className="mt-1.5 text-[12px]" style={{ color: C.muted }}>
                   {metaLine(media)}
                 </div>
+              )}
+              {media.synopsisFr && (
+                <p
+                  className="mt-2 max-w-2xl text-[12.5px] leading-[1.5] line-clamp-3"
+                  style={{ color: C.body }}
+                >
+                  {media.synopsisFr}
+                </p>
               )}
               {media.type === "GAME" && media.platforms.length > 0 && (
                 <div className="mt-2">
@@ -274,6 +284,20 @@ export function MediaDashboard({
           </div>
         )}
 
+        {/* ===== game specifics (PEGI descriptors, modes, online/purchases) ===== */}
+        {media.type === "GAME" && (
+          <div className="mb-[13px]">
+            <GameInfoCard
+              platforms={media.platforms}
+              genres={media.genres}
+              consumerism={media.metrics?.consumerism}
+              officialRating={media.officialRating}
+              pegiDescriptors={media.pegiDescriptors}
+              expertAgeRec={media.expertAgeRec}
+            />
+          </div>
+        )}
+
         {/* ===== Vous l'avez vu ? — reactions + written avis (collapsible) ===== */}
         <DashboardFamilyFeedback mediaId={dbId} mediaTitle={media.title} reviews={media.reviews} />
 
@@ -303,6 +327,11 @@ export function MediaDashboard({
               topics={media.topics}
             />
           </Suspense>
+        </div>
+
+        {/* ===== Signaler une correction ===== */}
+        <div className="flex justify-center pt-4">
+          <ReportCorrectionButton mediaId={dbId} mediaTitle={media.title} />
         </div>
       </div>
     </div>

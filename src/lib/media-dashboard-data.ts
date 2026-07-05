@@ -41,6 +41,7 @@ export interface DashboardMedia {
   director: string | null
   genres: string[]
   platforms: string[]
+  pegiDescriptors: string[]
   topics: string[]
   numberOfSeasons: number | null
   metrics: {
@@ -107,6 +108,7 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
       director: row.director,
       genres: row.genres ?? [],
       platforms: row.platforms ?? [],
+      pegiDescriptors: row.pegiDescriptors ?? [],
       topics: row.topics ?? [],
       numberOfSeasons: (row as unknown as { numberOfSeasons?: number | null }).numberOfSeasons ?? null,
       metrics: cm
