@@ -42,6 +42,10 @@ interface FamilyMemberWithReaction {
 interface FamilyReactionsProps {
   mediaId: string
   mediaTitle: string
+  /** Render bare — no own card, heading or collapse, always expanded — for
+   *  embedding inside another collapsible section (the V3 dashboard) so the
+   *  expand control isn't duplicated. */
+  embedded?: boolean
 }
 
 const REACTIONS: {
@@ -63,7 +67,7 @@ const REACTIONS: {
   { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100", selectedBg: "bg-orange-100", ringColor: "ring-orange-400" },
 ]
 
-export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
+export function FamilyReactions({ mediaId, embedded = false }: FamilyReactionsProps) {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
@@ -150,24 +154,25 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
 
-  const Shell = ({ children }: { children: React.ReactNode }) => (
-    <div
-      className="rounded-2xl p-5"
-      style={{ background: p.card, border: `1px solid ${p.line}` }}
-    >
-      {children}
-    </div>
-  )
+  const Shell = ({ children }: { children: React.ReactNode }) =>
+    embedded ? (
+      <>{children}</>
+    ) : (
+      <div className="rounded-2xl p-5" style={{ background: p.card, border: `1px solid ${p.line}` }}>
+        {children}
+      </div>
+    )
 
-  const SectionHeading = () => (
-    <h3
-      className={`${serifClass} text-lg font-medium flex items-center gap-2 mb-3`}
-      style={{ color: p.ink, letterSpacing: "-0.02em" }}
-    >
-      <Users className="h-5 w-5" style={{ color: p.accent }} />
-      Réactions de la famille
-    </h3>
-  )
+  const SectionHeading = () =>
+    embedded ? null : (
+      <h3
+        className={`${serifClass} text-lg font-medium flex items-center gap-2 mb-3`}
+        style={{ color: p.ink, letterSpacing: "-0.02em" }}
+      >
+        <Users className="h-5 w-5" style={{ color: p.accent }} />
+        Réactions de la famille
+      </h3>
+    )
 
   // Not logged in
   if (status === "unauthenticated") {
@@ -232,41 +237,44 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
   const membersWithReactions = members.filter((m) => m.reaction)
   return (
     <Shell>
-      <div className="flex items-center justify-between mb-3">
-        <h3
-          className={`${serifClass} text-lg font-medium flex items-center gap-2`}
-          style={{ color: p.ink, letterSpacing: "-0.02em" }}
-        >
-          <Users className="h-5 w-5" style={{ color: p.accent }} />
-          Réactions de la famille
-        </h3>
-        {members.length > 0 && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-opacity hover:opacity-70"
-            style={{ color: p.ink2 }}
+      {!embedded && (
+        <div className="flex items-center justify-between mb-3">
+          <h3
+            className={`${serifClass} text-lg font-medium flex items-center gap-2`}
+            style={{ color: p.ink, letterSpacing: "-0.02em" }}
           >
-            {expanded ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                Réduire
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                Ajouter
-              </>
-            )}
-          </button>
-        )}
-      </div>
+            <Users className="h-5 w-5" style={{ color: p.accent }} />
+            Réactions de la famille
+          </h3>
+          {members.length > 0 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-opacity hover:opacity-70"
+              style={{ color: p.ink2 }}
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="h-4 w-4" />
+                  Réduire
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4" />
+                  Ajouter
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
       <div className="space-y-4">
         {error && (
           <p className="text-sm text-red-500">{error}</p>
         )}
 
-        {/* Show existing reactions */}
-        {membersWithReactions.length > 0 && (
+        {/* Show existing reactions (redundant in embedded — the full grid below
+            already shows selected states). */}
+        {!embedded && membersWithReactions.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {membersWithReactions.map((member) => {
               const reactionInfo = REACTIONS.find((r) => r.value === member.reaction?.reaction)
@@ -293,9 +301,9 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
           </div>
         )}
 
-        {/* Expanded view to add reactions */}
-        {expanded && (
-          <div className="space-y-4 pt-2 border-t">
+        {/* Expanded view to add reactions (always shown when embedded) */}
+        {(expanded || embedded) && (
+          <div className={embedded ? "space-y-4" : "space-y-4 pt-2 border-t"}>
             {members.map((member) => (
               <div key={member.id} className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -347,7 +355,7 @@ export function FamilyReactions({ mediaId }: FamilyReactionsProps) {
         )}
 
         {/* Show prompt if no reactions yet */}
-        {membersWithReactions.length === 0 && !expanded && (
+        {!embedded && membersWithReactions.length === 0 && !expanded && (
           <p className="text-sm" style={{ color: p.ink2 }}>
             Cliquez sur &quot;Ajouter&quot; pour noter comment vos enfants ont
             réagi à ce contenu.

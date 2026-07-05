@@ -151,11 +151,6 @@ export function MediaDashboard({
                   {media.synopsisFr}
                 </p>
               )}
-              {media.type === "GAME" && media.platforms.length > 0 && (
-                <div className="mt-2">
-                  <PlatformIcons platforms={media.platforms} variant="hero" />
-                </div>
-              )}
             </div>
 
             {/* verdict + trailer */}

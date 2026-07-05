@@ -44,7 +44,7 @@ export function DashboardFamilyFeedback({
   }
 
   return (
-    <div className="mb-[13px] space-y-3">
+    <div className="mb-[13px]">
       <div className="rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E4DAC8" }}>
         <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
           <button
@@ -87,14 +87,17 @@ export function DashboardFamilyFeedback({
             </button>
           </div>
         </div>
-      </div>
 
-      {open &&
-        (tab === "reactions" ? (
-          <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} />
-        ) : (
-          <ReviewsSection reviews={reviews} />
-        ))}
+        {open && (
+          <div className="border-t px-4 pb-4 pt-4 sm:px-5" style={{ borderColor: "#EFE6D6" }}>
+            {tab === "reactions" ? (
+              <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} embedded />
+            ) : (
+              <ReviewsSection reviews={reviews} />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
