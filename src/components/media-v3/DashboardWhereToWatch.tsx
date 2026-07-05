@@ -88,7 +88,7 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
   const cinema = Boolean(data?.inTheaters)
 
   const segments: { key: Key; label: string; available: boolean }[] = [
-    { key: "location", label: "Location / Achat", available: location.length > 0 },
+    { key: "location", label: "Location · Achat", available: location.length > 0 },
     { key: "streaming", label: "Streaming", available: streaming.length > 0 },
     { key: "cinema", label: "Cinéma", available: cinema },
   ]
@@ -104,13 +104,13 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
           Où regarder
         </div>
         {anyAvailable && (
-          <div className="inline-flex items-center rounded-lg p-0.5" style={{ background: "#EFE6D6" }}>
+          <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
             {segments.map((s) => {
               const isActive = current === s.key
               const style = !s.available
-                ? { color: "#C4B8A0", background: "transparent" as const }
+                ? { color: "#B9AE9B", background: "transparent" as const }
                 : isActive
-                  ? { color: "#FFFFFF", background: "#2A251F" }
+                  ? { color: "#FFFFFF", background: "#2A251F", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
                   : { color: "#6B6154", background: "transparent" as const }
               return (
                 <button
@@ -118,7 +118,7 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
                   type="button"
                   disabled={!s.available}
                   onClick={() => setActive(s.key)}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[10.5px] font-semibold transition-colors disabled:cursor-default"
+                  className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-[10.5px] font-semibold transition-colors disabled:cursor-default"
                   style={style}
                 >
                   {s.key === "cinema" && s.available && (

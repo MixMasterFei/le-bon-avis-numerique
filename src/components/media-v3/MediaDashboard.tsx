@@ -82,7 +82,7 @@ export function MediaDashboard({
 
   return (
     <div className="min-h-screen" style={{ background: C.page }}>
-      <div className="mx-auto max-w-[1120px] px-4 pb-12 pt-5 sm:px-8">
+      <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
         <BackButton className="mb-4" />
 
         {/* ===== Scoreboard hero ===== */}
@@ -90,8 +90,8 @@ export function MediaDashboard({
           <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
             {/* poster */}
             <div
-              className="relative h-[106px] w-[72px] flex-none overflow-hidden rounded-[9px]"
-              style={{ boxShadow: "0 5px 16px rgba(42,37,31,.25)" }}
+              className="relative h-[138px] w-[92px] flex-none overflow-hidden rounded-[11px] sm:h-[162px] sm:w-[108px]"
+              style={{ boxShadow: "0 6px 20px rgba(42,37,31,.28)" }}
             >
               <BlurredPoster
                 src={media.posterUrl ?? "/placeholder-poster.jpg"}

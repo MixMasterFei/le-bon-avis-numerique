@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
+import { UserMetricsButton } from "@/components/media/UserMetricsButton"
 import { DashboardKpiStrip, buildScoreboardCells, type MetricsLike } from "./DashboardKpiStrip"
 
 type Mode = "totem" | "community"
@@ -15,8 +16,11 @@ interface CommunityResponse {
 /**
  * Client wrapper around the KPI strip: an actions row (favori / à voir / avis /
  * partager) on the left and a Totem Avisé ↔ Communauté toggle on the right,
- * then the strip below reflecting the selected source. Community averages come
- * from /api/media/[id]/community-metrics (same source as the classic fiche).
+ * then the strip below reflecting the selected source. In Communauté mode a
+ * footer invites the viewer to add/edit their own content rating
+ * (UserMetricsButton → same submission that feeds the averages), and the strip
+ * refreshes after they submit. Community averages come from
+ * /api/media/[id]/community-metrics (same source as the classic fiche).
  */
 export function DashboardScoreboard({
   mediaId,
@@ -32,14 +36,16 @@ export function DashboardScoreboard({
   const [mode, setMode] = useState<Mode>("totem")
   const [community, setCommunity] = useState<CommunityResponse | null>(null)
 
-  useEffect(() => {
-    let cancelled = false
+  const loadCommunity = useCallback(() => {
     fetch(`/api/media/${mediaId}/community-metrics`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (!cancelled) setCommunity(d) })
+      .then((d) => setCommunity(d))
       .catch(() => {})
-    return () => { cancelled = true }
   }, [mediaId])
+
+  useEffect(() => {
+    loadCommunity()
+  }, [loadCommunity])
 
   const communityHasData = !!community?.hasData
   const cells =
@@ -54,7 +60,11 @@ export function DashboardScoreboard({
         type="button"
         onClick={() => setMode(m)}
         className="rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors"
-        style={active ? { background: "#2A251F", color: "#FFFFFF" } : { color: "#8A8072", background: "transparent" }}
+        style={
+          active
+            ? { background: "#2A251F", color: "#FFFFFF", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
+            : { color: "#6B6154", background: "transparent" }
+        }
       >
         {label}
       </button>
@@ -68,7 +78,7 @@ export function DashboardScoreboard({
         style={{ borderTop: "1px solid #EFE6D6" }}
       >
         <MediaPageClient mediaId={mediaId} mediaTitle={mediaTitle} showActions />
-        <div className="inline-flex items-center rounded-lg p-0.5" style={{ background: "#EFE6D6" }}>
+        <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
           {seg("totem", "Totem Avisé")}
           {seg("community", "Communauté")}
         </div>
@@ -76,12 +86,17 @@ export function DashboardScoreboard({
 
       <DashboardKpiStrip cells={cells} />
 
-      {mode === "community" && community && !communityHasData && (
+      {mode === "community" && (
         <div
-          className="px-5 py-2 text-center text-[11px]"
-          style={{ background: "#FBF8F2", color: "#8A8072", borderTop: "1px solid #EFE6D6" }}
+          className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 sm:px-6"
+          style={{ background: "#FBF8F2", borderTop: "1px solid #EFE6D6" }}
         >
-          Pas encore d&apos;avis communautaire — soyez les premiers à noter ce titre.
+          <span className="text-[11.5px]" style={{ color: "#8A8072" }}>
+            {communityHasData
+              ? "Moyenne des évaluations de la communauté."
+              : "Pas encore d'avis communautaire — partagez le vôtre."}
+          </span>
+          <UserMetricsButton mediaId={mediaId} mediaTitle={mediaTitle} onSubmit={loadCommunity} />
         </div>
       )}
     </>
