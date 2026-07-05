@@ -480,6 +480,8 @@ export async function POST(request: NextRequest) {
       onlyLegacy = false, // Only re-enrich items missing v2 fields (toneTags empty)
       recalibrate = false, // Re-enrich already-enriched items whose scores look
                            // over-calibrated under the old rubric (see below)
+      mediaId, // When set, re-enrich EXACTLY this one item (forced, ignores the
+               // batch modes above) — for targeted corrections of a single title.
     } = body
 
     if (!process.env.OPENAI_API_KEY) {
@@ -519,7 +521,10 @@ export async function POST(request: NextRequest) {
 
     // Build where clause based on mode
     let whereClause
-    if (recalibrate) {
+    if (mediaId) {
+      // Targeted single-title re-enrichment (forced below).
+      whereClause = { id: String(mediaId) }
+    } else if (recalibrate) {
       // Re-enrich the genuinely over-scored cluster under the new rubric. NOT
       // every ≤12 title with a high axis — a 12+ live-action film with violence
       // 4 ("Important") is usually correct. The over-scoring concentrates in:
@@ -624,8 +629,8 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       try {
         // Skip if already has metrics and onlyMissing is true (but recalibrate
-        // deliberately re-processes already-enriched items).
-        if (onlyMissing && !onlyLegacy && !recalibrate && item.contentMetrics) {
+        // and a targeted mediaId deliberately re-process already-enriched items).
+        if (onlyMissing && !onlyLegacy && !recalibrate && !mediaId && item.contentMetrics) {
           result.skipped++
           continue
         }
