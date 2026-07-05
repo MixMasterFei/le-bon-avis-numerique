@@ -1,0 +1,296 @@
+import { Suspense } from "react"
+import Link from "next/link"
+import { BackButton } from "@/components/ui/BackButton"
+import { SafeImage } from "@/components/ui/SafeImage"
+import { BlurredPoster } from "@/components/media/BlurredPoster"
+import { FamilyFitHero } from "@/components/media/FamilyFitHero"
+import { WatchProvidersClient } from "@/components/media/WatchProvidersClient"
+import { PlatformIcons } from "@/components/media/PlatformIcons"
+import { MediaPageClient } from "@/components/media/MediaPageClient"
+import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
+import { DashboardKpiStrip } from "./DashboardKpiStrip"
+import { DashboardTrailerButton } from "./DashboardTrailerButton"
+import type { DashboardMedia } from "@/lib/media-dashboard-data"
+
+// Handoff palette (already matches the site's warm art direction).
+const C = {
+  page: "#EDE4D5",
+  card: "#FFFFFF",
+  border: "#E4DAC8",
+  divider: "#EFE6D6",
+  ink: "#2A251F",
+  body: "#4A433A",
+  muted: "#8A8072",
+  faint: "#A89A82",
+  accent: "#C0512E",
+  numberSoft: "#DCC9A6",
+} as const
+
+const TYPE_LABEL: Record<string, string> = {
+  MOVIE: "Film",
+  TV: "Série",
+  GAME: "Jeu vidéo",
+  BOOK: "Livre",
+  APP: "Application",
+  MANGA: "Manga",
+}
+
+const TYPE_LISTING: Record<string, string> = {
+  MOVIE: "/films",
+  TV: "/series",
+  GAME: "/jeux",
+  BOOK: "/livres",
+  MANGA: "/mangas",
+}
+
+const SECTION_LABEL =
+  "text-[10px] font-bold uppercase tracking-[.13em]"
+
+function metaLine(media: DashboardMedia): string {
+  const year = media.releaseDate ? new Date(media.releaseDate).getFullYear() : null
+  const parts: string[] = []
+  if (year) parts.push(String(year))
+  if (media.duration) parts.push(`${media.duration} min`)
+  if (media.director) parts.push(`Réalisé par ${media.director}`)
+  return parts.join(" · ")
+}
+
+export function MediaDashboard({
+  media,
+  dbId,
+  hideAnalysis,
+}: {
+  media: DashboardMedia
+  dbId: string
+  hideAnalysis: boolean
+}) {
+  const hasAge = media.expertAgeRec != null && media.expertAgeRec > 0
+  const verdict = hasAge ? `Dès ${media.expertAgeRec} ans` : "Non évalué"
+  const verdictNote = hideAnalysis
+    ? "Estimation · à confirmer après la sortie"
+    : media.isProvisional
+      ? "Âge provisoire · à confirmer"
+      : "Analyse automatisée · en calibrage"
+
+  const isFilmOrTv = media.type === "MOVIE" || media.type === "TV"
+  const listing = TYPE_LISTING[media.type] ?? "/recherche"
+  const seeAllHref = media.genres[0]
+    ? `${listing}/recherche?genres=${encodeURIComponent(media.genres[0])}`
+    : listing
+
+  const cardStyle = { background: C.card, border: `1px solid ${C.border}` } as const
+
+  return (
+    <div className="min-h-screen" style={{ background: C.page }}>
+      <div className="mx-auto max-w-[1120px] px-4 pb-12 pt-5 sm:px-8">
+        <BackButton className="mb-4" />
+
+        {/* ===== Scoreboard hero ===== */}
+        <div className="mb-[13px] overflow-hidden rounded-2xl" style={cardStyle}>
+          <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+            {/* poster */}
+            <div
+              className="relative h-[106px] w-[72px] flex-none overflow-hidden rounded-[9px]"
+              style={{ boxShadow: "0 5px 16px rgba(42,37,31,.25)" }}
+            >
+              <BlurredPoster
+                src={media.posterUrl ?? "/placeholder-poster.jpg"}
+                alt={media.title}
+                expertAgeRec={media.expertAgeRec}
+                violenceScore={media.metrics?.violence}
+                mediaType={media.type}
+                priority
+              />
+            </div>
+
+            {/* middle */}
+            <div className="min-w-0 flex-1">
+              <div className="mb-1.5 flex flex-wrap gap-1.5">
+                <span
+                  className="rounded-full px-2 py-[3px] text-[10.5px] font-semibold"
+                  style={{ color: "#A8431F", background: "#F3DECE" }}
+                >
+                  {TYPE_LABEL[media.type] ?? media.type}
+                </span>
+                {media.genres.length > 0 && (
+                  <span
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
+                    style={{ color: "#6B6154", background: C.page }}
+                  >
+                    {media.genres.slice(0, 3).join(" · ")}
+                  </span>
+                )}
+                {media.officialRating && (
+                  <span
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
+                    style={{ color: C.muted, background: C.page }}
+                  >
+                    {media.officialRating} · classif. officielle
+                  </span>
+                )}
+              </div>
+              <h1
+                className="font-serif text-[22px] font-semibold leading-tight sm:text-[27px]"
+                style={{ color: C.ink, letterSpacing: "-.01em" }}
+              >
+                {media.title}
+              </h1>
+              {metaLine(media) && (
+                <div className="mt-1.5 text-[12px]" style={{ color: C.muted }}>
+                  {metaLine(media)}
+                </div>
+              )}
+              {media.type === "GAME" && media.platforms.length > 0 && (
+                <div className="mt-2">
+                  <PlatformIcons platforms={media.platforms} variant="hero" />
+                </div>
+              )}
+            </div>
+
+            {/* verdict + trailer */}
+            <div className="flex flex-none flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-5">
+              <div className="sm:text-right">
+                <div className={SECTION_LABEL} style={{ color: C.faint }}>
+                  Notre recommandation
+                </div>
+                <div className="font-serif text-[34px] font-semibold leading-tight sm:text-[40px]" style={{ color: C.accent }}>
+                  {verdict}
+                </div>
+                <div className="text-[10.5px]" style={{ color: C.faint }}>
+                  {verdictNote}
+                </div>
+              </div>
+              {isFilmOrTv && <DashboardTrailerButton mediaId={dbId} mediaType={media.type} />}
+            </div>
+          </div>
+
+          {/* KPI strip (hidden when we haven't evaluated the content) */}
+          {!hideAnalysis && media.metrics && <DashboardKpiStrip metrics={media.metrics} />}
+        </div>
+
+        {/* ===== global actions (favori · à voir · avis · partager) ===== */}
+        <div className="mb-[13px] rounded-2xl px-5 py-3 sm:px-6" style={cardStyle}>
+          <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions />
+        </div>
+
+        {/* ===== three-column row ===== */}
+        <div className="mb-[13px] grid gap-[13px] lg:grid-cols-[1fr_1.25fr_1fr]">
+          {/* Pour ma famille */}
+          {!hideAnalysis ? (
+            <FamilyFitHero mediaId={dbId} />
+          ) : (
+            <div className="rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
+              <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
+                Pour ma famille
+              </div>
+              <p className="text-[12.5px] leading-relaxed" style={{ color: C.body }}>
+                L&apos;adéquation par membre sera disponible une fois le titre sorti et analysé.
+              </p>
+            </div>
+          )}
+
+          {/* Ce que les parents doivent savoir */}
+          <div className="rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
+            <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
+              Ce que les parents doivent savoir
+            </div>
+            {!hideAnalysis && media.metrics && media.metrics.whatParentsNeedToKnow.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-2.5">
+                  {media.metrics.whatParentsNeedToKnow.slice(0, 3).map((item, i) => (
+                    <div key={i} className="flex items-baseline gap-3">
+                      <span
+                        className="flex-none font-serif text-[16px] font-bold"
+                        style={{ color: C.numberSoft }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-[12.5px] leading-[1.5]" style={{ color: C.body }}>
+                        {item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {media.metrics.sensitiveWarnings.length > 0 && (
+                  <div
+                    className="mt-3 border-t pt-2.5 font-serif text-[12px] italic"
+                    style={{ borderColor: C.divider, color: "#9A9082" }}
+                  >
+                    À surveiller : {media.metrics.sensitiveWarnings.slice(0, 4).join(", ").toLowerCase()}.
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-[12.5px] leading-relaxed" style={{ color: C.body }}>
+                {hideAnalysis
+                  ? "L'analyse détaillée du contenu sera publiée après la sortie."
+                  : "Analyse de contenu à venir pour ce titre."}
+              </p>
+            )}
+          </div>
+
+          {/* Où regarder / plateformes */}
+          <div className="rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
+            <div className={`${SECTION_LABEL} mb-2.5`} style={{ color: C.faint }}>
+              {isFilmOrTv ? "Où regarder" : "Plateformes"}
+            </div>
+            {isFilmOrTv ? (
+              <WatchProvidersClient mediaId={dbId} mediaType={media.type} />
+            ) : media.platforms.length > 0 ? (
+              <PlatformIcons platforms={media.platforms} variant="hero" />
+            ) : (
+              <p className="text-[12.5px]" style={{ color: C.muted }}>
+                Disponibilités bientôt.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ===== screenshots ===== */}
+        {media.screenshots.length > 0 && (
+          <div className="mb-[13px] rounded-2xl p-4 sm:p-5" style={cardStyle}>
+            <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
+              Captures d&apos;écran
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {media.screenshots.slice(0, 4).map((s) => (
+                <div key={s.id} className="relative aspect-video overflow-hidden rounded-lg" style={{ background: C.page }}>
+                  <SafeImage src={s.url} alt={media.title} fill sizes="(max-width:640px) 50vw, 25vw" className="object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===== similar titles ===== */}
+        <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
+          <div className="mb-3 flex items-baseline justify-between">
+            <div className={SECTION_LABEL} style={{ color: C.faint }}>
+              Titres similaires
+            </div>
+            <Link href={seeAllHref} className="text-[11px] font-semibold" style={{ color: C.accent }}>
+              Tout voir →
+            </Link>
+          </div>
+          <Suspense
+            fallback={
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="aspect-[2/3] animate-pulse rounded-lg" style={{ background: C.page }} />
+                ))}
+              </div>
+            }
+          >
+            <ApercuSimilarMedia
+              mediaId={dbId}
+              mediaType={media.type}
+              genres={media.genres}
+              topics={media.topics}
+              serifClass="font-serif"
+            />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  )
+}

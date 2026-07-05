@@ -31,6 +31,7 @@ import { GameMetricsDisplay } from "@/components/media/GameMetricsDisplay"
 import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrapper"
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
+import { MediaV3Toggle } from "@/components/media-v3/MediaV3Toggle"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -1170,6 +1171,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
           )}
         </div>
       </div>
+
+      {/* Admin-only: jump to the V3 scoreboard dashboard preview. Self-hides
+          for non-admins, so it's safe on this public/ISR page. */}
+      <MediaV3Toggle variant="classic" routeId={toMediaRouteId(media.type, media.id)} />
       </FicheDataProvider>
     </div>
   )

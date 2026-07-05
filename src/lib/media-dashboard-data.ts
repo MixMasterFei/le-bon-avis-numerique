@@ -1,0 +1,122 @@
+import { cache } from "react"
+import { prisma } from "@/lib/prisma"
+import type { MediaType } from "@/lib/media-route"
+
+/**
+ * Focused data fetch for the V3 dashboard fiche (`/media/[id]/apercu`).
+ *
+ * Deliberately DB-only and lighter than the classic page's `fetchFromDatabase`
+ * (no external-API / mock fallback): the dashboard is an admin preview surface,
+ * so off-catalog titles simply fall through to the classic page. Everything the
+ * scoreboard needs comes from the row + its ContentMetrics + screenshots;
+ * family-fit, watch providers and similar titles are fetched by their own
+ * client components (by mediaId).
+ */
+export interface DashboardMedia {
+  id: string
+  title: string
+  originalTitle: string | null
+  type: MediaType
+  releaseDate: string | null
+  releaseStatus: string | null
+  posterUrl: string | null
+  synopsisFr: string | null
+  officialRating: string | null
+  expertAgeRec: number | null
+  communityAgeRec: number | null
+  isProvisional: boolean
+  duration: number | null
+  director: string | null
+  genres: string[]
+  platforms: string[]
+  topics: string[]
+  numberOfSeasons: number | null
+  metrics: {
+    violence: number
+    sexNudity: number
+    language: number
+    consumerism: number
+    substanceUse: number
+    positiveMessages: number
+    roleModels: number
+    whatParentsNeedToKnow: string[]
+    sensitiveWarnings: string[]
+    enrichmentConfidence: number | null
+  } | null
+  screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[]
+  reviewCount: number
+}
+
+export const getDashboardMedia = cache(async function getDashboardMedia(
+  rawId: string,
+): Promise<DashboardMedia | null> {
+  try {
+    const include = {
+      contentMetrics: true,
+      screenshots: { orderBy: { order: "asc" as const }, take: 8 },
+      _count: { select: { reviews: true } },
+    }
+
+    let row = await prisma.mediaItem.findUnique({ where: { id: rawId }, include })
+
+    if (!row) {
+      const numericId = parseInt(rawId)
+      if (!isNaN(numericId)) {
+        row =
+          (await prisma.mediaItem.findFirst({ where: { tmdbId: numericId }, include })) ??
+          (await prisma.mediaItem.findFirst({ where: { igdbId: numericId }, include }))
+      }
+    }
+
+    if (!row) return null
+
+    const cm = row.contentMetrics
+    return {
+      id: row.id,
+      title: row.title,
+      originalTitle: row.originalTitle,
+      type: row.type as MediaType,
+      releaseDate: row.releaseDate?.toISOString().split("T")[0] ?? null,
+      releaseStatus: row.releaseStatus,
+      posterUrl: row.posterUrl,
+      synopsisFr: row.synopsisFr,
+      officialRating: row.officialRating,
+      expertAgeRec: row.expertAgeRec,
+      communityAgeRec: row.communityAgeRec,
+      // Imported with an estimated age but not yet AI-enriched → provisional.
+      isProvisional: !row.isEnriched && row.expertAgeRec != null,
+      duration: row.duration,
+      director: row.director,
+      genres: row.genres ?? [],
+      platforms: row.platforms ?? [],
+      topics: row.topics ?? [],
+      numberOfSeasons: (row as unknown as { numberOfSeasons?: number | null }).numberOfSeasons ?? null,
+      metrics: cm
+        ? {
+            violence: cm.violence,
+            sexNudity: cm.sexNudity,
+            language: cm.language,
+            consumerism: cm.consumerism,
+            substanceUse: cm.substanceUse,
+            positiveMessages: cm.positiveMessages,
+            roleModels: cm.roleModels,
+            whatParentsNeedToKnow: cm.whatParentsNeedToKnow ?? [],
+            sensitiveWarnings: cm.sensitiveWarnings ?? [],
+            enrichmentConfidence: cm.enrichmentConfidence,
+          }
+        : null,
+      screenshots:
+        row.screenshots?.map((s) => ({
+          id: s.id,
+          url: s.url,
+          width: s.width,
+          height: s.height,
+          order: s.order,
+        })) ?? [],
+      reviewCount: (row as unknown as { _count?: { reviews: number } })._count?.reviews ?? 0,
+    }
+  } catch (error) {
+    console.error("[getDashboardMedia] failed:", error)
+    return null
+  }
+})
