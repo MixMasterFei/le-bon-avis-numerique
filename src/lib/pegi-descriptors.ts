@@ -110,3 +110,67 @@ export function pegiAgeFromOfficialRating(rating: string | null | undefined): nu
   const n = parseInt(rating.replace("PEGI_", ""), 10)
   return Number.isFinite(n) ? n : null
 }
+
+// --- Content-axis floors from official PEGI descriptors -------------------
+// PEGI descriptors are AUTHORITATIVE content signals. Enrichment scores each
+// axis from the synopsis (which rarely mentions sexual content, drugs, etc.)
+// and is told not to hallucinate, so a game officially flagged "Sexualité"
+// was landing at sexNudité 2 (the Witcher 3 case). Flooring the matching axis
+// by the PEGI descriptor + level corrects this. Only ever RAISES a score.
+
+export interface PegiContentFloors {
+  violence?: number
+  sexNudity?: number
+  language?: number
+  substanceUse?: number
+}
+
+const DESCRIPTOR_AXIS: Record<string, keyof PegiContentFloors> = {
+  Violence: "violence",
+  Sexualité: "sexNudity",
+  "Langage grossier": "language",
+  Drogues: "substanceUse",
+}
+
+/** How strong a flagged axis must be, given the PEGI age level. */
+function floorForPegiAge(pegiAge: number): number {
+  if (pegiAge >= 18) return 4
+  if (pegiAge >= 16) return 3
+  if (pegiAge >= 12) return 2
+  if (pegiAge >= 7) return 1
+  return 0
+}
+
+/** Minimum content-axis scores implied by a game's PEGI descriptors + level. */
+export function pegiContentFloors(
+  descriptors: string[] | null | undefined,
+  officialRating: string | null | undefined,
+): PegiContentFloors {
+  const pegiAge = pegiAgeFromOfficialRating(officialRating)
+  if (pegiAge === null || !descriptors?.length) return {}
+  const floorVal = floorForPegiAge(pegiAge)
+  if (floorVal <= 0) return {}
+  const floors: PegiContentFloors = {}
+  for (const d of descriptors) {
+    const axis = DESCRIPTOR_AXIS[d]
+    if (axis) floors[axis] = Math.max(floors[axis] ?? 0, floorVal)
+  }
+  return floors
+}
+
+/**
+ * Raise a metrics object's content axes to at least the floors implied by the
+ * official PEGI descriptors. Returns a new object; never lowers a score.
+ */
+export function applyPegiContentFloors<
+  T extends { violence: number; sexNudity: number; language: number; substanceUse: number },
+>(metrics: T, descriptors: string[] | null | undefined, officialRating: string | null | undefined): T {
+  const f = pegiContentFloors(descriptors, officialRating)
+  return {
+    ...metrics,
+    violence: Math.max(metrics.violence, f.violence ?? 0),
+    sexNudity: Math.max(metrics.sexNudity, f.sexNudity ?? 0),
+    language: Math.max(metrics.language, f.language ?? 0),
+    substanceUse: Math.max(metrics.substanceUse, f.substanceUse ?? 0),
+  }
+}

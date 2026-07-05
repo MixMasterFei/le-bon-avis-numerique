@@ -5,6 +5,7 @@ import { notUnreleasedWhere, unenrichedBacklogWhere } from "@/lib/enrich-filter"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
 import { floorExpertAgeBySignals } from "@/lib/age-floor"
+import { applyPegiContentFloors } from "@/lib/pegi-descriptors"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
@@ -166,6 +167,7 @@ async function analyzeWithOpenAI(
     officialRating?: string | null
     tmdbVoteCount?: number | null
     demographic?: string | null
+    pegiDescriptors?: string[] | null
   },
   tmdbKeywords: string[] = [],
   retryCount = 0
@@ -221,6 +223,7 @@ ${item.originalTitle ? `- Titre original: ${item.originalTitle}` : ""}
 - Genres: ${item.genres.join(", ") || "Non specifie"}
 ${item.releaseDate ? `- Date de sortie: ${item.releaseDate.toISOString().split("T")[0]}` : ""}
 ${item.officialRating ? `- Classification officielle: ${item.officialRating}` : ""}
+${item.pegiDescriptors && item.pegiDescriptors.length > 0 ? `- Descripteurs PEGI officiels (AUTORITAIRES — les axes correspondants DOIVENT les refleter, meme si le synopsis n'en parle pas): ${item.pegiDescriptors.join(", ")}` : ""}
 - Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}${keywordHint}${mangaRubric}
 
 IMPORTANT:
@@ -662,7 +665,17 @@ export async function POST(request: NextRequest) {
           officialRating: item.officialRating,
           tmdbVoteCount: item.tmdbVoteCount,
           demographic: item.demographic,
+          pegiDescriptors: item.pegiDescriptors,
         }, tmdbKeywords)
+
+        // Official PEGI descriptors are authoritative: floor the matching
+        // content axes (a game flagged "Sexualité" can't score sexNudité 2).
+        // Runs BEFORE the age floor so a raised axis can also lift the age.
+        analysis.contentMetrics = applyPegiContentFloors(
+          analysis.contentMetrics,
+          item.pegiDescriptors,
+          item.officialRating,
+        )
 
         // Deterministic age FLOOR: mature content must be allowed to push the
         // recommended age above a lenient official rating (independent guidance).
