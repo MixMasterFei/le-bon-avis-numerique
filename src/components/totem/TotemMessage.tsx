@@ -197,7 +197,7 @@ export function TotemMessage({
               return (
                 <div key={idx} className="flex flex-wrap gap-2 pt-1">
                   {results.slice(0, 4).map((r) => (
-                    <TotemMediaCard key={r.id} media={r} />
+                    <TotemMediaCard key={r.id} media={r} enableSeenAction />
                   ))}
                 </div>
               )
@@ -218,7 +218,7 @@ export function TotemMessage({
                   )}
                   <div className="flex flex-wrap gap-2">
                     {results.slice(0, 6).map((r) => (
-                      <TotemMediaCard key={r.id} media={r} />
+                      <TotemMediaCard key={r.id} media={r} enableSeenAction />
                     ))}
                   </div>
                 </div>
@@ -231,6 +231,7 @@ export function TotemMessage({
               return (
                 <div key={idx} className="pt-1">
                   <TotemMediaCard
+                    enableSeenAction
                     media={{
                       id: out.id,
                       title: out.title,

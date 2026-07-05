@@ -43,6 +43,17 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
   })
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const scrollerRef = useRef<HTMLDivElement | null>(null)
+  // Whether the view should keep pinned to the bottom as new content
+  // streams in. Flips to false when the user scrolls up to read, so we
+  // don't yank them back down mid-read.
+  const stickToBottomRef = useRef(true)
+
+  const handleScrollerScroll = () => {
+    const el = scrollerRef.current
+    if (!el) return
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    stickToBottomRef.current = distanceFromBottom < 80
+  }
 
   const {
     messages,
@@ -94,10 +105,26 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     return () => window.removeEventListener("totem:prefill", handler)
   }, [sendUserMessage])
 
+  // A value that grows as the last message streams in (tokens append to
+  // an existing message, so messages.length alone never changes during a
+  // stream). Depending on it makes the scroll effect follow the stream.
+  const lastMessage = messages[messages.length - 1]
+  const streamSignal = lastMessage?.parts?.reduce(
+    (n, p) => n + ("text" in p && typeof p.text === "string" ? p.text.length : 1),
+    0,
+  ) ?? 0
+
   useEffect(() => {
-    if (!scrollerRef.current) return
-    scrollerRef.current.scrollTop = scrollerRef.current.scrollHeight
-  }, [messages.length, status])
+    const el = scrollerRef.current
+    if (!el) return
+    if (!stickToBottomRef.current) return
+    el.scrollTop = el.scrollHeight
+  }, [messages.length, status, streamSignal])
+
+  // When the user sends a new message, always re-pin to the bottom.
+  useEffect(() => {
+    if (status === "submitted") stickToBottomRef.current = true
+  }, [status])
 
   const dismissAlphaHint = () => {
     setShowAlphaHint(false)
@@ -255,7 +282,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
           )}
 
           {/* Conversation OR history */}
-          <div ref={scrollerRef} className="flex-1 overflow-y-auto">
+          <div ref={scrollerRef} onScroll={handleScrollerScroll} className="flex-1 overflow-y-auto">
             {view === "history" ? (
               <TotemHistoryPanel
                 activeConversationId={activeConversationId}

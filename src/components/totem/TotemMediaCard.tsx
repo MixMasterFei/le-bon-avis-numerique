@@ -4,6 +4,7 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
+import { TotemSeenButton } from "./TotemSeenButton"
 
 export interface TotemCitedMedia {
   id: string
@@ -25,7 +26,14 @@ const TYPE_LABEL: Record<string, string> = {
   APP: "App",
 }
 
-export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
+export function TotemMediaCard({
+  media,
+  enableSeenAction = false,
+}: {
+  media: TotemCitedMedia
+  /** Show the "Déjà vu" action (logged-in family users only; self-hides otherwise). */
+  enableSeenAction?: boolean
+}) {
   const ageLabel = media.recommendedAge != null ? `${media.recommendedAge}+` : null
   // Canonical route form (/media/<type>:<id>) so Totem links match the rest
   // of the site for SEO/analytics, instead of the raw-id shortcut.
@@ -33,10 +41,14 @@ export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
     ? `/media/${toMediaRouteId(media.type as MediaType, media.id)}`
     : `/media/${media.id}`
   return (
-    <Link
-      href={href}
+    // Stretched-link pattern: the whole card navigates via an absolutely
+    // positioned <Link>, and the content sits above it as pointer-events-none
+    // so clicks fall through — except the "Déjà vu" button, which re-enables
+    // pointer events. This keeps the interactive button OUT of the <a>
+    // (invalid + hydration error) while preserving the full-card click target.
+    <div
       className={cn(
-        "group flex w-full max-w-[280px] gap-3 rounded-xl p-2 shadow-sm transition hover:shadow-md",
+        "group relative flex w-full max-w-[280px] gap-3 rounded-xl p-2 shadow-sm transition hover:shadow-md",
       )}
       style={{
         background: "var(--color-card)",
@@ -44,8 +56,10 @@ export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
         color: "var(--color-ink)",
       }}
     >
+      <Link href={href} aria-label={media.title} className="absolute inset-0 z-0 rounded-xl" />
+
       <div
-        className="relative h-[110px] w-[74px] flex-shrink-0 overflow-hidden rounded-md"
+        className="pointer-events-none relative z-10 h-[110px] w-[74px] flex-shrink-0 overflow-hidden rounded-md"
         style={{ background: "var(--color-placeholder)" }}
       >
         {media.posterUrl ? (
@@ -62,7 +76,7 @@ export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
           </div>
         )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
+      <div className="pointer-events-none relative z-10 flex min-w-0 flex-1 flex-col justify-between py-0.5">
         <div className="min-w-0">
           <div className="text-[10px] font-medium uppercase tracking-[0.06em]" style={{ color: "var(--color-ink2)" }}>
             {TYPE_LABEL[media.type] ?? media.type}
@@ -80,7 +94,7 @@ export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="mt-1 flex items-center justify-between gap-2">
           {ageLabel ? (
             <span
               className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
@@ -94,11 +108,15 @@ export function TotemMediaCard({ media }: { media: TotemCitedMedia }) {
           ) : (
             <span />
           )}
-          <span className="text-[11px] group-hover:text-[var(--color-accent)]" style={{ color: "var(--color-ink2)" }}>
-            voir la fiche →
-          </span>
+          {enableSeenAction ? (
+            <TotemSeenButton mediaId={media.id} mediaTitle={media.title} />
+          ) : (
+            <span className="text-[11px] group-hover:text-[var(--color-accent)]" style={{ color: "var(--color-ink2)" }}>
+              voir la fiche →
+            </span>
+          )}
         </div>
       </div>
-    </Link>
+    </div>
   )
 }

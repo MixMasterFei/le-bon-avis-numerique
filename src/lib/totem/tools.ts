@@ -1,9 +1,10 @@
 import { tool } from "ai"
 import { z } from "zod"
-import { Prisma } from "@prisma/client"
+import { Prisma, ReactionType } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { isPathAllowed } from "@/lib/totem/nav-allowlist"
 import { searchPublishedBlogPosts } from "@/lib/totem/sanity-search"
+import { matchMediaIdsByTitle, matchMediaIdsByTheme } from "@/lib/search-normalize"
 import { getMemberAge } from "@/lib/age-utils"
 
 export interface TotemToolContext {
@@ -13,6 +14,39 @@ export interface TotemToolContext {
 }
 
 const MEDIA_TYPES = ["MOVIE", "TV", "GAME", "BOOK", "APP"] as const
+
+// Reactions that mean a family member has already experienced a title, so
+// Totem shouldn't keep proposing it. TOO_YOUNG / TOO_OLD / NOT_FOR_ME are
+// pre-watch judgments, not "seen", so they're excluded.
+const SEEN_REACTIONS: ReactionType[] = [
+  ReactionType.WATCHED,
+  ReactionType.LOVED,
+  ReactionType.LIKED,
+  ReactionType.OK,
+  ReactionType.SCARED,
+  ReactionType.BORED,
+]
+
+/**
+ * Media ids at least one member of the connected user's family has already
+ * seen. Empty for anonymous users. Used to auto-hide already-seen titles from
+ * Totem's proposals (the chatbot kept re-suggesting films the family had
+ * watched).
+ */
+async function getSeenMediaIds(userId: string | null): Promise<Set<string>> {
+  if (!userId) return new Set()
+  try {
+    const rows = await prisma.mediaReaction.findMany({
+      where: { familyMember: { userId }, reaction: { in: SEEN_REACTIONS } },
+      select: { mediaId: true },
+      distinct: ["mediaId"],
+    })
+    return new Set(rows.map((r) => r.mediaId))
+  } catch (error) {
+    console.error("[totem] getSeenMediaIds failed", error)
+    return new Set()
+  }
+}
 
 function trimText(s: string | null, max: number): string | null {
   if (!s) return null
@@ -26,9 +60,15 @@ export function buildTotemTools(ctx: TotemToolContext) {
      */
     searchMedia: tool({
       description:
-        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Utilise pour trouver un titre par nom ou par filtre (âge, genre). IMPORTANT : quand l'utilisateur dit 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest' (sinon les vieux opus populaires d'une saga remontent en tête et tu rates le vrai dernier).",
+        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme déjà vus.",
       inputSchema: z.object({
-        q: z.string().optional().describe("Requête textuelle (titre partiel)."),
+        q: z.string().optional().describe("Requête par TITRE (titre partiel, insensible aux accents et à la casse)."),
+        theme: z
+          .string()
+          .optional()
+          .describe(
+            "Requête par SUJET/THÈME plutôt que par titre : ex 'histoire', 'amitié', 'nature', 'espace', 'seconde guerre mondiale', 'écologie'. Cherche dans les genres, thèmes et synopsis, classé par pertinence thématique. Utilise CECI (pas 'q') dès que l'utilisateur décrit un sujet/type d'histoire plutôt qu'un titre précis.",
+          ),
         type: z.enum(MEDIA_TYPES).optional().describe("Type de média à filtrer."),
         minAge: z.number().int().min(0).max(18).optional(),
         maxAge: z.number().int().min(0).max(18).optional(),
@@ -37,11 +77,12 @@ export function buildTotemTools(ctx: TotemToolContext) {
           .enum(["popular", "newest"])
           .optional()
           .describe(
-            "Ordre de tri. 'popular' (défaut quand q est fourni) trie par notoriété TMDB. 'newest' trie par date de sortie décroissante — à utiliser pour 'le dernier X', 'le plus récent', 'la dernière sortie'.",
+            "Ordre de tri. 'popular' (défaut) trie par notoriété TMDB. 'newest' trie par date de sortie décroissante — à utiliser pour 'le dernier X', 'le plus récent', 'la dernière sortie'. (Ignoré quand 'theme' est fourni : le tri thématique prime.)",
           ),
         limit: z.number().int().min(1).max(10).default(5),
       }),
-      execute: async ({ q, type, minAge, maxAge, genre, sort, limit }) => {
+      execute: async ({ q, theme, type, minAge, maxAge, genre, sort, limit }) => {
+        const cap = limit ?? 5
         const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
         if (type) where.type = type
         if (minAge != null || maxAge != null) {
@@ -51,12 +92,33 @@ export function buildTotemTools(ctx: TotemToolContext) {
           }
         }
         if (genre) where.genres = { has: genre }
-        if (q && q.trim().length > 0) {
-          where.OR = [
-            { title: { contains: q, mode: "insensitive" } },
-            { originalTitle: { contains: q, mode: "insensitive" } },
-          ]
+
+        // Resolve a thematic or title query to an ordered id list — both
+        // accent-insensitive. 'theme' also matches genres/topics/synopsis and
+        // is ranked by relevance (not raw popularity), which is what stops
+        // "films historiques pour enfants" from returning Avengers first.
+        let orderedIds: string[] | null = null
+        if (theme && theme.trim().length >= 2) {
+          orderedIds = await matchMediaIdsByTheme(theme, { limit: 40 })
+        } else if (q && q.trim().length > 0) {
+          orderedIds = await matchMediaIdsByTitle(q, { limit: 40 })
         }
+
+        // Auto-hide titles the family has already seen.
+        const seen = await getSeenMediaIds(ctx.userId)
+
+        let filteredIds: string[] | null = null
+        if (orderedIds) {
+          filteredIds = seen.size ? orderedIds.filter((id) => !seen.has(id)) : orderedIds
+          where.id = { in: filteredIds }
+        } else if (seen.size) {
+          where.NOT = { id: { in: [...seen] } }
+        }
+
+        // 'theme' owns the ranking; for a plain title/browse we let Postgres
+        // order. When we resolved ids we re-rank in JS to preserve their
+        // order — except for sort='newest', where date order must win.
+        const useRelevanceOrder = !!orderedIds && sort !== "newest"
 
         let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
         if (sort === "newest") {
@@ -64,32 +126,42 @@ export function buildTotemTools(ctx: TotemToolContext) {
             { releaseDate: { sort: "desc", nulls: "last" } },
             { tmdbVoteCount: { sort: "desc", nulls: "last" } },
           ]
-        } else if (q) {
+        } else if (orderedIds) {
           orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
         } else {
           orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
         }
 
-        const items = await prisma.mediaItem.findMany({
-          where,
-          orderBy,
-          take: limit ?? 5,
-          select: {
-            id: true,
-            title: true,
-            originalTitle: true,
-            type: true,
-            releaseDate: true,
-            posterUrl: true,
-            expertAgeRec: true,
-            communityAgeRec: true,
-            genres: true,
-            synopsisFr: true,
-          },
-        })
+        const fetchTake = orderedIds ? Math.min(filteredIds?.length ?? 0, 40) : cap
+        const items =
+          orderedIds && (filteredIds?.length ?? 0) === 0
+            ? []
+            : await prisma.mediaItem.findMany({
+                where,
+                orderBy,
+                take: fetchTake,
+                select: {
+                  id: true,
+                  title: true,
+                  originalTitle: true,
+                  type: true,
+                  releaseDate: true,
+                  posterUrl: true,
+                  expertAgeRec: true,
+                  communityAgeRec: true,
+                  genres: true,
+                  synopsisFr: true,
+                },
+              })
+
+        let ranked = items
+        if (useRelevanceOrder && orderedIds) {
+          const pos = new Map(orderedIds.map((id, i) => [id, i]))
+          ranked = [...items].sort((a, b) => (pos.get(a.id) ?? 1e9) - (pos.get(b.id) ?? 1e9))
+        }
 
         return {
-          results: items.map((m) => ({
+          results: ranked.slice(0, cap).map((m) => ({
             id: m.id,
             title: m.title,
             type: m.type,
@@ -315,6 +387,8 @@ export function buildTotemTools(ctx: TotemToolContext) {
       }),
       execute: async ({ rail, age, platform, genre, limit }) => {
         const cap = limit ?? 6
+        // Auto-hide titles the family has already seen from every rail.
+        const seen = await getSeenMediaIds(ctx.userId)
 
         // ---- cinema: live TMDB ----------------------------------
         if (rail === "cinema") {
@@ -338,6 +412,9 @@ export function buildTotemTools(ctx: TotemToolContext) {
             let movies = data.movies ?? []
             if (typeof age === "number") {
               movies = movies.filter((m) => m.expertAgeRec == null || m.expertAgeRec <= age)
+            }
+            if (seen.size) {
+              movies = movies.filter((m) => !seen.has(m.id))
             }
             // Honour the age cap in the canonical "see all" URL so the
             // user lands on a pre-filtered films page, not the raw
@@ -419,6 +496,11 @@ export function buildTotemTools(ctx: TotemToolContext) {
         if (rail !== "by-age" && typeof age === "number") {
           where.expertAgeRec = { lte: age, gte: 0 }
           seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${age}` : `?maxAge=${age}`
+        }
+
+        // Don't re-propose titles the family has already seen.
+        if (seen.size) {
+          where.NOT = { id: { in: [...seen] } }
         }
 
         const items = await prisma.mediaItem.findMany({
