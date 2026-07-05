@@ -48,6 +48,11 @@ export async function ApercuSimilarMedia({
   serifClass,
 }: ApercuSimilarMediaProps) {
   let similarMedia: SimilarItem[] = []
+  // Genres of the current title, lowercased for overlap checks. When the
+  // heading promises related titles we must actually show related titles:
+  // the precomputed similarity graph can rank a pair on director/tone/age
+  // while they share no genre at all, which is what eroded user trust.
+  const currentGenreSet = new Set(genres.map((g) => g.toLowerCase()))
 
   try {
     // 1. Pre-computed similarities
@@ -98,9 +103,19 @@ export async function ApercuSimilarMedia({
         }
       })
       // Same media type only — the precomputed similarity graph can link a game
-      // to a movie, which surfaced cross-type suggestions ("Dans le même genre"
-      // on a game showing films). The genre fallback below tops up if thin.
+      // to a movie, which surfaced cross-type suggestions on a game showing
+      // films. The genre fallback below tops up if thin.
       .filter((s) => s.type === mediaType)
+      // Require a real shared genre with the current title. A precomputed edge
+      // can be high-scoring on director/tone/age alone; those slipped through
+      // as "similar" titles that looked unrelated to users. If the current
+      // title somehow has no genres we can't enforce this, so we keep the raw
+      // similarity ranking rather than empty the rail.
+      .filter(
+        (s) =>
+          currentGenreSet.size === 0 ||
+          s.genres.some((g) => currentGenreSet.has(g.toLowerCase())),
+      )
 
     // 2. Fallback / top-up: genre-based SAME-TYPE scoring when we don't have
     //    enough precomputed same-type similarities.

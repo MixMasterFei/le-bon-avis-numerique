@@ -1108,9 +1108,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   className="font-serif text-xl md:text-2xl font-medium mb-4"
                   style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
                 >
-                  Dans le même{" "}
+                  Titres{" "}
                   <em className="italic" style={{ color: "var(--color-warm-accent)" }}>
-                    genre
+                    similaires
                   </em>
                 </h2>
                 <ApercuSimilarMedia
