@@ -255,9 +255,9 @@ export function MediaDashboard({
               <>
                 <div className="flex flex-col gap-2.5">
                   {media.metrics.whatParentsNeedToKnow.slice(0, 3).map((item, i) => (
-                    <div key={i} className="flex items-baseline gap-3">
+                    <div key={i} className="flex items-baseline gap-2.5">
                       <span
-                        className="flex-none font-serif text-[16px] font-bold"
+                        className="flex-none w-4 font-serif text-[15px] font-bold tabular-nums"
                         style={{ color: C.numberSoft }}
                       >
                         {i + 1}

@@ -99,7 +99,7 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
 
   return (
     <>
-      <div className="mb-2.5 flex items-center justify-between gap-2">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
         <div className={LABEL} style={{ color: "#A89A82" }}>
           Où regarder
         </div>
@@ -118,7 +118,7 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
                   type="button"
                   disabled={!s.available}
                   onClick={() => setActive(s.key)}
-                  className="inline-flex items-center gap-1 rounded-md px-3 py-1 text-[10.5px] font-semibold transition-colors disabled:cursor-default"
+                  className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1 text-[10.5px] font-semibold transition-colors disabled:cursor-default"
                   style={style}
                 >
                   {s.key === "cinema" && s.available && (
