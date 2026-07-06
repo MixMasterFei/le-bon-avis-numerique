@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { BarChart3, LogIn } from "lucide-react"
 import { UserMetricsModal } from "./UserMetricsModal"
@@ -16,6 +17,7 @@ interface UserMetricsButtonProps {
 export function UserMetricsButton({ mediaId, mediaTitle, onSubmit }: UserMetricsButtonProps) {
   const { data: session, status } = useSession()
   const [showModal, setShowModal] = useState(false)
+  const pathname = usePathname()
   const p = APERCU_PALETTE
 
   if (status === "loading") {
@@ -34,7 +36,11 @@ export function UserMetricsButton({ mediaId, mediaTitle, onSubmit }: UserMetrics
 
   if (!session) {
     return (
-      <Link href="/auth/signin" className={pillClass} style={pillStyle}>
+      <Link
+        href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+        className={pillClass}
+        style={pillStyle}
+      >
         <LogIn className="h-4 w-4" />
         Connectez-vous pour évaluer
       </Link>

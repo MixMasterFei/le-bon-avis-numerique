@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { AlertTriangle, Send, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -53,6 +54,7 @@ const FIELD_OPTIONS = [
 ]
 
 export function ReportCorrectionModal({ mediaId, mediaTitle, isLoggedIn }: ReportCorrectionModalProps) {
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [type, setType] = useState("")
   const [field, setField] = useState("")
@@ -141,7 +143,7 @@ export function ReportCorrectionModal({ mediaId, mediaTitle, isLoggedIn }: Repor
               Vous devez être connecté pour signaler une erreur.
             </p>
             <Button asChild>
-              <a href="/connexion">Se connecter</a>
+              <a href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>Se connecter</a>
             </Button>
           </div>
         ) : success ? (

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Eye, EyeOff, Check, X, ArrowRight, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -9,8 +10,20 @@ import { trackSignupCompleted } from "@/lib/analytics"
 
 const SAGE = "#5C8A5C"
 
+// Internal-paths-only guard, mirroring /connexion's safeCallback (open-redirect
+// protection). Falls back to /profil, the historical post-signup landing.
+function safeCallback(raw: string | null): string {
+  if (!raw) return "/profil"
+  if (raw[0] !== "/" || raw[1] === "/" || raw[1] === "\\") return "/profil"
+  return raw
+}
+
 export function ApercuInscription({ serifClass }: { serifClass: string }) {
   const p = APERCU_PALETTE
+  const searchParams = useSearchParams()
+  // A visitor sent here from a fiche ("Créer mon profil") should come back to
+  // that fiche after signup, not be dumped on /profil.
+  const callbackUrl = safeCallback(searchParams.get("callbackUrl"))
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
@@ -76,7 +89,7 @@ export function ApercuInscription({ serifClass }: { serifClass: string }) {
     setGoogleLoading(true)
     // Fire analytics before the full-page redirect so Plausible catches it.
     trackSignupCompleted("google")
-    await signIn("google", { callbackUrl: "/profil" })
+    await signIn("google", { callbackUrl })
   }
 
   return (

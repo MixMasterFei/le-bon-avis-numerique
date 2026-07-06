@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Sparkles, LogIn, UserPlus } from "lucide-react"
 import {
   useFamilyFitData,
@@ -70,6 +71,8 @@ const secondaryBtn =
  */
 export function FamilyQuickAnswer({ mediaId, className }: { mediaId: string; className?: string }) {
   const { data, loading } = useFamilyFitData(mediaId)
+  const pathname = usePathname()
+  const authQuery = `?callbackUrl=${encodeURIComponent(pathname)}`
 
   if (loading) {
     return (
@@ -102,12 +105,12 @@ export function FamilyQuickAnswer({ mediaId, className }: { mediaId: string; cla
             </Link>
           ) : (
             <>
-              <Link href="/connexion" className={primaryBtn} style={{ background: "var(--color-warm-accent)" }}>
+              <Link href={`/connexion${authQuery}`} className={primaryBtn} style={{ background: "var(--color-warm-accent)" }}>
                 <LogIn className="h-4 w-4" />
                 Se connecter
               </Link>
               <Link
-                href="/inscription"
+                href={`/inscription${authQuery}`}
                 className={secondaryBtn}
                 style={{ color: "var(--color-warm-ink)", border: "1px solid var(--color-warm-line)" }}
               >
