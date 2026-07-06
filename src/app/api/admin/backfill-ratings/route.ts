@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   let updated = 0
+  let unratable = 0
   let errors = 0
 
   for (const item of items) {
@@ -71,8 +72,27 @@ export async function POST(req: NextRequest) {
       updated++
 
       await new Promise((resolve) => setTimeout(resolve, 150))
-    } catch {
-      errors++
+    } catch (error) {
+      // A 404 means the tmdbId no longer exists on TMDB (deleted/merged
+      // title) — it will NEVER get a rating, so persist 0/0 to drain it
+      // from the queue. Without this, the same handful of dead ids was
+      // re-selected every batch (highest dataQualityScore first) and the
+      // Saturday loop spun on them forever. Transient failures (429,
+      // timeout, 5xx) still fall through to errors++ and retry next run.
+      const message = error instanceof Error ? error.message : ""
+      if (message.includes("TMDB API error: 404")) {
+        try {
+          await prisma.mediaItem.update({
+            where: { id: item.id },
+            data: { tmdbRating: 0, tmdbVoteCount: 0 },
+          })
+          unratable++
+        } catch {
+          errors++
+        }
+      } else {
+        errors++
+      }
     }
   }
 
@@ -83,13 +103,14 @@ export async function POST(req: NextRequest) {
   await logCronRun({
     task: "backfill-ratings",
     status: errors > 0 ? "partial" : "success",
-    summary: `${updated} notes TMDB ajoutees, ${remaining} restants`,
-    details: { updated, errors, remaining },
+    summary: `${updated} notes TMDB ajoutees${unratable > 0 ? `, ${unratable} sans fiche TMDB (ignores)` : ""}, ${remaining} restants`,
+    details: { updated, unratable, errors, remaining },
     startTime,
   })
 
   return NextResponse.json({
     updated,
+    unratable,
     errors,
     remaining,
     message: remaining > 0

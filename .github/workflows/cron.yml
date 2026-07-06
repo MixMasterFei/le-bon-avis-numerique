@@ -371,9 +371,18 @@ jobs:
               "$SITE_URL/api/admin/backfill-ratings" 2>/dev/null)
             remaining=$(echo "$response" | jq -r '.remaining // 0' 2>/dev/null || echo "0")
             updated=$(echo "$response" | jq -r '.updated // 0' 2>/dev/null || echo "0")
-            echo "Batch $i: updated=$updated remaining=$remaining"
+            unratable=$(echo "$response" | jq -r '.unratable // 0' 2>/dev/null || echo "0")
+            echo "Batch $i: updated=$updated unratable=$unratable remaining=$remaining"
             if [ "$remaining" = "0" ]; then
               echo "All ratings backfilled"
+              break
+            fi
+            # No progress at all (nothing rated, nothing marked unratable) ⇒
+            # only transient errors left in this pass. Without this, the loop
+            # burned all 35 iterations every Saturday re-asking TMDB about the
+            # same stuck titles.
+            if [ "$updated" = "0" ] && [ "$unratable" = "0" ]; then
+              echo "No progress ($remaining stuck) — stopping, will retry next run"
               break
             fi
             sleep 2

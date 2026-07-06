@@ -67,6 +67,18 @@ export async function POST(request: Request) {
     let created = 0
     const updated = 0
 
+    // Safety bail before Vercel's 300s ceiling. At ~7,900 enriched items a
+    // full-mode item costs ~5-6s (candidates query + up to 10 upserts), so a
+    // 50-item batch can no longer finish inside maxDuration — the gateway
+    // killed the function mid-run, curl saw an empty response, and the whole
+    // Saturday similarity step silently gave up after 3 tries (nothing logged;
+    // the supervisor then flagged "similarity stale" a week later). Bailing at
+    // 260s returns real progress + a forward nextOffset so the workflow loop
+    // keeps draining. Mirrors the enrich route's TIME_BUDGET_MS pattern.
+    const TIME_BUDGET_MS = 260_000
+    let itemsDone = 0
+    let bailedOnTime = false
+
     // Helper: save a similarity pair using upsert (avoids separate findFirst + create/update)
     async function savePair(idA: string, idB: string, score: number, reasons: string[]) {
       // Ensure consistent ordering (smaller ID first) to avoid duplicate pairs
@@ -106,6 +118,10 @@ export async function POST(request: Request) {
     if (mode === "full") {
       // Full mode: compare each item against top candidates of same type
       for (const itemA of mediaItems) {
+        if (Date.now() - startTime > TIME_BUDGET_MS) {
+          bailedOnTime = true
+          break
+        }
         // Fetch candidates with at least some shared genres
         const candidates = await prisma.mediaItem.findMany({
           where: {
@@ -149,6 +165,7 @@ export async function POST(request: Request) {
         for (const match of matches.slice(0, 10)) {
           await savePair(itemA.id, match.item.id, match.score, match.reasons)
         }
+        itemsDone++
       }
     } else {
       // Batch mode: compare pairs within the batch only
@@ -165,15 +182,20 @@ export async function POST(request: Request) {
       }
     }
 
-    const nextOffset = offset + limit
-    const done = nextOffset >= totalItems || mediaItems.length < limit
+    // On a time bail, only advance past the items actually processed so the
+    // caller's next call resumes exactly where this one stopped. (itemsDone=0
+    // ⇒ nextOffset === offset, which the workflow loop treats as "no forward
+    // progress" and stops safely instead of spinning.)
+    const consumed = mode === "full" && bailedOnTime ? itemsDone : mediaItems.length
+    const nextOffset = offset + consumed
+    const done = !bailedOnTime && (nextOffset >= totalItems || mediaItems.length < limit)
 
     await logCronRun({
       task: "similarity",
       status: done ? "success" : "partial",
       summary: done
         ? `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`
-        : `Batch similarity offset=${offset} next=${nextOffset}/${totalItems} (${processed} paires)`,
+        : `Batch similarity offset=${offset} next=${nextOffset}/${totalItems} (${processed} paires)${bailedOnTime ? " — bailed on time" : ""}`,
       details: {
         processed,
         created,
@@ -183,6 +205,7 @@ export async function POST(request: Request) {
         nextOffset: done ? null : nextOffset,
         total: totalItems,
         done,
+        bailedOnTime,
       },
       startTime,
     })

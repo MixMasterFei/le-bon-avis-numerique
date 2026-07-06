@@ -790,7 +790,10 @@ export async function POST(request: NextRequest) {
     await logCronRun({
       task: "enrich",
       status: result.errors > 0 ? "partial" : bailedOnTime ? "partial" : "success",
-      summary: `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
+      summary:
+        result.processed === 0
+          ? `Backlog vide — rien a enrichir (${type})`
+          : `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
       details: { ...result, type, bailedOnTime },
       startTime,
     })

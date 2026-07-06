@@ -43,6 +43,12 @@ type Issue = {
   summary: string
   latest?: RecentLog
   remediation?: Remediation
+  // How many CONSECUTIVE prior supervisor runs already flagged this task.
+  // ≥2 means the daily remediation "succeeded" (HTTP 200) without fixing
+  // anything — observed with the enrich AI_RECAL constraint bug, where the
+  // identical email fired for a week. The report escalates wording so a
+  // persistent anomaly reads as "fix the root cause", not "retried, fine".
+  persistedRuns?: number
 }
 
 type ActionResult = {
@@ -435,9 +441,20 @@ function actionForAgent(issue: Issue, action?: ActionResult): string {
 function actionForHuman(issues: Issue[], actions: ActionResult[]): string[] {
   const failedActions = actions.filter((action) => !action.ok)
   const unresolved = issues.filter((issue) => !actions.some((action) => action.task === issue.task && action.ok))
+  const persistent = issues.filter((issue) => (issue.persistedRuns ?? 0) >= 2)
 
   if (issues.length === 0) {
     return ["Rien a faire. Le superviseur n'a detecte aucune anomalie."]
+  }
+
+  if (persistent.length > 0) {
+    return [
+      "Anomalie persistante : la relance automatique passe (HTTP 200) mais ne corrige rien — la cause racine est ailleurs (bug code/DB, pas un rate).",
+      "Transmettre ce mail a Codex avec la demande : \"diagnostique et corrige la cause racine\".",
+      ...persistent.map(
+        (issue) => `${issue.task} : flague ${(issue.persistedRuns ?? 0) + 1} runs superviseur d'affilee.`,
+      ),
+    ]
   }
 
   if (failedActions.length > 0) {
@@ -482,12 +499,15 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
 
   const failedActions = actions.filter((action) => !action.ok)
   const unresolved = issues.filter((issue) => !actions.some((action) => action.task === issue.task && action.ok))
+  const persistentCount = issues.filter((issue) => (issue.persistedRuns ?? 0) >= 2).length
   const decision =
-    failedActions.length > 0
-      ? "Intervention agent recommandee : au moins une remediation automatique a echoue."
-      : unresolved.length > 0
-        ? "A surveiller : certaines anomalies n'ont pas de remediation automatique OK."
-        : "Remediation automatique OK : surveiller le prochain run."
+    persistentCount > 0
+      ? "Cause racine a corriger : la meme anomalie persiste malgre les relances automatiques quotidiennes."
+      : failedActions.length > 0
+        ? "Intervention agent recommandee : au moins une remediation automatique a echoue."
+        : unresolved.length > 0
+          ? "A surveiller : certaines anomalies n'ont pas de remediation automatique OK."
+          : "Remediation automatique OK : surveiller le prochain run."
 
   lines.push("## Lecture rapide", "")
   lines.push(`- Verdict : ${decision}`)
@@ -502,6 +522,9 @@ function buildReport(issues: Issue[], actions: ActionResult[]): string {
       `- ${issue.task} — ${issue.status}`,
       `  ${issue.summary}`,
       issue.latest ? `  Dernier run : ${issue.latest.createdAt.toISOString()} (${issue.latest.status})` : "",
+      (issue.persistedRuns ?? 0) >= 2
+        ? `  ⚠ PERSISTANT : déjà flagué aux ${issue.persistedRuns} runs superviseur précédents — la relance ne suffit pas, corriger la cause racine.`
+        : "",
     )
   }
 
@@ -576,6 +599,44 @@ export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): 
   for (const anomaly of detectOutputAnomalies(recentLogs)) {
     if (!flaggedTasks.has(anomaly.task)) issues.push(anomaly)
   }
+
+  // Persistence: how many consecutive prior supervisor runs already flagged
+  // each task (read back from our own cron_logs details.issues). A streak ≥2
+  // escalates the report from "relance OK" to "cause racine à corriger" —
+  // otherwise a remediation that returns 200 without fixing anything produces
+  // the exact same digest every day and nothing distinguishes day 7 from day 1.
+  if (issues.length > 0) {
+    const priorRuns = await prisma.cronLog.findMany({
+      where: { task: "cron-supervisor" },
+      orderBy: { createdAt: "desc" },
+      take: 7,
+      select: { details: true },
+    })
+    const priorFlagged: Array<Set<string>> = priorRuns.map((run) => {
+      let parsed: unknown = run.details
+      if (typeof parsed === "string") {
+        try {
+          parsed = JSON.parse(parsed)
+        } catch {
+          parsed = null
+        }
+      }
+      const list = (parsed as { issues?: Array<{ task?: unknown }> } | null)?.issues
+      return new Set(
+        (Array.isArray(list) ? list : [])
+          .map((entry) => entry?.task)
+          .filter((task): task is string => typeof task === "string"),
+      )
+    })
+    for (const issue of issues) {
+      let streak = 0
+      for (const flagged of priorFlagged) {
+        if (!flagged.has(issue.task)) break
+        streak++
+      }
+      issue.persistedRuns = streak
+    }
+  }
   const remediationsEnabled = process.env.CRON_SUPERVISOR_REMEDIATE !== "false"
   const actions: ActionResult[] = []
 
@@ -593,11 +654,12 @@ export async function runCronSupervisor(params: { forceEmail?: boolean } = {}): 
   const emailSent = params.forceEmail || issues.length > 0 || actions.length > 0
 
   if (emailSent) {
+    const hasPersistent = issues.some((issue) => (issue.persistedRuns ?? 0) >= 2)
     await sendCronSupervisorDigest({
       subject:
         issues.length === 0
           ? "Superviseur Totem — tout est OK"
-          : `Superviseur Totem — ${issues.length} anomalie${issues.length > 1 ? "s" : ""}`,
+          : `Superviseur Totem — ${issues.length} anomalie${issues.length > 1 ? "s" : ""}${hasPersistent ? " (persistante — cause racine à corriger)" : ""}`,
       report,
     })
   }
