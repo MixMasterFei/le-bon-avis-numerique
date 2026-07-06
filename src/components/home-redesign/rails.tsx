@@ -347,7 +347,12 @@ export function CinemaRail({ maxAge, audience, rankByMemberIds }: { maxAge?: num
 
 // ── Nos coups de cœur ──
 export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
-  const url = `/api/db/expert-picks?limit=10${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
+  // "Recharger" re-rolls the editorial picks in place via the API's seed param
+  // (same pattern as the "Pour ce soir" rail). This used to be an "Autre
+  // sélection" link to /recherche — an empty search box, which read as a
+  // broken page with no movies.
+  const [seed, setSeed] = useState<number | null>(null)
+  const url = `/api/db/expert-picks?limit=10${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}${seed !== null ? `&seed=${seed}` : ""}`
   const { items, loading } = useRail(url, "items", "MOVIE")
   return (
     <CardRailSection
@@ -356,7 +361,7 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
       eyebrow="Coups de cœur"
       title={<>Nos <Em tone="pine">coups de cœur</Em> du moment</>}
       lead="Sélectionnés à la main par l'équipe. Des valeurs sûres, vues et analysées."
-      action={{ label: "Autre sélection", href: "/recherche" }}
+      onReload={() => setSeed(Math.floor(Math.random() * 1_000_000))}
       items={items}
       loading={loading}
       totem="full"
