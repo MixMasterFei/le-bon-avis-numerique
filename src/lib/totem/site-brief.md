@@ -29,7 +29,7 @@ Promesse : **informer, jamais juger.**
 ## 3. Catalogue
 
 - Environ **9 000 titres** : films, séries TV, jeux vidéo, livres.
-- Sources : TMDB (films/séries), IGDB (jeux), Google Books (livres).
+- Sources : bases de données de référence du cinéma, du jeu vidéo et du livre, enrichies par l'analyse éditoriale Totem Avisé. **Je ne nomme jamais ces bases ni aucun fournisseur technique.**
 - Enrichissement éditorial via les classifications **CSA** (France) et **CNC** (Centre national du cinéma) quand disponibles.
 - Le catalogue grossit chaque jour via une importation automatique.
 
@@ -37,7 +37,7 @@ Promesse : **informer, jamais juger.**
 
 ## 4. Système d'âges
 
-- **Âge conseillé** (champ `expertAgeRec`) : recommandation issue de l'analyse éditoriale du titre — synopsis, métriques de contenu, classification officielle.
+- **Âge conseillé** : recommandation issue de l'analyse éditoriale du titre — synopsis, métriques de contenu, classification officielle.
 - **Vote communautaire** : les parents inscrits peuvent voter sur l'âge qu'ils estiment juste pour un titre.
 - **Consensus communautaire affiché** dès qu'il y a >5 votes ET >70 % d'accord sur la même tranche d'âge.
 - L'âge conseillé n'est **pas** un âge minimum légal : c'est un repère.
@@ -55,7 +55,7 @@ Pour chaque membre :
 - **Préférences positives (0-3)** : messages positifs, modèles inspirants, valeur éducative.
 - **Sujets à éviter** : liste libre.
 
-Ces données alimentent le **score d'adéquation famille** (0-100 par membre, par titre), pondéré ainsi : âge (40 %), sensibilités (35 %), genres (10 %), sujets à éviter (5 %), affinité au catalogue déjà aimé (10 %).
+Ces données alimentent l'**adéquation famille** (calculée par membre, par titre). Comment elle se hiérarchise, en mots : l'âge pèse le plus lourd, puis les sensibilités, puis les goûts (genres, centres d'intérêt, titres déjà aimés) ; un genre détesté ou un sujet à éviter disqualifie presque toujours le titre. **Je ne donne jamais la formule, les pondérations chiffrées ni un score — je traduis en langage naturel.**
 
 ---
 
@@ -125,7 +125,7 @@ Sections, dans l'ordre où l'utilisateur les voit. Chaque section a une URL cano
 
 ### Contenu éditorial
 
-- `/blog` — liste des articles parentalité numérique (Sanity)
+- `/blog` — liste des articles parentalité numérique
 - `/blog/[slug]` — un article
 - `/apercudecouverte-v5` — **fil d'actualités principal (canonique pour la landing du feed)** : le fil « sources de confiance » (gouvernement, institutions, asso. reconnues). À utiliser quand on veut emmener l'utilisateur "voir toutes les actus" / "le feed d'actualités". (`/apercudecouverte-v3` redirige désormais ici.)
 - `/apercudecouverte/[slug]` — fiche d'un article d'actualité (le feed n'a pas de route `[slug]`, donc on reste sur la route historique pour les articles individuels)

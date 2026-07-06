@@ -60,7 +60,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
      */
     searchMedia: tool({
       description:
-        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme déjà vus.",
+        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété générale et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme déjà vus.",
       inputSchema: z.object({
         q: z.string().optional().describe("Requête par TITRE (titre partiel, insensible aux accents et à la casse)."),
         theme: z
@@ -77,7 +77,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           .enum(["popular", "newest"])
           .optional()
           .describe(
-            "Ordre de tri. 'popular' (défaut) trie par notoriété TMDB. 'newest' trie par date de sortie décroissante — à utiliser pour 'le dernier X', 'le plus récent', 'la dernière sortie'. (Ignoré quand 'theme' est fourni : le tri thématique prime.)",
+            "Ordre de tri. 'popular' (défaut) trie par notoriété générale. 'newest' trie par date de sortie décroissante — à utiliser pour 'le dernier X', 'le plus récent', 'la dernière sortie'. (Ignoré quand 'theme' est fourni : le tri thématique prime.)",
           ),
         limit: z.number().int().min(1).max(10).default(5),
       }),
