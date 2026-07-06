@@ -184,6 +184,7 @@ export async function POST(request: Request) {
 
         await prisma.mediaScreenshot.createMany({
           data: screenshotRecords,
+          skipDuplicates: true, // (mediaId, url) unique — never double-insert
         })
 
         stats.imported++
@@ -322,6 +323,7 @@ export async function PUT(request: Request) {
 
     await prisma.mediaScreenshot.createMany({
       data: screenshotRecords,
+      skipDuplicates: true, // (mediaId, url) unique — never double-insert
     })
 
     return NextResponse.json({

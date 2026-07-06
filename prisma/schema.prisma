@@ -763,6 +763,7 @@ model MediaScreenshot {
 
   media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
 
+  @@unique([mediaId, url]) // one row per still per media — import uses skipDuplicates
   @@index([mediaId])
   @@map("media_screenshots")
 }
