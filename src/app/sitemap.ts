@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next"
 import { prisma } from "@/lib/prisma"
 import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
 import { sanityClient } from "@/sanity/client"
+import { COLLECTIONS } from "@/lib/collections-data"
 
 // Revalidate sitemap every 6 hours (ISR) — picks up new cron imports
 export const revalidate = 21600
@@ -39,6 +40,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/age/13-15`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/age/16-plus`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
   ]
+
+  // Individual collection pages ("Top 10 des films Pixar"…) — these are
+  // primary SEO landing pages; before July 2026 only the hub was listed and
+  // the pages themselves were client-rendered, so Google never found them.
+  const collectionPages: MetadataRoute.Sitemap = COLLECTIONS.map((c) => ({
+    url: `${baseUrl}/collections/${c.id}`,
+    lastModified: new Date(`${c.lastUpdated}-01`),
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }))
 
   // Media pages from database
   let mediaPages: MetadataRoute.Sitemap = []
@@ -88,5 +99,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] Sanity query failed:", error instanceof Error ? error.message : error)
   }
 
-  return [...staticPages, ...mediaPages, ...blogPages]
+  return [...staticPages, ...collectionPages, ...mediaPages, ...blogPages]
 }

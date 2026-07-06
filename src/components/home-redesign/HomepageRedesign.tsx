@@ -14,6 +14,7 @@ import { TopPicksRail, UpcomingRail, CinemaRail, CoupsDeCoeurRail, GamesRail } f
 import { AgeGridRedesign, GenresGrid, FinalCTARedesign } from "./grids"
 import { PlatformsSection } from "./PlatformsSection"
 import { MethodeBand } from "./MethodeBand"
+import { CollectionsStrip } from "./CollectionsStrip"
 import { FamilyNudge } from "./FamilyNudge"
 
 import type { FamilyMemberLite } from "./FamilyChips"
@@ -159,6 +160,10 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         <DeferUntilVisible>
           <GamesRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
+        {/* Static band, NOT deferred: these are the crawlable links to the
+            collection pages — hiding them behind IntersectionObserver would
+            take them out of the server HTML again. */}
+        <CollectionsStrip />
         <MethodeBand />
         <GenresGrid />
         <FinalCTARedesign isLoggedIn={isLoggedIn} />
