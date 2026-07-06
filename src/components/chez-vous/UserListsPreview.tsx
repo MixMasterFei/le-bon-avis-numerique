@@ -247,6 +247,8 @@ function SavedNewsCard({
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                       sizes="96px"
+                      // Raw publisher CDN (unbounded host) — bypass the optimizer.
+                      unoptimized
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
