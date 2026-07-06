@@ -32,6 +32,11 @@ import { AdminScreenshotsWrapper } from "@/components/media/AdminScreenshotsWrap
 import { MediaHeroEditable } from "@/components/media/MediaHeroEditable"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { MediaV3Toggle } from "@/components/media-v3/MediaV3Toggle"
+import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
+import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
+import { mediaV3Enabled } from "@/lib/media-v3-flag"
+import { isAdmin } from "@/lib/auth"
+import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
@@ -314,13 +319,13 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
         : ["age minimum", "age conseillé", "parents guide"]),
       media.title,
     ],
+    // OG/Twitter images come from the branded 1200×630 card at
+    // ./opengraph-image.tsx (Next injects it automatically) — no explicit
+    // `images` here, which would duplicate the tag with the raw portrait poster.
     openGraph: {
       title: `${title} | Totem Avisé`,
       description,
       type: ogType as "video.movie" | "video.tv_show" | "website",
-      ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
-        images: [{ url: media.posterUrl, width: 500, height: 750, alt: media.title }],
-      }),
       locale: "fr_FR",
       siteName: "Totem Avisé",
     },
@@ -328,9 +333,6 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
       card: "summary_large_image",
       title,
       description,
-      ...(media.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" && {
-        images: [media.posterUrl],
-      }),
     },
   }
 }
@@ -494,6 +496,27 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
   }
 
   return { breadcrumb, mainEntity, faqPage }
+}
+
+// Single source for the three JSON-LD scripts — both the dashboard and the
+// classic body must emit identical structured data.
+function MediaJsonLd({ data }: { data: ReturnType<typeof buildJsonLd> }) {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(data.breadcrumb) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(data.mainEntity) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(data.faqPage) }}
+      />
+    </>
+  )
 }
 
 export default async function MediaPage({ params }: MediaPageProps) {
@@ -672,9 +695,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // Watch providers and trailer are now fetched client-side via /api/media/[id]/extras
   // This eliminates the 1-5s TMDB blocking from server render
 
-  // Admin status is resolved client-side (useSession) inside the components
-  // that need it — a server-side auth() read here would read cookies and opt
-  // the whole route out of ISR (revalidate above would be inert).
+  // Most admin state is resolved client-side (useSession) inside the widgets.
+  // This route is dynamic anyway (dynamic [id] segment + the root layout's
+  // auth()), so the one server-side isAdmin() read below — gating the V3
+  // dashboard body — is free; `revalidate` here was already inert.
 
   // Pre-release / provisional fiches: we have NOT evaluated the title, so
   // every content-analysis surface (réponse rapide, metric bars, parent
@@ -693,6 +717,38 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // the hero (MediaHeroEditable) and mirrored into the FAQ JSON-LD so answer
   // engines can cite the reasoning. Single source: buildAgeRationale.
   const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis })
+
+  // ===== V3 dashboard as the public fiche — same URL, same metadata/JSON-LD,
+  // new body. Admins get it now (real-URL preview); everyone once
+  // MEDIA_V3_PUBLIC flips on (mediaV3Enabled = flag || isAdmin). Reading auth
+  // here is free: this route is already dynamic (dynamic [id] segment + the
+  // root layout's auth()), so there is no ISR to lose. Movies, TV and games
+  // only — books/manga and off-catalog titles keep the classic body below.
+  const wantsDashboard =
+    source === "database" &&
+    dbId !== null &&
+    (media.type === "MOVIE" || media.type === "TV" || media.type === "GAME") &&
+    mediaV3Enabled(await isAdmin())
+
+  if (wantsDashboard) {
+    const dash = await getDashboardMedia(rawId)
+    if (dash) {
+      return (
+        <>
+          <MediaJsonLd data={jsonLd} />
+          <FicheDataProvider mediaId={dash.id} mediaType={dash.type}>
+            <MediaDashboard
+              media={dash}
+              dbId={dash.id}
+              hideAnalysis={hideContentAnalysis}
+              quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
+              breadcrumb={<DashboardBreadcrumb type={dash.type} title={dash.title} />}
+            />
+          </FicheDataProvider>
+        </>
+      )
+    }
+  }
 
   // Shared white-card styling for the warm page (cards float on the cream bg).
   const warmCard = {
@@ -716,18 +772,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   return (
     <div className="min-h-screen" style={{ background: "var(--color-warm-bg)" }}>
       {/* JSON-LD Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.breadcrumb) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.mainEntity) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.faqPage) }}
-      />
+      <MediaJsonLd data={jsonLd} />
 
       <FicheDataProvider mediaId={dbId} mediaType={media.type}>
         {/* Collapsing summary bar — slides in once the hero scrolls behind
@@ -783,6 +828,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     expertAgeRec={media.expertAgeRec}
                     violenceScore={media.contentMetrics?.violence}
                     mediaType={media.type}
+                    sizes="(max-width: 640px) 160px, (max-width: 1024px) 192px, 210px"
                     priority
                   />
                 </div>
@@ -987,7 +1033,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
             >
               Avis des familles{media.reviews.length > 0 ? ` (${media.reviews.length})` : ""}
             </h2>
-            <ReviewsSection reviews={media.reviews} />
+            <ReviewsSection
+              reviews={media.reviews}
+              mediaId={dbId ?? undefined}
+              mediaTitle={media.title}
+            />
           </div>
 
           {/* Fiche technique — only facts not already shown in the hero:

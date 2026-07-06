@@ -62,10 +62,16 @@ export function MediaDashboard({
   media,
   dbId,
   hideAnalysis,
+  quickAnswer,
+  breadcrumb,
 }: {
   media: DashboardMedia
   dbId: string
   hideAnalysis: boolean
+  /** Visible FAQ-backing block ("à partir de quel âge ?") — same wording as the FAQPage JSON-LD. */
+  quickAnswer?: { question: string; answer: string }
+  /** Visible breadcrumb matching the BreadcrumbList JSON-LD; falls back to the BackButton (admin preview). */
+  breadcrumb?: React.ReactNode
 }) {
   const hasAge = media.expertAgeRec != null && media.expertAgeRec > 0
   const verdict = hasAge ? `Dès ${media.expertAgeRec} ans` : "Non évalué"
@@ -77,16 +83,18 @@ export function MediaDashboard({
 
   const isFilmOrTv = media.type === "MOVIE" || media.type === "TV"
   const listing = TYPE_LISTING[media.type] ?? "/recherche"
-  const seeAllHref = media.genres[0]
-    ? `${listing}/recherche?genres=${encodeURIComponent(media.genres[0])}`
-    : listing
+  // Public, indexable catalog filter — `topics` matches both genres[] and
+  // topics[] server-side (media-queries.ts), unlike the admin-only
+  // /films/recherche route this used to point at.
+  const genreHref = (g: string) => `${listing}?topics=${encodeURIComponent(g)}`
+  const seeAllHref = media.genres[0] ? genreHref(media.genres[0]) : listing
 
   const cardStyle = { background: C.card, border: `1px solid ${C.border}` } as const
 
   return (
     <div className="min-h-screen" style={{ background: C.page }}>
       <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
-        <BackButton className="mb-4 text-[#8A8072] hover:text-[#2A251F]" />
+        {breadcrumb ?? <BackButton className="mb-4 text-[#8A8072] hover:text-[#2A251F]" />}
 
         {/* ===== Scoreboard hero ===== */}
         <div className="mb-[13px] overflow-hidden rounded-2xl" style={cardStyle}>
@@ -102,6 +110,7 @@ export function MediaDashboard({
                 expertAgeRec={media.expertAgeRec}
                 violenceScore={media.metrics?.violence}
                 mediaType={media.type}
+                sizes="(max-width: 640px) 106px, 126px"
                 priority
               />
             </div>
@@ -115,14 +124,16 @@ export function MediaDashboard({
                 >
                   {TYPE_LABEL[media.type] ?? media.type}
                 </span>
-                {media.genres.length > 0 && (
-                  <span
-                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
+                {media.genres.slice(0, 3).map((g) => (
+                  <Link
+                    key={g}
+                    href={genreHref(g)}
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[#2A251F]"
                     style={{ color: "#6B6154", background: C.page }}
                   >
-                    {media.genres.slice(0, 3).join(" · ")}
-                  </span>
-                )}
+                    {g}
+                  </Link>
+                ))}
                 {media.officialRating && (
                   <span
                     className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
@@ -185,6 +196,38 @@ export function MediaDashboard({
             </div>
           )}
         </div>
+
+        {/* ===== Réponse rapide — visible source of the FAQPage JSON-LD ===== */}
+        {quickAnswer && (
+          <div className="mb-[13px] rounded-2xl p-4 sm:p-[18px]" style={cardStyle}>
+            <div className={`${SECTION_LABEL} mb-2`} style={{ color: C.faint }}>
+              Réponse rapide
+            </div>
+            <h2
+              className="font-serif text-[15px] font-semibold leading-snug sm:text-[16px]"
+              style={{ color: C.ink, letterSpacing: "-.01em" }}
+            >
+              {quickAnswer.question}
+            </h2>
+            <p className="mt-1.5 text-[12.5px] leading-[1.55]" style={{ color: C.body }}>
+              {quickAnswer.answer}
+            </p>
+            {media.topics.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: C.divider }}>
+                {media.topics.slice(0, 8).map((t) => (
+                  <Link
+                    key={t}
+                    href={`${listing}?topics=${encodeURIComponent(t)}`}
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[#2A251F]"
+                    style={{ color: "#6B6154", background: C.page }}
+                  >
+                    {t}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ===== three-column row ===== */}
         <div className="mb-[13px] grid gap-[13px] lg:grid-cols-[1fr_1.25fr_1fr]">
