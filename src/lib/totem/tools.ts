@@ -703,6 +703,11 @@ export function buildTotemTools(ctx: TotemToolContext) {
               substances: m.sensitivitySubstances,
             },
             useCustomSettings: m.useCustomSettings,
+            // Same heuristic as the profile completion meter. When false,
+            // sensitivities/genres are family defaults — say so (soul.md §2)
+            // and offer the quiz at /profil/quiz/<id>.
+            quizCompleted: m.useCustomSettings && m.favoriteGenres.length > 0,
+            quizUrl: `/profil/quiz/${m.id}`,
             recentReactions: m.reactions.map((r) => ({
               mediaTitle: r.media.title,
               mediaType: r.media.type,

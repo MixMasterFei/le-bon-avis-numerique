@@ -92,10 +92,19 @@ describe("totem access gate (canUseTotem)", () => {
     })
   })
 
-  it("'true' opens fully, anonymous included", () => {
+  it("'true' opens to authenticated users but NEVER to anonymous visitors", () => {
     withFlag("true", () => {
-      expect(getTotemAccessMode()).toBe("public")
-      expect(canUseTotem(anon)).toBe(true)
+      expect(getTotemAccessMode()).toBe("authenticated")
+      expect(canUseTotem(member)).toBe(true)
+      expect(canUseTotem(anon)).toBe(false)
     })
+  })
+
+  it("no flag value ever grants anonymous access (account gate is hard)", () => {
+    for (const v of [undefined, "auth", "true", "1", "authenticated", "public", "garbage"]) {
+      withFlag(v, () => {
+        expect(canUseTotem(anon), `flag=${String(v)}`).toBe(false)
+      })
+    }
   })
 })

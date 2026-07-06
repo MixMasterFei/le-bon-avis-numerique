@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
-import { Send, Loader2, X, ChevronLeft, History, Plus, Zap, ZapOff } from "lucide-react"
+import { Send, Loader2, X, ChevronLeft, History, Plus, Zap, ZapOff, HelpCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTotemChat } from "./useTotemChat"
 import { TotemMessage } from "./TotemMessage"
@@ -37,6 +37,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     return !window.localStorage.getItem(ALPHA_HINT_KEY)
   })
   const [view, setView] = useState<"chat" | "history">("chat")
+  const [showHelp, setShowHelp] = useState(false)
   const [autoMode, setAutoMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     return window.localStorage.getItem(AUTO_MODE_KEY) === "1"
@@ -227,6 +228,19 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {view === "chat" && (
+                <button
+                  type="button"
+                  onClick={() => setShowHelp((v) => !v)}
+                  aria-pressed={showHelp}
+                  className="rounded-md p-1.5 transition hover:bg-black/5"
+                  style={{ color: showHelp ? "var(--color-accent)" : "var(--color-ink2)" }}
+                  aria-label="Ce que Totem sait faire"
+                  title="Ce que Totem sait faire"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </button>
+              )}
               {isAuthenticated && view === "chat" && (
                 <>
                   <button
@@ -265,6 +279,39 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
               </DialogPrimitive.Close>
             </div>
           </div>
+
+          {/* Help panel — what Totem can (and can't) do */}
+          {view === "chat" && showHelp && (
+            <div
+              className="border-b px-4 py-3 text-xs"
+              style={{ borderColor: "var(--color-line)", background: "var(--color-bg2)" }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-medium" style={{ color: "var(--color-ink)" }}>
+                  Ce que Totem sait faire
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowHelp(false)}
+                  className="rounded-md p-0.5 transition hover:bg-black/5"
+                  style={{ color: "var(--color-ink2)" }}
+                  aria-label="Fermer l'aide"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <ul className="mt-2 space-y-1.5 leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+                <li>• Trouver un film, une série, un jeu ou un livre adapté à l&apos;âge de vos enfants.</li>
+                <li>• Vous dire ce qui peut surprendre dans un titre : peur, violence, langage.</li>
+                <li>• Tenir compte du profil de chaque membre de votre foyer — un quiz rempli affine ses conseils.</li>
+                <li>• Ajouter un titre à votre liste <em>à voir plus tard</em> et noter les réactions de vos enfants.</li>
+                <li>• Vous emmener vers la bonne page du site : nouveautés, cinéma, plateformes.</li>
+              </ul>
+              <p className="mt-2 italic" style={{ color: "var(--color-ink2)" }}>
+                Totem s&apos;en tient aux films, séries, jeux et livres pour les familles — et propose toujours avant d&apos;agir.
+              </p>
+            </div>
+          )}
 
           {/* Alpha hint banner — first open only */}
           {showAlphaHint && (

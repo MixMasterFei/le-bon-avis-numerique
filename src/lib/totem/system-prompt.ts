@@ -17,8 +17,12 @@ function loadSiteBrief(): string {
 }
 
 export interface FamilyMemberSnapshot {
+  /** FamilyMember id — needed to build the /profil/quiz/<id> link. */
+  id: string
   name: string
   age: number | null
+  /** True when the member completed the preference quiz (useCustomSettings + favoriteGenres). */
+  quizCompleted: boolean
   sensitivities?: {
     violence?: number
     scary?: number
@@ -119,18 +123,29 @@ Règles strictes sur les requêtes "famille" :
 3. **Tu réponds à la question posée, pas plus.** Si l'utilisateur demande pour un enfant, tu parles de cet enfant. Tu peux mentionner les autres en demi-phrase si c'est utile, mais tu ne déballes pas une fiche par membre.
 4. **Tu décris le contenu en voix de parent**, pas en bulletin scolaire. Pas de *"violence : 1, langage : 0"*. Tu écris *"deux gros mots vers la fin"*, *"quelques scènes émouvantes mais rien de violent"*.
 5. **2 à 3 phrases par défaut.** Plus long uniquement si l'utilisateur demande, ou si la question est grave.
-6. **Différencie "données manquantes" et "vraie inadéquation".** Pour chaque membre, l'outil \`getFamilyFit\` te renvoie un drapeau \`hasPreferences\`. **Si \`hasPreferences=false\`** (aucun quiz rempli), tu ne dis JAMAIS *"pas son genre"* / *"pas sa tasse de thé"* / *"il n'aimera pas"*. Le score bas reflète l'absence d'info, pas un rejet. Tu écris quelque chose comme : *"Sans leur quiz rempli, je ne peux pas trancher pour [prénom] — le film tient bien en soi, dites-moi leurs goûts ou faites-leur faire le quiz, je serai plus précis."* **Si \`hasPreferences=true\`** et score faible, là tu peux dire *"pas son genre"* — tu as la donnée pour le justifier.`
+6. **Différencie "données manquantes" et "vraie inadéquation".** Pour chaque membre, l'outil \`getFamilyFit\` te renvoie un drapeau \`hasPreferences\`. **Si \`hasPreferences=false\`** (aucun quiz rempli), tu ne dis JAMAIS *"pas son genre"* / *"pas sa tasse de thé"* / *"il n'aimera pas"*. Le score bas reflète l'absence d'info, pas un rejet. Tu écris quelque chose comme : *"Sans leur quiz rempli, je ne peux pas trancher pour [prénom] — le film tient bien en soi, dites-moi leurs goûts ou faites-leur faire le quiz, je serai plus précis."* **Si \`hasPreferences=true\`** et score faible, là tu peux dire *"pas son genre"* — tu as la donnée pour le justifier.
+7. **Quiz non rempli → tu le dis, une fois.** Quand tu recommandes pour un membre marqué "QUIZ NON REMPLI" dans la composition du foyer, tu précises en une demi-phrase que ta réponse serait plus fiable avec son quiz (ex : *"Sans le quiz de [prénom], je me base surtout sur son âge."*), et tu peux proposer \`proposeNavigation\` vers son lien \`/profil/quiz/<id>\` (celui indiqué dans le foyer — jamais un id inventé). **Une seule fois par conversation**, jamais deux tours de suite, jamais comme reproche. Si le quiz du membre concerné est rempli, tu n'en parles pas.`
 
+  const membersWithoutQuiz = (params.familyContext ?? []).filter((m) => !m.quizCompleted)
   const familyBlock = params.familyContext && params.familyContext.length > 0
     ? `Composition du foyer connecté :\n${params.familyContext.map((m) => {
         const age = m.age != null ? `${m.age} ans` : "âge inconnu"
+        // The quiz drives sensitivity/genre reliability — without it the
+        // sensibilités below are family defaults, not the member's own.
+        const quiz = m.quizCompleted
+          ? " — quiz rempli"
+          : ` — QUIZ NON REMPLI (lien : /profil/quiz/${m.id})`
         const sens = m.sensitivities
           ? ` — sensibilités : violence ${m.sensitivities.violence ?? 0}, peur ${m.sensitivities.scary ?? 0}, sexualité ${m.sensitivities.sexual ?? 0}, langage ${m.sensitivities.language ?? 0}, substances ${m.sensitivities.substances ?? 0}`
           : ""
         const genres = m.favoriteGenres && m.favoriteGenres.length > 0 ? ` — aime : ${m.favoriteGenres.slice(0, 5).join(", ")}` : ""
         const avoid = m.avoidTopics && m.avoidTopics.length > 0 ? ` — éviter : ${m.avoidTopics.slice(0, 5).join(", ")}` : ""
-        return `- ${m.name} (${age})${sens}${genres}${avoid}`
-      }).join("\n")}`
+        return `- ${m.name} (${age})${quiz}${sens}${genres}${avoid}`
+      }).join("\n")}${
+        membersWithoutQuiz.length > 0
+          ? `\n\nRappel quiz : ${membersWithoutQuiz.map((m) => m.name).join(", ")} n'${membersWithoutQuiz.length > 1 ? "ont" : "a"} pas rempli le quiz de préférences. Applique la règle 7 des garde-fous.`
+          : ""
+      }`
     : ""
 
   let pageBlock = ""

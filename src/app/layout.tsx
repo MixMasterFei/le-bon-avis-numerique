@@ -93,8 +93,9 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Gate the Totem Assistant dock — admin-only during alpha, opens
-  // to everyone when TOTEM_PUBLIC=true. Mirrors NEWSLETTER_PUBLIC.
+  // Gate the Totem Assistant dock — account-gated by design: admin-only
+  // during alpha, all authenticated users when TOTEM_PUBLIC=true. Never
+  // shown to anonymous visitors. Mirrors NEWSLETTER_PUBLIC.
   const { auth } = await import("@/lib/auth")
   const { canUseTotem } = await import("@/lib/totem/access")
   const session = await auth()

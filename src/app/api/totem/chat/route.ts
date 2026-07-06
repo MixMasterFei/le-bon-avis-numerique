@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
   const userId = session?.user?.id ?? null
   const ip = getClientIpFromHeaders(req.headers)
 
-  // Access gate — admin-only during alpha unless TOTEM_PUBLIC=true.
+  // Access gate — account required in every mode; admin-only during
+  // alpha, all authenticated users when TOTEM_PUBLIC=true.
   if (!canUseTotem({ isAuthenticated: !!session?.user, role: session?.user?.role ?? null })) {
     return NextResponse.json({ error: "totem_disabled" }, { status: 403 })
   }
@@ -214,8 +215,12 @@ export async function POST(req: NextRequest) {
       take: 10,
     })
     familyContext = members.map((m) => ({
+      id: m.id,
       name: m.name,
       age: getMemberAge(m.birthYear, m.birthMonth),
+      // Quiz completion heuristic shared with the profile completion meter:
+      // custom settings on + at least one favorite genre chosen.
+      quizCompleted: m.useCustomSettings && m.favoriteGenres.length > 0,
       sensitivities: {
         violence: m.sensitivityViolence,
         scary: m.sensitivityScary,

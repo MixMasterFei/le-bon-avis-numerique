@@ -1,19 +1,22 @@
 // Totem Assistant access gate.
 //
-// Graduated rollout via the `TOTEM_PUBLIC` env var:
-//   (unset)            → admin-only (alpha default)
-//   "auth"             → all authenticated users (logged-in, any role)
-//   "true" / "1"       → fully public, anonymous visitors included
-// This lets the assistant open to logged-in members first and only then to
-// anonymous traffic — a deliberate two-step, not a single jump to public.
+// Totem is account-gated by design: a connected user is required at every
+// rollout stage. The `TOTEM_PUBLIC` env var only widens WHICH connected
+// users get access:
+//   (unset)                      → admin-only (alpha default)
+//   "true" / "1" / "auth"        → all authenticated users (any role)
+// There is deliberately NO anonymous mode — family context (ages, quiz,
+// sensibilités) is what makes Totem's answers reliable, and the anonymous
+// rate limiter is per-instance on Vercel (too soft for open traffic).
 // Mirrors the NEWSLETTER_PUBLIC pattern documented in CLAUDE.md.
 
-export type TotemAccessMode = "off" | "admin-only" | "authenticated" | "public"
+export type TotemAccessMode = "admin-only" | "authenticated"
 
 export function getTotemAccessMode(): TotemAccessMode {
   const flag = process.env.TOTEM_PUBLIC?.toLowerCase()
-  if (flag === "true" || flag === "1") return "public"
-  if (flag === "auth" || flag === "authenticated") return "authenticated"
+  if (flag === "true" || flag === "1" || flag === "auth" || flag === "authenticated") {
+    return "authenticated"
+  }
   return "admin-only"
 }
 
@@ -23,13 +26,11 @@ export interface TotemAccessInput {
 }
 
 export function canUseTotem(input: TotemAccessInput): boolean {
+  // A connected account is a hard prerequisite in every mode.
+  if (!input.isAuthenticated) return false
   switch (getTotemAccessMode()) {
-    case "off":
-      return false
-    case "public":
-      return true
     case "authenticated":
-      return input.isAuthenticated
+      return true
     case "admin-only":
       return input.role === "ADMIN"
   }
