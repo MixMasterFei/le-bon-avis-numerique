@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useState } from "react"
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { UserMetricsButton } from "@/components/media/UserMetricsButton"
 import { DashboardKpiStrip, buildScoreboardCells, type MetricsLike } from "./DashboardKpiStrip"
@@ -35,17 +35,26 @@ export function DashboardScoreboard({
 }) {
   const [mode, setMode] = useState<Mode>("totem")
   const [community, setCommunity] = useState<CommunityResponse | null>(null)
+  const [communityRequested, setCommunityRequested] = useState(false)
 
   const loadCommunity = useCallback(() => {
+    setCommunityRequested(true)
     fetch(`/api/media/${mediaId}/community-metrics`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => setCommunity(d))
       .catch(() => {})
   }, [mediaId])
 
-  useEffect(() => {
-    loadCommunity()
-  }, [loadCommunity])
+  // Deferred: the default view is Totem (expert metrics already in hand), so the
+  // community fetch fires only when the viewer first opens the Communauté tab —
+  // not on every page load.
+  const selectMode = useCallback(
+    (m: Mode) => {
+      setMode(m)
+      if (m === "community" && !communityRequested) loadCommunity()
+    },
+    [communityRequested, loadCommunity],
+  )
 
   const communityHasData = !!community?.hasData
   const cells =
@@ -58,7 +67,7 @@ export function DashboardScoreboard({
     return (
       <button
         type="button"
-        onClick={() => setMode(m)}
+        onClick={() => selectMode(m)}
         className="rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors"
         style={
           active

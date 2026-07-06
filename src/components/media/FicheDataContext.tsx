@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react"
+import { useSession } from "next-auth/react"
 import type { TMDBWatchProviderResult, TMDBVideo } from "@/lib/tmdb"
 
 // ── Family-fit shapes (shared with FamilyFitHero / dashboard bar / quick answer) ──
@@ -104,6 +105,7 @@ export function FicheDataProvider({
   mediaType: string
   children: ReactNode
 }) {
+  const { status: authStatus } = useSession()
   const [familyFit, setFamilyFit] = useState<FamilyFitResponse | null>(null)
   const [familyFitLoading, setFamilyFitLoading] = useState(!!mediaId)
   const [extras, setExtras] = useState<ExtrasData | null>(null)
@@ -111,8 +113,13 @@ export function FicheDataProvider({
   const [triggerVotes, setTriggerVotes] = useState<TriggerConsensusResponse | null>(null)
   const [triggerVotesLoading, setTriggerVotesLoading] = useState(wantsTriggers(mediaId, mediaType))
 
+  // Family-fit is user-scoped, so skip the round-trip for logged-out visitors
+  // (the API only ever returns {status:"not_logged_in"} for them). Only the
+  // authenticated branch fetches; the anon/loading answers are DERIVED below
+  // (deriving avoids setState-in-effect and the flash of "not_logged_in" at a
+  // user whose session is still resolving).
   useEffect(() => {
-    if (!mediaId) return
+    if (!mediaId || authStatus !== "authenticated") return
     let cancelled = false
     fetch(`/api/media/${mediaId}/family-fit`)
       .then((r) => (r.ok ? r.json() : null))
@@ -120,7 +127,14 @@ export function FicheDataProvider({
       .catch(() => { if (!cancelled) setFamilyFit(null) })
       .finally(() => { if (!cancelled) setFamilyFitLoading(false) })
     return () => { cancelled = true }
-  }, [mediaId])
+  }, [mediaId, authStatus])
+
+  // loading → skeleton; unauthenticated → not_logged_in without a fetch;
+  // authenticated → the fetched result.
+  const effectiveFamilyFit: FamilyFitResponse | null =
+    authStatus === "unauthenticated" ? { status: "not_logged_in" } : familyFit
+  const effectiveFamilyFitLoading =
+    authStatus === "unauthenticated" ? false : authStatus === "loading" ? true : familyFitLoading
 
   useEffect(() => {
     if (!wantsExtras(mediaId, mediaType)) return
@@ -146,7 +160,14 @@ export function FicheDataProvider({
 
   return (
     <FicheDataContext.Provider
-      value={{ familyFit, familyFitLoading, extras, extrasLoading, triggerVotes, triggerVotesLoading }}
+      value={{
+        familyFit: effectiveFamilyFit,
+        familyFitLoading: effectiveFamilyFitLoading,
+        extras,
+        extrasLoading,
+        triggerVotes,
+        triggerVotesLoading,
+      }}
     >
       {children}
     </FicheDataContext.Provider>
