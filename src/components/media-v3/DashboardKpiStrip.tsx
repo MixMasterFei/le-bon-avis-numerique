@@ -78,12 +78,15 @@ function Cell({ cell, last }: { cell: ScoreCell; last: boolean }) {
   const suffixColor = positive ? "#9DBCA6" : "#C4B8A0"
   return (
     <div
-      className="px-2.5 py-[13px] text-center"
+      className="px-1 py-[13px] text-center sm:px-2.5"
       style={{ borderRight: last ? "none" : "1px solid #EFE6D6", background: positive ? "#E7F1E5" : "transparent" }}
     >
+      {/* Smaller + tighter on mobile so the long single-word labels
+          ("Consumérisme", "Substances") fit the 4-col grid without clipping;
+          restored to the handoff size at sm+. */}
       <div
-        className="mb-[5px] text-[9.5px] font-bold uppercase leading-tight"
-        style={{ letterSpacing: ".08em", color: positive ? "#2E6B47" : "#8A8072" }}
+        className="mb-[5px] text-[8.5px] font-bold uppercase leading-tight tracking-[0.02em] sm:text-[9.5px] sm:tracking-[0.08em]"
+        style={{ color: positive ? "#2E6B47" : "#8A8072" }}
       >
         {label}
       </div>
