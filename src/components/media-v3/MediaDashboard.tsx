@@ -340,7 +340,7 @@ export function MediaDashboard({
         )}
 
         {/* ===== Vous l'avez vu ? — reactions + written avis (collapsible) ===== */}
-        <DashboardFamilyFeedback mediaId={dbId} mediaTitle={media.title} reviews={media.reviews} />
+        <DashboardFamilyFeedback mediaId={dbId} mediaTitle={media.title} mediaType={media.type} reviews={media.reviews} />
 
         {/* ===== similar titles — compact single row ===== */}
         <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>

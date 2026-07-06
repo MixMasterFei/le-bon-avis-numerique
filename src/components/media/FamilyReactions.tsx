@@ -42,10 +42,28 @@ interface FamilyMemberWithReaction {
 interface FamilyReactionsProps {
   mediaId: string
   mediaTitle: string
+  /** Drives the "seen" verb: a game is played, a book is read, not "vu".
+   *  Defaults to film/TV wording when unset. */
+  mediaType?: string
   /** Render bare — no own card, heading or collapse, always expanded — for
    *  embedding inside another collapsible section (the V3 dashboard) so the
    *  expand control isn't duplicated. */
   embedded?: boolean
+}
+
+/** Per-type wording for "seen it" — a game is *joué*, a book *lu*, everything
+ *  else *vu*. Shared with DashboardFamilyFeedback so the section header and the
+ *  WATCHED reaction label always agree. */
+export function seenVerb(mediaType?: string): { label: string; header: string } {
+  switch (mediaType) {
+    case "GAME":
+      return { label: "Déjà joué", header: "Vous y avez joué ?" }
+    case "BOOK":
+    case "MANGA":
+      return { label: "Déjà lu", header: "Vous l'avez lu ?" }
+    default:
+      return { label: "Déjà vu", header: "Vous l'avez vu ?" }
+  }
 }
 
 const REACTIONS: {
@@ -67,7 +85,10 @@ const REACTIONS: {
   { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100", selectedBg: "bg-orange-100", ringColor: "ring-orange-400" },
 ]
 
-export function FamilyReactions({ mediaId, embedded = false }: FamilyReactionsProps) {
+export function FamilyReactions({ mediaId, mediaType, embedded = false }: FamilyReactionsProps) {
+  // Override the WATCHED label per media type ("Déjà joué" for games etc.).
+  const seenLabel = seenVerb(mediaType).label
+  const labelFor = (value: string, fallback?: string) => (value === "WATCHED" ? seenLabel : fallback ?? "")
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
@@ -294,7 +315,9 @@ export function FamilyReactions({ mediaId, embedded = false }: FamilyReactionsPr
                   />
                   <span className="text-sm font-medium">{member.name}</span>
                   <Icon className={`h-4 w-4 ${reactionInfo?.color || "text-gray-400"}`} />
-                  <span className="text-xs text-gray-500">{reactionInfo?.label}</span>
+                  <span className="text-xs text-gray-500">
+                    {labelFor(reactionInfo?.value ?? "", reactionInfo?.label)}
+                  </span>
                 </div>
               )
             })}
@@ -344,7 +367,9 @@ export function FamilyReactions({ mediaId, embedded = false }: FamilyReactionsPr
                         ) : (
                           <Icon className={`h-3.5 w-3.5 ${isSelected ? reaction.color : "text-gray-400"}`} />
                         )}
-                        <span className={isSelected ? `font-medium ${reaction.color}` : ""}>{reaction.label}</span>
+                        <span className={isSelected ? `font-medium ${reaction.color}` : ""}>
+                          {labelFor(reaction.value, reaction.label)}
+                        </span>
                       </button>
                     )
                   })}

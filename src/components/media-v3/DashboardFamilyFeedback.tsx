@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Users, ChevronDown, ChevronUp } from "lucide-react"
-import { FamilyReactions } from "@/components/media/FamilyReactions"
+import { FamilyReactions, seenVerb } from "@/components/media/FamilyReactions"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import type { DashboardReview } from "@/lib/media-dashboard-data"
 
@@ -15,10 +15,12 @@ import type { DashboardReview } from "@/lib/media-dashboard-data"
 export function DashboardFamilyFeedback({
   mediaId,
   mediaTitle,
+  mediaType,
   reviews,
 }: {
   mediaId: string
   mediaTitle: string
+  mediaType: string
   reviews: DashboardReview[]
 }) {
   const [open, setOpen] = useState(false)
@@ -63,7 +65,7 @@ export function DashboardFamilyFeedback({
                 className="block font-serif text-[16px] font-medium"
                 style={{ color: "#2A251F", letterSpacing: "-.01em" }}
               >
-                Vous l&apos;avez vu ?
+                {seenVerb(mediaType).header}
               </span>
               <span className="block text-[11.5px]" style={{ color: "#8A8072" }}>
                 Réactions &amp; avis de votre famille{reviews.length > 0 ? ` · ${reviews.length} avis` : ""}
@@ -91,7 +93,7 @@ export function DashboardFamilyFeedback({
         {open && (
           <div className="border-t px-4 pb-4 pt-4 sm:px-5" style={{ borderColor: "#EFE6D6" }}>
             {tab === "reactions" ? (
-              <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} embedded />
+              <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} mediaType={mediaType} embedded />
             ) : (
               <ReviewsSection reviews={reviews} mediaId={mediaId} mediaTitle={mediaTitle} />
             )}

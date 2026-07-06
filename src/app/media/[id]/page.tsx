@@ -1020,7 +1020,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   Partagez les réactions de votre famille et votre avis — vous aiderez les autres parents à décider.
                 </p>
               </div>
-              <FamilyReactions mediaId={dbId} mediaTitle={media.title} />
+              <FamilyReactions mediaId={dbId} mediaTitle={media.title} mediaType={media.type} />
             </>
           )}
 
