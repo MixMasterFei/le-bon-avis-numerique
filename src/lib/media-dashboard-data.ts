@@ -67,7 +67,9 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
   try {
     const include = {
       contentMetrics: true,
-      screenshots: { orderBy: { order: "asc" as const }, take: 8 },
+      // Over-fetch: the same frame is often stored as several language
+      // variants, deduped by URL at render — mirrors the classic fiche.
+      screenshots: { orderBy: { order: "asc" as const }, take: 12 },
       reviews: {
         include: { user: { select: { id: true, name: true, image: true } } },
         orderBy: { createdAt: "desc" as const },

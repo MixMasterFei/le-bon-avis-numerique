@@ -91,6 +91,14 @@ export function MediaDashboard({
 
   const cardStyle = { background: C.card, border: `1px solid ${C.border}` } as const
 
+  // Screenshots are often stored as several language variants of the same
+  // frame (identical URL) — dedupe by URL before showing 4, as the classic
+  // fiche does, so we don't render the same still two or three times.
+  const seenShotUrls = new Set<string>()
+  const screenshots = media.screenshots
+    .filter((s) => (seenShotUrls.has(s.url) ? false : (seenShotUrls.add(s.url), true)))
+    .slice(0, 4)
+
   return (
     <div className="min-h-screen" style={{ background: C.page }}>
       <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
@@ -307,13 +315,13 @@ export function MediaDashboard({
         </div>
 
         {/* ===== screenshots ===== */}
-        {media.screenshots.length > 0 && (
+        {screenshots.length > 0 && (
           <div className="mb-[13px] rounded-2xl p-4 sm:p-5" style={cardStyle}>
             <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
               Captures d&apos;écran
             </div>
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              {media.screenshots.slice(0, 4).map((s) => (
+              {screenshots.map((s) => (
                 <div key={s.id} className="relative aspect-video overflow-hidden rounded-lg" style={{ background: C.page }}>
                   <SafeImage src={s.url} alt={media.title} fill sizes="(max-width:640px) 50vw, 25vw" className="object-cover" />
                 </div>
