@@ -26,14 +26,29 @@ function emptyConsensus(): CategoryConsensus {
  * Optimistic, no refetch — mirrors AgeVoteButton. Consensus comes from the
  * shared FicheDataContext fetch.
  */
-export function TriggerChip({ mediaId, category }: { mediaId: string; category: string }) {
+export function TriggerChip({
+  mediaId,
+  category,
+  seedUserVote,
+}: {
+  mediaId: string
+  category: string
+  /** True when the chip was just added via the "signaler un élément" picker —
+   *  the submitter's "présent" vote is already recorded server-side, so the
+   *  chip starts from that state instead of an empty consensus. */
+  seedUserVote?: boolean
+}) {
   const { data: session } = useSession()
   const { data } = useTriggerVotes(mediaId)
   const p = APERCU_PALETTE
 
   const threshold = data?.threshold ?? { minVotes: 5, minPercent: 70 }
   const consensus = data?.categories[category] ?? null
-  const [local, setLocal] = useState<CategoryConsensus | null>(null)
+  const [local, setLocal] = useState<CategoryConsensus | null>(
+    seedUserVote
+      ? { present: 1, absent: 0, total: 1, presentPercent: 100, userVote: true }
+      : null,
+  )
   const [submitting, setSubmitting] = useState(false)
   const [needFamily, setNeedFamily] = useState(false)
 

@@ -29,6 +29,25 @@ export const VALID_SENSITIVE_WARNINGS = [
   "Suspense ou tension intense",
   "Thèmes matures ou complexes",
   "Comportements à risque imités",
+  // ── Specific triggers (community-votable, doesthedogdie-style) ──
+  // Added for the fiche "Signaler un élément" picker; the AI may also flag
+  // them at enrichment when the synopsis supports it. Same closed-vocabulary
+  // rule as above: short neutral noun-phrases, no scene claims.
+  "Mort d'un animal",
+  "Maladie grave ou cancer",
+  "Hôpital ou scènes médicales",
+  "Automutilation ou suicide",
+  "Violence domestique",
+  "Harcèlement scolaire",
+  "Accident de voiture",
+  "Noyade",
+  "Divorce ou séparation des parents",
+  "Guerre",
+  "Catastrophe naturelle",
+  "Aiguilles ou piqûres",
+  "Vomissements",
+  "Araignées, serpents ou insectes",
+  "Clowns effrayants",
 ] as const
 
 export type SensitiveWarning = (typeof VALID_SENSITIVE_WARNINGS)[number]

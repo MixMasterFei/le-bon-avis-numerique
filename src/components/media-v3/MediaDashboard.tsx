@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { DashboardScreenshots } from "./DashboardScreenshots"
+import { DashboardSensitiveWarnings } from "./DashboardSensitiveWarnings"
 import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 import { GameInfoCard } from "@/components/media/GameInfoCard"
@@ -267,14 +268,9 @@ export function MediaDashboard({
                     </div>
                   ))}
                 </div>
-                {media.metrics.sensitiveWarnings.length > 0 && (
-                  <div
-                    className="mt-3 border-t pt-2.5 font-serif text-[12px] italic"
-                    style={{ borderColor: C.divider, color: "#9A9082" }}
-                  >
-                    À surveiller : {media.metrics.sensitiveWarnings.slice(0, 4).join(", ").toLowerCase()}.
-                  </div>
-                )}
+                {/* Sensitive warnings moved to the dedicated collapsible
+                    "Ce qui peut marquer" card below (opt-in reveal — the
+                    labels are mild spoilers). */}
               </>
             ) : (
               <p className="text-[12.5px] leading-relaxed" style={{ color: C.body }}>
@@ -305,6 +301,19 @@ export function MediaDashboard({
             )}
           </div>
         </div>
+
+        {/* ===== Ce qui peut marquer — community trigger warnings (film/TV;
+            trigger votes are gated off for games in FicheDataContext) ===== */}
+        {!hideAnalysis && isFilmOrTv && (
+          <DashboardSensitiveWarnings
+            mediaId={dbId}
+            aiItems={
+              (media.metrics?.enrichmentConfidence ?? 0) >= 0.6
+                ? (media.metrics?.sensitiveWarnings ?? [])
+                : []
+            }
+          />
+        )}
 
         {/* ===== screenshots (dedup by URL + admin delete) ===== */}
         {media.screenshots.length > 0 && (
