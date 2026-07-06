@@ -91,6 +91,8 @@ export function ApercuNewsHeroCard({
             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             sizes="(max-width: 768px) 100vw, 55vw"
             priority
+            // Raw publisher CDN (unbounded host) — bypass the optimizer.
+            unoptimized
             onError={handleImageError}
           />
         </Link>

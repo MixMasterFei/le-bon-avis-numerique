@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { Play, Share2, Heart, Clapperboard, Calendar } from "lucide-react"
 import { useFamilyFitData, useExtrasData } from "@/components/media/FicheDataContext"
@@ -61,6 +62,8 @@ export function MediaDashboardBar({
   isUpcoming,
 }: MediaDashboardBarProps) {
   const { data: session } = useSession()
+  const pathname = usePathname()
+  const connexionHref = `/connexion?callbackUrl=${encodeURIComponent(pathname)}`
   const [show, setShow] = useState(false)
   const [topOffset, setTopOffset] = useState(64)
   const [inList, setInList] = useState(false)
@@ -218,7 +221,7 @@ export function MediaDashboardBar({
                   </div>
                 ) : (
                   <Link
-                    href={familyStatus === "no_family" ? "/profil" : "/connexion"}
+                    href={familyStatus === "no_family" ? "/profil" : connexionHref}
                     className="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
                     style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
                   >
@@ -308,7 +311,7 @@ export function MediaDashboardBar({
                 </button>
               ) : (
                 <Link
-                  href="/connexion"
+                  href={connexionHref}
                   aria-label="À voir"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full"
                   style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}

@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ThumbsUp, ThumbsDown, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -25,6 +27,7 @@ interface VoteData {
 
 export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
   const { data: session } = useSession()
+  const pathname = usePathname()
   const [data, setData] = useState<VoteData | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -167,12 +170,19 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
           </button>
         </div>
       ) : (
-        // Not logged in — show counts only
-        data.total > 0 && (
-          <span className="text-[11px]" style={{ color: p.ink2 }}>
-            {data.total} vote{data.total > 1 ? "s" : ""}
-          </span>
-        )
+        // Not logged in — counts plus an invitation to vote (was a dead-end
+        // showing nothing at 0 votes).
+        <Link
+          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+          className="flex items-center gap-1.5 text-[11px] transition-opacity hover:opacity-75"
+          style={{ color: p.ink2 }}
+          title="Connectez-vous pour voter sur l'âge conseillé"
+        >
+          <ThumbsUp className="h-3 w-3" />
+          {data.total > 0
+            ? `${data.total} vote${data.total > 1 ? "s" : ""} · votez aussi`
+            : "Votre avis sur cet âge ?"}
+        </Link>
       )}
     </div>
   )

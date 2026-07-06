@@ -93,7 +93,7 @@ export function DashboardFamilyFeedback({
             {tab === "reactions" ? (
               <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} embedded />
             ) : (
-              <ReviewsSection reviews={reviews} />
+              <ReviewsSection reviews={reviews} mediaId={mediaId} mediaTitle={mediaTitle} />
             )}
           </div>
         )}

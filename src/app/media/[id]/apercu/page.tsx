@@ -5,8 +5,10 @@ import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { buildQuickAnswer } from "@/lib/quick-answer"
 import { FicheDataProvider } from "@/components/media/FicheDataContext"
 import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
+import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { MediaV3Toggle } from "@/components/media-v3/MediaV3Toggle"
 
 // Admin preview surface: reads auth() (dynamic) and must never be indexed.
@@ -45,9 +47,33 @@ export default async function MediaDashboardPage({ params }: PageProps) {
     releaseStatus: media.releaseStatus,
   })
 
+  // Preview parity: same quick answer + breadcrumb as the public dashboard
+  // branch in /media/[id]/page.tsx, so what admins preview is what ships.
+  const quickAnswer = buildQuickAnswer({
+    title: media.title,
+    type: media.type,
+    expertAgeRec: media.expertAgeRec,
+    contentMetrics: media.metrics ?? {
+      violence: 0,
+      sexNudity: 0,
+      language: 0,
+      consumerism: 0,
+      substanceUse: 0,
+      positiveMessages: 0,
+      roleModels: 0,
+    },
+    hideContentAnalysis: hideAnalysis,
+  })
+
   return (
     <FicheDataProvider mediaId={media.id} mediaType={media.type}>
-      <MediaDashboard media={media} dbId={media.id} hideAnalysis={hideAnalysis} />
+      <MediaDashboard
+        media={media}
+        dbId={media.id}
+        hideAnalysis={hideAnalysis}
+        quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
+        breadcrumb={<DashboardBreadcrumb type={media.type} title={media.title} />}
+      />
       <MediaV3Toggle variant="dashboard" routeId={routeId} />
     </FicheDataProvider>
   )

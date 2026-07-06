@@ -13,12 +13,23 @@ const nextConfig: NextConfig = {
     scrollRestoration: true,
   },
   images: {
-    unoptimized: true,
+    // Optimization ON (AVIF/WebP + responsive resizing). Every remote host that
+    // reaches next/image must be listed below, OR the render passes
+    // `unoptimized` (used on the news cards that hotlink arbitrary publisher
+    // CDNs — those hosts can't be enumerated). See the news components.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "image.tmdb.org",
         pathname: "/t/p/**",
+      },
+      {
+        // Google OAuth profile avatars (user.image) — rendered by UserAvatar
+        // and review cards. lh3..lh6 are the load-balanced variants.
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
+        pathname: "/**",
       },
       {
         protocol: "https",

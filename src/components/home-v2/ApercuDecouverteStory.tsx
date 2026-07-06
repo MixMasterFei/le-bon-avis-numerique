@@ -206,6 +206,8 @@ export function ApercuDecouverteStory({
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 768px"
               priority
+              // Raw publisher CDN (unbounded host) — bypass the optimizer.
+              unoptimized
             />
             <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
           </div>

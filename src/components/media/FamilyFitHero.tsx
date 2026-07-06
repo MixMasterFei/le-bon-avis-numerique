@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
 import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
@@ -107,6 +108,8 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   // Reads the shared fiche data (single fetch via FicheDataProvider on the
   // media page); self-fetches when rendered without the provider.
   const { data, loading } = useFamilyFitData(mediaId)
+  const pathname = usePathname()
+  const authQuery = `?callbackUrl=${encodeURIComponent(pathname)}`
 
   // ---------- Loading ----------
   if (loading) return <HeroSkeleton />
@@ -143,7 +146,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
         </p>
         <div className="flex flex-col gap-2">
           <Link
-            href="/inscription"
+            href={`/inscription${authQuery}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90"
             style={{ background: p.ink, color: p.bg }}
           >
@@ -151,7 +154,7 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
             Créer mon profil
           </Link>
           <Link
-            href="/connexion"
+            href={`/connexion${authQuery}`}
             className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-80"
             style={{
               background: "transparent",

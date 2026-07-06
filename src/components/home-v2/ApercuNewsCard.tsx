@@ -66,6 +66,9 @@ export function ApercuNewsCard({
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             sizes="(max-width: 768px) 100vw, 33vw"
+            // Raw publisher CDN (unbounded host) — bypass the optimizer, which
+            // would reject the non-allowlisted hostname at render.
+            unoptimized
             onError={handleImageError}
           />
         </Link>
