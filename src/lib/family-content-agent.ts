@@ -4,6 +4,7 @@ import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
 import { sendEditorialAgentReport } from "@/lib/email"
 import { toMediaRouteId } from "@/lib/media-route"
 import { withVerdict } from "@/lib/agent-verdict"
+import { COLLECTIONS } from "@/lib/collections-data"
 
 type Candidate = {
   id: string
@@ -365,6 +366,78 @@ ${JSON.stringify(compactCandidates, null, 2)}`,
   return text || null
 }
 
+// ── Collections freshness (owner rule, July 2026) ─────────────────────
+// Open-ended Top-X lists must always carry 1-2 titles under 12 months old,
+// or they read as abandoned. Identity lists (timeless: true — Disney
+// classiques, Ghibli, Noël…) are exempt. Deterministic (no LLM): appended
+// to the Monday report so a stale list or a missed big release becomes a
+// weekly nudge instead of something to remember.
+const FRESHNESS_WINDOW_MONTHS = 12
+const SUGGESTION_WINDOW_MONTHS = 6
+const SUGGESTION_MIN_VOTES = 500
+
+async function buildCollectionsFreshness(): Promise<string> {
+  const now = new Date()
+  const freshFloor = new Date(now)
+  freshFloor.setMonth(now.getMonth() - FRESHNESS_WINDOW_MONTHS)
+  const suggestFloor = new Date(now)
+  suggestFloor.setMonth(now.getMonth() - SUGGESTION_WINDOW_MONTHS)
+
+  const curated = COLLECTIONS.filter((c) => c.curatedIds?.length)
+  const allCuratedIds = Array.from(new Set(curated.flatMap((c) => c.curatedIds!)))
+  const items = await prisma.mediaItem.findMany({
+    where: { id: { in: allCuratedIds } },
+    select: { id: true, releaseDate: true },
+  })
+  const releaseById = new Map(items.map((i) => [i.id, i.releaseDate]))
+
+  const stale: string[] = []
+  for (const collection of curated) {
+    if (collection.timeless) continue
+    const freshCount = collection.curatedIds!.filter((id) => {
+      const date = releaseById.get(id)
+      return date != null && date >= freshFloor
+    }).length
+    if (freshCount === 0) {
+      stale.push(
+        `- « ${collection.title} » : aucun titre de moins de ${FRESHNESS_WINDOW_MONTHS} mois — ajouter 1-2 sorties récentes (src/lib/collections-data.ts).`,
+      )
+    }
+  }
+
+  // Big recent releases absent from EVERY curated list — candidates to slot in.
+  const missing = await prisma.mediaItem.findMany({
+    where: {
+      type: { in: ["MOVIE", "GAME"] },
+      releaseDate: { gte: suggestFloor, lte: now },
+      expertAgeRec: { not: null, lte: 12 },
+      tmdbVoteCount: { gte: SUGGESTION_MIN_VOTES },
+      posterUrl: { not: null },
+      id: { notIn: allCuratedIds },
+      NOT: { genres: { hasSome: ["Horreur"] } },
+    },
+    select: { title: true, type: true, expertAgeRec: true, tmdbVoteCount: true, releaseDate: true },
+    orderBy: { tmdbVoteCount: "desc" },
+    take: 5,
+  })
+
+  const lines = ["", "## Fraîcheur des collections (Top 10)", ""]
+  if (stale.length === 0) {
+    lines.push(`Toutes les listes ouvertes contiennent au moins un titre récent (moins de ${FRESHNESS_WINDOW_MONTHS} mois).`)
+  } else {
+    lines.push(...stale)
+  }
+  if (missing.length > 0) {
+    lines.push("", "Sorties récentes populaires absentes de toutes les collections :")
+    for (const m of missing) {
+      lines.push(
+        `- ${m.title} (${m.type === "GAME" ? "jeu" : "film"}, ${m.expertAgeRec} ans, ${m.tmdbVoteCount} votes, sorti le ${m.releaseDate!.toISOString().slice(0, 10)})`,
+      )
+    }
+  }
+  return lines.join("\n")
+}
+
 export async function runFamilyContentAgent(): Promise<FamilyContentAgentResult> {
   const candidates = await getCandidates()
   const body =
@@ -372,7 +445,16 @@ export async function runFamilyContentAgent(): Promise<FamilyContentAgentResult>
       ? (await buildClaudeReport(candidates)) ?? buildFallbackReport(candidates)
       : "# Agent sorties famille\n\nAucune fiche candidate prioritaire détectée cette semaine."
 
-  const report = withVerdict(body, {
+  // Freshness audit is best-effort: a failure here must never block the
+  // main editorial report.
+  let freshness = ""
+  try {
+    freshness = await buildCollectionsFreshness()
+  } catch (error) {
+    console.error("[family-content-agent] collections freshness failed:", error)
+  }
+
+  const report = withVerdict(body + freshness, {
     count: candidates.length,
     kind: "action",
     top: candidates.length > 0 ? `${candidates.length} fiche(s) à vérifier / promouvoir` : undefined,

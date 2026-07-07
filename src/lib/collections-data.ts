@@ -9,6 +9,9 @@
 //   - "Ados" lists must keep their promise: nothing under 10 ans.
 //   - Year lists are dynamic with a vote floor (minVotes) so a 1-vote
 //     obscurity can never outrank a real release.
+//   - Open-ended lists always carry 1-2 titles under 12 months old; identity
+//     lists (timeless: true) are exempt. The Monday family-content-agent
+//     emails a freshness alert when an open list has gone stale.
 
 export interface CollectionQuery {
   type?: "MOVIE" | "TV" | "GAME"
@@ -31,6 +34,11 @@ export interface CollectionDef {
   limit: number
   category: "top" | "seasonal"
   lastUpdated: string // "YYYY-MM"
+  /** Identity lists (Disney classiques, Ghibli, Noël…) are deliberately
+   *  timeless — the Monday agent's freshness check skips them. Open-ended
+   *  lists (animation, famille, jeux…) are expected to always carry 1-2
+   *  titles under 12 months old. */
+  timeless?: boolean
   /** Hand-picked item IDs in display order (preferred). */
   curatedIds?: string[]
   /** Dynamic query fallback (only when curatedIds is absent). */
@@ -56,22 +64,25 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 15,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: added the fresh hits (Zootopie 2, Goat, a
+    // 2026 release) and Kirikou. A French guide's animation list should
+    // carry French animation no US competitor will ever rank.
     curatedIds: [
       "19cb35d9-e841-4048-ac9f-79ddffbfbf9f", // Le Robot sauvage (6 ans)
+      "a93df6d7-477c-45bc-a114-86a4f4ddb0df", // Zootopie 2 (6 ans)
       "1745085c-82a7-4b1b-974d-cb914f83be8a", // Vice-versa 2 (8 ans)
       "b7c955de-9b73-4047-8d57-4629fdc42421", // Ratatouille (6 ans)
       "ac94cb19-24fb-4901-81a0-d426245b27a6", // Encanto (7 ans)
       "145c4ed8-6aa8-4507-aa9d-0e6e11a79d61", // Le Monde de Nemo (6 ans)
       "a4c78a98-7f7b-49cc-959c-17de8a3df228", // Mon voisin Totoro (6 ans)
-      "72817572-0a12-498b-8522-845864035074", // Le Chat Potté 2 (7 ans)
+      "49d807b5-fa8b-4883-8f12-08da597d239f", // Kirikou et la sorcière (6 ans)
       "e5110c5c-d632-4d20-932f-ae51d257de9a", // Raiponce (6 ans)
       "9334936b-9386-4fce-a5da-7927034e578c", // Luca (7 ans)
+      "7e96e603-0b5d-4d92-8378-22d09388eba8", // Goat - rêver plus haut (6 ans, 2026)
       "15658e6f-a228-4f46-a6c6-37ab05018e75", // Les Mitchell contre les machines (10 ans)
       "920a69a3-a570-4a25-bd99-079b2dca1d13", // Toy Story 2 (6 ans)
       "059a2f0d-d0d0-4131-b9d3-22ecd9154bbe", // Dragons (7 ans)
       "f00e2891-11ff-4aa2-b4fa-40623971d084", // Élémentaire (7 ans)
-      "c419ae48-6f8a-45a8-910b-0aa66ddc996b", // Kung Fu Panda 4 (6 ans)
-      "bcd59eb0-abfb-41f6-9aa1-49477c716025", // 1001 Pattes (6 ans)
     ],
   },
   {
@@ -83,11 +94,16 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 15,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: KPop Demon Hunters (the current phenomenon
+    // with kids) + the original Toy Story (consensus canon) replace the two
+    // weakest entries (Garfield, Stuart Little).
     curatedIds: [
       "19cb35d9-e841-4048-ac9f-79ddffbfbf9f", // Le Robot sauvage (6 ans)
       "64449909-82bc-468b-a0bd-5753681bdea8", // Paddington 2 (6 ans)
+      "6185e512-f3a2-4561-8011-a68c08f285cb", // KPop Demon Hunters (8 ans)
       "77db9a4a-5bd4-4482-9416-d5aceefc20ad", // Wonka (8 ans)
       "02ac7984-f7a8-41e3-ad2f-991f6340273c", // Super Mario Bros. (6 ans)
+      "a3fe88b6-3169-4f9a-b954-859062f2dad7", // Toy Story (6 ans)
       "c99328a8-f5e2-4888-b9ce-802d419c9500", // Mary Poppins (6 ans)
       "6ca8951f-32ad-442d-ad33-9f916b22e89f", // L'enfant, la taupe, le renard et le cheval (6 ans)
       "15658e6f-a228-4f46-a6c6-37ab05018e75", // Les Mitchell contre les machines (10 ans)
@@ -96,13 +112,12 @@ export const COLLECTIONS: CollectionDef[] = [
       "d548b4aa-3ddd-4e14-98f0-d6e23ab832bb", // Matilda (6 ans)
       "58e152ea-eb1d-4dbb-bde5-b6a612b7c2da", // Le Petit Prince (6 ans)
       "7794734b-8013-4338-a671-b11f0433a283", // Paddington au Pérou (6 ans)
-      "25119819-de73-414f-958e-fb4deb05c64c", // Garfield (6 ans)
       "7dfef07e-6ed6-4832-8e36-0ae3ab21a901", // La Nuit au Musée (7 ans)
-      "ed4e578e-4f4a-4ba0-82aa-741adbad1d62", // Stuart Little (6 ans)
     ],
   },
   {
     id: "top-disney",
+    timeless: true,
     title: "Top 10 des classiques Disney",
     description: "Les grands classiques Disney qui ont marqué des générations.",
     intro: "On connaît les chansons par cœur. On pleure toujours aux mêmes scènes. Et on attend le bon moment pour les montrer à nos enfants, comme si on leur confiait un secret. Les classiques de la Renaissance des années 90 et ceux qui ont renouvelé la magie depuis, le tout en 10 films.",
@@ -125,6 +140,7 @@ export const COLLECTIONS: CollectionDef[] = [
   },
   {
     id: "top-pixar",
+    timeless: true,
     title: "Top 10 des films Pixar",
     description: "Les chefs-d'œuvre du studio aux films inoubliables.",
     intro: "Depuis le milieu des années 90, ce studio n'a jamais vraiment baissé le niveau. Des films qui mettent des mots sur les émotions de nos enfants, qui parlent du deuil avec justesse, qui font pleurer tout le monde dès les dix premières minutes. Nos 10 préférés, ceux qui touchent autant les parents que les petits.",
@@ -132,21 +148,25 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 10,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: Coco, Là-haut and WALL·E top every consensus
+    // Pixar ranking (Common Sense Media, parent canon lists) and were absent
+    // here while mid-tier picks (En avant, Rebelle, Élémentaire) held slots.
     curatedIds: [
+      "3393ce29-40eb-4078-bb35-ef0e89738212", // Coco (7 ans)
       "b7c955de-9b73-4047-8d57-4629fdc42421", // Ratatouille (6 ans)
-      "118ae7ce-5978-4b21-b165-23f66f436e51", // Monstres & Cie (6 ans)
+      "f2d5b24d-ca8f-4ff6-bfba-9d2eeb5e6232", // Là-haut (8 ans)
+      "2eb49468-f860-47d4-86e1-e78f04cbd253", // WALL·E (6 ans)
       "145c4ed8-6aa8-4507-aa9d-0e6e11a79d61", // Le Monde de Nemo (6 ans)
+      "118ae7ce-5978-4b21-b165-23f66f436e51", // Monstres & Cie (6 ans)
       "1745085c-82a7-4b1b-974d-cb914f83be8a", // Vice-versa 2 (8 ans)
       "0966956e-feb1-45be-9288-99675b7283a3", // Les Indestructibles (8 ans)
       "920a69a3-a570-4a25-bd99-079b2dca1d13", // Toy Story 2 (6 ans)
       "9334936b-9386-4fce-a5da-7927034e578c", // Luca (7 ans)
-      "f00e2891-11ff-4aa2-b4fa-40623971d084", // Élémentaire (7 ans)
-      "b1bb3bf4-a0b5-4cbd-a7bf-152be04896e1", // En avant (8 ans)
-      "5e1fe4df-cbc6-4b9e-bf62-31e22f64a9d0", // Rebelle (8 ans)
     ],
   },
   {
     id: "top-ghibli",
+    timeless: true,
     title: "Top 10 Studio Ghibli",
     description: "L'univers poétique et enchanteur du studio japonais de Hayao Miyazaki.",
     intro: "Fondé en 1985 par deux maîtres de l'animation japonaise, ce studio a produit des films qu'on ne trouve nulle part ailleurs. Des œuvres récompensées aux Oscars et à Berlin, des musiques qui restent en tête pendant des semaines. Des forêts qui respirent, des esprits bienveillants, des héroïnes courageuses. Ça ne ressemble à rien d'autre.",
@@ -176,6 +196,8 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 10,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: Avatar : De feu et de cendres (2025) replaces
+    // Sonic 2 (which stays in the summer list — no doublon).
     curatedIds: [
       "ae95be8c-178f-4b18-9e30-df33de5f6d98", // Spider-Man : Across the Spider-Verse (10 ans)
       "d869e655-ac1c-4033-ab88-619d3df7dc20", // Spider-Man : New Generation (10 ans)
@@ -184,7 +206,7 @@ export const COLLECTIONS: CollectionDef[] = [
       "c3a73966-67eb-4e95-9391-0bdb9f8edf5e", // Le Château ambulant (8 ans)
       "0d36ab3a-41b7-4257-8e92-c51f9c6848e5", // L'Empire contre-attaque (10 ans)
       "46457bf3-b2fb-4ee3-976c-7996482aa9c5", // Les Nouveaux Héros (8 ans)
-      "696fbd3f-4b4d-4334-84f2-60ac90cb7073", // Sonic 2 (8 ans)
+      "5166df64-21b0-40e1-b0fd-989b4caa167f", // Avatar : De feu et de cendres (10 ans, 2025)
       "f26ba400-959e-479e-9920-b2f5bec3033e", // Indiana Jones et le Cadran de la destinée (10 ans)
       "b410c36a-0791-4a12-af48-c0044b26502a", // Jurassic World : Renaissance (10 ans)
     ],
@@ -223,6 +245,8 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 10,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: Superman (2025, 4 385 votes) replaces
+    // Shazam 2 — the strongest recent family-superhero release.
     curatedIds: [
       "ae95be8c-178f-4b18-9e30-df33de5f6d98", // Spider-Man : Across the Spider-Verse (10 ans)
       "d869e655-ac1c-4033-ab88-619d3df7dc20", // Spider-Man : New Generation (10 ans)
@@ -230,7 +254,7 @@ export const COLLECTIONS: CollectionDef[] = [
       "0966956e-feb1-45be-9288-99675b7283a3", // Les Indestructibles (8 ans)
       "4e4dc9e2-2026-460f-96f1-9d9d5d924136", // Black Panther : Wakanda Forever (10 ans)
       "6c49d372-df92-45fc-ba2b-e33bc8414383", // Les 4 Fantastiques : Premiers pas (10 ans)
-      "1c4019e6-60e2-460d-b268-b3735f92cb35", // Shazam! La Rage des Dieux (10 ans)
+      "845d22d8-2527-427f-8319-6cfefc754d8d", // Superman (12 ans, 2025)
       "000453dd-64ea-4bd9-aeaf-2f0171046425", // Spider-Man : Homecoming (10 ans)
       "0e290fac-dc12-492a-9a27-5181648f40be", // Thunderbolts* (13 ans)
       "d71260c8-36ae-4df3-89ff-7cb01ec84dd0", // Avengers : Endgame (13 ans)
@@ -286,6 +310,7 @@ export const COLLECTIONS: CollectionDef[] = [
   // ── Seasonal collections ───────────────────────────────────────────
   {
     id: "films-noel-famille",
+    timeless: true,
     title: "Films de Noël en famille",
     description: "Les classiques et nouveautés pour des fêtes magiques en famille.",
     intro: "Le sapin est monté, les guirlandes clignotent, le chocolat chaud est prêt. Il manque le film. Classiques ou nouveautés, tous les camps trouveront leur bonheur ici, des tout-petits aux grands-parents. De quoi tenir toutes les soirées des vacances de Noël.",
@@ -313,6 +338,7 @@ export const COLLECTIONS: CollectionDef[] = [
   },
   {
     id: "films-halloween-enfants",
+    timeless: true,
     title: "Films d'Halloween pour enfants",
     description: "Frissons légers et citrouilles : des films d'Halloween adaptés aux enfants, sans cauchemars.",
     intro: "Halloween, c'est l'occasion de se faire un peu peur. Mais juste un peu. Des citrouilles, des fantômes rigolos, des sorcières pas si méchantes. Pile ce qu'il faut pour entrer dans l'ambiance sans que personne ne finisse dans le lit des parents à 3h du matin.",
@@ -342,18 +368,22 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 15,
     category: "seasonal",
     lastUpdated: "2026-07",
+    // July 2026 research pass: the two big summer-2026 theatrical releases
+    // open the list — the vacation list is exactly where "feels current"
+    // matters most. (Their vote counts are still low post-release; curated
+    // placement is deliberate.)
     curatedIds: [
+      "83846f8d-03b5-4fdc-a55e-36b84a5f80ec", // Toy Story 5 (6 ans, en salle été 2026)
+      "d7c30912-8e5c-4ead-87ad-e6cadddb0e7a", // Les Minions 3 (6 ans, en salle été 2026)
       "79ef5951-745e-4b83-8377-b029f2a8050b", // Les Goonies (10 ans)
       "15658e6f-a228-4f46-a6c6-37ab05018e75", // Les Mitchell contre les machines (10 ans)
       "9334936b-9386-4fce-a5da-7927034e578c", // Luca (7 ans)
       "02ac7984-f7a8-41e3-ad2f-991f6340273c", // Super Mario Bros. (6 ans)
       "f26ba400-959e-479e-9920-b2f5bec3033e", // Indiana Jones et le Cadran de la destinée (10 ans)
       "b410c36a-0791-4a12-af48-c0044b26502a", // Jurassic World : Renaissance (10 ans)
-      "0d36ab3a-41b7-4257-8e92-c51f9c6848e5", // L'Empire contre-attaque (10 ans)
       "059a2f0d-d0d0-4131-b9d3-22ecd9154bbe", // Dragons (7 ans)
       "ae95be8c-178f-4b18-9e30-df33de5f6d98", // Spider-Man : Across the Spider-Verse (10 ans)
       "5bcd4be9-63dd-4e66-9d43-1b04a5367f79", // Jumanji : Next Level (10 ans)
-      "8112331b-00ea-4510-8a81-e227772c3470", // Retour vers le futur III (10 ans)
       "696fbd3f-4b4d-4334-84f2-60ac90cb7073", // Sonic 2 (8 ans)
       "a6579284-ce8e-4ba1-9dfa-bcc7c5730dd0", // Vaiana 2 (6 ans)
       "7794734b-8013-4338-a671-b11f0433a283", // Paddington au Pérou (6 ans)
@@ -373,17 +403,19 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 10,
     category: "top",
     lastUpdated: "2026-07",
+    // July 2026 research pass: Astro Bot (2024 GOTY, replaces its own demo
+    // Astro's Playroom) and Donkey Kong Bananza (2025) keep the list current.
     curatedIds: [
       "a29de2ac-8207-4b26-bae1-34d64b06295a", // Mario Kart 8 Deluxe (3 ans)
+      "32f9a756-2476-4b6b-9a7b-d13400662c07", // Astro Bot (7 ans, 2024)
       "ad27f7ab-b6e3-4ede-b561-bde80d1fef62", // Minecraft (8 ans)
       "01f7bc58-97ea-432e-bdc6-614f7ae37393", // Super Mario Odyssey (7 ans)
+      "6639da5a-806b-4429-a137-395c9128bf70", // Donkey Kong Bananza (7 ans, 2025)
       "c895fdb5-0e23-4366-b36e-3ba26ae78cc4", // Animal Crossing: New Horizons (7 ans)
       "b45b6852-0cf0-4c46-80cb-23f44ad3eeac", // Kirby and the Forgotten Land (6 ans)
       "748eb49a-97d9-4331-8d83-84c58f2f9821", // Nintendo Switch Sports (6 ans)
       "3fa9a840-2cf6-47bd-ba7f-de0b4e1513db", // Rayman Legends (7 ans)
-      "489b91e4-201e-4ef9-be61-6c20e3e997fd", // Astro's Playroom (7 ans)
       "409c0b44-a466-44d5-9ba3-e7dd0e4ef48e", // LEGO Star Wars: The Skywalker Saga (8 ans)
-      "11d11711-b025-438f-bbe8-2322598f03c9", // Journey (7 ans)
     ],
   },
   {
@@ -414,7 +446,7 @@ export const COLLECTIONS: CollectionDef[] = [
     // Re-curated July 2026: the old list padded with 3-6 ans titles (Mario
     // Kart "3 ans", Switch Sports) right after promising "pas bébé", and
     // included a fan game (Undertale Yellow) instead of the real Undertale.
-    // Now: nothing under 10 ans, real teen classics, zero overlap.
+    // Silksong (2025) and Zelda: Echoes of Wisdom (2024) keep it fresh.
     id: "top-jeux-ados",
     title: "Top 10 des jeux pour ados",
     description: "Sélection de jeux adaptés aux adolescents : aventure, réflexion et mondes ouverts.",
@@ -425,14 +457,14 @@ export const COLLECTIONS: CollectionDef[] = [
     lastUpdated: "2026-07",
     curatedIds: [
       "b8279f33-aeb6-493a-b12d-a0a9ad36ce52", // The Legend of Zelda: Breath of the Wild (12 ans)
+      "d6d08fdc-929e-47d5-8007-3115d8ffd33e", // Hollow Knight: Silksong (12 ans, 2025)
       "91fcc1b5-201d-4eac-8a6b-2874eff5de98", // Portal 2 (12 ans)
-      "c3a2e25b-c7a3-4fa3-892b-d1120d5ee6e3", // Hollow Knight (10 ans)
       "a88f882d-99cf-4ae7-8e74-2af895886985", // Hades (12 ans)
+      "9b092f7d-5df7-4212-8466-450e08a38025", // The Legend of Zelda: Echoes of Wisdom (10 ans, 2024)
       "628b20a5-9347-488a-9101-15605a787591", // Celeste (10 ans)
       "1783ecb9-fda0-4dc2-9d71-8056656bd7f1", // Undertale (12 ans)
       "b9deccff-df0b-4080-b14f-32d779c799b3", // Stardew Valley (12 ans)
       "7dbb80ed-fe38-4a69-bb9f-e744e7096be2", // Terraria (12 ans)
-      "858950a2-836b-46cd-96a4-b1d04c18babc", // Sid Meier's Civilization V (12 ans)
       "e84275fa-f9fb-4fc8-b362-e04c8108aa57", // The Stanley Parable (13 ans)
     ],
   },
