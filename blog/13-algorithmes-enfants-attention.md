@@ -10,7 +10,6 @@ internalLinks:
   - "/objectif"
   - "/films"
   - "/series"
-  - "/blog/qualite-contenu-plus-que-chronometre"
 sourceLinks:
   - "https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025"
   - "https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028"
@@ -73,7 +72,7 @@ Trois habitudes valent la peine d'être prises : couper les notifications qui ne
 
 On associe les algorithmes aux réseaux sociaux, mais ils sont partout. Les plateformes de streaming recommandent des séries, les boutiques de jeux poussent leurs nouveautés, les vidéos autour d'un film ou d'un jeu façonnent les envies. Un enfant réclame parfois une œuvre simplement parce qu'il l'a vue passer partout, sans rien savoir de ce qu'elle contient vraiment.
 
-C'est exactement là que Totem Avisé essaie de ramener le choix au bon endroit. Avant de lancer un contenu, on peut ouvrir la fiche d'un [film](/films) ou d'une [série](/series), regarder l'âge conseillé, les points sensibles, les messages positifs, puis décider en connaissance de cause. Notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre) creuse cette idée : l'enjeu n'est pas seulement le temps passé, mais ce que les plateformes glissent dans ce temps.
+C'est exactement là que Totem Avisé essaie de ramener le choix au bon endroit. Avant de lancer un contenu, on peut ouvrir la fiche d'un [film](/films) ou d'une [série](/series), regarder l'âge conseillé, les points sensibles, les messages positifs, puis décider en connaissance de cause. L'enjeu n'est pas seulement le temps passé, mais ce que les plateformes glissent dans ce temps.
 
 ## Donner des phrases à l'enfant
 

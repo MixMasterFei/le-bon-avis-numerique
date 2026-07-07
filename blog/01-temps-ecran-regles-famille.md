@@ -19,7 +19,7 @@ sourceLinks:
 
 # Temps d'écran : comment fixer des règles sans transformer la maison en tribunal
 
-Le scénario est familier dans beaucoup de foyers. Il est 19 h, un mardi. Il reste un exercice de maths à finir, une douche à prendre, un cartable à préparer pour demain, et quelqu'un réclame « juste un épisode ». La discussion sur les écrans ne commence presque jamais au calme. Elle commence fatiguée, pressée, au pire moment de la journée.
+Le scénario est familier dans beaucoup de foyers. Il est 19 h, la journée a été longue. Il reste un repas à préparer, une douche à caser, mille petites choses à ranger, et quelqu'un réclame « juste un épisode ». La discussion sur les écrans ne commence presque jamais au calme. Elle commence fatiguée, pressée, au pire moment de la journée.
 
 C'est pour cette raison que les conseils parfaits (pas d'écran avant tel âge, une heure maximum, toujours accompagné) aident moins qu'on ne l'espère. La difficulté n'est pas de connaître la bonne règle. C'est de tenir une règle un soir où plus personne n'a l'énergie de négocier.
 

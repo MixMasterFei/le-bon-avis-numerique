@@ -10,8 +10,6 @@ internalLinks:
   - "/films"
   - "/series"
   - "/notre-methode"
-  - "/blog/bon-age-film-enfant"
-  - "/blog/films-vraiment-educatifs-enfants"
   - "/inscription"
 sourceLinks:
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent"
@@ -38,7 +36,7 @@ Il vaut donc la peine de regarder le ressort de la peur plutôt que sa simple in
 
 Les classifications officielles et les recommandations d'âge restent un premier repère solide. Mais elles ne connaissent pas votre enfant : à neuf ans, l'un est parfaitement à l'aise avec le suspense quand l'autre se crispe devant les images sombres ou un héros laissé seul face au danger. Le vécu pèse aussi, une séparation récente, un deuil ou un sommeil fragile rendant tel film plus difficile à traverser.
 
-Nous développons cette idée dans notre article [« le bon âge n'existe pas vraiment »](/blog/bon-age-film-enfant). Pour la peur en particulier, retenez surtout que l'intensité ressentie dépend autant de l'enfant que du film. C'est pourquoi notre [méthode](/notre-methode) regarde aussi l'ambiance, les thèmes abordés et l'intensité de la peur, pas seulement l'âge.
+Pour la peur en particulier, retenez surtout que l'intensité ressentie dépend autant de l'enfant que du film. C'est pourquoi notre [méthode](/notre-methode) regarde aussi l'ambiance, les thèmes abordés et l'intensité de la peur, pas seulement l'âge.
 
 ## Les signes qu'un enfant n'est pas encore prêt
 
@@ -82,7 +80,7 @@ Avant un film qui risque de faire peur, un rapide tour d'horizon suffit souvent 
 
 Si plusieurs réponses restent floues, attendez. Ce n'est pas rater une expérience, c'est la garder pour un moment plus juste.
 
-Sur Totem Avisé, vous pouvez explorer les [films](/films) et [séries](/series) avec les repères d'âge, les points sensibles et les signaux « Trop tôt » ou « À vérifier » selon votre [profil de famille](/inscription). Notre article sur les [films vraiment éducatifs](/blog/films-vraiment-educatifs-enfants) rappelle d'ailleurs qu'un film peut faire grandir un enfant sans avoir besoin de le bousculer trop fort.
+Sur Totem Avisé, vous pouvez explorer les [films](/films) et [séries](/series) avec les repères d'âge, les points sensibles et les signaux « Trop tôt » ou « À vérifier » selon votre [profil de famille](/inscription).
 
 ## Pour aller plus loin
 

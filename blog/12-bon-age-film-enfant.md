@@ -57,6 +57,12 @@ Beaucoup de parents se fient d'instinct aux classifications officielles. Elles s
 
 « Tous publics » signifie le plus souvent que le contenu ne franchit pas certains seuils de restriction. Ce n'est pas la même chose que de garantir que tous les enfants le recevront bien. Voilà pourquoi une fiche pensée pour les parents change la donne : elle ajoute la nuance qui manque, en précisant quelles scènes surveiller, quels sujets discuter, quelles valeurs ressortent et quelle ambiance domine.
 
+## Ce qui peut marquer, au-delà de l'âge
+
+Deux films peuvent afficher le même âge conseillé sans laisser la même trace. Ce qui fait la différence tient souvent à une scène précise : un animal qui meurt, un parent qui disparaît, du harcèlement scolaire, une noyade, un moment franchement effrayant. Ces éléments ne rendent pas un film « mauvais » — beaucoup de chefs-d'œuvre familiaux en contiennent — mais ils gagnent à être connus à l'avance, surtout pour un enfant sensible à ce sujet-là.
+
+C'est le rôle des points de vigilance que nous regroupons, sur chaque fiche, dans un volet « Ce qui peut marquer ». Ce ne sont ni des interdits ni des scènes garanties, mais des repères à recouper avec ce que vous savez de votre enfant. Un enfant qui vient de perdre un animal ne recevra pas de la même manière un film où un animal meurt ; un autre passera sans encombre. L'âge conseillé ne voit pas cette différence ; le point de vigilance, si.
+
 ## L'enfant n'est pas toujours le meilleur juge
 
 « Je suis prêt. » La phrase revient souvent, sincère mais pas toujours fiable. Un enfant peut vouloir regarder pour faire comme les grands, pour suivre une conversation entre copains, pour ne pas passer pour un bébé, ou simplement parce que l'affiche l'attire.

@@ -9,8 +9,6 @@ seoDescription: "IA générative et enfants : ce qu'il faut se dire en famille a
 internalLinks:
   - "/guides"
   - "/objectif"
-  - "/blog/chatgpt-devoirs-parents"
-  - "/blog/algorithmes-enfants-attention"
 sourceLinks:
   - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
   - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
@@ -40,7 +38,7 @@ La règle de base se dit en une phrase : pas d'information personnelle qui n'a r
 
 ## Se faire aider, ce n'est pas se faire remplacer
 
-Vient ensuite la question des devoirs, celle qui inquiète le plus de parents. La règle tient en une phrase : l'IA peut expliquer, faire réviser, interroger, mais elle ne rend pas le travail à la place de l'enfant. Le meilleur test, utilisé aussi par beaucoup d'enseignants, c'est de pouvoir expliquer avec ses mots ce qu'on vient de rendre. L'Éducation nationale a d'ailleurs posé un cadre clair : l'usage pédagogique des IA génératives par les élèves, accompagné par un enseignant, est autorisé à partir de la 4e, et se faire faire un devoir par une IA sans autorisation ni travail personnel d'appropriation est considéré comme une fraude. Comme ce sujet mérite mieux qu'un paragraphe, nous lui consacrons un article entier, [ChatGPT et les devoirs](/blog/chatgpt-devoirs-parents).
+Vient ensuite la question des devoirs, celle qui inquiète le plus de parents. La règle tient en une phrase : l'IA peut expliquer, faire réviser, interroger, mais elle ne rend pas le travail à la place de l'enfant. Le meilleur test, utilisé aussi par beaucoup d'enseignants, c'est de pouvoir expliquer avec ses mots ce qu'on vient de rendre. L'Éducation nationale a d'ailleurs posé un cadre clair : l'usage pédagogique des IA génératives par les élèves, accompagné par un enseignant, est autorisé à partir de la 4e, et se faire faire un devoir par une IA sans autorisation ni travail personnel d'appropriation est considéré comme une fraude.
 
 ## Une image générée peut mentir très bien
 
@@ -66,7 +64,7 @@ Ce cadre se desserre avec l'âge. Un collégien et un lycéen n'ont pas la même
 
 L'école avance, elle aussi. Le ministère de l'Éducation nationale déploie le parcours Pix IA, expérimenté depuis 2025 puis généralisé à partir de 2026 pour certains niveaux (4e, 2nde et première année de CAP), avec une mise en œuvre qui s'étale sur les années scolaires 2025-2026 et 2026-2027. Cela dit quelque chose d'utile aux parents : l'IA n'est pas un sujet réservé aux passionnés de technologie, c'est devenu une compétence numérique de base, au même titre que reconnaître une publicité ou protéger un mot de passe.
 
-Chez Totem Avisé, notre [mission](/objectif) est d'aider les familles à comprendre les contenus et les outils qui traversent le quotidien des enfants. L'IA générative en fait partie, au même rang que les algorithmes de recommandation ou les réseaux sociaux. D'ailleurs, notre article sur les [algorithmes et l'attention](/blog/algorithmes-enfants-attention) raconte un peu la même histoire sous un autre angle : apprendre à se servir d'un outil sans lui abandonner son propre jugement. Nos [guides parents](/guides) sont là pour creuser chaque sujet sans prérequis technique.
+Chez Totem Avisé, notre [mission](/objectif) est d'aider les familles à comprendre les contenus et les outils qui traversent le quotidien des enfants. L'IA générative en fait partie, au même rang que les algorithmes de recommandation ou les réseaux sociaux : apprendre à se servir d'un outil sans lui abandonner son propre jugement. Nos [guides parents](/guides) sont là pour creuser chaque sujet sans prérequis technique.
 
 La meilleure manière d'aborder tout ça reste de partir d'exemples. Demandez à l'IA de résumer un texte, puis cherchez ensemble ce qu'elle a oublié. Faites-lui inventer une image, puis discutez de ce qui sonne faux. Posez-lui une question sur un domaine que votre ado maîtrise bien, et laissez-le repérer les approximations. Trois petites expériences faites côte à côte rendent l'outil moins magique, et bien plus facile à manier seul ensuite. C'est largement plus efficace qu'une interdiction que personne ne tiendra.
 

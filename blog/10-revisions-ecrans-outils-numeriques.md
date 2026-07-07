@@ -9,8 +9,6 @@ seoDescription: "Révisions et écrans : comment aider un enfant ou un ado à ut
 internalLinks:
   - "/guides"
   - "/objectif"
-  - "/blog/chatgpt-devoirs-parents"
-  - "/blog/qualite-contenu-plus-que-chronometre"
 sourceLinks:
   - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
   - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
@@ -53,7 +51,7 @@ L'intelligence artificielle est entrée à l'école, et plutôt par la grande po
 
 Pour réviser, l'IA peut beaucoup : expliquer une notion autrement, proposer un quiz, corriger une phrase en montrant l'erreur, faire répéter un oral. Elle peut aussi rédiger le devoir entier, et c'est là que tout se joue. La différence tient à la consigne qu'on lui donne.
 
-Quelques demandes qui gardent l'enfant aux commandes : « Explique-moi cette notion avec un exemple simple », « pose-moi cinq questions sans me donner les réponses tout de suite », « corrige mon texte et explique mes erreurs », « aide-moi à faire un plan mais ne rédige pas à ma place ». À l'inverse, « fais mon devoir », « rédige toute ma dissertation » ou « donne-moi seulement la réponse » court-circuitent l'apprentissage. Notre article sur [ChatGPT et les devoirs](/blog/chatgpt-devoirs-parents) détaille ce cadre ; l'idée tient en une ligne : l'IA soutient l'effort, elle ne le remplace pas.
+Quelques demandes qui gardent l'enfant aux commandes : « Explique-moi cette notion avec un exemple simple », « pose-moi cinq questions sans me donner les réponses tout de suite », « corrige mon texte et explique mes erreurs », « aide-moi à faire un plan mais ne rédige pas à ma place ». À l'inverse, « fais mon devoir », « rédige toute ma dissertation » ou « donne-moi seulement la réponse » court-circuitent l'apprentissage. L'idée tient en une ligne : l'IA soutient l'effort, elle ne le remplace pas.
 
 ## Le téléphone, mauvais bureau de révision
 
@@ -87,7 +85,7 @@ Suivre les révisions numériques ne veut pas dire rester planté derrière l'en
 
 Cette dernière déplace l'attention du temps passé vers le progrès réel. Un enfant peut avoir consacré quarante minutes à une vidéo sans rien retenir, et un autre avoir fait quinze minutes d'exercices en avançant beaucoup. Le bon indicateur n'est donc pas la durée, mais la clarté : l'enfant sait-il expliquer ce qu'il vient de réviser ?
 
-Chez Totem Avisé, nous ne sommes pas anti-écrans. Nous défendons un usage qui garde l'enfant acteur, exactement comme pour les films, les séries ou les jeux, où la [qualité du contenu](/blog/qualite-contenu-plus-que-chronometre), le contexte et l'accompagnement comptent plus que le chronomètre. Pour aller plus loin, nos [guides parents](/guides) et notre [objectif](/objectif) précisent cette approche. Le numérique peut être un très bon compagnon de révision : une intention claire, un outil choisi, une sortie prévue, et il reste à sa place.
+Chez Totem Avisé, nous ne sommes pas anti-écrans. Nous défendons un usage qui garde l'enfant acteur, exactement comme pour les films, les séries ou les jeux, où la qualité du contenu, le contexte et l'accompagnement comptent plus que le chronomètre. Pour aller plus loin, nos [guides parents](/guides) et notre [objectif](/objectif) précisent cette approche. Le numérique peut être un très bon compagnon de révision : une intention claire, un outil choisi, une sortie prévue, et il reste à sa place.
 
 ## Pour aller plus loin
 

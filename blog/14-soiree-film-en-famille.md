@@ -10,7 +10,6 @@ internalLinks:
   - "/films"
   - "/collections"
   - "/notre-methode"
-  - "/blog/bon-age-film-enfant"
   - "/inscription"
 sourceLinks:
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
@@ -81,7 +80,7 @@ Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le 
 - Choisissez l'envie du moment : rire, aventure, douceur, frisson léger.
 - Comparez les films compatibles avec toute la famille, puis tranchez.
 
-Et si vous hésitez sur la limite d'âge, notre article sur le [bon âge pour un film](/blog/bon-age-film-enfant) revient sur une réalité simple : deux enfants du même âge ne vivent pas toujours la même histoire. Un film bien choisi, à la bonne heure, regardé ensemble : c'est déjà une bonne soirée.
+Et si vous hésitez sur la limite d'âge, gardez en tête une réalité simple : deux enfants du même âge ne vivent pas toujours la même histoire. Un film bien choisi, à la bonne heure, regardé ensemble : c'est déjà une bonne soirée.
 
 ## Pour aller plus loin
 

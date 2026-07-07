@@ -11,7 +11,6 @@ internalLinks:
   - "/notre-methode"
   - "/films"
   - "/series"
-  - "/blog/temps-ecran-regles-famille"
 sourceLinks:
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent"
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age"
@@ -72,7 +71,7 @@ Pour s'y retrouver, mieux vaut regarder le type de jeu, la présence ou non d'un
 
 ## Protéger d'abord les moments fragiles
 
-Regarder la qualité d'un contenu ne dispense pas de protéger certains moments de la journée : le matin avant l'école, les repas, la nuit, le dernier quart d'heure avant le coucher. Ce cadre horaire, nous le détaillons dans notre article sur les [règles d'écran en famille](/blog/temps-ecran-regles-famille). Ici, l'essentiel est qu'il se combine avec le regard sur le contenu : bien choisir ce qu'on regarde et préserver les bons moments ne s'opposent pas, les deux avancent ensemble.
+Regarder la qualité d'un contenu ne dispense pas de protéger certains moments de la journée : le matin, les repas, la nuit, le dernier quart d'heure avant le coucher. L'essentiel est que ce cadre horaire se combine avec le regard sur le contenu : bien choisir ce qu'on regarde et préserver les bons moments ne s'opposent pas, les deux avancent ensemble.
 
 ## Installer une culture du choix
 
@@ -80,7 +79,7 @@ Le plus utile, sur la durée, c'est de rendre le choix visible. Au lieu de dire 
 
 C'est l'idée qui guide notre [méthode](/notre-methode) : regarder les contenus finement plutôt que de les classer en bons ou mauvais. Un même titre peut être trop tôt pour un enfant et parfait deux ans plus tard. Un autre peut être court mais envahissant. Un autre encore peut devenir un vrai rendez-vous familial.
 
-Si vous voulez vous lancer sans tout révolutionner, choisissez une soirée par semaine où le contenu se décide ensemble. Un film adapté, un épisode choisi, une partie en famille, puis quelques minutes pour en parler. Vous verrez vite que la conversation glisse du « combien de temps » vers le « qu'est-ce qu'on a aimé ». Pour aller plus loin sur le cadre général, vous pouvez aussi lire notre guide sur le [temps d'écran et les règles familiales](/blog/temps-ecran-regles-famille), et garder sous la main nos [guides parents](/guides) au moment de choisir.
+Si vous voulez vous lancer sans tout révolutionner, choisissez une soirée par semaine où le contenu se décide ensemble. Un film adapté, un épisode choisi, une partie en famille, puis quelques minutes pour en parler. Vous verrez vite que la conversation glisse du « combien de temps » vers le « qu'est-ce qu'on a aimé ». Gardez sous la main nos [guides parents](/guides) au moment de choisir.
 
 ## Pour aller plus loin
 

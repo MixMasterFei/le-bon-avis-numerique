@@ -10,7 +10,6 @@ internalLinks:
   - "/jeux"
   - "/collections"
   - "/notre-methode"
-  - "/blog/qualite-contenu-plus-que-chronometre"
   - "/inscription"
 sourceLinks:
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent"
@@ -81,7 +80,7 @@ La dernière question est la plus parlante : qu'est-ce que ce jeu apporte vraime
 
 Le jeu vidéo peut être un excellent loisir de famille. Il fait rire, réfléchir, coopérer, échouer et recommencer, et il rapproche parfois un parent et un enfant quand l'adulte accepte d'entrer un peu dans son univers. Ce qu'on surveille, au fond, c'est simplement qu'il garde sa place : qu'il n'avale ni le sommeil, ni les repas, ni les devoirs, ni l'humeur de la maison une fois la console éteinte.
 
-Pour aller plus loin, vous pouvez lire notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre), explorer les [jeux vidéo](/jeux) analysés sur Totem, ou créer un [profil famille](/inscription) pour obtenir des repères adaptés à chaque enfant.
+Pour aller plus loin, vous pouvez explorer les [jeux vidéo](/jeux) analysés sur Totem, ou créer un [profil famille](/inscription) pour obtenir des repères adaptés à chaque enfant.
 
 ## Pour aller plus loin
 

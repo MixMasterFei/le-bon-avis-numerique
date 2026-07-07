@@ -10,8 +10,6 @@ internalLinks:
   - "/guides"
   - "/notre-methode"
   - "/objectif"
-  - "/blog/chatgpt-devoirs-parents"
-  - "/blog/cyberharcelement-signaux-faibles"
 sourceLinks:
   - "https://www.parents.fr/actualites/etre-parent/le-gouvernement-veut-interdire-les-reseaux-sociaux-aux-moins-de-15-ans-et-le-portable-au-lycee-des-la-rentree-2026-1145316"
   - "https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181"
@@ -60,7 +58,7 @@ Deux points sont plus importants encore que les interdits. D'abord un droit d'ap
 
 La durée compte, bien sûr. Mais sur les réseaux, d'autres signaux en disent souvent plus long. Un enfant qui devient irritable après chaque session, qui dort moins bien, qui referme brutalement son écran à votre approche, qui se compare sans arrêt, qui veut supprimer des photos de lui, qui s'angoisse dès qu'il n'a pas son téléphone, ou qui parle d'un groupe avec une gêne inhabituelle : tout cela appelle une conversation.
 
-Et la conversation gagne à éviter le « qu'est-ce que tu as encore fait ? ». On avance mieux avec des ouvertures simples. Est-ce qu'il y a quelque chose qui t'a mis mal à l'aise ? Est-ce que tu te sens obligé de répondre tout de suite ? Est-ce que quelqu'un est pris pour cible dans le groupe ? Est-ce qu'on regarde les paramètres ensemble ? Un parent n'a pas besoin de tout savoir pour être utile. Il a surtout besoin de rester accessible. Si vous repérez des signaux qui inquiètent, notre article sur les [signaux faibles du cyberharcèlement](/blog/cyberharcelement-signaux-faibles) va plus loin.
+Et la conversation gagne à éviter le « qu'est-ce que tu as encore fait ? ». On avance mieux avec des ouvertures simples. Est-ce qu'il y a quelque chose qui t'a mis mal à l'aise ? Est-ce que tu te sens obligé de répondre tout de suite ? Est-ce que quelqu'un est pris pour cible dans le groupe ? Est-ce qu'on regarde les paramètres ensemble ? Un parent n'a pas besoin de tout savoir pour être utile. Il a surtout besoin de rester accessible.
 
 ## Et si l'enfant a déjà un compte
 
@@ -70,7 +68,7 @@ Commencez par un état des lieux calme, fait à deux : quels comptes existent, l
 
 ## Ce n'est pas un monde à part
 
-Les réseaux ne forment pas une bulle séparée. Ils se mêlent aux séries, aux jeux, aux vidéos, aux devoirs, aux discussions entre amis. Un enfant découvre une bande-annonce sur TikTok, veut voir une série « parce qu'elle circule partout », entend parler d'un jeu par un créateur qu'il suit. C'est aussi par là que passe l'aide aux devoirs, avec ses propres questions, que nous abordons dans notre article sur [ChatGPT et les devoirs](/blog/chatgpt-devoirs-parents).
+Les réseaux ne forment pas une bulle séparée. Ils se mêlent aux séries, aux jeux, aux vidéos, aux devoirs, aux discussions entre amis. Un enfant découvre une bande-annonce sur TikTok, veut voir une série « parce qu'elle circule partout », entend parler d'un jeu par un créateur qu'il suit. C'est aussi par là que passe l'aide aux devoirs, avec ses propres questions.
 
 C'est pour cette raison que Totem Avisé regarde l'ensemble des contenus : films, séries, jeux, actualités famille et guides. Notre [méthode](/notre-methode) ne remplace pas votre jugement, mais elle aide à lire les bons indices, de l'âge conseillé à la sensibilité, en passant par la violence, les messages positifs ou la valeur éducative. Vous pouvez aussi parcourir nos [guides parents](/guides) pour ouvrir des discussions plus larges, et découvrir [ce que nous cherchons à faire](/objectif) avec les familles.
 

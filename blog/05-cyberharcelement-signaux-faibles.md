@@ -9,8 +9,6 @@ seoDescription: "Cyberharcèlement enfant : signaux faibles, preuves à garder, 
 internalLinks:
   - "/guides"
   - "/objectif"
-  - "/blog/reseaux-sociaux-avant-15-ans"
-  - "/blog/temps-ecran-regles-famille"
 sourceLinks:
   - "https://www.3018.fr/"
   - "https://www.service-public.gouv.fr/particuliers/vosdroits/F32239"
@@ -95,8 +93,6 @@ La [parentalité numérique](/guides) ne se résume pas à de la surveillance. C
 ## Le lien avec les réseaux et les contenus
 
 Le cyberharcèlement ne naît pas uniquement sur les réseaux sociaux, mais ceux-ci l'amplifient. Groupes de classe, commentaires, stories, jeux en ligne, messageries : tout cela forme un même écosystème, où une moquerie peut rebondir d'une appli à l'autre. C'est pour cette raison que l'ouverture d'un premier compte ou l'arrivée d'un premier smartphone gagne à s'accompagner de discussions sur les limites, l'image de soi, le respect et les recours possibles.
-
-Notre article sur les [réseaux sociaux avant 15 ans](/blog/reseaux-sociaux-avant-15-ans) propose justement un cadre progressif. Celui sur le [temps d'écran](/blog/temps-ecran-regles-famille) rappelle de son côté que le sujet ne se limite pas à la durée, mais touche au contexte, au contenu et à l'état émotionnel de l'enfant.
 
 Chez Totem Avisé, notre [mission](/objectif) consiste à aider les familles à choisir et à accompagner les contenus numériques avec un peu plus de repères. Cela vaut pour les films et les jeux, mais aussi pour les conversations autour de ce que les enfants traversent en ligne.
 

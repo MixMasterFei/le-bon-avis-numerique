@@ -79,6 +79,17 @@ export const methodeSections: MethodeSection[] = [
     ],
   },
   {
+    id: "points-de-vigilance",
+    icon: "shield-alert",
+    title: "Les points de vigilance (« Ce qui peut marquer »)",
+    content: [
+      "Certaines scènes précises marquent les enfants bien plus que ne le laisse deviner une note globale : la mort d'un animal, le harcèlement scolaire, la séparation des parents, une scène effrayante, une noyade… Sur les fiches de films et de séries, un volet « Ce qui peut marquer » regroupe ces points de vigilance, à partir d'une liste fermée de repères clairs et vérifiables.",
+      "Ces repères sont d'abord signalés par notre analyse du contenu, puis confirmés ou contestés par les parents (« Confirmer » / « Pas dans ce film »). Nous ne les présentons jamais comme des scènes garanties : ce sont des points à vérifier selon la sensibilité de votre enfant. Le volet reste replié par défaut, car nommer ces éléments peut divulgâcher une partie de l'histoire — à vous de choisir de l'ouvrir.",
+      "L'objectif n'est pas de faire peur ni de coller une étiquette « à éviter », mais de rendre visible ce qu'un chiffre d'âge ne dit pas. Un parent qui sait qu'un animal meurt à la fin d'un film peut préparer la discussion, ou attendre un an. C'est exactement la nuance que Totem cherche à rendre facile.",
+    ],
+    after: "Les parents peuvent ajouter un repère manquant depuis la fiche (liste fermée, sans texte libre, pour éviter les doublons et les divulgâchages inutiles). Chaque signalement reste rattaché à un profil famille.",
+  },
+  {
     id: "themes-detectes",
     icon: "book-open",
     title: "Les thèmes détectés",

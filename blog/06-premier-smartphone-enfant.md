@@ -10,8 +10,6 @@ internalLinks:
   - "/guides"
   - "/objectif"
   - "/notre-methode"
-  - "/blog/reseaux-sociaux-avant-15-ans"
-  - "/blog/cyberharcelement-signaux-faibles"
 sourceLinks:
   - "https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181"
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
@@ -52,7 +50,7 @@ Avant 11 ans, le besoin d'un smartphone personnel est rarement évident. Si l'ob
 
 L'entrée au collège, entre 11 et 13 ans, fait souvent ressurgir la question. Mais y répondre par oui ne signifie pas ouvrir tout internet d'un coup. On peut très bien commencer par les appels, les SMS, la localisation et une poignée d'applications validées ensemble.
 
-Entre 13 et 15 ans, l'enfant gagne en autonomie. Les réseaux sociaux, les groupes et les contenus recommandés réclament cependant un accompagnement réel, pas une simple confiance accordée d'avance. C'est d'ailleurs tout l'enjeu de notre article sur les [réseaux sociaux avant 15 ans](/blog/reseaux-sociaux-avant-15-ans).
+Entre 13 et 15 ans, l'enfant gagne en autonomie. Les réseaux sociaux, les groupes et les contenus recommandés réclament cependant un accompagnement réel, pas une simple confiance accordée d'avance.
 
 Après 15 ans, le cadre peut s'assouplir sans disparaître. Le sommeil, les données personnelles, les messages privés et le respect des autres restent des sujets de conversation familiale.
 
@@ -72,7 +70,7 @@ La règle la plus rentable, et de loin, c'est la nuit hors de la chambre. Une st
 
 Avoir un smartphone ne signifie pas avoir TikTok, Instagram ou Snapchat. Ces applications ouvrent un espace social à part entière, qui mérite une discussion spécifique plutôt qu'un accès automatique. Au début, deux limites doivent rester simples et fermes : pas d'inconnu en message privé, et pas de photo de quelqu'un d'autre sans son accord. On demande avant de publier, de partager ou de se moquer.
 
-Les achats, eux, passent systématiquement par un adulte : jeux, abonnements, achats intégrés, tout. Enfin, la règle la plus importante n'en est pas vraiment une : votre enfant doit pouvoir demander de l'aide sans craindre de perdre son téléphone. S'il a peur de la sanction, il cachera les problèmes. Un message gênant, une image qui circule, un conflit en ligne, tout cela doit pouvoir se raconter à la maison. Notre article sur le [cyberharcèlement et ses signaux faibles](/blog/cyberharcelement-signaux-faibles) revient sur cette confiance, qui change tout.
+Les achats, eux, passent systématiquement par un adulte : jeux, abonnements, achats intégrés, tout. Enfin, la règle la plus importante n'en est pas vraiment une : votre enfant doit pouvoir demander de l'aide sans craindre de perdre son téléphone. S'il a peur de la sanction, il cachera les problèmes. Un message gênant, une image qui circule, un conflit en ligne, tout cela doit pouvoir se raconter à la maison.
 
 ## Entre « rien » et « tout », il y a de la place
 

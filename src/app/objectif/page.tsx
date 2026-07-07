@@ -44,6 +44,7 @@ const pillars = [
 
 const differences = [
   "On analyse 8 dimensions du contenu, pas juste un âge minimum",
+  "On signale les points de vigilance (mort d'un animal, harcèlement…), à confirmer par les parents",
   "On repère les messages positifs et les modèles inspirants",
   "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur…)",
   "Films, séries, jeux vidéo, livres : tout au même endroit",
