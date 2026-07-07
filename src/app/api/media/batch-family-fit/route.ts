@@ -49,6 +49,14 @@ import {
 
 // ---------------------------------------------------------------------------
 
+// Minimum taste-fit (genre + interests + learned behaviour, age EXCLUDED) for a
+// member who has filled their profile to earn a "fit" avatar on a card. Below
+// this, the title isn't their thing and the card must not claim "Bon choix" —
+// the more a parent fills in, the tighter the avatars get. Tuned so a member
+// with zero favourite-genre overlap (~0.35) and no rescuing interest/behaviour
+// signal drops, while any real genre/interest match clears it.
+const TASTE_FIT_MIN = 0.45
+
 interface MemberFit {
   id: string
   name: string
@@ -315,6 +323,26 @@ export async function POST(request: NextRequest) {
               personalizedScore: personalized,
             }) * maturePenalty.multiplier
           )
+
+          // Taste gate — a completed profile must sharpen the card, not merely
+          // gate by age. A member only earns a "fit" avatar when the title
+          // genuinely matches their taste (favourite genres + interests +
+          // learned behaviour, age deliberately excluded), so a card never
+          // asserts "Bon choix" for something they wouldn't like. Members who
+          // like the genre keep a high genreScore and stay even on age-edge
+          // titles; genreScore===0 (hard dislike) is left to the "avoid" pillar
+          // below so its exclusion reason stays specific.
+          const tasteFit = 0.5 * genreScore + 0.25 * interestsScore + 0.25 * personalized
+          if (genreScore > 0 && tasteFit < TASTE_FIT_MIN) {
+            if (isAdmin) {
+              excludedForDebug.push({
+                id: member.id,
+                name: member.name,
+                reason: `goût faible (${tasteFit.toFixed(2)}) · profil rempli`,
+              })
+            }
+            continue
+          }
         }
 
         const hasYouthAppeal = hasYouthAppealSignal({
