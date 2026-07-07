@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { ReactionType } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { COMMUNITY_WARNING_THRESHOLD } from "@/lib/family-warning"
@@ -40,6 +41,11 @@ import {
   EMPTY_VECTOR,
   type MemberVector,
 } from "@/lib/preference-vector"
+import {
+  AFFINITY_REACTIONS,
+  computeSignedAffinity,
+  DISMISSAL_REACTIONS,
+} from "@/lib/reaction-affinity"
 
 // ---------------------------------------------------------------------------
 // Batch Family Fit API
@@ -129,22 +135,68 @@ export async function POST(request: NextRequest) {
       include: { contentMetrics: true },
     })
 
-    // Per-item dismissals: a member who explicitly said "Pas intéressé"
-    // (TOO_OLD) or "Pas pour moi" (NOT_FOR_ME) on a specific title must never
-    // resurface as a fitting avatar for it, however well age/prefs score. This
-    // is the per-item override the weighted score can't express (the behavioral
-    // vector only nudges genre-level affinity, not this exact title).
-    const dismissals = await prisma.mediaReaction.findMany({
+    // The family's full valenced reaction history — three uses:
+    //   1. Per-item dismissals ("Pas intéressé"/"Pas pour moi" on THIS title
+    //      → never show as a fitting avatar, however well age/prefs score).
+    //   2. Per-item positives (Adoré/Bien aimé on THIS title → always a fit,
+    //      bypassing the taste gate: the parent told us directly).
+    //   3. Signed affinity over SIMILAR titles ("a adoré GTA V mais pas
+    //      intéressé par GTA IV" → un autre GTA ressort mitigé) — the mean
+    //      that makes each reaction visibly improve the recommendations.
+    const familyReactions = await prisma.mediaReaction.findMany({
       where: {
         familyMemberId: { in: familyMembers.map((m) => m.id) },
-        mediaId: { in: mediaIds },
-        reaction: { in: ["TOO_OLD", "NOT_FOR_ME"] },
+        reaction: { in: AFFINITY_REACTIONS as ReactionType[] },
       },
-      select: { familyMemberId: true, mediaId: true },
+      select: { familyMemberId: true, mediaId: true, reaction: true },
     })
+    const mediaIdSet = new Set(mediaIds)
     const dismissedSet = new Set(
-      dismissals.map((d) => `${d.familyMemberId}:${d.mediaId}`),
+      familyReactions
+        .filter((r) => mediaIdSet.has(r.mediaId) && (DISMISSAL_REACTIONS as readonly string[]).includes(r.reaction))
+        .map((r) => `${r.familyMemberId}:${r.mediaId}`),
     )
+    const lovedSet = new Set(
+      familyReactions
+        .filter((r) => mediaIdSet.has(r.mediaId) && (r.reaction === "LOVED" || r.reaction === "LIKED"))
+        .map((r) => `${r.familyMemberId}:${r.mediaId}`),
+    )
+    const reactionsByMember = new Map<string, { mediaId: string; reaction: string }[]>()
+    for (const r of familyReactions) {
+      const list = reactionsByMember.get(r.familyMemberId)
+      if (list) list.push(r)
+      else reactionsByMember.set(r.familyMemberId, [r])
+    }
+
+    // Similarity edges between the requested cards and every reacted title,
+    // one indexed query — feeds the signed affinity per (member, card).
+    const reactedIds = [...new Set(familyReactions.map((r) => r.mediaId))]
+    const simEdges = reactedIds.length
+      ? await prisma.mediaSimilarity.findMany({
+          where: {
+            OR: [
+              { mediaIdA: { in: mediaIds }, mediaIdB: { in: reactedIds } },
+              { mediaIdA: { in: reactedIds }, mediaIdB: { in: mediaIds } },
+            ],
+            similarityScore: { gte: 0.4 },
+          },
+          select: { mediaIdA: true, mediaIdB: true, similarityScore: true },
+        })
+      : []
+    // card media id → (similar reacted id → similarity score)
+    const simByCard = new Map<string, Map<string, number>>()
+    const addEdge = (cardId: string, otherId: string, score: number) => {
+      if (!mediaIdSet.has(cardId) || cardId === otherId) return
+      let m = simByCard.get(cardId)
+      if (!m) { m = new Map(); simByCard.set(cardId, m) }
+      const prev = m.get(otherId)
+      if (prev === undefined || score > prev) m.set(otherId, score)
+    }
+    for (const e of simEdges) {
+      addEdge(e.mediaIdA, e.mediaIdB, e.similarityScore)
+      addEdge(e.mediaIdB, e.mediaIdA, e.similarityScore)
+    }
+    const EMPTY_SIM = new Map<string, number>()
 
     // Detect if household has any minor (under 18)
     const hasMinor = familyMembers.some((m) => {
@@ -310,13 +362,21 @@ export async function POST(request: NextRequest) {
             topics: media.topics,
             toneTags: (metrics.toneTags ?? []) as string[],
           })
+          // Signed mean over the member's reactions on titles similar to this
+          // card (0.5 = neutral / no history) — a loved GTA V lifts other GTA,
+          // a dismissed GTA IV pulls them back toward the middle.
+          const signedAffinity = computeSignedAffinity(
+            reactionsByMember.get(member.id) ?? [],
+            simByCard.get(media.id) ?? EMPTY_SIM,
+          )
+          const affinityScore = signedAffinity?.score ?? 0.5
           rawScore = clampScore(
             computeWeightedFitScore({
               ageScore,
               sensitivityScore,
               genreScore,
               interestsScore,
-              affinityScore: 0.5,
+              affinityScore,
               toneScore,
               positiveScore,
               avoidScore,
@@ -327,13 +387,17 @@ export async function POST(request: NextRequest) {
           // Taste gate — a completed profile must sharpen the card, not merely
           // gate by age. A member only earns a "fit" avatar when the title
           // genuinely matches their taste (favourite genres + interests +
-          // learned behaviour, age deliberately excluded), so a card never
-          // asserts "Bon choix" for something they wouldn't like. Members who
-          // like the genre keep a high genreScore and stay even on age-edge
-          // titles; genreScore===0 (hard dislike) is left to the "avoid" pillar
-          // below so its exclusion reason stays specific.
-          const tasteFit = 0.5 * genreScore + 0.25 * interestsScore + 0.25 * personalized
-          if (genreScore > 0 && tasteFit < TASTE_FIT_MIN) {
+          // learned behaviour + similar-title reactions, age deliberately
+          // excluded), so a card never asserts "Bon choix" for something they
+          // wouldn't like. Members who like the genre keep a high genreScore
+          // and stay even on age-edge titles; genreScore===0 (hard dislike) is
+          // left to the "avoid" pillar below so its exclusion reason stays
+          // specific. An explicit Adoré/Bien aimé on THIS title bypasses the
+          // gate entirely — the parent told us directly.
+          const selfLoved = lovedSet.has(`${member.id}:${media.id}`)
+          const tasteFit =
+            0.35 * genreScore + 0.2 * interestsScore + 0.2 * personalized + 0.25 * affinityScore
+          if (!selfLoved && genreScore > 0 && tasteFit < TASTE_FIT_MIN) {
             if (isAdmin) {
               excludedForDebug.push({
                 id: member.id,

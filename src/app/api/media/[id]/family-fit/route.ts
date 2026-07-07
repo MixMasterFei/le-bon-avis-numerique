@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { ReactionType } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
@@ -43,6 +44,11 @@ import {
   EMPTY_VECTOR,
   type MemberVector,
 } from "@/lib/preference-vector"
+import {
+  AFFINITY_REACTIONS,
+  computeSignedAffinity,
+  DISMISSAL_REACTIONS,
+} from "@/lib/reaction-affinity"
 
 // ---------------------------------------------------------------------------
 // Family Fit API
@@ -98,11 +104,15 @@ function preferencePillarFromSignals(input: {
   if (input.genreScore === 0) return "avoid"
   if (input.maturePenaltySeverity === "block") return "avoid"
   if (!input.hasPreferences) return "noProfile"
-  // Cautions
+  // Cautions. affinityScore is on the signed scale (0.5 = neutral): a net-
+  // NEGATIVE reaction history on similar titles ("pas intéressé par GTA IV")
+  // caps the verdict at "à vérifier" — the mean the parent expects when the
+  // member liked some of a franchise but dismissed the rest.
   if (input.maturePenaltySeverity === "caution") return "check"
+  if (input.affinityScore <= 0.4) return "check"
   if (input.guardrailLevel === "moderate" || input.guardrailScore < 66) return "check"
-  // Positive
-  if (input.affinityScore >= 0.5 || input.guardrailScore >= 80) return "love"
+  // Positive — net-positive similar-title history or a high overall score.
+  if (input.affinityScore >= 0.65 || input.guardrailScore >= 80) return "love"
   return "good"
 }
 
@@ -351,11 +361,14 @@ export async function GET(
       )
     }
 
-    // Fetch positive reactions for all family members (for affinity scoring)
-    const positiveReactions = await prisma.mediaReaction.findMany({
+    // Fetch every valenced reaction for the family (signed affinity: positives
+    // pull similar titles up, dismissals/bof pull them down — the mean is the
+    // whole point of asking parents to react). Includes reactions on THIS
+    // title, which override the inferred verdict below.
+    const allReactions = await prisma.mediaReaction.findMany({
       where: {
         familyMemberId: { in: familyMembers.map(m => m.id) },
-        reaction: { in: ["LOVED", "LIKED"] },
+        reaction: { in: AFFINITY_REACTIONS as ReactionType[] },
       },
       include: {
         media: {
@@ -377,11 +390,12 @@ export async function GET(
       take: 50,
     })
 
-    // Build a map of similar media IDs -> similarity info
-    const similarMediaMap = new Map<string, { score: number; reasons: string[] }>()
+    // Build a map of similar media IDs -> similarity score (for the signed
+    // affinity mean over the member's reaction history).
+    const similarScoreMap = new Map<string, number>()
     for (const sim of similarities) {
       const otherId = sim.mediaIdA === id ? sim.mediaIdB : sim.mediaIdA
-      similarMediaMap.set(otherId, { score: sim.similarityScore, reasons: sim.reasons })
+      similarScoreMap.set(otherId, sim.similarityScore)
     }
 
     const members: FamilyFitMember[] = familyMembers.map((member) => {
@@ -392,7 +406,10 @@ export async function GET(
       const eff = resolveEffectivePrefs(member, familySettings)
 
       // --- Compute affinity from watch history ---
-      const memberReactions = positiveReactions.filter(r => r.familyMemberId === member.id)
+      const memberReactions = allReactions.filter(r => r.familyMemberId === member.id)
+      // The member's own reaction on THIS title — the strongest signal there
+      // is; it overrides any inferred verdict further down.
+      const selfReaction = memberReactions.find(r => r.mediaId === id)
       // Enough signal for a real rating: any curated preference OR any reaction
       // history. Mirrors the recommendations gate; not the strict quiz flag.
       const hasPreferences = hasActionablePreferences(member) || memberReactions.length > 0
@@ -400,50 +417,50 @@ export async function GET(
       const profileComplete = isProfileComplete(member)
       let affinity: AffinityInfo = { hasConnection: false }
 
-      // Check for direct connections via MediaSimilarity
-      let bestConnection: { title: string; reaction: string; score: number } | null = null
-      for (const reaction of memberReactions) {
-        const simInfo = similarMediaMap.get(reaction.mediaId)
-        if (simInfo && simInfo.score > (bestConnection?.score ?? 0)) {
-          bestConnection = {
-            title: reaction.media.title,
-            reaction: reaction.reaction,
-            score: simInfo.score,
-          }
-        }
-      }
+      // Signed mean over reactions on SIMILAR titles: "a adoré GTA V" et
+      // "pas intéressé par GTA IV" → un autre GTA ressort mitigé, pas
+      // "Bon choix". Falls back to positive genre history when no similar
+      // title has a reaction.
+      const signed = computeSignedAffinity(
+        memberReactions.map(r => ({ mediaId: r.mediaId, reaction: r.reaction, mediaTitle: r.media.title })),
+        similarScoreMap,
+      )
 
-      if (bestConnection) {
-        const reactionLabel = bestConnection.reaction === "LOVED" ? "adoré" : "bien aimé"
+      // 0.5 = neutral on the signed scale (cold start included).
+      let affinityScore = 0.5
+      if (signed) {
+        affinityScore = signed.score
+        const best = signed.bestPositive ?? signed.bestNegative
         affinity = {
           hasConnection: true,
-          connectedMedia: {
-            title: bestConnection.title,
-            reaction: bestConnection.reaction,
-          },
-          affinityReason: `A ${reactionLabel} ${bestConnection.title}`,
+          connectedMedia: best ? { title: best.title, reaction: best.reaction } : undefined,
+          affinityReason: signed.reason ?? undefined,
         }
-      } else if (memberReactions.length > 0) {
-        // No direct similarity, but check genre affinity from reaction history
-        const reactionGenres = new Map<string, number>()
-        for (const r of memberReactions) {
-          const weight = r.reaction === "LOVED" ? 2 : 1
-          for (const g of r.media.genres) {
-            reactionGenres.set(g.toLowerCase(), (reactionGenres.get(g.toLowerCase()) || 0) + weight)
+      } else {
+        const positiveHistory = memberReactions.filter(r => r.reaction === "LOVED" || r.reaction === "LIKED")
+        if (positiveHistory.length > 0) {
+          // No direct similarity, but check genre affinity from reaction history
+          const reactionGenres = new Map<string, number>()
+          for (const r of positiveHistory) {
+            const weight = r.reaction === "LOVED" ? 2 : 1
+            for (const g of r.media.genres) {
+              reactionGenres.set(g.toLowerCase(), (reactionGenres.get(g.toLowerCase()) || 0) + weight)
+            }
           }
-        }
-        // Count how many of the current media's genres match reaction history
-        const matchingGenres = media.genres.filter(g => reactionGenres.has(g.toLowerCase()))
-        if (matchingGenres.length >= 2 || (matchingGenres.length >= 1 && media.genres.length <= 2)) {
-          affinity = {
-            hasConnection: false,
-            genreAffinityScore: Math.min(100, Math.round((matchingGenres.length / Math.max(2, media.genres.length)) * 100)),
-            affinityReason: `Correspond à ses goûts (${matchingGenres.slice(0, 3).join(", ")})`,
+          // Count how many of the current media's genres match reaction history
+          const matchingGenres = media.genres.filter(g => reactionGenres.has(g.toLowerCase()))
+          if (matchingGenres.length >= 2 || (matchingGenres.length >= 1 && media.genres.length <= 2)) {
+            const genreAffinityScore = Math.min(100, Math.round((matchingGenres.length / Math.max(2, media.genres.length)) * 100))
+            affinity = {
+              hasConnection: false,
+              genreAffinityScore,
+              affinityReason: `Correspond à ses goûts (${matchingGenres.slice(0, 3).join(", ")})`,
+            }
+            // Mild lift above neutral (max 0.75) — weaker than a direct link.
+            affinityScore = 0.5 + (genreAffinityScore / 100) * 0.25
           }
         }
       }
-
-      const affinityScore = affinity.hasConnection ? 1.0 : (affinity.genreAffinityScore ? affinity.genreAffinityScore / 100 * 0.5 : 0)
 
       // --- Weighted score components ---
       const ageScore = computeAgeScore(media.expertAgeRec, memberAge, media.tmdbRating, media.genres, media.topics)
@@ -531,7 +548,6 @@ export async function GET(
           avoidScore: null,
           affinityScore,
         })
-        const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
         const detail = applyDetailPagePresentation({
           level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
           reason,
@@ -695,7 +711,7 @@ export async function GET(
       if (genreScore >= 0.7) prefReasons.push("Correspond à ses genres préférés")
       if (interestsScore >= 0.8) prefReasons.push("Correspond à ses centres d'intérêt")
       if (affinity.hasConnection && affinity.affinityReason) prefReasons.push(affinity.affinityReason)
-      const prefPillar = preferencePillarFromSignals({
+      let prefPillar = preferencePillarFromSignals({
         hasPreferences: true,
         guardrailScore: guardrails.score,
         guardrailLevel: guardrails.level,
@@ -704,7 +720,17 @@ export async function GET(
         avoidScore,
         affinityScore,
       })
-      const preferenceVerdict = preferenceVerdictFromPillar(prefPillar, prefReasons)
+      // The member's own reaction on THIS title beats every inference — a
+      // parent who just clicked "Pas intéressé" must see it reflected, not
+      // "Bon choix" (trust). Symmetrically, an explicit Adoré/Bien aimé wins.
+      if (selfReaction && (DISMISSAL_REACTIONS as readonly string[]).includes(selfReaction.reaction)) {
+        prefPillar = "avoid"
+        prefReasons.length = 0
+        prefReasons.push("Vous avez indiqué : pas intéressé")
+      } else if (selfReaction && (selfReaction.reaction === "LOVED" || selfReaction.reaction === "LIKED")) {
+        prefPillar = "love"
+        prefReasons.unshift(selfReaction.reaction === "LOVED" ? "A adoré ce titre" : "A bien aimé ce titre")
+      }
       const detail = applyDetailPagePresentation({
         level: legacyLevelFromPillars(ageVerdict.pillar, prefPillar),
         reason,
@@ -742,14 +768,14 @@ export async function GET(
       { status: isFamilyWarning ? "family_warning" : "ok", members },
       {
         headers: {
-          // Family composition rarely changes minute-to-minute. Bump the
-          // cache so repeat visits during a session hit the browser cache
-          // instead of recomputing the full fit pipeline. `private` keeps
-          // it per-user (different households never share a cache entry).
-          // `stale-while-revalidate` lets us serve instantly while
-          // refreshing in the background.
+          // `private` keeps it per-user (different households never share a
+          // cache entry); `stale-while-revalidate` serves instantly while
+          // refreshing in the background. max-age is SHORT on purpose: the
+          // verdict now reflects the member's own reactions, and a parent who
+          // just clicked "Pas intéressé" must not stare at a cached "Bon
+          // choix" for 5 minutes (trust). 60s covers the within-page churn.
           "Cache-Control":
-            "private, max-age=300, stale-while-revalidate=600",
+            "private, max-age=60, stale-while-revalidate=300",
         },
       }
     )
