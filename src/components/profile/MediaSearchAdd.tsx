@@ -154,9 +154,9 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
   return (
     <div ref={containerRef} className="relative">
       <div className="relative flex items-center">
-        <Search className="absolute left-3 h-4 w-4 text-gray-400 pointer-events-none" />
+        <Search className="absolute left-3 h-4 w-4 text-gray-400 dark:text-neutral-500 pointer-events-none" />
         {loading && (
-          <Loader2 className="absolute right-3 h-4 w-4 text-gray-400 animate-spin" />
+          <Loader2 className="absolute right-3 h-4 w-4 text-gray-400 dark:text-neutral-500 animate-spin" />
         )}
         <input
           ref={inputRef}
@@ -171,13 +171,13 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
             }
           }}
           autoComplete="off"
-          className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+          className="w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-white/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
         />
       </div>
 
       {/* Dropdown */}
       {showDropdown && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[var(--color-card)] rounded-xl shadow-lg border border-gray-200 dark:border-white/10 z-50 overflow-hidden">
           <ul className="py-1 max-h-72 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
@@ -191,7 +191,7 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
                     disabled={isExisting || isAdding}
                     className={cn(
                       "w-full px-3 py-2.5 flex items-center gap-3 text-left transition-colors",
-                      index === selectedIndex ? "bg-violet-50" : "hover:bg-gray-50",
+                      index === selectedIndex ? "bg-violet-50 dark:bg-violet-500/15" : "hover:bg-gray-50 dark:hover:bg-white/5",
                       isExisting ? "opacity-60" : ""
                     )}
                     onClick={() => handleAdd(suggestion)}
@@ -208,20 +208,20 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
                         className="w-8 h-12 object-cover rounded flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                        <Icon className="h-4 w-4 text-gray-400" />
+                      <div className="w-8 h-12 bg-gray-100 dark:bg-white/10 rounded flex items-center justify-center flex-shrink-0">
+                        <Icon className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                       </div>
                     )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{suggestion.title}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-[var(--color-ink)] truncate">{suggestion.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                        <span className="text-xs text-gray-500 dark:text-neutral-400 bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded">
                           {typeLabels[suggestion.type]}
                         </span>
                         {suggestion.year && (
-                          <span className="text-xs text-gray-400">{suggestion.year}</span>
+                          <span className="text-xs text-gray-400 dark:text-neutral-500">{suggestion.year}</span>
                         )}
                       </div>
                     </div>
@@ -229,11 +229,11 @@ export function MediaSearchAdd({ memberId, memberName, existingMediaIds, onAdded
                     {/* Action indicator */}
                     <div className="flex-shrink-0">
                       {isAdding ? (
-                        <Loader2 className="h-4 w-4 text-violet-500 animate-spin" />
+                        <Loader2 className="h-4 w-4 text-violet-500 dark:text-violet-300 animate-spin" />
                       ) : isExisting ? (
                         <Check className="h-4 w-4 text-emerald-500" />
                       ) : (
-                        <div className="flex items-center gap-1 text-violet-600">
+                        <div className="flex items-center gap-1 text-violet-600 dark:text-violet-300">
                           <Heart className="h-3.5 w-3.5" />
                           <Plus className="h-3 w-3" />
                         </div>

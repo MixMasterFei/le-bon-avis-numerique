@@ -225,7 +225,7 @@ export function UserMetricsModal({
             </TooltipProvider>
 
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+              <div className="p-3 bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300 rounded-lg text-sm">
                 {error}
               </div>
             )}

@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Drive Tailwind's `dark:` variant off the site's own theme toggle
+   ([data-theme="dark"] on <html>, set by the blocking script in layout.tsx)
+   instead of the browser's prefers-color-scheme. Without this, `dark:`
+   utilities silently followed the OS and ignored the Soirée switch, so
+   components styled with hardcoded light classes (bg-white, bg-indigo-50…)
+   stayed light on the dark page. Now `dark:bg-…` follows the toggle. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
   /* Canonical Aperçu palette — site-wide design system.
      Values are re-declared below via `:root` so dark mode can swap
@@ -145,6 +153,32 @@ html[data-v2-type="on"] .font-heading {
 :root[data-theme] * {
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Dark-mode fix for shadcn/ui primitives. `@theme inline` (top of file)
+   bakes the LIGHT token values straight into the utility classes
+   (.bg-card, .bg-background, .border-input …), so — unlike the site's
+   var()-based components — they never followed the [data-theme] swap. That's
+   why every shadcn Card / Input / Tab / Dialog in the profile + member
+   corner + rating modal stayed white on the dark page. These unlayered rules
+   re-point the baked utilities at the live (already-dark) tokens; being
+   unlayered they win over Tailwind's utilities layer (same mechanism as the
+   font overrides above) and only match under the dark toggle, so light mode
+   is byte-for-byte unchanged. One place, fixes every shadcn surface. */
+:root[data-theme="dark"] .bg-card { background-color: var(--color-card); }
+:root[data-theme="dark"] .bg-background { background-color: var(--color-bg); }
+:root[data-theme="dark"] .bg-popover { background-color: var(--color-card); }
+:root[data-theme="dark"] .bg-muted { background-color: var(--color-bg2); }
+:root[data-theme="dark"] .bg-secondary { background-color: var(--color-bg2); }
+:root[data-theme="dark"] .text-foreground,
+:root[data-theme="dark"] .text-card-foreground,
+:root[data-theme="dark"] .text-popover-foreground,
+:root[data-theme="dark"] .text-secondary-foreground { color: var(--color-ink); }
+:root[data-theme="dark"] .text-muted-foreground { color: var(--color-ink2); }
+:root[data-theme="dark"] .border-input { border-color: var(--color-line2); }
+:root[data-theme="dark"] .border-border { border-color: var(--color-line); }
+/* shadcn Card uses a bare `border` (no color utility) — re-point it too. */
+:root[data-theme="dark"] .rounded-xl.border.bg-card { border-color: var(--color-line2); }
 
 /* ─────────────────────────────────────────────────────────────────────
    V3 media fiche (dashboard) palette. The fiche is styled with inline

@@ -92,10 +92,10 @@ export function FamilyRecommendationsSection() {
   // Still loading
   if (loading) {
     return (
-      <section className="rounded-2xl bg-white border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-50">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Sparkles className="h-5 w-5 text-violet-500" />
+      <section className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-[var(--color-ink)]">
+            <Sparkles className="h-5 w-5 text-violet-500 dark:text-violet-300" />
             Recommandations personnalisées
           </h2>
         </div>
@@ -109,18 +109,18 @@ export function FamilyRecommendationsSection() {
   // No family members yet
   if (members.length === 0) {
     return (
-      <section className="rounded-2xl bg-white border border-gray-100 overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-50">
-          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-            <Sparkles className="h-5 w-5 text-violet-500" />
+      <section className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-[var(--color-ink)]">
+            <Sparkles className="h-5 w-5 text-violet-500 dark:text-violet-300" />
             Recommandations personnalisées
           </h2>
         </div>
         <div className="text-center py-12 px-6">
-          <div className="inline-flex p-3 bg-violet-50 rounded-2xl mb-4">
-            <Users className="h-6 w-6 text-violet-500" />
+          <div className="inline-flex p-3 bg-violet-50 dark:bg-violet-500/15 rounded-2xl mb-4">
+            <Users className="h-6 w-6 text-violet-500 dark:text-violet-300" />
           </div>
-          <p className="text-gray-500 mb-5 max-w-sm mx-auto">
+          <p className="text-gray-500 dark:text-neutral-400 mb-5 max-w-sm mx-auto">
             Ajoutez les membres de votre famille pour obtenir des recommandations personnalisées.
           </p>
           <Button asChild className="rounded-full">
@@ -135,17 +135,17 @@ export function FamilyRecommendationsSection() {
   }
 
   return (
-    <section className="rounded-2xl bg-white border border-gray-100 overflow-hidden">
+    <section className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-50 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900">
-          <Sparkles className="h-5 w-5 text-violet-500" />
+      <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-[var(--color-ink)]">
+          <Sparkles className="h-5 w-5 text-violet-500 dark:text-violet-300" />
           Recommandations personnalisées
         </h2>
         {hasAnyReactions && (
           <Link
             href="/recommandations"
-            className="text-sm font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1 transition-colors"
+            className="text-sm font-medium text-violet-600 dark:text-violet-300 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 transition-colors"
           >
             Voir tout <ChevronRight className="h-4 w-4" />
           </Link>
@@ -165,7 +165,7 @@ export function FamilyRecommendationsSection() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all text-sm font-medium ${
                   isSelected
                     ? "bg-violet-600 text-white shadow-md shadow-violet-200"
-                    : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    : "bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10"
                 }`}
               >
                 <MemberAvatar
@@ -178,7 +178,7 @@ export function FamilyRecommendationsSection() {
                 />
                 <span>{member.name}</span>
                 {reactionCount > 0 && (
-                  <span className={`text-xs ${isSelected ? "text-violet-200" : "text-gray-400"}`}>
+                  <span className={`text-xs ${isSelected ? "text-violet-200 dark:text-violet-300" : "text-gray-400 dark:text-neutral-500"}`}>
                     ({reactionCount})
                   </span>
                 )}
@@ -196,10 +196,10 @@ export function FamilyRecommendationsSection() {
           <>
             {/* Based on info */}
             {recommendations.basedOn && (
-              <div className="mb-5 flex flex-wrap gap-2 items-center text-sm text-gray-500">
+              <div className="mb-5 flex flex-wrap gap-2 items-center text-sm text-gray-500 dark:text-neutral-400">
                 <span>Basé sur {recommendations.basedOn.lovedCount + recommendations.basedOn.likedCount} avis :</span>
                 {recommendations.basedOn.genres.slice(0, 3).map((genre) => (
-                  <Badge key={genre} variant="secondary" className="bg-violet-50 text-violet-700 border-0">
+                  <Badge key={genre} variant="secondary" className="bg-violet-50 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border-0">
                     {genre}
                   </Badge>
                 ))}
@@ -215,7 +215,7 @@ export function FamilyRecommendationsSection() {
                   className="group"
                 >
                   <div className="overflow-hidden rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="relative aspect-[2/3] bg-gray-100">
+                    <div className="relative aspect-[2/3] bg-gray-100 dark:bg-white/10">
                       {media.posterUrl ? (
                         <Image
                           src={media.posterUrl}
@@ -226,7 +226,7 @@ export function FamilyRecommendationsSection() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Film className="h-6 w-6 text-gray-300" />
+                          <Film className="h-6 w-6 text-gray-300 dark:text-neutral-600" />
                         </div>
                       )}
                       {media.expertAgeRec !== null && (
@@ -236,7 +236,7 @@ export function FamilyRecommendationsSection() {
                       )}
                     </div>
                   </div>
-                  <h3 className="mt-1.5 text-xs font-medium line-clamp-1 text-gray-700 group-hover:text-violet-600 transition-colors">
+                  <h3 className="mt-1.5 text-xs font-medium line-clamp-1 text-gray-700 dark:text-neutral-300 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
                     {media.title}
                   </h3>
                 </Link>
@@ -244,7 +244,7 @@ export function FamilyRecommendationsSection() {
             </div>
           </>
         ) : (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-gray-500 dark:text-neutral-400">
             <Film className="h-8 w-8 mx-auto mb-3 opacity-30" />
             <p className="font-medium">{recommendations?.message || "Aucune recommandation disponible"}</p>
             <Button asChild variant="outline" className="mt-4 rounded-full">

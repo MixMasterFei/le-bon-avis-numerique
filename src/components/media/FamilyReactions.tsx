@@ -75,14 +75,14 @@ const REACTIONS: {
   selectedBg: string
   ringColor: string
 }[] = [
-  { value: "WATCHED", label: "Déjà vu", icon: Eye, color: "text-indigo-500", bgColor: "bg-indigo-50 hover:bg-indigo-100", selectedBg: "bg-indigo-100", ringColor: "ring-indigo-400" },
-  { value: "LOVED", label: "Adoré", icon: Heart, color: "text-red-500", bgColor: "bg-red-50 hover:bg-red-100", selectedBg: "bg-red-100", ringColor: "ring-red-400" },
-  { value: "LIKED", label: "Bien aimé", icon: ThumbsUp, color: "text-green-500", bgColor: "bg-green-50 hover:bg-green-100", selectedBg: "bg-green-100", ringColor: "ring-green-400" },
-  { value: "OK", label: "Bof", icon: Meh, color: "text-yellow-500", bgColor: "bg-yellow-50 hover:bg-yellow-100", selectedBg: "bg-yellow-100", ringColor: "ring-yellow-400" },
-  { value: "SCARED", label: "A eu peur", icon: Ghost, color: "text-purple-500", bgColor: "bg-purple-50 hover:bg-purple-100", selectedBg: "bg-purple-100", ringColor: "ring-purple-400" },
-  { value: "BORED", label: "S'est ennuyé", icon: Frown, color: "text-gray-500", bgColor: "bg-gray-50 hover:bg-gray-100", selectedBg: "bg-gray-200", ringColor: "ring-gray-400" },
-  { value: "TOO_YOUNG", label: "Trop jeune", icon: Baby, color: "text-blue-500", bgColor: "bg-blue-50 hover:bg-blue-100", selectedBg: "bg-blue-100", ringColor: "ring-blue-400" },
-  { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500", bgColor: "bg-orange-50 hover:bg-orange-100", selectedBg: "bg-orange-100", ringColor: "ring-orange-400" },
+  { value: "WATCHED", label: "Déjà vu", icon: Eye, color: "text-indigo-500 dark:text-indigo-300", bgColor: "bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-400/10 dark:hover:bg-indigo-400/20", selectedBg: "bg-indigo-100 dark:bg-indigo-400/25", ringColor: "ring-indigo-400" },
+  { value: "LOVED", label: "Adoré", icon: Heart, color: "text-red-500 dark:text-red-300", bgColor: "bg-red-50 hover:bg-red-100 dark:bg-red-400/10 dark:hover:bg-red-400/20", selectedBg: "bg-red-100 dark:bg-red-400/25", ringColor: "ring-red-400" },
+  { value: "LIKED", label: "Bien aimé", icon: ThumbsUp, color: "text-green-500 dark:text-green-300", bgColor: "bg-green-50 hover:bg-green-100 dark:bg-green-400/10 dark:hover:bg-green-400/20", selectedBg: "bg-green-100 dark:bg-green-400/25", ringColor: "ring-green-400" },
+  { value: "OK", label: "Bof", icon: Meh, color: "text-yellow-500 dark:text-yellow-300", bgColor: "bg-yellow-50 hover:bg-yellow-100 dark:bg-yellow-400/10 dark:hover:bg-yellow-400/20", selectedBg: "bg-yellow-100 dark:bg-yellow-400/25", ringColor: "ring-yellow-400" },
+  { value: "SCARED", label: "A eu peur", icon: Ghost, color: "text-purple-500 dark:text-purple-300", bgColor: "bg-purple-50 hover:bg-purple-100 dark:bg-purple-400/10 dark:hover:bg-purple-400/20", selectedBg: "bg-purple-100 dark:bg-purple-400/25", ringColor: "ring-purple-400" },
+  { value: "BORED", label: "S'est ennuyé", icon: Frown, color: "text-gray-500 dark:text-gray-300", bgColor: "bg-gray-50 hover:bg-gray-100 dark:bg-white/5 dark:hover:bg-white/10", selectedBg: "bg-gray-200 dark:bg-white/20", ringColor: "ring-gray-400" },
+  { value: "TOO_YOUNG", label: "Trop jeune", icon: Baby, color: "text-blue-500 dark:text-blue-300", bgColor: "bg-blue-50 hover:bg-blue-100 dark:bg-blue-400/10 dark:hover:bg-blue-400/20", selectedBg: "bg-blue-100 dark:bg-blue-400/25", ringColor: "ring-blue-400" },
+  { value: "TOO_OLD", label: "Pas intéressé", icon: UserX, color: "text-orange-500 dark:text-orange-300", bgColor: "bg-orange-50 hover:bg-orange-100 dark:bg-orange-400/10 dark:hover:bg-orange-400/20", selectedBg: "bg-orange-100 dark:bg-orange-400/25", ringColor: "ring-orange-400" },
 ]
 
 export function FamilyReactions({ mediaId, mediaType, embedded = false }: FamilyReactionsProps) {
@@ -303,7 +303,7 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
               return (
                 <div
                   key={member.id}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${reactionInfo?.bgColor || "bg-gray-50"}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${reactionInfo?.bgColor || "bg-gray-50 dark:bg-white/5"}`}
                 >
                   <MemberAvatar
                     avatarStyle={member.avatarStyle ?? null}
@@ -358,8 +358,8 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
                         disabled={isLoading}
                         className={`flex items-center gap-1 px-2 py-1.5 rounded-md text-xs transition-all ${
                           isSelected
-                            ? `${reaction.selectedBg} ring-2 ring-offset-1 ${reaction.ringColor}`
-                            : "bg-gray-50 hover:bg-gray-100"
+                            ? `${reaction.selectedBg} ring-2 ring-offset-1 dark:ring-offset-transparent ${reaction.ringColor}`
+                            : "bg-gray-50 hover:bg-gray-100 dark:bg-white/[0.06] dark:hover:bg-white/[0.12]"
                         } ${isLoading ? "opacity-50" : ""}`}
                       >
                         {isLoading && saving === member.id ? (

@@ -99,7 +99,7 @@ const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType
   LIKED: { label: "Bien aimé", icon: ThumbsUp, color: "text-green-500" },
   OK: { label: "Bof", icon: Meh, color: "text-yellow-500" },
   SCARED: { label: "A eu peur", icon: Ghost, color: "text-purple-500" },
-  BORED: { label: "S'est ennuyé", icon: Frown, color: "text-gray-500" },
+  BORED: { label: "S'est ennuyé", icon: Frown, color: "text-gray-500 dark:text-neutral-400" },
   TOO_YOUNG: { label: "Trop jeune", icon: Baby, color: "text-blue-500" },
   TOO_OLD: { label: "Pas intéressé", icon: UserX, color: "text-orange-500" },
 }
@@ -218,7 +218,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
   if (error || !member) {
     return (
       <div className="text-center py-16">
-        <p className="text-gray-500 mb-4">{error || "Erreur inconnue"}</p>
+        <p className="text-gray-500 dark:text-neutral-400 mb-4">{error || "Erreur inconnue"}</p>
         <Button asChild variant="outline">
           <Link href="/profil">Retour au profil</Link>
         </Button>
@@ -447,11 +447,11 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           size={56}
         />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-[var(--color-ink)]">
             Le coin de {member.name}
           </h1>
           {memberAge != null && (
-            <p className="text-sm text-gray-500">{memberAge}</p>
+            <p className="text-sm text-gray-500 dark:text-neutral-400">{memberAge}</p>
           )}
         </div>
       </div>
@@ -483,8 +483,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                       size={40}
                     />
                     <div>
-                      <h3 className="font-semibold text-gray-900">{member.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-semibold text-gray-900 dark:text-[var(--color-ink)]">{member.name}</h3>
+                      <p className="text-sm text-gray-500 dark:text-neutral-400">
                         {memberAge != null ? memberAge : "Âge non renseigné"}
                         {member.birthYear != null && ` (né en ${member.birthYear})`}
                       </p>
@@ -499,7 +499,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Prénom</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">Prénom</label>
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -507,7 +507,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Année de naissance</label>
+                      <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">Année de naissance</label>
                       <Input
                         type="number"
                         value={editBirthYear}
@@ -521,7 +521,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Avatar</label>
+                    <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">Avatar</label>
                     <div className="mt-2">
                       <AvatarPicker value={editAvatarValue} onChange={setEditAvatarValue} />
                     </div>
@@ -552,23 +552,23 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <BarChart3 className="h-5 w-5 mx-auto text-gray-400 mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{organicReactions.length}</p>
-                <p className="text-xs text-gray-500">Réactions</p>
+                <BarChart3 className="h-5 w-5 mx-auto text-gray-400 dark:text-neutral-500 mb-1" />
+                <p className="text-2xl font-bold text-gray-900 dark:text-[var(--color-ink)]">{organicReactions.length}</p>
+                <p className="text-xs text-gray-500 dark:text-neutral-400">Réactions</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <Heart className="h-5 w-5 mx-auto text-red-400 mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{lovedCount}</p>
-                <p className="text-xs text-gray-500">Adorés</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-[var(--color-ink)]">{lovedCount}</p>
+                <p className="text-xs text-gray-500 dark:text-neutral-400">Adorés</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <Tag className="h-5 w-5 mx-auto text-violet-400 mb-1" />
-                <p className="text-2xl font-bold text-gray-900">{member.favoriteGenres.length}</p>
-                <p className="text-xs text-gray-500">Genres</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-[var(--color-ink)]">{member.favoriteGenres.length}</p>
+                <p className="text-xs text-gray-500 dark:text-neutral-400">Genres</p>
               </CardContent>
             </Card>
             <Card>
@@ -577,17 +577,17 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 {prefsState === "complete" ? (
                   <>
                     <p className="text-sm font-bold text-emerald-600">Complété</p>
-                    <p className="text-xs text-gray-500">Quiz</p>
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">Quiz</p>
                   </>
                 ) : prefsState === "partial" ? (
                   <>
                     <p className="text-sm font-bold text-sky-600">Partiel</p>
-                    <p className="text-xs text-gray-500">Quiz</p>
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">Quiz</p>
                   </>
                 ) : (
                   <>
                     <p className="text-sm font-bold text-amber-600">À faire</p>
-                    <p className="text-xs text-gray-500">Quiz</p>
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">Quiz</p>
                   </>
                 )}
               </CardContent>
@@ -599,7 +599,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">Centres d&apos;intérêt</CardTitle>
-                {savingInterests && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+                {savingInterests && <Loader2 className="h-4 w-4 animate-spin text-gray-400 dark:text-neutral-500" />}
                 {interestsSaved && <span className="text-xs text-emerald-600 flex items-center gap-1"><Check className="h-3 w-3" /> Enregistré</span>}
               </div>
             </CardHeader>
@@ -644,7 +644,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     <Link
                       key={reaction.id}
                       href={`/media/${routeId}`}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                     >
                       {reaction.media.posterUrl ? (
                         <Image
@@ -656,13 +656,13 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                           unoptimized
                         />
                       ) : (
-                        <div className="w-8 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                          <Film className="h-4 w-4 text-gray-400" />
+                        <div className="w-8 h-12 bg-gray-100 dark:bg-white/10 rounded flex items-center justify-center flex-shrink-0">
+                          <Film className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{reaction.media.title}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-sm font-medium text-gray-900 dark:text-[var(--color-ink)] truncate">{reaction.media.title}</p>
+                        <p className="text-xs text-gray-400 dark:text-neutral-500">
                           {TYPE_LABELS[reaction.media.type] || reaction.media.type}
                         </p>
                       </div>
@@ -687,16 +687,16 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Bookmark className="h-4 w-4 text-violet-500" />
+                <Bookmark className="h-4 w-4 text-violet-500 dark:text-violet-300" />
                 Ses titres repères
               </CardTitle>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1">
                 Quelques titres adorés (et à éviter) pour affiner les recommandations.
               </p>
             </CardHeader>
             <CardContent className="space-y-5">
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400 mb-2 flex items-center gap-1.5">
                   <Heart className="h-3 w-3 text-rose-500" />
                   Adore
                 </h4>
@@ -713,7 +713,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 />
               </div>
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2 flex items-center gap-1.5">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400 mb-2 flex items-center gap-1.5">
                   <X className="h-3 w-3 text-slate-500" />
                   À éviter
                 </h4>
@@ -748,8 +748,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-medium transition-colors",
                   typeFilter === "all"
-                    ? "bg-violet-100 text-violet-700"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300"
+                    : "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-white/[0.14]"
                 )}
               >
                 Tous ({organicReactions.length})
@@ -763,8 +763,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     className={cn(
                       "px-3 py-1 rounded-full text-xs font-medium transition-colors",
                       typeFilter === type
-                        ? "bg-violet-100 text-violet-700"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        ? "bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300"
+                        : "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-white/[0.14]"
                     )}
                   >
                     {TYPE_LABELS[type] || type}s ({count})
@@ -785,7 +785,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 return (
                   <div key={reaction.id} className="group relative">
                     <Link href={`/media/${routeId}`}>
-                      <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 relative">
+                      <div className="aspect-[2/3] rounded-xl overflow-hidden bg-gray-100 dark:bg-white/10 relative">
                         {reaction.media.posterUrl ? (
                           <Image
                             src={reaction.media.posterUrl}
@@ -796,7 +796,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Film className="h-8 w-8 text-gray-300" />
+                            <Film className="h-8 w-8 text-gray-300 dark:text-neutral-600" />
                           </div>
                         )}
 
@@ -819,24 +819,24 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                         e.stopPropagation()
                         removeReaction(reaction.media.id)
                       }}
-                      className="absolute top-2 left-2 p-1 rounded-full bg-white/90 shadow-sm text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 left-2 p-1 rounded-full bg-white/90 shadow-sm text-gray-400 dark:text-neutral-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                       title="Retirer"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
 
-                    <p className="mt-1.5 text-xs font-medium text-gray-900 line-clamp-2">{reaction.media.title}</p>
+                    <p className="mt-1.5 text-xs font-medium text-gray-900 dark:text-[var(--color-ink)] line-clamp-2">{reaction.media.title}</p>
                   </div>
                 )
               })}
             </div>
           ) : (
             <div className="text-center py-12">
-              <Heart className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">
+              <Heart className="h-10 w-10 text-gray-200 dark:text-neutral-700 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-neutral-400">
                 Aucun favori pour le moment.
               </p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-gray-400 dark:text-neutral-500 mt-1">
                 Utilisez la barre de recherche ci-dessus pour ajouter les films et séries que {member.name} a adorés !
               </p>
             </div>
@@ -857,7 +857,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                     prefsState === "complete" ? "text-emerald-600" : prefsState === "partial" ? "text-sky-600" : "text-amber-600"
                   )} />
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-[var(--color-ink)]">
                       {prefsState === "complete"
                         ? "Quiz de préférences complété"
                         : prefsState === "partial"
@@ -865,7 +865,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                           : "Quiz de préférences non complété"
                       }
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-neutral-400">
                       {prefsState === "complete"
                         ? "Les recommandations sont personnalisées"
                         : prefsState === "partial"
@@ -898,7 +898,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="h-4 w-4 text-gray-400" />
+                <Shield className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                 Sensibilité
               </CardTitle>
             </CardHeader>
@@ -915,7 +915,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Star className="h-4 w-4 text-gray-400" />
+                <Star className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                 Contenu positif
               </CardTitle>
             </CardHeader>
@@ -930,14 +930,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Film className="h-4 w-4 text-gray-400" />
+                <Film className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                 Genres
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {member.favoriteGenres.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">Préférés</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-neutral-400 mb-1.5">Préférés</p>
                   <div className="flex flex-wrap gap-1.5">
                     {member.favoriteGenres.map((g) => (
                       <Badge key={g} className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">{g}</Badge>
@@ -947,7 +947,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               )}
               {member.dislikedGenres.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1.5">À éviter</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-neutral-400 mb-1.5">À éviter</p>
                   <div className="flex flex-wrap gap-1.5">
                     {member.dislikedGenres.map((g) => (
                       <Badge key={g} className="bg-red-100 text-red-700 hover:bg-red-100">{g}</Badge>
@@ -956,7 +956,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                 </div>
               )}
               {member.favoriteGenres.length === 0 && member.dislikedGenres.length === 0 && (
-                <p className="text-sm text-gray-400">Aucun genre défini. Complétez le quiz pour personnaliser.</p>
+                <p className="text-sm text-gray-400 dark:text-neutral-500">Aucun genre défini. Complétez le quiz pour personnaliser.</p>
               )}
             </CardContent>
           </Card>
@@ -965,7 +965,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-gray-400" />
+                <AlertTriangle className="h-4 w-4 text-gray-400 dark:text-neutral-500" />
                 Sujets à éviter
               </CardTitle>
             </CardHeader>
@@ -977,7 +977,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">Aucun sujet à éviter défini.</p>
+                <p className="text-sm text-gray-400 dark:text-neutral-500">Aucun sujet à éviter défini.</p>
               )}
             </CardContent>
           </Card>
@@ -995,7 +995,7 @@ function SensitivityRow({ label, value }: { label: string; value: number }) {
   const colors = ["bg-emerald-200", "bg-amber-200", "bg-orange-200", "bg-red-200"]
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-neutral-300">{label}</span>
       <div className="flex items-center gap-2">
         <div className="flex gap-0.5">
           {[0, 1, 2, 3].map((i) => (
@@ -1003,22 +1003,22 @@ function SensitivityRow({ label, value }: { label: string; value: number }) {
               key={i}
               className={cn(
                 "w-4 h-2 rounded-full",
-                i <= value ? colors[value] : "bg-gray-200"
+                i <= value ? colors[value] : "bg-gray-200 dark:bg-white/[0.14]"
               )}
             />
           ))}
         </div>
-        <span className="text-xs text-gray-500 w-28 text-right">{SENSITIVITY_LABELS[value]}</span>
+        <span className="text-xs text-gray-500 dark:text-neutral-400 w-28 text-right">{SENSITIVITY_LABELS[value]}</span>
       </div>
     </div>
   )
 }
 
 function PreferenceRow({ label, value }: { label: string; value: number }) {
-  const colors = ["bg-gray-200", "bg-blue-200", "bg-violet-200", "bg-violet-400"]
+  const colors = ["bg-gray-200 dark:bg-white/[0.14]", "bg-blue-200", "bg-violet-200", "bg-violet-400"]
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-gray-700 dark:text-neutral-300">{label}</span>
       <div className="flex items-center gap-2">
         <div className="flex gap-0.5">
           {[0, 1, 2, 3].map((i) => (
@@ -1026,12 +1026,12 @@ function PreferenceRow({ label, value }: { label: string; value: number }) {
               key={i}
               className={cn(
                 "w-4 h-2 rounded-full",
-                i <= value ? colors[value] : "bg-gray-200"
+                i <= value ? colors[value] : "bg-gray-200 dark:bg-white/[0.14]"
               )}
             />
           ))}
         </div>
-        <span className="text-xs text-gray-500 w-28 text-right">{PREFERENCE_LABELS[value]}</span>
+        <span className="text-xs text-gray-500 dark:text-neutral-400 w-28 text-right">{PREFERENCE_LABELS[value]}</span>
       </div>
     </div>
   )
@@ -1096,29 +1096,29 @@ function BehavioralProfilePanel({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-violet-500" />
+          <Sparkles className="h-4 w-4 text-violet-500 dark:text-violet-300" />
           Comment {memberName} a évolué
         </CardTitle>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1">
           Profil affiné par {vector.evidenceCount} réaction{vector.evidenceCount > 1 ? "s" : ""} marquante{vector.evidenceCount > 1 ? "s" : ""}.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {top.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400 mb-2">
               Préférences apprises
             </h4>
             <ul className="space-y-1.5">
               {top.map((pref) => (
                 <li key={`${pref.axis}-${pref.key}`} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[10px] uppercase tracking-wide text-gray-400 w-14 flex-shrink-0">
+                    <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-neutral-500 w-14 flex-shrink-0">
                       {AXIS_LABELS[pref.axis]}
                     </span>
-                    <span className="text-sm text-gray-800 truncate capitalize">{pref.key}</span>
+                    <span className="text-sm text-gray-800 dark:text-neutral-200 truncate capitalize">{pref.key}</span>
                   </div>
-                  <span className="text-xs text-violet-600 font-medium flex-shrink-0">
+                  <span className="text-xs text-violet-600 dark:text-violet-300 font-medium flex-shrink-0">
                     +{pref.weight.toFixed(1)}
                   </span>
                 </li>
@@ -1129,20 +1129,20 @@ function BehavioralProfilePanel({
 
         {tolDiff.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400 mb-2">
               Tolérances ajustées
             </h4>
             <ul className="space-y-1.5">
               {tolDiff.map((d) => (
                 <li key={d.axis} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-gray-700">{SENSITIVITY_AXIS_LABELS[d.axis] ?? d.axis}</span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-gray-700 dark:text-neutral-300">{SENSITIVITY_AXIS_LABELS[d.axis] ?? d.axis}</span>
+                  <span className="text-xs text-gray-500 dark:text-neutral-400">
                     Annoncé <span className="font-medium">{d.stated}</span> → effectif <span className="font-medium text-emerald-600">{d.effective}</span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="text-[11px] text-gray-400 italic mt-2">
+            <p className="text-[11px] text-gray-400 dark:text-neutral-500 italic mt-2">
               Les réactions de {memberName} ont assoupli ces seuils d&apos;une étape — toujours dans la limite de ce que vous avez déclaré.
             </p>
           </div>

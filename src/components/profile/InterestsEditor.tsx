@@ -55,7 +55,7 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
         {interests.map((interest) => (
           <span
             key={interest}
-            className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-800 text-sm rounded-full"
+            className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-100 dark:bg-violet-500/20 text-violet-800 text-sm rounded-full"
           >
             {interest}
             <button
@@ -82,7 +82,7 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
             onFocus={() => setShowSuggestions(true)}
             onKeyDown={handleKeyDown}
             placeholder={`Qu'est-ce que ${memberName} aime ?`}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-white/15 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             disabled={interests.length >= 20}
           />
           <button
@@ -96,12 +96,12 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
 
         {/* Suggestions dropdown */}
         {showSuggestions && filteredSuggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          <div className="absolute z-10 w-full mt-1 bg-white dark:bg-[var(--color-card)] border border-gray-200 dark:border-white/10 rounded-lg shadow-lg max-h-48 overflow-y-auto">
             {filteredSuggestions.slice(0, 8).map((suggestion) => (
               <button
                 key={suggestion}
                 onClick={() => handleAdd(suggestion)}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-white/10 first:rounded-t-lg last:rounded-b-lg"
               >
                 {suggestion}
               </button>
@@ -113,13 +113,13 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
       {/* Quick add buttons when empty */}
       {interests.length === 0 && (
         <div className="space-y-1">
-          <p className="text-xs text-gray-500">Suggestions :</p>
+          <p className="text-xs text-gray-500 dark:text-neutral-400">Suggestions :</p>
           <div className="flex flex-wrap gap-1">
             {SUGGESTED_INTERESTS.slice(0, 8).map((suggestion) => (
               <button
                 key={suggestion}
                 onClick={() => handleAdd(suggestion)}
-                className="px-2 py-0.5 text-xs border border-violet-200 text-violet-600 rounded-full hover:bg-violet-50"
+                className="px-2 py-0.5 text-xs border border-violet-200 text-violet-600 dark:text-violet-300 rounded-full hover:bg-violet-50 dark:hover:bg-violet-500/15"
               >
                 + {suggestion}
               </button>
@@ -129,7 +129,7 @@ export function InterestsEditor({ interests, onChange, memberName, className }: 
       )}
 
       {interests.length >= 20 && (
-        <p className="text-xs text-gray-400">Maximum de 20 centres d&apos;intérêt atteint.</p>
+        <p className="text-xs text-gray-400 dark:text-neutral-500">Maximum de 20 centres d&apos;intérêt atteint.</p>
       )}
     </div>
   )

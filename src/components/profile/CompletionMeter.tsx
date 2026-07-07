@@ -24,7 +24,7 @@ export function CompletionMeter({ member, reactionCount, compact, className }: C
     return (
       <div className={cn("space-y-1.5", className)}>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">Profil</span>
+          <span className="text-xs text-gray-500 dark:text-neutral-400">Profil</span>
           <span
             className={cn(
               "text-xs font-bold",
@@ -42,7 +42,7 @@ export function CompletionMeter({ member, reactionCount, compact, className }: C
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">Profil complété</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-neutral-300">Profil complété</span>
         <span
           className={cn(
             "text-sm font-bold",
@@ -57,11 +57,11 @@ export function CompletionMeter({ member, reactionCount, compact, className }: C
 
       {missing.length > 0 && (
         <div className="space-y-1.5 pt-1">
-          <p className="text-xs font-medium text-gray-500">Prochaines étapes :</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-neutral-400">Prochaines étapes :</p>
           <ul className="space-y-1">
             {missing.slice(0, 3).map((item) => (
-              <li key={item.label} className="flex items-center gap-2 text-xs text-gray-500">
-                <Circle className="h-3 w-3 flex-shrink-0 text-gray-300" />
+              <li key={item.label} className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400">
+                <Circle className="h-3 w-3 flex-shrink-0 text-gray-300 dark:text-neutral-600" />
                 {item.label}
               </li>
             ))}
