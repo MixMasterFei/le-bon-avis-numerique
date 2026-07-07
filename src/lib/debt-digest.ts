@@ -181,6 +181,27 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   const unenrichedByTypeScoped = kpis.catalogUnenrichedByType.filter((r) => r.type !== "MANGA")
   const catalogUnenrichedScoped = unenrichedByTypeScoped.reduce((s, r) => s + r.count, 0)
 
+  // ── Content-safety net ──────────────────────────────────────────────
+  // The import guard (src/lib/adult-content-filter) keeps hentai/eroge/porn
+  // out at the source, but scan the live catalogue too so anything that ever
+  // slips past surfaces here instead of needing a manual audit. Expected: 0.
+  const adultWhere = {
+    OR: [
+      { genres: { hasSome: ["Hentai", "Ecchi"] } },
+      { title: { contains: "hentai", mode: "insensitive" as const } },
+      { title: { contains: "eroge", mode: "insensitive" as const } },
+      { synopsisFr: { contains: "sexuellement explicite", mode: "insensitive" as const } },
+      { synopsisFr: { contains: "pornographique", mode: "insensitive" as const } },
+    ],
+  }
+  const adultFlagged = await prisma.mediaItem.findMany({
+    where: adultWhere,
+    select: { title: true, type: true, expertAgeRec: true },
+    take: 12,
+    orderBy: { createdAt: "desc" },
+  }).catch(() => [] as { title: string; type: string; expertAgeRec: number | null }[])
+  const adultFlaggedCount = adultFlagged.length
+
   // Only tasks with a known cadence get a health verdict; anything else
   // (admin-triggered maintenance like news-rebuild / streaming-cache) is
   // listed for context but never flagged "stale".
@@ -207,6 +228,7 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Fiches sans affiche : ${missingPoster} · sans âge conseillé (films/séries) : ${missingAgeRecVideo}`)
   L.push(`- Fiches qualité < 30 : ${lowQuality} · non revérifiées > 90j : ${staleVerified}`)
   L.push(`- File éditoriale en attente : ${actionQueueTotal}`)
+  L.push(`- Contenu adulte détecté (doit rester 0) : ${adultFlaggedCount}${adultFlaggedCount > 0 ? " ⚠️" : ""}`)
   L.push("")
 
   L.push(`## Jobs automatiques (${cronVerdicts.length})`, "")
@@ -238,6 +260,15 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Non revérifiées depuis > 90 jours : ${staleVerified}`)
   L.push(`- Enrichies mais sans topics (jeunesse, hors titres 14+) : ${noTopics}`)
   L.push("")
+
+  if (adultFlaggedCount > 0) {
+    L.push("## ⚠️ Contenu adulte à retirer", "")
+    L.push(`Le garde-fou d'import laisse normalement 0 — ${adultFlaggedCount} fiche(s) à vérifier/supprimer :`)
+    for (const it of adultFlagged) {
+      L.push(`- [${it.type} ${it.expertAgeRec ?? "?"}a] ${it.title}`)
+    }
+    L.push("")
+  }
 
   L.push("## Qualité des notations (confiance du site)", "")
   L.push(`- ⚠ Jeunesse (≤8) avec un axe sensibilité ≥3 — devrait être 0 : ${ratingIncoherentYoung}`)
@@ -304,6 +335,9 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   const agentTodo: string[] = []
   if (invariantFailures.length > 0) {
     agentTodo.push(`RÉGRESSION attentes : ${invariantFailures.map((r) => r.id).join(", ")} — corriger la constante ou le test (src/lib/expectations.ts) après décision.`)
+  }
+  if (adultFlaggedCount > 0) {
+    agentTodo.push(`URGENT contenu adulte : ${adultFlaggedCount} fiche(s) hentai/eroge/porno ont passé le garde-fou — vérifier et supprimer (cf. section dédiée), puis renforcer src/lib/adult-content-filter.`)
   }
   if (cronProblems > 0) {
     agentTodo.push("Diagnostiquer chaque job marqué RETARD/ERREUR/JAMAIS ci-dessus (cause racine, pas seulement re-lancer).")

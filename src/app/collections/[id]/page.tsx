@@ -7,6 +7,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { getCollectionWithItems } from "@/lib/collections"
 import { COLLECTIONS } from "@/lib/collections-data"
+import { CollectionIcon } from "@/components/collections/CollectionIcon"
 
 // Server component (July 2026 rebuild): the Top-X list itself must be in the
 // crawled HTML. The previous client version served a spinner to Google — the
@@ -115,7 +116,12 @@ export default async function CollectionPage({
         </nav>
 
         <header className="mb-10">
-          <span className="text-4xl mb-4 block">{collection.emoji}</span>
+          <span
+            className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl"
+            style={{ background: "color-mix(in srgb, currentColor 13%, transparent)", color: p.accent }}
+          >
+            <CollectionIcon id={collection.id} className="h-7 w-7" />
+          </span>
           <h1
             className={`${serifClass} text-3xl md:text-5xl font-medium leading-[1.05] mb-3`}
             style={{ color: p.ink, letterSpacing: "-0.02em" }}

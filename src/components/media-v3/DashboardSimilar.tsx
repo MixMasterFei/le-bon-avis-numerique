@@ -2,6 +2,7 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
 import { getSimilarMedia } from "@/lib/similar-media"
+import { ageBadgeColor } from "@/components/home-v2/apercuTheme"
 
 /**
  * "Dans le même genre" rail for the V3 dashboard: a single row of poster cards
@@ -28,6 +29,9 @@ export async function DashboardSimilar({
       {items.map((item) => {
         const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null
         const age = item.expertAgeRec != null && item.expertAgeRec > 0 ? `${item.expertAgeRec}+` : null
+        // Age-band colour (young=green … 16+=pink) with near-black text, matching
+        // the "Par âge" grid — legible over any poster, unlike the old flat green.
+        const ageBadge = ageBadgeColor(item.expertAgeRec)
         return (
           <Link
             key={item.id}
@@ -43,8 +47,12 @@ export async function DashboardSimilar({
               )}
               {age && (
                 <div
-                  className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                  style={{ background: "var(--f-green)", color: "var(--f-green-deep)" }}
+                  className="absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[11px] font-bold tabular-nums"
+                  style={{
+                    background: ageBadge.bg,
+                    color: ageBadge.text,
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+                  }}
                 >
                   {age}
                 </div>

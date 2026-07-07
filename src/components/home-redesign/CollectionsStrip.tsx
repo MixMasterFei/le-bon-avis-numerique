@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Band, Wrap, Eyebrow, Em } from "./parts"
 import { COLLECTIONS, COLLECTION_HIGHLIGHTS } from "@/lib/collections-data"
+import { CollectionIcon } from "@/components/collections/CollectionIcon"
 
 /**
  * "Nos collections" band — static, crawlable links to the Top-X collection
@@ -50,7 +51,15 @@ export function CollectionsStrip() {
               className="group rounded-[18px] p-5 transition-transform duration-200 hover:-translate-y-0.5"
               style={{ background: "var(--paper)", border: "1px solid var(--line)" }}
             >
-              <span className="text-3xl">{c.emoji}</span>
+              <span
+                className="inline-flex h-12 w-12 items-center justify-center rounded-2xl"
+                style={{
+                  background: "color-mix(in srgb, var(--terra) 13%, var(--paper))",
+                  color: "var(--terra)",
+                }}
+              >
+                <CollectionIcon id={c.id} className="h-[26px] w-[26px]" />
+              </span>
               <div
                 className="mt-3 text-[16px] font-bold leading-snug"
                 style={{ fontFamily: "var(--font-bricolage)", color: "var(--ink)" }}

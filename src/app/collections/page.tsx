@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Trophy, CalendarDays } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { getCollectionSummaries, type CollectionSummary } from "@/lib/collections"
+import { CollectionIcon } from "@/components/collections/CollectionIcon"
 
 // Server component (July 2026 rebuild): the hub used to be client-rendered
 // ("use client" + useEffect fetch), so its HTML was a spinner — Google never
@@ -152,7 +153,12 @@ function CollectionCard({ collection }: { collection: CollectionSummary }) {
               className="h-full w-full flex items-center justify-center"
               style={{ background: p.bg2 }}
             >
-              <span className="text-5xl">{collection.emoji}</span>
+              <span
+                className="inline-flex h-16 w-16 items-center justify-center rounded-2xl"
+                style={{ background: "rgba(255,255,255,0.55)", color: p.accent }}
+              >
+                <CollectionIcon id={collection.id} className="h-8 w-8" />
+              </span>
             </div>
           )}
 
@@ -160,7 +166,7 @@ function CollectionCard({ collection }: { collection: CollectionSummary }) {
 
           <div className="absolute bottom-0 left-0 right-0 p-4">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-lg">{collection.emoji}</span>
+              <CollectionIcon id={collection.id} className="h-[18px] w-[18px] flex-none text-white" />
               <h3 className="font-semibold text-white text-sm leading-tight">
                 {collection.title}
               </h3>
