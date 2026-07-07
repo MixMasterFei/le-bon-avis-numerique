@@ -4,6 +4,7 @@ import { ArrowLeft, Users } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageBandCatalogWhere } from "@/lib/age-bands"
 import type { Prisma } from "@prisma/client"
 import {
   ApercuMediaCard,
@@ -67,14 +68,10 @@ interface AgePageProps {
 }
 
 async function fetchAgeRangeMedia(min: number, max: number, page: number) {
-  const where: Prisma.MediaItemWhereInput = {
-    expertAgeRec: { gte: min, lte: max },
-    posterUrl: { not: null, startsWith: "http" },
-    isEnriched: true,
-    // Films, séries and games only — mangas/books have their own sections.
-    type: { in: ["MOVIE", "TV", "GAME"] },
-    AND: [{ tmdbVoteCount: { gte: 50 } }],
-  }
+  // Shared with /api/stats/age-bands so the homepage "Par âge" counts always
+  // match what this page lists — films, séries and games only (mangas/books
+  // have their own sections). See src/lib/age-bands.ts.
+  const where: Prisma.MediaItemWhereInput = ageBandCatalogWhere(min, max)
 
   // The 8+ bands are game-heavy in the catalog, which made these pages read as
   // a games-only list (films/séries buried). Pull a quality-ordered pool, then

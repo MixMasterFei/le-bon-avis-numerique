@@ -2,51 +2,34 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { APERCU_AGE_BUCKETS, buildAgeBucketHref } from "@/components/home-v2/apercuTheme"
+import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
+import { AGE_BANDS } from "@/lib/age-bands"
 import { Band, Wrap, SectionHead, Em } from "./parts"
 
 // ── Par âge ──────────────────────────────────────────────────────────
+// Counts are EXCLUSIVE per band across films + séries + jeux (same filter as
+// the /age/[range] destination pages, via /api/stats/age-bands) — not the old
+// cumulative movies-only ceilings, which made "16+" look like the biggest
+// slice of the catalog when it is in fact the smallest.
 export function AgeGridRedesign() {
   const [counts, setCounts] = useState<Record<string, number | null>>({})
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const entries = await Promise.all(
-        APERCU_AGE_BUCKETS.map(async (b) => {
-          try {
-            const params = new URLSearchParams({
-              maxAge: String(b.maxAge),
-              requirePoster: "true",
-              language: "fr,en",
-              limit: "1",
-              page: "1",
-            })
-            for (const [k, v] of Object.entries(b.caps)) {
-              if (typeof v === "number") params.set(k, String(v))
-            }
-            const res = await fetch(`/api/db/movies?${params}`, { cache: "force-cache" })
-            if (!res.ok) return [b.key, null] as const
-            const data = await res.json()
-            const total =
-              typeof data?.pagination?.total === "number"
-                ? data.pagination.total
-                : Array.isArray(data?.movies)
-                  ? data.movies.length
-                  : null
-            return [b.key, total] as const
-          } catch {
-            return [b.key, null] as const
-          }
-        }),
-      )
-      if (cancelled) return
-      const map: Record<string, number | null> = {}
-      for (const [k, v] of entries) map[k] = v
-      setCounts(map)
+      try {
+        const res = await fetch("/api/stats/age-bands", { cache: "force-cache" })
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled && data?.counts) setCounts(data.counts)
+      } catch {
+        /* counts stay as "…" */
+      }
     })()
     return () => { cancelled = true }
   }, [])
+
+  const slugFor = (key: string) => AGE_BANDS.find((band) => band.key === key)?.slug ?? key
 
   return (
     <Band id="par-age">
@@ -63,7 +46,7 @@ export function AgeGridRedesign() {
             return (
               <Link
                 key={b.key}
-                href={buildAgeBucketHref(b)}
+                href={`/age/${slugFor(b.key)}`}
                 className="group relative flex min-h-[148px] flex-col justify-between overflow-hidden rounded-[14px] p-[22px] transition-transform hover:-translate-y-1"
                 style={{ background: b.color, color: "#1E1A15", boxShadow: "var(--shadow-sm, 0 10px 26px -22px rgba(40,28,12,.6))" }}
               >
