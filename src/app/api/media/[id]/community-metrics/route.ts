@@ -14,7 +14,12 @@ export async function GET(
       where: { mediaId: id },
     })
 
-    const cacheHeaders = { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
+    // No CDN cache: a parent must see their own vote reflected in the mean
+    // immediately — a 5-min s-maxage (previously) served a stale "hasData:false"
+    // for up to 15 min via stale-while-revalidate, so first voters saw nothing.
+    // The query is a light aggregate on an indexed column, fired only when the
+    // Communauté tab is opened.
+    const cacheHeaders = { "Cache-Control": "no-store" }
 
     if (userMetrics.length === 0) {
       return NextResponse.json(

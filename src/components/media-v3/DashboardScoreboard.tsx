@@ -10,6 +10,7 @@ type Mode = "totem" | "community"
 interface CommunityResponse {
   hasData: boolean
   averages: MetricsLike | null
+  count?: number
   sampleSize?: number
 }
 
@@ -39,14 +40,21 @@ export function DashboardScoreboard({
   const [mode, setMode] = useState<Mode>("totem")
   const [community, setCommunity] = useState<CommunityResponse | null>(null)
   const [communityRequested, setCommunityRequested] = useState(false)
+  const [justSubmitted, setJustSubmitted] = useState(false)
 
-  const loadCommunity = useCallback(() => {
-    setCommunityRequested(true)
-    fetch(`/api/media/${mediaId}/community-metrics`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setCommunity(d))
-      .catch(() => {})
-  }, [mediaId])
+  // `fresh` bypasses the community-metrics CDN cache (s-maxage=300) so a
+  // parent's just-submitted vote shows immediately instead of up to 5 min later.
+  const loadCommunity = useCallback(
+    (fresh = false) => {
+      setCommunityRequested(true)
+      const url = `/api/media/${mediaId}/community-metrics${fresh ? `?t=${Date.now()}` : ""}`
+      fetch(url, fresh ? { cache: "no-store" } : undefined)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => setCommunity(d))
+        .catch(() => {})
+    },
+    [mediaId],
+  )
 
   // Deferred: the default view is Totem (expert metrics already in hand), so the
   // community fetch fires only when the viewer first opens the Communauté tab —
@@ -58,6 +66,16 @@ export function DashboardScoreboard({
     },
     [communityRequested, loadCommunity],
   )
+
+  // After a parent submits their rating: their vote feeds the community
+  // averages, not the Totem/expert view — so jump to the Communauté tab (past
+  // the cache) and confirm, otherwise the submission looks like it did nothing.
+  const handleMetricsSubmit = useCallback(() => {
+    setMode("community")
+    loadCommunity(true)
+    setJustSubmitted(true)
+    window.setTimeout(() => setJustSubmitted(false), 4500)
+  }, [loadCommunity])
 
   const communityHasData = !!community?.hasData
   const cells =
@@ -103,12 +121,14 @@ export function DashboardScoreboard({
           className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 sm:px-6"
           style={{ background: "var(--f-inset)", borderTop: "1px solid var(--f-divider)" }}
         >
-          <span className="text-[11.5px]" style={{ color: "var(--f-muted)" }}>
-            {communityHasData
-              ? "Moyenne des évaluations de la communauté."
-              : "Pas encore d'avis communautaire — partagez le vôtre."}
+          <span className="text-[11.5px]" style={{ color: justSubmitted ? "var(--f-green)" : "var(--f-muted)" }}>
+            {justSubmitted
+              ? "✓ Merci — votre évaluation est enregistrée, elle est incluse dans la moyenne ci-dessus."
+              : communityHasData
+                ? `Moyenne de ${community?.count ?? 0} évaluation${(community?.count ?? 0) > 1 ? "s" : ""} de parents.`
+                : "Pas encore d'avis communautaire — soyez le premier, votre évaluation apparaîtra aussitôt."}
           </span>
-          <UserMetricsButton mediaId={mediaId} mediaTitle={mediaTitle} onSubmit={loadCommunity} />
+          <UserMetricsButton mediaId={mediaId} mediaTitle={mediaTitle} onSubmit={handleMetricsSubmit} />
         </div>
       )}
     </>
