@@ -336,7 +336,10 @@ export async function discoverMovies(options: {
       params[key] = value.toString()
     }
   })
-  
+  // Family-guide guard: never surface adult titles from discover (TMDB defaults
+  // to false, but pin it so a future param change can't flip it on).
+  params.include_adult = "false"
+
   return tmdbFetch<TMDBSearchResult<TMDBMovie>>("/discover/movie", params)
 }
 

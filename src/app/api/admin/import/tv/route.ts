@@ -11,6 +11,7 @@ import {
   getTVWatchProviders,
 } from "@/lib/tmdb"
 import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
+import { isAdultTmdbTv } from "@/lib/adult-content-filter"
 
 // Vercel serverless function config
 export const maxDuration = 60
@@ -35,6 +36,7 @@ interface ImportStats {
   imported: number
   skipped: number
   skippedNoFR: number
+  skippedAdult: number
   errors: number
   details: string[]
 }
@@ -94,6 +96,7 @@ export async function POST(request: Request) {
       imported: 0,
       skipped: 0,
       skippedNoFR: 0,
+      skippedAdult: 0,
       errors: 0,
       details: [],
     }
@@ -199,6 +202,13 @@ export async function POST(request: Request) {
     for (const show of newShows) {
       try {
         const details = await getTVDetails(show.id)
+
+        // Family-guide guard: never import hentai / explicit adult series.
+        if (isAdultTmdbTv(details)) {
+          stats.skippedAdult++
+          continue
+        }
+
         const rating = getTVFrenchRating(details.content_ratings)
 
         // Skip TV shows with no French relevance (unless source is inherently FR)

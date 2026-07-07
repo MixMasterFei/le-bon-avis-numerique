@@ -27,6 +27,7 @@ import {
 } from "@/lib/supabase-storage"
 import { getWeekSeed } from "@/lib/seeded-shuffle"
 import { certificationToAge, createMovieFromTmdb } from "@/lib/import-helpers"
+import { isAdultTmdbTv } from "@/lib/adult-content-filter"
 import { extractProviders } from "@/lib/streaming-providers"
 import { refreshTrending } from "@/lib/trending"
 
@@ -186,9 +187,10 @@ async function importMoviesFromSource(
       }
 
       // Shared create: provisional age (CSA → foreign → genre) + day-one platforms.
+      // Returns null when the adult-content guard rejects the title.
       const providers = extractProviders(await loadWatch())
-      await createMovieFromTmdb(details, { providers })
-      stats.imported++
+      const created = await createMovieFromTmdb(details, { providers })
+      if (created) stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
     } catch {
       stats.errors++
@@ -226,6 +228,13 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
   for (const show of newShows.slice(0, 15)) {
     try {
       const details = await getTVDetails(show.id)
+
+      // Family-guide guard: never import hentai / explicit adult series.
+      if (isAdultTmdbTv(details)) {
+        stats.skippedNoFR++
+        continue
+      }
+
       const frRating = getTVFrenchRating(details.content_ratings)
 
       // Skip TV shows with no French relevance

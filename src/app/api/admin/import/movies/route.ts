@@ -221,8 +221,10 @@ export async function POST(request: Request) {
         }
 
         // Shared create: provisional age (CSA → foreign → genre) + day-one platforms.
+        // Returns null when the adult-content guard rejects the title.
         const providers = extractProviders(await loadWatch())
-        await createMovieFromTmdb(details, { providers })
+        const created = await createMovieFromTmdb(details, { providers })
+        if (!created) continue
 
         stats.imported++
 

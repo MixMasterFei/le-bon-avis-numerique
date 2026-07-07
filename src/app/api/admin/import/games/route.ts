@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isAdultIgdbGame } from "@/lib/adult-content-filter"
 
 // Vercel serverless function config
 export const maxDuration = 60
@@ -138,6 +139,11 @@ export async function POST(request: Request) {
     // Process only NEW games
     for (const game of newGames) {
       try {
+        // Family-guide guard: never import erotic / adult-only games.
+        if (isAdultIgdbGame(game)) {
+          stats.details.push(`Skipped adult game: ${game.name}`)
+          continue
+        }
         const data = transformGameToMediaItem(game)
 
         await prisma.mediaItem.create({

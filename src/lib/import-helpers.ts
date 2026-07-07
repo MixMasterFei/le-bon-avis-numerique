@@ -20,6 +20,7 @@ import {
 } from "@/lib/tmdb"
 import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 import { extractProviders } from "@/lib/streaming-providers"
+import { isAdultTmdbMovie } from "@/lib/adult-content-filter"
 
 export type AgeSource = "csa" | "foreign" | "genre"
 
@@ -142,13 +143,20 @@ export function estimateProvisionalAgeFromStored(args: {
 
 /**
  * Create a MOVIE DB row from TMDB details, with a provisional age and (best
- * effort) day-one streaming platforms. Returns the created id. Caller handles
- * dedup (skip existing tmdbId) before calling.
+ * effort) day-one streaming platforms. Returns the created id, or `null` when
+ * the title is rejected as adult/pornographic (family-guide guard). Caller
+ * handles dedup (skip existing tmdbId) before calling.
  */
 export async function createMovieFromTmdb(
   details: TMDBMovieDetails,
   opts: { fetchProviders?: boolean; providers?: string[] } = {},
-): Promise<string> {
+): Promise<string | null> {
+  // Family-guide guard: never import hentai / eroge / explicit porn, even
+  // behind an age gate. Runs before the poster upload so nothing is fetched.
+  if (isAdultTmdbMovie(details)) {
+    console.warn(`[import] skipped adult movie: "${details.title}" (tmdb ${details.id})`)
+    return null
+  }
   const id = randomUUID()
   const [posterUrl, backdropUrl] = await Promise.all([
     uploadTMDBPoster(id, details.poster_path),

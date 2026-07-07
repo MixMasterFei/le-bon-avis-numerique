@@ -13,6 +13,7 @@ import {
   type AniListManga,
 } from "@/lib/anilist"
 import { searchBooks } from "@/lib/google-books"
+import { isAdultAniListManga } from "@/lib/adult-content-filter"
 
 export const maxDuration = 300 // Vercel Pro; popular import over 100 rows
 
@@ -104,6 +105,19 @@ export async function POST(req: Request) {
 
   for (const m of mangas) {
     try {
+      // Family-guide guard: never import hentai / ecchi / adult manga.
+      if (
+        isAdultAniListManga({
+          isAdult: m.isAdult,
+          genres: normalizeGenres(m),
+          title: pickDisplayTitle(m),
+          description: m.description,
+        })
+      ) {
+        result.skipped += 1
+        continue
+      }
+
       const existing = await prisma.mediaItem.findUnique({
         where: { anilistId: m.id },
         select: { id: true },

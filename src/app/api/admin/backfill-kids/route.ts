@@ -10,6 +10,7 @@ import {
   type TMDBMovieDetails,
 } from "@/lib/tmdb"
 import { createMovieFromTmdb, estimateProvisionalAge } from "@/lib/import-helpers"
+import { isAdultTmdbMovie } from "@/lib/adult-content-filter"
 import { extractProviders } from "@/lib/streaming-providers"
 import { logCronRun } from "@/lib/cron-log"
 
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
     skippedExisting: 0,
     skippedAge: 0,
     skippedNoFR: 0,
+    skippedAdult: 0,
     errors: 0,
   }
   const importedTitles: Array<{ title: string; age: number }> = []
@@ -153,6 +155,14 @@ export async function POST(req: NextRequest) {
       stats.examined++
       try {
         const details = await getMovieDetails(tmdbId)
+
+        // Family-guide guard — never let a young-kids sweep pull in an adult
+        // OVA that TMDB tags "Animation" (the very risk this deep sweep runs).
+        if (isAdultTmdbMovie(details)) {
+          stats.skippedAdult++
+          continue
+        }
+
         const frCert = getFrenchCertification(details.release_dates)
 
         // FR relevance — allow a watch-provider fallback (an FR-streamable

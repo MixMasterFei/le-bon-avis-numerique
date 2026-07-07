@@ -13,6 +13,7 @@ import {
   type AniListManga,
 } from "@/lib/anilist"
 import { searchBooks } from "@/lib/google-books"
+import { isAdultAniListManga } from "@/lib/adult-content-filter"
 
 export const maxDuration = 60
 
@@ -79,6 +80,18 @@ async function lookupFrenchEdition(displayTitle: string, authors: string[]): Pro
 
 async function upsertManga(m: AniListManga, stats: RefreshStats): Promise<void> {
   try {
+    // Family-guide guard: never import hentai / ecchi / adult manga.
+    if (
+      isAdultAniListManga({
+        isAdult: m.isAdult,
+        genres: normalizeGenres(m),
+        title: pickDisplayTitle(m),
+        description: m.description,
+      })
+    ) {
+      return
+    }
+
     const existing = await prisma.mediaItem.findUnique({
       where: { anilistId: m.id },
       select: { id: true, latestVolumeDate: true, googleBookId: true },

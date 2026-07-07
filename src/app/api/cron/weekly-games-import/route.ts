@@ -10,6 +10,7 @@ import {
   type IGDBGame,
 } from "@/lib/igdb"
 import { normalizeGameGenres } from "@/lib/igdb-genres"
+import { isAdultIgdbGame } from "@/lib/adult-content-filter"
 
 export const maxDuration = 60
 
@@ -123,6 +124,11 @@ async function importBatch(
   let imported = 0
   for (const game of fresh.slice(0, remainingBudget)) {
     try {
+      // Family-guide guard: never import erotic / adult-only games.
+      if (isAdultIgdbGame(game)) {
+        console.warn(`[weekly-games-import] skipped adult game: "${game.name}"`)
+        continue
+      }
       const data = transformGame(game)
       await prisma.mediaItem.create({
         data: {
