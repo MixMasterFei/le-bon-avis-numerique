@@ -10,6 +10,7 @@ import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButto
 import { MediaPageClient } from "@/components/media/MediaPageClient"
 import { DashboardScoreboard } from "./DashboardScoreboard"
 import { DashboardTrailerButton } from "./DashboardTrailerButton"
+import { AgeVoteButton } from "@/components/media/AgeVoteButton"
 import { DashboardFamilyPanel } from "./DashboardFamilyPanel"
 import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
 import { DashboardFamilyFeedback } from "./DashboardFamilyFeedback"
@@ -177,6 +178,14 @@ export function MediaDashboard({
                 <div className="text-[10.5px]" style={{ color: C.faint }}>
                   {verdictNote}
                 </div>
+                {/* Community trust signal — parents agree / disagree with the
+                    recommended age (was only on the classic hero; restored on
+                    the V3 public fiche). */}
+                {hasAge && !hideAnalysis && (
+                  <div className="mt-2 flex sm:justify-end">
+                    <AgeVoteButton mediaId={dbId} />
+                  </div>
+                )}
               </div>
               {isFilmOrTv && <DashboardTrailerButton mediaId={dbId} mediaType={media.type} />}
             </div>
