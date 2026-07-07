@@ -41,7 +41,9 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers (chromium only)
-        run: npx playwright install --with-deps chromium
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft* /etc/apt/sources.list.d/azure* || true
+          npx playwright install --with-deps chromium || npx playwright install chromium
 
       - name: Wait for Vercel deploy
         if: github.event_name == 'push'

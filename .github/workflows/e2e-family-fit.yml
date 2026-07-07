@@ -64,7 +64,14 @@ jobs:
         run: npx prisma db push --accept-data-loss --skip-generate
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          # The 24.04 runner's Microsoft/Azure apt repos intermittently serve a
+          # broken InRelease ("NOSPLIT" / does the network require auth?), which
+          # fails `--with-deps` apt-get update even though those repos aren't
+          # needed for Chromium's system libs. Drop them, then fall back to a
+          # deps-less install (the runner image already ships the Playwright libs).
+          sudo rm -f /etc/apt/sources.list.d/microsoft* /etc/apt/sources.list.d/azure* || true
+          npx playwright install --with-deps chromium || npx playwright install chromium
 
       - name: Build app
         run: npm run build

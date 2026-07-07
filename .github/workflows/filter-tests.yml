@@ -68,7 +68,9 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft* /etc/apt/sources.list.d/azure* || true
+          npx playwright install --with-deps chromium || npx playwright install chromium
 
       - name: Run E2E filter tests (Films)
         run: npx playwright test e2e/filters/films-filters.spec.ts --project=chromium
