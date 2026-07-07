@@ -49,7 +49,7 @@ Ce dernier point compte plus qu'il n'en a l'air. Un enfant peut rester assis lon
 
 ## L'IA peut réviser avec l'enfant, pas à sa place
 
-L'intelligence artificielle est entrée à l'école, et plutôt par la grande porte. Depuis janvier 2026, les parcours Pix consacrés à l'IA sont généralisés pour les élèves de 4e, de 2nde et de première année de CAP, leur mise en œuvre obligatoire s'étalant progressivement sur les années scolaires 2025-2026 et 2026-2027. Autrement dit, vos enfants vont apprendre à utiliser ces outils dans un cadre scolaire. Autant que la maison parle le même langage.
+L'intelligence artificielle est entrée à l'école, et plutôt par la grande porte. Expérimentés depuis la rentrée 2025 puis ouverts à tous les élèves volontaires début 2026, les parcours Pix consacrés à l'IA deviennent obligatoires à la rentrée 2026 pour les élèves de 4e, de 2nde et de première année de CAP, leur mise en œuvre s'étalant progressivement sur les années scolaires 2025-2026 et 2026-2027. Autrement dit, vos enfants vont apprendre à utiliser ces outils dans un cadre scolaire. Autant que la maison parle le même langage.
 
 Pour réviser, l'IA peut beaucoup : expliquer une notion autrement, proposer un quiz, corriger une phrase en montrant l'erreur, faire répéter un oral. Elle peut aussi rédiger le devoir entier, et c'est là que tout se joue. La différence tient à la consigne qu'on lui donne.
 
