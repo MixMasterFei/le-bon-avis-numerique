@@ -74,8 +74,8 @@ export function DashboardScoreboard({
         className="rounded-md px-3 py-1.5 text-[11.5px] font-semibold transition-colors"
         style={
           active
-            ? { background: "#2A251F", color: "#FFFFFF", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
-            : { color: "#6B6154", background: "transparent" }
+            ? { background: "var(--f-ink)", color: "var(--f-card)", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
+            : { color: "var(--f-mid)", background: "transparent" }
         }
       >
         {label}
@@ -87,10 +87,10 @@ export function DashboardScoreboard({
     <>
       <div
         className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-6"
-        style={{ borderTop: "1px solid #EFE6D6" }}
+        style={{ borderTop: "1px solid var(--f-divider)" }}
       >
         <MediaPageClient mediaId={mediaId} mediaTitle={mediaTitle} showActions reviewCount={reviewCount} />
-        <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
+        <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "var(--f-track)" }}>
           {seg("totem", "Totem Avisé")}
           {seg("community", "Communauté")}
         </div>
@@ -101,9 +101,9 @@ export function DashboardScoreboard({
       {mode === "community" && (
         <div
           className="flex flex-wrap items-center justify-between gap-3 px-5 py-2.5 sm:px-6"
-          style={{ background: "#FBF8F2", borderTop: "1px solid #EFE6D6" }}
+          style={{ background: "var(--f-inset)", borderTop: "1px solid var(--f-divider)" }}
         >
-          <span className="text-[11.5px]" style={{ color: "#8A8072" }}>
+          <span className="text-[11.5px]" style={{ color: "var(--f-muted)" }}>
             {communityHasData
               ? "Moyenne des évaluations de la communauté."
               : "Pas encore d'avis communautaire — partagez le vôtre."}

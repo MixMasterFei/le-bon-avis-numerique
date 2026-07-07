@@ -76,7 +76,7 @@ export function DashboardSensitiveWarnings({
   const Chevron = open ? ChevronUp : ChevronDown
 
   return (
-    <div className="mb-[13px] rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E4DAC8" }}>
+    <div className="mb-[13px] rounded-2xl" style={{ background: "var(--f-card)", border: "1px solid var(--f-border)" }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -85,30 +85,30 @@ export function DashboardSensitiveWarnings({
         <span className="flex min-w-0 items-center gap-2.5">
           <span
             className="flex h-8 w-8 flex-none items-center justify-center rounded-lg"
-            style={{ background: "#F7ECD7", color: "#C7892F" }}
+            style={{ background: "var(--f-gold-soft)", color: "var(--f-gold)" }}
           >
             <AlertTriangle className="h-4 w-4" />
           </span>
           <span className="min-w-0">
             <span
               className="block font-serif text-[16px] font-medium"
-              style={{ color: "#2A251F", letterSpacing: "-.01em" }}
+              style={{ color: "var(--f-ink)", letterSpacing: "-.01em" }}
             >
               Ce qui peut marquer
             </span>
-            <span className="block text-[11.5px]" style={{ color: "#8A8072" }}>
+            <span className="block text-[11.5px]" style={{ color: "var(--f-muted)" }}>
               {items.length > 0
                 ? `${items.length} point${items.length > 1 ? "s" : ""} de vigilance · afficher (peut divulgâcher)`
                 : "Aucun point signalé pour l'instant"}
             </span>
           </span>
         </span>
-        <Chevron className="h-4 w-4 flex-none" style={{ color: "#8A8072" }} />
+        <Chevron className="h-4 w-4 flex-none" style={{ color: "var(--f-muted)" }} />
       </button>
 
       {open && (
-        <div className="border-t px-4 pb-4 pt-3.5 sm:px-5" style={{ borderColor: "#EFE6D6" }}>
-          <p className="mb-3 text-[12px] leading-relaxed" style={{ color: "#8A8072" }}>
+        <div className="border-t px-4 pb-4 pt-3.5 sm:px-5" style={{ borderColor: "var(--f-divider)" }}>
+          <p className="mb-3 text-[12px] leading-relaxed" style={{ color: "var(--f-muted)" }}>
             Repères signalés par l&apos;analyse et confirmés par les parents — des points à
             vérifier selon la sensibilité de votre enfant, pas des scènes garanties.
           </p>
@@ -133,7 +133,7 @@ export function DashboardSensitiveWarnings({
                   defaultValue=""
                   onChange={(e) => submitPick(e.target.value)}
                   className="rounded-lg px-2.5 py-1.5 text-[12.5px]"
-                  style={{ background: "#FBF8F2", border: "1px solid #E4DAC8", color: "#4A433A" }}
+                  style={{ background: "var(--f-inset)", border: "1px solid var(--f-border)", color: "var(--f-body)" }}
                   aria-label="Choisir un élément sensible à signaler"
                 >
                   <option value="" disabled>
@@ -152,7 +152,7 @@ export function DashboardSensitiveWarnings({
                     setPickerError(null)
                   }}
                   className="text-[12px]"
-                  style={{ color: "#8A8072" }}
+                  style={{ color: "var(--f-muted)" }}
                 >
                   Annuler
                 </button>
@@ -163,7 +163,7 @@ export function DashboardSensitiveWarnings({
                   type="button"
                   onClick={() => setPicking(true)}
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-opacity hover:opacity-80"
-                  style={{ background: "#FBF8F2", border: "1px solid #E4DAC8", color: "#6B6154" }}
+                  style={{ background: "var(--f-inset)", border: "1px solid var(--f-border)", color: "var(--f-mid)" }}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Signaler un autre élément
@@ -174,7 +174,7 @@ export function DashboardSensitiveWarnings({
             <Link
               href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
               className="inline-flex items-center gap-1.5 text-[12px] font-semibold transition-opacity hover:opacity-80"
-              style={{ color: "#C0512E" }}
+              style={{ color: "var(--f-accent)" }}
             >
               <Plus className="h-3.5 w-3.5" />
               Connectez-vous pour signaler un élément
@@ -182,7 +182,7 @@ export function DashboardSensitiveWarnings({
           )}
 
           {pickerError && (
-            <p className="mt-2 text-[12px]" style={{ color: "#C0512E" }}>
+            <p className="mt-2 text-[12px]" style={{ color: "var(--f-accent)" }}>
               {pickerError}
             </p>
           )}

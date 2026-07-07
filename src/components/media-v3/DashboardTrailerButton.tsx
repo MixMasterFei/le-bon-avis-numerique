@@ -20,7 +20,7 @@ export function DashboardTrailerButton({
   const trailer = data?.trailer
 
   if (loading) {
-    return <div className="h-9 w-36 animate-pulse rounded-[9px]" style={{ background: "#F0E7D8" }} />
+    return <div className="h-9 w-36 animate-pulse rounded-[9px]" style={{ background: "var(--f-inset)" }} />
   }
   if (!trailer || trailer.site !== "YouTube" || !trailer.key) return null
 
@@ -30,7 +30,7 @@ export function DashboardTrailerButton({
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-[9px] px-4 py-[11px] text-[12.5px] font-semibold text-white transition-colors"
-      style={{ background: "#C0512E" }}
+      style={{ background: "var(--f-accent)" }}
     >
       <Play className="h-3.5 w-3.5 fill-current" />
       Bande-annonce

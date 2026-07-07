@@ -16,22 +16,22 @@ import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@
  */
 
 const LABEL = "text-[10px] font-bold uppercase tracking-[.13em]"
-const CARD = { background: "#FFFFFF", border: "1px solid #E4DAC8" } as const
+const CARD = { background: "var(--f-card)", border: "1px solid var(--f-border)" } as const
 
 const BAND: Record<
   FamilyFitBand,
   { text: string; bg: string; Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }> }
 > = {
-  veryAdapted: { text: "#2E6B47", bg: "#DCEBDD", Icon: Check },
-  goodChoice: { text: "#2E6B47", bg: "#DCEBDD", Icon: Check },
-  check: { text: "#A8752A", bg: "#F6E9CE", Icon: Clock },
-  notYet: { text: "#C0512E", bg: "#F3DECE", Icon: X },
+  veryAdapted: { text: "var(--f-green-deep)", bg: "var(--f-green-soft)", Icon: Check },
+  goodChoice: { text: "var(--f-green-deep)", bg: "var(--f-green-soft)", Icon: Check },
+  check: { text: "var(--f-gold-deep)", bg: "var(--f-inset)", Icon: Clock },
+  notYet: { text: "var(--f-accent)", bg: "var(--f-accent-soft)", Icon: X },
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="rounded-2xl p-4 sm:p-[18px]" style={CARD}>
-      <div className={`${LABEL} mb-3`} style={{ color: "#A89A82" }}>
+      <div className={`${LABEL} mb-3`} style={{ color: "var(--f-faint)" }}>
         Pour ma famille
       </div>
       {children}
@@ -44,7 +44,7 @@ function AddMemberButton({ label }: { label: string }) {
     <Link
       href="/profil"
       className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed py-2 text-[11.5px] font-semibold transition-colors hover:brightness-95"
-      style={{ borderColor: "#D2A85A", background: "#FBF4E4", color: "#A8752A" }}
+      style={{ borderColor: "var(--f-gold)", background: "var(--f-gold-soft)", color: "var(--f-gold-deep)" }}
     >
       <UserPlus className="h-3.5 w-3.5" />
       {label}
@@ -66,10 +66,10 @@ export function DashboardFamilyPanel({
       <Shell>
         <div className="flex gap-2">
           {[0, 1, 2].map((i) => (
-            <span key={i} className="h-6 w-20 animate-pulse rounded-full" style={{ background: "#EDE4D5" }} />
+            <span key={i} className="h-6 w-20 animate-pulse rounded-full" style={{ background: "var(--f-page)" }} />
           ))}
         </div>
-        <div className="mt-3 h-3 w-3/4 animate-pulse rounded" style={{ background: "#EDE4D5" }} />
+        <div className="mt-3 h-3 w-3/4 animate-pulse rounded" style={{ background: "var(--f-page)" }} />
       </Shell>
     )
   }
@@ -77,21 +77,21 @@ export function DashboardFamilyPanel({
   if (data?.status === "not_logged_in") {
     return (
       <Shell>
-        <p className="text-[12.5px] leading-[1.55]" style={{ color: "#4A433A" }}>
+        <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--f-body)" }}>
           Créez un profil famille pour voir, membre par membre, si ce titre convient.
         </p>
         <div className="mt-3 flex gap-2">
           <Link
             href="/inscription"
             className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11.5px] font-semibold text-white"
-            style={{ background: "#2A251F" }}
+            style={{ background: "var(--f-ink)" }}
           >
             <UserPlus className="h-3.5 w-3.5" /> Créer mon profil
           </Link>
           <Link
             href="/connexion"
             className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11.5px] font-semibold"
-            style={{ border: "1px solid #E4DAC8", color: "#2A251F" }}
+            style={{ border: "1px solid var(--f-border)", color: "var(--f-ink)" }}
           >
             <LogIn className="h-3.5 w-3.5" /> Se connecter
           </Link>
@@ -103,7 +103,7 @@ export function DashboardFamilyPanel({
   if (data?.status === "no_family") {
     return (
       <Shell>
-        <p className="text-[12.5px] leading-[1.55]" style={{ color: "#4A433A" }}>
+        <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--f-body)" }}>
           Ajoutez les membres de votre foyer pour voir si ce titre leur convient.
         </p>
         <AddMemberButton label="+ Ajouter un membre" />
@@ -114,7 +114,7 @@ export function DashboardFamilyPanel({
   if (!data || (data.status !== "ok" && data.status !== "family_warning")) {
     return (
       <Shell>
-        <p className="text-[12.5px]" style={{ color: "#8A8072" }}>
+        <p className="text-[12.5px]" style={{ color: "var(--f-muted)" }}>
           Indisponible pour le moment.
         </p>
       </Shell>
@@ -155,13 +155,13 @@ export function DashboardFamilyPanel({
               {/* Hover / focus popover — keeps per-member detail out of the box flow */}
               <div
                 className="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-56 rounded-xl p-3 text-left opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-                style={{ background: "#FFFFFF", border: "1px solid #E4DAC8", color: "#2A251F" }}
+                style={{ background: "var(--f-card)", border: "1px solid var(--f-border)", color: "var(--f-ink)" }}
               >
                 <div className="flex items-center gap-1.5 text-[12px] font-semibold">
                   <Icon className="h-3.5 w-3.5" style={{ color: cfg.text }} />
                   {m.name}
                   {m.age != null && (
-                    <span className="font-normal" style={{ color: "#8A8072" }}>
+                    <span className="font-normal" style={{ color: "var(--f-muted)" }}>
                       · {m.age} ans
                     </span>
                   )}
@@ -169,11 +169,11 @@ export function DashboardFamilyPanel({
                 <div className="mt-0.5 text-[11px] font-semibold" style={{ color: cfg.text }}>
                   {FAMILY_FIT_LABELS[band]}
                 </div>
-                <p className="mt-1 text-[11.5px] leading-[1.45]" style={{ color: "#4A433A" }}>
+                <p className="mt-1 text-[11.5px] leading-[1.45]" style={{ color: "var(--f-body)" }}>
                   {m.reason}
                 </p>
                 {m.hasPreferences === false && (
-                  <p className="mt-1.5 text-[10.5px] italic" style={{ color: "#8A8072" }}>
+                  <p className="mt-1.5 text-[10.5px] italic" style={{ color: "var(--f-muted)" }}>
                     Quiz non rempli — indice limité.
                   </p>
                 )}
@@ -183,7 +183,7 @@ export function DashboardFamilyPanel({
         })}
       </div>
 
-      <p className="mt-3 text-[12.5px] leading-[1.55]" style={{ color: "#4A433A" }}>
+      <p className="mt-3 text-[12.5px] leading-[1.55]" style={{ color: "var(--f-body)" }}>
         Convient à{" "}
         <b>
           {adapted} de vos {total} membre{total > 1 ? "s" : ""}

@@ -42,9 +42,9 @@ function ProviderRows({ providers }: { providers: Provider[] }) {
           <div
             key={p.provider_name}
             className="flex items-center gap-2.5 py-1.5"
-            style={{ borderTop: i === 0 ? "none" : "1px solid #EFE6D6" }}
+            style={{ borderTop: i === 0 ? "none" : "1px solid var(--f-divider)" }}
           >
-            <span className="h-[22px] w-[22px] flex-none overflow-hidden rounded-md" style={{ background: "#EDE4D5" }}>
+            <span className="h-[22px] w-[22px] flex-none overflow-hidden rounded-md" style={{ background: "var(--f-page)" }}>
               {p.logo_path && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -56,7 +56,7 @@ function ProviderRows({ providers }: { providers: Provider[] }) {
                 />
               )}
             </span>
-            <span className="text-[12px] font-semibold" style={{ color: "#2A251F" }}>
+            <span className="text-[12px] font-semibold" style={{ color: "var(--f-ink)" }}>
               {p.provider_name}
             </span>
           </div>
@@ -67,7 +67,7 @@ function ProviderRows({ providers }: { providers: Provider[] }) {
           type="button"
           onClick={() => setShowAll(true)}
           className="mt-2.5 w-full rounded-lg border border-dashed py-1.5 text-[11px] font-semibold"
-          style={{ borderColor: "#D2A85A", background: "#FBF4E4", color: "#A8752A" }}
+          style={{ borderColor: "var(--f-gold)", background: "var(--f-gold-soft)", color: "var(--f-gold-deep)" }}
         >
           + {extra} autre{extra > 1 ? "s" : ""} plateforme{extra > 1 ? "s" : ""}
         </button>
@@ -100,18 +100,18 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
   return (
     <>
       <div className="mb-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-        <div className={LABEL} style={{ color: "#A89A82" }}>
+        <div className={LABEL} style={{ color: "var(--f-faint)" }}>
           Où regarder
         </div>
         {anyAvailable && (
-          <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
+          <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "var(--f-track)" }}>
             {segments.map((s) => {
               const isActive = current === s.key
               const style = !s.available
-                ? { color: "#B9AE9B", background: "transparent" as const }
+                ? { color: "var(--f-faint)", background: "transparent" as const }
                 : isActive
-                  ? { color: "#FFFFFF", background: "#2A251F", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
-                  : { color: "#6B6154", background: "transparent" as const }
+                  ? { color: "var(--f-card)", background: "var(--f-ink)", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
+                  : { color: "var(--f-mid)", background: "transparent" as const }
               return (
                 <button
                   key={s.key}
@@ -122,7 +122,7 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
                   style={style}
                 >
                   {s.key === "cinema" && s.available && (
-                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#3E8158" }} />
+                    <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--f-green)" }} />
                   )}
                   {s.label}
                 </button>
@@ -135,16 +135,16 @@ export function DashboardWhereToWatch({ mediaId, mediaType }: { mediaId: string;
       {loading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-5 animate-pulse rounded" style={{ background: "#EDE4D5" }} />
+            <div key={i} className="h-5 animate-pulse rounded" style={{ background: "var(--f-page)" }} />
           ))}
         </div>
       ) : !anyAvailable ? (
-        <p className="text-[12.5px]" style={{ color: "#8A8072" }}>
+        <p className="text-[12.5px]" style={{ color: "var(--f-muted)" }}>
           Disponibilités bientôt.
         </p>
       ) : current === "cinema" ? (
-        <div className="flex items-center gap-2 py-1 text-[12.5px] font-medium" style={{ color: "#3E8158" }}>
-          <span className="h-2 w-2 rounded-full" style={{ background: "#3E8158" }} />
+        <div className="flex items-center gap-2 py-1 text-[12.5px] font-medium" style={{ color: "var(--f-green)" }}>
+          <span className="h-2 w-2 rounded-full" style={{ background: "var(--f-green)" }} />
           Actuellement au cinéma
         </div>
       ) : current === "streaming" ? (

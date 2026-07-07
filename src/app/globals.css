@@ -147,6 +147,34 @@ html[data-v2-type="on"] .font-heading {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
+   V3 media fiche (dashboard) palette. The fiche is styled with inline
+   colours, so it used to stay warm-light in dark mode. These variables
+   (scoped to [data-fiche="v3"] on the dashboard root) let those inline
+   styles follow the site's Soirée theme — light values here, dark
+   overrides below.
+   ───────────────────────────────────────────────────────────────────── */
+[data-fiche="v3"] {
+  --f-page: #EDE4D5; --f-card: #FFFFFF; --f-inset: #FBF8F2;
+  --f-border: #E4DAC8; --f-divider: #EFE6D6; --f-track: #E7DCC8;
+  --f-ink: #2A251F; --f-body: #4A433A; --f-mid: #6B6154;
+  --f-muted: #8A8072; --f-faint: #A89A82;
+  --f-accent: #C0512E; --f-accent-deep: #A8431F; --f-accent-soft: #F3DECE;
+  --f-green: #3E8158; --f-green-deep: #2E6B47; --f-green-soft: #DCEBDD;
+  --f-gold: #C7892F; --f-gold-deep: #A8752A; --f-gold-soft: #F7ECD7;
+  --f-number: #DCC9A6;
+}
+:root[data-theme="dark"] [data-fiche="v3"] {
+  --f-page: #1B1815; --f-card: #2A2520; --f-inset: #221E1A;
+  --f-border: #3A332B; --f-divider: #322C25; --f-track: #38312A;
+  --f-ink: #F4EFE4; --f-body: #D8D0C2; --f-mid: #BDB3A3;
+  --f-muted: #9C9384; --f-faint: #837A6B;
+  --f-accent: #E58A6B; --f-accent-deep: #E0734A; --f-accent-soft: #3A2A22;
+  --f-green: #7FB98F; --f-green-deep: #6FAA7E; --f-green-soft: #24312A;
+  --f-gold: #E6B04A; --f-gold-deep: #D69A3A; --f-gold-soft: #33291A;
+  --f-number: #574E3B;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    Homepage V2 (admin-only redesign) — design tokens scoped to the V2
    subtree so the classic homepage + the rest of the site are untouched.
    Used via var(--paper) etc. in the home-redesign components. Dark mode

@@ -20,29 +20,29 @@ export function DashboardBreadcrumb({
 }) {
   const category = CRUMB_CATEGORY[type]
   return (
-    <nav aria-label="Fil d'Ariane" className="mb-4 text-[12px]" style={{ color: "#8A8072" }}>
+    <nav aria-label="Fil d'Ariane" className="mb-4 text-[12px]" style={{ color: "var(--f-muted)" }}>
       <ol className="flex flex-wrap items-center gap-1.5">
         <li>
-          <Link href="/" className="transition-colors hover:text-[#2A251F]">
+          <Link href="/" className="transition-colors hover:text-[color:var(--f-ink)]">
             Accueil
           </Link>
         </li>
         {category && (
           <>
-            <li aria-hidden="true" style={{ color: "#A89A82" }}>
+            <li aria-hidden="true" style={{ color: "var(--f-faint)" }}>
               ›
             </li>
             <li>
-              <Link href={category.path} className="transition-colors hover:text-[#2A251F]">
+              <Link href={category.path} className="transition-colors hover:text-[color:var(--f-ink)]">
                 {category.label}
               </Link>
             </li>
           </>
         )}
-        <li aria-hidden="true" style={{ color: "#A89A82" }}>
+        <li aria-hidden="true" style={{ color: "var(--f-faint)" }}>
           ›
         </li>
-        <li aria-current="page" className="max-w-[60vw] truncate font-medium" style={{ color: "#4A433A" }}>
+        <li aria-current="page" className="max-w-[60vw] truncate font-medium" style={{ color: "var(--f-body)" }}>
           {title}
         </li>
       </ol>

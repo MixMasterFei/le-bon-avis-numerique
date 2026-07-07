@@ -13,7 +13,7 @@ interface Screenshot {
   order: number
 }
 
-const C = { page: "#EDE4D5", accent: "#C0512E" }
+const C = { page: "var(--f-page)", accent: "var(--f-accent)" }
 
 /**
  * Dashboard screenshots grid. Dedupes by URL (the MediaScreenshot table stores

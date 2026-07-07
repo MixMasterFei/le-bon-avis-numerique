@@ -54,8 +54,8 @@ export function DashboardFamilyFeedback({
         className="rounded-md px-3 py-1 text-[11px] font-semibold transition-colors"
         style={
           active
-            ? { background: "#2A251F", color: "#FFFFFF", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
-            : { color: "#6B6154", background: "transparent" }
+            ? { background: "var(--f-ink)", color: "var(--f-card)", boxShadow: "0 1px 2px rgba(42,37,31,.22)" }
+            : { color: "var(--f-mid)", background: "transparent" }
         }
       >
         {label}
@@ -65,7 +65,7 @@ export function DashboardFamilyFeedback({
 
   return (
     <div ref={cardRef} className="mb-[13px] scroll-mt-20">
-      <div className="rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E4DAC8" }}>
+      <div className="rounded-2xl" style={{ background: "var(--f-card)", border: "1px solid var(--f-border)" }}>
         <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
           <button
             type="button"
@@ -74,25 +74,25 @@ export function DashboardFamilyFeedback({
           >
             <span
               className="flex h-8 w-8 flex-none items-center justify-center rounded-lg"
-              style={{ background: "#F3DECE", color: "#C0512E" }}
+              style={{ background: "var(--f-accent-soft)", color: "var(--f-accent)" }}
             >
               <Users className="h-4 w-4" />
             </span>
             <span className="min-w-0">
               <span
                 className="block font-serif text-[16px] font-medium"
-                style={{ color: "#2A251F", letterSpacing: "-.01em" }}
+                style={{ color: "var(--f-ink)", letterSpacing: "-.01em" }}
               >
                 {seenVerb(mediaType).header}
               </span>
-              <span className="block text-[11.5px]" style={{ color: "#8A8072" }}>
+              <span className="block text-[11.5px]" style={{ color: "var(--f-muted)" }}>
                 Réactions &amp; avis de votre famille{reviews.length > 0 ? ` · ${reviews.length} avis` : ""}
               </span>
             </span>
           </button>
           <div className="flex flex-none items-center gap-3">
             {open && (
-              <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
+              <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "var(--f-track)" }}>
                 {seg("reactions", "Réactions")}
                 {seg("reviews", `Avis écrits${reviews.length ? ` (${reviews.length})` : ""}`)}
               </div>
@@ -103,13 +103,13 @@ export function DashboardFamilyFeedback({
               aria-label={open ? "Réduire" : "Développer"}
               className="rounded-full p-1 transition-opacity hover:opacity-70"
             >
-              <Chevron className="h-4 w-4" style={{ color: "#8A8072" }} />
+              <Chevron className="h-4 w-4" style={{ color: "var(--f-muted)" }} />
             </button>
           </div>
         </div>
 
         {open && (
-          <div className="border-t px-4 pb-4 pt-4 sm:px-5" style={{ borderColor: "#EFE6D6" }}>
+          <div className="border-t px-4 pb-4 pt-4 sm:px-5" style={{ borderColor: "var(--f-divider)" }}>
             {tab === "reactions" ? (
               <FamilyReactions mediaId={mediaId} mediaTitle={mediaTitle} mediaType={mediaType} embedded />
             ) : (

@@ -36,7 +36,7 @@ export async function DashboardSimilar({
           >
             <div
               className="relative aspect-[2/3] overflow-hidden rounded-xl transition-transform duration-300 group-hover:-translate-y-1"
-              style={{ background: "#EDE4D5", border: "1px solid #E4DAC8", boxShadow: "0 4px 14px rgba(0,0,0,0.08)" }}
+              style={{ background: "var(--f-page)", border: "1px solid var(--f-border)", boxShadow: "0 4px 14px rgba(0,0,0,0.08)" }}
             >
               {item.posterUrl && (
                 <SafeImage src={item.posterUrl} alt={item.title} fill sizes="190px" className="object-cover" />
@@ -44,7 +44,7 @@ export async function DashboardSimilar({
               {age && (
                 <div
                   className="absolute left-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                  style={{ background: "#B8D89A", color: "#2D3E1E" }}
+                  style={{ background: "var(--f-green)", color: "var(--f-green-deep)" }}
                 >
                   {age}
                 </div>
@@ -52,11 +52,11 @@ export async function DashboardSimilar({
             </div>
             <div
               className="mt-2 font-serif text-[13px] font-semibold leading-snug line-clamp-2"
-              style={{ color: "#2A251F", letterSpacing: "-0.01em", minHeight: "2.6em" }}
+              style={{ color: "var(--f-ink)", letterSpacing: "-0.01em", minHeight: "2.6em" }}
             >
               {item.title}
             </div>
-            <div className="text-[11px]" style={{ color: "#8A8072" }}>
+            <div className="text-[11px]" style={{ color: "var(--f-muted)" }}>
               {year ?? " "}
             </div>
           </Link>

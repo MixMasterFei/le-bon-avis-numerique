@@ -18,16 +18,16 @@ import type { DashboardMedia } from "@/lib/media-dashboard-data"
 
 // Handoff palette (already matches the site's warm art direction).
 const C = {
-  page: "#EDE4D5",
-  card: "#FFFFFF",
-  border: "#E4DAC8",
-  divider: "#EFE6D6",
-  ink: "#2A251F",
-  body: "#4A433A",
-  muted: "#8A8072",
-  faint: "#A89A82",
-  accent: "#C0512E",
-  numberSoft: "#DCC9A6",
+  page: "var(--f-page)",
+  card: "var(--f-card)",
+  border: "var(--f-border)",
+  divider: "var(--f-divider)",
+  ink: "var(--f-ink)",
+  body: "var(--f-body)",
+  muted: "var(--f-muted)",
+  faint: "var(--f-faint)",
+  accent: "var(--f-accent)",
+  numberSoft: "var(--f-number)",
 } as const
 
 const TYPE_LABEL: Record<string, string> = {
@@ -93,9 +93,9 @@ export function MediaDashboard({
   const cardStyle = { background: C.card, border: `1px solid ${C.border}` } as const
 
   return (
-    <div className="min-h-screen" style={{ background: C.page }}>
+    <div data-fiche="v3" className="min-h-screen" style={{ background: C.page }}>
       <div className="mx-auto max-w-[1280px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
-        {breadcrumb ?? <BackButton className="mb-4 text-[#8A8072] hover:text-[#2A251F]" />}
+        {breadcrumb ?? <BackButton className="mb-4 text-[color:var(--f-muted)] hover:text-[color:var(--f-ink)]" />}
 
         {/* ===== Scoreboard hero ===== */}
         <div className="mb-[13px] overflow-hidden rounded-2xl" style={cardStyle}>
@@ -121,7 +121,7 @@ export function MediaDashboard({
               <div className="mb-1.5 flex flex-wrap gap-1.5">
                 <span
                   className="rounded-full px-2 py-[3px] text-[10.5px] font-semibold"
-                  style={{ color: "#A8431F", background: "#F3DECE" }}
+                  style={{ color: "var(--f-accent-deep)", background: "var(--f-accent-soft)" }}
                 >
                   {TYPE_LABEL[media.type] ?? media.type}
                 </span>
@@ -129,8 +129,8 @@ export function MediaDashboard({
                   <Link
                     key={g}
                     href={genreHref(g)}
-                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[#2A251F]"
-                    style={{ color: "#6B6154", background: C.page }}
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[color:var(--f-ink)]"
+                    style={{ color: "var(--f-mid)", background: C.page }}
                   >
                     {g}
                   </Link>
@@ -193,7 +193,7 @@ export function MediaDashboard({
               reviewCount={media.reviews.length}
             />
           ) : (
-            <div className="px-5 py-3 sm:px-6" style={{ borderTop: "1px solid #EFE6D6" }}>
+            <div className="px-5 py-3 sm:px-6" style={{ borderTop: "1px solid var(--f-divider)" }}>
               <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions reviewCount={media.reviews.length} />
             </div>
           )}
@@ -220,8 +220,8 @@ export function MediaDashboard({
                   <Link
                     key={t}
                     href={`${listing}?topics=${encodeURIComponent(t)}`}
-                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[#2A251F]"
-                    style={{ color: "#6B6154", background: C.page }}
+                    className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:text-[color:var(--f-ink)]"
+                    style={{ color: "var(--f-mid)", background: C.page }}
                   >
                     {t}
                   </Link>
