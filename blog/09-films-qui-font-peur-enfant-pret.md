@@ -10,6 +10,7 @@ internalLinks:
   - "/films"
   - "/series"
   - "/notre-methode"
+  - "/blog/bon-age-film-enfant"
   - "/blog/films-vraiment-educatifs-enfants"
   - "/inscription"
 sourceLinks:
@@ -41,7 +42,7 @@ Nous développons cette idée dans notre article [« le bon âge n'existe pas vr
 
 ## Les signes qu'un enfant n'est pas encore prêt
 
-Parfois, le doute se lève avant même de lancer le film. Un enfant qui veut surtout regarder pour prouver qu'il est grand, qui a déjà du mal à dormir, qui rumine facilement les images, qui pose beaucoup de questions anxieuses sur la mort, les voleurs ou les catastrophes, ou qui cache sa peur pour ne pas perdre la face devant ses frères et soeurs : autant d'indices qu'il vaut mieux attendre encore un peu.
+Parfois, le doute se lève avant même de lancer le film. Un enfant qui veut surtout regarder pour prouver qu'il est grand, qui a déjà du mal à dormir, qui rumine facilement les images, qui pose beaucoup de questions anxieuses sur la mort, les voleurs ou les catastrophes, ou qui cache sa peur pour ne pas perdre la face devant ses frères et sœurs : autant d'indices qu'il vaut mieux attendre encore un peu.
 
 Pendant la séance, le corps parle souvent avant les mots. L'enfant se fige sans rien dire, regarde longuement ailleurs, demande à plusieurs reprises si « ça finit bien », s'agite, se colle à vous tout en voulant continuer, ou rit nerveusement sans vraiment profiter de l'histoire. Aucun de ces signes pris seul n'est alarmant, mais ils méritent qu'on lève le pied.
 
@@ -49,7 +50,7 @@ Après le film, le signal le plus parlant reste le sommeil. Des cauchemars, une 
 
 ## Pourquoi certains films « familiaux » surprennent
 
-Un film familial n'est pas toujours un film doux. Beaucoup de grands classiques contiennent des scènes très intenses : un parent absent, une mort symbolique, un méchant terrifiant, une poursuite, un incendie, une trahison. Ces moments font souvent la force du récit, mais ils peuvent prendre une famille de court quand on s'attendait à un simple divertissement.
+Un film familial n'est pas toujours un film doux. Beaucoup de grands classiques contiennent des scènes très intenses : un parent absent, une mort symbolique, un méchant terrifiant, une poursuite, un incendie, une trahison. La mort de Mufasa dans [*Le Roi lion*](/media/movie:a81d4991-583c-46e6-9269-7b6e1820624e), le deuil placé au cœur de [*Coco*](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212), ou les images de solitude de [*Là-haut*](/media/movie:f2d5b24d-ca8f-4ff6-bfba-9d2eeb5e6232) marquent durablement certains enfants, alors même que ces films sont adorés. Ces moments font souvent la force du récit, mais ils peuvent prendre une famille de court quand on s'attendait à un simple divertissement.
 
 Les dessins animés méritent une attention particulière. Le format animé peut rendre la peur plus acceptable, en mettant un peu de distance. Il peut aussi la graver durablement : une musique, un visage, une métamorphose restent parfois en tête bien après le générique. C'est pourquoi nous conseillons de vérifier avant, surtout pour un enfant sensible. Lire une fiche, regarder les points signalés pour les parents, demander à d'autres familles, ou visionner le film seul d'abord en cas de doute, cela change beaucoup la soirée.
 
@@ -81,7 +82,7 @@ Avant un film qui risque de faire peur, un rapide tour d'horizon suffit souvent 
 
 Si plusieurs réponses restent floues, attendez. Ce n'est pas rater une expérience, c'est la garder pour un moment plus juste.
 
-Sur Totem Avisé, vous pouvez explorer les [films](/films) et [séries](/series) avec les repères d'âge, les points sensibles et les signaux « Trop tôt » ou « À vérifier » selon votre profil de famille. Notre article sur les [films vraiment éducatifs](/blog/films-vraiment-educatifs-enfants) rappelle d'ailleurs qu'un film peut faire grandir un enfant sans avoir besoin de le bousculer trop fort.
+Sur Totem Avisé, vous pouvez explorer les [films](/films) et [séries](/series) avec les repères d'âge, les points sensibles et les signaux « Trop tôt » ou « À vérifier » selon votre [profil de famille](/inscription). Notre article sur les [films vraiment éducatifs](/blog/films-vraiment-educatifs-enfants) rappelle d'ailleurs qu'un film peut faire grandir un enfant sans avoir besoin de le bousculer trop fort.
 
 ## Pour aller plus loin
 

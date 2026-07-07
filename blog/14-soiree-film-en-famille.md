@@ -37,7 +37,7 @@ La première porte sur **l'âge et la sensibilité**. Le plus jeune peut-il le v
 
 ## Préparer une courte liste à froid
 
-Le choix à chaud est presque toujours mauvais. Tout le monde fait défiler les affiches, les bandes-annonces excitent, on hésite, et le film démarre trop tard pour un soir d'école.
+Le choix à chaud est presque toujours mauvais. Tout le monde fait défiler les affiches, les bandes-annonces excitent, on hésite, et le film démarre trop tard pour un soir de semaine.
 
 Mieux vaut préparer quelques options à l'avance, hors du feu de l'action. Cinq à dix titres suffisent, idéalement répartis selon les humeurs possibles : de quoi tenir un soir fatigué, une grande aventure pour un week-end, un film qui réunit petits et grands. Les [collections](/collections) Totem peuvent servir de point de départ pour constituer ces réserves. Le soir venu, on ne cherche plus dans tout internet : on choisit dans une sélection déjà validée, ce qui désamorce l'essentiel des disputes.
 
@@ -51,7 +51,7 @@ En cas de doute, une fiche parent renseigne mieux : l'âge conseillé, les point
 
 Un film de plus de deux heures peut être magnifique sans être un bon choix un mardi soir. La durée pèse sur l'attention, l'heure du coucher et l'humeur du lendemain. Pour les plus jeunes, un film long devient parfois une épreuve même quand le contenu est parfaitement adapté.
 
-Il n'y a pas de barème à respecter. La bonne réflexe consiste simplement à garder les formats courts et doux pour les fins de journée chargées, et à réserver les grandes sagas ou les films intenses à un moment où l'on a vraiment le temps devant soi, un début de week-end plutôt qu'une veille d'école. La vraie question n'est pas seulement « est-ce adapté ? » mais « est-ce adapté maintenant ? ».
+Il n'y a pas de barème à respecter. Le bon réflexe consiste simplement à garder les formats courts et doux pour les fins de journée chargées, et à réserver les grandes sagas ou les films intenses à un moment où l'on a vraiment le temps devant soi, un début de week-end plutôt qu'un soir de semaine chargé. La vraie question n'est pas seulement « est-ce adapté ? » mais « est-ce adapté maintenant ? ».
 
 ## Faire tourner le choix, avec un cadre
 
@@ -73,7 +73,7 @@ Après, inutile de disséquer le film. Une seule question relance la discussion 
 
 ## Totem comme arbitre tranquille
 
-Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le choix moins bruyant. Notre [méthode](/notre-methode) regarde l'âge conseillé, les contenus sensibles, les messages positifs et la compatibilité avec votre foyer. Avec un [profil famille](/inscription), vous voyez plus vite, pour chaque membre, quel film est très adapté, correct, à vérifier ou trop tôt.
+Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le choix moins bruyant. Notre [méthode](/notre-methode) regarde l'âge conseillé, les contenus sensibles, les messages positifs et la compatibilité avec votre foyer. Avec un [profil famille](/inscription), vous voyez plus vite, pour chaque membre, si un film est « très adapté », « bon choix », « à vérifier » ou « trop tôt ».
 
 **La méthode Totem en 3 minutes :**
 

@@ -11,10 +11,10 @@ internalLinks:
   - "/objectif"
   - "/blog/chatgpt-devoirs-parents"
   - "/blog/algorithmes-enfants-attention"
-  - "/inscription"
 sourceLinks:
   - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
   - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
+  - "https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647"
   - "https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028"
 ---
 

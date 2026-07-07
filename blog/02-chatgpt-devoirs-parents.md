@@ -11,7 +11,6 @@ internalLinks:
   - "/objectif"
   - "/notre-methode"
   - "/apercudecouverte"
-  - "/inscription"
 sourceLinks:
   - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
   - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"

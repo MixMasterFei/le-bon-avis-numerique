@@ -11,7 +11,6 @@ internalLinks:
   - "/objectif"
   - "/blog/chatgpt-devoirs-parents"
   - "/blog/qualite-contenu-plus-que-chronometre"
-  - "/inscription"
 sourceLinks:
   - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
   - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"

@@ -7,11 +7,10 @@ excerpt: "Les enfants n'ont pas besoin d'un cours technique pour comprendre les 
 seoTitle: "Algorithmes et enfants : expliquer l'attention"
 seoDescription: "Algorithmes et enfants : comment expliquer simplement les recommandations, les notifications et l'attention captée."
 internalLinks:
-  - "/guides"
   - "/objectif"
-  - "/blog/reseaux-sociaux-avant-15-ans"
+  - "/films"
+  - "/series"
   - "/blog/qualite-contenu-plus-que-chronometre"
-  - "/blog/premier-smartphone-enfant"
 sourceLinks:
   - "https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025"
   - "https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028"
@@ -24,7 +23,7 @@ Le mot « algorithme » a tout pour effrayer une discussion familiale. Trop tech
 
 Rien de magique là-dedans. Un algorithme, c'est une suite de règles et de calculs qui décide quoi montrer ensuite. Mais l'effet, lui, est très concret pour un enfant : rester plus longtemps, cliquer plus vite, comparer davantage, revenir plus souvent. Lui expliquer ce mécanisme ne sert pas à lui faire peur. Cela lui rend un peu de pouvoir sur ce qu'il regarde.
 
-C'est aussi un sujet que les institutions suivent de près. Dans son [Référentiel des usages numériques 2025](https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025), l'Arcom relève que 42 % des répondants estiment passer trop de temps devant les écrans ; chez les 18-24 ans qui y passent plus de trois heures par jour, ils sont 61 % à juger ce temps excessif. De son côté, la CNIL a fait de la protection des mineurs en ligne l'un des axes de son [plan stratégique 2025-2028](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028). Autrement dit, ce n'est pas une inquiétude de parent isolé.
+C'est aussi un sujet que les institutions suivent de près. Dans son [Référentiel des usages numériques 2025](https://www.arcom.fr/se-documenter/etudes-et-donnees/etudes-bilans-et-rapports-de-larcom/referentiel-des-usages-numeriques-2025), l'Arcom relève que 42 % des répondants estiment passer trop de temps devant les écrans — un ressenti qui commence tôt, à mesure que les usages se déplacent vers des applications pensées pour retenir l'attention. De son côté, la CNIL a fait de la protection des mineurs en ligne l'un des axes de son [plan stratégique 2025-2028](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028). Autrement dit, ce n'est pas une inquiétude de parent isolé.
 
 ## L'image du vendeur qui apprend très vite
 
@@ -46,11 +45,17 @@ Une bonne question à poser, sans en faire un interrogatoire : « Pourquoi tu cr
 
 Plutôt que de dresser une liste de dangers à craindre, il vaut mieux nommer trois mécanismes que l'enfant peut apprendre à repérer par lui-même.
 
-D'abord, **l'enchaînement**. Une vidéo se termine, une autre démarre toute seule. Un épisode se lance. Un fil descend sans fin. La plateforme efface précisément les moments où l'on pourrait se demander : « Est-ce que j'ai encore envie ? » L'antidote n'est pas compliqué : se fabriquer ses propres pauses. Une vidéo choisie, puis on ferme. Un épisode, puis on décide avant le suivant.
+### L'enchaînement
 
-Ensuite, **l'émotion forte**. Les contenus qui choquent, énervent, font rire très fort ou inquiètent retiennent l'attention mieux que les autres, et l'algorithme l'a compris. Il aura donc tendance à en proposer davantage. Le réflexe utile tient en une question, à se poser après coup : « Là, je me sens comment ? Plus calme, plus curieux, ou plutôt énervé, jaloux, inquiet ? »
+Une vidéo se termine, une autre démarre toute seule. Un épisode se lance. Un fil descend sans fin. La plateforme efface précisément les moments où l'on pourrait se demander : « Est-ce que j'ai encore envie ? » L'antidote n'est pas compliqué : se fabriquer ses propres pauses. Une vidéo choisie, puis on ferme. Un épisode, puis on décide avant le suivant.
 
-Enfin, **la comparaison**. Les réseaux défilent en corps, maisons, vacances, notes, performances, popularité. Même quand on sait que tout cela est trié, monté, filtré, ça finit par peser. Le rappel à glisser, sans le marteler : un fil n'est pas la vraie vie, c'est une sélection de moments, souvent taillée pour attirer le regard.
+### L'émotion forte
+
+Les contenus qui choquent, énervent, font rire très fort ou inquiètent retiennent l'attention mieux que les autres, et l'algorithme l'a compris. Il aura donc tendance à en proposer davantage. Le réflexe utile tient en une question, à se poser après coup : « Là, je me sens comment ? Plus calme, plus curieux, ou plutôt énervé, jaloux, inquiet ? »
+
+### La comparaison
+
+Les réseaux font défiler des corps, des maisons, des vacances, des notes, des performances, de la popularité. Même quand on sait que tout cela est trié, monté, filtré, ça finit par peser. Le rappel à glisser, sans le marteler : un fil n'est pas la vraie vie, c'est une sélection de moments, souvent taillée pour attirer le regard.
 
 ## Une conversation de cinq minutes, pas un cours
 
@@ -68,7 +73,7 @@ Trois habitudes valent la peine d'être prises : couper les notifications qui ne
 
 On associe les algorithmes aux réseaux sociaux, mais ils sont partout. Les plateformes de streaming recommandent des séries, les boutiques de jeux poussent leurs nouveautés, les vidéos autour d'un film ou d'un jeu façonnent les envies. Un enfant réclame parfois une œuvre simplement parce qu'il l'a vue passer partout, sans rien savoir de ce qu'elle contient vraiment.
 
-C'est exactement là que Totem Avisé essaie de ramener le choix au bon endroit. Avant de lancer un contenu, on peut ouvrir une fiche, regarder l'âge conseillé, les points sensibles, les messages positifs, puis décider en connaissance de cause. Notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre) creuse cette idée : l'enjeu n'est pas seulement le temps passé, mais ce que les plateformes glissent dans ce temps.
+C'est exactement là que Totem Avisé essaie de ramener le choix au bon endroit. Avant de lancer un contenu, on peut ouvrir la fiche d'un [film](/films) ou d'une [série](/series), regarder l'âge conseillé, les points sensibles, les messages positifs, puis décider en connaissance de cause. Notre article sur la [qualité du contenu plutôt que le chronomètre](/blog/qualite-contenu-plus-que-chronometre) creuse cette idée : l'enjeu n'est pas seulement le temps passé, mais ce que les plateformes glissent dans ce temps.
 
 ## Donner des phrases à l'enfant
 

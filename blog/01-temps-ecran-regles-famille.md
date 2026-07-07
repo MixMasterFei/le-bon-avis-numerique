@@ -11,7 +11,6 @@ internalLinks:
   - "/notre-methode"
   - "/films"
   - "/jeux"
-  - "/inscription"
 sourceLinks:
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres"

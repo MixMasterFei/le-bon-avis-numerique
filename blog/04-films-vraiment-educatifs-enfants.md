@@ -55,13 +55,31 @@ Beaucoup de films riches sont aussi intenses. Ils parlent de mort, de guerre, d'
 
 La classification officielle est un point de départ utile, pas une réponse complète. Un film peut être « tous publics » et bouleverser un enfant sensible. Un autre est conseillé plus tard, non pas pour une scène choquante, mais parce que ses thèmes demandent une certaine maturité émotionnelle. Avant de lancer un film avec une intention éducative, quelques questions valent la peine d'être posées : mon enfant peut-il comprendre le sujet principal ? Certaines scènes risquent-elles de le marquer au-delà du plaisir du film ? Serai-je disponible pour en parler après ? Si la réponse reste incertaine, ce n'est pas grave. On peut attendre. Un beau film vu trop tôt perd parfois sa force, et le revoir plus tard devient une meilleure expérience.
 
-Sur Totem Avisé, vous pouvez explorer les [films](/films) par âge, par genre et par signaux de contenu (violence, peur, langage, mais aussi messages positifs et valeur éducative). Les [collections](/collections) permettent aussi de partir d'une intention plutôt que d'un titre : films pour parler des émotions, univers d'animation, aventures, classiques familiaux. Pour des œuvres comme *Le Roi lion* ou *Coco*, l'âge conseillé et les points sensibles sont indiqués avant de dire oui, parce que des scènes très fortes peuvent y côtoyer de magnifiques moments de transmission.
+Sur Totem Avisé, vous pouvez explorer les [films](/films) par âge, par genre et par signaux de contenu (violence, peur, langage, mais aussi messages positifs et valeur éducative). Les [collections](/collections) permettent aussi de partir d'une intention plutôt que d'un titre : films pour parler des émotions, univers d'animation, aventures, classiques familiaux. Pour des œuvres comme [*Le Roi lion*](/media/movie:a81d4991-583c-46e6-9269-7b6e1820624e) ou [*Coco*](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212), l'âge conseillé et les points sensibles sont indiqués avant de dire oui, parce que des scènes très fortes peuvent y côtoyer de magnifiques moments de transmission.
 
 ## Quelques pistes concrètes, par intention
 
 Plutôt qu'un palmarès des « films à voir absolument », voici quelques œuvres souvent citées par les familles, rangées par ce qu'elles aident à travailler. L'âge juste dépend toujours de votre enfant : vérifiez l'âge conseillé et les points sensibles sur sa fiche avant de lancer.
 
-Pour mettre des mots sur les émotions, *Vice-versa* reste une référence, tout comme la douceur d'*Ernest et Célestine* pour les plus jeunes. Pour aborder le deuil et la mémoire sans brutalité, *Coco* ouvre facilement la discussion. Pour la curiosité du monde et la rencontre de l'autre, *Azur et Asmar* ou *Kirikou et la Sorcière* mêlent beauté visuelle et ouverture culturelle. Du côté du courage et de la persévérance, *Vaiana* et *Là-haut* montrent des personnages qui doutent avant d'avancer. Et pour réfléchir, sans leçon appuyée, à notre rapport au monde, *Wall-E* fait beaucoup avec très peu de mots.
+### Pour mettre des mots sur les émotions
+
+[*Vice-versa*](/media/movie:23985d35-c8be-4b2e-ac43-323d782fb4b6) reste une référence, tout comme la douceur d'[*Ernest et Célestine*](/media/movie:882960e0-9501-4fbc-898c-2a95effdb8fd) pour les plus jeunes.
+
+### Pour aborder le deuil et la mémoire
+
+Sans brutalité, [*Coco*](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212) ouvre facilement la discussion.
+
+### Pour la curiosité du monde et la rencontre de l'autre
+
+[*Azur et Asmar*](/media/movie:b7f0e9a5-5490-44b7-9954-d3ea6b11719c) ou [*Kirikou et la Sorcière*](/media/movie:49d807b5-fa8b-4883-8f12-08da597d239f) mêlent beauté visuelle et ouverture culturelle.
+
+### Pour le courage et la persévérance
+
+[*Vaiana*](/media/movie:63799a62-8b76-4aac-9b90-f193f7c495dc) et [*Là-haut*](/media/movie:f2d5b24d-ca8f-4ff6-bfba-9d2eeb5e6232) montrent des personnages qui doutent avant d'avancer.
+
+### Pour réfléchir à notre rapport au monde
+
+Sans leçon appuyée, [*Wall-E*](/media/movie:2eb49468-f860-47d4-86e1-e78f04cbd253) fait beaucoup avec très peu de mots, et plus récemment [*Le Robot sauvage*](/media/movie:19cb35d9-e841-4048-ac9f-79ddffbfbf9f) prolonge cette réflexion sur le lien et la nature.
 
 Ces titres ne sont pas une liste figée, mais des points de départ. Sur Totem Avisé, nos [collections](/collections) regroupent justement les films par intention (parler des émotions, partir à l'aventure, retrouver des classiques familiaux), et chaque fiche précise l'âge conseillé et les signaux de contenu, pour adapter le choix à chacun de vos enfants.
 

@@ -9,7 +9,6 @@ seoDescription: "Dessins animés pour petits : comment choisir un contenu adapt�
 internalLinks:
   - "/films"
   - "/series"
-  - "/guides"
   - "/notre-methode"
   - "/blog/temps-ecran-regles-famille"
 sourceLinks:
@@ -66,7 +65,7 @@ Couper l'écran reste difficile chez les petits, et ce n'est pas toujours de la 
 
 ## Une petite bibliothèque sûre vaut mieux qu'un catalogue infini
 
-Pour un jeune enfant, le plus reposant est rarement la nouveauté permanente. Une poignée de programmes connus, testés, rassurants suffit largement. Trois ou quatre titres adaptés valent mieux qu'un catalogue sans fond qui relance la négociation à chaque fois. Cette petite sélection peut évoluer doucement : on ajoute un contenu, puis on observe le sommeil, le retour au calme, les jeux qui suivent. Si l'enfant rejoue l'histoire, pose des questions ou fredonne la musique, c'est bon signe. Si tout finit en colère, en agitation ou en demande compulsive d'enchaîner, le programme n'est sans doute pas le bon, même s'il s'affiche « pour enfants ».
+Pour un jeune enfant, le plus reposant est rarement la nouveauté permanente. Une poignée de programmes connus, testés, rassurants suffit largement. Trois ou quatre titres adaptés valent mieux qu'un catalogue sans fond qui relance la négociation à chaque fois. Du côté des films, des œuvres douces et lentes comme [*Mon voisin Totoro*](/media/movie:a4c78a98-7f7b-49cc-959c-17de8a3df228) ou [*Ernest et Célestine*](/media/movie:882960e0-9501-4fbc-898c-2a95effdb8fd) illustrent bien ce rythme apaisé ; pour composer votre propre sélection, vous pouvez [parcourir les films par âge](/films?maxAge=6) et repérer les titres adaptés aux plus petits. Cette petite sélection peut évoluer doucement : on ajoute un contenu, puis on observe le sommeil, le retour au calme, les jeux qui suivent. Si l'enfant rejoue l'histoire, pose des questions ou fredonne la musique, c'est bon signe. Si tout finit en colère, en agitation ou en demande compulsive d'enchaîner, le programme n'est sans doute pas le bon, même s'il s'affiche « pour enfants ».
 
 C'est exactement ce travail de nuance que nous essayons de faciliter. Sur les fiches [films](/films) et [séries](/series), nous regardons l'âge conseillé mais aussi le ton, les éléments sensibles et les dimensions positives, parce qu'un contenu peut être officiellement accessible et pourtant trop rapide, trop bruyant, trop sombre ou trop long pour un petit. Notre [méthode](/notre-methode) aide à raisonner en sensibilité plutôt qu'en simple catégorie, et notre article sur les [règles de temps d'écran](/blog/temps-ecran-regles-famille) donne un cadre simple à poser autour de ces moments de visionnage.
 

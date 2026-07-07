@@ -11,7 +11,6 @@ internalLinks:
   - "/objectif"
   - "/blog/reseaux-sociaux-avant-15-ans"
   - "/blog/temps-ecran-regles-famille"
-  - "/inscription"
 sourceLinks:
   - "https://www.3018.fr/"
   - "https://www.service-public.gouv.fr/particuliers/vosdroits/F32239"
