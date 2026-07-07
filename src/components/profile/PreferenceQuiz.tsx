@@ -15,9 +15,12 @@ import {
   Bookmark,
   Gamepad2,
   AlertCircle,
+  User,
+  Users,
+  Sofa,
+  Trophy,
+  X,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { QuizAnchorPicker, type AnchorEntry } from "@/components/profile/QuizAnchorPicker"
 import { getMemberAge } from "@/lib/age-utils"
 import { mergeDislikedGenres, partitionDislikedGenres } from "@/lib/disliked-genres"
@@ -99,6 +102,27 @@ const DEFAULT_ANSWERS: QuizAnswers = {
   avoidTopics: [],
   interests: [],
   gameplayStyles: [],
+}
+
+// ── Editorial art direction (matches the approved mockup) ────────────
+// Structural colour comes from the site tokens (var(--color-*)) so the quiz
+// follows Soirée; the pastels below are the catalogue's own badge family, used
+// as the selected-state fills so the quiz speaks the same visual language.
+const CHIP_INK = "#1E1A15"
+const CHIP_PASTELS = ["#F4C7A6", "#B8D89A", "#F8D775", "#8DBDC9", "#C9B7D9", "#D89AB0"]
+// Sensitivity severity ramp: green → yellow → peach → terracotta.
+const SEVERITY = ["#B8D89A", "#F8D775", "#F4C7A6", "#E9A184"]
+const GAMEPLAY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  "Jeu solo": User,
+  "Jeu coop": Users,
+  "Jeu en famille": Sofa,
+  "Jeu compétitif": Trophy,
+}
+
+function monogram(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+  return name.trim().slice(0, 2).toUpperCase() || "?"
 }
 
 const LIGHT_STEPS: StepDef[] = [
@@ -199,7 +223,6 @@ function buildStepSequence(memberAge: number | null, run: "light" | "deep"): Ste
 export function PreferenceQuiz({
   memberId,
   memberName,
-  memberEmoji,
   birthYear,
   birthMonth,
   initialPhase = "light",
@@ -227,7 +250,6 @@ export function PreferenceQuiz({
   )
   const step = steps[currentStep]
   const copy = step ? copyForStep(step.id, mode, memberName) : { title: "" }
-  const progress = ((currentStep + 1) / steps.length) * 100
   const isLastStep = currentStep === steps.length - 1
   const isLightLast = phase === "light" && isLastStep
 
@@ -378,34 +400,36 @@ export function PreferenceQuiz({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--color-accent)" }} />
       </div>
     )
   }
 
   if (phase === "done") {
     return (
-      <div className="max-w-lg mx-auto text-center py-12 space-y-6">
-        <div className="text-6xl">{memberEmoji}</div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {mode === "self" ? "Profil enregistré !" : `Profil de ${memberName} enregistré !`}
-          </h2>
-          <p className="text-gray-600 text-sm leading-relaxed">
-            Les repères « Pour {memberName} » et les recommandations vont s&apos;affiner. Pas d&apos;accord avec
-            un âge conseillé sur une fiche ? Complétez ce quiz et votez sur la page du titre.
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+      <div className="max-w-lg mx-auto text-center py-12">
+        <span
+          className="mx-auto mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ background: "color-mix(in srgb, var(--color-accent) 15%, transparent)", color: "var(--color-accent)" }}
+        >
+          <Check className="h-8 w-8" strokeWidth={2.4} />
+        </span>
+        <h2
+          className="font-serif text-[26px] font-semibold"
+          style={{ color: "var(--color-ink)", letterSpacing: "-0.02em" }}
+        >
+          {mode === "self" ? "Profil enregistré" : `Profil de ${memberName} enregistré`}
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+          Les repères « Pour {memberName} » et les recommandations vont s&apos;affiner à chaque réaction.
+          Pas d&apos;accord avec un âge conseillé sur une fiche&nbsp;? Votez aussi sur la page du titre.
+        </p>
+        <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
           {initialPhase !== "deep" && (
-            <Button onClick={startDeep} variant="outline">
-              Affiner encore (5 min)
-            </Button>
+            <QuizButton variant="ghost" onClick={startDeep}>Affiner encore (5 min)</QuizButton>
           )}
-          <Button onClick={() => router.push("/profil")} variant="outline">
-            Retour au profil
-          </Button>
-          <Button onClick={() => router.push("/films")}>Découvrir le catalogue</Button>
+          <QuizButton variant="outline" onClick={() => router.push("/profil")}>Retour au profil</QuizButton>
+          <QuizButton variant="cta" onClick={() => router.push("/films")}>Découvrir le catalogue</QuizButton>
         </div>
       </div>
     )
@@ -414,56 +438,89 @@ export function PreferenceQuiz({
   const allTakenIds = new Set([...lovedAnchors.map((a) => a.id), ...dislikedAnchors.map((a) => a.id)])
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{memberEmoji}</span>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              {mode === "self" ? "Quiz de préférences" : `Quiz pour ${memberName}`}
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                {phase === "deep" ? "· Affinage" : "· Essentiel"}
-              </span>
-            </h1>
-            <p className="text-sm text-gray-500">
-              Étape {currentStep + 1} sur {steps.length}
-            </p>
-          </div>
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-        </div>
-        {step && (
-          <div className="flex items-center gap-2 text-sm text-primary font-medium">
-            {step.sectionIcon}
-            <span>{step.section}</span>
-          </div>
-        )}
-      </div>
-
+    <div className="max-w-2xl mx-auto">
       {validationError && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{validationError}</p>
+        <div
+          className="mb-4 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-sm"
+          style={{
+            background: "color-mix(in srgb, #C2412A 12%, transparent)",
+            border: "1px solid color-mix(in srgb, #C2412A 30%, transparent)",
+            color: "var(--color-ink)",
+          }}
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-none" style={{ color: "#C2412A" }} />
+          <span>{validationError}</span>
+        </div>
       )}
 
-      <Card className="border-2">
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-gray-900">{copy.title}</h2>
-            {copy.subtitle && <p className="text-sm text-gray-500">{copy.subtitle}</p>}
+      <div
+        className="rounded-[22px] p-6 sm:p-8"
+        style={{
+          background: "var(--color-card)",
+          border: "1px solid var(--color-line)",
+          boxShadow: "0 10px 30px -24px rgba(40,28,12,.55)",
+        }}
+      >
+        {/* Member context + segmented progress */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span
+            className="inline-flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3.5 text-[13px] font-bold"
+            style={{ background: "var(--color-bg2)", border: "1px solid var(--color-line)", color: "var(--color-ink2)" }}
+          >
+            <span
+              className="grid h-7 w-7 place-items-center rounded-full text-[11px] font-extrabold"
+              style={{ background: "color-mix(in srgb, var(--color-accent2) 24%, transparent)", color: "var(--color-accent2)" }}
+            >
+              {monogram(memberName)}
+            </span>
+            {mode === "self" ? "Vos préférences" : `Pour ${memberName}`}
+            {memberAge != null ? ` · ${memberAge} ans` : ""}
+          </span>
+          <div className="flex gap-1.5" aria-hidden>
+            {steps.map((s, i) => (
+              <span
+                key={s.id}
+                className="h-1 w-6 rounded-full transition-colors"
+                style={{
+                  background: i <= currentStep ? "var(--color-accent)" : "var(--color-line)",
+                  opacity: i === currentStep ? 0.5 : 1,
+                }}
+              />
+            ))}
           </div>
+        </div>
 
+        {/* Kicker + question + help */}
+        <div className="mt-6 text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--color-accent)" }}>
+          Étape {currentStep + 1} sur {steps.length}
+          {step ? ` · ${step.section}` : ""}
+        </div>
+        <h1
+          className="mt-1.5 font-serif text-[clamp(21px,3.1vw,28px)] font-semibold leading-[1.12]"
+          style={{ color: "var(--color-ink)", letterSpacing: "-0.02em" }}
+        >
+          {copy.title}
+        </h1>
+        {copy.subtitle && (
+          <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "var(--color-ink2)" }}>
+            {copy.subtitle}
+          </p>
+        )}
+
+        {/* Step content */}
+        <div className="mt-6">
           {step?.id === "genres-like" && (
-            <GenreGrid
-              genres={QUIZ_FAVORITE_GENRES}
+            <ChoiceChips
+              items={QUIZ_FAVORITE_GENRES}
               selected={answers.favoriteGenres}
               onToggle={(g) => toggleGenre(g, "favoriteGenres")}
-              variant="favorite"
+              variant="pastel"
             />
           )}
 
           {step?.id === "genres-hard-avoid" && (
-            <GenreGrid
-              genres={QUIZ_HARD_AVOID_GENRES}
+            <ChoiceChips
+              items={QUIZ_HARD_AVOID_GENRES}
               selected={answers.hardAvoidGenres}
               onToggle={(g) => toggleGenre(g, "hardAvoidGenres")}
               variant="hard"
@@ -471,8 +528,8 @@ export function PreferenceQuiz({
           )}
 
           {step?.id === "genres-soft-dislike" && (
-            <GenreGrid
-              genres={QUIZ_SOFT_DISLIKE_GENRES.filter((g) => !answers.favoriteGenres.includes(g))}
+            <ChoiceChips
+              items={QUIZ_SOFT_DISLIKE_GENRES.filter((g) => !answers.favoriteGenres.includes(g))}
               selected={answers.softDislikeGenres}
               onToggle={(g) => toggleGenre(g, "softDislikeGenres")}
               variant="soft"
@@ -480,34 +537,34 @@ export function PreferenceQuiz({
           )}
 
           {step?.id === "sensitivity-violence" && (
-            <SensitivityQuestion value={answers.sensitivityViolence} onChange={(v) => setNumeric("sensitivityViolence", v)} />
+            <SensitivityScale value={answers.sensitivityViolence} onChange={(v) => setNumeric("sensitivityViolence", v)} />
           )}
           {step?.id === "sensitivity-scary" && (
-            <SensitivityQuestion value={answers.sensitivityScary} onChange={(v) => setNumeric("sensitivityScary", v)} />
+            <SensitivityScale value={answers.sensitivityScary} onChange={(v) => setNumeric("sensitivityScary", v)} />
           )}
           {step?.id === "sensitivity-language" && (
-            <SensitivityQuestion value={answers.sensitivityLanguage} onChange={(v) => setNumeric("sensitivityLanguage", v)} />
+            <SensitivityScale value={answers.sensitivityLanguage} onChange={(v) => setNumeric("sensitivityLanguage", v)} />
           )}
           {step?.id === "sensitivity-sexual" && (
-            <SensitivityQuestion value={answers.sensitivitySexual} onChange={(v) => setNumeric("sensitivitySexual", v)} />
+            <SensitivityScale value={answers.sensitivitySexual} onChange={(v) => setNumeric("sensitivitySexual", v)} />
           )}
           {step?.id === "sensitivity-substances" && (
-            <SensitivityQuestion value={answers.sensitivitySubstances} onChange={(v) => setNumeric("sensitivitySubstances", v)} />
+            <SensitivityScale value={answers.sensitivitySubstances} onChange={(v) => setNumeric("sensitivitySubstances", v)} />
           )}
 
           {step?.id === "positive-content" && (
             <div className="space-y-5">
-              <PositiveSlider
+              <PositiveScale
                 label="Messages positifs / valeurs"
                 value={answers.preferPositiveMessages}
                 onChange={(v) => setNumeric("preferPositiveMessages", v)}
               />
-              <PositiveSlider
+              <PositiveScale
                 label="Modèles / héros inspirants"
                 value={answers.preferRoleModels}
                 onChange={(v) => setNumeric("preferRoleModels", v)}
               />
-              <PositiveSlider
+              <PositiveScale
                 label="Aspect éducatif"
                 value={answers.preferEducational}
                 onChange={(v) => setNumeric("preferEducational", v)}
@@ -516,7 +573,7 @@ export function PreferenceQuiz({
           )}
 
           {step?.id === "avoid-topics" && (
-            <ChipGrid
+            <ChoiceChips
               items={QUIZ_AVOID_TOPICS}
               selected={answers.avoidTopics}
               onToggle={(t) => toggleChip("avoidTopics", t)}
@@ -525,40 +582,48 @@ export function PreferenceQuiz({
           )}
 
           {step?.id === "interests" && (
-            <ChipGrid
+            <ChoiceChips
               items={QUIZ_INTEREST_CHIPS}
               selected={answers.interests}
               onToggle={(t) => toggleChip("interests", t)}
-              variant="interest"
+              variant="pastel"
             />
           )}
 
           {step?.id === "gameplay-style" && (
-            <div className="flex flex-wrap gap-2">
-              {QUIZ_GAMEPLAY_STYLES.map((style) => (
-                <button
-                  key={style.value}
-                  type="button"
-                  onClick={() => toggleChip("gameplayStyles", style.value)}
-                  className={cn(
-                    "px-3 py-2 rounded-lg text-sm font-medium border-2 flex items-center gap-1.5",
-                    answers.gameplayStyles.includes(style.value)
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white text-gray-700 border-gray-200 hover:border-primary/50",
-                  )}
-                >
-                  <span aria-hidden>{style.emoji}</span>
-                  {style.label}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2.5">
+              {QUIZ_GAMEPLAY_STYLES.map((style) => {
+                const Icon = GAMEPLAY_ICONS[style.value] ?? Gamepad2
+                const sel = answers.gameplayStyles.includes(style.value)
+                return (
+                  <button
+                    key={style.value}
+                    type="button"
+                    onClick={() => toggleChip("gameplayStyles", style.value)}
+                    className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[14px] font-semibold transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+                    style={
+                      sel
+                        ? {
+                            background: "color-mix(in srgb, var(--color-accent) 16%, transparent)",
+                            color: "var(--color-accent)",
+                            border: "1.5px solid color-mix(in srgb, var(--color-accent) 45%, transparent)",
+                          }
+                        : { background: "var(--color-card)", color: "var(--color-ink2)", border: "1.5px solid var(--color-line)" }
+                    }
+                  >
+                    <Icon className="h-4 w-4" />
+                    {style.label}
+                  </button>
+                )
+              })}
             </div>
           )}
 
           {step?.id === "anchor-titles" && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
-                  <Heart className="h-4 w-4 text-rose-500" />
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
+                  <Heart className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
                   {mode === "self" ? "Adorés" : `Adorés par ${memberName}`}
                 </h3>
                 <QuizAnchorPicker
@@ -571,8 +636,8 @@ export function PreferenceQuiz({
                 />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
-                  <Sparkles className="h-4 w-4 text-slate-500" />
+                <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold" style={{ color: "var(--color-ink)" }}>
+                  <Sparkles className="h-4 w-4" style={{ color: "var(--color-ink2)" }} />
                   À ne pas recommander
                 </h3>
                 <QuizAnchorPicker
@@ -586,29 +651,36 @@ export function PreferenceQuiz({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={goPrev} disabled={currentStep === 0} className="gap-1">
-          <ChevronLeft className="h-4 w-4" />
-          Précédent
-        </Button>
-        <Button onClick={goNext} disabled={saving} className="gap-1">
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isLastStep ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <ChevronRight className="h-4 w-4" />
-          )}
-          {isLightLast ? "Enregistrer le profil" : isLastStep && phase === "deep" ? "Terminer" : "Suivant"}
-        </Button>
+        {/* Footer */}
+        <div className="mt-8 flex items-center justify-between">
+          <QuizButton variant="ghost" onClick={goPrev} disabled={currentStep === 0}>
+            <ChevronLeft className="h-4 w-4" />
+            Précédent
+          </QuizButton>
+          <QuizButton variant="cta" onClick={goNext} disabled={saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                {isLightLast ? "Enregistrer le profil" : isLastStep && phase === "deep" ? "Terminer" : "Continuer"}
+                {isLastStep ? <Check className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </>
+            )}
+          </QuizButton>
+        </div>
       </div>
 
-      <div className="flex justify-center">
+      {/* Skip + note */}
+      <div className="mt-4 flex justify-center">
         {!isLastStep ? (
-          <button type="button" onClick={goNext} className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2">
+          <button
+            type="button"
+            onClick={goNext}
+            className="text-xs underline underline-offset-2 transition-opacity hover:opacity-70"
+            style={{ color: "var(--color-ink2)" }}
+          >
             Passer cette étape
           </button>
         ) : step?.id === "anchor-titles" ? (
@@ -616,16 +688,17 @@ export function PreferenceQuiz({
             type="button"
             onClick={goNext}
             disabled={saving}
-            className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2 disabled:opacity-50"
+            className="text-xs underline underline-offset-2 transition-opacity hover:opacity-70 disabled:opacity-50"
+            style={{ color: "var(--color-ink2)" }}
           >
             Terminer sans titres repères
           </button>
         ) : null}
       </div>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="mt-4 text-center text-xs" style={{ color: "var(--color-ink2)", opacity: 0.8 }}>
         Pas d&apos;accord avec un repère d&apos;âge sur une fiche ?{" "}
-        <Link href="/profil" className="underline hover:text-gray-600">
+        <Link href="/profil" className="underline hover:opacity-80">
           Ce quiz affine les goûts
         </Link>
         , pas l&apos;âge expert — votez aussi sur la page du titre.
@@ -634,51 +707,44 @@ export function PreferenceQuiz({
   )
 }
 
-function GenreGrid({
-  genres,
-  selected,
-  onToggle,
-  variant,
+function QuizButton({
+  variant = "cta",
+  onClick,
+  disabled,
+  children,
 }: {
-  genres: readonly string[]
-  selected: string[]
-  onToggle: (g: string) => void
-  variant: "favorite" | "hard" | "soft"
+  variant?: "cta" | "outline" | "ghost"
+  onClick?: () => void
+  disabled?: boolean
+  children: React.ReactNode
 }) {
-  const active =
-    variant === "hard"
-      ? "bg-red-100 text-red-800 border-red-300"
-      : variant === "soft"
-        ? "bg-amber-50 text-amber-900 border-amber-200"
-        : "bg-primary text-white border-primary"
-  const idle =
-    variant === "hard"
-      ? "hover:border-red-200"
-      : variant === "soft"
-        ? "hover:border-amber-200"
-        : "hover:border-primary/50"
-
+  const style: React.CSSProperties =
+    variant === "cta"
+      ? { background: "var(--color-accent)", color: "#FFF8F0", padding: "11px 24px" }
+      : variant === "outline"
+        ? { background: "transparent", color: "var(--color-ink)", border: "1px solid var(--color-line2)", padding: "10px 20px" }
+        : { background: "transparent", color: "var(--color-ink2)", padding: "10px 12px" }
   return (
-    <div className="flex flex-wrap gap-2">
-      {genres.map((genre) => (
-        <button
-          key={genre}
-          type="button"
-          onClick={() => onToggle(genre)}
-          className={cn(
-            "px-3 py-2 rounded-lg text-sm font-medium transition-all border-2 bg-white text-gray-700",
-            selected.includes(genre) ? active : cn("border-gray-200", idle),
-          )}
-        >
-          {selected.includes(genre) && (variant === "hard" ? "✗ " : "✓ ")}
-          {genre}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex items-center justify-center gap-1.5 rounded-full text-[14px] font-bold transition-transform",
+        "hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]",
+        "disabled:pointer-events-none disabled:opacity-45",
+        variant === "cta" && "hover:brightness-[0.96]",
+      )}
+      style={style}
+    >
+      {children}
+    </button>
   )
 }
 
-function ChipGrid({
+// Unified pill chips — pastel (favourites/interests, catalogue colours),
+// hard/avoid (soft terracotta-red + ✗), soft (muted gold). Zero emoji.
+function ChoiceChips({
   items,
   selected,
   onToggle,
@@ -687,87 +753,135 @@ function ChipGrid({
   items: readonly string[]
   selected: string[]
   onToggle: (v: string) => void
-  variant: "avoid" | "interest"
+  variant: "pastel" | "hard" | "soft" | "avoid"
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((item) => (
-        <button
-          key={item}
-          type="button"
-          onClick={() => onToggle(item)}
-          className={cn(
-            "px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all",
-            selected.includes(item)
-              ? variant === "avoid"
-                ? "bg-red-50 text-red-800 border-red-200"
-                : "bg-primary text-white border-primary"
-              : "bg-white text-gray-700 border-gray-200 hover:border-gray-300",
-          )}
-        >
-          {selected.includes(item) ? "✓ " : ""}
-          {item}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function PositiveSlider({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: number
-  onChange: (v: number) => void
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span className="font-medium text-gray-800">{label}</span>
-        <span className="text-gray-500">{QUIZ_POSITIVE_OPTIONS[value]?.label ?? value}</span>
-      </div>
-      <div className="flex gap-2">
-        {QUIZ_POSITIVE_OPTIONS.map((opt) => (
+    <div className="flex flex-wrap gap-2.5">
+      {items.map((item, i) => {
+        const on = selected.includes(item)
+        const isNegative = variant === "hard" || variant === "avoid"
+        let style: React.CSSProperties
+        if (!on) {
+          style = { background: "var(--color-card)", color: "var(--color-ink2)", border: "1.5px solid var(--color-line)" }
+        } else if (isNegative) {
+          style = { background: "#E7A79A", color: CHIP_INK, border: "1.5px solid #E7A79A" }
+        } else if (variant === "soft") {
+          style = { background: "#EBD9A6", color: CHIP_INK, border: "1.5px solid #EBD9A6" }
+        } else {
+          const c = CHIP_PASTELS[i % CHIP_PASTELS.length]
+          style = { background: c, color: CHIP_INK, border: `1.5px solid ${c}` }
+        }
+        return (
           <button
-            key={opt.value}
+            key={item}
             type="button"
-            onClick={() => onChange(opt.value)}
-            className={cn(
-              "flex-1 py-2 rounded-lg text-xs font-medium border-2 transition-all",
-              value === opt.value ? "border-primary bg-primary/10 text-primary" : "border-gray-200 text-gray-600 hover:border-gray-300",
-            )}
+            onClick={() => onToggle(item)}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[14px] font-semibold transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+            style={style}
           >
-            {opt.label}
+            <span
+              className="grid h-[15px] w-[15px] flex-none place-items-center rounded-full"
+              style={{ border: on ? "1.5px solid rgba(0,0,0,.38)" : "1.5px solid var(--color-line2)" }}
+            >
+              {on &&
+                (isNegative ? (
+                  <X className="h-2.5 w-2.5" strokeWidth={3.5} style={{ color: "rgba(0,0,0,.72)" }} />
+                ) : (
+                  <Check className="h-2.5 w-2.5" strokeWidth={3.5} style={{ color: "rgba(0,0,0,.72)" }} />
+                ))}
+            </span>
+            {item}
           </button>
-        ))}
+        )
+      })}
+    </div>
+  )
+}
+
+// Segmented positive-content scale (0 = indifférent … 3 = essentiel).
+function PositiveScale({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-semibold" style={{ color: "var(--color-ink)" }}>
+          {label}
+        </span>
+        <span style={{ color: "var(--color-ink2)" }}>{QUIZ_POSITIVE_OPTIONS[value]?.label ?? value}</span>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {QUIZ_POSITIVE_OPTIONS.map((opt) => {
+          const on = value === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              className="rounded-xl py-2.5 text-[12.5px] font-semibold transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+              style={
+                on
+                  ? {
+                      background: "color-mix(in srgb, var(--color-accent) 16%, transparent)",
+                      color: "var(--color-accent)",
+                      border: "1.5px solid color-mix(in srgb, var(--color-accent) 45%, transparent)",
+                    }
+                  : { background: "var(--color-bg2)", color: "var(--color-ink2)", border: "1.5px solid var(--color-line)" }
+              }
+            >
+              {opt.label}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-function SensitivityQuestion({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+// Sensitivity as a 4-bar intensity gauge on the age-grid severity ramp
+// (green → yellow → peach → terracotta). Replaces the 😎🙂😐🚫 radios.
+function SensitivityScale({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
-    <div className="space-y-3">
-      {QUIZ_SENSITIVITY_OPTIONS.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left",
-            value === option.value ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300",
-          )}
-        >
-          <span className="text-2xl">{option.emoji}</span>
-          <div>
-            <p className="font-medium text-gray-900">{option.label}</p>
-            <p className="text-sm text-gray-500">{option.description}</p>
-          </div>
-          {value === option.value && <Check className="h-5 w-5 text-primary ml-auto" />}
-        </button>
-      ))}
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {QUIZ_SENSITIVITY_OPTIONS.map((option) => {
+        const on = value === option.value
+        const fill = SEVERITY[option.value] ?? SEVERITY[SEVERITY.length - 1]
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            title={option.description}
+            className="flex flex-col items-center gap-2 rounded-2xl px-3 py-3 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+            style={
+              on
+                ? { background: fill, color: CHIP_INK, border: `1.5px solid ${fill}` }
+                : { background: "var(--color-bg2)", color: "var(--color-ink2)", border: "1.5px solid var(--color-line)" }
+            }
+          >
+            <span className="flex h-4 items-end gap-[3px]" aria-hidden>
+              {[0, 1, 2, 3].map((i) => {
+                const activeBar = i <= option.value
+                return (
+                  <span
+                    key={i}
+                    className="w-[5px] rounded-[2px]"
+                    style={{
+                      height: `${5 + i * 3.6}px`,
+                      background: activeBar
+                        ? on
+                          ? "rgba(0,0,0,.72)"
+                          : "var(--color-ink2)"
+                        : on
+                          ? "rgba(0,0,0,.22)"
+                          : "var(--color-line)",
+                    }}
+                  />
+                )
+              })}
+            </span>
+            <span className="text-center text-[12.5px] font-bold leading-tight">{option.label}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }
