@@ -121,6 +121,23 @@ export async function POST(request: NextRequest) {
       include: { contentMetrics: true },
     })
 
+    // Per-item dismissals: a member who explicitly said "Pas intéressé"
+    // (TOO_OLD) or "Pas pour moi" (NOT_FOR_ME) on a specific title must never
+    // resurface as a fitting avatar for it, however well age/prefs score. This
+    // is the per-item override the weighted score can't express (the behavioral
+    // vector only nudges genre-level affinity, not this exact title).
+    const dismissals = await prisma.mediaReaction.findMany({
+      where: {
+        familyMemberId: { in: familyMembers.map((m) => m.id) },
+        mediaId: { in: mediaIds },
+        reaction: { in: ["TOO_OLD", "NOT_FOR_ME"] },
+      },
+      select: { familyMemberId: true, mediaId: true },
+    })
+    const dismissedSet = new Set(
+      dismissals.map((d) => `${d.familyMemberId}:${d.mediaId}`),
+    )
+
     // Detect if household has any minor (under 18)
     const hasMinor = familyMembers.some((m) => {
       const age = getMemberAge(m.birthYear, m.birthMonth)
@@ -206,6 +223,14 @@ export async function POST(request: NextRequest) {
       }
 
       for (const member of familyMembers) {
+        // Explicit "not interested" on this exact title — drop before scoring.
+        if (dismissedSet.has(`${member.id}:${media.id}`)) {
+          if (isAdmin) {
+            excludedForDebug.push({ id: member.id, name: member.name, reason: "réaction · pas intéressé" })
+          }
+          continue
+        }
+
         const memberAge = getMemberAge(member.birthYear, member.birthMonth)
         const eff = resolveEffectivePrefs(member, familySettings)
 
