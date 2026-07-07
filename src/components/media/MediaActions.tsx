@@ -14,6 +14,12 @@ interface MediaActionsProps {
   mediaTitle?: string
   className?: string
   onReviewClick?: () => void
+  /** Number of written family avis on this fiche. With onSeeReviews, a
+   *  non-zero count turns the review pill into "Avis (N)" that jumps to the
+   *  feedback section — existing feedback was invisible from the top of the
+   *  page (buried behind a collapsed section + a tab). */
+  reviewCount?: number
+  onSeeReviews?: () => void
 }
 
 interface PillButtonProps {
@@ -53,6 +59,8 @@ export function MediaActions({
   mediaTitle,
   className = "",
   onReviewClick,
+  reviewCount = 0,
+  onSeeReviews,
 }: MediaActionsProps) {
   const p = APERCU_PALETTE
   const { data: session, status } = useSession()
@@ -164,6 +172,19 @@ export function MediaActions({
     </PillButton>
   )
 
+  // Existing avis are the stronger signal: reading them is public, so this
+  // pill shows for anonymous visitors too (the section itself carries the
+  // "give yours" path). Zero avis → the classic "Donner mon avis" CTA.
+  const seeReviewsPill =
+    reviewCount > 0 && onSeeReviews ? (
+      <PillButton onClick={onSeeReviews} active activeColor={p.accent}>
+        <MessageSquare className="h-4 w-4" style={{ color: p.accent }} />
+        <span className="text-xs">
+          Avis ({reviewCount})
+        </span>
+      </PillButton>
+    ) : null
+
   if (status === "loading" || initialLoading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
@@ -192,12 +213,14 @@ export function MediaActions({
             <span className="text-xs">À voir</span>
           </PillButton>
         </Link>
-        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
-          <PillButton>
-            <MessageSquare className="h-4 w-4" />
-            <span className="text-xs">Donner mon avis</span>
-          </PillButton>
-        </Link>
+        {seeReviewsPill ?? (
+          <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+            <PillButton>
+              <MessageSquare className="h-4 w-4" />
+              <span className="text-xs">Donner mon avis</span>
+            </PillButton>
+          </Link>
+        )}
         {shareButton}
       </div>
     )
@@ -247,12 +270,13 @@ export function MediaActions({
         </span>
       </PillButton>
 
-      {onReviewClick && (
-        <PillButton onClick={onReviewClick}>
-          <MessageSquare className="h-4 w-4" />
-          <span className="text-xs">Donner mon avis</span>
-        </PillButton>
-      )}
+      {seeReviewsPill ??
+        (onReviewClick && (
+          <PillButton onClick={onReviewClick}>
+            <MessageSquare className="h-4 w-4" />
+            <span className="text-xs">Donner mon avis</span>
+          </PillButton>
+        ))}
 
       {shareButton}
     </div>

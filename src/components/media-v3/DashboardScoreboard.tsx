@@ -27,11 +27,14 @@ export function DashboardScoreboard({
   mediaTitle,
   expertMetrics,
   topics,
+  reviewCount = 0,
 }: {
   mediaId: string
   mediaTitle: string
   expertMetrics: MetricsLike
   topics: string[]
+  /** Written avis count — surfaces "Avis (N)" in the actions row. */
+  reviewCount?: number
 }) {
   const [mode, setMode] = useState<Mode>("totem")
   const [community, setCommunity] = useState<CommunityResponse | null>(null)
@@ -86,7 +89,7 @@ export function DashboardScoreboard({
         className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 sm:px-6"
         style={{ borderTop: "1px solid #EFE6D6" }}
       >
-        <MediaPageClient mediaId={mediaId} mediaTitle={mediaTitle} showActions />
+        <MediaPageClient mediaId={mediaId} mediaTitle={mediaTitle} showActions reviewCount={reviewCount} />
         <div className="inline-flex items-center rounded-[10px] p-1" style={{ background: "#E7DCC8" }}>
           {seg("totem", "Totem Avisé")}
           {seg("community", "Communauté")}

@@ -190,10 +190,11 @@ export function MediaDashboard({
               mediaTitle={media.title}
               expertMetrics={media.metrics}
               topics={media.topics}
+              reviewCount={media.reviews.length}
             />
           ) : (
             <div className="px-5 py-3 sm:px-6" style={{ borderTop: "1px solid #EFE6D6" }}>
-              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions />
+              <MediaPageClient mediaId={media.id} mediaTitle={media.title} showActions reviewCount={media.reviews.length} />
             </div>
           )}
         </div>

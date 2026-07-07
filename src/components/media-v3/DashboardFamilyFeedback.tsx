@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Users, ChevronDown, ChevronUp } from "lucide-react"
 import { FamilyReactions, seenVerb } from "@/components/media/FamilyReactions"
+import { OPEN_FAMILY_FEEDBACK_EVENT } from "@/components/media/MediaPageClient"
 import { ReviewsSection } from "@/components/media/ReviewsSection"
 import type { DashboardReview } from "@/lib/media-dashboard-data"
 
@@ -25,7 +26,24 @@ export function DashboardFamilyFeedback({
 }) {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<"reactions" | "reviews">("reactions")
+  const cardRef = useRef<HTMLDivElement>(null)
   const Chevron = open ? ChevronUp : ChevronDown
+
+  // The top "Avis (N)" pill fires this event: open directly on the written
+  // avis and bring the card into view — existing feedback used to be
+  // invisible from the top (collapsed section + tab, two taps deep).
+  useEffect(() => {
+    const openFromTop = () => {
+      setOpen(true)
+      setTab("reviews")
+      // Wait for the expanded content to render before measuring the scroll.
+      requestAnimationFrame(() => {
+        cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      })
+    }
+    window.addEventListener(OPEN_FAMILY_FEEDBACK_EVENT, openFromTop)
+    return () => window.removeEventListener(OPEN_FAMILY_FEEDBACK_EVENT, openFromTop)
+  }, [])
 
   const seg = (t: "reactions" | "reviews", label: string) => {
     const active = tab === t
@@ -46,7 +64,7 @@ export function DashboardFamilyFeedback({
   }
 
   return (
-    <div className="mb-[13px]">
+    <div ref={cardRef} className="mb-[13px] scroll-mt-20">
       <div className="rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E4DAC8" }}>
         <div className="flex items-center justify-between gap-3 p-4 sm:p-5">
           <button
