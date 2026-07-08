@@ -22,6 +22,7 @@ import {
   IGDBGame,
 } from "@/lib/igdb"
 import { normalizeGameGenres } from "@/lib/igdb-genres"
+import { deriveGameStyleTags } from "@/lib/game-style-tags"
 
 interface ImportStats {
   total: number
@@ -50,7 +51,7 @@ function transformGameToMediaItem(game: IGDBGame) {
     pegiDescriptors: pegi?.descriptors ?? [],
     expertAgeRec: pegi?.age || null,
     director: developer?.company.name || null, // Using director field for developer
-    topics: game.themes?.map((t) => t.name) || [],
+    topics: deriveGameStyleTags(game), // Steam-style tags — see game-style-tags.ts
     // Store IGDB rating in shared rating fields (same as tmdbRating for movies)
     tmdbRating: game.total_rating ? Math.round(game.total_rating) / 10 : null, // IGDB 0-100 → 0-10 scale
     tmdbVoteCount: game.total_rating_count || null,

@@ -54,6 +54,7 @@ on:
           - all
           - import
           - backfill-ratings
+          - backfill-game-styles
           - enrich
           - enrich-deep
           - recalibrate-ratings
@@ -158,6 +159,29 @@ jobs:
             -H "Authorization: Bearer $CRON_SECRET" \
             "$SITE_URL/api/admin/import-cnc-ratings?limit=50&only_missing=true" \
             | jq '{matched, updated, errors, total}' 2>/dev/null || true
+          echo "::endgroup::"
+
+  # ── Dispatch-only: re-enrich all games with Steam-style tags ─────
+  backfill-game-styles:
+    name: Backfill game style tags
+    runs-on: ubuntu-latest
+    environment: Production
+    if: github.event.inputs.task == 'backfill-game-styles'
+    steps:
+      - name: Re-tag games from IGDB (cursor loop)
+        run: |
+          set +e
+          echo "::group::Game style backfill"
+          cursor=""
+          for i in $(seq 1 40); do
+            url="$SITE_URL/api/admin/backfill-game-styles?limit=60"
+            if [ -n "$cursor" ]; then url="$url&cursor=$cursor"; fi
+            resp=$(curl -sSL --max-time 285 -X POST -H "Authorization: Bearer $CRON_SECRET" "$url")
+            echo "$resp" | jq -c '{updated:.stats.updated,examined:.stats.examined,errors:.stats.errors,done,nextCursor}' 2>/dev/null || echo "$resp"
+            done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
+            cursor=$(echo "$resp" | jq -r '.nextCursor' 2>/dev/null)
+            if [ "$done" = "true" ] || [ -z "$cursor" ] || [ "$cursor" = "null" ]; then break; fi
+          done
           echo "::endgroup::"
 
   # ── Daily: Enrichment + deep enrichment + quality scores ─────────

@@ -11,6 +11,7 @@ import {
 } from "@/lib/igdb"
 import { normalizeGameGenres } from "@/lib/igdb-genres"
 import { isAdultIgdbGame } from "@/lib/adult-content-filter"
+import { deriveGameStyleTags } from "@/lib/game-style-tags"
 
 export const maxDuration = 60
 
@@ -72,7 +73,9 @@ function transformGame(game: IGDBGame) {
     pegiDescriptors: pegi?.descriptors ?? [],
     expertAgeRec: ageRec,
     director: developer?.company.name || null, // IGDB developer → director field (per existing manual import convention)
-    topics: game.themes?.map((t) => t.name) || [],
+    // Steam-style tags (Pixel art, Roguelike, JRPG, 2D/3D, MMO…) from IGDB
+    // metadata — replaces the raw English theme names. See game-style-tags.ts.
+    topics: deriveGameStyleTags(game),
     tmdbRating: game.total_rating ? Math.round(game.total_rating) / 10 : null,
     tmdbVoteCount: game.total_rating_count || null,
     dataSource: "IGDB" as const,

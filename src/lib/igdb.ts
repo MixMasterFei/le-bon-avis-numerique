@@ -125,6 +125,8 @@ export interface IGDBGame {
   total_rating_count?: number
   themes?: { id: number; name: string }[]
   game_modes?: { id: number; name: string }[]
+  player_perspectives?: { id: number; name: string }[]
+  keywords?: { id: number; name: string }[]
   url?: string
 }
 
@@ -336,6 +338,8 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
            involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
            themes.name,
            game_modes.name,
+           player_perspectives.name,
+           keywords.name,
            total_rating, total_rating_count;
     where id = ${safeId};
   `

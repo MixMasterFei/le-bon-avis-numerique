@@ -8,6 +8,7 @@ export type SimilarItem = {
   posterUrl: string | null
   expertAgeRec: number | null
   genres: string[]
+  topics: string[]
   releaseDate: Date | null
   score: number
 }
@@ -61,10 +62,10 @@ export async function getSimilarMedia({
       take: 10,
       include: {
         mediaA: {
-          select: { id: true, title: true, type: true, posterUrl: true, expertAgeRec: true, genres: true, releaseDate: true },
+          select: { id: true, title: true, type: true, posterUrl: true, expertAgeRec: true, genres: true, topics: true, releaseDate: true },
         },
         mediaB: {
-          select: { id: true, title: true, type: true, posterUrl: true, expertAgeRec: true, genres: true, releaseDate: true },
+          select: { id: true, title: true, type: true, posterUrl: true, expertAgeRec: true, genres: true, topics: true, releaseDate: true },
         },
       },
     })
@@ -79,6 +80,7 @@ export async function getSimilarMedia({
           posterUrl: other.posterUrl,
           expertAgeRec: other.expertAgeRec,
           genres: other.genres,
+          topics: other.topics,
           releaseDate: other.releaseDate,
           score: sim.similarityScore,
         }
@@ -128,7 +130,10 @@ export async function getSimilarMedia({
           const ageDiff = Math.abs(current.expertAgeRec - m.expertAgeRec)
           if (ageDiff <= 2) relevance += 2
         }
-        if (m.topics) relevance += m.topics.filter((t) => topicSet.has(t.toLowerCase())).length
+        // Style tags (Pixel art, Metroidvania, JRPG…) are the real "same genre"
+        // signal for games — weight them well above the broad IGDB genre.
+        const topicOverlap = m.topics ? m.topics.filter((t) => topicSet.has(t.toLowerCase())).length : 0
+        relevance += topicOverlap * (mediaType === "GAME" ? 3 : 1)
         if (m.tmdbRating) relevance += m.tmdbRating / 10
 
         return {
@@ -138,6 +143,7 @@ export async function getSimilarMedia({
           posterUrl: m.posterUrl,
           expertAgeRec: m.expertAgeRec,
           genres: m.genres,
+          topics: m.topics ?? [],
           releaseDate: m.releaseDate,
           score: relevance,
         }
@@ -152,6 +158,20 @@ export async function getSimilarMedia({
   } catch (error) {
     console.error("[getSimilarMedia] Failed to fetch:", error)
     return []
+  }
+
+  // For games, re-rank the whole list by shared style tags so a 2D pixel-art
+  // metroidvania leads with other 2D pixel-art / metroidvania games — even
+  // ahead of a higher raw similarity edge that only shared "Aventure". Stable
+  // for ties (keeps the score/precomputed order).
+  if (mediaType === "GAME" && topics.length > 0) {
+    const tset = new Set(topics.map((t) => t.toLowerCase()))
+    const styleOverlap = (item: SimilarItem) =>
+      item.topics.filter((t) => tset.has(t.toLowerCase())).length
+    similarMedia = similarMedia
+      .map((item, i) => ({ item, i, o: styleOverlap(item) }))
+      .sort((a, b) => b.o - a.o || a.i - b.i)
+      .map((x) => x.item)
   }
 
   return similarMedia.slice(0, limit)
