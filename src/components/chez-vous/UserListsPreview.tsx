@@ -4,7 +4,9 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Bookmark, BookOpen, Film, Heart, Newspaper } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+const p = APERCU_PALETTE
 
 interface MediaPreviewItem {
   id: string
@@ -114,14 +116,17 @@ function MediaListCard({
 }) {
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden animate-pulse">
-        <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10 flex items-center justify-between">
-          <div className="h-6 w-28 bg-gray-100 dark:bg-white/10 rounded" />
+      <div
+        className="rounded-2xl overflow-hidden animate-pulse"
+        style={{ background: p.card, border: `1px solid ${p.line}` }}
+      >
+        <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: `1px solid ${p.line}` }}>
+          <div className="h-6 w-28 rounded" style={{ background: p.placeholder }} />
         </div>
         <div className="p-6">
           <div className="grid grid-cols-6 gap-2">
             {[1, 2, 3, 4, 5, 6].map((j) => (
-              <div key={j} className="aspect-[2/3] bg-gray-100 dark:bg-white/10 rounded-lg" />
+              <div key={j} className="aspect-[2/3] rounded-lg" style={{ background: p.placeholder }} />
             ))}
           </div>
         </div>
@@ -130,16 +135,20 @@ function MediaListCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden">
-      <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-[var(--color-ink)]">
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: `1px solid ${p.line}` }}>
+        <h2 className="flex items-center gap-2 font-serif text-lg font-medium" style={{ color: p.ink, letterSpacing: "-0.01em" }}>
           <Icon className={`h-5 w-5 ${iconColor}`} />
           {title}
         </h2>
         {items.length > 0 && (
           <Link
             href={href}
-            className="text-sm font-medium text-violet-600 dark:text-violet-300 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 transition-colors"
+            className="text-sm font-semibold flex items-center gap-1 transition-opacity hover:opacity-70"
+            style={{ color: p.accent }}
           >
             Voir tout <ArrowRight className="h-4 w-4" />
           </Link>
@@ -149,17 +158,24 @@ function MediaListCard({
       <div className="p-6">
         {items.length === 0 ? (
           <div className="text-center py-8">
-            <Film className="h-8 w-8 mx-auto mb-3 text-gray-200 dark:text-neutral-700" />
-            <p className="text-sm text-gray-400 dark:text-neutral-500">{emptyMessage}</p>
-            <Button variant="link" size="sm" asChild className="mt-2 text-violet-600 dark:text-violet-300">
-              <Link href="/films">Explorer les films</Link>
-            </Button>
+            <Film className="h-8 w-8 mx-auto mb-3" style={{ color: p.ink2, opacity: 0.4 }} />
+            <p className="text-sm" style={{ color: p.ink2 }}>{emptyMessage}</p>
+            <Link
+              href="/films"
+              className="inline-block mt-2 text-sm font-semibold transition-opacity hover:opacity-70"
+              style={{ color: p.accent }}
+            >
+              Explorer les films
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-6 gap-2">
             {items.map((item) => (
               <Link key={item.id} href={`/media/${item.media.id}`} className="group">
-                <div className="aspect-[2/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-white/10 relative hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+                <div
+                  className="aspect-[2/3] rounded-lg overflow-hidden relative hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                  style={{ background: p.placeholder }}
+                >
                   {item.media.posterUrl ? (
                     <Image
                       src={item.media.posterUrl}
@@ -170,7 +186,7 @@ function MediaListCard({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Film className="h-4 w-4 text-gray-300 dark:text-neutral-600" />
+                      <Film className="h-4 w-4" style={{ color: p.ink2, opacity: 0.5 }} />
                     </div>
                   )}
                 </div>
@@ -192,13 +208,16 @@ function SavedNewsCard({
 }) {
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden animate-pulse">
-        <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10">
-          <div className="h-6 w-36 bg-gray-100 dark:bg-white/10 rounded" />
+      <div
+        className="rounded-2xl overflow-hidden animate-pulse"
+        style={{ background: p.card, border: `1px solid ${p.line}` }}
+      >
+        <div className="px-6 py-5" style={{ borderBottom: `1px solid ${p.line}` }}>
+          <div className="h-6 w-36 rounded" style={{ background: p.placeholder }} />
         </div>
         <div className="p-6 space-y-3">
           {[1, 2, 3].map((j) => (
-            <div key={j} className="h-16 bg-gray-100 dark:bg-white/10 rounded-xl" />
+            <div key={j} className="h-16 rounded-xl" style={{ background: p.placeholder }} />
           ))}
         </div>
       </div>
@@ -206,16 +225,20 @@ function SavedNewsCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white dark:bg-[var(--color-card)] border border-gray-100 dark:border-white/10 overflow-hidden md:col-span-2">
-      <div className="px-6 py-5 border-b border-gray-50 dark:border-white/10 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-[var(--color-ink)]">
-          <BookOpen className="h-5 w-5 text-emerald-600" />
+    <div
+      className="rounded-2xl overflow-hidden md:col-span-2"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      <div className="px-6 py-5 flex items-center justify-between" style={{ borderBottom: `1px solid ${p.line}` }}>
+        <h2 className="flex items-center gap-2 font-serif text-lg font-medium" style={{ color: p.ink, letterSpacing: "-0.01em" }}>
+          <BookOpen className="h-5 w-5" style={{ color: p.accent }} />
           &Agrave; lire plus tard
         </h2>
         {items.length > 0 && (
           <Link
             href="/apercudecouverte"
-            className="text-sm font-medium text-violet-600 dark:text-violet-300 hover:text-violet-700 dark:hover:text-violet-300 flex items-center gap-1 transition-colors"
+            className="text-sm font-semibold flex items-center gap-1 transition-opacity hover:opacity-70"
+            style={{ color: p.accent }}
           >
             Actualit&eacute;s <ArrowRight className="h-4 w-4" />
           </Link>
@@ -225,11 +248,15 @@ function SavedNewsCard({
       <div className="p-6">
         {items.length === 0 ? (
           <div className="text-center py-8">
-            <Newspaper className="h-8 w-8 mx-auto mb-3 text-gray-200 dark:text-neutral-700" />
-            <p className="text-sm text-gray-400 dark:text-neutral-500">Pas encore d&apos;articles gard&eacute;s</p>
-            <Button variant="link" size="sm" asChild className="mt-2 text-violet-600 dark:text-violet-300">
-              <Link href="/apercudecouverte">Lire les actualit&eacute;s</Link>
-            </Button>
+            <Newspaper className="h-8 w-8 mx-auto mb-3" style={{ color: p.ink2, opacity: 0.4 }} />
+            <p className="text-sm" style={{ color: p.ink2 }}>Pas encore d&apos;articles gard&eacute;s</p>
+            <Link
+              href="/apercudecouverte"
+              className="inline-block mt-2 text-sm font-semibold transition-opacity hover:opacity-70"
+              style={{ color: p.accent }}
+            >
+              Lire les actualit&eacute;s
+            </Link>
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
@@ -237,9 +264,10 @@ function SavedNewsCard({
               <Link
                 key={item.id}
                 href={`/apercudecouverte/${item.story.slug}`}
-                className="group flex gap-3 rounded-xl border border-gray-100 dark:border-white/10 p-3 hover:border-emerald-200 hover:bg-emerald-50/40 transition-colors"
+                className="group flex gap-3 rounded-xl p-3 transition-colors"
+                style={{ border: `1px solid ${p.line}` }}
               >
-                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-white/10">
+                <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg" style={{ background: p.placeholder }}>
                   {item.story.imageUrl ? (
                     <Image
                       src={item.story.imageUrl}
@@ -252,15 +280,15 @@ function SavedNewsCard({
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                      <Newspaper className="h-5 w-5 text-gray-300 dark:text-neutral-600" />
+                      <Newspaper className="h-5 w-5" style={{ color: p.ink2, opacity: 0.5 }} />
                     </div>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <div className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900 dark:text-[var(--color-ink)]">
+                  <div className="line-clamp-2 text-sm font-semibold leading-snug" style={{ color: p.ink }}>
                     {item.story.title}
                   </div>
-                  <p className="mt-1 line-clamp-2 text-xs leading-snug text-gray-500 dark:text-neutral-400">
+                  <p className="mt-1 line-clamp-2 text-xs leading-snug" style={{ color: p.ink2 }}>
                     {item.story.summary}
                   </p>
                 </div>
