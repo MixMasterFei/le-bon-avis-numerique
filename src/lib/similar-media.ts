@@ -38,6 +38,22 @@ export async function getSimilarMedia({
   const currentGenreSet = new Set(genres.map((g) => g.toLowerCase()))
   let similarMedia: SimilarItem[] = []
 
+  // Age-coherence guard (strict). "Dans le même genre" matches on genre +
+  // similarity score, so a 10+ anime and The Boys (17+) both tagged
+  // Action/Sci-Fi looked "similar" — unacceptable on a family guide. A
+  // suggestion must NEVER be rated older than the title being viewed: same age
+  // or younger only, and an UNRATED suggestion is dropped too (its age can't be
+  // guaranteed ≤ current). The rule only applies once we know the current
+  // title's age — enriched fiches always do; a rare unrated fiche keeps the
+  // genre-only behaviour.
+  const current = await prisma.mediaItem.findUnique({
+    where: { id: mediaId },
+    select: { director: true, expertAgeRec: true },
+  })
+  const currentAge = current?.expertAgeRec ?? null
+  const passesAge = (age: number | null): boolean =>
+    currentAge == null || (age != null && age <= currentAge)
+
   try {
     const similarities = await prisma.mediaSimilarity.findMany({
       where: { OR: [{ mediaIdA: mediaId }, { mediaIdB: mediaId }] },
@@ -71,6 +87,7 @@ export async function getSimilarMedia({
       .filter(
         (s) => currentGenreSet.size === 0 || s.genres.some((g) => currentGenreSet.has(g.toLowerCase())),
       )
+      .filter((s) => passesAge(s.expertAgeRec))
 
     if (similarMedia.length < 6 && genres.length > 0) {
       const existingIds = new Set<string>([mediaId, ...similarMedia.map((s) => s.id)])
@@ -99,15 +116,10 @@ export async function getSimilarMedia({
         take: 60,
       })
 
-      const current = await prisma.mediaItem.findUnique({
-        where: { id: mediaId },
-        select: { director: true, expertAgeRec: true },
-      })
-
       const genreSet = new Set(genres.map((g) => g.toLowerCase()))
       const topicSet = new Set(topics.map((t) => t.toLowerCase()))
 
-      const scored = fallback.map((m) => {
+      const scored = fallback.filter((m) => passesAge(m.expertAgeRec)).map((m) => {
         let relevance = 0
         const overlap = m.genres.filter((g) => genreSet.has(g.toLowerCase())).length
         relevance += overlap * 1.5
