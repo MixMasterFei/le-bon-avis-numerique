@@ -96,6 +96,8 @@ function daysAgo(n: number): Date {
 const KNOWN_CRON_TASKS = [
   "import",
   "import-games",   // Daily — IGDB recent + popular, popularity-floored
+  "import-preschool", // Daily — TMDB Kids-genre TV, grows the 2-4 band
+  "release-alerts", // Daily — "Prévenez-moi" → bell notifications on release
   "enrich",
   "enrich-deep",
   "quality",

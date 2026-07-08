@@ -58,6 +58,7 @@ model User {
   newsSavedStories      NewsSavedStory[]
   notifications         Notification[]
   totemConversations    TotemConversation[]
+  releaseAlerts         ReleaseAlert[]
 
   @@map("users")
 }
@@ -215,6 +216,7 @@ model MediaItem {
   familyWarningVotes    FamilyWarningVote[]
   triggerVotes          TriggerVote[]
   recoClicks            RecoClick[]
+  releaseAlerts         ReleaseAlert[]
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -1213,6 +1215,24 @@ model Notification {
   @@index([userId, readAt, createdAt])
   @@index([type])
   @@map("notifications")
+}
+
+// "Prévenez-moi" on an upcoming title. On the media's release date a daily cron
+// turns each un-notified alert into a MAJOR_RELEASE Notification (the bell).
+model ReleaseAlert {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  mediaId    String    @map("media_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  notifiedAt DateTime? @map("notified_at")
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@index([notifiedAt])
+  @@map("release_alerts")
 }
 
 // ============================================

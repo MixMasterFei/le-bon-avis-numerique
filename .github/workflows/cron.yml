@@ -125,6 +125,17 @@ jobs:
           done
           echo "::endgroup::"
 
+      - name: Send release alerts (Prévenez-moi → bell)
+        # Turns "Prévenez-moi" subscriptions into bell notifications the day
+        # each title reaches its release date. Cheap; non-fatal.
+        run: |
+          set +e
+          echo "::group::Release alerts"
+          curl -sSL --max-time 58 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/release-alerts" | jq . 2>/dev/null || true
+          echo "::endgroup::"
+
       - name: Import games from IGDB
         # Recent + popular console releases, defensively filtered to
         # total_rating_count >= 20 so the homepage "Sortis récemment

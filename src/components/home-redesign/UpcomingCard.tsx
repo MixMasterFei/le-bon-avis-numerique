@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Bell, Check } from "lucide-react"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
@@ -27,25 +29,56 @@ const WHERE: Record<UpcomingItem["type"], string> = { MOVIE: "Au cinéma", TV: "
  * unreleased, so we don't score them.
  */
 export function UpcomingCard({ item }: { item: UpcomingItem }) {
+  const { status } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
   const [notified, setNotified] = useState(false)
+  const [busy, setBusy] = useState(false)
 
+  // Hydrate the real subscription state (server-side) for logged-in users.
   useEffect(() => {
-    if (typeof window === "undefined") return
-    if (window.localStorage.getItem(`ta-notify-${item.id}`) === "1") {
-      queueMicrotask(() => setNotified(true))
+    if (status !== "authenticated") {
+      setNotified(false)
+      return
     }
-  }, [item.id])
+    let cancelled = false
+    fetch(`/api/user/release-alert?mediaId=${item.id}`)
+      .then((r) => (r.ok ? r.json() : { subscribed: false }))
+      .then((d) => {
+        if (!cancelled) setNotified(Boolean(d?.subscribed))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [status, item.id])
 
-  const toggle = (e: React.MouseEvent) => {
+  const toggle = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setNotified((n) => {
-      const next = !n
-      try {
-        window.localStorage.setItem(`ta-notify-${item.id}`, next ? "1" : "0")
-      } catch {}
-      return next
-    })
+    // Anonymous → invite to connect (the alert has to be tied to an account).
+    if (status !== "authenticated") {
+      router.push(`/connexion?callbackUrl=${encodeURIComponent(pathname || "/")}`)
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    const next = !notified
+    setNotified(next) // optimistic
+    try {
+      const res = next
+        ? await fetch("/api/user/release-alert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mediaId: item.id }),
+          })
+        : await fetch(`/api/user/release-alert?mediaId=${item.id}`, { method: "DELETE" })
+      if (!res.ok) setNotified(!next) // revert on failure
+    } catch {
+      setNotified(!next)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const href = `/media/${toMediaRouteId(item.type, item.id)}`
@@ -113,7 +146,13 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
           <button
             onClick={toggle}
             aria-pressed={notified}
-            className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-[7px] text-[13px] font-bold transition-colors"
+            disabled={busy}
+            title={
+              notified
+                ? "C'est noté — une notification arrivera dans votre cloche à sa sortie"
+                : "Recevez une notification à sa sortie"
+            }
+            className="inline-flex items-center gap-1.5 rounded-full px-[13px] py-[7px] text-[13px] font-bold transition-colors disabled:opacity-60"
             style={
               notified
                 ? { background: "var(--pine)", border: "1.5px solid var(--pine)", color: "#fff" }
@@ -121,7 +160,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
             }
           >
             {notified ? <Check className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
-            {notified ? "Prévenu" : "Prévenez-moi"}
+            {notified ? "Prévenu · à sa sortie" : "Prévenez-moi"}
           </button>
         </div>
       </div>

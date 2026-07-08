@@ -72,6 +72,7 @@ const MAX_REMEDIATIONS = 4
 const EXPECTED_TASKS: ExpectedTask[] = [
   { task: "import", staleAfterHours: 36, outputMetric: { key: "totalExamined", label: "Items TMDB examinés" } },
   { task: "import-games", staleAfterHours: 36, outputMetric: { key: "fetched", label: "Jeux récupérés" } },
+  { task: "release-alerts", staleAfterHours: 36, outputMetric: { key: "notified", label: "Alertes de sortie envoyées" } },
   {
     task: "enrich",
     staleAfterHours: 36,
