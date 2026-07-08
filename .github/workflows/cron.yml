@@ -168,17 +168,20 @@ jobs:
         run: |
           set +e
           echo "::group::Screenshot backfill"
-          after=""
-          for i in $(seq 1 6); do
-            url="$SITE_URL/api/admin/screenshots/import"
-            if [ -n "$after" ]; then url="$url?afterId=$after"; fi
-            resp=$(curl -sSL --max-time 285 -X POST \
-              -H "Authorization: Bearer $CRON_SECRET" -H "Content-Type: application/json" \
-              -d '{"mediaType":"ALL","skipExisting":true,"limit":40}' "$url")
-            echo "$resp" | jq -c '{imported:.stats.imported,remaining,done,lastId}' 2>/dev/null || echo "$resp"
-            done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
-            after=$(echo "$resp" | jq -r '.lastId' 2>/dev/null)
-            if [ "$done" = "true" ] || [ -z "$after" ] || [ "$after" = "null" ]; then break; fi
+          # Games first (few, and the visible gap), then everything else.
+          for TYPE in GAME ALL; do
+            after=""
+            for i in $(seq 1 6); do
+              url="$SITE_URL/api/admin/screenshots/import"
+              if [ -n "$after" ]; then url="$url?afterId=$after"; fi
+              resp=$(curl -sSL --max-time 285 -X POST \
+                -H "Authorization: Bearer $CRON_SECRET" -H "Content-Type: application/json" \
+                -d "{\"mediaType\":\"$TYPE\",\"skipExisting\":true,\"limit\":40}" "$url")
+              echo "[$TYPE] $(echo "$resp" | jq -c '{imported:.stats.imported,remaining,done,lastId}' 2>/dev/null || echo "$resp")"
+              done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
+              after=$(echo "$resp" | jq -r '.lastId' 2>/dev/null)
+              if [ "$done" = "true" ] || [ -z "$after" ] || [ "$after" = "null" ]; then break; fi
+            done
           done
           echo "::endgroup::"
 
