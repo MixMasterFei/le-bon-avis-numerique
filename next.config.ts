@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
     // `unoptimized` (used on the news cards that hotlink arbitrary publisher
     // CDNs — those hosts can't be enumerated). See the news components.
     formats: ["image/avif", "image/webp"],
+    // Poster/cover art is immutable (content-addressed TMDB/IGDB/Books URLs), so
+    // cache an optimized variant for 31 days. This lifts the /_next/image cache
+    // hit-rate (repeat views + re-crawls stop re-invoking the optimizer) — the
+    // 38% miss rate was turning a bot/crawler burst across the catalogue into a
+    // Function-Invocation + Edge-Request spike.
+    minimumCacheTTL: 60 * 60 * 24 * 31, // 31 days
+    // Pin the single quality the app renders at. Without this the optimizer
+    // accepts any q=1..100, so one poster URL can fan out into ~100 distinct
+    // optimization jobs (invocations) for a crawler probing the query string.
+    qualities: [75],
     remotePatterns: [
       {
         protocol: "https",
