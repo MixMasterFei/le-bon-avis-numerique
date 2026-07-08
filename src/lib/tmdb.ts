@@ -375,6 +375,25 @@ export async function getPopularTVShows(page = 1) {
   })
 }
 
+/**
+ * Discover TV shows with filters (e.g. the Kids genre for pre-school series).
+ */
+export async function discoverTVShows(options: {
+  page?: number
+  with_genres?: string // comma-separated genre IDs
+  sort_by?: string
+  "vote_count.gte"?: string
+  with_original_language?: string
+  "first_air_date.gte"?: string
+}) {
+  const params: Record<string, string> = {}
+  Object.entries(options).forEach(([key, value]) => {
+    if (value !== undefined) params[key] = value.toString()
+  })
+  params.include_adult = "false"
+  return tmdbFetch<TMDBSearchResult<TMDBTVShow>>("/discover/tv", params)
+}
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
