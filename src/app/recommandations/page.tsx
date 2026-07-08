@@ -7,7 +7,9 @@ import {
   ApercuMediaCard,
   type ApercuCardMedia,
 } from "@/components/home-v2/ApercuMediaCard"
+import { RedesignCard } from "@/components/home-redesign/RedesignCard"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { useV2Type } from "@/components/providers/V2TypeProvider"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 type WizardType = "all" | "movie" | "tv" | "game" | "book" | "app"
@@ -78,6 +80,9 @@ function mapDb(media: DbMedia): CardItem | null {
 function RecosInner() {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
+  // Match the catalogue: V2 poster card (totem meter) when the V2 visual
+  // system is on, else the previous ApercuMediaCard family-avatar row.
+  const v2 = useV2Type()
   const sp = useSearchParams()
   const router = useRouter()
 
@@ -340,15 +345,27 @@ function RecosInner() {
                   </div>
                 ) : filtered.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-                      {filtered.slice(0, displayCount).map((m) => (
-                        <ApercuMediaCard
-                          key={`${m.type}:${m.id}`}
-                          media={m}
-                          size="sm"
-                          serifClass={serifClass}
-                        />
-                      ))}
+                    <div
+                      data-home={v2 ? "v2" : undefined}
+                      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5"
+                    >
+                      {filtered.slice(0, displayCount).map((m) =>
+                        v2 ? (
+                          <RedesignCard
+                            key={`${m.type}:${m.id}`}
+                            media={m}
+                            totem="compact"
+                            showType
+                          />
+                        ) : (
+                          <ApercuMediaCard
+                            key={`${m.type}:${m.id}`}
+                            media={m}
+                            size="sm"
+                            serifClass={serifClass}
+                          />
+                        )
+                      )}
                     </div>
                     {displayCount < filtered.length && (
                       <div className="flex justify-center mt-8">
