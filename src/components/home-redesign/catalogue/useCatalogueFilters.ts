@@ -274,6 +274,7 @@ export function useCatalogueFilters({
   return {
     // state
     search, sort, minAge, maxAge, platforms, topics, memberIds,
+    mediaType,
     // derived
     selectedMembers, filterSummary, hasActiveFilters, isPending,
     PLATFORMS, TOPICS,

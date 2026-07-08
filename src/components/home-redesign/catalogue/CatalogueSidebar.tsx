@@ -4,6 +4,7 @@ import { Search, X, Users, Check } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { getMemberAge } from "@/lib/age-utils"
+import { GAME_STYLE_GROUPS } from "@/lib/game-style-tags"
 import { memberColor } from "../family"
 import { MemberMonogram } from "../MemberMonogram"
 import {
@@ -229,6 +230,41 @@ export function CatalogueSidebar({
                 </button>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Style (games) — Steam-style tags, grouped; filter via the topics param */}
+      {f.mediaType === "GAME" && (
+        <div>
+          <SectionLabel>Style</SectionLabel>
+          <div className="space-y-2.5">
+            {GAME_STYLE_GROUPS.map((group) => (
+              <div key={group.label}>
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--ink-3)" }}>
+                  {group.label}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.tags.map((tag) => {
+                    const active = f.topics.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => f.toggleTopic(tag)}
+                        className="rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors"
+                        style={{
+                          background: active ? "var(--pine)" : "var(--paper-2)",
+                          color: active ? "#fff" : "var(--ink-2)",
+                          border: `1px solid ${active ? "var(--pine)" : "var(--line)"}`,
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

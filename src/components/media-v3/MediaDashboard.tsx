@@ -164,6 +164,21 @@ export function MediaDashboard({
                   {media.synopsisFr}
                 </p>
               )}
+              {/* Steam-style tags for games (2D, Pixel art, Metroidvania…) */}
+              {media.type === "GAME" && media.topics.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {media.topics.slice(0, 8).map((t) => (
+                    <Link
+                      key={t}
+                      href={`/jeux?topics=${encodeURIComponent(t)}`}
+                      className="rounded-full px-2 py-[3px] text-[10.5px] font-medium transition-colors hover:opacity-80"
+                      style={{ color: "var(--f-accent-deep)", background: "var(--f-accent-soft)" }}
+                    >
+                      {t}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* verdict + trailer */}

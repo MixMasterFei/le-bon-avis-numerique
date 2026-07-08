@@ -14,6 +14,7 @@ import { getAgeCategory, getMemberAge } from "@/lib/age-utils"
 import { hasActionablePreferences } from "@/lib/family-fit-score"
 import { FILTERABLE_PLATFORMS } from "@/lib/streaming-providers"
 import { GAME_GENRE_TOPICS } from "@/lib/igdb-genres"
+import { GAME_STYLE_GROUPS } from "@/lib/game-style-tags"
 
 interface FamilyMember {
   id: string
@@ -755,6 +756,35 @@ export function FilterSidebar({ className, onFiltersChange, mediaType = "MOVIE",
           ))}
         </div>
       </div>
+
+      {/* Style (games) — Steam-style tags, filter via the same topics param */}
+      {mediaType === "GAME" && (
+        <div className="space-y-3">
+          <h3 className="font-medium text-sm text-gray-700 dark:text-neutral-300">Style</h3>
+          {GAME_STYLE_GROUPS.map((group) => (
+            <div key={group.label} className="space-y-1.5">
+              <div className="text-xs font-medium text-gray-400 dark:text-neutral-500">{group.label}</div>
+              <div className="flex flex-wrap gap-2">
+                {group.tags.map((tag) => (
+                  <Badge
+                    key={tag}
+                    variant={selectedTopics.includes(tag) ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer transition-colors",
+                      selectedTopics.includes(tag)
+                        ? "bg-primary hover:bg-primary/90"
+                        : "hover:bg-gray-100 dark:hover:bg-white/10",
+                    )}
+                    onClick={() => toggleTopic(tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </aside>
   )
 }
