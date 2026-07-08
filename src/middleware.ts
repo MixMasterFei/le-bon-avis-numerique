@@ -16,7 +16,7 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 // Routes that require authentication
-const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris"]
+const protectedRoutes = ["/profil", "/ma-liste", "/mes-favoris"]
 
 // Routes that require admin role (both UI and API)
 const adminRoutes = ["/admin", "/api/admin"]

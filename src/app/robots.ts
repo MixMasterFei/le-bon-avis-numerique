@@ -6,7 +6,6 @@ const PRIVATE_PATHS = [
   "/api/",
   "/profil/",
   "/chez-vous",
-  "/mes-avis/",
   "/ma-liste/",
   "/mes-favoris/",
   "/studio/",
