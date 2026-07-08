@@ -9,7 +9,9 @@ import {
   ApercuMediaCard,
   type ApercuCardMedia,
 } from "@/components/home-v2/ApercuMediaCard"
+import { RedesignCard } from "@/components/home-redesign/RedesignCard"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { useV2Type } from "@/components/providers/V2TypeProvider"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface ApiItem {
@@ -24,6 +26,10 @@ interface ApiItem {
 export default function MaListePage() {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
+  // Match the catalogue: V2 poster card (totem meter) when the V2 visual
+  // system is on, else the previous ApercuMediaCard. Keeps this page in step
+  // with /films, /age/*, etc. instead of frozen on the old family-avatar row.
+  const v2 = useV2Type()
   const { data: session, status } = useSession()
   const [watchlist, setWatchlist] = useState<ApercuCardMedia[]>([])
   const [loading, setLoading] = useState(true)
@@ -158,6 +164,15 @@ export default function MaListePage() {
                 >
                   Parcourir les films
                 </Link>
+              </div>
+            ) : v2 ? (
+              <div
+                data-home="v2"
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-5 lg:grid-cols-5"
+              >
+                {watchlist.map((item) => (
+                  <RedesignCard key={item.id} media={item} totem="compact" showType />
+                ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">

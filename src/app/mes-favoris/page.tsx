@@ -9,7 +9,9 @@ import {
   ApercuMediaCard,
   type ApercuCardMedia,
 } from "@/components/home-v2/ApercuMediaCard"
+import { RedesignCard } from "@/components/home-redesign/RedesignCard"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
+import { useV2Type } from "@/components/providers/V2TypeProvider"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface ApiItem {
@@ -24,6 +26,11 @@ interface ApiItem {
 export default function MesFavorisPage() {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
+  // Match the catalogue: when the V2 visual system is on (admin or
+  // HOMEPAGE_V2_PUBLIC), render the V2 poster card (totem meter) instead of
+  // the previous ApercuMediaCard (heart-avatar family row), so this page
+  // stops looking a generation behind /films, /age/*, etc.
+  const v2 = useV2Type()
   const { data: session, status } = useSession()
   const [favorites, setFavorites] = useState<ApercuCardMedia[]>([])
   const [loading, setLoading] = useState(true)
@@ -157,6 +164,15 @@ export default function MesFavorisPage() {
                 >
                   Parcourir les films
                 </Link>
+              </div>
+            ) : v2 ? (
+              <div
+                data-home="v2"
+                className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 md:gap-5 lg:grid-cols-5"
+              >
+                {favorites.map((item) => (
+                  <RedesignCard key={item.id} media={item} totem="compact" showType />
+                ))}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
