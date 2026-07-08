@@ -11,7 +11,7 @@ export async function GET() {
     const entries = await Promise.all(
       AGE_BANDS.map(
         async (b) =>
-          [b.key, await prisma.mediaItem.count({ where: ageBandCatalogWhere(b.min, b.max) })] as const,
+          [b.key, await prisma.mediaItem.count({ where: ageBandCatalogWhere(b.min, b.max, b.voteFloor) })] as const,
       ),
     )
     return NextResponse.json(
