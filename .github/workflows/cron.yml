@@ -105,6 +105,26 @@ jobs:
           fi
           echo "::endgroup::"
 
+      - name: Import pre-school TV (grow the 2-4 band)
+        # Paginates TMDB's Kids genre for France-available series (Peppa,
+        # Bluey, T'choupi…) — the thinnest slice of the catalogue. Cursor loop
+        # advances startPage until drained. Non-fatal.
+        run: |
+          set +e
+          echo "::group::Pre-school TV import"
+          page=1
+          for i in 1 2 3 4 5; do
+            resp=$(curl -sSL --max-time 285 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$SITE_URL/api/admin/import-preschool?startPage=$page&pages=3&voteFloor=15")
+            echo "$resp" | jq -c '{imported:.stats.imported,examined:.stats.examined,skippedExisting:.stats.skippedExisting,done,nextPage}' 2>/dev/null || echo "$resp"
+            done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
+            next=$(echo "$resp" | jq -r '.nextPage' 2>/dev/null)
+            if [ "$done" = "true" ] || [ -z "$next" ] || [ "$next" = "null" ]; then break; fi
+            page=$next
+          done
+          echo "::endgroup::"
+
       - name: Import games from IGDB
         # Recent + popular console releases, defensively filtered to
         # total_rating_count >= 20 so the homepage "Sortis récemment
