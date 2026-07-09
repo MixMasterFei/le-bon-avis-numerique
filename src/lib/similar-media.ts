@@ -55,6 +55,50 @@ export async function getSimilarMedia({
   const passesAge = (age: number | null): boolean =>
     currentAge == null || (age != null && age <= currentAge)
 
+  // Games: select candidates by shared STYLE tags (Pixel art, Metroidvania,
+  // 2D, JRPG, Rétro…), NOT the genre-only precomputed edges — those produced
+  // incoherent rails (a 2D indie next to Heroes of Might & Magic), and most
+  // games have no precomputed edges anyway. Rank by style-tag overlap first,
+  // genre + rating as tiebreakers. Untagged games (rare) fall through to the
+  // generic genre flow below.
+  if (mediaType === "GAME" && topics.length > 0) {
+    try {
+      const tset = new Set(topics.map((t) => t.toLowerCase()))
+      const gset = new Set(genres.map((g) => g.toLowerCase()))
+      const pool = await prisma.mediaItem.findMany({
+        where: {
+          id: { not: mediaId },
+          type: "GAME",
+          posterUrl: { not: null, startsWith: "http" },
+          topics: { hasSome: topics },
+          ...(currentAge != null ? { expertAgeRec: { not: null, lte: currentAge } } : {}),
+        },
+        select: {
+          id: true, title: true, type: true, posterUrl: true, expertAgeRec: true,
+          genres: true, topics: true, releaseDate: true, tmdbRating: true,
+        },
+        take: 300,
+      })
+      const scored = pool
+        .map((m) => {
+          const style = m.topics.filter((t) => tset.has(t.toLowerCase())).length
+          const genreOverlap = m.genres.filter((g) => gset.has(g.toLowerCase())).length
+          const item: SimilarItem = {
+            id: m.id, title: m.title, type: m.type as string, posterUrl: m.posterUrl,
+            expertAgeRec: m.expertAgeRec, genres: m.genres, topics: m.topics,
+            releaseDate: m.releaseDate, score: style,
+          }
+          return { item, style, tie: style * 5 + genreOverlap + (m.tmdbRating ?? 0) / 10 }
+        })
+        .sort((a, b) => b.style - a.style || b.tie - a.tie)
+      const out = scored.map((s) => s.item)
+      if (out.length >= 4) return out.slice(0, limit)
+      // too few style peers → let the generic flow try genres
+    } catch (e) {
+      console.error("[getSimilarMedia] game style path failed:", e)
+    }
+  }
+
   try {
     const similarities = await prisma.mediaSimilarity.findMany({
       where: { OR: [{ mediaIdA: mediaId }, { mediaIdB: mediaId }] },
