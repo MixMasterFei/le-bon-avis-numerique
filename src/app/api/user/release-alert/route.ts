@@ -34,6 +34,18 @@ export async function POST(req: NextRequest) {
   })
   if (!media) return NextResponse.json({ error: "Titre introuvable" }, { status: 404 })
 
+  // The date to fire on: prefer the card's FR availability date (body.releaseDate)
+  // — MediaItem.releaseDate is the TMDB primary date and is often earlier/wrong
+  // for France. Fall back to the stored date ONLY if it's in the future (never a
+  // stale past date, which would fire immediately and wrongly say "disponible").
+  const now = new Date()
+  let notifyAt: Date | null = null
+  if (typeof body?.releaseDate === "string") {
+    const d = new Date(body.releaseDate)
+    if (!Number.isNaN(d.getTime())) notifyAt = d
+  }
+  if (!notifyAt && media.releaseDate && media.releaseDate > now) notifyAt = media.releaseDate
+
   // Only notify on a NEW subscription (not a re-toggle), so the bell confirms
   // the action once without spamming.
   const already = await prisma.releaseAlert.findUnique({
@@ -43,14 +55,14 @@ export async function POST(req: NextRequest) {
 
   await prisma.releaseAlert.upsert({
     where: { userId_mediaId: { userId: session.user.id, mediaId } },
-    create: { userId: session.user.id, mediaId },
-    update: {}, // re-subscribing is idempotent; keep the original notifiedAt state
+    create: { userId: session.user.id, mediaId, notifyAt },
+    update: { notifyAt }, // correct a stale/missing date on re-subscribe
   })
 
   if (!already) {
     // Immediate confirmation in the bell — "you're now waiting for X".
-    const dateStr = media.releaseDate
-      ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(media.releaseDate)
+    const dateStr = notifyAt
+      ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(notifyAt)
       : null
     await createNotification({
       userId: session.user.id,

@@ -1224,6 +1224,10 @@ model ReleaseAlert {
   userId     String    @map("user_id")
   mediaId    String    @map("media_id")
   createdAt  DateTime  @default(now()) @map("created_at")
+  // The date the alert should fire — captured from the "Bientôt" card at
+  // subscribe time (the FR theatrical / availability date). Stored because the
+  // MediaItem.releaseDate is the TMDB primary date, often NOT the FR date.
+  notifyAt   DateTime? @map("notify_at")
   notifiedAt DateTime? @map("notified_at")
 
   user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)

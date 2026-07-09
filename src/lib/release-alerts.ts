@@ -11,10 +11,13 @@ import type { MediaType } from "@/lib/types"
  */
 export async function runReleaseAlerts(): Promise<{ notified: number; scanned: number }> {
   const now = new Date()
+  // Fire on the captured FR availability date (notifyAt), NOT the TMDB primary
+  // MediaItem.releaseDate — which is often an earlier/foreign date and would
+  // wrongly say "disponible" weeks before the French release.
   const due = await prisma.releaseAlert.findMany({
     where: {
       notifiedAt: null,
-      media: { releaseDate: { not: null, lte: now } },
+      notifyAt: { not: null, lte: now },
     },
     take: 1000,
     include: { media: { select: { id: true, title: true, type: true } } },

@@ -70,7 +70,9 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
         ? await fetch("/api/user/release-alert", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mediaId: item.id }),
+            // Pass the FR availability date shown on the card so the alert fires
+            // on the right day (not the stored TMDB primary date).
+            body: JSON.stringify({ mediaId: item.id, releaseDate: item.releaseDate }),
           })
         : await fetch(`/api/user/release-alert?mediaId=${item.id}`, { method: "DELETE" })
       if (!res.ok) setNotified(!next) // revert on failure
