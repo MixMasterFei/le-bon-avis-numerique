@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
+import { seededShuffle, getDaySeed } from "@/lib/seeded-shuffle"
 import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
@@ -231,7 +231,9 @@ export function TopPicksRail({ maxAge, audience, rankByMemberIds, state }: { max
   const label = homepageRailLabel(state)
 
   const shown = useMemo(() => {
-    const seed = getWeekSeed() + nonce
+    // Top rail rotates DAILY (fresh feel) — the pools are ~30 deep, only 12
+    // shown, so a day seed yields a genuinely different selection each day.
+    const seed = getDaySeed() + nonce
     const mix = TOP_MIX[state]
     const pick = (arr: RedesignCardMedia[], n: number, s: number) => seededShuffle(arr, s).slice(0, n)
     // Cinema leads (big new releases first); the rest is shuffled together so
