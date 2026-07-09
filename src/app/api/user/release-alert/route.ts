@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createNotification, NOTIFICATION_TYPES } from "@/lib/notifications"
+import { toMediaRouteId, type MediaType } from "@/lib/media-route"
 
 // "Prévenez-moi" subscriptions for upcoming titles. A daily cron
 // (/api/cron/release-alerts) turns each un-notified alert into a bell
@@ -26,14 +28,43 @@ export async function POST(req: NextRequest) {
   if (!mediaId || typeof mediaId !== "string") {
     return NextResponse.json({ error: "mediaId requis" }, { status: 400 })
   }
-  const media = await prisma.mediaItem.findUnique({ where: { id: mediaId }, select: { id: true } })
+  const media = await prisma.mediaItem.findUnique({
+    where: { id: mediaId },
+    select: { id: true, title: true, type: true, releaseDate: true },
+  })
   if (!media) return NextResponse.json({ error: "Titre introuvable" }, { status: 404 })
+
+  // Only notify on a NEW subscription (not a re-toggle), so the bell confirms
+  // the action once without spamming.
+  const already = await prisma.releaseAlert.findUnique({
+    where: { userId_mediaId: { userId: session.user.id, mediaId } },
+    select: { id: true },
+  })
 
   await prisma.releaseAlert.upsert({
     where: { userId_mediaId: { userId: session.user.id, mediaId } },
     create: { userId: session.user.id, mediaId },
     update: {}, // re-subscribing is idempotent; keep the original notifiedAt state
   })
+
+  if (!already) {
+    // Immediate confirmation in the bell — "you're now waiting for X".
+    const dateStr = media.releaseDate
+      ? new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" }).format(media.releaseDate)
+      : null
+    await createNotification({
+      userId: session.user.id,
+      type: NOTIFICATION_TYPES.MAJOR_RELEASE,
+      priority: "NORMAL",
+      title: `Vous suivez « ${media.title} »`,
+      body: dateStr
+        ? `C'est noté — je vous préviens ici dès sa sortie, le ${dateStr}.`
+        : "C'est noté — je vous préviens ici dès sa sortie.",
+      href: `/media/${toMediaRouteId(media.type as MediaType, media.id)}`,
+      metadata: { mediaId: media.id, kind: "subscribed" },
+    }).catch(() => {}) // never fail the subscription on a notification hiccup
+  }
+
   return NextResponse.json({ subscribed: true })
 }
 

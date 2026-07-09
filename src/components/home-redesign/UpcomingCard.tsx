@@ -160,7 +160,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
             }
           >
             {notified ? <Check className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
-            {notified ? "Prévenu · à sa sortie" : "Prévenez-moi"}
+            {notified ? "Prévenu" : "Prévenez-moi"}
           </button>
         </div>
       </div>
