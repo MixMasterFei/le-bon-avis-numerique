@@ -30,6 +30,7 @@ import {
   Loader2,
   Smartphone,
   Clock,
+  Home,
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -361,6 +362,17 @@ export function SiteHeader() {
                     {item.name}
                   </Link>
                 ),
+              )}
+
+              {isAdmin && (
+                <Link
+                  href="/coin-famille"
+                  className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90 whitespace-nowrap"
+                  style={{ background: p.accent, color: "#fff" }}
+                >
+                  <Home className="h-4 w-4 flex-shrink-0" />
+                  Coin Famille
+                </Link>
               )}
 
               <div ref={moreMenuRef} className="relative">
@@ -701,6 +713,17 @@ export function SiteHeader() {
                       className="absolute right-0 mt-2 w-52 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
                       style={dropdownPanelStyle}
                     >
+                      {isAdmin && (
+                        <Link
+                          href="/coin-famille"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:opacity-70"
+                          style={{ color: p.accent }}
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Home className="h-4 w-4" />
+                          Coin Famille
+                        </Link>
+                      )}
                       <Link
                         href="/profil"
                         className="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold transition-colors hover:opacity-70"
@@ -845,6 +868,16 @@ export function SiteHeader() {
         </form>
 
         <nav className="lg:hidden flex items-center gap-1 pb-2 overflow-x-auto -mx-1 px-1">
+          {isAdmin && (
+            <Link
+              href="/coin-famille"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap"
+              style={{ background: p.accent, color: "#fff", border: `1px solid ${p.accent}` }}
+            >
+              <Home className="h-3.5 w-3.5" />
+              Coin Famille
+            </Link>
+          )}
           {navigation.map((item) => (
             <Link
               key={item.name}
@@ -986,6 +1019,17 @@ export function SiteHeader() {
             {session?.user ? (
               <>
                 <hr className="my-2" style={{ borderColor: p.line }} />
+                {isAdmin && (
+                  <Link
+                    href="/coin-famille"
+                    className="flex items-center gap-3 px-4 py-3 font-semibold rounded-lg transition-opacity hover:opacity-70"
+                    style={{ color: p.accent }}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Home className="h-5 w-5" />
+                    Coin Famille
+                  </Link>
+                )}
                 <Link
                   href="/profil"
                   className="flex items-center gap-3 px-4 py-3 font-medium rounded-lg transition-opacity hover:opacity-70"

@@ -12,6 +12,8 @@ const SAGE = "#5C8A5C"
 
 // Internal-paths-only guard, mirroring /connexion's safeCallback (open-redirect
 // protection). Falls back to /profil, the historical post-signup landing.
+// NOTE: switch to /coin-famille at Coin Famille public launch (see
+// COIN_FAMILLE_PUBLIC in src/lib/coin-famille-flag.ts).
 function safeCallback(raw: string | null): string {
   if (!raw) return "/profil"
   if (raw[0] !== "/" || raw[1] === "/" || raw[1] === "\\") return "/profil"

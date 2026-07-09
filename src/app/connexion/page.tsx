@@ -28,6 +28,8 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
  *   - absolute URLs ("https://…")
  *   - "javascript:" / "data:" / any non-path string
  * On rejection we fall back to /profil (the default landing).
+ * NOTE: at Coin Famille public launch, switch this default to /coin-famille
+ * (see COIN_FAMILLE_PUBLIC in src/lib/coin-famille-flag.ts).
  */
 function safeCallback(raw: string | null): string {
   if (!raw) return "/profil"
