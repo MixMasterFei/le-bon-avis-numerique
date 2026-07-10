@@ -18,10 +18,16 @@ export async function GET(req: NextRequest) {
   // ?email=always forces the digest even with 0 opportunities (handy for a
   // first manual verification); default only emails when there's something to act on.
   const forceEmail = req.nextUrl.searchParams.get("email") === "always"
-  // Writes are OFF by default — this agent edits user-visible copy, so prod starts
-  // in dry-run and is flipped on explicitly via SEO_AGENT_AUTOFIX=true after a
-  // manual verification. ?dryRun=1 forces report-only regardless of the env flag.
-  const writesEnabled = process.env.SEO_AGENT_AUTOFIX === "true"
+  // Writes are ON by default IN PRODUCTION since 2026-07-10 (owner call: "the
+  // best automatic system linked to SEO") — every write is gated
+  // (keyword/faithfulness/length checks), reversible, and reported in the
+  // weekly email. Fail-closed everywhere else: previews and local dev always
+  // dry-run (VERCEL_ENV guard), so a missing/mis-scoped env var can never
+  // silently enable writes outside prod. Kill-switch: SEO_AGENT_AUTOFIX="false"
+  // in Vercel. ?dryRun=1 forces report-only for a single run regardless.
+  const writesEnabled =
+    process.env.VERCEL_ENV === "production" &&
+    process.env.SEO_AGENT_AUTOFIX !== "false"
   const forceDryRun = req.nextUrl.searchParams.get("dryRun") === "1"
   const dryRun = !writesEnabled || forceDryRun
 

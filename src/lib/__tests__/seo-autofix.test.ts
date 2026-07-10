@@ -6,6 +6,7 @@ import {
   isJunkQuery,
   scoreNeighbor,
   seoTitlePasses,
+  rewritePasses,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -62,6 +63,60 @@ describe("keywordPresent", () => {
   it("still requires the genuine ranking keyword (not just the title)", () => {
     expect(keywordPresent("backrooms age minimum", "Backrooms : couloirs infinis.")).toBe(false)
   })
+
+  it("does not require age-intent MODIFIERS as literal words", () => {
+    // "minimum"/"quel"/"à partir de" phrase the question — natural copy answers
+    // with "dès 16 ans" and never says "l'âge minimum est". These queries were
+    // permanently unsatisfiable before, making the write-side agent a no-op.
+    expect(
+      keywordPresent("obsession film age minimum", "Obsession", "Un vœu exaucé au prix fort — dès 16 ans."),
+    ).toBe(true)
+    expect(
+      keywordPresent("toy story 5 à partir de quel âge", "Toy Story 5", "Les jouets repartent à l'aventure, dès 6 ans."),
+    ).toBe(true)
+    expect(
+      keywordPresent("spider man brand new day interdit au moins de", "Spider-Man: Brand New Day — dès 12 ans"),
+    ).toBe(true)
+  })
+
+  it("still requires the AGE itself even when modifiers are relaxed", () => {
+    expect(keywordPresent("obsession film age minimum", "Obsession", "Un vœu exaucé au prix fort.")).toBe(false)
+  })
+})
+
+describe("rewritePasses", () => {
+  it("counts the TITLE toward keyword coverage (synopses never repeat their own title)", () => {
+    expect(
+      rewritePasses(
+        "age toy story 5",
+        "Toy Story 5",
+        "Les jouets bien-aimés quittent leur zone familière.",
+        "Les jouets repartent pour une aventure pleine d'émotion, à partager dès 6 ans.",
+      ),
+    ).toBe(true)
+  })
+
+  it("rejects a draft that still misses the ranking intent", () => {
+    expect(
+      rewritePasses(
+        "age toy story 5",
+        "Toy Story 5",
+        "Les jouets bien-aimés quittent leur zone familière.",
+        "Les jouets repartent pour une aventure pleine d'émotion.",
+      ),
+    ).toBe(false)
+  })
+
+  it("rejects a gutted draft (less than half the original)", () => {
+    expect(
+      rewritePasses(
+        "age toy story 5",
+        "Toy Story 5",
+        "Un synopsis long et détaillé qui décrit précisément l'intrigue, les personnages et les thèmes du film pour les parents.",
+        "Dès 6 ans.",
+      ),
+    ).toBe(false)
+  })
 })
 
 describe("isJunkQuery", () => {
@@ -74,6 +129,11 @@ describe("isJunkQuery", () => {
   it("leaves clean editorial queries alone", () => {
     expect(isJunkQuery("avis de fil et de sang")).toBe(false)
     expect(isJunkQuery("roméo + juliette âge conseillé")).toBe(false)
+  })
+
+  it("does not flag a bare 'regarder' age query (only 'regarder en …' is navigational)", () => {
+    expect(isJunkQuery("my dress up darling age pour regarder")).toBe(false)
+    expect(isJunkQuery("regarder my dress up darling en ligne")).toBe(true)
   })
 })
 

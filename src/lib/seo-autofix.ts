@@ -3,20 +3,22 @@
 // records exactly what it did so the weekly email becomes a closed loop instead of
 // a to-do list.
 //
-// Two levers, both grounded in how /media/[id] pages actually render:
+// Three levers, all grounded in how /media/[id] pages actually render:
 //   A. Maillage interne — there is no in-body internal-link system; the only
 //      structured internal link on a fiche is the "Dans le même genre" rail, which
 //      reads MediaSimilarity edges (symmetric: an edge (X, T) surfaces T on X's page).
-//      So we create high-score source:"EXPERT" edges toward under-linked target
-//      pages. Reversible (delete the EXPERT rows). Protected from the Saturday
+//      We create high-score source:"EXPERT" edges toward the target: filling thin
+//      pages up to LINK_TARGET, and guaranteeing MIN_EXPERT_LINKS top-of-rail
+//      edges on popular pages (blockbusters stuck at pos 8-12 — the usual report
+//      target). Reversible (delete the EXPERT rows). Protected from the Saturday
 //      ALGORITHM recompute by a guard in similarity/compute/route.ts.
 //   B. Synopsis copy — the chapô AND the meta description both derive from
 //      synopsisFr (there is no separate SEO-copy field). When a striking query's
 //      keyword is genuinely absent from title+synopsis, we re-write synopsisFr via
-//      the same gpt-5-mini pattern enrichment already uses.
-//
-// The page <title>/H1 is media.title (used site-wide) and is NEVER auto-edited —
-// only flagged for a human.
+//      the same gpt-5-mini pattern enrichment already uses. Enriched fiches only.
+//   C. SEO <title> — writes the separate `seoTitle` field (the Google <title>
+//      override); the DISPLAY name (H1/cards, media.title) is NEVER auto-edited.
+//      Also runs on provisional fiches that carry an age estimate.
 
 import OpenAI from "openai"
 import { MediaType } from "@prisma/client"
@@ -27,9 +29,22 @@ import type { StrikingQuery } from "./seo-striking-distance"
 // How many inbound similarity edges a target should have before we stop adding
 // maillage. Below this it appears in too few rails to get internal-link juice.
 const LINK_TARGET = 4
+// Popular striking-distance pages (the usual case: a blockbuster stuck at pos
+// 8-12) already have plenty of ALGORITHM edges — but those sit mid-rail on the
+// neighbours' pages. What moves them is a handful of top-of-rail EXPERT edges
+// from popular neighbours. So maillage now also ensures a minimum number of
+// EXPERT edges, instead of skipping any page that merely has "enough" links
+// (the old rule made Lever A a no-op on exactly the pages the report targets).
+const MIN_EXPERT_LINKS = 3
 // EXPERT edges sit at the top of the rail (sorted by score desc) so the target is
 // the first thing surfaced on each neighbour's page.
 const EXPERT_SCORE = 0.95
+// Editorial credibility floor for a maillage neighbour. A single shared genre
+// (1.5 + rating bonus ≲ 2.5) is NOT enough to justify a top-of-rail EXPERT
+// edge — it must combine at least two real signals (e.g. 2 genres, or genre +
+// age proximity, or genre + shared topics). The SEO gain must never cost rail
+// quality on the target's own page.
+const MIN_NEIGHBOR_SCORE = 3.5
 // Hard cap on AI synopsis rewrites per run. Keeps cost bounded and the run under
 // the route's maxDuration (each gpt-5-mini call can take ~35s).
 const MAX_REWRITES = 3
@@ -80,6 +95,19 @@ const GENERIC_TOKENS = new Set([
   "anime", "animes", "bd", "emission", "emissions",
 ])
 
+// Age/rating-intent MODIFIERS ("âge *minimum*", "à *partir* de *quel* âge",
+// "âge *conseillé*", "*interdit* au *moins* de"). These phrase the question —
+// they are not information the copy must literally contain. Requiring them made
+// most age queries permanently unsatisfiable (natural copy says "dès 12 ans",
+// never "l'âge minimum est"), which is why the write-side agent no-op'd for
+// months. The AGE intent itself is still required via AGE_EQUIV below.
+const INTENT_TOKENS = new Set([
+  "minimum", "maximum", "quel", "quelle", "quels", "quelles", "partir",
+  "conseille", "conseillee", "deconseille", "deconseillee", "recommande",
+  "recommandee", "limite", "interdit", "interdite", "moins", "combien",
+  "faut", "voir", "regarder", "adapte", "adaptee",
+])
+
 // Age-intent is the single most common striking-query shape ("<titre> à partir
 // de quel âge", "âge minimum"). A natural answer reads "dès 14 ans" — which
 // carries no literal "âge" token — so the "age" requirement is satisfied by any
@@ -100,7 +128,9 @@ function tokenCovered(token: string, haystack: string, haystackWords: Set<string
  * satisfied by an explicit age phrasing ("dès 14 ans").
  */
 export function keywordPresent(query: string, ...texts: (string | null | undefined)[]): boolean {
-  const tokens = significantTokens(query).filter((t) => !GENERIC_TOKENS.has(t))
+  const tokens = significantTokens(query).filter(
+    (t) => !GENERIC_TOKENS.has(t) && !INTENT_TOKENS.has(t),
+  )
   if (tokens.length === 0) return true // nothing meaningful to add
   const haystack = normalize(texts.filter(Boolean).join(" "))
   const haystackWords = new Set(haystack.split(" ").filter(Boolean))
@@ -109,8 +139,10 @@ export function keywordPresent(query: string, ...texts: (string | null | undefin
 
 // Navigational / piracy / streaming-intent queries: never the right trigger for a
 // copy rewrite (we'd just be stuffing a junk phrase). Flagged, not actioned.
+// "regarder en" (not bare "regarder") — "<titre> âge pour regarder" is a
+// legitimate age query, while "regarder en streaming/ligne" is navigational.
 const JUNK_MARKERS = [
-  "streaming", "regarder", "telecharger", "torrent", "vostfr", "vf", "gratuit",
+  "streaming", "regarder en", "telecharger", "torrent", "vostfr", "vf", "gratuit",
   "complet", "voir en", "en ligne", "ddl", "uptobox",
 ]
 
@@ -202,15 +234,24 @@ async function ensureInternalLinks(
 ): Promise<{ created: string[]; skippedReason?: string }> {
   const existing = await prisma.mediaSimilarity.findMany({
     where: { OR: [{ mediaIdA: target.id }, { mediaIdB: target.id }] },
-    select: { mediaIdA: true, mediaIdB: true },
+    select: { mediaIdA: true, mediaIdB: true, source: true },
   })
-  if (existing.length >= LINK_TARGET) {
-    return { created: [], skippedReason: `déjà ${existing.length} liens` }
+  const expertCount = existing.filter((e) => e.source === "EXPERT").length
+  if (existing.length >= LINK_TARGET && expertCount >= MIN_EXPERT_LINKS) {
+    return {
+      created: [],
+      skippedReason: `déjà ${existing.length} liens dont ${expertCount} SEO`,
+    }
   }
   const linkedIds = new Set(
     existing.map((e) => (e.mediaIdA === target.id ? e.mediaIdB : e.mediaIdA)),
   )
-  const need = LINK_TARGET - existing.length
+  // Fill whichever floor is unmet: overall coverage (thin pages) or
+  // top-of-rail EXPERT presence (popular pages). Capped per run.
+  const need = Math.min(
+    MIN_EXPERT_LINKS,
+    Math.max(LINK_TARGET - existing.length, MIN_EXPERT_LINKS - expertCount),
+  )
 
   if (target.genres.length === 0) {
     return { created: [], skippedReason: "aucun genre" }
@@ -229,13 +270,16 @@ async function ensureInternalLinks(
       id: true, title: true, genres: true, topics: true,
       director: true, expertAgeRec: true, tmdbRating: true,
     },
+    // Popular neighbours first: an EXPERT edge only passes internal-link value
+    // if the neighbour's page itself gets seen/crawled.
+    orderBy: { tmdbVoteCount: { sort: "desc", nulls: "last" } },
     take: 80,
   })
 
   const ranked = candidates
     .filter((c) => !linkedIds.has(c.id))
     .map((c) => ({ c, score: scoreNeighbor(target, c) }))
-    .filter((x) => x.score > 0)
+    .filter((x) => x.score >= MIN_NEIGHBOR_SCORE)
     .sort((a, b) => b.score - a.score)
     .slice(0, need)
 
@@ -325,11 +369,15 @@ async function callJsonField(openai: OpenAI, prompt: string, field: string): Pro
 }
 
 /** Gate a candidate rewrite before it ever touches the DB. */
-function rewritePasses(query: string, before: string | null, after: string): boolean {
+export function rewritePasses(query: string, title: string, before: string | null, after: string): boolean {
   if (!after || after.length > SYNOPSIS_MAX) return false
   if (isJunkQuery(after)) return false
-  // Must now cover the keyword it was supposed to add.
-  if (!keywordPresent(query, after)) return false
+  // Must now cover the keyword it was supposed to add. The TITLE counts toward
+  // coverage (same haystack as the decision gate): a synopsis describes the
+  // plot and never repeats its own title, so requiring "toy story" inside the
+  // synopsis text rejected every legitimate draft — the second reason the
+  // agent's rewrites always came back "échouée/refusée".
+  if (!keywordPresent(query, title, after)) return false
   // Don't let the model gut the description.
   if (before && after.length < before.length * 0.5) return false
   return true
@@ -447,7 +495,7 @@ export async function runSeoAutofix(
     } else {
       rewritesUsed++
       const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
-      if (draft && rewritePasses(t.query, item.synopsisFr, draft)) {
+      if (draft && rewritePasses(t.query, item.title, item.synopsisFr, draft)) {
         await prisma.mediaItem.update({ where: { id: item.id }, data: { synopsisFr: draft } })
         synopsis = "rewritten"
         synopsisBefore = item.synopsisFr ?? ""
@@ -459,11 +507,16 @@ export async function runSeoAutofix(
 
     // Lever C — SEO meta title. Only when the keyword is missing from the
     // DISPLAY title; writes the separate `seoTitle` field, never `title`.
+    // Unlike the synopsis lever, this one ALSO runs on provisional
+    // (un-enriched) fiches as long as they carry an age estimate: the title
+    // only uses title + age + query intent — nothing to confabulate — and
+    // pre-release tentpoles (L'Odyssée, Spider-Man…) are precisely where the
+    // striking-distance traffic concentrates.
     let seoTitle: SeoActionTarget["seoTitle"]
     let seoTitleAfter: string | undefined
     if (!titleNeedsKeyword) {
       seoTitle = "n/a"
-    } else if (!item.isEnriched) {
+    } else if (!item.isEnriched && item.expertAgeRec == null) {
       seoTitle = "not-enriched"
     } else if (isJunkQuery(t.query)) {
       seoTitle = "flagged-junk"

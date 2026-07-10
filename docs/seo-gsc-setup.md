@@ -42,18 +42,23 @@ GSC_PROPERTY_URL
 ```
 Redeploy so the cron picks them up.
 
-## 5. Dry-run, then enable writes
+## 5. Write-side semantics (since 2026-07-10)
+The write-side is **ON by default in production** — no env var needed. It is
+**fail-closed everywhere else**: previews and local dev always run report-only
+(the route requires `VERCEL_ENV === "production"`), so a missing or mis-scoped
+env var can never enable writes outside prod.
+
+- Kill-switch: set `SEO_AGENT_AUTOFIX="false"` in Vercel → report-only.
+- One-off dry-run (works in prod too):
 ```
 curl -L "https://totemavise.com/api/cron/seo-striking-distance?dryRun=1" \
   -H "Authorization: Bearer $CRON_SECRET"
 ```
-Expect a JSON report with `strikingCount` + `targets` (position 8–20 queries).
-Review the email/report. Then enable the write-side:
-```
-SEO_AGENT_AUTOFIX=true   # Vercel env
-```
-This lets the cron create internal-link maillage + rewrite synopses when the
-query keyword is absent (max 3/run; title/H1 are **never** auto-edited).
+Writes performed: internal-link maillage (`source:"EXPERT"` edges, editorial
+credibility floor), synopsis rewrites when the query keyword is absent
+(enriched fiches only), and `seoTitle` `<title>` overrides (also on provisional
+fiches with an age). Max 3 synopses + 3 titles/run. The display name (H1/cards)
+is **never** auto-edited.
 
 ## 6. After activation
 - **Monitor 1–2 weeks** via the failure/digest emails and `cron_logs`
