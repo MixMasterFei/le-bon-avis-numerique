@@ -90,15 +90,28 @@ function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   })
 }
 
+function hasRealPhoto(row: NewsRow): boolean {
+  return Boolean(row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl))
+}
+
 function rowToItem(row: NewsRow): CoinFamilleNewsItem {
   // directSource image policy (like V4/V5): prefer the real publisher photo,
   // branded category card only when there's none.
   const fb = fallbackCard(row.category, row.title)
-  const hasPhoto = Boolean(row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl))
+  const hasPhoto = hasRealPhoto(row)
   const sources = toSources(row.sources)
+  // Publisher headline only when the source is French — the Playwright audit
+  // surfaced raw English headlines (The Verge, Polygon) on the family page.
+  // For foreign sources we fall back to our own French factual title (facts,
+  // not a synthesis — the legal posture is unchanged).
+  const primary = sources[0]
+  const frenchHeadline =
+    primary?.headline && (!primary.country || primary.country.toLowerCase() === "fr")
+      ? primary.headline
+      : null
   return {
     slug: row.slug,
-    headline: sources[0]?.headline ?? row.title,
+    headline: frenchHeadline ?? row.title,
     title: row.title,
     imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
     fallbackImageUrl: fb.url,
@@ -132,10 +145,28 @@ async function fetchPool(sinceDays: number): Promise<NewsRow[]> {
  * Returns the curated Coin Famille news items (default 6: 1 hero + 5). Pulls a
  * recency pool, balances tone/cluster, then takes the top N. Widens the recency
  * window if the 5-day pool is thin so the strand never starves.
+ *
+ * Tone: unlike the aperçu news page, the Coin Famille is a warm daily family
+ * moment — "grave" stories are excluded entirely (not just kept off the hero),
+ * and the selection favours family relevance + real photos over pure recency
+ * (the audit surfaced a page led by an assault conviction, a domestic-violence
+ * study and an administrative webinar, half of them on generic fallback cards).
  */
 export async function getCoinFamilleNews(take = 6): Promise<CoinFamilleNewsItem[]> {
   let pool = await fetchPool(5)
   if (pool.length < take + 2) pool = await fetchPool(10)
-  const balanced = balanceNewsForFeed(pool, take)
+
+  const softened = pool.filter((r) => (r.editorialTone ?? "").toLowerCase() !== "grave")
+  // Priority order fed to the balancer: real photo first, then family
+  // relevance, then recency. balanceNewsForFeed treats input order as priority
+  // and still prevents same-cluster stacking.
+  const prioritized = [...(softened.length >= take ? softened : pool)].sort((a, b) => {
+    const photo = Number(hasRealPhoto(b)) - Number(hasRealPhoto(a))
+    if (photo !== 0) return photo
+    const rel = b.relevanceScore - a.relevanceScore
+    if (Math.abs(rel) > 0.001) return rel
+    return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  })
+  const balanced = balanceNewsForFeed(prioritized, take)
   return balanced.slice(0, take).map(rowToItem)
 }

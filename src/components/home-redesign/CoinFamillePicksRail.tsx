@@ -5,7 +5,7 @@ import { RefreshCw, Users } from "lucide-react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 import { CoinFamilleHeroPick } from "./CoinFamilleHeroPick"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
-import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
+import type { HomepageState } from "@/lib/homepage-time-context"
 
 interface RawItem {
   id: string
@@ -100,8 +100,6 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   const activeItems = activeMember?.cards ?? familyCards
   const hero = activeItems.length > 0 ? activeItems[offset % activeItems.length] : null
   const shown = visibleWindow(activeItems, offset)
-  const state = response?.state ?? "default"
-  const label = homepageRailLabel(state)
 
   const changeTab = (id: string) => {
     setActiveTab(id)
@@ -109,7 +107,10 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   }
 
   const rotate = () => {
-    setOffset((current) => (activeItems.length ? (current + 1) % activeItems.length : 0))
+    // Advance past the hero + the 4 visible cards so "D'autres idées" swaps the
+    // WHOLE selection — a +1 shift kept 3 of 4 cards identical, which read as
+    // a broken button in the audit.
+    setOffset((current) => (activeItems.length ? (current + 5) % activeItems.length : 0))
   }
 
   return (
@@ -117,46 +118,38 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
       className="overflow-hidden rounded-3xl p-4 sm:p-6"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
-            {activeMember ? "Rien que pour" : label.eyebrow}
-          </div>
-          <h2
-            className={`${serifClass} m-0 text-2xl font-medium leading-[1.05] md:text-3xl`}
-            style={{ color: p.ink, letterSpacing: "-0.025em" }}
-          >
-            {activeMember ? (
-              <>
-                La sélection de{" "}
-                <em className="italic" style={{ color: p.accent }}>
-                  {activeMember.name}
-                </em>
-              </>
-            ) : (
-              <>
-                {label.prefix}
-                <em className="italic" style={{ color: p.accent }}>
-                  {label.emphasis}
-                </em>
-                {label.suffix}
-              </>
-            )}
-          </h2>
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
-            {activeMember
-              ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
-              : label.lead}
-          </p>
+      {/* Distinct from the page H1 (which already carries the time-aware
+          "Pour les vacances en famille" heading) — repeating it here read as
+          a copy/paste bug in the Playwright audit. */}
+      <div className="min-w-0">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
+          {activeMember ? "Rien que pour" : "Choisi pour votre foyer"}
         </div>
-        {response?.subtitle && (
-          <span
-            className="w-fit shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold"
-            style={{ background: p.bg2, color: p.ink2 }}
-          >
-            Mis à jour {response.subtitle}
-          </span>
-        )}
+        <h2
+          className={`${serifClass} m-0 text-2xl font-medium leading-[1.05] md:text-3xl`}
+          style={{ color: p.ink, letterSpacing: "-0.025em" }}
+        >
+          {activeMember ? (
+            <>
+              La sélection de{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                {activeMember.name}
+              </em>
+            </>
+          ) : (
+            <>
+              Les bonnes idées{" "}
+              <em className="italic" style={{ color: p.accent }}>
+                du jour
+              </em>
+            </>
+          )}
+        </h2>
+        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
+          {activeMember
+            ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
+            : "Un coup de cœur et une courte sélection, adaptés aux âges et aux goûts de chacun."}
+        </p>
       </div>
 
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Sélection par membre">
@@ -208,7 +201,11 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
               <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: p.placeholder }} />
             ))
           : shown.map((media) => (
-              <RedesignCard key={`${activeTab}-${media.id}`} media={media} totem="compact" showType familyVariant="avatars" />
+              // cornerLabel stripped: the fit-reason ribbon truncated ("Bon
+              // choix pour tout le foy…") and hid the artwork on small cards —
+              // the hero shows the reason as text instead. Default meter
+              // variant = the V2 per-member fit display (not the old hearts).
+              <RedesignCard key={`${activeTab}-${media.id}`} media={{ ...media, cornerLabel: null }} totem="compact" showType />
             ))}
       </div>
 

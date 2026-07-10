@@ -166,6 +166,34 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                   )}
                 </div>
 
+                {/* Onward journey — the audit showed the page dead-ending
+                    after the news; give the daily visit a next step. */}
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4"
+                  style={{ background: p.card, border: `1px solid ${p.line}` }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: p.ink }}>
+                    Envie d&apos;explorer plus loin ?
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "Films", href: "/films" },
+                      { label: "Séries", href: "/series" },
+                      { label: "Jeux vidéo", href: "/jeux" },
+                      { label: "Collections", href: "/collections" },
+                    ].map((l) => (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        className="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-opacity hover:opacity-70"
+                        style={{ background: p.bg2, color: p.ink, border: `1px solid ${p.line}` }}
+                      >
+                        {l.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Mobile: the "Le foyer" rail inlined after the feed */}
                 <div className="lg:hidden flex flex-col gap-4 mt-2">
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>

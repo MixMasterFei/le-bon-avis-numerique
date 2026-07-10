@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
-import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
+import { FamilyFitMeter } from "./FamilyFitMeter"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
@@ -99,7 +99,9 @@ export function CoinFamilleHeroPick({
           </div>
           {familyFit && familyFit.members.length > 0 && (
             <div className="mt-3">
-              <FamilyFitAvatars members={familyFit.members} />
+              {/* V2 per-member meter (monogram + segments) — the heart gauge is
+                  the pre-V2 display and looked a generation behind here. */}
+              <FamilyFitMeter members={familyFit.members} />
             </div>
           )}
           <span
