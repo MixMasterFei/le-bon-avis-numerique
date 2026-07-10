@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react"
 import { RefreshCw, Users } from "lucide-react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 import { CoinFamilleHeroPick } from "./CoinFamilleHeroPick"
-import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { APERCU_PALETTE, genreLabelFr } from "@/components/home-v2/apercuTheme"
+import { totemVoiceLine } from "@/lib/totem-voice"
 import type { HomepageState } from "@/lib/homepage-time-context"
 
 interface RawItem {
@@ -20,6 +22,10 @@ interface RawItem {
 interface MemberSection {
   id: string
   name: string
+  avatarEmoji?: string | null
+  avatarStyle?: string | null
+  avatarSeed?: string | null
+  avatarOptions?: Record<string, unknown> | null
   items: RawItem[]
 }
 
@@ -175,13 +181,21 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
             role="tab"
             aria-selected={activeTab === member.id}
             onClick={() => changeTab(member.id)}
-            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-xs font-semibold transition-colors"
             style={
               activeTab === member.id
                 ? { background: p.ink, color: p.bg }
                 : { background: p.bg2, color: p.ink2, border: `1px solid ${p.line}` }
             }
           >
+            <MemberAvatar
+              avatarStyle={member.avatarStyle ?? null}
+              avatarSeed={member.avatarSeed ?? null}
+              avatarOptions={member.avatarOptions ?? null}
+              avatarEmoji={member.avatarEmoji ?? null}
+              name={member.name}
+              size={22}
+            />
             {member.name}
           </button>
         ))}
@@ -192,6 +206,11 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
           media={hero}
           serifClass={serifClass}
           badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
+          voiceLine={totemVoiceLine({
+            memberName: activeMember?.name,
+            title: hero.title,
+            genres: (hero.genres ?? []).map(genreLabelFr),
+          })}
         />
       )}
 

@@ -80,7 +80,7 @@ export function CoinFamilleUpcomingRail({
           className={`${serifClass} text-xl md:text-2xl font-medium leading-[1.05] m-0`}
           style={{ color: p.ink, letterSpacing: "-0.02em" }}
         >
-          Les prochaines{" "}
+          Les prochaines sorties{" "}
           <em className="italic" style={{ color: p.accent }}>
             {label.titleEmphasis}
           </em>

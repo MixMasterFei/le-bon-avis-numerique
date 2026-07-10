@@ -73,9 +73,11 @@ export function CoinFamilleNewsCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
+        {/* title attr = full headline on hover (the clamp cuts long ones) */}
         <h3
           className={`${serifClass} text-[15px] leading-snug font-medium line-clamp-2`}
           style={{ color: p.ink, letterSpacing: "-0.01em" }}
+          title={story.headline}
         >
           {story.headline}
         </h3>
@@ -111,18 +113,22 @@ export function CoinFamilleNewsCard({
                 className="mt-2 rounded-lg px-3 py-2.5 text-[12.5px] leading-relaxed"
                 style={{ background: p.bg2, border: `1px solid ${p.line}`, color: p.ink2 }}
               >
-                {story.familyTakeaway}
+                {/* Text and button on separate blocks — inline, the dark pill
+                    sat ON the last line of text and hid it. */}
+                <p className="m-0">{story.familyTakeaway}</p>
                 {story.articleUrl && (
-                  <a
-                    href={story.articleUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-bold transition-opacity hover:opacity-80"
-                    style={{ background: p.ink, color: p.bg }}
-                  >
-                    Lire l&apos;article
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                  <div className="mt-2.5">
+                    <a
+                      href={story.articleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-bold transition-opacity hover:opacity-80"
+                      style={{ background: p.ink, color: p.bg }}
+                    >
+                      Lire l&apos;article
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
                 )}
               </div>
             )}

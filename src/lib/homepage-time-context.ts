@@ -205,7 +205,8 @@ export function upcomingRailLabel(state: HomepageState): UpcomingRailLabel {
     default:
       return {
         eyebrow: "Bientôt · pour votre famille",
-        titleEmphasis: "sorties pour vous",
+        // The rail renders "Les prochaines sorties {titleEmphasis}".
+        titleEmphasis: "pour vous",
         lead: "Choisies d'après les goûts de votre foyer. L'âge affiché est provisoire, précisé après la sortie.",
       }
   }

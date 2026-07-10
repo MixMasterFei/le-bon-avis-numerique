@@ -135,6 +135,11 @@ export async function GET() {
       birthYear: true,
       birthMonth: true,
       favoriteGenres: true,
+      // Tab chips render each member's real avatar next to their name.
+      avatarEmoji: true,
+      avatarStyle: true,
+      avatarSeed: true,
+      avatarOptions: true,
     },
     orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
   })
@@ -240,6 +245,10 @@ export async function GET() {
     return {
       id: member.id,
       name: member.name,
+      avatarEmoji: member.avatarEmoji,
+      avatarStyle: member.avatarStyle,
+      avatarSeed: member.avatarSeed,
+      avatarOptions: member.avatarOptions,
       items: mixByMoment(memberPools, mix, state).map((item) =>
         toItem(item, memberReason(item, member)),
       ),

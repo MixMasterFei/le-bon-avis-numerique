@@ -146,7 +146,10 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                     L&apos;essentiel pour les parents
                   </div>
                   {data.news.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                    // items-start: without it, expanding ONE card's takeaway
+                    // stretched every card in the row (default grid stretch),
+                    // which read as "all the news expanded at once".
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 items-start">
                       {data.news.slice(0, 6).map((story) => (
                         <CoinFamilleNewsCard key={story.slug} story={story} serifClass={serifClass} />
                       ))}

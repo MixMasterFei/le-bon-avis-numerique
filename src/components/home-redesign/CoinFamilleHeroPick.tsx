@@ -20,16 +20,19 @@ const TYPE_LABELS: Record<RedesignCardMedia["type"], string> = {
 
 /**
  * Spotlight card for the #1 pick in the active tab — gives the page a clear
- * "start here" anchor without adding another network request.
+ * "start here" anchor without adding another network request. `voiceLine` is
+ * Totem's own one-sentence take on WHY this fits (src/lib/totem-voice.ts).
  */
 export function CoinFamilleHeroPick({
   media,
   serifClass,
   badge,
+  voiceLine,
 }: {
   media: RedesignCardMedia
   serifClass: string
   badge: string
+  voiceLine?: string
 }) {
   const p = APERCU_PALETTE
   const { getFamilyFit, registerMediaId } = useFamilyFit()
@@ -72,9 +75,12 @@ export function CoinFamilleHeroPick({
           >
             {media.title}
           </h3>
-          {media.cornerLabel && (
-            <p className="mt-2 text-sm leading-snug" style={{ color: p.ink2 }}>
-              {media.cornerLabel}
+          {(voiceLine || media.cornerLabel) && (
+            <p
+              className="mt-2 border-l-2 pl-2.5 text-sm italic leading-snug"
+              style={{ color: p.ink2, borderColor: p.accent }}
+            >
+              {voiceLine ?? media.cornerLabel}
             </p>
           )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
