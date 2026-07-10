@@ -153,6 +153,12 @@ export async function middleware(request: NextRequest) {
 
   // Onboarding redirect — force new users to complete onboarding
   // Skip for: API routes, auth routes, onboarding page itself, static files
+  // A media fiche carrying ?fit=1 is the intentional quick family-fit funnel:
+  // OAuth returns there, the user creates one minimal member inline, then that
+  // flow marks onboarding complete. Keep every other page on the full wizard.
+  const isMediaFamilyFitReturn =
+    pathname.startsWith("/media/") &&
+    request.nextUrl.searchParams.get("fit") === "1"
   const skipOnboarding =
     pathname.startsWith("/api/") ||
     pathname.startsWith("/auth/") ||
@@ -163,6 +169,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/mot-de-passe-oublie") ||
     pathname.startsWith("/reinitialiser-mot-de-passe") ||
     pathname.startsWith("/verifier-email") ||
+    isMediaFamilyFitReturn ||
     pathname.includes(".")
 
   if (!skipOnboarding) {

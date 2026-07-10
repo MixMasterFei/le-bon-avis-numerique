@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -63,6 +64,7 @@ export interface TriggerConsensusResponse {
 interface FicheData {
   familyFit: FamilyFitResponse | null
   familyFitLoading: boolean
+  refetchFamilyFit: () => void
   extras: ExtrasData | null
   extrasLoading: boolean
   triggerVotes: TriggerConsensusResponse | null
@@ -108,6 +110,7 @@ export function FicheDataProvider({
   const { status: authStatus } = useSession()
   const [familyFit, setFamilyFit] = useState<FamilyFitResponse | null>(null)
   const [familyFitLoading, setFamilyFitLoading] = useState(!!mediaId)
+  const [familyFitRefreshKey, setFamilyFitRefreshKey] = useState(0)
   const [extras, setExtras] = useState<ExtrasData | null>(null)
   const [extrasLoading, setExtrasLoading] = useState(wantsExtras(mediaId, mediaType))
   const [triggerVotes, setTriggerVotes] = useState<TriggerConsensusResponse | null>(null)
@@ -127,7 +130,12 @@ export function FicheDataProvider({
       .catch(() => { if (!cancelled) setFamilyFit(null) })
       .finally(() => { if (!cancelled) setFamilyFitLoading(false) })
     return () => { cancelled = true }
-  }, [mediaId, authStatus])
+  }, [mediaId, authStatus, familyFitRefreshKey])
+
+  const refetchFamilyFit = useCallback(() => {
+    setFamilyFitLoading(true)
+    setFamilyFitRefreshKey((key) => key + 1)
+  }, [])
 
   // loading → skeleton; unauthenticated → not_logged_in without a fetch;
   // authenticated → the fetched result.
@@ -163,6 +171,7 @@ export function FicheDataProvider({
       value={{
         familyFit: effectiveFamilyFit,
         familyFitLoading: effectiveFamilyFitLoading,
+        refetchFamilyFit,
         extras,
         extrasLoading,
         triggerVotes,
@@ -182,11 +191,13 @@ export function FicheDataProvider({
 export function useFamilyFitData(mediaId: string | null): {
   data: FamilyFitResponse | null
   loading: boolean
+  refetch: () => void
 } {
   const ctx = useContext(FicheDataContext)
   const hasCtx = ctx !== undefined
   const [data, setData] = useState<FamilyFitResponse | null>(null)
   const [loading, setLoading] = useState(!hasCtx && !!mediaId)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
     if (hasCtx || !mediaId) return // provider supplies the data, or nothing to fetch
@@ -197,10 +208,19 @@ export function useFamilyFitData(mediaId: string | null): {
       .catch(() => { if (!cancelled) setData(null) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [hasCtx, mediaId])
+  }, [hasCtx, mediaId, refreshKey])
 
-  if (ctx) return { data: ctx.familyFit, loading: ctx.familyFitLoading }
-  return { data, loading }
+  const refetch = useCallback(() => {
+    if (hasCtx) {
+      ctx?.refetchFamilyFit()
+      return
+    }
+    setLoading(true)
+    setRefreshKey((key) => key + 1)
+  }, [ctx, hasCtx])
+
+  if (ctx) return { data: ctx.familyFit, loading: ctx.familyFitLoading, refetch }
+  return { data, loading, refetch }
 }
 
 /**

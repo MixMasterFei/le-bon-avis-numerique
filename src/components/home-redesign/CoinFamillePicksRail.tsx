@@ -1,8 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { RefreshCw, Users } from "lucide-react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
+import { CoinFamilleHeroPick } from "./CoinFamilleHeroPick"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 
 interface RawItem {
   id: string
@@ -11,62 +14,67 @@ interface RawItem {
   posterUrl: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
+  cornerLabel?: string | null
+}
+
+interface MemberSection {
+  id: string
+  name: string
+  items: RawItem[]
+}
+
+interface PicksResponse {
+  state: HomepageState
+  day: string
+  subtitle: string
+  familyItems: RawItem[]
+  memberSections: MemberSection[]
 }
 
 function toCardType(t: unknown): RedesignCardMedia["type"] {
   return t === "MOVIE" || t === "TV" || t === "GAME" ? t : "MOVIE"
 }
 
+function toCards(items: RawItem[]): RedesignCardMedia[] {
+  return items.map((item) => ({
+    id: item.id,
+    type: toCardType(item.type),
+    title: item.title,
+    posterUrl: item.posterUrl,
+    expertAgeRec: item.expertAgeRec ?? null,
+    genres: item.genres ?? [],
+    contentMetrics: null,
+    cornerLabel: item.cornerLabel ?? null,
+  }))
+}
+
+function visibleWindow(items: RedesignCardMedia[], offset: number, count = 4): RedesignCardMedia[] {
+  if (items.length <= count) return items
+  return Array.from({ length: count }, (_, index) => items[(offset + 1 + index) % items.length])
+}
+
 /**
- * A single-row personalized "category" for Le Coin Famille. Fetches
- * /api/coin-famille/tonight (optionally scoped to a member subset via
- * ?members=) and renders one row of V2 cards with the per-member meter.
- * Used both for "À regarder tous ensemble" (whole family) and each
- * "Pour <name>" rail. Self-hides when the family fit is thin.
+ * The personalized heart of Le Coin Famille: one network request, one focused
+ * rail, then family/member tabs. The server returns twelve daily-rotated picks
+ * per audience; "D'autres idées" changes the window without another DB pass.
  */
-export function CoinFamillePicksRail({
-  serifClass,
-  eyebrow,
-  title,
-  memberIds = [],
-  minItems = 3,
-}: {
-  serifClass: string
-  eyebrow: string
-  title: string
-  memberIds?: string[]
-  minItems?: number
-}) {
+export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   const p = APERCU_PALETTE
-  const key = memberIds.join(",")
-  const [items, setItems] = useState<RedesignCardMedia[]>([])
+  const [response, setResponse] = useState<PicksResponse | null>(null)
+  const [activeTab, setActiveTab] = useState("family")
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // On a member-selection change we keep the current cards visible until the
-    // new set resolves (no loading flash); skeletons only show on first load.
     let cancelled = false
-    const qs = key ? `?members=${encodeURIComponent(key)}` : ""
-    fetch(`/api/coin-famille/tonight${qs}`)
+    fetch("/api/coin-famille/tonight")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
-        const arr: RawItem[] = Array.isArray(data?.items) ? data.items : []
-        setItems(
-          arr.map((m) => ({
-            id: m.id,
-            type: toCardType(m.type),
-            title: m.title,
-            posterUrl: m.posterUrl,
-            expertAgeRec: m.expertAgeRec ?? null,
-            genres: m.genres ?? [],
-            contentMetrics: null,
-            cornerLabel: null,
-          })),
-        )
+        setResponse(data && Array.isArray(data.familyItems) ? data : null)
       })
       .catch(() => {
-        if (!cancelled) setItems([])
+        if (!cancelled) setResponse(null)
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -74,30 +82,160 @@ export function CoinFamillePicksRail({
     return () => {
       cancelled = true
     }
-  }, [key])
+  }, [])
 
-  if (!loading && items.length < minItems) return null
+  const familyCards = useMemo(
+    () => toCards(response?.familyItems ?? []),
+    [response?.familyItems],
+  )
+  const memberTabs = useMemo(
+    () =>
+      (response?.memberSections ?? []).map((section) => ({
+        ...section,
+        cards: toCards(section.items),
+      })),
+    [response?.memberSections],
+  )
+  const activeMember = memberTabs.find((member) => member.id === activeTab)
+  const activeItems = activeMember?.cards ?? familyCards
+  const hero = activeItems.length > 0 ? activeItems[offset % activeItems.length] : null
+  const shown = visibleWindow(activeItems, offset)
+  const state = response?.state ?? "default"
+  const label = homepageRailLabel(state)
+
+  const changeTab = (id: string) => {
+    setActiveTab(id)
+    setOffset(0)
+  }
+
+  const rotate = () => {
+    setOffset((current) => (activeItems.length ? (current + 1) % activeItems.length : 0))
+  }
 
   return (
-    <section>
-      <div className="mb-3">
-        <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: p.accent }}>
-          {eyebrow}
+    <section
+      className="overflow-hidden rounded-3xl p-4 sm:p-6"
+      style={{ background: p.card, border: `1px solid ${p.line}` }}
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
+            {activeMember ? "Rien que pour" : label.eyebrow}
+          </div>
+          <h2
+            className={`${serifClass} m-0 text-2xl font-medium leading-[1.05] md:text-3xl`}
+            style={{ color: p.ink, letterSpacing: "-0.025em" }}
+          >
+            {activeMember ? (
+              <>
+                La sélection de{" "}
+                <em className="italic" style={{ color: p.accent }}>
+                  {activeMember.name}
+                </em>
+              </>
+            ) : (
+              <>
+                {label.prefix}
+                <em className="italic" style={{ color: p.accent }}>
+                  {label.emphasis}
+                </em>
+                {label.suffix}
+              </>
+            )}
+          </h2>
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
+            {activeMember
+              ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
+              : label.lead}
+          </p>
         </div>
-        <h2
-          className={`${serifClass} text-xl md:text-2xl font-medium leading-[1.05] m-0`}
-          style={{ color: p.ink, letterSpacing: "-0.02em" }}
-        >
-          {title}
-        </h2>
+        {response?.subtitle && (
+          <span
+            className="w-fit shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold"
+            style={{ background: p.bg2, color: p.ink2 }}
+          >
+            Mis à jour {response.subtitle}
+          </span>
+        )}
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-        {loading && items.length === 0
-          ? Array.from({ length: 5 }).map((_, i) => (
+
+      <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Sélection par membre">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "family"}
+          onClick={() => changeTab("family")}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+          style={
+            activeTab === "family"
+              ? { background: p.ink, color: p.bg }
+              : { background: p.bg2, color: p.ink2, border: `1px solid ${p.line}` }
+          }
+        >
+          <Users className="h-3.5 w-3.5" />
+          Toute la famille
+        </button>
+        {memberTabs.map((member) => (
+          <button
+            key={member.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === member.id}
+            onClick={() => changeTab(member.id)}
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+            style={
+              activeTab === member.id
+                ? { background: p.ink, color: p.bg }
+                : { background: p.bg2, color: p.ink2, border: `1px solid ${p.line}` }
+            }
+          >
+            {member.name}
+          </button>
+        ))}
+      </div>
+
+      {!loading && hero && (
+        <CoinFamilleHeroPick
+          media={hero}
+          serifClass={serifClass}
+          badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {loading
+          ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: p.placeholder }} />
             ))
-          : items.slice(0, 5).map((m) => <RedesignCard key={m.id} media={m} totem="compact" showType />)}
+          : shown.map((media) => (
+              <RedesignCard key={`${activeTab}-${media.id}`} media={media} totem="compact" showType familyVariant="avatars" />
+            ))}
       </div>
+
+      {!loading && shown.length === 0 && !hero && (
+        <div className="mt-4 rounded-2xl px-4 py-5 text-center" style={{ background: p.bg2, color: p.ink2 }}>
+          <p className="text-sm font-semibold" style={{ color: p.ink }}>
+            On affine encore cette sélection
+          </p>
+          <p className="mt-1 text-xs">
+            Ajoutez quelques goûts ou réactions au profil pour débloquer davantage d’idées adaptées.
+          </p>
+        </div>
+      )}
+
+      {!loading && activeItems.length > 1 && (
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={rotate}
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-70"
+            style={{ color: p.ink, border: `1px solid ${p.line}` }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            D’autres idées
+          </button>
+        </div>
+      )}
     </section>
   )
 }

@@ -17,6 +17,7 @@ export interface UpcomingItem {
   expertAgeRec: number | null
   genres: string[]
   releaseDate: string | null
+  fitLabel?: string | null
 }
 
 const TYPE_LABELS: Record<UpcomingItem["type"], string> = { MOVIE: "Film", TV: "Série", GAME: "Jeu" }
@@ -141,6 +142,11 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
           <div className="text-[17px] font-bold leading-snug" style={{ color: "var(--ink)" }}>{item.title}</div>
         </Link>
         {meta && <div className="mt-[3px] text-[13px]" style={{ color: "var(--ink-3)" }}>{meta}</div>}
+        {item.fitLabel && (
+          <div className="mt-2 text-[11.5px] font-semibold" style={{ color: "var(--color-warm-accent)" }}>
+            {item.fitLabel}
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between gap-2.5">
           <span className="rounded-full px-[10px] py-1 text-[12px] font-bold" style={{ color: "var(--pine-2)", background: "var(--pine-soft)" }}>
             {WHERE[item.type]}

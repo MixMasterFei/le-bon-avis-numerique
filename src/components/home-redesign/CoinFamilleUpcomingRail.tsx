@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { upcomingRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 
 interface RawItem {
   id: string
@@ -12,6 +13,7 @@ interface RawItem {
   expertAgeRec?: number | null
   genres?: string[] | null
   releaseDate?: string | null
+  fitLabel?: string | null
 }
 
 function toCardType(t: unknown): UpcomingItem["type"] {
@@ -23,8 +25,15 @@ function toCardType(t: unknown): UpcomingItem["type"] {
  * /api/coin-famille/upcoming. Reuses UpcomingCard (keeps the "Prévenez-moi"
  * release-alert). Self-hides when empty.
  */
-export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) {
+export function CoinFamilleUpcomingRail({
+  serifClass,
+  timeState = "default",
+}: {
+  serifClass: string
+  timeState?: HomepageState
+}) {
   const p = APERCU_PALETTE
+  const label = upcomingRailLabel(timeState)
   const [items, setItems] = useState<UpcomingItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -44,6 +53,7 @@ export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) 
             expertAgeRec: m.expertAgeRec ?? null,
             genres: m.genres ?? [],
             releaseDate: m.releaseDate ?? null,
+            fitLabel: m.fitLabel ?? null,
           })),
         )
       })
@@ -64,7 +74,7 @@ export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) 
     <section className="mt-2">
       <div className="mb-4">
         <div className="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: p.accent }}>
-          Bientôt · pour votre famille
+          {label.eyebrow}
         </div>
         <h2
           className={`${serifClass} text-xl md:text-2xl font-medium leading-[1.05] m-0`}
@@ -72,11 +82,11 @@ export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) 
         >
           Les prochaines{" "}
           <em className="italic" style={{ color: p.accent }}>
-            sorties pour vous
+            {label.titleEmphasis}
           </em>
         </h2>
         <p className="mt-1 text-sm" style={{ color: p.ink2 }}>
-          Choisies d&apos;après les goûts de votre foyer. L&apos;âge affiché est provisoire, précisé après la sortie.
+          {label.lead}
         </p>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

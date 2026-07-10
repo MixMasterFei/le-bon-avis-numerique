@@ -8,6 +8,7 @@ import { CoinFamillePicksRail } from "@/components/home-redesign/CoinFamillePick
 import { CoinFamilleUpcomingRail } from "@/components/home-redesign/CoinFamilleUpcomingRail"
 import { CoinFamilleNewsCard } from "./CoinFamilleNewsCard"
 import type { CoinFamilleNewsItem } from "@/lib/coin-famille-news"
+import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { MeteoFamilleCard } from "./MeteoFamilleCard"
 import { AirQualiteCard } from "./AirQualiteCard"
@@ -24,11 +25,14 @@ import type { NotableDateInstance } from "@/lib/notable-dates"
 import type { DeadlineInstance } from "@/lib/family-deadlines"
 import type { CatalogAnniversary } from "@/lib/catalog-anniversary"
 import type { CinemaTendance } from "@/lib/news-cinema-tendances"
+import { CoinFamilleProfileNudge, type ProfileNudgeMember } from "./CoinFamilleProfileNudge"
 
 export interface CoinFamilleData {
   news: CoinFamilleNewsItem[]
   hasFamily: boolean
-  familyMembers: { id: string; name: string }[]
+  timeState: HomepageState
+  timeSubtitle: string
+  profileNudges: ProfileNudgeMember[]
   // Right-rail (reused from the aperçu "Le foyer" stack).
   weather: WeatherSnapshot
   hasUserCity: boolean
@@ -43,12 +47,9 @@ export interface CoinFamilleData {
   cinemaTendances: CinemaTendance[]
 }
 
-// One named "Pour <name>" rail per member (capped so a big family doesn't
-// produce a wall of rails — the rest still get the family + upcoming rails).
-const MAX_MEMBER_RAILS = 4
-
 export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; serifClass: string }) {
   const p = APERCU_PALETTE
+  const pageLabel = homepageRailLabel(data.timeState)
 
   const RightRail = (
     <div className="flex flex-col gap-4">
@@ -86,58 +87,36 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                     className={`${serifClass} text-2xl md:text-4xl font-medium leading-[1.05] max-w-2xl text-balance`}
                     style={{ color: p.ink, letterSpacing: "-0.02em" }}
                   >
-                    Votre rendez-vous{" "}
+                    {pageLabel.prefix}
                     <em className="italic" style={{ color: p.accent }}>
-                      famille
-                    </em>{" "}
-                    du jour
+                      {pageLabel.emphasis}
+                    </em>
+                    {pageLabel.suffix}
                   </h1>
                   <p className="mt-2 text-sm md:text-[15px]" style={{ color: p.ink2 }}>
-                    Actus utiles, sorties et idées — choisies pour votre foyer.{" "}
+                    {pageLabel.lead}{" "}
+                    {data.timeSubtitle && (
+                      <span className="font-medium" style={{ color: p.ink }}>
+                        · {data.timeSubtitle}
+                      </span>
+                    )}{" "}
                     <Link href="/profil" className="inline-flex items-center gap-1 font-semibold underline underline-offset-2" style={{ color: p.ink }}>
                       <Users className="h-3.5 w-3.5" /> Gérer ma famille
                     </Link>
                   </p>
                 </div>
 
-                {/* Curated news — compact, always-imaged, 2 rows on desktop */}
-                {data.news.length > 0 && (
-                  <div>
-                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
-                      À lire aujourd&apos;hui
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {data.news.slice(0, 8).map((s) => (
-                        <CoinFamilleNewsCard key={s.slug} story={s} serifClass={serifClass} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Personalized categories — one per member + the whole family +
-                    upcoming. Each is deferred and self-hides when thin. */}
+                {/* Personalized heart — one request, then instant family/member
+                    tabs. This leads the page; generic editorial news comes after
+                    the useful, household-specific choices. */}
                 {data.hasFamily ? (
                   <div className="flex flex-col gap-8">
+                    {data.profileNudges.length > 0 && <CoinFamilleProfileNudge members={data.profileNudges} />}
                     <DeferUntilVisible minHeight={300}>
-                      <CoinFamillePicksRail
-                        serifClass={serifClass}
-                        eyebrow="Toute la famille"
-                        title="À regarder tous ensemble"
-                        memberIds={[]}
-                      />
+                      <CoinFamillePicksRail serifClass={serifClass} />
                     </DeferUntilVisible>
-                    {data.familyMembers.slice(0, MAX_MEMBER_RAILS).map((m) => (
-                      <DeferUntilVisible key={m.id} minHeight={300}>
-                        <CoinFamillePicksRail
-                          serifClass={serifClass}
-                          eyebrow="Rien que pour"
-                          title={`Pour ${m.name}`}
-                          memberIds={[m.id]}
-                        />
-                      </DeferUntilVisible>
-                    ))}
                     <DeferUntilVisible minHeight={300}>
-                      <CoinFamilleUpcomingRail serifClass={serifClass} />
+                      <CoinFamilleUpcomingRail serifClass={serifClass} timeState={data.timeState} />
                     </DeferUntilVisible>
                   </div>
                 ) : (
@@ -159,6 +138,33 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                     </Link>
                   </div>
                 )}
+
+                {/* Curated news — useful context, deliberately secondary to the
+                    personalized media choices. */}
+                <div>
+                  <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
+                    L&apos;essentiel pour les parents
+                  </div>
+                  {data.news.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                      {data.news.slice(0, 6).map((story) => (
+                        <CoinFamilleNewsCard key={story.slug} story={story} serifClass={serifClass} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="rounded-2xl px-5 py-6 text-center"
+                      style={{ background: p.card, border: `1px solid ${p.line}` }}
+                    >
+                      <p className={`${serifClass} text-lg font-medium`} style={{ color: p.ink }}>
+                        Rien d’essentiel à signaler aujourd’hui
+                      </p>
+                      <p className="mt-1 text-sm" style={{ color: p.ink2 }}>
+                        Nous préférons une sélection courte et utile plutôt qu’un fil rempli pour rien.
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Mobile: the "Le foyer" rail inlined after the feed */}
                 <div className="lg:hidden flex flex-col gap-4 mt-2">

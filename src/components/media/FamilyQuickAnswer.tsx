@@ -1,12 +1,14 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Sparkles, LogIn, UserPlus } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import {
   useFamilyFitData,
   type FamilyFitMember,
 } from "@/components/media/FicheDataContext"
+import {
+  FamilyFitQuickSetup,
+  FamilyFitSignIn,
+} from "@/components/media/FamilyFitConversionFlow"
 import { familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
 const BAND_PILL: Record<FamilyFitBand, { bg: string; text: string; mark: string }> = {
@@ -58,11 +60,6 @@ function Shell({
   )
 }
 
-const primaryBtn =
-  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-const secondaryBtn =
-  "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-opacity hover:opacity-80"
-
 /**
  * "Adapté à ma famille ?" — the personalized companion to the generic quick
  * answer. Always rendered beside it (the page gates it off only for
@@ -71,8 +68,6 @@ const secondaryBtn =
  */
 export function FamilyQuickAnswer({ mediaId, className }: { mediaId: string; className?: string }) {
   const { data, loading } = useFamilyFitData(mediaId)
-  const pathname = usePathname()
-  const authQuery = `?callbackUrl=${encodeURIComponent(pathname)}`
 
   if (loading) {
     return (
@@ -94,31 +89,14 @@ export function FamilyQuickAnswer({ mediaId, className }: { mediaId: string; cla
       <Shell subtitle="Réponse personnalisée" className={className}>
         <p className="mb-3 text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
           {noFamily
-            ? "Ajoutez les membres de votre famille pour savoir si ce film convient à chacun de vos enfants."
-            : "Connectez-vous pour savoir si ce film convient à chacun de vos enfants."}
+            ? "Ajoutez un premier profil pour obtenir votre réponse personnalisée sans quitter cette fiche."
+            : "L’âge ne suffit pas toujours. Obtenez un repère adapté aux sensibilités de votre foyer."}
         </p>
-        <div className="flex flex-wrap gap-2">
-          {noFamily ? (
-            <Link href="/profil" className={primaryBtn} style={{ background: "var(--color-warm-accent)" }}>
-              <UserPlus className="h-4 w-4" />
-              Ajouter ma famille
-            </Link>
-          ) : (
-            <>
-              <Link href={`/connexion${authQuery}`} className={primaryBtn} style={{ background: "var(--color-warm-accent)" }}>
-                <LogIn className="h-4 w-4" />
-                Se connecter
-              </Link>
-              <Link
-                href={`/inscription${authQuery}`}
-                className={secondaryBtn}
-                style={{ color: "var(--color-warm-ink)", border: "1px solid var(--color-warm-line)" }}
-              >
-                Créer un profil
-              </Link>
-            </>
-          )}
-        </div>
+        {noFamily ? (
+          <FamilyFitQuickSetup mediaId={mediaId} variant="warm" autoOpen={false} />
+        ) : (
+          <FamilyFitSignIn variant="warm" />
+        )}
       </Shell>
     )
   }

@@ -9,6 +9,7 @@ import {
   coerceMemberVector,
   type UpcomingMemberProfile,
 } from "@/lib/upcoming-fit"
+import { getDaySeed, seededShuffle } from "@/lib/seeded-shuffle"
 
 // "Bientôt pour vous" — upcoming films/séries/jeux ranked by the family's
 // TASTE (genre / interests / learned vector), since pre-release titles carry
@@ -31,6 +32,8 @@ export async function GET() {
   const members = await prisma.familyMember.findMany({
     where: { userId: session.user.id },
     select: {
+      id: true,
+      name: true,
       favoriteGenres: true,
       dislikedGenres: true,
       interests: true,
@@ -41,7 +44,9 @@ export async function GET() {
   })
   if (members.length === 0) return NextResponse.json({ items: [] })
 
-  const profiles: UpcomingMemberProfile[] = members.map((m) => ({
+  const profiles: (UpcomingMemberProfile & { id: string; name: string })[] = members.map((m) => ({
+    id: m.id,
+    name: m.name,
     favoriteGenres: m.favoriteGenres,
     dislikedGenres: m.dislikedGenres,
     interests: m.interests,
@@ -116,15 +121,19 @@ export async function GET() {
     .map((c) => {
       let best = 0
       let anyIncluded = false
+      let bestMember: (typeof profiles)[number] | null = null
       for (const p of profiles) {
         const r = scoreUpcomingForMember(
           { genres: c.genres, topics: c.topics, expertAgeRec: c.expertAgeRec },
           p,
         )
         if (!r.excluded) anyIncluded = true
-        if (r.fit > best) best = r.fit
+        if (r.fit > best) {
+          best = r.fit
+          bestMember = p
+        }
       }
-      return { c, fit: best, anyIncluded }
+      return { c, fit: best, anyIncluded, bestMember }
     })
     // Keep only titles at least one member isn't opted-out of, and that clear
     // the taste bar for the best-fitting member ("any member wants this").
@@ -135,17 +144,37 @@ export async function GET() {
       if (!b.c.releaseDate) return -1
       return a.c.releaseDate.localeCompare(b.c.releaseDate)
     })
-    .slice(0, RESULT_LIMIT)
+  // Keep fit ordering, but rotate close-quality groups every Paris day so
+  // "Bientôt" does not feel frozen between release-calendar updates.
+  const daily: typeof scored = []
+  const seed = getDaySeed()
+  for (let index = 0; index < scored.length; index += 4) {
+    daily.push(...seededShuffle(scored.slice(index, index + 4), seed + index))
+  }
 
-  const items = scored.map((s) => ({
-    id: s.c.id,
-    type: s.c.type,
-    title: s.c.title,
-    posterUrl: s.c.posterUrl,
-    expertAgeRec: s.c.expertAgeRec,
-    genres: s.c.genres,
-    releaseDate: s.c.releaseDate,
-  }))
+  const items = daily.slice(0, RESULT_LIMIT).map((s) => {
+    const favoriteGenre = s.bestMember
+      ? s.c.genres.find((genre) =>
+          s.bestMember!.favoriteGenres.some(
+            (favorite) => favorite.toLowerCase() === genre.toLowerCase(),
+          ),
+        )
+      : null
+    return {
+      id: s.c.id,
+      type: s.c.type,
+      title: s.c.title,
+      posterUrl: s.c.posterUrl,
+      expertAgeRec: s.c.expertAgeRec,
+      genres: s.c.genres,
+      releaseDate: s.c.releaseDate,
+      fitLabel: s.bestMember
+        ? favoriteGenre
+          ? `Pour ${s.bestMember.name} · aime ${favoriteGenre.toLowerCase()}`
+          : `Choisi pour ${s.bestMember.name}`
+        : "Choisi pour votre foyer",
+    }
+  })
 
   return NextResponse.json({ items })
 }

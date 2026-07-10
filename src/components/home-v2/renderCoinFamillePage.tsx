@@ -11,6 +11,8 @@ import { getAirQualityForCity } from "@/lib/air-quality"
 import { getCinemaTendances } from "@/lib/news-cinema-tendances"
 import { getUpcomingNotableDates, type NotableDateInstance } from "@/lib/notable-dates"
 import { getUpcomingDeadlines, type DeadlineInstance } from "@/lib/family-deadlines"
+import { resolveHomepageTimeContext } from "@/lib/homepage-time-context"
+import { getCompletionItems, getCompletionPercent, type CompletionMember } from "@/lib/profile-completion"
 import { fraunces } from "./apercuFont"
 
 // Server renderer for "Le Coin Famille" — the daily family home base. Modeled
@@ -93,15 +95,31 @@ export async function renderCoinFamillePage() {
     cinemaTendances,
     notableDates,
     deadlines,
+    reactionCounts,
   ] = await Promise.all([
     getCoinFamilleNews(8).catch(safe<CoinFamilleNewsItem[]>("news", [])),
     prisma.familyMember
       .findMany({
         where: { userId },
-        select: { id: true, name: true },
+        select: {
+          id: true,
+          name: true,
+          birthYear: true,
+          avatarEmoji: true,
+          avatarStyle: true,
+          useCustomSettings: true,
+          favoriteGenres: true,
+          sensitivityViolence: true,
+          sensitivityScary: true,
+          sensitivitySexual: true,
+          sensitivityLanguage: true,
+          sensitivitySubstances: true,
+          avoidTopics: true,
+          interests: true,
+        },
         orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
       })
-      .catch(safe<{ id: string; name: string }[]>("familyMembers", [])),
+      .catch(safe<Awaited<ReturnType<typeof prisma.familyMember.findMany>>>("familyMembers", [])),
     getNextHoliday("B").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayB", null)),
     getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
     getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
@@ -118,12 +136,36 @@ export async function renderCoinFamillePage() {
     getCinemaTendances().catch(safe<Awaited<ReturnType<typeof getCinemaTendances>>>("cinemaTendances", [])),
     Promise.resolve(getUpcomingNotableDates()).catch(safe<NotableDateInstance[]>("notableDates", [])),
     Promise.resolve(getUpcomingDeadlines()).catch(safe<DeadlineInstance[]>("deadlines", [])),
+    prisma.mediaReaction
+      .groupBy({
+        by: ["familyMemberId"],
+        where: { familyMember: { userId } },
+        _count: { _all: true },
+      })
+      .catch(safe<Array<{ familyMemberId: string; _count: { _all: number } }>>("reactionCounts", [])),
   ])
+
+  const timeContext = resolveHomepageTimeContext(new Date(), holidayCalendar)
+  const reactionsByMember = new Map(reactionCounts.map((row) => [row.familyMemberId, row._count._all]))
+  const profileNudges = familyMembers.map((member) => {
+    const completionMember: CompletionMember = member
+    const reactionCount = reactionsByMember.get(member.id) ?? 0
+    const percent = getCompletionPercent(completionMember, reactionCount)
+    const nextStep = getCompletionItems(completionMember, reactionCount).find((item) => !item.done)?.label ?? "Compléter le profil"
+    return {
+      id: member.id,
+      name: member.name,
+      completionPercent: percent,
+      nextStep,
+    }
+  })
 
   const data: CoinFamilleData = {
     news,
     hasFamily: familyMembers.length > 0,
-    familyMembers,
+    timeState: timeContext.state,
+    timeSubtitle: timeContext.subtitle,
+    profileNudges,
     weather,
     hasUserCity,
     airQuality,

@@ -105,19 +105,34 @@ export async function POST(request: NextRequest) {
     // Sanitize DiceBear avatar inputs
     const sanitizedAvatar = sanitizeAvatarInput({ avatarStyle, avatarSeed, avatarOptions })
 
-    const familyMember = await prisma.familyMember.create({
-      data: {
-        userId: session.user.id,
-        name: name.trim(),
-        birthYear: birthYear ? parseInt(birthYear) : null,
-        birthMonth: birthMonth ? Math.min(12, Math.max(1, parseInt(birthMonth))) : null,
-        avatarEmoji: avatarEmoji || "👧",
-        ...(sanitizedAvatar.avatarStyle && { avatarStyle: sanitizedAvatar.avatarStyle }),
-        ...(sanitizedAvatar.avatarSeed && { avatarSeed: sanitizedAvatar.avatarSeed }),
-        ...(sanitizedAvatar.avatarOptions && { avatarOptions: sanitizedAvatar.avatarOptions as object }),
-        favoriteGenres: Array.isArray(favoriteGenres) ? favoriteGenres : [],
-        dislikedGenres: Array.isArray(dislikedGenres) ? dislikedGenres : [],
-      },
+    const familyMember = await prisma.$transaction(async (tx) => {
+      const member = await tx.familyMember.create({
+        data: {
+          userId: session.user.id,
+          name: name.trim(),
+          birthYear: birthYear ? parseInt(birthYear) : null,
+          birthMonth: birthMonth ? Math.min(12, Math.max(1, parseInt(birthMonth))) : null,
+          avatarEmoji: avatarEmoji || "👧",
+          ...(sanitizedAvatar.avatarStyle && { avatarStyle: sanitizedAvatar.avatarStyle }),
+          ...(sanitizedAvatar.avatarSeed && { avatarSeed: sanitizedAvatar.avatarSeed }),
+          ...(sanitizedAvatar.avatarOptions && { avatarOptions: sanitizedAvatar.avatarOptions as object }),
+          favoriteGenres: Array.isArray(favoriteGenres) ? favoriteGenres : [],
+          dislikedGenres: Array.isArray(dislikedGenres) ? dislikedGenres : [],
+        },
+      })
+
+      // The quick family-fit funnel creates the first useful piece of the
+      // account directly on a media fiche. Treat that first member as a valid
+      // onboarding completion so middleware doesn't force the long wizard on
+      // the very next navigation. The full preference quiz stays available.
+      if (existingCount === 0) {
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: { onboardingCompleted: true },
+        })
+      }
+
+      return member
     })
 
     return NextResponse.json({ familyMember }, { status: 201 })

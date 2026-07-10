@@ -379,7 +379,7 @@ function ConnexionForm() {
             >
               Pas encore de compte ?{" "}
               <Link
-                href="/inscription"
+                href={`/inscription?callbackUrl=${encodeURIComponent(callbackUrl)}`}
                 className="underline font-semibold"
                 style={{ color: p.ink }}
               >
@@ -458,7 +458,7 @@ function ConnexionForm() {
           </ul>
 
           <Link
-            href="/inscription"
+            href={`/inscription?callbackUrl=${encodeURIComponent(callbackUrl)}`}
             className="inline-flex items-center justify-center gap-2 mt-8 px-5 py-3 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
             style={{ background: p.ink, color: p.bg }}
           >

@@ -1,9 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Users, LogIn, UserPlus, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
+import { Users, Check, AlertTriangle, Sparkles, Lightbulb, ShieldAlert } from "lucide-react"
 import { FamilyWarningVoteButton } from "@/components/media/FamilyWarningVoteButton"
+import {
+  FamilyFitQuickSetup,
+  FamilyFitSignIn,
+} from "@/components/media/FamilyFitConversionFlow"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
@@ -108,8 +111,6 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
   // Reads the shared fiche data (single fetch via FicheDataProvider on the
   // media page); self-fetches when rendered without the provider.
   const { data, loading } = useFamilyFitData(mediaId)
-  const pathname = usePathname()
-  const authQuery = `?callbackUrl=${encodeURIComponent(pathname)}`
 
   // ---------- Loading ----------
   if (loading) return <HeroSkeleton />
@@ -141,34 +142,9 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
           </h3>
         </div>
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
-          Créez un profil famille pour découvrir si ce contenu convient à
-          chaque membre de votre famille.
+          L’âge ne suffit pas toujours. Obtenez un repère adapté aux sensibilités de votre foyer.
         </p>
-        <div className="flex flex-col gap-2">
-          <Link
-            href={`/inscription${authQuery}`}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90"
-            style={{ background: p.ink, color: p.bg }}
-          >
-            <UserPlus className="h-4 w-4" />
-            Créer mon profil
-          </Link>
-          <Link
-            href={`/connexion${authQuery}`}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-80"
-            style={{
-              background: "transparent",
-              color: p.ink,
-              border: `1px solid ${p.line2}`,
-            }}
-          >
-            <LogIn className="h-4 w-4" />
-            Se connecter
-          </Link>
-        </div>
-        <p className="text-xs mt-3" style={{ color: p.ink2 }}>
-          Gratuit — 2 minutes. Modifiable à tout moment.
-        </p>
+        <FamilyFitSignIn variant="warm" />
       </div>
     )
   }
@@ -192,17 +168,9 @@ export function FamilyFitHero({ mediaId }: FamilyFitHeroProps) {
           </h3>
         </div>
         <p className="text-sm leading-relaxed mb-4" style={{ color: p.ink2 }}>
-          Ajoutez les membres de votre famille pour voir si ce contenu leur
-          convient.
+          Ajoutez un premier profil pour obtenir votre réponse personnalisée sans quitter cette fiche.
         </p>
-        <Link
-          href="/profil"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90"
-          style={{ background: p.ink, color: p.bg }}
-        >
-          <UserPlus className="h-4 w-4" />
-          Ajouter un membre
-        </Link>
+        <FamilyFitQuickSetup mediaId={mediaId} variant="warm" />
       </div>
     )
   }

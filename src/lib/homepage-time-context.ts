@@ -175,6 +175,42 @@ export interface HomepageRailLabel {
  * Time-aware label for the homepage's first content rail, so it never reads
  * "ce week-end" on a Monday. Mirrors the states of resolveHomepageTimeContext.
  */
+export interface UpcomingRailLabel {
+  eyebrow: string
+  titleEmphasis: string
+  lead: string
+}
+
+/** Time-aware copy for the "Bientôt" rail on Coin Famille. */
+export function upcomingRailLabel(state: HomepageState): UpcomingRailLabel {
+  switch (state) {
+    case "holidays":
+      return {
+        eyebrow: "Vacances · à venir",
+        titleEmphasis: "pendant les vacances",
+        lead: "Les prochaines sorties qui plairont à votre foyer — à garder sous le coude.",
+      }
+    case "weekend":
+      return {
+        eyebrow: "Ce week-end · à venir",
+        titleEmphasis: "ce week-end",
+        lead: "Films au cinéma et nouveautés streaming, triés selon les goûts de votre foyer.",
+      }
+    case "tonight":
+      return {
+        eyebrow: "Prochainement",
+        titleEmphasis: "pour votre famille",
+        lead: "Ce qui arrive bientôt et correspond déjà aux profils de votre foyer.",
+      }
+    default:
+      return {
+        eyebrow: "Bientôt · pour votre famille",
+        titleEmphasis: "sorties pour vous",
+        lead: "Choisies d'après les goûts de votre foyer. L'âge affiché est provisoire, précisé après la sortie.",
+      }
+  }
+}
+
 export function homepageRailLabel(state: HomepageState): HomepageRailLabel {
   switch (state) {
     case "holidays":

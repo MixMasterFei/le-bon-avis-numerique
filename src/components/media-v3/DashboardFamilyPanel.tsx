@@ -1,8 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Check, Clock, X, UserPlus, LogIn } from "lucide-react"
+import { Check, Clock, X, UserPlus } from "lucide-react"
 import { useFamilyFitData } from "@/components/media/FicheDataContext"
+import {
+  FamilyFitQuickSetup,
+  FamilyFitSignIn,
+} from "@/components/media/FamilyFitConversionFlow"
 import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
 
 /**
@@ -30,7 +34,7 @@ const BAND: Record<
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl p-4 sm:p-[18px]" style={CARD}>
+    <div id="pour-ma-famille" className="scroll-mt-24 rounded-2xl p-4 sm:p-[18px]" style={CARD}>
       <div className={`${LABEL} mb-3`} style={{ color: "var(--f-faint)" }}>
         Pour ma famille
       </div>
@@ -78,23 +82,10 @@ export function DashboardFamilyPanel({
     return (
       <Shell>
         <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--f-body)" }}>
-          Créez un profil famille pour voir, membre par membre, si ce titre convient.
+          L’âge ne suffit pas toujours. Obtenez un repère adapté aux sensibilités de votre foyer.
         </p>
-        <div className="mt-3 flex gap-2">
-          <Link
-            href="/inscription"
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11.5px] font-semibold text-white"
-            style={{ background: "var(--f-ink)" }}
-          >
-            <UserPlus className="h-3.5 w-3.5" /> Créer mon profil
-          </Link>
-          <Link
-            href="/connexion"
-            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-[11.5px] font-semibold"
-            style={{ border: "1px solid var(--f-border)", color: "var(--f-ink)" }}
-          >
-            <LogIn className="h-3.5 w-3.5" /> Se connecter
-          </Link>
+        <div className="mt-3">
+          <FamilyFitSignIn variant="dashboard" compact />
         </div>
       </Shell>
     )
@@ -104,9 +95,11 @@ export function DashboardFamilyPanel({
     return (
       <Shell>
         <p className="text-[12.5px] leading-[1.55]" style={{ color: "var(--f-body)" }}>
-          Ajoutez les membres de votre foyer pour voir si ce titre leur convient.
+          Ajoutez un premier profil pour obtenir votre réponse personnalisée sans quitter cette fiche.
         </p>
-        <AddMemberButton label="+ Ajouter un membre" />
+        <div className="mt-3">
+          <FamilyFitQuickSetup mediaId={mediaId} variant="dashboard" compact />
+        </div>
       </Shell>
     )
   }
