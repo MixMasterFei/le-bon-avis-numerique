@@ -24,15 +24,24 @@ const TONIGHT_MIX: Record<HomepageState, { MOVIE: number; TV: number; GAME: numb
 const RESULT_LIMIT = 12
 const MIN_SCORE = 55
 
-export async function GET() {
+export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ items: [], state: "default" })
 
-  const members = await prisma.familyMember.findMany({
+  const allMembers = await prisma.familyMember.findMany({
     where: { userId: session.user.id },
     select: { id: true, birthYear: true, birthMonth: true },
   })
-  if (members.length === 0) return NextResponse.json({ items: [], state: "default" })
+  if (allMembers.length === 0) return NextResponse.json({ items: [], state: "default" })
+
+  // Optional ?members=id,id — restrict the picks to a subset (drives the
+  // per-member "Pour <name>" rails). Empty/invalid → the whole family.
+  const requested = (new URL(req.url).searchParams.get("members") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const chosen = requested.length ? allMembers.filter((m) => requested.includes(m.id)) : allMembers
+  const members = chosen.length ? chosen : allMembers
 
   const memberIds = members.map((m) => m.id)
   const ages = members
@@ -52,6 +61,7 @@ export async function GET() {
     requirePoster: true,
     maxAge,
     limit: 20,
+    take: 600, // bounded popularity window — enough for top picks, cheaper per rail
   }
 
   const [movie, tv, game] = await Promise.all([

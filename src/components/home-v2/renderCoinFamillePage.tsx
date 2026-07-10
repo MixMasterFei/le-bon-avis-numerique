@@ -82,7 +82,7 @@ export async function renderCoinFamillePage() {
 
   const [
     news,
-    memberCount,
+    familyMembers,
     holidayB,
     holidayA,
     holidayC,
@@ -94,8 +94,14 @@ export async function renderCoinFamillePage() {
     notableDates,
     deadlines,
   ] = await Promise.all([
-    getCoinFamilleNews(6).catch(safe<CoinFamilleNewsItem[]>("news", [])),
-    prisma.familyMember.count({ where: { userId } }).catch(safe<number>("memberCount", 0)),
+    getCoinFamilleNews(8).catch(safe<CoinFamilleNewsItem[]>("news", [])),
+    prisma.familyMember
+      .findMany({
+        where: { userId },
+        select: { id: true, name: true },
+        orderBy: [{ displayOrder: "asc" }, { createdAt: "asc" }],
+      })
+      .catch(safe<{ id: string; name: string }[]>("familyMembers", [])),
     getNextHoliday("B").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayB", null)),
     getNextHoliday("A").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayA", null)),
     getNextHoliday("C").catch(safe<Awaited<ReturnType<typeof getNextHoliday>>>("holidayC", null)),
@@ -116,7 +122,8 @@ export async function renderCoinFamillePage() {
 
   const data: CoinFamilleData = {
     news,
-    hasFamily: memberCount > 0,
+    hasFamily: familyMembers.length > 0,
+    familyMembers,
     weather,
     hasUserCity,
     airQuality,

@@ -67,7 +67,7 @@ export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) 
           Bientôt · pour votre famille
         </div>
         <h2
-          className={`${serifClass} text-2xl md:text-3xl font-medium leading-[1.05] m-0`}
+          className={`${serifClass} text-xl md:text-2xl font-medium leading-[1.05] m-0`}
           style={{ color: p.ink, letterSpacing: "-0.02em" }}
         >
           Les prochaines{" "}
@@ -75,7 +75,7 @@ export function CoinFamilleUpcomingRail({ serifClass }: { serifClass: string }) 
             sorties pour vous
           </em>
         </h2>
-        <p className="mt-1.5 text-sm" style={{ color: p.ink2 }}>
+        <p className="mt-1 text-sm" style={{ color: p.ink2 }}>
           Choisies d&apos;après les goûts de votre foyer. L&apos;âge affiché est provisoire, précisé après la sortie.
         </p>
       </div>

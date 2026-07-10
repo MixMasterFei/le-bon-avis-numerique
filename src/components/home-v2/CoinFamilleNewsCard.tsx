@@ -12,22 +12,19 @@ import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import type { CoinFamilleNewsItem } from "@/lib/coin-famille-news"
 
 /**
- * Coin Famille news card — the legal-safe mechanic.
+ * Coin Famille news card — compact + always-imaged, the legal-safe mechanic.
  *
- * Shows the publisher HEADLINE (facts), an inline "expand" that reveals
- * Totem Avisé's own angle (`familyTakeaway`, original opinion), and a
- * "Lire l'article" button straight to the original publisher. There is NO
- * link to an internal `/apercudecouverte/<slug>` summary — that's the point:
- * we curate + add our opinion + link out, never republishing a synthesis.
+ * Shows the publisher HEADLINE (facts) over a thumbnail, an inline "expand"
+ * revealing Totem Avisé's own angle (`familyTakeaway`, original opinion) with a
+ * "Lire l'article" button to the original publisher. No link to an internal
+ * summary page — we curate + add our opinion + link out, never republishing.
  */
 export function CoinFamilleNewsCard({
   story,
   serifClass,
-  featured = false,
 }: {
   story: CoinFamilleNewsItem
   serifClass: string
-  featured?: boolean
 }) {
   const p = APERCU_PALETTE
   const [src, setSrc] = useState(story.imageUrl)
@@ -39,110 +36,111 @@ export function CoinFamilleNewsCard({
     else setImageBroken(true)
   }
   const showImage = !imageBroken && !isBlockedHotlinkImageUrl(src)
-  const panelId = `cf-takeaway-${story.slug}`
-
-  const ImageBlock = (
-    <div
-      className={`relative overflow-hidden ${featured ? "aspect-[16/10] md:aspect-auto md:h-full" : "aspect-[16/9]"}`}
-      style={{ background: p.placeholder }}
-    >
-      {showImage ? (
-        <Image
-          src={src}
-          alt=""
-          fill
-          className="object-cover"
-          sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 33vw"}
-          // Raw publisher CDN (unbounded host) — bypass the optimizer, which
-          // would reject the non-allowlisted hostname at render.
-          unoptimized
-          onError={handleImageError}
-        />
-      ) : null}
-      <div
-        className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
-        style={{ background: p.ink, color: p.bg }}
-      >
-        {NEWS_CATEGORY_LABEL[story.category]}
-      </div>
-      <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
-    </div>
-  )
-
-  const Body = (
-    <div className="flex flex-1 flex-col gap-2 p-4">
-      <h3
-        className={`${serifClass} font-medium leading-snug ${featured ? "text-xl md:text-2xl" : "text-lg line-clamp-3"}`}
-        style={{ color: p.ink, letterSpacing: "-0.01em" }}
-      >
-        {story.headline}
-      </h3>
-
-      <div className="flex items-center justify-between gap-2">
-        <ApercuNewsSourcePills sources={story.sources} compact />
-        {/* suppressHydrationWarning: relative time reads Date.now() at render;
-            a one-bucket drift during hydration is invisible (see ApercuNewsCard). */}
-        <span
-          className="text-[11px] whitespace-nowrap"
-          style={{ color: p.ink2 }}
-          suppressHydrationWarning
-        >
-          {formatRelativeTimeFr(story.publishedAt)}
-        </span>
-      </div>
-
-      {/* Totem's angle — inline accordion, NO navigation. */}
-      {story.familyTakeaway && (
-        <div className="mt-auto pt-1">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls={panelId}
-            className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold transition-opacity hover:opacity-70"
-            style={{ color: p.accent }}
-          >
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
-            />
-            Pourquoi c&apos;est intéressant pour les familles
-          </button>
-          {open && (
-            <div
-              id={panelId}
-              className="mt-2 rounded-xl px-3.5 py-3 text-[13.5px] leading-relaxed"
-              style={{ background: p.bg2, border: `1px solid ${p.line}`, color: p.ink2 }}
-            >
-              {story.familyTakeaway}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Outbound to the ORIGINAL publisher — new tab, no synthesis. */}
-      {story.articleUrl && (
-        <a
-          href={story.articleUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition-opacity hover:opacity-80"
-          style={{ background: p.ink, color: p.bg }}
-        >
-          Lire l&apos;article
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      )}
-    </div>
-  )
+  const panelId = `cf-news-${story.slug}`
 
   return (
     <article
-      className={`flex overflow-hidden rounded-2xl ${featured ? "flex-col md:flex-row md:items-stretch" : "flex-col"}`}
+      className="flex flex-col overflow-hidden rounded-xl"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
-      <div className={featured ? "md:w-1/2" : ""}>{ImageBlock}</div>
-      <div className={featured ? "md:w-1/2" : ""} style={{ display: "flex" }}>
-        {Body}
+      <div className="relative aspect-[16/9]" style={{ background: p.placeholder }}>
+        {showImage ? (
+          <Image
+            src={src}
+            alt=""
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 50vw, 25vw"
+            // Raw publisher CDN (unbounded host) — bypass the optimizer.
+            unoptimized
+            onError={handleImageError}
+          />
+        ) : (
+          // Guarantee an image slot even if the branded card also fails.
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: p.bg2 }}>
+            <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
+              {NEWS_CATEGORY_LABEL[story.category]}
+            </span>
+          </div>
+        )}
+        <div
+          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
+          style={{ background: p.ink, color: p.bg }}
+        >
+          {NEWS_CATEGORY_LABEL[story.category]}
+        </div>
+        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1.5 p-3">
+        <h3
+          className={`${serifClass} text-[15px] leading-snug font-medium line-clamp-2`}
+          style={{ color: p.ink, letterSpacing: "-0.01em" }}
+        >
+          {story.headline}
+        </h3>
+
+        <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
+          <ApercuNewsSourcePills sources={story.sources} compact />
+          <span
+            className="text-[10.5px] whitespace-nowrap"
+            style={{ color: p.ink2 }}
+            suppressHydrationWarning
+          >
+            {formatRelativeTimeFr(story.publishedAt)}
+          </span>
+        </div>
+
+        {/* Totem's angle — inline accordion, NO navigation. */}
+        {story.familyTakeaway ? (
+          <div>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls={panelId}
+              className="inline-flex items-center gap-1 text-[11.5px] font-semibold transition-opacity hover:opacity-70"
+              style={{ color: p.accent }}
+            >
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+              Pourquoi c&apos;est intéressant
+            </button>
+            {open && (
+              <div
+                id={panelId}
+                className="mt-2 rounded-lg px-3 py-2.5 text-[12.5px] leading-relaxed"
+                style={{ background: p.bg2, border: `1px solid ${p.line}`, color: p.ink2 }}
+              >
+                {story.familyTakeaway}
+                {story.articleUrl && (
+                  <a
+                    href={story.articleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-bold transition-opacity hover:opacity-80"
+                    style={{ background: p.ink, color: p.bg }}
+                  >
+                    Lire l&apos;article
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          story.articleUrl && (
+            <a
+              href={story.articleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11.5px] font-semibold transition-opacity hover:opacity-70"
+              style={{ color: p.accent }}
+            >
+              Lire l&apos;article
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )
+        )}
       </div>
     </article>
   )

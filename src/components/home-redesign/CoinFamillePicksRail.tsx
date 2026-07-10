@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
-import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 interface RawItem {
@@ -19,23 +18,39 @@ function toCardType(t: unknown): RedesignCardMedia["type"] {
 }
 
 /**
- * "Ce soir" — time-aware, multi-type family consensus (films + séries + jeux),
- * ranked by the whole family's fit via /api/coin-famille/tonight. Per-member
- * avatars come from the page's FamilyFitProvider. Self-hides under 3 results.
+ * A single-row personalized "category" for Le Coin Famille. Fetches
+ * /api/coin-famille/tonight (optionally scoped to a member subset via
+ * ?members=) and renders one row of V2 cards with the per-member meter.
+ * Used both for "À regarder tous ensemble" (whole family) and each
+ * "Pour <name>" rail. Self-hides when the family fit is thin.
  */
-export function CoinFamilleTonightRail({ serifClass }: { serifClass: string }) {
+export function CoinFamillePicksRail({
+  serifClass,
+  eyebrow,
+  title,
+  memberIds = [],
+  minItems = 3,
+}: {
+  serifClass: string
+  eyebrow: string
+  title: string
+  memberIds?: string[]
+  minItems?: number
+}) {
   const p = APERCU_PALETTE
+  const key = memberIds.join(",")
   const [items, setItems] = useState<RedesignCardMedia[]>([])
-  const [state, setState] = useState<HomepageState>("default")
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    // On a member-selection change we keep the current cards visible until the
+    // new set resolves (no loading flash); skeletons only show on first load.
     let cancelled = false
-    fetch("/api/coin-famille/tonight")
+    const qs = key ? `?members=${encodeURIComponent(key)}` : ""
+    fetch(`/api/coin-famille/tonight${qs}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
-        setState((data?.state as HomepageState) ?? "default")
         const arr: RawItem[] = Array.isArray(data?.items) ? data.items : []
         setItems(
           arr.map((m) => ({
@@ -59,36 +74,29 @@ export function CoinFamilleTonightRail({ serifClass }: { serifClass: string }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [key])
 
-  if (!loading && items.length < 3) return null
-  const label = homepageRailLabel(state)
+  if (!loading && items.length < minItems) return null
 
   return (
-    <section className="mt-2">
-      <div className="mb-4">
-        <div className="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: p.accent }}>
-          {label.eyebrow} · en famille
+    <section>
+      <div className="mb-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: p.accent }}>
+          {eyebrow}
         </div>
         <h2
-          className={`${serifClass} text-2xl md:text-3xl font-medium leading-[1.05] m-0`}
+          className={`${serifClass} text-xl md:text-2xl font-medium leading-[1.05] m-0`}
           style={{ color: p.ink, letterSpacing: "-0.02em" }}
         >
-          {label.prefix}
-          <em className="italic" style={{ color: p.accent }}>
-            {label.emphasis}
-          </em>
-          {label.suffix}
+          {title}
         </h2>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         {loading && items.length === 0
-          ? Array.from({ length: 4 }).map((_, i) => (
+          ? Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: p.placeholder }} />
             ))
-          : items.slice(0, 8).map((m) => (
-              <RedesignCard key={m.id} media={m} totem="full" showType familyVariant="avatars" />
-            ))}
+          : items.slice(0, 5).map((m) => <RedesignCard key={m.id} media={m} totem="compact" showType />)}
       </div>
     </section>
   )

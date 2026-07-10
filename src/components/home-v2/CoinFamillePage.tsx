@@ -4,8 +4,8 @@ import Link from "next/link"
 import { ArrowRight, Users } from "lucide-react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { DeferUntilVisible } from "@/components/home-redesign/DeferUntilVisible"
+import { CoinFamillePicksRail } from "@/components/home-redesign/CoinFamillePicksRail"
 import { CoinFamilleUpcomingRail } from "@/components/home-redesign/CoinFamilleUpcomingRail"
-import { CoinFamilleTonightRail } from "@/components/home-redesign/CoinFamilleTonightRail"
 import { CoinFamilleNewsCard } from "./CoinFamilleNewsCard"
 import type { CoinFamilleNewsItem } from "@/lib/coin-famille-news"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -28,6 +28,7 @@ import type { CinemaTendance } from "@/lib/news-cinema-tendances"
 export interface CoinFamilleData {
   news: CoinFamilleNewsItem[]
   hasFamily: boolean
+  familyMembers: { id: string; name: string }[]
   // Right-rail (reused from the aperçu "Le foyer" stack).
   weather: WeatherSnapshot
   hasUserCity: boolean
@@ -42,9 +43,12 @@ export interface CoinFamilleData {
   cinemaTendances: CinemaTendance[]
 }
 
+// One named "Pour <name>" rail per member (capped so a big family doesn't
+// produce a wall of rails — the rest still get the family + upcoming rails).
+const MAX_MEMBER_RAILS = 4
+
 export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; serifClass: string }) {
   const p = APERCU_PALETTE
-  const [hero, ...rest] = data.news
 
   const RightRail = (
     <div className="flex flex-col gap-4">
@@ -72,7 +76,7 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
           <div className="container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 lg:gap-12 items-start">
               {/* ─────── MAIN COLUMN ─────── */}
-              <main className="min-w-0 flex flex-col gap-6">
+              <main className="min-w-0 flex flex-col gap-8">
                 {/* Header — Coin Famille vs Profil made explicit */}
                 <div>
                   <div className="text-[11px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: p.accent }}>
@@ -96,33 +100,46 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                   </p>
                 </div>
 
-                {/* Curated news — headline + expand + outbound link */}
+                {/* Curated news — compact, always-imaged, 2 rows on desktop */}
                 {data.news.length > 0 && (
-                  <div className="flex flex-col gap-5">
-                    <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
+                  <div>
+                    <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
                       À lire aujourd&apos;hui
                     </div>
-                    {hero && <CoinFamilleNewsCard story={hero} serifClass={serifClass} featured />}
-                    {rest.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        {rest.map((s) => (
-                          <CoinFamilleNewsCard key={s.slug} story={s} serifClass={serifClass} />
-                        ))}
-                      </div>
-                    )}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {data.news.slice(0, 8).map((s) => (
+                        <CoinFamilleNewsCard key={s.slug} story={s} serifClass={serifClass} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {/* Personalized rails — deferred; or a nudge to create a family */}
+                {/* Personalized categories — one per member + the whole family +
+                    upcoming. Each is deferred and self-hides when thin. */}
                 {data.hasFamily ? (
-                  <>
-                    <DeferUntilVisible minHeight={320}>
+                  <div className="flex flex-col gap-8">
+                    <DeferUntilVisible minHeight={300}>
+                      <CoinFamillePicksRail
+                        serifClass={serifClass}
+                        eyebrow="Toute la famille"
+                        title="À regarder tous ensemble"
+                        memberIds={[]}
+                      />
+                    </DeferUntilVisible>
+                    {data.familyMembers.slice(0, MAX_MEMBER_RAILS).map((m) => (
+                      <DeferUntilVisible key={m.id} minHeight={300}>
+                        <CoinFamillePicksRail
+                          serifClass={serifClass}
+                          eyebrow="Rien que pour"
+                          title={`Pour ${m.name}`}
+                          memberIds={[m.id]}
+                        />
+                      </DeferUntilVisible>
+                    ))}
+                    <DeferUntilVisible minHeight={300}>
                       <CoinFamilleUpcomingRail serifClass={serifClass} />
                     </DeferUntilVisible>
-                    <DeferUntilVisible minHeight={360}>
-                      <CoinFamilleTonightRail serifClass={serifClass} />
-                    </DeferUntilVisible>
-                  </>
+                  </div>
                 ) : (
                   <div className="rounded-2xl p-6" style={{ background: p.card, border: `1px solid ${p.line}` }}>
                     <h3 className={`${serifClass} text-xl font-medium`} style={{ color: p.ink }}>
@@ -144,7 +161,7 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                 )}
 
                 {/* Mobile: the "Le foyer" rail inlined after the feed */}
-                <div className="lg:hidden flex flex-col gap-4 mt-4">
+                <div className="lg:hidden flex flex-col gap-4 mt-2">
                   <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
                     Le foyer
                   </div>
