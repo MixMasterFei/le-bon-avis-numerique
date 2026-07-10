@@ -6,6 +6,7 @@ import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-t
 import { getHolidayCalendar } from "@/lib/school-holidays"
 import { getMemberAge } from "@/lib/age-utils"
 import { getDaySeed, seededShuffle } from "@/lib/seeded-shuffle"
+import type { FitReason } from "@/lib/totem-voice"
 
 // One request powers both the whole-family selection and every member tab.
 // We score one broad candidate pool per media type (3 smart-filter passes total)
@@ -56,24 +57,27 @@ function memberScore(item: SmartFilterResultItem, memberId: string): number {
   return item.memberScores.find((score) => score.memberId === memberId)?.score ?? 0
 }
 
-function memberReason(item: SmartFilterResultItem, member: { id: string; name: string; favoriteGenres: string[] }): string {
+// Truthful reason, derived from the member's real favorite genres + fit score.
+// The client (src/lib/totem-voice.ts) turns it into one plain French sentence,
+// so the phrasing lives in one place and can never assert a taste we didn't check.
+function memberReason(item: SmartFilterResultItem, member: { id: string; name: string; favoriteGenres: string[] }): FitReason {
   const favorite = item.genres.find((genre) =>
     member.favoriteGenres.some((candidate) => candidate.toLowerCase() === genre.toLowerCase()),
   )
-  if (favorite) return `${member.name} aime les contenus ${favorite.toLowerCase()}`
+  if (favorite) return { kind: "member-genre", name: member.name, genre: favorite }
   const score = memberScore(item, member.id)
-  return score >= 80 ? `Très bon accord pour ${member.name}` : `Choisi pour ${member.name}`
+  return score >= 80 ? { kind: "member-strong", name: member.name } : { kind: "member-chosen", name: member.name }
 }
 
-function familyReason(item: SmartFilterResultItem, memberNames: Map<string, string>): string {
+function familyReason(item: SmartFilterResultItem, memberNames: Map<string, string>): FitReason {
   const adapted = item.memberScores
     .filter((score) => score.score >= 70)
     .map((score) => memberNames.get(score.memberId))
     .filter((name): name is string => Boolean(name))
-  if (adapted.length === item.memberScores.length) return "Bon choix pour tout le foyer"
-  if (adapted.length === 1) return `Particulièrement adapté à ${adapted[0]}`
-  if (adapted.length > 1) return `Adapté à ${adapted.slice(0, 2).join(" et ")}`
-  return "Un bon compromis familial"
+  if (adapted.length === item.memberScores.length) return { kind: "family-all" }
+  if (adapted.length === 1) return { kind: "family-one", name: adapted[0] }
+  if (adapted.length > 1) return { kind: "family-some", names: adapted }
+  return { kind: "family-compromise" }
 }
 
 function mixByMoment(
@@ -102,7 +106,7 @@ function mixByMoment(
   return result
 }
 
-function toItem(item: SmartFilterResultItem, cornerLabel: string) {
+function toItem(item: SmartFilterResultItem, reason: FitReason) {
   return {
     id: item.mediaId,
     type: item.type,
@@ -111,9 +115,14 @@ function toItem(item: SmartFilterResultItem, cornerLabel: string) {
     expertAgeRec: item.expertAgeRec,
     genres: item.genres,
     familyScore: item.familyScore,
-    cornerLabel,
+    reason,
   }
 }
+
+// "Le classique à redécouvrir" — one older, well-loved catalog title that still
+// fits the whole foyer. Released ≥ CLASSIC_MIN_AGE_YEARS ago so it reads as a
+// rediscovery, not just another recent pick; rotates daily.
+const CLASSIC_MIN_AGE_YEARS = 6
 
 export async function GET() {
   const session = await auth()
@@ -124,6 +133,7 @@ export async function GET() {
       subtitle: "",
       familyItems: [],
       memberSections: [],
+      classic: null,
     })
   }
 
@@ -150,6 +160,7 @@ export async function GET() {
       subtitle: "",
       familyItems: [],
       memberSections: [],
+      classic: null,
     })
   }
 
@@ -221,6 +232,24 @@ export async function GET() {
     toItem(item, familyReason(item, names)),
   )
 
+  // Derive the daily "classique à redécouvrir" from the same scored pools —
+  // family-eligible, not already shown above, and old enough to feel like a
+  // rediscovery. Rotate the best-fitting band so it changes day to day.
+  const currentYear = new Date().getFullYear()
+  const shownIds = new Set(familyItems.map((item) => item.id))
+  const classicCandidates = [...rawPools.MOVIE, ...rawPools.TV, ...rawPools.GAME].filter(
+    (item) =>
+      familyEligible(item) &&
+      !shownIds.has(item.mediaId) &&
+      item.releaseDate !== null &&
+      item.releaseDate.getFullYear() <= currentYear - CLASSIC_MIN_AGE_YEARS,
+  )
+  classicCandidates.sort((a, b) => b.familyScore - a.familyScore)
+  const classicPick = classicCandidates.length
+    ? seededShuffle(classicCandidates.slice(0, 8), seed + 53)[0]
+    : null
+  const classic = classicPick ? toItem(classicPick, familyReason(classicPick, names)) : null
+
   const memberSections = allMembers.map((member, memberIndex) => {
     const eligible = (item: SmartFilterResultItem) =>
       memberScore(item, member.id) >= MIN_SCORE &&
@@ -261,5 +290,6 @@ export async function GET() {
     subtitle: context.subtitle,
     familyItems,
     memberSections,
+    classic,
   })
 }

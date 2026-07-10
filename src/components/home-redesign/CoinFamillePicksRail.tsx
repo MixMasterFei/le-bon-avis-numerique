@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react"
 import { RefreshCw, Users } from "lucide-react"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 import { CoinFamilleHeroPick } from "./CoinFamilleHeroPick"
+import { CoinFamilleClassicCard } from "./CoinFamilleClassicCard"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
-import { APERCU_PALETTE, genreLabelFr } from "@/components/home-v2/apercuTheme"
-import { totemVoiceLine } from "@/lib/totem-voice"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { totemVoiceLine, type FitReason } from "@/lib/totem-voice"
 import type { HomepageState } from "@/lib/homepage-time-context"
 
 interface RawItem {
@@ -16,7 +17,8 @@ interface RawItem {
   posterUrl: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
-  cornerLabel?: string | null
+  // Truthful fit reason from the API; phrased into one sentence for the hero.
+  reason?: FitReason
 }
 
 interface MemberSection {
@@ -35,6 +37,7 @@ interface PicksResponse {
   subtitle: string
   familyItems: RawItem[]
   memberSections: MemberSection[]
+  classic?: RawItem | null
 }
 
 function toCardType(t: unknown): RedesignCardMedia["type"] {
@@ -50,7 +53,9 @@ function toCards(items: RawItem[]): RedesignCardMedia[] {
     expertAgeRec: item.expertAgeRec ?? null,
     genres: item.genres ?? [],
     contentMetrics: null,
-    cornerLabel: item.cornerLabel ?? null,
+    // Cards don't show the ribbon (it truncated on small tiles); the hero
+    // carries the reason as a full sentence instead.
+    cornerLabel: null,
   }))
 }
 
@@ -104,8 +109,17 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   )
   const activeMember = memberTabs.find((member) => member.id === activeTab)
   const activeItems = activeMember?.cards ?? familyCards
+  // Raw items stay in the same order as the cards, so the hero's reason is the
+  // reason at the same index — no re-lookup by id needed.
+  const activeRaw = activeMember?.items ?? response?.familyItems ?? []
   const hero = activeItems.length > 0 ? activeItems[offset % activeItems.length] : null
+  const heroReason = activeRaw.length > 0 ? activeRaw[offset % activeRaw.length]?.reason : undefined
   const shown = visibleWindow(activeItems, offset)
+
+  // "Le classique à redécouvrir" — one family-level pick, constant across tabs.
+  const classicRaw = response?.classic ?? null
+  const classicCard = useMemo(() => (classicRaw ? toCards([classicRaw])[0] : null), [classicRaw])
+  const classicReason = classicRaw?.reason ? totemVoiceLine(classicRaw.reason) : undefined
 
   const changeTab = (id: string) => {
     setActiveTab(id)
@@ -206,11 +220,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
           media={hero}
           serifClass={serifClass}
           badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
-          voiceLine={totemVoiceLine({
-            memberName: activeMember?.name,
-            title: hero.title,
-            genres: (hero.genres ?? []).map(genreLabelFr),
-          })}
+          voiceLine={heroReason ? totemVoiceLine(heroReason) : undefined}
         />
       )}
 
@@ -250,6 +260,15 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
             <RefreshCw className="h-3.5 w-3.5" />
             D’autres idées
           </button>
+        </div>
+      )}
+
+      {!loading && classicCard && (
+        <div className="mt-5 border-t pt-4" style={{ borderColor: p.line }}>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
+            Le classique à redécouvrir
+          </div>
+          <CoinFamilleClassicCard media={classicCard} reason={classicReason} serifClass={serifClass} />
         </div>
       )}
     </section>

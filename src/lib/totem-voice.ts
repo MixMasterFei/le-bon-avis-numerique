@@ -1,86 +1,48 @@
-import { getDaySeed } from "@/lib/seeded-shuffle"
-
 /**
- * "Le totem a parlé" — the Coin Famille hero's one-liner, written as if Totem
- * itself explains WHY today's pick fits. Owner brief: a specific, lightly funny
- * tone (à la mascot persona) that catches attention — but hand-crafted
- * templates only, never AI-generated jokes at runtime (they misfire).
+ * The Coin Famille hero's one-liner — a short, plain-spoken note explaining WHY
+ * today's pick fits, in Totem Avisé's editorial voice.
  *
- * Deterministic: the template rotates with the day + the title, so the line
- * changes daily without flickering between renders. Templates are deadpan-warm
- * and safe — they poke fun at the totem, never at the child or the family.
+ * It is a pure PHRASING layer over a `FitReason` that the caller has already
+ * derived from real signals (the member's favorite genres, the fit score, who
+ * the title suits). We never guess the reason here and never invent a taste —
+ * the sentence is always traceable to the data that produced the `FitReason`.
+ *
+ * Tone: warm, specific, mainstream. No mascot jokes, no manufactured
+ * excitement — an editor's note, not a gag.
  */
 
-const FAMILY_LINES_WITH_GENRE = [
-  "Vérifié trois fois : du {genre} qui plaît à tout le foyer. Le totem n'en revient toujours pas.",
-  "{genre} pour les uns, {genre2} pour les autres : ce titre coche les deux cases. Le totem approuve.",
-  "Le totem a comparé les goûts de tout le monde — ce {genre} est ressorti en tête, sans tricher.",
-] as const
+export type FitReason =
+  /** The title matches a genre this member has marked as a favorite. */
+  | { kind: "member-genre"; name: string; genre: string }
+  /** Strong overall fit for this member (high score), no single standout genre. */
+  | { kind: "member-strong"; name: string }
+  /** A solid pick for this member on age + taste, without a headline reason. */
+  | { kind: "member-chosen"; name: string }
+  /** Suits every member of the household. */
+  | { kind: "family-all" }
+  /** Particularly suits one member. */
+  | { kind: "family-one"; name: string }
+  /** Suits two named members well. */
+  | { kind: "family-some"; names: string[] }
+  /** A reasonable middle ground when tastes diverge. */
+  | { kind: "family-compromise" }
 
-const FAMILY_LINES_PLAIN = [
-  "Un choix validé pour chaque membre du foyer — autant dire un petit miracle statistique.",
-  "De quoi mettre tout le monde d'accord avant même la fin du générique d'ouverture.",
-  "Le genre de titre qui évite le débat du soir. Le totem aime les soirées calmes.",
-  "Le totem a pesé les goûts de chacun. Celui-ci est ressorti en tête, à l'unanimité ou presque.",
-] as const
-
-const MEMBER_LINES_WITH_GENRE = [
-  "Du {genre}, le rayon préféré de {name} — le totem n'a pas eu à chercher bien loin.",
-  "Le radar du totem a clignoté pour {name} dès la première seconde. {genre} oblige.",
-  "Si {name} aime le {genre}, ceci devrait faire mouche. Le totem est plutôt sûr de son coup.",
-] as const
-
-const MEMBER_LINES_PLAIN = [
-  "Choisi pour {name} : bon âge, bons goûts, zéro mauvaise surprise. Le totem a fait le tri.",
-  "Repéré pour {name} : dans ses goûts, à son âge, prêt à lancer. Le totem retourne veiller.",
-  "{name} d'abord : ce choix suit ses goûts à lui, pas ceux de l'algorithme du voisin.",
-] as const
-
-/** Small stable hash so the line varies per title, not just per day. */
-function hashString(s: string): number {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
-  return h
-}
-
-function pick<T>(arr: readonly T[], seed: number): T {
-  return arr[seed % arr.length]
-}
-
-export interface TotemVoiceInput {
-  /** Family-member first name; omit for the whole-family tab. */
-  memberName?: string | null
-  title: string
-  /** Already-translated FR genre labels (e.g. via genreLabelFr). */
-  genres?: string[]
-  /** Injectable for tests; defaults to today's Paris day seed. */
-  daySeed?: number
-}
-
-/** One French sentence in Totem's voice explaining why the pick fits. */
-export function totemVoiceLine({ memberName, title, genres = [], daySeed }: TotemVoiceInput): string {
-  const seed = (daySeed ?? getDaySeed()) + hashString(title)
-  const genre = genres[0]?.toLowerCase()
-  const genre2 = genres[1]?.toLowerCase()
-
-  if (memberName) {
-    if (genre) {
-      return pick(MEMBER_LINES_WITH_GENRE, seed)
-        .replaceAll("{name}", memberName)
-        .replaceAll("{genre}", genre)
-    }
-    return pick(MEMBER_LINES_PLAIN, seed).replaceAll("{name}", memberName)
+/** One French sentence, in Totem's voice, explaining why the pick fits. */
+export function totemVoiceLine(reason: FitReason): string {
+  switch (reason.kind) {
+    case "member-genre":
+      return `Choisi pour ${reason.name}, qui aime les contenus ${reason.genre.toLowerCase()}.`
+    case "member-strong":
+      return `Très bon accord avec le profil de ${reason.name}.`
+    case "member-chosen":
+      return `Choisi pour ${reason.name}, d'après son âge et ses goûts.`
+    case "family-all":
+      return "Un bon choix pour toute la famille."
+    case "family-one":
+      return `Particulièrement adapté à ${reason.name}.`
+    case "family-some":
+      return `Adapté à ${reason.names.slice(0, 2).join(" et ")}.`
+    case "family-compromise":
+      return "Un bon compromis pour réunir tout le monde."
   }
-
-  if (genre && genre2) {
-    return pick(FAMILY_LINES_WITH_GENRE, seed)
-      .replaceAll("{genre}", genre)
-      .replaceAll("{genre2}", genre2)
-  }
-  if (genre) {
-    // Templates needing {genre2} are excluded when only one genre exists.
-    const singleGenre = FAMILY_LINES_WITH_GENRE.filter((t) => !t.includes("{genre2}"))
-    return pick(singleGenre, seed).replaceAll("{genre}", genre)
-  }
-  return pick(FAMILY_LINES_PLAIN, seed)
 }
