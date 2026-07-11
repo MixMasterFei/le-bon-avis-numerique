@@ -2,6 +2,8 @@
 
 ## Current Phase: Marketing & Growth — Site live, repositioning for visibility
 
+> **Active growth plan:** [`growth-plan-2026-Q3.md`](growth-plan-2026-Q3.md) — the 90-day execution checklist (fiche→signup funnel, Coin Famille launch, AI-Overviews prep, games queries). Reasoning + sourced research: [`../marketing/market-study-2026-07.md`](../marketing/market-study-2026-07.md).
+
 ---
 
 ## Phases Overview
