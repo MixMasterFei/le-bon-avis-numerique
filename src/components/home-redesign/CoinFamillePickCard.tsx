@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Heart, Bookmark, Eye, ChevronDown, Loader2 } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
@@ -50,6 +50,47 @@ export function CoinFamillePickCard({
   const [busySave, setBusySave] = useState(false)
   const [seenBusy, setSeenBusy] = useState(false)
   const [open, setOpen] = useState(false)
+  const [flash, setFlash] = useState<string | null>(null)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const [favRes, watchRes] = await Promise.all([
+          fetch(`/api/user/favorite?mediaId=${media.id}`),
+          fetch(`/api/user/watchlist?mediaId=${media.id}`),
+        ])
+        if (cancelled) return
+        if (favRes.ok) {
+          const data = await favRes.json()
+          setFav(Boolean(data.isFavorite))
+        }
+        if (watchRes.ok) {
+          const data = await watchRes.json()
+          setSaved(Boolean(data.inWatchlist))
+        }
+      } catch {
+        // Non bloquant — les toggles restent utilisables.
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [media.id])
+
+  useEffect(() => {
+    return () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current)
+    }
+  }, [])
+
+  const showFlash = (message: string) => {
+    if (flashTimer.current) clearTimeout(flashTimer.current)
+    setFlash(message)
+    flashTimer.current = setTimeout(() => setFlash(null), 2200)
+  }
 
   const ageLabel =
     typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
@@ -60,6 +101,7 @@ export function CoinFamillePickCard({
     setValue: (v: boolean) => void,
     setBusy: (v: boolean) => void,
     read: (data: unknown) => boolean,
+    onSuccess?: (next: boolean) => void,
   ) => {
     setBusy(true)
     setValue(!current) // optimistic
@@ -71,7 +113,9 @@ export function CoinFamillePickCard({
       })
       if (!res.ok) throw new Error("failed")
       const data = await res.json()
-      setValue(read(data))
+      const next = read(data)
+      setValue(next)
+      onSuccess?.(next)
     } catch {
       setValue(current) // revert
     } finally {
@@ -168,7 +212,15 @@ export function CoinFamillePickCard({
           fav,
           p.accent,
           busyFav,
-          () => toggle("/api/user/favorite", fav, setFav, setBusyFav, (d) => Boolean((d as { isFavorite?: boolean }).isFavorite)),
+          () =>
+            toggle(
+              "/api/user/favorite",
+              fav,
+              setFav,
+              setBusyFav,
+              (d) => Boolean((d as { isFavorite?: boolean }).isFavorite),
+              (next) => showFlash(next ? "Ajouté aux favoris" : "Retiré des favoris"),
+            ),
           <Heart className="h-3.5 w-3.5" style={{ fill: fav ? "#fff" : "transparent" }} />,
         )}
         {iconBtn(
@@ -176,7 +228,15 @@ export function CoinFamillePickCard({
           saved,
           SAGE,
           busySave,
-          () => toggle("/api/user/watchlist", saved, setSaved, setBusySave, (d) => Boolean((d as { inWatchlist?: boolean }).inWatchlist)),
+          () =>
+            toggle(
+              "/api/user/watchlist",
+              saved,
+              setSaved,
+              setBusySave,
+              (d) => Boolean((d as { inWatchlist?: boolean }).inWatchlist),
+              (next) => showFlash(next ? "Ajouté à ma liste" : "Retiré de ma liste"),
+            ),
           <Bookmark className="h-3.5 w-3.5" style={{ fill: saved ? "#fff" : "transparent" }} />,
         )}
         {iconBtn(
@@ -200,6 +260,12 @@ export function CoinFamillePickCard({
           </button>
         )}
       </div>
+
+      {flash && (
+        <p className="mt-1 text-[11px] font-semibold leading-snug" style={{ color: SAGE }} aria-live="polite">
+          {flash}
+        </p>
+      )}
 
       {open && comment && (
         <p className="mt-1.5 text-[12px] italic leading-relaxed" style={{ color: p.ink2 }}>
