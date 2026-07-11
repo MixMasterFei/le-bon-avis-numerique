@@ -17,7 +17,6 @@ import { VacancesScolairesCard, type SerializableHoliday } from "./VacancesScola
 import { JourANoterCard } from "./JourANoterCard"
 import { AnniversaireCard } from "./AnniversaireCard"
 import { CinemaTendancesCard } from "./CinemaTendancesCard"
-import { SourcesTrustCard } from "./SourcesTrustCard"
 import type { WeatherSnapshot } from "@/lib/weather"
 import type { AirQualitySnapshot } from "@/lib/air-quality"
 import type { CalendarHoliday } from "@/lib/school-holidays"
@@ -66,7 +65,6 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
       {data.notableDates.length > 0 && <JourANoterCard dates={data.notableDates} serifClass={serifClass} />}
       {data.anniversary && <AnniversaireCard anniversary={data.anniversary} serifClass={serifClass} />}
       {data.cinemaTendances.length > 0 && <CinemaTendancesCard tendances={data.cinemaTendances} serifClass={serifClass} />}
-      <SourcesTrustCard serifClass={serifClass} />
     </div>
   )
 
