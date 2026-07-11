@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
-import { floorExpertAgeBySignals } from "@/lib/age-floor"
+import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 import OpenAI from "openai"
 
 // Each item runs a web-search-enabled gpt-4o call (~15-30 s) plus Prisma
@@ -96,6 +96,12 @@ async function deepEnrichWithOpenAI(
     genres: string[]
     releaseDate?: Date | null
     officialRating?: string | null
+    // Persisted deterministic signals — REQUIRED by the safety floor. topics
+    // carries the reliable IGDB-derived "Horreur"/"Guerre" tags; pegiDescriptors
+    // carries the official content flags. Omitting them is exactly how deep
+    // enrich used to silently lower correctly-floored horror titles.
+    topics?: string[] | null
+    pegiDescriptors?: string[] | null
   },
   existingMetrics: {
     violence: number
@@ -224,47 +230,38 @@ Reponds UNIQUEMENT avec un JSON valide:
       throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
     }
 
-    // Deterministic age FLOOR (same order as the basic enrich route: floor
-    // first, on the RAW axes, then the young-age metric cap uses the floored
-    // age). For games this enforces the PEGI legal minimum.
+    // Deterministic safety stack (PEGI axis floors → age floor → young-age
+    // metric clamp), shared verbatim with the basic enrich route via
+    // content-safety-floors.ts. topics MUST union the item's PERSISTED topics
+    // (the reliable IGDB-derived "Horreur" signal) with the fresh tags, and the
+    // official PEGI descriptors must be passed too — the previous version here
+    // floored on `parsed.tags` alone with no PEGI descriptors, which silently
+    // LOWERED correctly-floored horror titles on the nightly deep pass (the
+    // exact bug fixed in the basic route on 2026-07-11, previously unfixed here).
     const rawAxis = (v: unknown) =>
       Math.min(5, Math.max(0, typeof v === "number" ? v : 0))
-    const flooredAge = floorExpertAgeBySignals({
+    const { expertAgeRec: expertAge, metrics: flooredMetrics } = applyContentSafetyFloors({
       expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
       metrics: {
         violence: rawAxis(parsed.contentMetrics?.violence),
         sexNudity: rawAxis(parsed.contentMetrics?.sexNudity),
         language: rawAxis(parsed.contentMetrics?.language),
-        substanceUse: rawAxis(parsed.contentMetrics?.substanceUse),
-      },
-      genres: item.genres,
-      topics: Array.isArray(parsed.tags) ? parsed.tags : [],
-      visualStyle: typeof parsed.visualStyle === "string" ? parsed.visualStyle : null,
-      type: item.type,
-      officialRating: item.officialRating,
-    })
-
-    // Deterministic guardrail: a title curated young (expertAgeRec ≤ 8) caps
-    // its sensibility axes at 2. Keyed on the model's own age (trustworthy),
-    // NOT officialRating (unreliable in our DB). consumerism is NOT capped.
-    const expertAge = Math.min(18, flooredAge)
-    const young = expertAge <= 8
-    const axis = (v: unknown) => {
-      const n = Math.min(5, Math.max(0, (typeof v === "number" ? v : 0)))
-      return young ? Math.min(n, 2) : n
-    }
-
-    return {
-      expertAgeRec: expertAge,
-      contentMetrics: {
-        violence: axis(parsed.contentMetrics?.violence),
-        sexNudity: axis(parsed.contentMetrics?.sexNudity),
-        language: axis(parsed.contentMetrics?.language),
         consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
-        substanceUse: axis(parsed.contentMetrics?.substanceUse),
+        substanceUse: rawAxis(parsed.contentMetrics?.substanceUse),
         positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
         roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
       },
+      genres: item.genres,
+      topics: [...(item.topics ?? []), ...(Array.isArray(parsed.tags) ? parsed.tags : [])],
+      visualStyle: typeof parsed.visualStyle === "string" ? parsed.visualStyle : null,
+      type: item.type,
+      officialRating: item.officialRating,
+      pegiDescriptors: item.pegiDescriptors,
+    })
+
+    return {
+      expertAgeRec: expertAge,
+      contentMetrics: flooredMetrics,
       whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
         ? parsed.whatParentsNeedToKnow.slice(0, 6)
         : [],
@@ -358,6 +355,8 @@ export async function POST(request: NextRequest) {
             genres: item.genres,
             releaseDate: item.releaseDate,
             officialRating: item.officialRating,
+            topics: item.topics,
+            pegiDescriptors: item.pegiDescriptors,
           },
           {
             violence: item.contentMetrics.violence,

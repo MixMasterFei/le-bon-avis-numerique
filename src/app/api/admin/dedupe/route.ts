@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 
 // Deduplicate games by title - merge multiple entries into one
 // This handles cases where IGDB returns different entries for the same game on different platforms
@@ -23,9 +24,11 @@ export async function POST(request: NextRequest) {
       details: [],
     }
 
-    // Find duplicate games by title (case-insensitive)
+    // Find duplicate games by title (case-insensitive). Include contentMetrics
+    // so the merged row can be re-floored on its real content axes.
     const games = await prisma.mediaItem.findMany({
       where: { type: "GAME" },
+      include: { contentMetrics: true },
       orderBy: [
         { title: "asc" },
         { createdAt: "asc" }, // Keep the oldest entry as primary
@@ -93,14 +96,33 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Use the best age recommendation (lowest non-null)
+      // Use the SAFEST age recommendation (HIGHEST non-null) across duplicates.
+      // Taking the lowest used to silently degrade a correctly-floored horror
+      // duplicate (14) down to a stale one (10) — the exact class of bug from
+      // the 2026-07-11 incident. The merged row is then re-floored below.
       let bestAge = primary.expertAgeRec
       for (const game of duplicates) {
         if (game.expertAgeRec !== null) {
-          if (bestAge === null || game.expertAgeRec < bestAge) {
+          if (bestAge === null || game.expertAgeRec > bestAge) {
             bestAge = game.expertAgeRec
           }
         }
+      }
+
+      // Re-run the deterministic safety floor on the merged row: the unioned
+      // topics (the reliable "Horreur" signal), primary's official PEGI rating
+      // + descriptors, and its content axes must all be honored on the survivor.
+      const mergedTopics = Array.from(allTopics)
+      if (bestAge !== null) {
+        bestAge = applyContentSafetyFloors({
+          expertAgeRec: bestAge,
+          metrics: primary.contentMetrics ?? { violence: 0, sexNudity: 0, language: 0, substanceUse: 0 },
+          genres: Array.from(allGenres),
+          topics: mergedTopics,
+          type: primary.type,
+          officialRating: primary.officialRating,
+          pegiDescriptors: primary.pegiDescriptors,
+        }).expertAgeRec
       }
 
       const mergeInfo = `"${primary.title}" (${toMerge.length} duplicates) -> platforms: ${Array.from(allPlatforms).join(", ")}`
@@ -113,7 +135,7 @@ export async function POST(request: NextRequest) {
           data: {
             platforms: Array.from(allPlatforms),
             genres: Array.from(allGenres),
-            topics: Array.from(allTopics),
+            topics: mergedTopics,
             synopsisFr: bestSynopsis,
             posterUrl: bestPoster,
             releaseDate: earliestRelease,

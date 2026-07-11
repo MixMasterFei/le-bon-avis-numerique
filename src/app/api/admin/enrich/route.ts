@@ -4,8 +4,7 @@ import { logCronRun } from "@/lib/cron-log"
 import { notUnreleasedWhere, unenrichedBacklogWhere } from "@/lib/enrich-filter"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
-import { floorExpertAgeBySignals } from "@/lib/age-floor"
-import { applyPegiContentFloors } from "@/lib/pegi-descriptors"
+import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
@@ -127,32 +126,6 @@ function computeFinalConfidence(
 
 function filterToValidList(values: string[], validList: string[]): string[] {
   return values.filter((v) => validList.includes(v))
-}
-
-/**
- * Deterministic safety net beyond the LLM rubric: a title curated for young
- * audiences should not carry high SENSIBILITY scores. We gate on the model's
- * own `expertAgeRec` (≤ 8) — NOT officialRating, which is unreliable in our DB
- * ("Tous Publics"/"U" codes sit on clearly-adult films). This matches the
- * on-card display anchor (≤8 → capped at "Léger"). If a ≤8 title still gets >2
- * on violence/sex/language/substances, cap it at 2. consumerism is NOT capped
- * (microtransactions aren't bounded by an age rating).
- */
-const YOUNG_AGE = 8
-
-function clampMetricsByAge(
-  m: ContentAnalysis["contentMetrics"],
-  expertAge: number | null | undefined,
-): ContentAnalysis["contentMetrics"] {
-  if (typeof expertAge !== "number" || expertAge > YOUNG_AGE) return m
-  const cap = (v: number) => Math.min(v, 2)
-  return {
-    ...m,
-    violence: cap(m.violence),
-    sexNudity: cap(m.sexNudity),
-    language: cap(m.language),
-    substanceUse: cap(m.substanceUse),
-  }
 }
 
 async function analyzeWithOpenAI(
@@ -668,30 +641,15 @@ export async function POST(request: NextRequest) {
           pegiDescriptors: item.pegiDescriptors,
         }, tmdbKeywords)
 
-        // Official PEGI descriptors are authoritative: floor the matching
-        // content axes (a game flagged "Sexualité" can't score sexNudité 2).
-        // Runs BEFORE the age floor so a raised axis can also lift the age.
-        analysis.contentMetrics = applyPegiContentFloors(
-          analysis.contentMetrics,
-          item.pegiDescriptors,
-          item.officialRating,
-        )
-
-        // Deterministic age FLOOR: mature content must be allowed to push the
-        // recommended age above a lenient official rating (independent guidance).
-        // Runs BEFORE the metric clamp so a raised age doesn't then get its axes
-        // capped. The symmetric counterpart to clampMetricsByAge.
-        //
-        // topics MUST include the item's EXISTING persisted topics (item.topics),
-        // not just the fresh analysis.tags — VALID_TOPICS (the AI's controlled
-        // vocabulary above) does not even contain "Horreur", so a horror floor
-        // keyed on analysis.tags alone only fired when the model happened to
-        // free-type a tag outside its own prompt's instructions. The reliable
-        // horror signal comes from the deterministic IGDB-derived tag already on
-        // the item (see game-style-tags.ts), which is why item.topics must be in
-        // this union — bug found + fixed 2026-07-11 after a re-enrichment pass
-        // wrongly LOWERED several already-correct horror titles.
-        analysis.expertAgeRec = floorExpertAgeBySignals({
+        // Deterministic safety stack (PEGI axis floors → age floor → young-age
+        // metric clamp), shared verbatim with every other write path via
+        // src/lib/content-safety-floors.ts. topics MUST union the item's
+        // PERSISTED topics (deterministic, IGDB-derived — the reliable "Horreur"
+        // signal) with the fresh analysis.tags, never the fresh tags alone:
+        // VALID_TOPICS does not even contain "Horreur", so a horror floor keyed
+        // on analysis.tags alone only fired by luck (bug found + fixed
+        // 2026-07-11 after a re-enrichment pass wrongly LOWERED horror titles).
+        const floored = applyContentSafetyFloors({
           expertAgeRec: analysis.expertAgeRec,
           metrics: analysis.contentMetrics,
           genres: item.genres,
@@ -699,15 +657,10 @@ export async function POST(request: NextRequest) {
           visualStyle: analysis.visualStyle,
           type: item.type,
           officialRating: item.officialRating,
+          pegiDescriptors: item.pegiDescriptors,
         })
-
-        // Deterministic guardrail: cap sensibility axes for titles the model
-        // itself curated as young (≤8). Backstop beyond the LLM rubric — keyed
-        // on expertAgeRec (trustworthy), not officialRating (unreliable here).
-        analysis.contentMetrics = clampMetricsByAge(
-          analysis.contentMetrics,
-          analysis.expertAgeRec,
-        )
+        analysis.expertAgeRec = floored.expertAgeRec
+        analysis.contentMetrics = floored.metrics
 
         // Mark recalibrated rows so the recalibrate sweep processes each once
         // and then terminates (see the recalibrate whereClause above).

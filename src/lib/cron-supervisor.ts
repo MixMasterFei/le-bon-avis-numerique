@@ -242,6 +242,20 @@ const EXPECTED_TASKS: ExpectedTask[] = [
       body: { mode: "full", limit: 10, offset: 0 },
     },
   },
+  {
+    // Weekly (Saturday) deterministic age-floor sweep. Self-draining like
+    // synopsis-audit: once the catalogue is floored, "raised" legitimately sits
+    // at ~0 forever (only drift from later edits/imports trickles in), so there
+    // is deliberately NO outputMetric — an output-anomaly check would misread
+    // that success as a silent failure. Staleness alone is the right monitoring.
+    task: "age-floor",
+    staleAfterHours: 192,
+    remediation: {
+      label: "Relance age-floor sweep",
+      method: "POST",
+      path: "/api/admin/age-floor?limit=200",
+    },
+  },
 ]
 
 function hoursSince(date: Date): number {

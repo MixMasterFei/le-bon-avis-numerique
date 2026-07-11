@@ -196,7 +196,7 @@ Automated maintenance, all jobs use `CRON_SECRET` Bearer auth.
 | Daily 3:00 AM | Import new movies/TV from TMDB (`weekly-import`) + new games from IGDB (`weekly-games-import`, popularity-floored) + CNC ratings import. TMDB dedup keeps actual new items per run to ~10-20. |
 | Daily 4:00 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute (all items) |
 | 4×/day (:17 past 00/06/12/18) | News discovery (`news-discover`) — synthesized news briefs |
-| Saturday 5:00 AM | TMDB ratings backfill (loops until drained) + Streaming platform updates + Similarity scores (full mode, 50/batch ×20) |
+| Saturday 5:00 AM | TMDB ratings backfill (loops until drained) + Streaming platform updates + Similarity scores (full mode, 50/batch ×20) + **Age-floor sweep** (`age-floor`) — deterministic, idempotent, re-floors any title whose age drifted below its content-justified minimum since last write (zero LLM cost). Manual dry-run review via the standalone `age-floor` dispatch task. |
 | Tue + Fri 5:00 AM | Weekly dossier (`weekly-dossier`) — long-read synthesis |
 | Monday 6:00 AM | Family content editorial agent (`family-content-agent`) — priorities email |
 | **Wed 6:13 AM** | **Debt digest (`debt-digest`)** — weekly tech/data-debt email: cron health, catalog gaps (unenriched / no poster / no age rec / low quality / no topics, manga excluded), editorial queue. Read-only. |

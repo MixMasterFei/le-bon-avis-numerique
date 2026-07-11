@@ -96,7 +96,18 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
     : bandMax.length
       ? Math.max(...bandMax)
       : undefined
-  const weekendMaxAge = globalMaxAge ?? defaultMaxAge
+  // The family age cap that EVERY browse rail falls back to when the visitor
+  // hasn't picked an age/member yet (globalMaxAge is undefined). Defined once
+  // and passed to all of them so no rail can silently ship un-capped — the gap
+  // that let PEGI 16/18 games fill the default "jeux vidéo" rail. When the
+  // visitor DOES pick an age band or member, globalMaxAge wins and this widens
+  // to exactly their choice.
+  const effectiveMaxAge = globalMaxAge ?? defaultMaxAge
+  // The now-playing cinema rail is informational (a factual theatrical listing,
+  // watched with a parent present), so it uses a slightly older default cap
+  // than the browse rails. Deliberately 14, not defaultMaxAge — do NOT
+  // "harmonize" this to 12; the two caps encode different intents.
+  const cinemaMaxAge = globalMaxAge ?? 14
 
   // Shown in section titles so every rail visibly reflects the selection.
   const personalizedTitle =
@@ -143,22 +154,22 @@ export function HomepageRedesign({ isLoggedIn, heroPosters, defaultMaxAge, famil
         {/* First rail stays eager (at/just-below the fold). The rest are heavy
             data rails (each fetches + renders a poster grid) — deferred until
             scrolled near, so they don't all mount on load and delay LCP. */}
-        <TopPicksRail maxAge={weekendMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} state={homepageState} />
+        <TopPicksRail maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} state={homepageState} />
         <DeferUntilVisible minHeight={300}>
-          <UpcomingRail />
+          <UpcomingRail maxAge={effectiveMaxAge} />
         </DeferUntilVisible>
         <DeferUntilVisible>
-          <CinemaRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+          <CinemaRail maxAge={cinemaMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         <DeferUntilVisible>
-          <CoupsDeCoeurRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+          <CoupsDeCoeurRail maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         <AgeGridRedesign />
         <DeferUntilVisible>
-          <PlatformsSection maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+          <PlatformsSection maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         <DeferUntilVisible>
-          <GamesRail maxAge={globalMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+          <GamesRail maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         {/* Static band, NOT deferred: these are the crawlable links to the
             collection pages — hiding them behind IntersectionObserver would

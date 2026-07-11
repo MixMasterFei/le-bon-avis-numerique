@@ -276,12 +276,17 @@ export function TopPicksRail({ maxAge, audience, rankByMemberIds, state }: { max
 }
 
 // ── Bientôt — prochaines sorties (unreleased media → compact up-cards) ──
-function useUpcoming() {
+function useUpcoming(maxAge?: number) {
   const [items, setItems] = useState<UpcomingItem[]>([])
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     let cancelled = false
-    fetch("/api/db/upcoming")
+    // Family age cap: upcoming titles have no ContentMetrics yet, so neither
+    // the score filter nor the blur can protect a young visitor — the age cap
+    // is the ONLY gate here. Always send it (the caller defaults to the family
+    // cap), or a PEGI 16/18 "coming soon" title fills this rail unbadged.
+    const url = `/api/db/upcoming${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
+    fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
@@ -301,12 +306,12 @@ function useUpcoming() {
       .catch(() => { if (!cancelled) setItems([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [])
+  }, [maxAge])
   return { items, loading }
 }
 
-export function UpcomingRail() {
-  const { items, loading } = useUpcoming()
+export function UpcomingRail({ maxAge }: { maxAge?: number }) {
+  const { items, loading } = useUpcoming(maxAge)
   if (!loading && items.length === 0) return null
   return (
     <Band alt id="bientot">

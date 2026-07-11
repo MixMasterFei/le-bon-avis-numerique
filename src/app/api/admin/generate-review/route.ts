@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getMovieDetails, getTVDetails, getImageUrl, ImageSize } from "@/lib/tmdb"
 import { prisma } from "@/lib/prisma"
+import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 import OpenAI from "openai"
 
 // This endpoint generates AI-powered content reviews for movies
@@ -330,6 +331,23 @@ export async function POST(request: NextRequest) {
       analysis = analyzeContentFromMetadata(movie)
       analysisMethod = "heuristic"
     }
+
+    // Deterministic safety stack — this path previously wrote unfloored ages +
+    // metrics straight from the LLM/heuristic. Apply the same shared floor as
+    // every other write path. MOVIE/TV only (no games ⇒ no PEGI descriptors);
+    // the TMDB genre names double as topics so the horror/war floors (which key
+    // on topic membership) can fire — this path has no persisted topics.
+    const genreNames = movie.genres.map((g) => g.name)
+    const floored = applyContentSafetyFloors({
+      expertAgeRec: analysis.expertAgeRec,
+      metrics: analysis.contentMetrics,
+      genres: genreNames,
+      topics: genreNames,
+      type: dbType,
+      officialRating: null,
+    })
+    analysis.expertAgeRec = floored.expertAgeRec
+    analysis.contentMetrics = floored.metrics
 
     // Save to database (use composite unique: tmdbId + type)
     const savedItem = await prisma.mediaItem.upsert({

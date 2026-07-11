@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 
 const ALLOWED_FIELDS = [
   "title",
@@ -85,6 +86,32 @@ export async function PATCH(
         { error: "Aucun champ à modifier" },
         { status: 400 }
       )
+    }
+
+    // Re-run the deterministic safety floor on the EFFECTIVE post-edit state.
+    // An admin can set any age 0-21 and can replace topics wholesale (dropping
+    // the "Horreur"/"Guerre" signal); the floor must still win. Recompute it
+    // from the edited field where present, else the persisted value, so a
+    // manual edit can never leave a title below its content-justified minimum.
+    const existing = await prisma.mediaItem.findUnique({
+      where: { id },
+      include: { contentMetrics: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: "Média introuvable" }, { status: 404 })
+    }
+    const editedAge = updateData.expertAgeRec as number | null | undefined
+    const effectiveAge = editedAge ?? existing.expertAgeRec
+    if (typeof effectiveAge === "number") {
+      updateData.expertAgeRec = applyContentSafetyFloors({
+        expertAgeRec: effectiveAge,
+        metrics: existing.contentMetrics ?? { violence: 0, sexNudity: 0, language: 0, substanceUse: 0 },
+        genres: (updateData.genres as string[] | undefined) ?? existing.genres,
+        topics: (updateData.topics as string[] | undefined) ?? existing.topics,
+        type: existing.type,
+        officialRating: (updateData.officialRating as string | null | undefined) ?? existing.officialRating,
+        pegiDescriptors: existing.pegiDescriptors,
+      }).expertAgeRec
     }
 
     const updated = await prisma.mediaItem.update({

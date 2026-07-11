@@ -30,3 +30,12 @@ export const FAMILY_VIP_BRAND_TOPICS = [
 export const FAMILY_VIP_BRAND_TOPICS_LOWER = new Set(
   FAMILY_VIP_BRAND_TOPICS.map((t) => t.toLowerCase()),
 )
+
+// A VIP brand tag means "designed for all ages", so it may lift a title ABOVE
+// a stricter age filter — but ONLY up to this ceiling. The bypass must never
+// rescue a genuinely mature title: "Nintendo" tags PEGI-18 first-party games
+// (Bayonetta), and "Disney" gets applied thematically to adult films (The
+// Florida Project, 14+). Above this age the title respects the age filter like
+// anything else. 12 covers real family-VIP content (Ghibli up to Mononoke,
+// Zelda) without opening a hole for the mature exceptions.
+export const FAMILY_VIP_AGE_CEILING = 12

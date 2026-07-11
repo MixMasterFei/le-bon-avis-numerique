@@ -105,6 +105,7 @@ const KNOWN_CRON_TASKS = [
   "synopsis-audit", // Nightly top-up (in daily-enrich) — grammar/tone pass over synopsisFr
   "streaming",
   "similarity",
+  "age-floor",              // Saturday — deterministic age-floor sweep (idempotent, zero-cost)
   "news-discover",
   // news.prewarmImagesV4 removed — V4 Actualités now uses raw RSS images
   // (directSource); the prewarm route is a no-op (re-enable via NEWS_V4_PREWARM).

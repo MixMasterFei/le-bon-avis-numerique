@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
-import { FAMILY_VIP_BRAND_TOPICS } from "@/lib/family-vip-brands"
+import { FAMILY_VIP_BRAND_TOPICS, FAMILY_VIP_AGE_CEILING } from "@/lib/family-vip-brands"
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -161,10 +161,22 @@ function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxA
   // 5+ should still surface when the filter is centered on a 10-year-
   // old. Wrap age + VIP as an OR so other filters (genres, platforms)
   // still AND cleanly with the rest of the where clause.
+  //
+  // The VIP bypass is CEILED at FAMILY_VIP_AGE_CEILING: the tag lifts a title
+  // above a stricter filter only within family range. Without this ceiling,
+  // "Nintendo" (which tags PEGI-18 first-party games like Bayonetta) and a
+  // thematic "Disney" tag (on adult films like The Florida Project) would let
+  // genuinely mature titles bypass every age cap — the leak that put Bayonetta
+  // in the default family games rail.
   appendAnd(where, {
     OR: [
       { expertAgeRec: ageFilter },
-      { topics: { hasSome: [...FAMILY_VIP_BRAND_TOPICS] } },
+      {
+        AND: [
+          { topics: { hasSome: [...FAMILY_VIP_BRAND_TOPICS] } },
+          { expertAgeRec: { not: null, lte: FAMILY_VIP_AGE_CEILING } },
+        ],
+      },
     ],
   })
 }

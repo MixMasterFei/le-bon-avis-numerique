@@ -38,6 +38,7 @@ const CRON_STALE_HOURS: Record<string, number> = {
   "backfill-ratings": 220,
   streaming: 220,
   similarity: 220,
+  "age-floor": 220,
 }
 
 type CronVerdict = {

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { floorExpertAgeBySignals } from "@/lib/age-floor"
+import { logCronRun } from "@/lib/cron-log"
 
 export const maxDuration = 60
 
@@ -29,6 +30,7 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const startTime = Date.now()
   const url = new URL(req.url)
   const dry = url.searchParams.get("dry") === "true"
   const limit = Math.min(500, Math.max(1, parseInt(url.searchParams.get("limit") || "200")))
@@ -37,7 +39,11 @@ async function run(req: NextRequest) {
   // Candidate window — only titles a floor could raise (the floor never
   // lowers, so already-mature titles are skipped):
   //  - films/séries in the young/teen bands (≤13, the content floor's max is 14)
-  //  - PEGI-rated games below 18 (a PEGI 18 floor can raise anything under it)
+  //  - games below 18. Deliberately NOT restricted to PEGI-rated games: the
+  //    2026-07-11 incident was a NO-PEGI horror indie game (the horror-topic +
+  //    axis fallback floors it to 14), so restricting to `officialRating
+  //    startsWith "PEGI_"` here would leave that exact class uncovered by the
+  //    scheduled sweep. Scanning all games ≤17 is cheap and idempotent.
   const items = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where: {
@@ -51,7 +57,6 @@ async function run(req: NextRequest) {
           {
             type: "GAME",
             expertAgeRec: { not: null, lte: 17 },
-            officialRating: { startsWith: "PEGI_" },
           },
         ],
         ...(afterId ? { id: { gt: afterId } } : {}),
@@ -107,6 +112,20 @@ async function run(req: NextRequest) {
 
   const lastId = items.length > 0 ? items[items.length - 1].id : null
   const done = items.length < limit
+
+  // Log each real (non-dry) call so the supervisor/debt-digest can see the
+  // weekly sweep ran. Self-draining: `raised` legitimately sits at ~0 once the
+  // catalogue is floored, so there is NO output-anomaly check on it (see the
+  // EXPECTED_TASKS note) — staleness alone is monitored.
+  if (!dry) {
+    await logCronRun({
+      task: "age-floor",
+      status: "success",
+      summary: `Age-floor sweep: ${raised} relevé(s) sur ${items.length} examiné(s)${done ? " (terminé)" : ""}`,
+      details: { processed: items.length, raised, done, changes: changes.slice(0, 20) },
+      startTime,
+    })
+  }
 
   return NextResponse.json({
     dry,

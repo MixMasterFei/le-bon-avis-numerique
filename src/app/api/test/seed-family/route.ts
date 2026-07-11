@@ -13,7 +13,19 @@ const TEST_HORROR_ID = "11111111-1111-4111-8111-111111111111"
 const TEST_FAMILY_MOVIE_ID = "22222222-2222-4222-8222-222222222222"
 
 export async function POST() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_TEST_SEED !== "true") {
+  // This route seeds deterministic E2E fixtures. It must NEVER write to the
+  // production database. Two independent guards, either of which requires an
+  // explicit ALLOW_TEST_SEED="true" opt-in:
+  //   1. NODE_ENV === "production" — the Vercel runtime (original guard).
+  //   2. DATABASE_URL points at a hosted Supabase pooler — catches the real
+  //      incident: a LOCAL `npm run dev` whose .env points at prod. There
+  //      NODE_ENV is "development", so guard #1 alone let a local Playwright
+  //      run seed prod. CI uses an isolated localhost Postgres container (and
+  //      opts in via ALLOW_TEST_SEED), so it is unaffected.
+  const dbUrl = process.env.DATABASE_URL ?? ""
+  const looksLikeHostedDb = /supabase\.(co|com)/i.test(dbUrl)
+  const guarded = process.env.NODE_ENV === "production" || looksLikeHostedDb
+  if (guarded && process.env.ALLOW_TEST_SEED !== "true") {
     return NextResponse.json({ error: "Not Found" }, { status: 404 })
   }
 
@@ -102,7 +114,11 @@ export async function POST() {
       originalLanguage: "fr",
       tmdbRating: 7.5,
       tmdbVoteCount: 2000,
-      dataQualityScore: 80,
+      // DQS 0 keeps these fixtures below every public/browse/featured floor
+      // (publicMediaWhere requires >= 30) so a stray seed can never surface
+      // them; the E2E specs navigate to /media/<id> by id, which has no DQS
+      // gate, so they still work.
+      dataQualityScore: 0,
       isEnriched: true,
     },
     update: {
@@ -111,6 +127,7 @@ export async function POST() {
       posterUrl: "https://image.tmdb.org/t/p/w500/placeholder.jpg",
       tmdbVoteCount: 2000,
       tmdbRating: 7.5,
+      dataQualityScore: 0,
     },
   })
 
@@ -126,12 +143,19 @@ export async function POST() {
       positiveMessages: 1,
       roleModels: 1,
       whatParentsNeedToKnow: [],
+      // High confidence + not-flagged keeps the nightly deep-enrich cron
+      // (which targets needsDeepEnrich: true) from ever re-processing a
+      // fixture and burning API calls on placeholder data.
+      enrichmentConfidence: 1.0,
+      needsDeepEnrich: false,
     },
     update: {
       violence: 4,
       sexNudity: 1,
       positiveMessages: 1,
       roleModels: 1,
+      enrichmentConfidence: 1.0,
+      needsDeepEnrich: false,
     },
   })
 
@@ -151,7 +175,8 @@ export async function POST() {
       originalLanguage: "fr",
       tmdbRating: 8.1,
       tmdbVoteCount: 4500,
-      dataQualityScore: 90,
+      // DQS 0 — see the horror fixture above.
+      dataQualityScore: 0,
       isEnriched: true,
     },
     update: {
@@ -160,6 +185,7 @@ export async function POST() {
       posterUrl: "https://image.tmdb.org/t/p/w500/placeholder-family.jpg",
       tmdbVoteCount: 4500,
       tmdbRating: 8.1,
+      dataQualityScore: 0,
     },
   })
 
@@ -175,11 +201,15 @@ export async function POST() {
       positiveMessages: 4,
       roleModels: 4,
       whatParentsNeedToKnow: [],
+      enrichmentConfidence: 1.0,
+      needsDeepEnrich: false,
     },
     update: {
       violence: 1,
       positiveMessages: 4,
       roleModels: 4,
+      enrichmentConfidence: 1.0,
+      needsDeepEnrich: false,
     },
   })
 

@@ -613,6 +613,42 @@ jobs:
           done
           echo "::endgroup::"
 
+      - name: Deterministic age-floor sweep (apply)
+        # Runs on the weekly Saturday schedule (and task=all). Manual on-demand
+        # runs — including dry-run review — use the standalone `age-floor` job
+        # above (task=age-floor), so this step is deliberately NOT gated on that
+        # input to avoid a double sweep. Idempotent + zero LLM cost: re-floors
+        # any title whose age drifted below its content-justified minimum since
+        # the last write (PEGI backfilled later, dedupe merge, admin edit,
+        # deep-enrich). The floor only ever RAISES, so a stray un-floored horror
+        # game can never sit in a family band for more than a week.
+        if: >-
+          github.event.schedule == '0 5 * * 6' ||
+          github.event.inputs.task == 'all'
+        run: |
+          set +e
+          echo "::group::Age floor sweep (apply)"
+          after=""
+          total_raised=0
+          for batch in $(seq 1 60); do
+            url="$SITE_URL/api/admin/age-floor?limit=200"
+            if [ -n "$after" ]; then url="$url&afterId=$after"; fi
+            response=$(curl -sSL --max-time 80 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" "$url" 2>/dev/null)
+            echo "$response" | jq '{processed, raised, done, sample: (.changes[0:5])}' 2>/dev/null || echo "$response"
+            raised=$(echo "$response" | jq -r '.raised // 0' 2>/dev/null || echo 0)
+            total_raised=$((total_raised + raised))
+            # `.done // false` (NOT `// true`): jq treats boolean false as absent,
+            # so `// true` would stop after one batch. Fall back to "true" only on
+            # an empty/parse error to stop safely.
+            done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo true)
+            after=$(echo "$response" | jq -r '.lastId // empty' 2>/dev/null || echo "")
+            if [ "$done_flag" = "true" ] || [ -z "$after" ]; then break; fi
+            sleep 1
+          done
+          echo "Total raised: $total_raised"
+          echo "::endgroup::"
+
   # ── Daily: News discovery (admin-only synthesized news feed) ──────
   daily-news-discover:
     name: Daily News Discover
