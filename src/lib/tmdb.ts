@@ -295,11 +295,14 @@ export async function getNowPlayingMovies(page = 1) {
 }
 
 /**
- * Get upcoming movies in France
+ * Get upcoming movies for a region (default France). `region=FR` makes TMDB
+ * return titles by their French theatrical window — the forward-looking slate
+ * we want fiches ranking for before the première.
  */
-export async function getUpcomingMovies(page = 1) {
+export async function getUpcomingMovies(page = 1, region = "FR") {
   return tmdbFetch<TMDBSearchResult<TMDBMovie>>("/movie/upcoming", {
     page: page.toString(),
+    region,
   })
 }
 

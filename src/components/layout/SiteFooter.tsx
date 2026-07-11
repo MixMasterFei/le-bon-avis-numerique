@@ -20,6 +20,7 @@ const BY_AGE = [
 ]
 
 const DISCOVER = [
+  { name: "Jeux : quel âge ?", href: "/jeux/quel-age" },
   { name: "Collections thématiques", href: "/collections" },
   { name: "Recommandations", href: "/recommandations" },
   { name: "Guides parents", href: "/guides" },
