@@ -12,7 +12,7 @@ Totem Avisé est un guide média français pour les familles. Le site aide les p
 - Public principal : parents et adultes accompagnant des enfants de 3 à 15 ans.
 - Promesse : donner des repères utiles, pas un verdict automatique.
 - Méthode : recommandations d'âge, 8 dimensions de contenu, réactions des familles et votes communautaires.
-- Indépendance : les recommandations ne sont pas basées sur une recommandation opaque.
+- Indépendance : aucun annonceur ni studio n'influence les repères ; la méthode d'évaluation est publique et explicable, pas une boîte noire (voir ${baseUrl}/notre-methode).
 
 ## Pages importantes
 - Accueil : ${baseUrl}
@@ -20,6 +20,7 @@ Totem Avisé est un guide média français pour les familles. Le site aide les p
 - Films : ${baseUrl}/films
 - Séries : ${baseUrl}/series
 - Jeux vidéo : ${baseUrl}/jeux
+- Jeux vidéo par âge (Fortnite, Roblox, Minecraft…) : ${baseUrl}/jeux/quel-age
 - Recommandations : ${baseUrl}/recommandations
 - Guides parents : ${baseUrl}/guides
 - Méthode : ${baseUrl}/notre-methode

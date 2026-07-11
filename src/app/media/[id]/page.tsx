@@ -22,6 +22,7 @@ import { MediaDashboardBar } from "@/components/media/MediaDashboardBar"
 import { FamilyQuickAnswer } from "@/components/media/FamilyQuickAnswer"
 import { AccountChip } from "@/components/media/AccountChip"
 import { ApercuSimilarMedia } from "@/components/home-v2/ApercuSimilarMedia"
+import { AgeAlternativesGames } from "@/components/media/AgeAlternativesGames"
 
 import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButton"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
@@ -1172,6 +1173,19 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   serifClass="font-serif"
                 />
               </div>
+            </Suspense>
+          )}
+
+          {/* Alternatives plus jeunes — mature game fiches only, streamed */}
+          {dbId && media.type === "GAME" && media.expertAgeRec != null && media.expertAgeRec >= 14 && (
+            <Suspense fallback={null}>
+              <AgeAlternativesGames
+                mediaId={dbId}
+                title={media.title}
+                genres={media.genres}
+                topics={media.topics}
+                currentAge={media.expertAgeRec}
+              />
             </Suspense>
           )}
 
