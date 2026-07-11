@@ -1,11 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
-import { genreLabelFr, genreBadgeColor, APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import type { RedesignCardMedia } from "./RedesignCard"
 
 const TYPE_LABELS: Record<RedesignCardMedia["type"], string> = {
@@ -15,9 +14,11 @@ const TYPE_LABELS: Record<RedesignCardMedia["type"], string> = {
 }
 
 /**
- * "Le classique à redécouvrir" — a single older catalog title that still fits
- * the foyer. Compact horizontal card so it reads as a secondary band under the
- * daily picks, not a second spotlight. `reason` is already phrased upstream.
+ * "Les classiques à redécouvrir" tile — compact poster + a single-line title,
+ * sized to sit in a horizontally-scrollable row (flex + overflow-x-auto) so
+ * the whole section stays on one line regardless of how many titles or how
+ * narrow the viewport is. The fit reason is a hover tooltip rather than
+ * inline text, keeping each tile to one line.
  */
 export function CoinFamilleClassicCard({
   media,
@@ -29,64 +30,49 @@ export function CoinFamilleClassicCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
+  const ageLabel =
+    typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
 
   return (
     <Link
       href={`/media/${toMediaRouteId(media.type, media.id)}`}
-      className="group flex gap-3 overflow-hidden rounded-2xl p-2.5 transition-transform duration-200 hover:-translate-y-0.5"
-      style={{ background: p.bg2, border: `1px solid ${p.line}` }}
+      title={reason ?? media.title}
+      className="group w-[104px] shrink-0"
     >
-      <div className="relative aspect-[2/3] w-[72px] shrink-0 overflow-hidden rounded-lg" style={{ background: p.placeholder }}>
+      <div
+        className="relative aspect-[2/3] overflow-hidden rounded-lg transition-transform duration-200 group-hover:-translate-y-0.5"
+        style={{ background: p.placeholder, border: `1px solid ${p.line}` }}
+      >
         {media.posterUrl && (
           <SafeImage
             src={tmdbPosterAtSize(media.posterUrl, "w185")}
             alt={media.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-            sizes="72px"
+            className="object-cover"
+            sizes="104px"
           />
         )}
-      </div>
-
-      <div className="flex min-w-0 flex-col justify-center py-0.5">
-        <h4
-          className={`${serifClass} text-base font-medium leading-tight line-clamp-2`}
-          style={{ color: p.ink, letterSpacing: "-0.01em" }}
-        >
-          {media.title}
-        </h4>
-        {reason && (
-          <p className="mt-1 text-[12.5px] italic leading-snug line-clamp-2" style={{ color: p.ink2 }}>
-            {reason}
-          </p>
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,.45) 0%, rgba(0,0,0,0) 34%)" }}
+        />
+        <span className="absolute left-1.5 top-1.5 z-10 text-[9px] font-bold uppercase tracking-[0.1em] text-white/85">
+          {TYPE_LABELS[media.type]}
+        </span>
+        {ageLabel && (
+          <span
+            className="absolute right-1.5 top-1.5 z-10 rounded px-1 py-0.5 text-[10px] font-extrabold leading-none text-white"
+            style={{ background: "rgba(15,12,8,.6)", border: "1px solid rgba(255,255,255,.22)" }}
+          >
+            {ageLabel}
+          </span>
         )}
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-            style={{ background: p.card, color: p.ink2, border: `1px solid ${p.line}` }}
-          >
-            {TYPE_LABELS[media.type]}
-          </span>
-          {(media.genres ?? []).slice(0, 1).map((genre) => {
-            const colors = genreBadgeColor(genre)
-            return (
-              <span
-                key={genre}
-                className="rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                style={{ background: colors.bg, color: colors.text }}
-              >
-                {genreLabelFr(genre)}
-              </span>
-            )
-          })}
-          <span
-            className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold transition-opacity group-hover:opacity-70"
-            style={{ color: p.ink }}
-          >
-            Voir la fiche
-            <ArrowRight className="h-3 w-3" />
-          </span>
-        </div>
+      </div>
+      <div
+        className={`${serifClass} mt-1.5 line-clamp-1 text-[12.5px] font-medium leading-tight`}
+        style={{ color: p.ink }}
+      >
+        {media.title}
       </div>
     </Link>
   )

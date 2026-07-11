@@ -40,7 +40,7 @@ interface PicksResponse {
   subtitle: string
   familyItems: RawItem[]
   memberSections: MemberSection[]
-  classic?: RawItem | null
+  classics?: RawItem[]
 }
 
 // One row under the hero (5 across on desktop).
@@ -134,10 +134,8 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   const heroReason = heroRaw?.reason
   const gridItems = gridWindow(availableRaw, offset, GRID_COUNT)
 
-  // "Le classique à redécouvrir" — one family-level pick, constant across tabs.
-  const classicRaw = response?.classic ?? null
-  const classicCard = useMemo(() => (classicRaw ? toHeroCard(classicRaw) : null), [classicRaw])
-  const classicReason = classicRaw?.reason ? totemVoiceLine(classicRaw.reason, classicRaw.synopsis) : undefined
+  // "Les classiques à redécouvrir" — family-level picks, constant across tabs.
+  const classicsRaw = response?.classics ?? []
 
   const changeTab = (id: string) => {
     setActiveTab(id)
@@ -287,12 +285,23 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
         </div>
       )}
 
-      {!loading && classicCard && (
+      {!loading && classicsRaw.length > 0 && (
         <div className="mt-5 border-t pt-4" style={{ borderColor: p.line }}>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
-            Le classique à redécouvrir
+            Les classiques à redécouvrir
           </div>
-          <CoinFamilleClassicCard media={classicCard} reason={classicReason} serifClass={serifClass} />
+          {/* flex + overflow-x-auto (not a wrapping grid) so the row stays on
+              one line at every viewport width, per owner feedback. */}
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {classicsRaw.map((item) => (
+              <CoinFamilleClassicCard
+                key={item.id}
+                media={toHeroCard(item)}
+                reason={item.reason ? totemVoiceLine(item.reason, item.synopsis) : undefined}
+                serifClass={serifClass}
+              />
+            ))}
+          </div>
         </div>
       )}
     </section>

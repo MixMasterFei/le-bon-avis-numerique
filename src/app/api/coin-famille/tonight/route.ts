@@ -121,10 +121,11 @@ function toItem(item: SmartFilterResultItem, reason: FitReason) {
   }
 }
 
-// "Le classique à redécouvrir" — one older, well-loved catalog title that still
-// fits the whole foyer. Released ≥ CLASSIC_MIN_AGE_YEARS ago so it reads as a
-// rediscovery, not just another recent pick; rotates daily.
+// "Les classiques à redécouvrir" — older, well-loved catalog titles that still
+// fit the whole foyer. Released ≥ CLASSIC_MIN_AGE_YEARS ago so they read as a
+// rediscovery, not just more recent picks; the set rotates daily.
 const CLASSIC_MIN_AGE_YEARS = 6
+const CLASSICS_COUNT = 6
 
 export async function GET() {
   const session = await auth()
@@ -135,7 +136,7 @@ export async function GET() {
       subtitle: "",
       familyItems: [],
       memberSections: [],
-      classic: null,
+      classics: [],
     })
   }
 
@@ -162,7 +163,7 @@ export async function GET() {
       subtitle: "",
       familyItems: [],
       memberSections: [],
-      classic: null,
+      classics: [],
     })
   }
 
@@ -234,9 +235,9 @@ export async function GET() {
     toItem(item, familyReason(item, names)),
   )
 
-  // Derive the daily "classique à redécouvrir" from the same scored pools —
+  // Derive today's "classiques à redécouvrir" from the same scored pools —
   // family-eligible, not already shown above, and old enough to feel like a
-  // rediscovery. Rotate the best-fitting band so it changes day to day.
+  // rediscovery. Rotate the best-fitting band so the set changes day to day.
   const currentYear = new Date().getFullYear()
   const shownIds = new Set(familyItems.map((item) => item.id))
   const classicCandidates = [...rawPools.MOVIE, ...rawPools.TV, ...rawPools.GAME].filter(
@@ -247,10 +248,9 @@ export async function GET() {
       item.releaseDate.getFullYear() <= currentYear - CLASSIC_MIN_AGE_YEARS,
   )
   classicCandidates.sort((a, b) => b.familyScore - a.familyScore)
-  const classicPick = classicCandidates.length
-    ? seededShuffle(classicCandidates.slice(0, 8), seed + 53)[0]
-    : null
-  const classic = classicPick ? toItem(classicPick, familyReason(classicPick, names)) : null
+  const classics = seededShuffle(classicCandidates.slice(0, 18), seed + 53)
+    .slice(0, CLASSICS_COUNT)
+    .map((item) => toItem(item, familyReason(item, names)))
 
   const memberSections = allMembers.map((member, memberIndex) => {
     const eligible = (item: SmartFilterResultItem) =>
@@ -292,6 +292,6 @@ export async function GET() {
     subtitle: context.subtitle,
     familyItems,
     memberSections,
-    classic,
+    classics,
   })
 }
