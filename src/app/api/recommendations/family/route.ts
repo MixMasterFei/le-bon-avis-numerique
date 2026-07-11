@@ -229,6 +229,11 @@ export async function GET(request: NextRequest) {
       where: {
         id: { notIn: Array.from(allSeenMediaIds) },
         type: "MOVIE",
+        // Enriched only: a provisional (metrics-less) title would score as
+        // "falsely safe" here (sensitivity/tone/positive all default to 0.5),
+        // which is exactly what the smart filter refuses to let through. Keep
+        // the family recommendations expert-only, consistent with that rule.
+        isEnriched: true,
         ...(hasGenres ? {
           OR: [
             { genres: { hasSome: sortedGenres } },

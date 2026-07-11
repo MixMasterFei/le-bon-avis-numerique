@@ -117,7 +117,18 @@ export async function GET() {
     })),
   ]
 
-  const scored = candidates
+  // Family-level hard age gate (the primary safety net; the per-member gate in
+  // scoreUpcomingForMember refines who a kept title is "for"). Upcoming titles
+  // have no ContentMetrics, so age is the only signal we can act on. Whenever
+  // the household isn't confirmed all-adult (any minor, or any member with an
+  // unknown age), drop candidates that are mature (16+) or unrated (null age) —
+  // an unrated "coming soon" can't be shown safely to a family with a child.
+  const householdNotAllAdult = profiles.some((p) => p.age == null || p.age < 18)
+  const ageSafeCandidates = householdNotAllAdult
+    ? candidates.filter((c) => typeof c.expertAgeRec === "number" && c.expertAgeRec < 16)
+    : candidates
+
+  const scored = ageSafeCandidates
     .map((c) => {
       let best = 0
       let anyIncluded = false

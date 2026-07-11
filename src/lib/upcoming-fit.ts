@@ -43,6 +43,11 @@ export function coerceMemberVector(raw: Prisma.JsonValue | null | undefined): Me
   return raw as unknown as MemberVector
 }
 
+// A member counts as a minor for the age gate below when their age is known
+// and under 18. Members with an UNKNOWN age are handled by the family-level
+// gate in the route (which drops null-age / 16+ candidates whenever the
+// household isn't all-adult), so here an unknown age simply skips the per-
+// member upper bound rather than guessing.
 export function scoreUpcomingForMember(
   item: UpcomingScorable,
   member: UpcomingMemberProfile,
@@ -53,18 +58,22 @@ export function scoreUpcomingForMember(
   // family-fit uses, so "pas intéressé par X" is respected pre-release too.
   if (genre === 0) return { fit: 0, excluded: true }
 
+  // Hard age gate (replaces the former soft ×0.5). Upcoming titles have NO
+  // content metrics, so age is the ONLY safety signal — a soft down-weight let
+  // a mature title still surface when the taste match was strong. A MINOR only
+  // "fits" a title they're old enough for: an unknown age (can't verify) or a
+  // title more than 2 years above their age excludes them.
+  if (member.age != null && member.age < 18) {
+    if (item.expertAgeRec == null || item.expertAgeRec > member.age + 2) {
+      return { fit: 0, excluded: true }
+    }
+  }
+
   const interest = computeInterestsScore(item.topics ?? [], [], member.interests)
   const perso = personalizedScore(member.memberVector, { genres: item.genres, topics: item.topics ?? [] })
   const affin = signedAffinity?.score ?? 0.5
 
-  let fit = 0.45 * genre + 0.2 * interest + 0.2 * perso + 0.15 * affin
-
-  // Soft, provisional age gate — down-weight (never drop) a title that looks
-  // too old for the member. The estimate is provisional until enrichment, so a
-  // hard block would wrongly hide titles.
-  if (item.expertAgeRec != null && member.age != null && item.expertAgeRec > member.age + 2) {
-    fit *= 0.5
-  }
+  const fit = 0.45 * genre + 0.2 * interest + 0.2 * perso + 0.15 * affin
 
   return { fit, excluded: false }
 }

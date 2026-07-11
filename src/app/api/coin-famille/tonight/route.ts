@@ -171,9 +171,16 @@ export async function GET() {
   const ages = allMembers
     .map((m) => getMemberAge(m.birthYear, m.birthMonth))
     .filter((a): a is number => a !== null)
-  // Query a broad enough pool for older-member tabs. The family rail applies
-  // its own all-member score floor below, so mature titles cannot leak there.
+  // Query a broad enough pool for older-member tabs (oldest + 3). Each member's
+  // OWN tab is scored per-member below, so this breadth is needed there.
   const maxAge = ages.length ? Math.min(18, Math.max(...ages) + 3) : undefined
+  // Deterministic hard cap for the SHARED "en famille" rail + classics, which
+  // are watched together and so must be safe for the YOUNGEST child. The old
+  // code leaned only on the per-member score floor (50), but the age penalty
+  // caps at −40, so a high-taste neutral-metrics title rated a few years above
+  // the youngest could still clear it. This gate does not rely on scoring.
+  const minorAges = ages.filter((a) => a < 18)
+  const familyAgeCap = minorAges.length ? Math.min(...minorAges) + 2 : 18
 
   const holidays = await getHolidayCalendar().catch(() => [])
   const context = resolveHomepageTimeContext(new Date(), holidays)
@@ -221,6 +228,10 @@ export async function GET() {
   }
 
   const familyEligible = (item: SmartFilterResultItem) =>
+    // Deterministic age cap first — the shared rail must be safe for the
+    // youngest regardless of how strong the taste match is.
+    item.expertAgeRec != null &&
+    item.expertAgeRec <= familyAgeCap &&
     item.familyScore >= MIN_SCORE &&
     item.memberScores.every((score) => score.score >= FAMILY_MEMBER_FLOOR) &&
     !familyNegative.has(item.mediaId) &&

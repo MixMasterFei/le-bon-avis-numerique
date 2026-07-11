@@ -106,6 +106,41 @@ describe("calculateMemberScore — disliked genre", () => {
   })
 })
 
+describe("calculateMemberScore — avoidTopics hard gate", () => {
+  it("floors the score when an avoided topic matches (case-insensitive, quiz literal vs stored casing)", () => {
+    // The quiz stores "Guerre"; media topics may carry "guerre". The old exact
+    // case-sensitive −25 missed this and let the title survive.
+    const member: MemberPreferences = { ...baseMember, avoidTopics: ["Guerre"] }
+    const { score, concerns } = calculateMemberScore(
+      member,
+      { ...neutralMedia, topics: ["guerre", "Histoire"] },
+      false,
+    )
+    expect(score).toBeLessThanOrEqual(10) // hard-gated, not merely −25
+    expect(concerns.some((c) => c.toLowerCase().includes("éviter"))).toBe(true)
+  })
+
+  it("matches an avoided topic against media GENRES too", () => {
+    const member: MemberPreferences = { ...baseMember, avoidTopics: ["horreur"] }
+    const { score } = calculateMemberScore(
+      member,
+      { ...neutralMedia, genres: ["Horreur"] },
+      false,
+    )
+    expect(score).toBeLessThanOrEqual(10)
+  })
+
+  it("does not floor when no avoided topic is present", () => {
+    const member: MemberPreferences = { ...baseMember, avoidTopics: ["Guerre"] }
+    const { score } = calculateMemberScore(
+      member,
+      { ...neutralMedia, topics: ["Amitié"] },
+      false,
+    )
+    expect(score).toBeGreaterThan(50)
+  })
+})
+
 describe("buildSmartFilterWhere", () => {
   const baseInput = {
     mediaType: "MOVIE",

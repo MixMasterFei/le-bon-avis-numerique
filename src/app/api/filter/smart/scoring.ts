@@ -1,6 +1,11 @@
 import { getMemberAge } from "@/lib/age-utils"
 import { dislikedGenresForHardExclusion } from "@/lib/disliked-genres"
 
+// A matched avoid-topic floors the per-member score to this value so any
+// realistic minScore (tonight uses 55, /films smart filter 50+) hides it —
+// making avoidTopics a hard gate here, consistent with computeAvoidScore.
+const AVOID_TOPIC_FLOOR = 5
+
 export interface MemberPreferences {
   id: string
   name: string
@@ -232,11 +237,17 @@ export function calculateMemberScore(
     score += matching * 5
   }
 
-  const avoidedTopicsFound = member.avoidTopics.filter(t =>
-    media.topics.includes(t) || media.genres.includes(t)
-  )
+  // Avoided topics are a HARD gate everywhere else (computeAvoidScore floors
+  // to 0; recommendations/family also excludes them in SQL). This path used a
+  // soft −25 that a high-taste title could survive, AND an exact case-sensitive
+  // match — so the quiz literal "Guerre" missed a stored "guerre". Normalise
+  // (lowercase/trim) like computeAvoidScore and floor the score so minScore
+  // hides it.
+  const normaliseTag = (s: string) => s.toLowerCase().trim()
+  const avoidMediaTagSet = new Set([...media.topics, ...media.genres].map(normaliseTag))
+  const avoidedTopicsFound = member.avoidTopics.filter((t) => avoidMediaTagSet.has(normaliseTag(t)))
   if (avoidedTopicsFound.length > 0) {
-    score -= avoidedTopicsFound.length * 25
+    score = Math.min(score, AVOID_TOPIC_FLOOR)
     concerns.push(`Thème à éviter: ${avoidedTopicsFound.join(", ")}`)
   }
 

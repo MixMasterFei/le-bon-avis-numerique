@@ -15,6 +15,12 @@ export interface TotemToolContext {
 
 const MEDIA_TYPES = ["MOVIE", "TV", "GAME", "BOOK", "APP"] as const
 
+// Default upper age bound for the assistant's browse/recommendation queries
+// when the asker gave no explicit age. Keeps an open "propose-moi quelque
+// chose" from surfacing adult titles. A specific title lookup bypasses it so
+// the assistant can still discuss (and warn about) a named mature title.
+const TOTEM_DEFAULT_MAX_AGE = 16
+
 // Reactions that mean a family member has already experienced a title, so
 // Totem shouldn't keep proposing it. TOO_YOUNG / TOO_OLD / NOT_FOR_ME are
 // pre-watch judgments, not "seen", so they're excluded.
@@ -83,13 +89,26 @@ export function buildTotemTools(ctx: TotemToolContext) {
       }),
       execute: async ({ q, theme, type, minAge, maxAge, genre, sort, limit }) => {
         const cap = limit ?? 5
-        const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
+        // Data-layer safety floor (the system prompt is not the only guard):
+        // isEnriched → only titles with real analysis, never provisional /
+        // unanalyzed rows with no reliable age or metrics.
+        const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" }, isEnriched: true }
         if (type) where.type = type
+        const isTitleLookup = !!(q && q.trim().length > 0)
         if (minAge != null || maxAge != null) {
+          // The asker specified an age band — respect it exactly.
           where.expertAgeRec = {
             gte: minAge ?? 0,
             lte: maxAge ?? 99,
           }
+        } else if (!isTitleLookup) {
+          // Browse / theme / genre with NO explicit age → default family
+          // ceiling, so an open "recommande-moi un jeu" can never surface an
+          // adult title (esp. once TOTEM_PUBLIC opens the assistant to all).
+          // A specific TITLE lookup (q) is deliberately exempt: a parent asking
+          // "est-ce que <titre 18+> convient à mon enfant ?" must still find it,
+          // so the assistant can explain that it's too old.
+          where.expertAgeRec = { not: null, lte: TOTEM_DEFAULT_MAX_AGE }
         }
         if (genre) where.genres = { has: genre }
 
@@ -410,9 +429,11 @@ export function buildTotemTools(ctx: TotemToolContext) {
               }>
             }
             let movies = data.movies ?? []
-            if (typeof age === "number") {
-              movies = movies.filter((m) => m.expertAgeRec == null || m.expertAgeRec <= age)
-            }
+            // Age cap: the asker's age if given, else the default family
+            // ceiling. Require a non-null age — an unrated theatrical film
+            // can't be vouched for, so the assistant shouldn't propose it.
+            const cinemaCap = typeof age === "number" ? age : TOTEM_DEFAULT_MAX_AGE
+            movies = movies.filter((m) => m.expertAgeRec != null && m.expertAgeRec <= cinemaCap)
             if (seen.size) {
               movies = movies.filter((m) => !seen.has(m.id))
             }
@@ -448,7 +469,8 @@ export function buildTotemTools(ctx: TotemToolContext) {
         }
 
         // ---- catalog rails (Prisma) ----------------------------
-        const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" } }
+        // isEnriched: discovery only proposes titles with real analysis.
+        const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" }, isEnriched: true }
         let orderBy: Prisma.MediaItemOrderByWithRelationInput[] = [
           { tmdbVoteCount: { sort: "desc", nulls: "last" } },
         ]
@@ -492,10 +514,16 @@ export function buildTotemTools(ctx: TotemToolContext) {
         }
 
         // Optional age cap on rails that aren't by-age (e.g. "des films
-        // de comédie pour mes 7 ans" → rail=by-genre, age=7).
-        if (rail !== "by-age" && typeof age === "number") {
-          where.expertAgeRec = { lte: age, gte: 0 }
-          seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${age}` : `?maxAge=${age}`
+        // de comédie pour mes 7 ans" → rail=by-genre, age=7). When no age is
+        // given, fall back to the default family ceiling (and require a
+        // non-null age) so an open browse can't surface adult titles.
+        if (rail !== "by-age") {
+          if (typeof age === "number") {
+            where.expertAgeRec = { lte: age, gte: 0 }
+            seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${age}` : `?maxAge=${age}`
+          } else {
+            where.expertAgeRec = { not: null, lte: TOTEM_DEFAULT_MAX_AGE }
+          }
         }
 
         // Don't re-propose titles the family has already seen.
