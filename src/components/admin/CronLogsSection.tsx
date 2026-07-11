@@ -14,6 +14,9 @@ import {
   Play,
   Sparkles,
   RefreshCw,
+  SpellCheck,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -45,6 +48,7 @@ const TASK_META: Record<string, { label: string; icon: React.ElementType; color:
   quality: { label: "Scores qualite", icon: RefreshCw, color: "bg-green-100 text-green-700" },
   streaming: { label: "Plateformes", icon: Play, color: "bg-cyan-100 text-cyan-700" },
   similarity: { label: "Similarites", icon: Sparkles, color: "bg-indigo-100 text-indigo-700" },
+  "synopsis-audit": { label: "Audit synopsis", icon: SpellCheck, color: "bg-emerald-100 text-emerald-700" },
 }
 
 const STATUS_ICON: Record<string, React.ElementType> = {
@@ -69,8 +73,18 @@ export function CronLogsSection({ variant = "default" }: { variant?: "default" |
   const [logs, setLogs] = useState<CronLog[]>([])
   const [summary, setSummary] = useState<TaskSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const p = APERCU_PALETTE
   const isApercu = variant === "apercu"
+
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const fetchLogs = () => {
     setLoading(true)
@@ -159,39 +173,66 @@ export function CronLogsSection({ variant = "default" }: { variant?: "default" |
             const TaskIcon = meta.icon
             const StatusIcon = STATUS_ICON[log.status] || AlertTriangle
             const statusColor = STATUS_COLOR[log.status] || "text-gray-500"
+            const hasDetails = !!log.details && Object.keys(log.details).length > 0
+            const isOpen = expanded.has(log.id)
 
             return (
               <div
                 key={log.id}
-                className="py-2.5 flex items-start gap-2"
+                className="py-2.5"
                 style={
                   isApercu && idx > 0 ? { borderTop: `1px solid ${p.line}` } : undefined
                 }
               >
-                <div className={`p-1.5 rounded-lg ${meta.color} mt-0.5`}>
-                  <TaskIcon className="h-3 w-3" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-medium" style={isApercu ? { color: p.ink } : undefined}>
-                      {meta.label}
-                    </span>
-                    <StatusIcon className={`h-3 w-3 ${statusColor}`} />
-                    {log.duration && (
-                      <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                        {formatDuration(log.duration)}
-                      </Badge>
-                    )}
+                <div
+                  className={`flex items-start gap-2 ${hasDetails ? "cursor-pointer" : ""}`}
+                  onClick={hasDetails ? () => toggleExpanded(log.id) : undefined}
+                >
+                  <div className={`p-1.5 rounded-lg ${meta.color} mt-0.5`}>
+                    <TaskIcon className="h-3 w-3" />
                   </div>
-                  {log.summary && (
-                    <p className="text-xs mt-0.5 truncate" style={{ color: isApercu ? p.ink2 : undefined }}>
-                      {log.summary}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-medium" style={isApercu ? { color: p.ink } : undefined}>
+                        {meta.label}
+                      </span>
+                      <StatusIcon className={`h-3 w-3 ${statusColor}`} />
+                      {log.duration && (
+                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                          {formatDuration(log.duration)}
+                        </Badge>
+                      )}
+                    </div>
+                    {log.summary && (
+                      <p
+                        className={isOpen ? "text-xs mt-0.5" : "text-xs mt-0.5 truncate"}
+                        style={{ color: isApercu ? p.ink2 : undefined }}
+                      >
+                        {log.summary}
+                      </p>
+                    )}
+                    <p className="text-[10px] mt-0.5" style={{ color: isApercu ? p.ink2 : undefined }}>
+                      {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: fr })}
                     </p>
+                  </div>
+                  {hasDetails && (
+                    <span className="mt-0.5 shrink-0" style={{ color: isApercu ? p.ink2 : undefined }}>
+                      {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    </span>
                   )}
-                  <p className="text-[10px] mt-0.5" style={{ color: isApercu ? p.ink2 : undefined }}>
-                    {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true, locale: fr })}
-                  </p>
                 </div>
+                {hasDetails && isOpen && (
+                  <pre
+                    className="mt-2 ml-7 max-h-64 overflow-auto rounded-lg p-2 text-[10px] leading-relaxed whitespace-pre-wrap break-words"
+                    style={{
+                      background: isApercu ? p.bg2 : "var(--muted, #f4f4f5)",
+                      border: `1px solid ${isApercu ? p.line : "var(--border, #e4e4e7)"}`,
+                      color: isApercu ? p.ink2 : undefined,
+                    }}
+                  >
+                    {JSON.stringify(log.details, null, 2)}
+                  </pre>
+                )}
               </div>
             )
           })}

@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   Image as ImageIcon,
+  SpellCheck,
   type LucideIcon,
 } from "lucide-react"
 import { useOperation, type OperationConfig } from "@/hooks/useOperation"
@@ -358,6 +359,37 @@ const OPERATIONS: Array<{
     icon: Shield,
     color: "amber",
     statLabels: { matched: "remis a null", updated: "corriges", skipped: "confirmes TP" },
+  },
+  {
+    config: {
+      key: "synopsisAudit",
+      endpoint: "/api/admin/synopsis-audit",
+      method: "POST",
+      // No body — limit/dryRun are query params the route defaults sensibly
+      // (limit=120). Self-selecting: every call just picks up whatever's
+      // still unchecked (synopsisFrCheckedAt IS NULL), so — unlike most
+      // chunked ops here — no getNextParams/cursor is needed.
+      chunked: true,
+      delayMs: 1000,
+      accumKeys: ["processed", "updated", "skipped", "errors"],
+      extractProgress: (data) => ({
+        processed: data.stats?.examined || 0,
+        total: typeof data.remaining === "number" ? (data.stats?.examined || 0) + data.remaining : null,
+        updated: data.stats?.fixed || 0,
+        skipped: data.stats?.flagged || 0,
+        errors: data.stats?.errors || 0,
+      }),
+      isDone: (data) => data.done === true,
+      buildSummary: (stats) => {
+        const errs = stats.errors || 0
+        return `${stats.processed || 0} vérifiés, ${stats.updated || 0} corrigés, ${stats.skipped || 0} signalés${errs ? `, ${errs} erreurs` : ""}`
+      },
+    },
+    label: "Audit synopsis",
+    description: "Grammaire + ton IA sur les synopsis déjà enrichis (articles manquants, phrasé robotique)",
+    icon: SpellCheck,
+    color: "emerald",
+    statLabels: { updated: "corrigés", skipped: "signalés" },
   },
   {
     config: {
@@ -1027,6 +1059,7 @@ const GROUPS: OperationGroup[] = [
       "fixTP",
       "backfillCertifications",
       "cleanupNonFrench",
+      "synopsisAudit",
     ],
   },
   {
