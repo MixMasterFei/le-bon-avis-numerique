@@ -8,7 +8,7 @@ import { getOfficialRatingDisplay } from "@/lib/utils"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
-import { TOP_GAMES, type TopGameSeed } from "./topGames.data"
+import { TOP_GAMES, aliasMatchScore, type TopGameSeed } from "./topGames.data"
 
 // The catalogue changes slowly relative to this page; a 1h ISR window keeps it
 // fresh as titles get enriched without hammering the DB on every hit.
@@ -84,6 +84,7 @@ async function fetchTopGameRows(): Promise<GameRow[]> {
         expertAgeRec: true,
         officialRating: true,
         dataQualityScore: true,
+        tmdbVoteCount: true,
         contentMetrics: {
           select: {
             violence: true,
@@ -105,15 +106,22 @@ async function fetchTopGameRows(): Promise<GameRow[]> {
   const usedIds = new Set<string>()
 
   for (const seed of TOP_GAMES) {
+    // Rank catalogue matches the same way the importer does: alias-match
+    // quality first (a flagship title beats a spin-off / loose substring), then
+    // popularity, then data quality — so "Genshin Impact" wins over a spin-off
+    // and an obscure "Pokemon …" entry never represents Pokémon if a real one
+    // is present.
     const candidates = matches
-      .filter((m) => {
-        if (usedIds.has(m.id)) return false
-        const t = m.title.toLowerCase()
-        return seed.aliases.some((a) => t.includes(a))
-      })
-      .sort((a, b) => b.dataQualityScore - a.dataQualityScore)
+      .map((m) => ({ m, score: usedIds.has(m.id) ? 0 : aliasMatchScore(m.title, seed.aliases) }))
+      .filter((x) => x.score > 0)
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          (b.m.tmdbVoteCount ?? 0) - (a.m.tmdbVoteCount ?? 0) ||
+          b.m.dataQualityScore - a.m.dataQualityScore,
+      )
 
-    const best = candidates[0]
+    const best = candidates[0]?.m
     if (!best) continue
     usedIds.add(best.id)
     rows.push({

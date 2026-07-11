@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import { searchGames } from "@/lib/igdb"
 import { createGameFromIgdb } from "@/lib/game-import"
-import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
+import { TOP_GAMES, aliasMatchScore } from "@/app/jeux/quel-age/topGames.data"
 
 // Targeted backfill for the /jeux/quel-age pillar: guarantees the high-search
 // titles kids ask for by name (Fortnite, Roblox, Minecraft, GTA…) actually
@@ -40,21 +40,25 @@ export async function GET(req: NextRequest) {
     for (const seed of TOP_GAMES) {
       stats.examined++
       try {
-        // IGDB search on the display name; then prefer a candidate whose name
-        // actually contains one of the seed's aliases (so "GTA" resolves to a
-        // Grand Theft Auto entry, not a fuzzy match), most-rated first.
-        const candidates = await searchGames(seed.name, 20)
-        const matched = candidates
-          .filter((g) => {
-            const n = g.name?.toLowerCase() ?? ""
-            return seed.aliases.some((a) => n.includes(a))
-          })
-          .sort((a, b) => (b.total_rating_count ?? 0) - (a.total_rating_count ?? 0))
+        // Search the flagship title (searchQuery), not the decorated display
+        // name. Rank by alias-match quality, then popularity. NO blind fallback:
+        // a seed with no genuine alias match is left notFound rather than
+        // importing a wrong game — a missing pillar row beats a wrong one.
+        const query = seed.searchQuery ?? seed.name
+        const candidates = await searchGames(query, 25)
+        const scored = candidates
+          .map((g) => ({ g, score: aliasMatchScore(g.name, seed.aliases) }))
+          .filter((x) => x.score > 0)
+          .sort(
+            (a, b) =>
+              b.score - a.score ||
+              (b.g.total_rating_count ?? 0) - (a.g.total_rating_count ?? 0),
+          )
 
-        const pick = matched[0] ?? candidates[0]
+        const pick = scored[0]?.g
         if (!pick) {
           stats.notFound++
-          details.push(`Introuvable sur IGDB : ${seed.name}`)
+          details.push(`Introuvable sur IGDB : ${seed.name} (recherche "${query}")`)
           continue
         }
 

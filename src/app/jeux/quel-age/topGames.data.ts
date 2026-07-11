@@ -16,7 +16,18 @@ export interface TopGameSeed {
   key: string
   /** Display name used in copy and structured data. */
   name: string
-  /** Lowercased title fragments matched against catalogue titles (contains). */
+  /**
+   * IGDB search term for the backfill importer. Defaults to `name` when absent.
+   * Set it to a specific flagship title for franchises (e.g. "Pokémon Scarlet")
+   * so the search returns the real game instead of obscure franchise entries —
+   * and never carry display decorations like "(ex-FIFA)" into the query.
+   */
+  searchQuery?: string
+  /**
+   * Lowercased title fragments matched against catalogue titles. Ranking prefers
+   * an exact title match, then startsWith, then contains — so listing the exact
+   * flagship title first makes matching deterministic.
+   */
   aliases: string[]
   /** Honest one-line reason parents look this title up (not a content claim). */
   parentNote: string
@@ -47,6 +58,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "gta",
     name: "Grand Theft Auto (GTA)",
+    searchQuery: "Grand Theft Auto V",
     aliases: ["grand theft auto", "gta"],
     parentNote:
       "Série d'action pour adultes que les plus jeunes réclament : la question de l'âge revient sans cesse.",
@@ -68,13 +80,15 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "ea-sports-fc",
     name: "EA Sports FC (ex-FIFA)",
-    aliases: ["ea sports fc", "ea sports f.c", "fifa"],
+    searchQuery: "EA Sports FC 24",
+    aliases: ["ea sports fc", "fifa"],
     parentNote:
       "Simulation de football familière, mais dont le mode Ultimate Team soulève des questions sur les dépenses.",
   },
   {
     key: "call-of-duty",
     name: "Call of Duty",
+    searchQuery: "Call of Duty: Modern Warfare",
     aliases: ["call of duty"],
     parentNote:
       "Jeu de tir militaire pour adolescents et adultes fréquemment réclamé plus tôt.",
@@ -96,6 +110,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "mario-kart",
     name: "Mario Kart",
+    searchQuery: "Mario Kart 8 Deluxe",
     aliases: ["mario kart"],
     parentNote:
       "Jeu de course familial emblématique de Nintendo, un grand classique des questions d'âge.",
@@ -103,20 +118,23 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "zelda",
     name: "The Legend of Zelda",
-    aliases: ["legend of zelda", "zelda"],
+    searchQuery: "The Legend of Zelda: Tears of the Kingdom",
+    aliases: ["the legend of zelda", "legend of zelda", "zelda"],
     parentNote:
       "Aventure Nintendo acclamée : les parents veulent savoir à partir de quel âge la proposer.",
   },
   {
     key: "pokemon",
     name: "Pokémon",
-    aliases: ["pokémon", "pokemon"],
+    searchQuery: "Pokémon Scarlet",
+    aliases: ["pokémon scarlet", "pokémon", "pokemon"],
     parentNote:
       "Licence de créatures à collectionner adorée des enfants, déclinée en de nombreux jeux.",
   },
   {
     key: "animal-crossing",
     name: "Animal Crossing",
+    searchQuery: "Animal Crossing: New Horizons",
     aliases: ["animal crossing"],
     parentNote:
       "Simulation de vie paisible souvent citée comme idéale pour les jeunes joueurs.",
@@ -124,6 +142,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "splatoon",
     name: "Splatoon",
+    searchQuery: "Splatoon 3",
     aliases: ["splatoon"],
     parentNote:
       "Jeu de tir coloré à l'encre, pensé pour un public jeune mais joué en ligne.",
@@ -131,6 +150,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "super-smash-bros",
     name: "Super Smash Bros.",
+    searchQuery: "Super Smash Bros. Ultimate",
     aliases: ["super smash bros", "smash bros"],
     parentNote:
       "Jeu de combat festif réunissant les héros Nintendo, très demandé en famille.",
@@ -138,6 +158,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "overwatch",
     name: "Overwatch",
+    searchQuery: "Overwatch 2",
     aliases: ["overwatch"],
     parentNote:
       "Jeu de tir en équipe stylisé : coloré, mais en ligne et compétitif.",
@@ -152,6 +173,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "genshin-impact",
     name: "Genshin Impact",
+    searchQuery: "Genshin Impact",
     aliases: ["genshin impact"],
     parentNote:
       "Aventure en monde ouvert au style manga, avec un système de tirages payants (gacha).",
@@ -166,7 +188,8 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "les-sims",
     name: "Les Sims",
-    aliases: ["les sims", "the sims"],
+    searchQuery: "The Sims 4",
+    aliases: ["the sims", "les sims", "sims 4"],
     parentNote:
       "Simulation de vie ouverte : les parents s'interrogent sur les thèmes adultes et les extensions.",
   },
@@ -180,6 +203,7 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     key: "sonic",
     name: "Sonic",
+    searchQuery: "Sonic Frontiers",
     aliases: ["sonic"],
     parentNote:
       "Le hérisson rapide de SEGA, une valeur sûre des jeux de plateforme pour enfants.",
@@ -192,3 +216,25 @@ export const TOP_GAMES: TopGameSeed[] = [
       "Jeu de bagarre burlesque à plusieurs, à la violence cartoonesque.",
   },
 ]
+
+/**
+ * Score how well a catalogue/IGDB title matches a seed's aliases:
+ * exact title (3) > startsWith (2) > contains (1) > no match (0). Shared by the
+ * backfill importer (which game to import) and the pillar page (which catalogue
+ * row represents each seed) so both resolve a title the same way — a flagship
+ * "Genshin Impact" beats a "Genshin Impact: …" spin-off, and a loose "…Brawl"
+ * never stands in for "Brawl Stars".
+ */
+export function aliasMatchScore(name: string | null | undefined, aliases: string[]): number {
+  const n = (name ?? "").toLowerCase().trim()
+  if (!n) return 0
+  let best = 0
+  for (const a of aliases) {
+    const al = a.toLowerCase().trim()
+    if (!al) continue
+    if (n === al) best = Math.max(best, 3)
+    else if (n.startsWith(al)) best = Math.max(best, 2)
+    else if (n.includes(al)) best = Math.max(best, 1)
+  }
+  return best
+}
