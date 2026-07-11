@@ -6,7 +6,7 @@ import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-t
 import { getHolidayCalendar } from "@/lib/school-holidays"
 import { getMemberAge } from "@/lib/age-utils"
 import { getDaySeed, seededShuffle } from "@/lib/seeded-shuffle"
-import type { FitReason } from "@/lib/totem-voice"
+import { synopsisHook, type FitReason } from "@/lib/totem-voice"
 
 // One request powers both the whole-family selection and every member tab.
 // We score one broad candidate pool per media type (3 smart-filter passes total)
@@ -116,6 +116,8 @@ function toItem(item: SmartFilterResultItem, reason: FitReason) {
     genres: item.genres,
     familyScore: item.familyScore,
     reason,
+    // One-sentence hook so the explanation is specific to this title, not generic.
+    synopsis: synopsisHook(item.synopsisFr),
   }
 }
 

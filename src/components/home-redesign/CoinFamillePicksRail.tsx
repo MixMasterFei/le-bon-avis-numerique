@@ -20,6 +20,8 @@ interface RawItem {
   genres?: string[] | null
   // Truthful fit reason from the API; phrased into a sentence for the cards.
   reason?: FitReason
+  // One-sentence synopsis hook woven into the explanation.
+  synopsis?: string | null
 }
 
 interface MemberSection {
@@ -41,7 +43,8 @@ interface PicksResponse {
   classic?: RawItem | null
 }
 
-const GRID_COUNT = 10
+// One row under the hero (5 across on desktop).
+const GRID_COUNT = 5
 
 function toCardType(t: unknown): RedesignCardMedia["type"] {
   return t === "MOVIE" || t === "TV" || t === "GAME" ? t : "MOVIE"
@@ -134,7 +137,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   // "Le classique à redécouvrir" — one family-level pick, constant across tabs.
   const classicRaw = response?.classic ?? null
   const classicCard = useMemo(() => (classicRaw ? toHeroCard(classicRaw) : null), [classicRaw])
-  const classicReason = classicRaw?.reason ? totemVoiceLine(classicRaw.reason) : undefined
+  const classicReason = classicRaw?.reason ? totemVoiceLine(classicRaw.reason, classicRaw.synopsis) : undefined
 
   const changeTab = (id: string) => {
     setActiveTab(id)
@@ -239,7 +242,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
           media={heroCard}
           serifClass={serifClass}
           badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
-          voiceLine={heroReason ? totemVoiceLine(heroReason) : undefined}
+          voiceLine={heroReason ? totemVoiceLine(heroReason, heroRaw?.synopsis) : undefined}
         />
       )}
 
@@ -252,7 +255,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
               <CoinFamillePickCard
                 key={`${activeTab}-${item.id}`}
                 media={toPickMedia(item)}
-                comment={item.reason ? totemVoiceLine(item.reason) : undefined}
+                comment={item.reason ? totemVoiceLine(item.reason, item.synopsis) : undefined}
                 memberId={activeMember?.id ?? null}
                 onSeen={handleSeen}
               />

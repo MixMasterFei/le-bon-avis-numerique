@@ -202,7 +202,7 @@ export function CoinFamillePickCard({
       </div>
 
       {open && comment && (
-        <p className="mt-1.5 text-[11.5px] italic leading-snug" style={{ color: p.ink2 }}>
+        <p className="mt-1.5 text-[12px] italic leading-relaxed" style={{ color: p.ink2 }}>
           {comment}
         </p>
       )}

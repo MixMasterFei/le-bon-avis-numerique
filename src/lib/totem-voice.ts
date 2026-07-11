@@ -1,14 +1,16 @@
 /**
- * The Coin Famille hero's one-liner — a short, plain-spoken note explaining WHY
- * today's pick fits, in Totem Avisé's editorial voice.
+ * The Coin Famille explanation — a short note tying today's pick to WHO it's for
+ * and WHAT it's about, in Totem Avisé's editorial voice.
  *
- * It is a pure PHRASING layer over a `FitReason` that the caller has already
- * derived from real signals (the member's favorite genres, the fit score, who
- * the title suits). We never guess the reason here and never invent a taste —
- * the sentence is always traceable to the data that produced the `FitReason`.
+ * It combines two truthful inputs the caller provides:
+ *   - a `FitReason` derived from real signals (the member's favorite genres,
+ *     the fit score, who the title suits) → the "who it's for" opener,
+ *   - the media's own French synopsis → a one-sentence "what it's about" hook.
  *
- * Tone: warm, specific, mainstream. No mascot jokes, no manufactured
- * excitement — an editor's note, not a gag.
+ * We never guess a taste and never write the plot ourselves; the sentence is
+ * always traceable to the FitReason + the catalogue synopsis.
+ *
+ * Tone: warm, specific, mainstream — an editor's note, not a gag.
  */
 
 export type FitReason =
@@ -27,22 +29,56 @@ export type FitReason =
   /** A reasonable middle ground when tastes diverge. */
   | { kind: "family-compromise" }
 
-/** One French sentence, in Totem's voice, explaining why the pick fits. */
-export function totemVoiceLine(reason: FitReason): string {
+/**
+ * Trim a raw synopsis into a short, clean hook (≈ one sentence, ≤ 160 chars).
+ * Returns null when there's nothing usable, so the caller falls back to the
+ * short opener alone.
+ */
+export function synopsisHook(text: string | null | undefined): string | null {
+  if (!text) return null
+  const s = text.trim().replace(/\s+/g, " ")
+  if (s.length < 25) return null
+  const MAX = 160
+  if (s.length <= MAX) return s
+  const window = s.slice(0, MAX)
+  const lastStop = Math.max(
+    window.lastIndexOf(". "),
+    window.lastIndexOf("! "),
+    window.lastIndexOf("? "),
+  )
+  if (lastStop > 70) return window.slice(0, lastStop + 1).trim()
+  const lastSpace = window.lastIndexOf(" ")
+  const base = lastSpace > 70 ? window.slice(0, lastSpace) : window
+  return base.replace(/[,;:]$/, "").trim() + "…"
+}
+
+/** The "who it's for" opener, with no trailing punctuation. */
+function opener(reason: FitReason): string {
   switch (reason.kind) {
     case "member-genre":
-      return `Choisi pour ${reason.name}, qui aime les contenus ${reason.genre.toLowerCase()}.`
+      return `Pour ${reason.name}, qui aime les contenus ${reason.genre.toLowerCase()}`
     case "member-strong":
-      return `Très bon accord avec le profil de ${reason.name}.`
+      return `Un très bon choix pour ${reason.name}`
     case "member-chosen":
-      return `Choisi pour ${reason.name}, d'après son âge et ses goûts.`
+      return `Pour ${reason.name}, d'après son âge et ses goûts`
     case "family-all":
-      return "Un bon choix pour toute la famille."
+      return "Pour toute la famille"
     case "family-one":
-      return `Particulièrement adapté à ${reason.name}.`
+      return `Surtout pour ${reason.name}`
     case "family-some":
-      return `Adapté à ${reason.names.slice(0, 2).join(" et ")}.`
+      return `Pour ${reason.names.slice(0, 2).join(" et ")}`
     case "family-compromise":
-      return "Un bon compromis pour réunir tout le monde."
+      return "Pour se retrouver tous ensemble"
   }
+}
+
+/**
+ * One or two French sentences in Totem's voice: a member-linked opener plus,
+ * when available, a one-sentence synopsis hook so the note is specific to the
+ * title rather than generic.
+ */
+export function totemVoiceLine(reason: FitReason, synopsis?: string | null): string {
+  const base = opener(reason)
+  const hook = synopsisHook(synopsis)
+  return hook ? `${base} : ${hook}` : `${base}.`
 }
