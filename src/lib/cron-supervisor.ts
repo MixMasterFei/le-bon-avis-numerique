@@ -107,6 +107,21 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // Grammar/tone audit of synopsisFr (nightly top-up in daily-enrich).
+    // Deliberately NO outputMetric: this sweep is self-draining by design —
+    // once the catalogue is fully checked, "examined" legitimately drops to
+    // ~0 forever (only new/rewritten synopses trickle in). An output-anomaly
+    // check would misread that success as a silent failure. Staleness alone
+    // (did it run at all in 36h) is the right level of monitoring here.
+    task: "synopsis-audit",
+    staleAfterHours: 36,
+    remediation: {
+      label: "Relance audit synopsis batch réduit",
+      method: "POST",
+      path: "/api/admin/synopsis-audit?limit=30",
+    },
+  },
+  {
     task: "news-discover",
     staleAfterHours: 10,
     // The motivating case: the pipeline logged "success" for ~2 weeks while

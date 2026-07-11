@@ -102,6 +102,7 @@ const KNOWN_CRON_TASKS = [
   "enrich-deep",
   "quality",
   "backfill-ratings",
+  "synopsis-audit", // Nightly top-up (in daily-enrich) — grammar/tone pass over synopsisFr
   "streaming",
   "similarity",
   "news-discover",

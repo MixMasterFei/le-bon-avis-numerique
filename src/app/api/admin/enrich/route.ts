@@ -720,6 +720,10 @@ export async function POST(request: NextRequest) {
           data: {
             expertAgeRec: analysis.expertAgeRec,
             synopsisFr: analysis.synopsis || item.synopsisFr,
+            // A fresh synopsis needs a fresh grammar/tone pass — un-mark it so
+            // the synopsis-audit sweep picks it back up instead of trusting a
+            // check that ran against the PREVIOUS text.
+            synopsisFrCheckedAt: null,
             topics: [...new Set([...item.topics, ...filterToValidList(analysis.tags, VALID_TOPICS)])],
             isEnriched: true,
           },

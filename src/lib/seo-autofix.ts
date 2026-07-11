@@ -496,7 +496,12 @@ export async function runSeoAutofix(
       rewritesUsed++
       const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
       if (draft && rewritePasses(t.query, item.title, item.synopsisFr, draft)) {
-        await prisma.mediaItem.update({ where: { id: item.id }, data: { synopsisFr: draft } })
+        // Un-mark the grammar/tone check too — this rewrite is fresh text the
+        // synopsis-audit sweep hasn't seen yet.
+        await prisma.mediaItem.update({
+          where: { id: item.id },
+          data: { synopsisFr: draft, synopsisFrCheckedAt: null },
+        })
         synopsis = "rewritten"
         synopsisBefore = item.synopsisFr ?? ""
         synopsisAfter = draft

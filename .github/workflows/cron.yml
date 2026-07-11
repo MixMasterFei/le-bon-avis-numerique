@@ -55,6 +55,7 @@ on:
           - import
           - backfill-ratings
           - backfill-game-styles
+          - synopsis-audit
           - enrich
           - enrich-deep
           - recalibrate-ratings
@@ -208,6 +209,41 @@ jobs:
           done
           echo "::endgroup::"
 
+  # ── Dispatch-only: grammar + naturalness audit, full backlog ─────
+  synopsis-audit-backfill:
+    name: Synopsis quality audit (full backlog)
+    runs-on: ubuntu-latest
+    environment: Production
+    if: github.event.inputs.task == 'synopsis-audit'
+    steps:
+      # Self-draining (synopsis_fr_checked_at IS NULL, most-popular first —
+      # see src/lib/synopsis-audit.ts). 20 loops × limit=120 covers a large
+      # chunk of the backlog in one dispatch; re-run the dispatch on
+      # following days to keep draining, or just let the nightly top-up
+      # inside daily-enrich finish it gradually.
+      - name: Grammar + naturalness pass (loop until done)
+        run: |
+          set +e
+          echo "::group::Synopsis audit"
+          for i in $(seq 1 20); do
+            resp=$(curl -sSL --max-time 290 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$SITE_URL/api/admin/synopsis-audit?limit=120")
+            echo "$resp" | jq -c '{examined:.stats.examined,fixed:.stats.fixed,flagged:.stats.flagged,errors:.stats.errors,remaining,done}' 2>/dev/null || echo "$resp"
+            done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
+            examined=$(echo "$resp" | jq -r '.stats.examined // 0' 2>/dev/null || echo "0")
+            if [ "$done" = "true" ]; then
+              echo "Synopsis audit complete — catalogue fully checked"
+              break
+            fi
+            if [ "$examined" = "0" ]; then
+              echo "No progress this batch — stopping, will retry next dispatch"
+              break
+            fi
+            sleep 2
+          done
+          echo "::endgroup::"
+
   # ── Daily: Enrichment + deep enrichment + quality scores ─────────
   daily-enrich:
     name: Daily Enrichment & Quality
@@ -293,6 +329,33 @@ jobs:
             echo "Backfill batch $i: $enriched enriched"
             if [ "$enriched" = "0" ]; then break; fi
             sleep 3
+          done
+          echo "::endgroup::"
+
+      # Synopsis quality audit: grammar + "reads like AI" pass over enriched
+      # synopsisFr (src/lib/synopsis-audit.ts). Self-draining (targets
+      # synopsis_fr_checked_at IS NULL, most-popular first) so it terminates
+      # once the catalogue is covered and then no-ops at near-zero cost —
+      # safe to run nightly forever. Also dispatchable at full scale via
+      # task=synopsis-audit (see synopsis-audit-backfill job) to jump-start
+      # the initial backlog.
+      - name: Synopsis quality audit (nightly top-up)
+        if: >-
+          github.event.inputs.task != 'quality' &&
+          github.event.inputs.task != 'enrich-deep' &&
+          github.event.inputs.task != 'recalibrate-ratings'
+        run: |
+          set +e
+          echo "::group::Synopsis audit (top-up)"
+          for i in 1 2 3; do
+            resp=$(curl -sSL --max-time 290 -X POST \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$SITE_URL/api/admin/synopsis-audit?limit=90")
+            echo "$resp" | jq -c '{examined:.stats.examined,fixed:.stats.fixed,flagged:.stats.flagged,remaining,done}' 2>/dev/null || echo "$resp"
+            done=$(echo "$resp" | jq -r '.done' 2>/dev/null)
+            examined=$(echo "$resp" | jq -r '.stats.examined // 0' 2>/dev/null || echo "0")
+            if [ "$done" = "true" ] || [ "$examined" = "0" ]; then break; fi
+            sleep 2
           done
           echo "::endgroup::"
 

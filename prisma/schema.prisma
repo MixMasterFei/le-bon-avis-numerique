@@ -143,6 +143,11 @@ model MediaItem {
   posterUrl       String?   @map("poster_url")
   backdropUrl     String?   @map("backdrop_url")
   synopsisFr      String?   @map("synopsis_fr") @db.Text
+  // WHEN synopsisFr last passed the grammar/tone quality audit (see
+  // src/app/api/admin/synopsis-audit/route.ts). Null = never checked.
+  // The audit sweep targets NULL rows, popularity-first, and terminates
+  // once every enriched title has been checked.
+  synopsisFrCheckedAt DateTime? @map("synopsis_fr_checked_at")
   // SEO-only meta <title> override (NOT the display name). When set, the
   // /media/[id] page uses it for the <title>/OG/Twitter tag only — the H1,
   // cards, links and structured-data name stay `title`. Written by the
