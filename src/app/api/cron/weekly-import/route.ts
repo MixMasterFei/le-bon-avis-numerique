@@ -5,6 +5,7 @@ import { logCronRun } from "@/lib/cron-log"
 import {
   getPopularMovies,
   getNowPlayingMovies,
+  getUpcomingMovies,
   discoverMovies,
   getMovieDetails,
   getFrenchCertification,
@@ -95,7 +96,7 @@ function hasTVFrenchRelevance(
 }
 
 async function importMoviesFromSource(
-  source: "popular" | "now_playing" | "family" | "animation" | "young_kids",
+  source: "popular" | "now_playing" | "upcoming" | "family" | "animation" | "young_kids",
   pages: number,
   startPage = 1
 ): Promise<ImportStats> {
@@ -109,6 +110,11 @@ async function importMoviesFromSource(
       switch (source) {
         case "now_playing":
           response = await getNowPlayingMovies(page)
+          break
+        case "upcoming":
+          // Forward-looking: French upcoming theatrical slate. createMovieFromTmdb
+          // gives each a provisional age so the fiche can rank before release.
+          response = await getUpcomingMovies(page)
           break
         case "family":
           response = await discoverMovies({
@@ -174,10 +180,10 @@ async function importMoviesFromSource(
         return watch
       }
 
-      // now_playing = French theatrical releases by definition (region=FR), so
-      // don't gate them on the FR-relevance heuristic — that was dropping current
-      // theatrical films before they were ever created.
-      if (source !== "now_playing") {
+      // now_playing / upcoming = French theatrical slate by definition (region=FR),
+      // so don't gate them on the FR-relevance heuristic. Upcoming titles also
+      // have no watch providers yet, which would fail the fallback and drop them.
+      if (source !== "now_playing" && source !== "upcoming") {
         let isFR = hasMovieFrenchRelevance(details, frCert)
         if (!isFR) isFR = (await loadWatch()) !== null
         if (!isFR) {
@@ -388,6 +394,11 @@ export async function GET(req: NextRequest) {
 
     // Import now playing movies (1 page = ~20 movies)
     results.nowPlaying = await importMoviesFromSource("now_playing", 1)
+
+    // Forward-looking: French upcoming theatrical slate (2 pages). Gets the
+    // fiche + provisional age in place months before release so it can rank
+    // ahead of the première — the pre-release edge the market study flags.
+    results.upcoming = await importMoviesFromSource("upcoming", 2)
 
     // Young-audience sources — rotate DEEPER each week so we keep
     // surfacing fresh 0–7 titles instead of re-fetching page 1's

@@ -55,6 +55,7 @@ on:
           - import
           - backfill-ratings
           - backfill-game-styles
+          - games-top-names
           - synopsis-audit
           - enrich
           - enrich-deep
@@ -207,6 +208,27 @@ jobs:
             cursor=$(echo "$resp" | jq -r '.nextCursor' 2>/dev/null)
             if [ "$done" = "true" ] || [ -z "$cursor" ] || [ "$cursor" = "null" ]; then break; fi
           done
+          echo "::endgroup::"
+
+  # ── Dispatch-only: backfill the high-search games for /jeux/quel-age ─────
+  games-top-names:
+    name: Games — grab the biggest names
+    runs-on: ubuntu-latest
+    environment: Production
+    if: github.event.inputs.task == 'games-top-names'
+    steps:
+      # Idempotent, seed-list driven (src/app/jeux/quel-age/topGames.data.ts).
+      # Searches IGDB for each big-name title and imports the ones missing from
+      # the catalogue; enrichment then runs via the daily cron. Re-run any time
+      # the seed list grows.
+      - name: Import the top game titles by name
+        run: |
+          set +e
+          echo "::group::Games top-names import"
+          curl -sSL --max-time 290 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/games-top-names" \
+            | jq '{stats, details}' 2>/dev/null || true
           echo "::endgroup::"
 
   # ── Dispatch-only: grammar + naturalness audit, full backlog ─────

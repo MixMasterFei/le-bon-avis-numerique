@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { isAdultIgdbGame } from "@/lib/adult-content-filter"
 
 // Vercel serverless function config
 export const maxDuration = 60
@@ -16,13 +15,9 @@ import {
   getPCGames,
   getGamesByFranchise,
   getTopRatedGames,
-  getIGDBImageUrl,
-  getPegiInfo,
-  normalizePlatforms,
   IGDBGame,
 } from "@/lib/igdb"
-import { normalizeGameGenres } from "@/lib/igdb-genres"
-import { deriveGameStyleTags } from "@/lib/game-style-tags"
+import { createGameFromIgdb } from "@/lib/game-import"
 
 interface ImportStats {
   total: number
@@ -30,32 +25,6 @@ interface ImportStats {
   skipped: number
   errors: number
   details: string[]
-}
-
-function transformGameToMediaItem(game: IGDBGame) {
-  const pegi = getPegiInfo(game.age_ratings)
-  const developer = game.involved_companies?.find((c) => c.developer)
-
-  return {
-    igdbId: game.id,
-    title: game.name,
-    type: "GAME" as const,
-    synopsisFr: game.summary || game.storyline || null,
-    posterUrl: getIGDBImageUrl(game.cover?.image_id, "large"),
-    releaseDate: game.first_release_date
-      ? new Date(game.first_release_date * 1000)
-      : null,
-    genres: normalizeGameGenres(game.genres?.map((g) => g.name) || []),
-    platforms: normalizePlatforms(game.platforms),
-    officialRating: pegi?.internal || null,
-    pegiDescriptors: pegi?.descriptors ?? [],
-    expertAgeRec: pegi?.age || null,
-    director: developer?.company.name || null, // Using director field for developer
-    topics: deriveGameStyleTags(game), // Steam-style tags — see game-style-tags.ts
-    // Store IGDB rating in shared rating fields (same as tmdbRating for movies)
-    tmdbRating: game.total_rating ? Math.round(game.total_rating) / 10 : null, // IGDB 0-100 → 0-10 scale
-    tmdbVoteCount: game.total_rating_count || null,
-  }
 }
 
 export async function POST(request: Request) {
@@ -140,23 +109,12 @@ export async function POST(request: Request) {
     // Process only NEW games
     for (const game of newGames) {
       try {
-        // Family-guide guard: never import erotic / adult-only games.
-        if (isAdultIgdbGame(game)) {
+        // Family-guide adult guard lives in createGameFromIgdb; null = skipped.
+        const created = await createGameFromIgdb(game)
+        if (!created) {
           stats.details.push(`Skipped adult game: ${game.name}`)
           continue
         }
-        const data = transformGameToMediaItem(game)
-
-        await prisma.mediaItem.create({
-          data: {
-            ...data,
-            originalTitle: null,
-            backdropUrl: null,
-            duration: null,
-            communityAgeRec: null,
-          },
-        })
-
         stats.imported++
       } catch (error) {
         stats.errors++
