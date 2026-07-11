@@ -681,11 +681,21 @@ export async function POST(request: NextRequest) {
         // recommended age above a lenient official rating (independent guidance).
         // Runs BEFORE the metric clamp so a raised age doesn't then get its axes
         // capped. The symmetric counterpart to clampMetricsByAge.
+        //
+        // topics MUST include the item's EXISTING persisted topics (item.topics),
+        // not just the fresh analysis.tags — VALID_TOPICS (the AI's controlled
+        // vocabulary above) does not even contain "Horreur", so a horror floor
+        // keyed on analysis.tags alone only fired when the model happened to
+        // free-type a tag outside its own prompt's instructions. The reliable
+        // horror signal comes from the deterministic IGDB-derived tag already on
+        // the item (see game-style-tags.ts), which is why item.topics must be in
+        // this union — bug found + fixed 2026-07-11 after a re-enrichment pass
+        // wrongly LOWERED several already-correct horror titles.
         analysis.expertAgeRec = floorExpertAgeBySignals({
           expertAgeRec: analysis.expertAgeRec,
           metrics: analysis.contentMetrics,
           genres: item.genres,
-          topics: analysis.tags,
+          topics: [...item.topics, ...analysis.tags],
           visualStyle: analysis.visualStyle,
           type: item.type,
           officialRating: item.officialRating,
