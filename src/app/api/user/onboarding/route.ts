@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { auth, updateSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 /**
@@ -16,6 +16,18 @@ export async function PATCH() {
     where: { id: session.user.id },
     data: { onboardingCompleted: true },
   })
+
+  // Rotate the session JWT in THIS response so the middleware sees
+  // onboardingCompleted=true on the very next navigation (the jwt callback
+  // runs with trigger "update" and re-reads the flag from the DB). Relying on
+  // the client's useSession().update() proved flaky: the cookie kept the
+  // stale `false` and the middleware bounced the user straight back to
+  // /onboarding after they finished the wizard.
+  try {
+    await updateSession({ user: {} })
+  } catch (error) {
+    console.error("[onboarding] session JWT refresh failed:", error)
+  }
 
   return NextResponse.json({ success: true })
 }

@@ -26,7 +26,13 @@ if (googleClientId && googleClientSecret) {
   )
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+// `updateSession` (NextAuth's unstable_update) re-issues the session JWT
+// server-side — the jwt callback runs with trigger "update" and re-fetches the
+// user from the DB. Used by the onboarding PATCH so the cookie's
+// onboardingCompleted flips in the SAME response; relying on the client's
+// useSession().update() proved flaky and left a stale cookie that the
+// middleware then bounced back to /onboarding.
+export const { handlers, signIn, signOut, auth, unstable_update: updateSession } = NextAuth({
   adapter: PrismaAdapter(prisma) as Adapter,
   trustHost: true,
   session: { strategy: "jwt" },

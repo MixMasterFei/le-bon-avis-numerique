@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { ArrowRight, ArrowLeft, Check, Plus, Sparkles, Users } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -24,6 +23,7 @@ interface CreatedMember {
   avatarSeed?: string | null
   avatarOptions?: Record<string, unknown> | null
   birthYear: number | null
+  birthMonth: number | null
   quizCompleted: boolean
 }
 
@@ -154,6 +154,7 @@ function CreateMemberStep({
         avatarSeed: avatarValue.seed,
         avatarOptions: avatarValue.options,
         birthYear: birthYear ? parseInt(birthYear) : null,
+        birthMonth: birthMonth ? parseInt(birthMonth) : null,
         quizCompleted: false,
       })
     } catch {
@@ -356,10 +357,16 @@ function QuizStep({
         </p>
       </div>
 
+      {/* birthYear/birthMonth tune the quiz to the member's age — without
+          them an under-10 child would be asked the intimate-scenes question
+          the sequence is designed to skip, and an adult would get the
+          third-person "de X" phrasing instead of self mode. */}
       <PreferenceQuiz
         memberId={member.id}
         memberName={member.name}
         memberEmoji={member.emoji}
+        birthYear={member.birthYear}
+        birthMonth={member.birthMonth}
         onComplete={onComplete}
       />
 
@@ -477,7 +484,6 @@ function DoneStep({
 // ---------------------------------------------------------------------------
 export default function OnboardingPage() {
   const p = APERCU_PALETTE
-  const router = useRouter()
   const { update } = useSession()
   const [step, setStep] = useState(0)
   const [members, setMembers] = useState<CreatedMember[]>([])
@@ -511,13 +517,21 @@ export default function OnboardingPage() {
 
   const handleFinish = useCallback(async () => {
     try {
+      // The PATCH also rotates the session JWT server-side (see the route),
+      // so the middleware sees onboardingCompleted=true immediately after.
       await fetch("/api/user/onboarding", { method: "PATCH" })
       await update()
     } catch {
       // Don't block — user can still proceed
     }
-    router.push("/profil")
-  }, [router, update])
+    // HARD navigation, not router.push: the Next client router may have
+    // PREFETCHED /profil while onboarding was still incomplete and cached the
+    // middleware's 307 → /onboarding for it — a push would replay that stale
+    // redirect and bounce the user back here forever. A full page load
+    // re-evaluates the middleware with the fresh cookie. One-time hop, so the
+    // reload cost is irrelevant.
+    window.location.assign("/profil")
+  }, [update])
 
   const totalSteps = 3
   const progressStep = Math.min(step, totalSteps)

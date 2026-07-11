@@ -175,12 +175,18 @@ export async function middleware(request: NextRequest) {
   if (!skipOnboarding) {
     try {
       const { getToken } = await import("next-auth/jwt")
-      const token = await getToken({ req: request })
+      // NextAuth v5's getToken does NOT read AUTH_SECRET from the environment
+      // on its own — without an explicit `secret` it THROWS ("Must pass
+      // `secret`"), which the catch below used to swallow, leaving this whole
+      // redirect silently dead (new users never saw /onboarding at all).
+      const token = await getToken({ req: request, secret: process.env.AUTH_SECRET })
       if (token && token.onboardingCompleted === false) {
         return NextResponse.redirect(new URL("/onboarding", request.url))
       }
-    } catch {
-      // Token parsing failed — don't block the request
+    } catch (error) {
+      // Token parsing failed — don't block the request, but never fail
+      // silently again (a swallowed throw here is how the redirect died).
+      console.error("[middleware] onboarding getToken failed:", error instanceof Error ? error.message : error)
     }
   }
 

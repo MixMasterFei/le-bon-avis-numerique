@@ -342,7 +342,7 @@ export function PreferenceQuiz({
     [answers],
   )
 
-  const saveQuiz = async (finishPhase: "light" | "deep") => {
+  const saveQuiz = async () => {
     setSaving(true)
     setValidationError(null)
     try {
@@ -356,15 +356,19 @@ export function PreferenceQuiz({
         setValidationError(data.error || "Erreur lors de l'enregistrement")
         return false
       }
-      if (finishPhase === "light") {
-        setPhase("done")
-      } else {
-        if (onComplete) {
-          onComplete()
-          return true
-        }
-        setPhase("done")
+      // When embedded (onComplete provided — the onboarding wizard), hand
+      // control back to the host after EITHER phase. The light finish used to
+      // fall through to the in-quiz done screen, whose "Retour au profil" /
+      // "Découvrir le catalogue" buttons navigate away from /onboarding
+      // BEFORE the wizard marks onboarding complete — and the middleware then
+      // bounces the user straight back to the wizard's first step (with its
+      // local state reset). The deep offer stays reachable later via the
+      // member corner's "Affiner" link (?depth=deep).
+      if (onComplete) {
+        onComplete()
+        return true
       }
+      setPhase("done")
       return true
     } catch {
       setValidationError("Erreur lors de l'enregistrement")
@@ -380,11 +384,11 @@ export function PreferenceQuiz({
       return
     }
     if (isLightLast) {
-      await saveQuiz("light")
+      await saveQuiz()
       return
     }
     if (isLastStep && phase === "deep") {
-      await saveQuiz("deep")
+      await saveQuiz()
       return
     }
     setCurrentStep((i) => Math.min(steps.length - 1, i + 1))
