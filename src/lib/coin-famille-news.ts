@@ -100,15 +100,13 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
   const fb = fallbackCard(row.category, row.title)
   const hasPhoto = hasRealPhoto(row)
   const sources = toSources(row.sources)
-  // Publisher headline only when the source is French — the Playwright audit
-  // surfaced raw English headlines (The Verge, Polygon) on the family page.
-  // For foreign sources we fall back to our own French factual title (facts,
-  // not a synthesis — the legal posture is unchanged).
+  // Publisher headline only when the source is EXPLICITLY French — otherwise we
+  // show our own French factual title. A missing `country` used to count as
+  // French, which let raw English headlines (The Verge, Polygon, and any
+  // untagged foreign source) through untranslated on the family page.
   const primary = sources[0]
   const frenchHeadline =
-    primary?.headline && (!primary.country || primary.country.toLowerCase() === "fr")
-      ? primary.headline
-      : null
+    primary?.headline && primary.country?.toLowerCase() === "fr" ? primary.headline : null
   return {
     slug: row.slug,
     headline: frenchHeadline ?? row.title,

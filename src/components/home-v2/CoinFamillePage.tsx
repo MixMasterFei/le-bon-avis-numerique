@@ -70,6 +70,37 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
     </div>
   )
 
+  // Curated news — slots in directly under the personalized picks (before the
+  // "à venir" rail); rendered in both the has-family and no-family layouts.
+  const newsSection = (
+    <div>
+      <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
+        L&apos;essentiel pour les parents
+      </div>
+      {data.news.length > 0 ? (
+        // items-start: without it, expanding ONE card's takeaway stretched
+        // every card in the row (default grid stretch).
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 items-start">
+          {data.news.slice(0, 6).map((story) => (
+            <CoinFamilleNewsCard key={story.slug} story={story} serifClass={serifClass} />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl px-5 py-6 text-center"
+          style={{ background: p.card, border: `1px solid ${p.line}` }}
+        >
+          <p className={`${serifClass} text-lg font-medium`} style={{ color: p.ink }}>
+            Rien d’essentiel à signaler aujourd’hui
+          </p>
+          <p className="mt-1 text-sm" style={{ color: p.ink2 }}>
+            Nous préférons une sélection courte et utile plutôt qu’un fil rempli pour rien.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <FamilyFitProvider>
       <div className="flex flex-col min-h-screen overflow-x-hidden" style={{ background: p.bg, color: p.ink }}>
@@ -106,68 +137,41 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                   </p>
                 </div>
 
-                {/* Personalized heart — one request, then instant family/member
-                    tabs. This leads the page; generic editorial news comes after
-                    the useful, household-specific choices. */}
+                {/* Personalized picks lead the page; the curated news slots in
+                    right under them, and the "à venir" rail follows the news. */}
                 {data.hasFamily ? (
                   <div className="flex flex-col gap-8">
                     {data.profileNudges.length > 0 && <CoinFamilleProfileNudge members={data.profileNudges} />}
                     <DeferUntilVisible minHeight={300}>
                       <CoinFamillePicksRail serifClass={serifClass} />
                     </DeferUntilVisible>
+                    {newsSection}
                     <DeferUntilVisible minHeight={300}>
                       <CoinFamilleUpcomingRail serifClass={serifClass} timeState={data.timeState} />
                     </DeferUntilVisible>
                   </div>
                 ) : (
-                  <div className="rounded-2xl p-6" style={{ background: p.card, border: `1px solid ${p.line}` }}>
-                    <h3 className={`${serifClass} text-xl font-medium`} style={{ color: p.ink }}>
-                      Des suggestions sur-mesure pour votre foyer
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed" style={{ color: p.ink2 }}>
-                      Créez un profil famille (âges, goûts, sensibilités) pour voir ici les films, séries et
-                      jeux qui correspondent vraiment à chaque membre — et les sorties à venir faites pour vous.
-                    </p>
-                    <Link
-                      href="/profil"
-                      className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
-                      style={{ background: p.ink, color: p.bg }}
-                    >
-                      Créer mon profil famille
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
+                  <div className="flex flex-col gap-8">
+                    <div className="rounded-2xl p-6" style={{ background: p.card, border: `1px solid ${p.line}` }}>
+                      <h3 className={`${serifClass} text-xl font-medium`} style={{ color: p.ink }}>
+                        Des suggestions sur-mesure pour votre foyer
+                      </h3>
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: p.ink2 }}>
+                        Créez un profil famille (âges, goûts, sensibilités) pour voir ici les films, séries et
+                        jeux qui correspondent vraiment à chaque membre — et les sorties à venir faites pour vous.
+                      </p>
+                      <Link
+                        href="/profil"
+                        className="mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-90"
+                        style={{ background: p.ink, color: p.bg }}
+                      >
+                        Créer mon profil famille
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                    {newsSection}
                   </div>
                 )}
-
-                {/* Curated news — useful context, deliberately secondary to the
-                    personalized media choices. */}
-                <div>
-                  <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.ink2 }}>
-                    L&apos;essentiel pour les parents
-                  </div>
-                  {data.news.length > 0 ? (
-                    // items-start: without it, expanding ONE card's takeaway
-                    // stretched every card in the row (default grid stretch),
-                    // which read as "all the news expanded at once".
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 items-start">
-                      {data.news.slice(0, 6).map((story) => (
-                        <CoinFamilleNewsCard key={story.slug} story={story} serifClass={serifClass} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div
-                      className="rounded-2xl px-5 py-6 text-center"
-                      style={{ background: p.card, border: `1px solid ${p.line}` }}
-                    >
-                      <p className={`${serifClass} text-lg font-medium`} style={{ color: p.ink }}>
-                        Rien d’essentiel à signaler aujourd’hui
-                      </p>
-                      <p className="mt-1 text-sm" style={{ color: p.ink2 }}>
-                        Nous préférons une sélection courte et utile plutôt qu’un fil rempli pour rien.
-                      </p>
-                    </div>
-                  )}
-                </div>
 
                 {/* Onward journey — the audit showed the page dead-ending
                     after the news; give the daily visit a next step. */}

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { RefreshCw, Users } from "lucide-react"
-import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
+import { type RedesignCardMedia } from "./RedesignCard"
 import { CoinFamilleHeroPick } from "./CoinFamilleHeroPick"
 import { CoinFamilleClassicCard } from "./CoinFamilleClassicCard"
+import { CoinFamillePickCard, type PickMedia } from "./CoinFamillePickCard"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { totemVoiceLine, type FitReason } from "@/lib/totem-voice"
@@ -17,7 +18,7 @@ interface RawItem {
   posterUrl: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
-  // Truthful fit reason from the API; phrased into one sentence for the hero.
+  // Truthful fit reason from the API; phrased into a sentence for the cards.
   reason?: FitReason
 }
 
@@ -40,12 +41,14 @@ interface PicksResponse {
   classic?: RawItem | null
 }
 
+const GRID_COUNT = 10
+
 function toCardType(t: unknown): RedesignCardMedia["type"] {
   return t === "MOVIE" || t === "TV" || t === "GAME" ? t : "MOVIE"
 }
 
-function toCards(items: RawItem[]): RedesignCardMedia[] {
-  return items.map((item) => ({
+function toHeroCard(item: RawItem): RedesignCardMedia {
+  return {
     id: item.id,
     type: toCardType(item.type),
     title: item.title,
@@ -53,27 +56,41 @@ function toCards(items: RawItem[]): RedesignCardMedia[] {
     expertAgeRec: item.expertAgeRec ?? null,
     genres: item.genres ?? [],
     contentMetrics: null,
-    // Cards don't show the ribbon (it truncated on small tiles); the hero
-    // carries the reason as a full sentence instead.
     cornerLabel: null,
-  }))
+  }
 }
 
-function visibleWindow(items: RedesignCardMedia[], offset: number, count = 4): RedesignCardMedia[] {
-  if (items.length <= count) return items
-  return Array.from({ length: count }, (_, index) => items[(offset + 1 + index) % items.length])
+function toPickMedia(item: RawItem): PickMedia {
+  return {
+    id: item.id,
+    type: toCardType(item.type),
+    title: item.title,
+    posterUrl: item.posterUrl,
+    expertAgeRec: item.expertAgeRec ?? null,
+  }
+}
+
+/** The grid, always excluding the hero (shown at index `offset`), up to `count`. */
+function gridWindow(items: RawItem[], offset: number, count: number): RawItem[] {
+  if (items.length <= 1) return []
+  const heroIdx = offset % items.length
+  const rest = [...items.slice(heroIdx + 1), ...items.slice(0, heroIdx)]
+  return rest.slice(0, count)
 }
 
 /**
- * The personalized heart of Le Coin Famille: one network request, one focused
- * rail, then family/member tabs. The server returns twelve daily-rotated picks
- * per audience; "D'autres idées" changes the window without another DB pass.
+ * The personalized heart of Le Coin Famille: one network request, family/member
+ * tabs, a spotlight + a dense grid of picks. Each card carries an expandable
+ * Totem note and quick actions (favori / à voir / déjà vu). "Déjà vu" drops the
+ * title from the view (and records it as watched on a member tab), so the grid
+ * keeps refreshing; "D'autres idées" swaps the whole window.
  */
 export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
   const p = APERCU_PALETTE
   const [response, setResponse] = useState<PicksResponse | null>(null)
   const [activeTab, setActiveTab] = useState("family")
   const [offset, setOffset] = useState(0)
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -95,30 +112,28 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
     }
   }, [])
 
-  const familyCards = useMemo(
-    () => toCards(response?.familyItems ?? []),
-    [response?.familyItems],
+  const memberSections = response?.memberSections ?? []
+  const activeMember = memberSections.find((member) => member.id === activeTab) ?? null
+
+  const activeRaw = useMemo<RawItem[]>(() => {
+    if (activeTab === "family") return response?.familyItems ?? []
+    return response?.memberSections.find((section) => section.id === activeTab)?.items ?? []
+  }, [activeTab, response])
+
+  // "Déjà vu" hides a title everywhere in this session (keyed by media id).
+  const availableRaw = useMemo(
+    () => activeRaw.filter((item) => !dismissed.has(item.id)),
+    [activeRaw, dismissed],
   )
-  const memberTabs = useMemo(
-    () =>
-      (response?.memberSections ?? []).map((section) => ({
-        ...section,
-        cards: toCards(section.items),
-      })),
-    [response?.memberSections],
-  )
-  const activeMember = memberTabs.find((member) => member.id === activeTab)
-  const activeItems = activeMember?.cards ?? familyCards
-  // Raw items stay in the same order as the cards, so the hero's reason is the
-  // reason at the same index — no re-lookup by id needed.
-  const activeRaw = activeMember?.items ?? response?.familyItems ?? []
-  const hero = activeItems.length > 0 ? activeItems[offset % activeItems.length] : null
-  const heroReason = activeRaw.length > 0 ? activeRaw[offset % activeRaw.length]?.reason : undefined
-  const shown = visibleWindow(activeItems, offset)
+
+  const heroRaw = availableRaw.length > 0 ? availableRaw[offset % availableRaw.length] : null
+  const heroCard = heroRaw ? toHeroCard(heroRaw) : null
+  const heroReason = heroRaw?.reason
+  const gridItems = gridWindow(availableRaw, offset, GRID_COUNT)
 
   // "Le classique à redécouvrir" — one family-level pick, constant across tabs.
   const classicRaw = response?.classic ?? null
-  const classicCard = useMemo(() => (classicRaw ? toCards([classicRaw])[0] : null), [classicRaw])
+  const classicCard = useMemo(() => (classicRaw ? toHeroCard(classicRaw) : null), [classicRaw])
   const classicReason = classicRaw?.reason ? totemVoiceLine(classicRaw.reason) : undefined
 
   const changeTab = (id: string) => {
@@ -126,11 +141,18 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
     setOffset(0)
   }
 
+  const handleSeen = (id: string) => {
+    setDismissed((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
+
   const rotate = () => {
-    // Advance past the hero + the 4 visible cards so "D'autres idées" swaps the
-    // WHOLE selection — a +1 shift kept 3 of 4 cards identical, which read as
-    // a broken button in the audit.
-    setOffset((current) => (activeItems.length ? (current + 5) % activeItems.length : 0))
+    // Advance past the hero + the whole grid so "D'autres idées" swaps the full
+    // selection rather than shuffling one card.
+    setOffset((current) => (availableRaw.length ? (current + GRID_COUNT + 1) % availableRaw.length : 0))
   }
 
   return (
@@ -138,9 +160,6 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
       className="overflow-hidden rounded-3xl p-4 sm:p-6"
       style={{ background: p.card, border: `1px solid ${p.line}` }}
     >
-      {/* Distinct from the page H1 (which already carries the time-aware
-          "Pour les vacances en famille" heading) — repeating it here read as
-          a copy/paste bug in the Playwright audit. */}
       <div className="min-w-0">
         <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: p.accent }}>
           {activeMember ? "Rien que pour" : "Choisi pour votre foyer"}
@@ -168,7 +187,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
         <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
           {activeMember
             ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
-            : "Un coup de cœur et une courte sélection, adaptés aux âges et aux goûts de chacun."}
+            : "Un coup de cœur et une sélection, adaptés aux âges et aux goûts de chacun. Un cœur pour garder, « à voir » pour plus tard, « déjà vu » pour en proposer d’autres."}
         </p>
       </div>
 
@@ -188,7 +207,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
           <Users className="h-3.5 w-3.5" />
           Toute la famille
         </button>
-        {memberTabs.map((member) => (
+        {memberSections.map((member) => (
           <button
             key={member.id}
             type="button"
@@ -215,30 +234,32 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
         ))}
       </div>
 
-      {!loading && hero && (
+      {!loading && heroCard && (
         <CoinFamilleHeroPick
-          media={hero}
+          media={heroCard}
           serifClass={serifClass}
           badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
           voiceLine={heroReason ? totemVoiceLine(heroReason) : undefined}
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-[2/3] animate-pulse rounded-[14px]" style={{ background: p.placeholder }} />
+          ? Array.from({ length: GRID_COUNT }).map((_, i) => (
+              <div key={i} className="aspect-[2/3] animate-pulse rounded-xl" style={{ background: p.placeholder }} />
             ))
-          : shown.map((media) => (
-              // cornerLabel stripped: the fit-reason ribbon truncated ("Bon
-              // choix pour tout le foy…") and hid the artwork on small cards —
-              // the hero shows the reason as text instead. Default meter
-              // variant = the V2 per-member fit display (not the old hearts).
-              <RedesignCard key={`${activeTab}-${media.id}`} media={{ ...media, cornerLabel: null }} totem="compact" showType />
+          : gridItems.map((item) => (
+              <CoinFamillePickCard
+                key={`${activeTab}-${item.id}`}
+                media={toPickMedia(item)}
+                comment={item.reason ? totemVoiceLine(item.reason) : undefined}
+                memberId={activeMember?.id ?? null}
+                onSeen={handleSeen}
+              />
             ))}
       </div>
 
-      {!loading && shown.length === 0 && !hero && (
+      {!loading && gridItems.length === 0 && !heroCard && (
         <div className="mt-4 rounded-2xl px-4 py-5 text-center" style={{ background: p.bg2, color: p.ink2 }}>
           <p className="text-sm font-semibold" style={{ color: p.ink }}>
             On affine encore cette sélection
@@ -249,7 +270,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
         </div>
       )}
 
-      {!loading && activeItems.length > 1 && (
+      {!loading && availableRaw.length > 1 && (
         <div className="mt-4 flex justify-end">
           <button
             type="button"
