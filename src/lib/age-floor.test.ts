@@ -93,7 +93,7 @@ describe("floorExpertAgeBySignals", () => {
     ).toBe(7)
   })
 
-  it("leaves a game without a PEGI rating unchanged", () => {
+  it("floors a game with no PEGI rating using the axis floor (2026-07-11 fix: PEGI coverage is frequently missing for indie titles, and a missing rating used to mean NO floor applied at all)", () => {
     expect(
       floorExpertAgeBySignals({
         expertAgeRec: 7,
@@ -101,7 +101,66 @@ describe("floorExpertAgeBySignals", () => {
         metrics: { violence: 5 },
         officialRating: null,
       }),
+    ).toBe(14)
+  })
+
+  it("leaves a genuinely mild game with no PEGI rating unchanged", () => {
+    expect(
+      floorExpertAgeBySignals({
+        expertAgeRec: 7,
+        type: "GAME",
+        metrics: { violence: 0, sexNudity: 0, language: 0, substanceUse: 0 },
+        officialRating: null,
+      }),
     ).toBe(7)
+  })
+
+  it("floors an under-rated indie horror game with no PEGI data (the real case: 'No, I'm Not A Human', reported 2026-07-11)", () => {
+    expect(
+      floorExpertAgeBySignals({
+        expertAgeRec: 12,
+        type: "GAME",
+        officialRating: null,
+        metrics: { violence: 2, sexNudity: 0, language: 1, substanceUse: 0 },
+        genres: ["Simulation", "Indé"],
+        topics: ["Vue FPS", "3D", "Solo", "Horreur", "Atmosphérique"],
+      }),
+    ).toBe(14)
+  })
+
+  it("floors a horror film/TV title even with low content axes (fright intensity has no dedicated axis)", () => {
+    expect(
+      floorExpertAgeBySignals({
+        expertAgeRec: 10,
+        type: "MOVIE",
+        metrics: { violence: 1, sexNudity: 0, language: 0, substanceUse: 0 },
+        topics: ["Horreur", "Mystère"],
+      }),
+    ).toBe(14)
+  })
+
+  it("does not float a kid-friendly Halloween title into the horror floor (broader scary-adjacent tags stay soft-only)", () => {
+    expect(
+      floorExpertAgeBySignals({
+        expertAgeRec: 8,
+        type: "MOVIE",
+        metrics: { violence: 1, sexNudity: 0, language: 0, substanceUse: 0 },
+        genres: ["Comédie", "Famille"],
+        topics: ["Halloween"],
+      }),
+    ).toBe(8)
+  })
+
+  it("does NOT override an existing PEGI rating with the horror floor (regression guard: Luigi's Mansion 3 is PEGI 7 despite a 'Horreur' tag from its haunted-mansion setting)", () => {
+    expect(
+      floorExpertAgeBySignals({
+        expertAgeRec: 8,
+        type: "GAME",
+        officialRating: "PEGI_7",
+        metrics: { violence: 1, sexNudity: 0, language: 0, substanceUse: 0 },
+        topics: ["Horreur", "Aventure"],
+      }),
+    ).toBe(8)
   })
 
   it("ignores CSA ratings for films (only PEGI is a floor input)", () => {

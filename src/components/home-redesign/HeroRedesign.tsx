@@ -113,7 +113,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Un titre, un thème…"
+                placeholder="Un titre…"
                 className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
                 style={{ color: "var(--ink)" }}
               />
