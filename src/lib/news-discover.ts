@@ -1187,14 +1187,15 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
     // page's. Demote to PENDING_REVIEW so a human can decide whether
     // to publish (parental-warning angle) or archive (pure
     // promotion). Catches Kill Bill, Mortal Kombat, Saw, etc.
+    // A match with a NULL age is also demoted: we can't confirm it's
+    // kid-appropriate, so it shouldn't auto-publish to the family feed.
     const primary = primaryMediaId ? findInCatalog(catalogIndex, primaryMediaId) : undefined
     const isAdultMatch =
-      primary?.expertAgeRec !== null &&
-      primary?.expertAgeRec !== undefined &&
-      primary.expertAgeRec >= ADULT_CONTENT_AGE_FLOOR
+      primary !== undefined &&
+      (primary.expertAgeRec == null || primary.expertAgeRec >= ADULT_CONTENT_AGE_FLOOR)
     if (isAdultMatch) {
       console.warn(
-        `[news-discover] demoted to PENDING_REVIEW (adult catalog match age=${primary?.expertAgeRec}): "${s.title.slice(0, 80)}"`,
+        `[news-discover] demoted to PENDING_REVIEW (catalog match age=${primary?.expertAgeRec ?? "null"}): "${s.title.slice(0, 80)}"`,
       )
     }
 

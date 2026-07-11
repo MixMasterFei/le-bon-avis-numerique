@@ -133,6 +133,8 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
     ratingAllZero,
     ratingLowConfidence,
     ratingDocViolent,
+    ratingMetricsMismatch,
+    ratingBelowFloor,
   ] = await Promise.all([
     // ≤8 curated but a sensibility axis still ≥3 — the display anchor + backfill
     // should keep this at 0; if not, something re-inflated young titles.
@@ -174,6 +176,28 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
       where: {
         isEnriched: true, genres: { hasSome: ["Documentaire", "Documentary"] },
         contentMetrics: { is: { violence: { gte: 4 } } },
+      },
+    }).catch(() => 0),
+    // Rating/metrics mismatch: an official 16/18 classification but implausibly
+    // low content metrics (violence AND sexNudity ≤2). Almost always a WRONG
+    // officialRating in the source data (e.g. a children's cartoon tagged
+    // CSA_16), which dents fiche credibility. NOT auto-fixed — auto-clamping
+    // would encode the bad rating into the metrics; a human should recheck.
+    prisma.mediaItem.count({
+      where: {
+        officialRating: { in: ["CSA_16", "CSA_18", "PEGI_16", "PEGI_18"] },
+        contentMetrics: { is: { violence: { lte: 2 }, sexNudity: { lte: 2 } } },
+      },
+    }).catch(() => 0),
+    // Below the deterministic age floor: horror-tagged titles still under 14.
+    // The weekly Saturday age-floor sweep drains this to ~0, so a non-zero
+    // value means drift crept in since the last run (a new import, a manual
+    // edit, a dedupe merge) — the exact class of the 2026-07-11 incident.
+    prisma.mediaItem.count({
+      where: {
+        isEnriched: true, type: SCOPED_NOT,
+        expertAgeRec: { not: null, lt: 14 },
+        topics: { hasSome: ["Horreur", "Horror"] },
       },
     }).catch(() => 0),
   ])
@@ -277,6 +301,8 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Vidéos enrichies tout à 0 (passe ratée probable) : ${ratingAllZero}`)
   L.push(`- Notations à faible confiance (< 0,6) : ${ratingLowConfidence}`)
   L.push(`- Documentaires notés très violents (à vérifier) : ${ratingDocViolent}`)
+  L.push(`- Classification 16/18 mais métriques faibles (rating source probablement erroné, à revérifier — PAS de correction auto) : ${ratingMetricsMismatch}`)
+  L.push(`- ⚠ Sous le plancher d'âge (titres « Horreur » encore < 14) — devrait être ~0, drainé chaque samedi : ${ratingBelowFloor}${ratingBelowFloor > 0 ? " ⚠️" : ""}`)
   L.push("")
 
   // ── Conformité aux attentes (oracle pur, sans DB) ──────────────────
@@ -354,6 +380,9 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   }
   if (ratingAllZero > 50) {
     agentTodo.push(`${ratingAllZero} vidéos enrichies ont toutes leurs métriques à 0 — passes ratées probables, à recalibrer (task=recalibrate-ratings).`)
+  }
+  if (ratingBelowFloor > 0) {
+    agentTodo.push(`SÉCURITÉ : ${ratingBelowFloor} titre(s) « Horreur » sous 14 ans — relancer le sweep age-floor (task=age-floor) et vérifier d'où vient la dérive (import/dedupe/édition manuelle).`)
   }
   if (agentTodo.length === 0) agentTodo.push("Rien à corriger côté code cette semaine.")
   for (const t of agentTodo) L.push(`- ${t}`)

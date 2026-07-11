@@ -15,7 +15,11 @@ function mapCNCDecision(decision: string | null): string | null {
   const d = decision.trim().toLowerCase()
 
   if (d === "tout public" || d === "tous publics") return "TOUS_PUBLICS"
-  if (d === "avertissement") return "TOUS_PUBLICS" // Warning but still all-audiences
+  // "Avertissement" = all-audiences BUT with an official content warning, so
+  // recording it as a clean TOUS_PUBLICS overstates how gentle it is. Return
+  // null (no official rating) and let the content-signal age floor decide,
+  // rather than anchoring the age to a lenient TP.
+  if (d === "avertissement") return null
 
   // -12 and old -13 system both map to CSA_12
   if (d.includes("-12") || d.includes("-13")) return "CSA_12"

@@ -344,7 +344,7 @@ export default function TarifsPage() {
             Prêt à faire les bons choix pour votre famille ?
           </h2>
           <p className="mb-6 max-w-xl mx-auto opacity-70">
-            Rejoignez des milliers de parents qui utilisent Totem Avisé.
+            Rejoignez les parents qui choisissent en confiance avec Totem Avisé.
           </p>
           <Link
             href="/inscription"

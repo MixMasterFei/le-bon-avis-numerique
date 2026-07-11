@@ -18,8 +18,11 @@ import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
  *   - "parent_only" → ok for parents/adults, not for kid-eyes
  *   - "unsuitable"  → drop entirely (horror, gore, weird, disturbing)
  *
- * Per-call timeout: 30s. Fail-open: any timeout/error → "parent_only"
- * so the cron never blocks on infra issues.
+ * Per-call timeout: 30s. Fail-CLOSED: any timeout / error / unparseable
+ * reply → "unsuitable" (the story is dropped, not shipped). An unmoderated
+ * story must never reach the family feed just because the moderator had an
+ * infra hiccup; the cron still completes (only that one story is skipped),
+ * and news is plentiful, so dropping one is cheap insurance.
  */
 
 export type Audience = "kid_safe" | "parent_only" | "unsuitable"
@@ -102,11 +105,11 @@ export async function moderateStory(c: CandidateForModeration): Promise<Moderati
   )
 
   if (text === null) {
-    // Timeout / network error — fail-open as parent_only.
-    return { audience: "parent_only", reason: "moderator timed out", visionUsed: false }
+    // Timeout / network error — fail CLOSED (drop), never ship unmoderated.
+    return { audience: "unsuitable", reason: "moderator timed out — failed closed", visionUsed: false }
   }
   const verdict = parseVerdict(text)
   if (verdict) return { ...verdict, visionUsed: false }
-  // Unparseable → fail-open.
-  return { audience: "parent_only", reason: "moderator response unparseable", visionUsed: false }
+  // Unparseable — fail CLOSED (drop).
+  return { audience: "unsuitable", reason: "moderator response unparseable — failed closed", visionUsed: false }
 }

@@ -292,8 +292,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             {post.author}
           </div>
           <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
-            Article rédigé par notre équipe éditoriale, à partir de sources officielles (Éducation nationale,
-            CNIL, e-Enfance, santé publique) et vérifié avant publication selon{" "}
+            Article rédigé à partir de sources officielles (Éducation nationale,
+            CNIL, e-Enfance, santé publique), selon{" "}
             <Link href="/notre-methode" className="underline" style={{ color: "var(--color-accent)" }}>
               notre méthode
             </Link>

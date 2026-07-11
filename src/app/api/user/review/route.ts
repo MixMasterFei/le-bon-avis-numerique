@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sanitizeInput } from "@/lib/security"
+
+// Don't publish (or display) a community age until enough parents have voted.
+// A single review used to set communityAgeRec outright — noisy and trivially
+// gameable. Below this count the field stays null and the UI shows nothing.
+const MIN_COMMUNITY_AGE_VOTES = 3
+
+// Recompute a title's community age from its reviews, applying the vote
+// threshold. Shared by POST (new/updated review) and DELETE (review removed).
+async function recomputeCommunityAge(mediaId: string) {
+  const reviews = await prisma.review.findMany({
+    where: { mediaId, ageSuggestion: { not: null } },
+    select: { ageSuggestion: true },
+  })
+  if (reviews.length >= MIN_COMMUNITY_AGE_VOTES) {
+    const avgAge = reviews.reduce((sum, r) => sum + (r.ageSuggestion || 0), 0) / reviews.length
+    await prisma.mediaItem.update({ where: { id: mediaId }, data: { communityAgeRec: avgAge } })
+  } else {
+    await prisma.mediaItem.update({ where: { id: mediaId }, data: { communityAgeRec: null } })
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +40,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate + bound all user-supplied values before they touch the DB.
+    const cleanRating = Math.min(5, Math.max(1, Math.round(Number(rating) || 0)))
+    const cleanAge =
+      typeof ageSuggestion === "number" && Number.isFinite(ageSuggestion)
+        ? Math.min(18, Math.max(0, Math.round(ageSuggestion)))
+        : null
+    const cleanComment =
+      typeof comment === "string" && comment.trim().length > 0 ? sanitizeInput(comment) : null
+
     // Check if user already reviewed this media
     const existingReview = await prisma.review.findFirst({
       where: {
@@ -33,12 +63,13 @@ export async function POST(request: NextRequest) {
         where: { id: existingReview.id },
         data: {
           role,
-          rating,
-          ageSuggestion,
-          comment,
+          rating: cleanRating,
+          ageSuggestion: cleanAge,
+          comment: cleanComment,
           familyMemberId: familyMemberId || null,
         },
       })
+      await recomputeCommunityAge(mediaId)
       return NextResponse.json({ success: true, review: updated, updated: true })
     }
 
@@ -48,26 +79,14 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         mediaId,
         role,
-        rating,
-        ageSuggestion,
-        comment,
+        rating: cleanRating,
+        ageSuggestion: cleanAge,
+        comment: cleanComment,
         familyMemberId: familyMemberId || null,
       },
     })
 
-    // Update community age recommendation
-    const reviews = await prisma.review.findMany({
-      where: { mediaId, ageSuggestion: { not: null } },
-      select: { ageSuggestion: true },
-    })
-
-    if (reviews.length > 0) {
-      const avgAge = reviews.reduce((sum, r) => sum + (r.ageSuggestion || 0), 0) / reviews.length
-      await prisma.mediaItem.update({
-        where: { id: mediaId },
-        data: { communityAgeRec: avgAge },
-      })
-    }
+    await recomputeCommunityAge(mediaId)
 
     return NextResponse.json({ success: true, review })
   } catch (error) {
@@ -135,11 +154,15 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Update the review with editedAt timestamp
+    // Update the review with editedAt timestamp (sanitize the edited comment).
+    const cleanComment =
+      typeof comment === "string" && comment.trim().length > 0
+        ? sanitizeInput(comment)
+        : review.comment
     const updated = await prisma.review.update({
       where: { id: reviewId },
       data: {
-        comment: comment?.trim() || review.comment,
+        comment: cleanComment,
         editedAt: new Date(),
       },
     })
@@ -195,26 +218,8 @@ export async function DELETE(request: NextRequest) {
       where: { id: reviewId },
     })
 
-    // Recalculate community age recommendation
-    const remainingReviews = await prisma.review.findMany({
-      where: { mediaId: review.mediaId, ageSuggestion: { not: null } },
-      select: { ageSuggestion: true },
-    })
-
-    if (remainingReviews.length > 0) {
-      const avgAge =
-        remainingReviews.reduce((sum, r) => sum + (r.ageSuggestion || 0), 0) /
-        remainingReviews.length
-      await prisma.mediaItem.update({
-        where: { id: review.mediaId },
-        data: { communityAgeRec: avgAge },
-      })
-    } else {
-      await prisma.mediaItem.update({
-        where: { id: review.mediaId },
-        data: { communityAgeRec: null },
-      })
-    }
+    // Recalculate community age recommendation (applies the vote threshold).
+    await recomputeCommunityAge(review.mediaId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

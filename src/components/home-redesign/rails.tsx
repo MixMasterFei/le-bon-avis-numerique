@@ -367,7 +367,7 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
       id="coups-de-coeur"
       eyebrow="Coups de cœur"
       title={<>Nos <Em tone="pine">coups de cœur</Em> du moment</>}
-      lead="Sélectionnés à la main par l'équipe. Des valeurs sûres, vues et analysées."
+      lead="Des valeurs sûres pour la famille, avec un âge conseillé et une analyse du contenu."
       onReload={() => setSeed(Math.floor(Math.random() * 1_000_000))}
       items={items}
       loading={loading}
