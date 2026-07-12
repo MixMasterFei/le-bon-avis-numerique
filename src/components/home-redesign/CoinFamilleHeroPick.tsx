@@ -7,7 +7,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { FamilyFitMeter } from "./FamilyFitMeter"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { toMediaRouteId } from "@/lib/media-route"
-import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { tmdbPosterAtSize, tmdbPosterSizeForWidth } from "@/lib/tmdb-image"
 import { genreLabelFr, genreBadgeColor } from "@/components/home-v2/apercuTheme"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import type { RedesignCardMedia } from "./RedesignCard"
@@ -25,11 +25,14 @@ const TYPE_LABELS: Record<RedesignCardMedia["type"], string> = {
  */
 export function CoinFamilleHeroPick({
   media,
+  backdropUrl,
   serifClass,
   badge,
   voiceLine,
 }: {
   media: RedesignCardMedia
+  /** Landscape still — a second visual for the daily spotlight. */
+  backdropUrl?: string | null
   serifClass: string
   badge: string
   voiceLine?: string
@@ -48,6 +51,23 @@ export function CoinFamilleHeroPick({
       className="group mb-5 block overflow-hidden rounded-2xl transition-transform duration-200 hover:-translate-y-0.5"
       style={{ background: p.bg2, border: `1px solid ${p.line}` }}
     >
+      {backdropUrl && (
+        // Full-width landscape still above the poster+text row: gives the
+        // daily spotlight a second image of the title (owner feedback).
+        <div className="relative aspect-[16/6] w-full overflow-hidden">
+          <SafeImage
+            src={tmdbPosterAtSize(backdropUrl, tmdbPosterSizeForWidth(700))}
+            alt=""
+            fill
+            className="object-cover object-center transition-transform duration-300 group-hover:scale-[1.03]"
+            sizes="(max-width: 768px) 100vw, 700px"
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.28))" }}
+          />
+        </div>
+      )}
       <div className="grid grid-cols-[112px_1fr] gap-0 sm:grid-cols-[148px_1fr]">
         <div className="relative aspect-[2/3] overflow-hidden sm:aspect-auto sm:min-h-[220px]">
           {media.posterUrl && (

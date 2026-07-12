@@ -403,19 +403,22 @@ export const COLLECTIONS: CollectionDef[] = [
     limit: 10,
     category: "top",
     lastUpdated: "2026-07",
-    // July 2026 research pass: Astro Bot (2024 GOTY, replaces its own demo
-    // Astro's Playroom) and Donkey Kong Bananza (2025) keep the list current.
+    // July 2026 curation fix (owner feedback: "certains jeux sont solo"): a
+    // "jouer EN FAMILLE" list must be genuinely playable together. Dropped
+    // Astro Bot (single-player only) and Super Mario Odyssey (its 2P mode is a
+    // minimal Cappy-assist — reads as solo to parents). Every title below has
+    // real local co-op or shared/party play. Donkey Kong Bananza (2025) keeps
+    // the list fresh. Party games on ONE screen stay in the canapé list (kept
+    // disjoint on purpose — see header).
     curatedIds: [
-      "a29de2ac-8207-4b26-bae1-34d64b06295a", // Mario Kart 8 Deluxe (3 ans)
-      "32f9a756-2476-4b6b-9a7b-d13400662c07", // Astro Bot (7 ans, 2024)
-      "ad27f7ab-b6e3-4ede-b561-bde80d1fef62", // Minecraft (8 ans)
-      "01f7bc58-97ea-432e-bdc6-614f7ae37393", // Super Mario Odyssey (7 ans)
-      "6639da5a-806b-4429-a137-395c9128bf70", // Donkey Kong Bananza (7 ans, 2025)
-      "c895fdb5-0e23-4366-b36e-3ba26ae78cc4", // Animal Crossing: New Horizons (7 ans)
-      "b45b6852-0cf0-4c46-80cb-23f44ad3eeac", // Kirby and the Forgotten Land (6 ans)
-      "748eb49a-97d9-4331-8d83-84c58f2f9821", // Nintendo Switch Sports (6 ans)
-      "3fa9a840-2cf6-47bd-ba7f-de0b4e1513db", // Rayman Legends (7 ans)
-      "409c0b44-a466-44d5-9ba3-e7dd0e4ef48e", // LEGO Star Wars: The Skywalker Saga (8 ans)
+      "a29de2ac-8207-4b26-bae1-34d64b06295a", // Mario Kart 8 Deluxe (3 ans) — jusqu'à 4 en local
+      "ad27f7ab-b6e3-4ede-b561-bde80d1fef62", // Minecraft (8 ans) — coop écran partagé
+      "6639da5a-806b-4429-a137-395c9128bf70", // Donkey Kong Bananza (7 ans, 2025) — coop 2 joueurs
+      "c895fdb5-0e23-4366-b36e-3ba26ae78cc4", // Animal Crossing: New Horizons (7 ans) — île partagée
+      "b45b6852-0cf0-4c46-80cb-23f44ad3eeac", // Kirby and the Forgotten Land (6 ans) — coop 2 joueurs
+      "748eb49a-97d9-4331-8d83-84c58f2f9821", // Nintendo Switch Sports (6 ans) — multijoueur
+      "3fa9a840-2cf6-47bd-ba7f-de0b4e1513db", // Rayman Legends (7 ans) — coop jusqu'à 4
+      "409c0b44-a466-44d5-9ba3-e7dd0e4ef48e", // LEGO Star Wars: The Skywalker Saga (8 ans) — coop 2 joueurs
     ],
   },
   {

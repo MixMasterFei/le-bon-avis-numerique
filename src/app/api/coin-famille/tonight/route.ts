@@ -112,6 +112,9 @@ function toItem(item: SmartFilterResultItem, reason: FitReason) {
     type: item.type,
     title: item.title,
     posterUrl: item.posterUrl,
+    // Landscape still for the hero "coup de cœur" — a second visual beyond
+    // the poster (owner feedback). Absent for most games; the hero degrades.
+    backdropUrl: item.backdropUrl,
     expertAgeRec: item.expertAgeRec,
     genres: item.genres,
     familyScore: item.familyScore,

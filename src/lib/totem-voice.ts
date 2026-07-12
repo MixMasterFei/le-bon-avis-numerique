@@ -30,15 +30,19 @@ export type FitReason =
   | { kind: "family-compromise" }
 
 /**
- * Trim a raw synopsis into a short, clean hook (≈ one sentence, ≤ 160 chars).
- * Returns null when there's nothing usable, so the caller falls back to the
- * short opener alone.
+ * Trim a raw synopsis into a short, clean hook (≈ one short clause, ≤ 90 chars).
+ * Kept deliberately terse — the Totem note should read as a punchy one-liner,
+ * not a paragraph (owner feedback: "plus succinct et direct"). Returns null
+ * when there's nothing usable, so the caller falls back to the opener alone.
  */
 export function synopsisHook(text: string | null | undefined): string | null {
   if (!text) return null
   const s = text.trim().replace(/\s+/g, " ")
   if (s.length < 25) return null
-  const MAX = 160
+  const MAX = 90
+  // Prefer the first full sentence when it already fits the short budget.
+  const firstStop = s.search(/[.!?](\s|$)/)
+  if (firstStop >= 25 && firstStop + 1 <= MAX) return s.slice(0, firstStop + 1).trim()
   if (s.length <= MAX) return s
   const window = s.slice(0, MAX)
   const lastStop = Math.max(
@@ -46,21 +50,27 @@ export function synopsisHook(text: string | null | undefined): string | null {
     window.lastIndexOf("! "),
     window.lastIndexOf("? "),
   )
-  if (lastStop > 70) return window.slice(0, lastStop + 1).trim()
+  if (lastStop > 45) return window.slice(0, lastStop + 1).trim()
   const lastSpace = window.lastIndexOf(" ")
-  const base = lastSpace > 70 ? window.slice(0, lastSpace) : window
+  const base = lastSpace > 45 ? window.slice(0, lastSpace) : window
   return base.replace(/[,;:]$/, "").trim() + "…"
+}
+
+/** "de X" → "d'X" before a vowel/h (fan de aventure → fan d'aventure). */
+function deOf(word: string): string {
+  const w = word.toLowerCase()
+  return /^[aeéèêiouyh]/.test(w) ? `d'${w}` : `de ${w}`
 }
 
 /** The "who it's for" opener, with no trailing punctuation. */
 function opener(reason: FitReason): string {
   switch (reason.kind) {
     case "member-genre":
-      return `Pour ${reason.name}, qui aime les contenus ${reason.genre.toLowerCase()}`
+      return `Pour ${reason.name}, fan ${deOf(reason.genre)}`
     case "member-strong":
-      return `Un très bon choix pour ${reason.name}`
+      return `Parfait pour ${reason.name}`
     case "member-chosen":
-      return `Pour ${reason.name}, d'après son âge et ses goûts`
+      return `Bien vu pour ${reason.name}`
     case "family-all":
       return "Pour toute la famille"
     case "family-one":
@@ -68,7 +78,7 @@ function opener(reason: FitReason): string {
     case "family-some":
       return `Pour ${reason.names.slice(0, 2).join(" et ")}`
     case "family-compromise":
-      return "Pour se retrouver tous ensemble"
+      return "Le bon compromis"
   }
 }
 

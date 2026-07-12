@@ -35,7 +35,9 @@ export function CoinFamilleNewsCard({
     if (story.fallbackImageUrl && src !== story.fallbackImageUrl) setSrc(story.fallbackImageUrl)
     else setImageBroken(true)
   }
-  const showImage = !imageBroken && !isBlockedHotlinkImageUrl(src)
+  // Empty src = the story has no real publisher photo; show the neutral
+  // category placeholder rather than fabricating a house card.
+  const showImage = Boolean(src) && !imageBroken && !isBlockedHotlinkImageUrl(src)
   const panelId = `cf-news-${story.slug}`
 
   return (
@@ -69,7 +71,23 @@ export function CoinFamilleNewsCard({
         >
           {NEWS_CATEGORY_LABEL[story.category]}
         </div>
-        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
+        {/* Credit sits bottom-LEFT so the always-visible "read the source"
+            link can own the bottom-right corner of the photo. */}
+        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} position="bottom-left" />
+        {story.articleUrl && (
+          <a
+            href={story.articleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Lire l'article original"
+            title="Lire l'article original"
+            className="absolute bottom-1.5 right-1.5 z-10 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold leading-none transition-opacity hover:opacity-90"
+            style={{ background: p.ink, color: p.bg }}
+          >
+            Lire l&apos;article
+            <ExternalLink className="h-2.5 w-2.5" />
+          </a>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
@@ -133,20 +151,7 @@ export function CoinFamilleNewsCard({
               </div>
             )}
           </div>
-        ) : (
-          story.articleUrl && (
-            <a
-              href={story.articleUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11.5px] font-semibold transition-opacity hover:opacity-70"
-              style={{ color: p.accent }}
-            >
-              Lire l&apos;article
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          )
-        )}
+        ) : null}
       </div>
     </article>
   )

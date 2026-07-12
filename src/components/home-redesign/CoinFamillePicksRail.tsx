@@ -16,6 +16,7 @@ interface RawItem {
   type?: string
   title: string
   posterUrl: string | null
+  backdropUrl?: string | null
   expertAgeRec?: number | null
   genres?: string[] | null
   // Truthful fit reason from the API; phrased into a sentence for the cards.
@@ -185,11 +186,14 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
             </>
           )}
         </h2>
-        <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
-          {activeMember
-            ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
-            : "Un coup de cœur et une sélection, adaptés aux âges et aux goûts de chacun. Un cœur pour garder, « à voir » pour plus tard, « déjà vu » pour en proposer d’autres."}
-        </p>
+        {/* Member tabs keep a short personalized subtitle; the default
+            "toute la famille" view drops the concept explanation (owner
+            feedback: the how-it-works copy under the heading is redundant). */}
+        {activeMember && (
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
+            {`Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`}
+          </p>
+        )}
       </div>
 
       <div className="mt-5 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Sélection par membre">
@@ -238,6 +242,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
       {!loading && heroCard && (
         <CoinFamilleHeroPick
           media={heroCard}
+          backdropUrl={heroRaw?.backdropUrl ?? null}
           serifClass={serifClass}
           badge={activeMember ? `Notre coup de cœur pour ${activeMember.name}` : "Notre coup de cœur du jour"}
           voiceLine={heroReason ? totemVoiceLine(heroReason, heroRaw?.synopsis) : undefined}

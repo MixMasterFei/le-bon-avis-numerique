@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@prisma/client"
-import { fallbackCard } from "@/lib/news-image"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
@@ -33,8 +32,9 @@ export interface CoinFamilleNewsItem {
   headline: string
   /** AI-synthesized title — kept only as a fallback when no source headline. */
   title: string
+  /** Real publisher photo, or "" when the story has none (no fabricated card). */
   imageUrl: string
-  /** Branded category card to swap in if a hotlinked photo 403s on the client. */
+  /** Kept for API shape; always null now — no branded-card substitution. */
   fallbackImageUrl: string | null
   imageCredit: string | null
   imageLicenseUrl: string | null
@@ -95,9 +95,10 @@ function hasRealPhoto(row: NewsRow): boolean {
 }
 
 function rowToItem(row: NewsRow): CoinFamilleNewsItem {
-  // directSource image policy (like V4/V5): prefer the real publisher photo,
-  // branded category card only when there's none.
-  const fb = fallbackCard(row.category, row.title)
+  // Real publisher photo only. The Coin Famille never fabricates a branded
+  // "Totem" card in the photo slot — a stylized house card credited "Photo :
+  // Totem Avisé" read as a fake photo of the article (owner feedback). When
+  // there's no usable photo the card shows a neutral category placeholder.
   const hasPhoto = hasRealPhoto(row)
   const sources = toSources(row.sources)
   // Publisher headline only when the source is EXPLICITLY French — otherwise we
@@ -111,10 +112,10 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
     slug: row.slug,
     headline: frenchHeadline ?? row.title,
     title: row.title,
-    imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
-    fallbackImageUrl: fb.url,
-    imageCredit: hasPhoto ? row.imageCredit : fb.credit,
-    imageLicenseUrl: hasPhoto ? row.imageLicenseUrl : (fb.licenseUrl ?? null),
+    imageUrl: hasPhoto ? row.sourceImageUrl! : "",
+    fallbackImageUrl: null,
+    imageCredit: hasPhoto ? row.imageCredit : null,
+    imageLicenseUrl: hasPhoto ? row.imageLicenseUrl : null,
     category: row.category,
     publishedAt: row.publishedAt.toISOString(),
     sources,

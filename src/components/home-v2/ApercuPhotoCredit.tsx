@@ -12,13 +12,18 @@
 export interface PhotoCreditProps {
   credit: string | null | undefined
   licenseUrl?: string | null | undefined
+  /** Corner placement — defaults to bottom-right (unchanged for existing
+   *  callers). Pass "bottom-left" to free the bottom-right for another
+   *  affordance (e.g. an outbound article link). */
+  position?: "bottom-left" | "bottom-right"
 }
 
-export function ApercuPhotoCredit({ credit, licenseUrl }: PhotoCreditProps) {
+export function ApercuPhotoCredit({ credit, licenseUrl, position = "bottom-right" }: PhotoCreditProps) {
   if (!credit) return null
 
+  const corner = position === "bottom-left" ? "bottom-1.5 left-1.5" : "bottom-1.5 right-1.5"
   const baseClass =
-    "absolute bottom-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded text-[10px] leading-none font-medium tracking-tight max-w-[60%] truncate"
+    `absolute ${corner} z-10 px-1.5 py-0.5 rounded text-[10px] leading-none font-medium tracking-tight max-w-[60%] truncate`
   const baseStyle = {
     background: "rgba(0,0,0,0.55)",
     color: "rgba(255,255,255,0.92)",

@@ -29,6 +29,7 @@ export interface SmartFilterResultItem {
   originalTitle: string | null
   type: string
   posterUrl: string | null
+  backdropUrl: string | null
   releaseDate: Date | null
   synopsisFr: string | null
   officialRating: string | null
@@ -206,6 +207,7 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
       originalTitle: media.originalTitle,
       type: media.type,
       posterUrl: media.posterUrl,
+      backdropUrl: media.backdropUrl,
       releaseDate: media.releaseDate,
       synopsisFr: media.synopsisFr,
       officialRating: media.officialRating,
