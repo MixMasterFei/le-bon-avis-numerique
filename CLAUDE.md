@@ -131,6 +131,10 @@ You are a **senior full-stack developer and technical advisor** for this project
 | SQL migrations | `sql/*.sql` |
 | SEO robots | `src/app/robots.ts` |
 | SEO sitemap (dynamic) | `src/app/sitemap.ts` |
+| AI discovery (llms.txt) | `src/app/llms.txt/route.ts` |
+| Markdown layer for AI agents | `src/app/md/` + `src/lib/markdown/` (media-md, media-md-data, selection-md — single-source builders shared with fiche JSON-LD and MCP) |
+| MCP server (public, read-only) | `src/app/api/mcp/[transport]/route.ts` + `src/lib/mcp/totem-tools.ts` — streamable HTTP at `/api/mcp/mcp`; anonymous tools describe media only, per-child fit stays behind accounts |
+| AI bot/referrer telemetry | `src/lib/ai-bots.ts` + `src/app/api/track/ai-bot/route.ts` (fed by middleware; `scripts/check-ai-bots.ts` to inspect) |
 | Marketing playbook | `docs/marketing/claude_mkt.md` |
 | Launch checklist | `docs/marketing/launch-checklist.md` |
 | Market analysis | `docs/marketing/market-analysis.md` |

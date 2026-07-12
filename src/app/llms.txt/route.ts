@@ -62,6 +62,13 @@ Des versions Markdown propres des pages principales sont disponibles pour les ag
 - Jeux vidéo très demandés, par âge : ${baseUrl}/md/jeux/quel-age
 
 Le segment \`{routeId}\` suit le format \`<type>:<id>\` (deux-points URL-encodé en \`%3A\`). Exemples : \`movie:603\`, \`tv:1399\`, \`game:12345\`. Types valides : \`movie\`, \`tv\`, \`game\`, \`book\`, \`app\`, \`manga\`. Cette couche n'est pas indexée par les moteurs (\`X-Robots-Tag: noindex, follow\`) et n'apparaît pas dans le sitemap.
+
+## Serveur MCP (Model Context Protocol)
+Les assistants et agents compatibles MCP peuvent interroger le catalogue directement :
+
+- Endpoint (streamable HTTP) : ${baseUrl}/api/mcp/mcp
+- Outils : \`search_media\` (recherche par titre), \`get_age_verdict\` (verdict complet : âge conseillé, 8 dimensions, raisonnement), \`recommend_for_age\` (sélection par âge 3-16).
+- Lecture seule, sans authentification, réponses en français, mêmes contenus que la couche Markdown.
 `
 
   return new Response(body, {
