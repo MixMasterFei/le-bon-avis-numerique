@@ -80,6 +80,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     releaseStatus: (dbMedia as unknown as { releaseStatus?: string | null }).releaseStatus ?? null,
     updatedAt: dbMedia.updatedAt,
     topics: dbMedia.topics || [],
+    genres: dbMedia.genres || [],
     contentMetrics: metrics
       ? {
           violence: metrics.violence,

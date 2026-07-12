@@ -17,7 +17,9 @@ Cette couche expose des versions Markdown propres des pages principales de Totem
 
 - ${baseUrl}/md — cet index.
 - ${baseUrl}/md/notre-methode — méthode d'évaluation (comment lire nos repères).
-- ${baseUrl}/md/media/{routeId} — fiche média (films, séries, jeux vidéo, livres, applications).
+- ${baseUrl}/md/media/{routeId} — fiche média (films, séries, jeux vidéo, livres, applications) : âge conseillé, 8 dimensions de contenu, raisonnement de l'âge.
+- ${baseUrl}/md/selection/{type}/{âge} — sélection recommandée par âge. \`{type}\` ∈ \`films\`, \`series\`, \`jeux\` ; \`{âge}\` entier de 3 à 16. Ex. ${baseUrl}/md/selection/films/7 pour "un film pour un enfant de 7 ans".
+- ${baseUrl}/md/jeux/quel-age — les jeux vidéo les plus demandés par les enfants, avec âge conseillé et PEGI (Fortnite, Roblox, Minecraft…).
 
 ## Format des identifiants média
 

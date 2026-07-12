@@ -795,6 +795,30 @@ model AdminActivity {
   @@map("admin_activities")
 }
 
+// ============================================
+// AI BOT HITS (AI-crawler & AI-referral telemetry)
+// Day-aggregated: one row per (day, bot, kind, surface), count incremented.
+// Fed by src/middleware.ts → POST /api/track/ai-bot. Bots don't run JS, so
+// Plausible never sees them — this table is the only view on whether GPTBot /
+// ClaudeBot / PerplexityBot actually consume the /md layer and the fiches.
+// ============================================
+
+model AiBotHit {
+  id         String   @id @default(uuid())
+  day        DateTime @db.Date
+  bot        String // "GPTBot", "ClaudeBot", "PerplexityBot", "referral:chatgpt", ...
+  kind       String // "crawler" | "referral"
+  surface    String // "md-fiche" | "md" | "llms" | "fiche" | "games-hub" | ...
+  count      Int      @default(0)
+  samplePath String?  @map("sample_path") // last path seen (rotating example)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([day, bot, kind, surface])
+  @@index([day])
+  @@index([bot])
+  @@map("ai_bot_hits")
+}
+
 model CronLog {
   id        String   @id @default(uuid())
   task      String // "import", "enrich", "backfill-ratings", "quality", "streaming", "similarity"

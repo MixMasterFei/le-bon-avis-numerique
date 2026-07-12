@@ -1,14 +1,12 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 import { ArrowLeft, Gamepad2 } from "lucide-react"
-import { prisma } from "@/lib/prisma"
-import { withPrismaRetry } from "@/lib/prisma-retry"
 import { toMediaRouteId } from "@/lib/media-route"
 import { getOfficialRatingDisplay } from "@/lib/utils"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
-import { TOP_GAMES, type TopGameSeed } from "./topGames.data"
+import { fetchTopGameRows } from "./gamesAgeData"
 
 // The catalogue changes slowly relative to this page; a 1h ISR window keeps it
 // fresh as titles get enriched without hammering the DB on every hit.
@@ -39,95 +37,6 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     siteName: "Totem Avisé",
   },
-}
-
-type GameRow = {
-  seed: TopGameSeed
-  id: string
-  title: string
-  posterUrl: string | null
-  expertAgeRec: number | null
-  officialRating: string | null
-  contentMetrics: {
-    violence: number
-    sexNudity: number
-    language: number
-    consumerism: number
-    substanceUse: number
-    positiveMessages: number
-    roleModels: number
-  } | null
-}
-
-// Look each curated title up in the catalogue. Only enriched games with a
-// poster and an age recommendation qualify (the fiche they link to must be
-// worth landing on). A single OR query, then attribute each result to the
-// best-matching seed by title fragment — highest data quality wins.
-async function fetchTopGameRows(): Promise<GameRow[]> {
-  const orClauses = TOP_GAMES.flatMap((g) =>
-    g.aliases.map((a) => ({ title: { contains: a, mode: "insensitive" as const } })),
-  )
-
-  const matches = await withPrismaRetry(() =>
-    prisma.mediaItem.findMany({
-      where: {
-        type: "GAME",
-        isEnriched: true,
-        posterUrl: { not: null },
-        expertAgeRec: { not: null },
-        OR: orClauses,
-      },
-      select: {
-        id: true,
-        title: true,
-        posterUrl: true,
-        expertAgeRec: true,
-        officialRating: true,
-        dataQualityScore: true,
-        contentMetrics: {
-          select: {
-            violence: true,
-            sexNudity: true,
-            language: true,
-            consumerism: true,
-            substanceUse: true,
-            positiveMessages: true,
-            roleModels: true,
-          },
-        },
-      },
-      // A generous cap: at most a handful of games match each alias.
-      take: 300,
-    }),
-  )
-
-  const rows: GameRow[] = []
-  const usedIds = new Set<string>()
-
-  for (const seed of TOP_GAMES) {
-    const candidates = matches
-      .filter((m) => {
-        if (usedIds.has(m.id)) return false
-        const t = m.title.toLowerCase()
-        return seed.aliases.some((a) => t.includes(a))
-      })
-      .sort((a, b) => b.dataQualityScore - a.dataQualityScore)
-
-    const best = candidates[0]
-    if (!best) continue
-    usedIds.add(best.id)
-    rows.push({
-      seed,
-      id: best.id,
-      title: best.title,
-      posterUrl: best.posterUrl,
-      expertAgeRec: best.expertAgeRec,
-      officialRating: best.officialRating,
-      contentMetrics: best.contentMetrics,
-    })
-  }
-
-  return rows
 }
 
 export default async function GamesAgePillarPage() {
