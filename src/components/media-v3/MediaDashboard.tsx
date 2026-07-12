@@ -81,7 +81,7 @@ export function MediaDashboard({
     ? "Estimation · à confirmer après la sortie"
     : media.isProvisional
       ? "Âge provisoire · à confirmer"
-      : "Analyse automatisée · en calibrage"
+      : "Analyse automatisée · critères publiés"
 
   const isFilmOrTv = media.type === "MOVIE" || media.type === "TV"
   const listing = TYPE_LISTING[media.type] ?? "/recherche"

@@ -34,9 +34,10 @@ export const methodeSections: MethodeSection[] = [
     icon: "sparkles",
     title: "Comment on analyse — en toute honnêteté",
     content: [
-      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 8 dimensions.",
+      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 8 dimensions, fondées sur le développement de l'enfant.",
+      "C'est aussi ce qui fait la force de la méthode : la grille est publiée, et elle est appliquée à l'identique à chacun des 11 000+ titres du catalogue — une cohérence qu'aucune équipe de critiques ne peut garantir. Le principe a fait ses preuves ailleurs en Europe : aux Pays-Bas, la classification Kijkwijzer — dérivée automatiquement d'un questionnaire structuré — guide les parents depuis plus de 25 ans.",
       "Cette estimation n'est pas un verdict d'expert. C'est un point de départ, qui s'affine avec le temps grâce aux votes et réactions des foyers inscrits. Quand au moins 5 parents ont voté et que 70 % sont d'accord, un badge de consensus apparaît — vos retours remplacent progressivement l'analyse automatisée.",
-      "On ne promet pas une recommandation magique. On dit « en calibrage » parce que c'est ce qui se passe : vous aidez à régler le cadran, pas à valider un résultat figé.",
+      "On ne promet pas une recommandation magique. Une estimation reste une estimation : vous aidez à régler le cadran, pas à valider un résultat figé.",
     ],
     list: [
       { label: "Recommandation d'âge", desc: "Estimée automatiquement à partir du synopsis + classifications officielles. Ajustée par vos votes « j'approuve / je conteste »." },
@@ -44,7 +45,7 @@ export const methodeSections: MethodeSection[] = [
       { label: "Points clés pour les parents", desc: "Extraits automatiquement du contenu analysé. Indicatifs — à recouper avec la fiche complète et les avis." },
       { label: "Thèmes détectés", desc: "Les tags thématiques sont détectés automatiquement. Ils peuvent être affinés par les signalements de la communauté." },
     ],
-    after: "Pour chaque surface concernée, une petite pastille « Analyse automatisée · en calibrage » est visible sur les fiches. Elle vous rappelle la nature de l'estimation et vous invite à contribuer.",
+    after: "Pour chaque surface concernée, une petite pastille « Analyse automatisée · critères publiés » est visible sur les fiches. Elle vous rappelle la nature de l'estimation et vous invite à contribuer.",
   },
   {
     id: "recommandations-age",
@@ -53,7 +54,7 @@ export const methodeSections: MethodeSection[] = [
     content: [
       "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC/CSA). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
       "Deux choses font la fiabilité de cette recommandation. D'abord la cohérence : la même grille de lecture est appliquée à tout le catalogue, là où un avis isolé varie d'une personne, et d'une humeur, à l'autre. Ensuite la sécurité : des garde-fous automatiques garantissent qu'un contenu aux signaux sensibles marqués (violence réaliste, scènes explicites, thèmes durs…) ne puisse jamais recevoir un âge trop bas — même quand sa classification officielle est indulgente. La recommandation peut donc être plus prudente que le visa légal, jamais l'inverse par accident.",
-      "La recommandation initiale est générée par analyse automatisée (voir « Comment on analyse » ci-dessus). Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
+      "La recommandation initiale est générée par l'analyse automatisée décrite ci-dessus, selon des critères publiés fondés sur le développement de l'enfant. Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
       "Quand les données du CNC sont disponibles, on les affiche en complément. Sur chaque fiche, vous voyez les deux côte à côte : la classification officielle et notre recommandation.",
     ],
     after: "Sur chaque fiche, le bloc « Pourquoi cet âge ? » détaille en clair les éléments de contenu qui pèsent dans la recommandation — pour que vous ne preniez jamais notre estimation pour argent comptant, mais que vous puissiez juger sur pièces.",
