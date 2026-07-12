@@ -5,7 +5,7 @@ Version 1.0 — juillet 2026. Contact : Xavier — contact@totemavise.com.*
 
 **Objet.** Ce document donne tout ce qu'il faut pour concevoir l'identité de marque
 de Totem Avisé : l'histoire, le positionnement, la personnalité, les preuves, les
-interdits, et l'existant visuel. Le brand book attendu en sortie est listé en §12.
+interdits, et l'existant visuel. Le brand book attendu en sortie est listé en §13.
 
 ---
 
@@ -161,7 +161,7 @@ votre compagnon de choix.
 **Mots interdits :** interdit/autorisé (registre légal — nous ne sommes pas la loi) ·
 danger/toxique (registre panique) · « l'IA a décidé » (la machine propose avec ses
 garde-fous, les familles affinent, les parents décident) · tout superlatif
-invérifiable (voir §8).
+invérifiable (voir §9).
 
 **Registre :** vouvoiement, phrases courtes, français impeccable. L'humour est
 bienvenu quand il vise la situation des parents (la soirée qui déraille, le
@@ -169,7 +169,26 @@ bienvenu quand il vise la situation des parents (la soirée qui déraille, le
 
 ---
 
-## 7. Le nom et le symbole
+## 7. Architecture de marque — concevoir pour la maison « Totem »
+
+**Totem Avisé est le premier produit d'une marque ombrelle « Totem »** destinée à
+couvrir, à terme, plusieurs besoins des familles numériques. Sont déjà en
+exploration : **Totem Quest** (tâches et missions familiales gamifiées) ; d'autres
+suivront. Conséquences pour le brand book :
+
+- **Système masterbrand, pas logo isolé.** « Totem » porte l'identité (monogramme,
+  typographie, chaleur) ; chaque produit se distingue par son **descripteur**
+  (Avisé, Quest…) et éventuellement une couleur d'accent propre — sur le modèle
+  d'une famille cohérente, pas de marques sœurs indépendantes.
+- Le monogramme doit fonctionner **seul** (« Totem ») et **composé**
+  (« Totem Avisé »), du 32 px d'une icône d'app aux supports imprimés.
+- La promesse ombrelle à protéger dans tous les produits : indépendance,
+  honnêteté, un compte famille unique qui suit la tribu d'un produit à l'autre.
+- **Hiérarchie assumée :** Totem Avisé reste le vaisseau amiral et le seul produit
+  communiqué publiquement tant que la marque n'a pas d'existence propre ; le
+  système doit simplement être *prêt* à accueillir les suivants sans refonte.
+
+## 8. Le nom et le symbole
 
 **Totem** : l'emblème protecteur autour duquel la tribu — la famille — se
 rassemble ; un repère stable qui se transmet. **Avisé** : informé, prudent, de bon
@@ -183,7 +202,7 @@ pas d'imagerie ethnographique) ; le totem « corporate tech » froid.
 
 ---
 
-## 8. Preuves, chiffres, et règles de revendication
+## 9. Preuves, chiffres, et règles de revendication
 
 **Chiffres utilisables (à date de juillet 2026, arrondir vers le bas) :**
 « plus de 11 500 titres » (ou « plus de 10 000 » pour un spot durable) · « films,
@@ -201,7 +220,7 @@ historique des films pour enfants a aujourd'hui plus d'audience que nous).
 
 ---
 
-## 9. Univers visuel existant (V2, à faire évoluer, pas à renier)
+## 10. Univers visuel existant (V2, à faire évoluer, pas à renier)
 
 Le site a déjà une direction « papier chaud » appréciée, sur laquelle le brand book
 doit capitaliser :
@@ -222,7 +241,7 @@ des actifs de marque à traiter comme tels.
 
 ---
 
-## 10. Concept publicitaire de référence — « La Surprise »
+## 11. Concept publicitaire de référence — « La Surprise »
 
 *Idée fondatrice de Xavier — elle capture parfaitement le concept. Ton semi-sérieux :
 drôle parce que terriblement vécu. À produire en fin de parcours, mais le brand book
@@ -258,7 +277,7 @@ que du site. Déclinable à l'infini (le jeu « anodin » au chat vocal, la sér
 
 ---
 
-## 11. Écosystème à couvrir
+## 12. Écosystème à couvrir
 
 Le brand book doit fonctionner sur : le site (desktop + mobile, thèmes clair/Soirée) ·
 les fiches partagées (OG images) · les réseaux @totemavise (formats verticaux) ·
@@ -269,10 +288,10 @@ lisible en 32 px et une description courte canonique).
 
 ---
 
-## 12. Livrables attendus du brand book
+## 13. Livrables attendus du brand book
 
 1. Logo + monogramme (dont version 32 px), zones de protection, interdits.
-2. Palette finalisée (à partir de l'existant §9), usages clair/Soirée, accessibilité AA.
+2. Palette finalisée (à partir de l'existant §10), usages clair/Soirée, accessibilité AA.
 3. Système typographique (titres/texte/UI) et hiérarchie éditoriale.
 4. Traitement des composants signature : badge d'âge, « à confirmer »,
    « Pourquoi cet âge ? », barres des 8 dimensions.
@@ -280,19 +299,19 @@ lisible en 32 px et une description courte canonique).
 6. Photographie / direction artistique des visuels sociaux (vraies familles,
    chaleur, jamais d'enfant en détresse en imagerie de marque).
 7. Ton de voix : guide rédactionnel court avec exemples avant/après.
-8. Motion : logo animé, transitions, habillage vidéo (dont « La Surprise »).
+8. Motion : logo animé, transitions, habillage vidéo (dont « La Surprise », §11).
 9. Templates : OG image, stories/reels, newsletter, présentation B2B, dossier de presse.
 
 ---
 
-## 13. Interdits absolus (à faire respecter dans tous les livrables)
+## 14. Interdits absolus (à faire respecter dans tous les livrables)
 
 - Aucune publicité tierce, aucun logo de studio/plateforme en caution.
-- Aucun superlatif invérifiable (§8). Aucune mention « approuvé par » sans accord réel.
+- Aucun superlatif invérifiable (§9). Aucune mention « approuvé par » sans accord réel.
 - Aucun nom d'outil ou de fournisseur technique tiers dans les supports publics —
   la méthode se raconte comme « notre machine supervisée, nos garde-fous, notre
   méthode publiée », sans citer de marques techniques.
 - Jamais d'enfant en détresse comme imagerie de marque (l'exception narrative du
-  spot §10 est cadrée : brève, comique, jamais complaisante).
+  spot §11 est cadrée : brève, comique, jamais complaisante).
 - Jamais de discours anti-écrans ou culpabilisant : Totem aide à *choisir*, pas à renoncer.
 - Le vouvoiement, toujours.
