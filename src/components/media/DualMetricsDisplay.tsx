@@ -274,7 +274,7 @@ export function DualMetricsDisplay({
         <MethodBadge
           iconOnly
           anchor="metriques-contenu"
-          description="Les 8 dimensions (violence, sexe, langage, valeur éducative, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles. Les dimensions évaluables sont recalibrées par les familles inscrites."
+          description="Les 8 dimensions (violence, sexe, langage, valeur éducative, etc.) sont estimées par analyse automatisée du synopsis et des classifications officielles, selon la même grille publiée fondée sur le développement de l'enfant pour chaque titre. Les dimensions évaluables sont recalibrées par les familles inscrites."
         />
       </div>
 

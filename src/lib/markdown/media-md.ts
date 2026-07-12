@@ -6,6 +6,7 @@ import {
   type MediaType,
 } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { buildAgeRationale } from "@/lib/age-rationale"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
@@ -22,6 +23,7 @@ export interface MediaMdInput {
   releaseStatus?: string | null
   updatedAt: Date
   topics: string[]
+  genres?: string[]
   contentMetrics: {
     violence: number
     sexNudity: number
@@ -126,12 +128,46 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
       }
       lines.push("")
     }
+
+    // "Pourquoi cet âge ?" — same single-source builder as the on-page panel
+    // and the FAQPage JSON-LD, so answer engines quoting the md layer can cite
+    // the REASONING behind the verdict, not just the number. Skipped for
+    // provisional fiches (the pending note above already says it all).
+    const rationale = buildAgeRationale({
+      title: media.title,
+      type: media.type,
+      expertAgeRec: media.expertAgeRec,
+      officialRating: media.officialRating,
+      genres: media.genres,
+      topics: media.topics,
+      contentMetrics: media.contentMetrics,
+    })
+    if (rationale.show) {
+      lines.push(`## ${rationale.heading}`, "")
+      lines.push(rationale.lead, "")
+      if (rationale.noDriverNote) lines.push(rationale.noDriverNote, "")
+      if (rationale.positives.length > 0) {
+        lines.push(`Points d'appui : ${rationale.positives.join(", ")}.`, "")
+      }
+      for (const note of rationale.contextNotes) {
+        lines.push(note, "")
+      }
+      lines.push(rationale.trustLine, "")
+    }
   }
 
   if (media.topics.length > 0) {
     lines.push("## Thèmes", "")
     lines.push(media.topics.join(", "), "")
   }
+
+  // Personalization pointer — the one thing an answer box can't replicate.
+  // Gives assistants an honest, useful next step to relay to parents.
+  lines.push("## Adapter ce repère à votre enfant", "")
+  lines.push(
+    `L'âge conseillé est une moyenne. Avec un compte famille gratuit, Totem Avisé calcule pour ce titre un score de compatibilité personnalisé selon l'âge, les sensibilités (peur, violence…) et les goûts de chaque enfant : ${SITE_URL}/inscription`,
+    "",
+  )
 
   lines.push("## Pages liées", "")
   lines.push(`- [Fiche complète](${canonical})`)

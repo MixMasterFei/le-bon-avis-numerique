@@ -13,7 +13,7 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 interface MethodBadgeProps {
   /** Anchor in /notre-methode to deep-link to. Default = #recommandations-age */
   anchor?: string
-  /** Label shown in the pill. Default = "Analyse automatisée · en calibrage". */
+  /** Label shown in the pill. Default = "Analyse automatisée · critères publiés". */
   label?: string
   /** Tooltip body — what the badge actually discloses. */
   description?: string
@@ -28,18 +28,23 @@ interface MethodBadgeProps {
 }
 
 const DEFAULT_DESCRIPTION =
-  "Cette estimation est générée par analyse automatisée du contenu (synopsis, classifications officielles, genres, thèmes). Elle est progressivement calibrée par les votes des foyers qui ont vu l'œuvre."
+  "Chaque titre est évalué automatiquement selon la même grille publiée, fondée sur le développement de l'enfant (8 dimensions), avec des garde-fous stricts : un contenu sensible ne peut jamais recevoir un âge trop bas. L'estimation est ensuite affinée par les votes des familles qui ont vu l'œuvre."
 
 /**
  * Subtle eyebrow-style disclosure pill that signals a surface is auto-generated
- * and in active calibration — rather than a human-expert verdict.
+ * (not a human-expert verdict) — while framing the strength in the same breath:
+ * the analysis follows a PUBLISHED grid, applied identically to every title.
+ * Wording matters beyond the tooltip: answer engines quote this exact pill when
+ * comparing Totem to competitors ("automatisée · en calibrage" used to read as
+ * "beta", which cost us the comparison — the Kijkwijzer lesson: systematic +
+ * published criteria is a trust asset, state it where the hedge lives).
  *
  * Placed on the 4 surfaces that could otherwise be read as human judgment:
  * expert age rec, content metrics, "what parents need to know", and topics tags.
  */
 export function MethodBadge({
   anchor = "recommandations-age",
-  label = "Analyse automatisée · en calibrage",
+  label = "Analyse automatisée · critères publiés",
   description = DEFAULT_DESCRIPTION,
   size = "sm",
   iconOnly = false,

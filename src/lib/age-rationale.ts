@@ -86,7 +86,7 @@ function levelWord(v: number): AgeRationaleDriver["level"] {
 }
 
 const TRUST_LINE =
-  "Recommandation indépendante de Totem Avisé : elle peut être plus prudente qu'une classification officielle. Des garde-fous automatiques empêchent qu'un contenu sensible reçoive un âge trop bas, et chaque estimation est affinée par les votes des familles."
+  "Recommandation indépendante de Totem Avisé, établie selon des critères publiés fondés sur le développement de l'enfant : elle peut être plus prudente qu'une classification officielle. Des garde-fous automatiques empêchent qu'un contenu sensible reçoive un âge trop bas, et chaque estimation est affinée par les votes des familles."
 
 export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
   const hasAge = typeof input.expertAgeRec === "number" && input.expertAgeRec > 0

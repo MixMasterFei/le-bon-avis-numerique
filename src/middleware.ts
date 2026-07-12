@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import type { NextFetchEvent, NextRequest } from "next/server"
+import { detectAiBot, detectAiReferrer, classifyAiSurface } from "@/lib/ai-bots"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -69,8 +70,40 @@ const rateLimitStore = new Map<
 // signal. It is NEVER set on public production.
 const RATE_LIMIT_DISABLED = process.env.ALLOW_TEST_SEED === "true"
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl
+
+  // AI-visibility telemetry: log AI crawlers (GPTBot, ClaudeBot, Perplexity…)
+  // and AI-assistant referrals (chatgpt.com, perplexity.ai…). Middleware is
+  // the only place that sees EVERY hit (including ISR-cached responses that
+  // never run the route handler), and bots don't execute JS so Plausible is
+  // blind to them. Fire-and-forget: adds zero latency, can never block.
+  if (request.method === "GET" && !pathname.startsWith("/api/")) {
+    try {
+      const hit =
+        detectAiBot(request.headers.get("user-agent")) ??
+        detectAiReferrer(request.headers.get("referer"))
+      if (hit && process.env.CRON_SECRET) {
+        event.waitUntil(
+          fetch(new URL("/api/track/ai-bot", request.url), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-track-secret": process.env.CRON_SECRET,
+            },
+            body: JSON.stringify({
+              bot: hit.bot,
+              kind: hit.kind,
+              surface: classifyAiSurface(pathname),
+              path: pathname,
+            }),
+          }).catch(() => {}),
+        )
+      }
+    } catch {
+      // Telemetry must never affect the request.
+    }
+  }
 
   // Apply rate limiting for API routes
   if (pathname.startsWith("/api/") && !RATE_LIMIT_DISABLED) {
