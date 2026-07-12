@@ -18,7 +18,10 @@
   --color-bg2: #EDE7DA;
   --color-card: #FFFFFF;
   --color-ink: #1E1A15;
-  --color-ink2: rgba(30, 26, 21, 0.60);
+  /* 0.66 alpha (not 0.60): secondary text on the cream bg must clear the
+     WCAG 4.5:1 contrast ratio — 0.60 computed to ~4.3:1 and failed the
+     Lighthouse accessibility audit. Dark mode's 0.60 passes (~6:1). */
+  --color-ink2: rgba(30, 26, 21, 0.66);
   --color-accent: #D16A4A;
   --color-accent2: #5C8A5C;
   --color-line: rgba(30, 26, 21, 0.08);

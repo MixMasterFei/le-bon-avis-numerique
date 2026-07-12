@@ -528,7 +528,7 @@ export function SiteHeader() {
                     <input
                       type="search"
                       placeholder="Rechercher..."
-                      className="pl-10 pr-9 py-2 w-full text-sm focus:outline-none bg-transparent rounded-r-full"
+                      className="pl-10 pr-9 py-2 min-h-11 w-full text-sm focus:outline-none bg-transparent rounded-r-full"
                       style={{ color: p.ink }}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
