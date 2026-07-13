@@ -192,7 +192,7 @@ export default async function AProposPage() {
             >
               Ce que vous pouvez découvrir
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { icon: Film, label: "Films" },
                 { icon: Tv, label: "Séries" },
