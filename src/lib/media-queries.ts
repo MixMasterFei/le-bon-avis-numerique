@@ -276,6 +276,25 @@ function transformItem(item: PrismaMediaWithRelations): TransformedMediaItem {
 
 // ── fetchMovies ──────────────────────────────────────────────────────
 
+/**
+ * Total ANALYZED items of a type — the honest "catalogue scale" number for the
+ * listing headline ("X films analysés"). Deliberately UNFILTERED by the browse
+ * gates the listing applies (language fr/en, requirePoster, min-quality): those
+ * shrink the visible page but don't change how many titles we've actually
+ * analyzed. Using the filtered pagination total here undersold the catalog
+ * (e.g. 4,180 shown vs ~7,200 films analyzed). "Analysé" = enriched (8 content
+ * dimensions computed), which is exactly what the headline claims.
+ */
+export async function countAnalyzedMedia(
+  type: "MOVIE" | "TV" | "GAME" | "MANGA",
+): Promise<number> {
+  return withPrismaRetry(() =>
+    prisma.mediaItem.count({
+      where: { type, isEnriched: true, expertAgeRec: { not: null } },
+    }),
+  )
+}
+
 export async function fetchMovies(filters: MediaQueryFilters = {}): Promise<MediaQueryResult> {
   const page = filters.page ?? 1
   const limit = filters.limit ?? 20

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import dynamic from "next/dynamic"
-import { fetchSeries } from "@/lib/media-queries"
+import { fetchSeries, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
 import { prisma } from "@/lib/prisma"
@@ -257,6 +257,9 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   const totalPages = useSmartRerank
     ? Math.max(1, Math.ceil((smart?.total ?? 0) / PAGE_SIZE))
     : result?.pagination.totalPages ?? 1
+  // Catalogue-scale count for the "X séries analysées" headline (unfiltered by
+  // the fr/en browse gate that shrinks totalItems).
+  const catalogTotal = await countAnalyzedMedia("TV")
 
   const filterSp = new URLSearchParams()
   if (search) filterSp.set("q", search)
@@ -322,6 +325,7 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
         const listProps = {
           items,
           total: totalItems,
+          catalogTotal,
           page,
           totalPages,
           serifClass: "font-serif",
