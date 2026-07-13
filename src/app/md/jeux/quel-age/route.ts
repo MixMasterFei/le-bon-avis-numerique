@@ -5,13 +5,27 @@ import { getOfficialRatingDisplay } from "@/lib/utils"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
-export const revalidate = 3600
+// Request-time rendered, CDN-cached via s-maxage below. NOT `revalidate`:
+// this is the md layer's only STATIC route handler that queries the DB, so
+// ISR would make Next prerender it at build time — which breaks the CI
+// build (no database in CI). The dynamic-segment md routes don't have this
+// problem; this one must opt out explicitly.
+export const dynamic = "force-dynamic"
 
 // Markdown mirror of the games "À partir de quel âge ?" pillar — the unowned
 // "fortnite quel âge / roblox quel âge" query class. Same data source and the
 // same shared verdict builder as the HTML page: zero drift.
 export async function GET() {
-  const rows = await fetchTopGameRows()
+  let rows
+  try {
+    rows = await fetchTopGameRows()
+  } catch (error) {
+    console.error("[md/jeux/quel-age] DB query failed:", error instanceof Error ? error.message : error)
+    return new Response("Temporairement indisponible", {
+      status: 503,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "300" },
+    })
+  }
   const htmlUrl = `${baseUrl}/jeux/quel-age`
 
   const lines: string[] = []
@@ -66,7 +80,9 @@ export async function GET() {
       "Content-Type": "text/markdown; charset=utf-8",
       "X-Robots-Tag": "noindex, follow",
       "Link": `<${htmlUrl}>; rel="canonical"`,
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      // s-maxage: the CDN does the hourly caching that `revalidate` used to
+      // (the route is force-dynamic — see note at the top).
+      "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
     },
   })
 }
