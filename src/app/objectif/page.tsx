@@ -47,7 +47,7 @@ const differences = [
   "On signale les points de vigilance (mort d'un animal, harcèlement…), à confirmer par les parents",
   "On repère les messages positifs et les modèles inspirants",
   "Chaque famille peut filtrer selon ses propres limites (violence, langage, peur…)",
-  "Films, séries, jeux vidéo, livres : tout au même endroit",
+  "Films, séries et jeux vidéo : tout au même endroit",
 ]
 
 export default function ObjectifPage() {

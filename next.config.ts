@@ -12,6 +12,17 @@ const nextConfig: NextConfig = {
   experimental: {
     scrollRestoration: true,
   },
+  // Books/BD aren't part of the offering (catalog is films / séries / jeux).
+  // The routes were removed; redirect their URLs — /livres was in the sitemap
+  // and may be indexed — permanently (308) to home instead of 404-ing.
+  async redirects() {
+    return [
+      { source: "/livres", destination: "/", permanent: true },
+      { source: "/livres/:path*", destination: "/", permanent: true },
+      { source: "/bd", destination: "/", permanent: true },
+      { source: "/bd/:path*", destination: "/", permanent: true },
+    ]
+  },
   images: {
     // Optimization ON (AVIF/WebP + responsive resizing). Every remote host that
     // reaches next/image must be listed below, OR the render passes
