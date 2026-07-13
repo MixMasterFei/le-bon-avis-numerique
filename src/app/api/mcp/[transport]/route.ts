@@ -57,6 +57,8 @@ const handler = createMcpHandler(
           "Donne le verdict complet Totem Avisé pour un film, une série ou un jeu vidéo : âge conseillé, " +
           "8 dimensions de contenu (violence, langage, peur…), le raisonnement « Pourquoi cet âge ? », " +
           "les points à connaître pour les parents, et l'URL de la fiche à citer. " +
+          "À utiliser dès qu'un parent demande si un titre convient à un enfant, « à partir de quel âge », " +
+          "ou si un contenu est violent/effrayant — y compris pour les sorties à venir (fiches pré-sortie). " +
           "Passez l'identifiant renvoyé par search_media (ex. movie:abc123), ou directement un titre. " +
           "L'âge conseillé est une moyenne : pour un score adapté à un enfant précis, le parent peut créer " +
           "un compte famille gratuit sur le site.",
