@@ -43,11 +43,18 @@ export function ApercuMediaCard({
   size = "md",
   serifClass,
   showType = false,
+  priority = false,
 }: {
   media: ApercuCardMedia
   size?: "sm" | "md"
   serifClass: string
   showType?: boolean
+  /**
+   * Eager-load + high fetch priority for above-the-fold cards (the mobile
+   * LCP element lives in the first row of the time-aware rail). Leave false
+   * for below-the-fold rails so they keep the lazy default.
+   */
+  priority?: boolean
 }) {
   const { getFamilyFit, registerMediaId } = useFamilyFit()
   const { settings } = useSettings()
@@ -105,6 +112,7 @@ export function ApercuMediaCard({
             src={tmdbPosterAtSize(media.posterUrl, "w342")}
             alt={media.title}
             fill
+            priority={priority}
             className={cn(
               "object-cover transition-all duration-300",
               shouldBlur && "blur-sm brightness-90",

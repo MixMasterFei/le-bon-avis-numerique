@@ -467,12 +467,15 @@ export async function ApercuTimeAwareHero({
         </div>
 
         <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-          {data.cards.slice(0, 4).map((media) => (
+          {data.cards.slice(0, 4).map((media, idx) => (
             <ApercuMediaCard
               key={media.id}
               media={media}
               size="md"
               serifClass={serifClass}
+              // First row (2 cols on mobile) is above the fold and holds the
+              // mobile LCP element — eager-load it instead of lazy.
+              priority={idx < 2}
             />
           ))}
         </div>

@@ -143,6 +143,11 @@ export function ApercuHero({
                       highlighted={idx === 1}
                       label={CARD_LABELS[idx]}
                       serifClass={serifClass}
+                      // Only the first two cards are LCP candidates on desktop.
+                      // The stack is hidden on mobile, so preloading all five
+                      // (via next/image `priority`) just burned mobile Slow-4G
+                      // bandwidth on images that never render there.
+                      priority={idx < 2}
                     />
                   )
                 })
@@ -183,6 +188,7 @@ function HeroPosterCard({
   highlighted,
   label,
   serifClass,
+  priority = false,
 }: {
   pick: HeroPick
   tilt: number
@@ -192,6 +198,7 @@ function HeroPosterCard({
   highlighted: boolean
   label: string
   serifClass: string
+  priority?: boolean
 }) {
   const p = APERCU_PALETTE
   const ageLabel =
@@ -222,9 +229,10 @@ function HeroPosterCard({
               src={pick.posterUrl}
               alt={pick.title}
               fill
-              // Above-the-fold on desktop and the page's LCP candidate —
-              // eager-load instead of the next/image lazy default.
-              priority
+              // Above-the-fold on desktop and an LCP candidate — eager-load
+              // the first two instead of the next/image lazy default. (Hidden
+              // on mobile, so `priority` is scoped to avoid wasted preloads.)
+              priority={priority}
               className="object-cover"
               sizes={`${CARD_WIDTH}px`}
             />
