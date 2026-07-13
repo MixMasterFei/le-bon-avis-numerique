@@ -56,7 +56,9 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={label}
       title={label}
-      className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-opacity hover:opacity-70 ${className ?? ""}`}
+      // 44×44px — WCAG touch-target minimum (36px failed the Lighthouse
+      // "touch targets" audit next to the adjacent search field).
+      className={`inline-flex items-center justify-center w-11 h-11 rounded-full transition-opacity hover:opacity-70 ${className ?? ""}`}
       style={{
         // Subtle cream/near-black pill so the toggle reads as a
         // distinct chip instead of blending with the header.
