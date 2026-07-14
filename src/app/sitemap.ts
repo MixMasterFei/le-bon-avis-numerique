@@ -20,7 +20,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/jeux`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${baseUrl}/jeux/quel-age`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     // /mangas intentionally omitted — admin-only during soft launch.
-    { url: `${baseUrl}/livres`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    // /livres removed — books aren't part of the offering (route redirects to home).
     { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/recommandations`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },

@@ -80,7 +80,6 @@ const moreNavigation = [
   { name: "Nos valeurs & notations", href: "/nos-valeurs", icon: Heart },
   { name: "Notre méthode", href: "/notre-methode", icon: Microscope },
   { name: "Nos guides", href: "/guides", icon: BookText },
-  { name: "BD", href: "/bd", icon: BookOpen, comingSoon: true },
   // Blog marked WIP until the editorial team publishes the first
   // posts — currently /blog renders an empty list which feels broken
   // to a visitor. Drop comingSoon once 3+ posts are published.

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import dynamic from "next/dynamic"
-import { fetchMovies } from "@/lib/media-queries"
+import { fetchMovies, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
 import { prisma } from "@/lib/prisma"
@@ -384,9 +384,14 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
         ? "Vue personnalisée limitée aux titres les plus pertinents — affinez les filtres pour en voir plus."
         : undefined
 
+  // Catalogue-scale count for the "X films analysés" headline (unfiltered by
+  // the fr/en + poster browse gates that shrink totalItems).
+  const catalogTotal = await countAnalyzedMedia("MOVIE")
+
   const listProps = {
     items,
     total: totalItems,
+    catalogTotal,
     page,
     totalPages,
     serifClass: "font-serif",

@@ -56,7 +56,7 @@ export const metadata: Metadata = {
     default: "Totem Avisé — Films, Séries TV et Jeux Vidéo en famille",
     template: "%s | Totem Avisé",
   },
-  description: "Trouvez les films, séries, jeux et livres parfaits pour votre famille. Avis indépendants et recommandations d'âge selon les goûts et sensibilités de chacun.",
+  description: "Trouvez les films, séries et jeux parfaits pour votre famille. Avis indépendants et recommandations d'âge selon les goûts et sensibilités de chacun.",
   alternates: {
     canonical: "/",
   },
@@ -64,10 +64,12 @@ export const metadata: Metadata = {
   authors: [{ name: "Totem Avisé" }],
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "16x16 32x32" },
-      { url: "/icon.png", sizes: "620x606", type: "image/png" },
+      // favicon.ico carries square 16/32/48/256 frames — the 48px+ is exactly
+      // what Google's search-result favicon wants (was under-declared as 16/32).
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48 256x256" },
+      { url: "/icon.png", sizes: "256x256", type: "image/png" },
     ],
-    apple: { url: "/icon.png", sizes: "620x606", type: "image/png" },
+    apple: { url: "/icon.png", sizes: "256x256", type: "image/png" },
   },
   openGraph: {
     title: "Totem Avisé",
@@ -75,7 +77,7 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     type: "website",
     siteName: "Totem Avisé",
-    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "Totem Avisé" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -157,7 +159,7 @@ export default async function RootLayout({
               alternateName: "Totem Avise",
               url: "https://totemavise.com",
               inLanguage: "fr-FR",
-              description: "Recommandations de films, séries, jeux et livres pour les familles françaises.",
+              description: "Recommandations de films, séries et jeux pour les familles françaises.",
               publisher: { "@type": "Organization", name: "Totem Avisé" },
               potentialAction: {
                 "@type": "SearchAction",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import dynamic from "next/dynamic"
-import { fetchGames } from "@/lib/media-queries"
+import { fetchGames, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
 import { prisma } from "@/lib/prisma"
@@ -260,6 +260,9 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
   const totalPages = useSmartRerank
     ? Math.max(1, Math.ceil((smart?.total ?? 0) / PAGE_SIZE))
     : result?.pagination.totalPages ?? 1
+  // Catalogue-scale count for the "X jeux analysés" headline (unfiltered by the
+  // min-quality browse gate that shrinks totalItems).
+  const catalogTotal = await countAnalyzedMedia("GAME")
 
   const filterSp = new URLSearchParams()
   if (search) filterSp.set("q", search)
@@ -325,6 +328,7 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
         const listProps = {
           items,
           total: totalItems,
+          catalogTotal,
           page,
           totalPages,
           serifClass: "font-serif",

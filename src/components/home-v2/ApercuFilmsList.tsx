@@ -18,6 +18,9 @@ interface FamilyMember {
 export interface ApercuFilmsListProps {
   items: (ApercuCardMedia & { releaseDate: string | null })[]
   total: number
+  /** Total ANALYZED items of this type (catalogue scale), unfiltered by the
+   *  browse gates — drives the "X analysés" headline. Falls back to `total`. */
+  catalogTotal?: number
   page: number
   totalPages: number
   serifClass: string
@@ -57,6 +60,7 @@ export interface ApercuFilmsListProps {
 export function ApercuFilmsList({
   items,
   total,
+  catalogTotal,
   page,
   totalPages,
   serifClass,
@@ -73,7 +77,9 @@ export function ApercuFilmsList({
   notice,
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
-  const countNoun = total === 1 ? itemNoun.singular : itemNoun.plural
+  // Headline = catalogue scale ("X analysés"), NOT the filtered page total.
+  const headlineTotal = catalogTotal ?? total
+  const countNoun = headlineTotal === 1 ? itemNoun.singular : itemNoun.plural
 
   return (
     <FamilyFitProvider>
@@ -108,7 +114,7 @@ export function ApercuFilmsList({
               className="mt-3 text-sm md:text-base"
               style={{ color: p.ink2 }}
             >
-              {total.toLocaleString("fr-FR")} {countNoun} analysés.
+              {headlineTotal.toLocaleString("fr-FR")} {countNoun} analysés.
               {totalPages > 1 && ` Page ${page} sur ${totalPages}.`}
             </p>
           </div>

@@ -9,6 +9,7 @@ import {
 import { renderMediaMarkdown } from "@/lib/markdown/media-md"
 import { loadMediaMdInput } from "@/lib/markdown/media-md-data"
 import { buildSelectionMarkdown } from "@/lib/markdown/selection-md"
+import { pickBestTitleMatch } from "@/lib/mcp/title-match"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -101,15 +102,18 @@ export async function ageVerdictText(params: { id?: string; title?: string }): P
   let alternates: SearchRow[] = []
 
   if (!resolvedId && params.title) {
-    const rows = await searchCatalog(params.title, undefined, 3)
+    const rows = await searchCatalog(params.title, undefined, 5)
     if (rows.length === 0) {
       return (
         `Aucun titre du catalogue Totem Avisé ne correspond à « ${params.title.trim()} ». ` +
         `Essayez \`search_media\` avec une autre orthographe, ou la recherche du site : ${SITE_URL}/recherche.`
       )
     }
-    resolvedId = toMediaRouteId(rows[0].type as MediaType, rows[0].id)
-    alternates = rows.slice(1)
+    // Exact-title collisions resolve to the most recent release, not the
+    // best-enriched fiche (see title-match.ts — the "L'Odyssée" 2016/2026 case).
+    const best = pickBestTitleMatch(rows, params.title)!
+    resolvedId = toMediaRouteId(best.type as MediaType, best.id)
+    alternates = rows.filter((r) => r.id !== best.id).slice(0, 2)
   }
 
   if (!resolvedId) {

@@ -164,8 +164,6 @@ function RecosInner() {
     { key: "movie", label: "Films" },
     { key: "tv", label: "Séries" },
     { key: "game", label: "Jeux" },
-    { key: "book", label: "Livres" },
-    { key: "app", label: "Apps" },
   ]
 
   return (

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Search, Loader2, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Search, Loader2, Film, Tv, Gamepad2 } from "lucide-react"
 import {
   ApercuMediaCard,
   type ApercuCardMedia,
@@ -128,7 +128,6 @@ function RechercheContent() {
     { key: "movie", label: "Films", icon: Film, count: counts.movie },
     { key: "tv", label: "Séries", icon: Tv, count: counts.tv },
     { key: "game", label: "Jeux", icon: Gamepad2, count: counts.game },
-    { key: "book", label: "Livres", icon: BookOpen, count: counts.book },
   ]
 
   return (

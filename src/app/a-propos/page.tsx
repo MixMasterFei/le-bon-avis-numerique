@@ -1,4 +1,4 @@
-import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2, BookOpen } from "lucide-react"
+import { Heart, Users, Sparkles, ArrowRight, Film, Tv, Gamepad2 } from "lucide-react"
 import Link from "next/link"
 import { auth } from "@/lib/auth"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
@@ -197,7 +197,6 @@ export default async function AProposPage() {
                 { icon: Film, label: "Films" },
                 { icon: Tv, label: "Séries" },
                 { icon: Gamepad2, label: "Jeux vidéo" },
-                { icon: BookOpen, label: "Livres" },
               ].map((item) => (
                 <div
                   key={item.label}

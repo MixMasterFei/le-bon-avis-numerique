@@ -51,7 +51,6 @@ const typeFilters: { value: SearchType; label: string }[] = [
   { value: "MOVIE", label: "Films" },
   { value: "TV", label: "Séries" },
   { value: "GAME", label: "Jeux" },
-  { value: "BOOK", label: "Livres" },
 ]
 
 interface HeroSearchProps {

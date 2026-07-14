@@ -1,13 +1,13 @@
 import Link from "next/link"
 import Image from "next/image"
 
-// "Mangas" intentionally omitted — admin-only until catalog quality
-// passes review. Admins access /mangas via the header.
+// "Livres" removed — books aren't part of the offering (catalog is
+// films / séries / jeux). "Mangas" intentionally omitted — admin-only
+// until catalog quality passes review; admins reach /mangas by direct URL.
 const BROWSE = [
   { name: "Films", href: "/films" },
   { name: "Séries TV", href: "/series" },
   { name: "Jeux Vidéo", href: "/jeux" },
-  { name: "Livres", href: "/livres" },
 ]
 
 const BY_AGE = [

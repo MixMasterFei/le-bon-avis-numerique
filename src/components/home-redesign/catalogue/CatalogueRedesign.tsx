@@ -30,6 +30,7 @@ export type CatalogueRedesignProps = ApercuFilmsListProps & {
 export function CatalogueRedesign({
   items,
   total,
+  catalogTotal,
   page,
   totalPages,
   familyMembers,
@@ -48,7 +49,9 @@ export function CatalogueRedesign({
   defaultMaxAge = 18,
   aboveGrid,
 }: CatalogueRedesignProps) {
-  const countNoun = total === 1 ? itemNoun.singular : itemNoun.plural
+  // Headline = catalogue scale ("X analysés"), NOT the filtered page total.
+  const headlineTotal = catalogTotal ?? total
+  const countNoun = headlineTotal === 1 ? itemNoun.singular : itemNoun.plural
 
   // Toggle should return to classic on the same page + filters.
   const toggleQuery = (() => {
@@ -78,7 +81,7 @@ export function CatalogueRedesign({
               {titlePrefix} <Em tone="terra">{titleAccent}</Em>
             </h1>
             <p className="mt-3 text-[15px]" style={{ color: "var(--ink-2)" }}>
-              <b style={{ color: "var(--ink)" }}>{total.toLocaleString("fr-FR")}</b> {countNoun} analysés.
+              <b style={{ color: "var(--ink)" }}>{headlineTotal.toLocaleString("fr-FR")}</b> {countNoun} analysés.
               {totalPages > 1 && ` Page ${page} sur ${totalPages}.`}
             </p>
           </div>
