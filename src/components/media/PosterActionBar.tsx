@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
-import { Heart, Eye, Bookmark, Check } from "lucide-react"
+import { Heart, Eye, Bookmark, ThumbsDown, Users, Check } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { posterActionsEnabled } from "@/lib/poster-actions-flag"
 import { useFamilyMembers } from "@/hooks/useFamilyMembers"
@@ -17,12 +17,17 @@ import { useFamilyMembers } from "@/hooks/useFamilyMembers"
 // replaces the member's prior state (want → watched → adoré). The top-row
 // counts reflect how many members are currently in each state.
 
-type ActionKind = "WANTS_TO_WATCH" | "WATCHED" | "LOVED"
+// Spans the full signal spectrum — intent, seen (dedup), loved (+2.0), and a
+// dislike (NOT_FOR_ME, -2.0). The negative is deliberate: it's the strongest
+// filtering signal and the one the fast lane would otherwise never capture,
+// leaving the taste vector positivity-biased.
+type ActionKind = "WANTS_TO_WATCH" | "WATCHED" | "LOVED" | "NOT_FOR_ME"
 
 const ACTIONS: { kind: ActionKind; label: string; Icon: typeof Heart }[] = [
   { kind: "WANTS_TO_WATCH", label: "À voir", Icon: Bookmark },
   { kind: "WATCHED", label: "Déjà vu", Icon: Eye },
   { kind: "LOVED", label: "Adoré", Icon: Heart },
+  { kind: "NOT_FOR_ME", label: "Pas pour nous", Icon: ThumbsDown },
 ]
 
 export function PosterActionBar({ mediaId }: { mediaId: string }) {
@@ -39,7 +44,7 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
   const [busy, setBusy] = useState(false)
 
   const counts = useMemo(() => {
-    const c: Record<ActionKind, number> = { WANTS_TO_WATCH: 0, WATCHED: 0, LOVED: 0 }
+    const c: Record<ActionKind, number> = { WANTS_TO_WATCH: 0, WATCHED: 0, LOVED: 0, NOT_FOR_ME: 0 }
     for (const k of Object.values(state)) c[k] += 1
     return c
   }, [state])
@@ -87,6 +92,21 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
     }
   }
 
+  // "Toute la famille": if everyone already has this state → clear it for all;
+  // otherwise set it for everyone who doesn't. Reuses applyToMember (which
+  // reads the same state snapshot) so each write is a correct toggle.
+  async function applyToAll(kind: ActionKind) {
+    if (!members || members.length === 0) return
+    const allHave = members.every((m) => state[m.id] === kind)
+    await Promise.all(
+      members.map((m) => {
+        const has = state[m.id] === kind
+        if (allHave) return has ? applyToMember(m.id, kind) : Promise.resolve()
+        return has ? Promise.resolve() : applyToMember(m.id, kind)
+      }),
+    )
+  }
+
   function onActionTap(e: React.MouseEvent, kind: ActionKind) {
     stop(e)
     if (!members || members.length === 0) return // handled by the no-member note
@@ -112,6 +132,30 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
             {ACTIONS.find((a) => a.kind === openAction)?.label} · qui ?
           </div>
           <div className="flex flex-wrap gap-1.5">
+            {/* Toute la famille — one tap applies (or clears) for everyone */}
+            {(() => {
+              const allActive = members.every((m) => state[m.id] === openAction)
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    stop(e)
+                    void applyToAll(openAction)
+                  }}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1 rounded-full py-0.5 pl-2 pr-2 text-[11px] font-semibold transition-colors"
+                  style={
+                    allActive
+                      ? { background: "#fff", color: "#1E1A15" }
+                      : { background: "rgba(255,255,255,0.14)", color: "#fff" }
+                  }
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Toute la famille
+                  {allActive && <Check className="h-3 w-3" />}
+                </button>
+              )
+            })()}
             {members.map((m) => {
               const active = state[m.id] === openAction
               return (
