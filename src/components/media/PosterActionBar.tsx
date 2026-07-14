@@ -1,12 +1,15 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Heart, Eye, Bookmark, ThumbsDown, Users, Check } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { posterActionsEnabled } from "@/lib/poster-actions-flag"
 import { useFamilyMembers } from "@/hooks/useFamilyMembers"
+import { useUserReactions } from "@/hooks/useUserReactions"
+
+const ACTION_KINDS = new Set(["WANTS_TO_WATCH", "WATCHED", "LOVED", "NOT_FOR_ME"])
 
 // Quick per-member triage on any poster, site-wide: "à voir" / "déjà vu" /
 // "adoré". One tap captures a real per-member reaction (feeding the taste
@@ -32,16 +35,29 @@ const ACTIONS: { kind: ActionKind; label: string; Icon: typeof Heart }[] = [
 
 export function PosterActionBar({ mediaId }: { mediaId: string }) {
   const { data: session } = useSession()
-  const isAdmin = session?.user?.role === "ADMIN"
-  const enabled = !!session?.user && posterActionsEnabled(isAdmin)
+  const enabled = !!session?.user && posterActionsEnabled()
 
   const members = useFamilyMembers(enabled)
-  // Optimistic per-member state for THIS media. Not preloaded in v1 (avoids N
-  // fetches on a grid) — starts blank and reflects what the user sets in
-  // session. Batch-preload is the immediate follow-up.
+  const preloaded = useUserReactions(enabled)
+  // Optimistic per-member state for THIS media.
   const [state, setState] = useState<Record<string, ActionKind>>({})
   const [openAction, setOpenAction] = useState<ActionKind | null>(null)
   const [busy, setBusy] = useState(false)
+  // Once the user interacts, a late-arriving preload must not clobber their
+  // fresh optimistic state.
+  const touched = useRef(false)
+
+  // Seed from the shared preload when it lands (one fetch for the whole grid).
+  useEffect(() => {
+    if (!preloaded || touched.current) return
+    const forMedia = preloaded[mediaId]
+    if (!forMedia) return
+    const seed: Record<string, ActionKind> = {}
+    for (const [memberId, reaction] of Object.entries(forMedia)) {
+      if (ACTION_KINDS.has(reaction)) seed[memberId] = reaction as ActionKind
+    }
+    if (Object.keys(seed).length > 0) setState(seed)
+  }, [preloaded, mediaId])
 
   const counts = useMemo(() => {
     const c: Record<ActionKind, number> = { WANTS_TO_WATCH: 0, WATCHED: 0, LOVED: 0, NOT_FOR_ME: 0 }
@@ -57,6 +73,7 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
   }
 
   async function applyToMember(memberId: string, kind: ActionKind) {
+    touched.current = true
     const current = state[memberId]
     const removing = current === kind
     // Optimistic
