@@ -52,6 +52,10 @@ export function ApercuNewsCard({
   if (imageBroken || isBlockedHotlinkImageUrl(src)) return null
 
   const href = `/apercudecouverte/${story.slug}`
+  // The branded category card is our own graphic, not a photo — drop the
+  // "Photo : …" credit on it (only real publisher photos get credited).
+  const showingFallbackCard = src.includes("/api/news/fallback-card")
+  const displayCredit = showingFallbackCard ? null : story.imageCredit
 
   return (
     <article
@@ -78,7 +82,7 @@ export function ApercuNewsCard({
         >
           {NEWS_CATEGORY_LABEL[story.category]}
         </div>
-        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
+        <ApercuPhotoCredit credit={displayCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
         <Link href={href} className="block">

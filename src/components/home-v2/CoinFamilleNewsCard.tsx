@@ -38,6 +38,12 @@ export function CoinFamilleNewsCard({
   const showImage = !imageBroken && !isBlockedHotlinkImageUrl(src)
   const panelId = `cf-news-${story.slug}`
 
+  // The branded category card is our own graphic, not a photo — so no
+  // "Photo : …" credit belongs on it. Only credit a real publisher photo.
+  const showingFallbackCard = src.includes("/api/news/fallback-card")
+  const displayCredit = showingFallbackCard ? null : story.imageCredit
+  const { articleUrl } = story
+
   return (
     <article
       className="flex flex-col overflow-hidden rounded-xl"
@@ -45,16 +51,38 @@ export function CoinFamilleNewsCard({
     >
       <div className="relative aspect-[16/9]" style={{ background: p.placeholder }}>
         {showImage ? (
-          <Image
-            src={src}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, 25vw"
-            // Raw publisher CDN (unbounded host) — bypass the optimizer.
-            unoptimized
-            onError={handleImageError}
-          />
+          articleUrl ? (
+            // Tapping the photo opens the original publisher article — the
+            // fastest path to the source on touch (no accordion to expand).
+            <a
+              href={articleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Lire l'article : ${story.headline}`}
+              className="absolute inset-0 block"
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
+                // Raw publisher CDN (unbounded host) — bypass the optimizer.
+                unoptimized
+                onError={handleImageError}
+              />
+            </a>
+          ) : (
+            <Image
+              src={src}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, 25vw"
+              unoptimized
+              onError={handleImageError}
+            />
+          )
         ) : (
           // Guarantee an image slot even if the branded card also fails.
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: p.bg2 }}>
@@ -64,22 +92,35 @@ export function CoinFamilleNewsCard({
           </div>
         )}
         <div
-          className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
+          className="pointer-events-none absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
           style={{ background: p.ink, color: p.bg }}
         >
           {NEWS_CATEGORY_LABEL[story.category]}
         </div>
-        <ApercuPhotoCredit credit={story.imageCredit} licenseUrl={story.imageLicenseUrl} />
+        <ApercuPhotoCredit credit={displayCredit} licenseUrl={story.imageLicenseUrl} />
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        {/* title attr = full headline on hover (the clamp cuts long ones) */}
+        {/* title attr = full headline on hover (the clamp cuts long ones).
+            The headline links straight to the publisher article, like the
+            photo above it. */}
         <h3
           className={`${serifClass} text-[15px] leading-snug font-medium line-clamp-2`}
           style={{ color: p.ink, letterSpacing: "-0.01em" }}
           title={story.headline}
         >
-          {story.headline}
+          {articleUrl ? (
+            <a
+              href={articleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-70"
+            >
+              {story.headline}
+            </a>
+          ) : (
+            story.headline
+          )}
         </h3>
 
         <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
