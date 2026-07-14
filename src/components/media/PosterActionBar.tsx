@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { useSession } from "next-auth/react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -65,6 +66,26 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
   // Once the user interacts, a late-arriving preload must not clobber their
   // fresh optimistic state.
   const touched = useRef(false)
+  // Portals need a client-side DOM target; render nothing server-side.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  // Lock background scroll while the member-picker sheet is open, and close it
+  // on Escape (desktop). Only engages for the multi-member sheet.
+  const sheetOpen = openAction !== null && !!members && members.length > 1
+  useEffect(() => {
+    if (!sheetOpen) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenAction(null)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [sheetOpen])
 
   // Seed from the shared preload when it lands (one fetch for the whole grid).
   useEffect(() => {
@@ -200,74 +221,132 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30" onClick={stop}>
-      {/* member picker — opens above the action row, dark panel for legibility */}
-      {openAction && members && members.length > 1 && (
-        <div
-          className="mx-2 mb-1 rounded-xl p-2 backdrop-blur-sm"
-          style={{ background: "rgba(20,16,12,0.82)" }}
-        >
-          <div className="mb-1.5 flex items-center gap-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-white/70">
-            {ACTIONS.find((a) => a.kind === openAction)?.label} · qui ?
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {/* Toute la famille — one tap applies (or clears) for everyone */}
-            {(() => {
-              const allActive = members.every((m) => state[m.id] === openAction)
-              return (
+      {/* Member picker — rendered as a bottom sheet PORTALED to <body> so the
+          poster's overflow-hidden can't clip it (the large-family bug). The
+          member list scrolls, so it stays clean whatever the family size. */}
+      {mounted &&
+        openAction &&
+        members &&
+        members.length > 1 &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+            onClick={(e) => {
+              e.stopPropagation()
+              setOpenAction(null)
+            }}
+          >
+            {/* Dim backdrop — tap anywhere to dismiss */}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-t-2xl sm:rounded-2xl sm:mx-4"
+              style={{
+                background: "#1B1713",
+                boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
+            >
+              {/* Grab handle (mobile affordance) */}
+              <div className="flex justify-center pt-2 sm:hidden">
+                <div className="h-1 w-9 rounded-full bg-white/25" />
+              </div>
+              <div className="flex items-center justify-between px-4 pt-3 pb-2">
+                <div className="flex items-center gap-2 text-white">
+                  {(() => {
+                    const A = ACTIONS.find((a) => a.kind === openAction)
+                    return A ? <A.Icon className="h-4 w-4" /> : null
+                  })()}
+                  <span className="text-sm font-semibold">
+                    {ACTIONS.find((a) => a.kind === openAction)?.label}
+                    <span className="text-white/50"> · pour qui ?</span>
+                  </span>
+                </div>
                 <button
                   type="button"
+                  aria-label="Fermer"
                   onClick={(e) => {
-                    stop(e)
-                    void applyToAll(openAction)
+                    e.stopPropagation()
+                    setOpenAction(null)
                   }}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-full py-0.5 pl-2 pr-2 text-[11px] font-semibold transition-colors"
-                  style={
-                    allActive
-                      ? { background: "#fff", color: "#1E1A15" }
-                      : { background: "rgba(255,255,255,0.14)", color: "#fff" }
-                  }
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10"
                 >
-                  <Users className="h-3.5 w-3.5" />
-                  Toute la famille
-                  {allActive && <Check className="h-3 w-3" />}
+                  <X className="h-4 w-4" />
                 </button>
-              )
-            })()}
-            {members.map((m) => {
-              const active = state[m.id] === openAction
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={(e) => {
-                    stop(e)
-                    void applyToMember(m.id, openAction)
-                  }}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1 rounded-full py-0.5 pl-0.5 pr-2 text-[11px] font-semibold transition-colors"
-                  style={
-                    active
-                      ? { background: "#fff", color: "#1E1A15" }
-                      : { background: "rgba(255,255,255,0.14)", color: "#fff" }
-                  }
-                >
-                  <MemberAvatar
-                    avatarStyle={m.avatarStyle ?? null}
-                    avatarSeed={m.avatarSeed ?? null}
-                    avatarOptions={m.avatarOptions ?? null}
-                    avatarEmoji={m.avatarEmoji ?? null}
-                    name={m.name}
-                    size={18}
-                  />
-                  {m.name}
-                  {active && <Check className="h-3 w-3" />}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+              </div>
+
+              {/* Toute la famille — one tap applies (or clears) for everyone */}
+              {(() => {
+                const allActive = members.every((m) => state[m.id] === openAction)
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      void applyToAll(openAction)
+                    }}
+                    disabled={busy}
+                    className="mx-3 mb-1 flex w-[calc(100%-1.5rem)] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors"
+                    style={
+                      allActive
+                        ? { background: "#fff", color: "#1E1A15" }
+                        : { background: "rgba(255,255,255,0.08)", color: "#fff" }
+                    }
+                  >
+                    <span
+                      className="flex h-9 w-9 items-center justify-center rounded-full"
+                      style={{
+                        background: allActive ? "rgba(30,26,21,0.08)" : "rgba(255,255,255,0.12)",
+                      }}
+                    >
+                      <Users className="h-4 w-4" />
+                    </span>
+                    <span className="flex-1 text-sm font-semibold">Toute la famille</span>
+                    {allActive && <Check className="h-4 w-4" />}
+                  </button>
+                )
+              })()}
+
+              {/* Member list — scrolls for big families, so nothing overflows */}
+              <div className="max-h-[45vh] overflow-y-auto px-3 pb-3">
+                {members.map((m) => {
+                  const active = state[m.id] === openAction
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        void applyToMember(m.id, openAction)
+                      }}
+                      disabled={busy}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors"
+                      style={
+                        active
+                          ? { background: "#fff", color: "#1E1A15" }
+                          : { background: "transparent", color: "#fff" }
+                      }
+                    >
+                      <MemberAvatar
+                        avatarStyle={m.avatarStyle ?? null}
+                        avatarSeed={m.avatarSeed ?? null}
+                        avatarOptions={m.avatarOptions ?? null}
+                        avatarEmoji={m.avatarEmoji ?? null}
+                        name={m.name}
+                        size={34}
+                      />
+                      <span className="flex-1 text-sm font-medium">{m.name}</span>
+                      {active && <Check className="h-4 w-4" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
 
       {noMembers && openAction === null && (
         <div className="mx-2 mb-1 rounded-lg px-2 py-1 text-center text-[10px] text-white" style={{ background: "rgba(20,16,12,0.82)" }}>
