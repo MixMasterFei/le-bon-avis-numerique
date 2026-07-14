@@ -45,7 +45,17 @@ const SIGNUP_COPY: Record<ActionKind, string> = {
   NOT_FOR_ME: "Écartez ce qui n'est pas pour vous",
 }
 
-export function PosterActionBar({ mediaId }: { mediaId: string }) {
+export function PosterActionBar({
+  mediaId,
+  onReact,
+}: {
+  mediaId: string
+  /** Fired (optimistically) after a member's reaction is toggled. `active` is
+   *  true when the reaction was set, false when cleared. Lets a host surface
+   *  react to writes — e.g. the Coin Famille rail swaps the card out when a
+   *  title is marked "déjà vu" (WATCHED). */
+  onReact?: (kind: ActionKind, memberId: string, active: boolean) => void
+}) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const enabled = posterActionsEnabled()
@@ -123,6 +133,9 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
       else next[memberId] = kind
       return next
     })
+    // Notify the host optimistically (matches the old Coin Famille "déjà vu →
+    // swap" feel: act immediately, persist in the background).
+    onReact?.(kind, memberId, !removing)
     setBusy(true)
     try {
       if (removing) {

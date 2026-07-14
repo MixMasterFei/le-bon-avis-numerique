@@ -188,7 +188,7 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
         <p className="mt-1.5 max-w-2xl text-sm leading-relaxed" style={{ color: p.ink2 }}>
           {activeMember
             ? `Des idées choisies selon l’âge, les goûts et les sensibilités de ${activeMember.name}.`
-            : "Un coup de cœur et une sélection, adaptés aux âges et aux goûts de chacun. Un cœur pour garder, « à voir » pour plus tard, « déjà vu » pour en proposer d’autres."}
+            : "Un coup de cœur et une sélection, adaptés aux âges et aux goûts de chacun. Réagissez pour chaque enfant — « à voir », « déjà vu », « adoré » — et « déjà vu » propose aussitôt une autre idée."}
         </p>
       </div>
 
@@ -254,7 +254,6 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
                 key={`${activeTab}-${item.id}`}
                 media={toPickMedia(item)}
                 comment={item.reason ? totemVoiceLine(item.reason, item.synopsis) : undefined}
-                memberId={activeMember?.id ?? null}
                 onSeen={handleSeen}
               />
             ))}

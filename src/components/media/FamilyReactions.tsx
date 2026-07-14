@@ -89,6 +89,13 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
   // Override the WATCHED label per media type ("Déjà joué" for games etc.).
   const seenLabel = seenVerb(mediaType).label
   const labelFor = (value: string, fallback?: string) => (value === "WATCHED" ? seenLabel : fallback ?? "")
+  // Past-tense "a déjà …" phrasing for the single-choice hint, per media type.
+  const seenPastPhrase =
+    mediaType === "GAME"
+      ? "y a déjà joué"
+      : mediaType === "BOOK" || mediaType === "MANGA"
+        ? "l'a déjà lu"
+        : "l'a déjà vu"
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
@@ -327,6 +334,13 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
         {/* Expanded view to add reactions (always shown when embedded) */}
         {(expanded || embedded) && (
           <div className={embedded ? "space-y-4" : "space-y-4 pt-2 border-t"}>
+            {/* Single-choice hint: reactions are one-per-person, and the
+                emotion options already imply the person experienced it — so
+                there's no separate "seen" to also tick. */}
+            <p className="text-xs leading-snug" style={{ color: p.ink2 }}>
+              Une seule réaction par personne — «&nbsp;{labelFor("LOVED", "Adoré")}&nbsp;» ou
+              «&nbsp;{labelFor("LIKED", "Bien aimé")}&nbsp;» veut déjà dire que la personne {seenPastPhrase}.
+            </p>
             {members.map((member) => (
               <div key={member.id} className="space-y-2">
                 <div className="flex items-center gap-2">
