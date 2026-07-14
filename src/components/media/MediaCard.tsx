@@ -10,6 +10,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { AgeBadge } from "./AgeBadge"
 import { ProvisionalBadge } from "./ProvisionalBadge"
 import { FamilyFitAvatars } from "./FamilyFitAvatars"
+import { PosterActionBar } from "./PosterActionBar"
 import { SafetyBar } from "./ContentGrid"
 import { PlatformIcons } from "./PlatformIcons"
 import { cn, mediaTypeLabels } from "@/lib/utils"
@@ -221,6 +222,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
                 {media.isProvisional && <ProvisionalBadge size="xs" />}
               </div>
             )}
+            <PosterActionBar mediaId={media.id} />
           </div>
           <div className="pt-2 px-1 flex-1">
             <h3 className="font-semibold text-xs text-gray-800 line-clamp-2 group-hover:text-violet-700 transition-colors leading-tight">
@@ -299,6 +301,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
               <Icon className="h-3 w-3" />
             </span>
           </div>
+          <PosterActionBar mediaId={media.id} />
         </div>
 
         {/* Info Section Below Image - Fixed height for grid alignment */}

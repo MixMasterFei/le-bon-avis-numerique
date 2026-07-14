@@ -5,6 +5,7 @@ import Link from "next/link"
 import { EyeOff } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
+import { PosterActionBar } from "@/components/media/PosterActionBar"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { useSettings } from "@/contexts/SettingsContext"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -168,6 +169,7 @@ export function ApercuMediaCard({
             {TYPE_LABELS[media.type]}
           </div>
         )}
+        <PosterActionBar mediaId={media.id} />
       </div>
       <div className="mt-1.5">
         <div
