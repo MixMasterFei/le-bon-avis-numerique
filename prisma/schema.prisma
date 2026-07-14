@@ -445,15 +445,16 @@ model FamilyMember {
 }
 
 enum ReactionType {
-  WATCHED    // Déjà vu
-  LOVED      // Adoré
-  LIKED      // Bien aimé
-  OK         // Bof
-  SCARED     // A eu peur
-  BORED      // S'est ennuyé
-  TOO_YOUNG  // Trop jeune pour comprendre
-  TOO_OLD    // Trop vieux (pas intéressé)
-  NOT_FOR_ME // Pas pour moi — intent dislike, distinct from BORED (post-watch)
+  WATCHED        // Déjà vu
+  LOVED          // Adoré
+  LIKED          // Bien aimé
+  OK             // Bof
+  SCARED         // A eu peur
+  BORED          // S'est ennuyé
+  TOO_YOUNG      // Trop jeune pour comprendre
+  TOO_OLD        // Trop vieux (pas intéressé)
+  NOT_FOR_ME     // Pas pour moi — intent dislike, distinct from BORED (post-watch)
+  WANTS_TO_WATCH // À voir — pre-watch intent (positive signal), set from the quick poster actions
 }
 
 enum ReactionSource {

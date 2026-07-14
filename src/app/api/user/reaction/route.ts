@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Valid reaction types. NOT_FOR_ME is intent (used by quiz anchors); the
     // other values are organic post-watch reactions.
-    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD", "NOT_FOR_ME"]
+    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD", "NOT_FOR_ME", "WANTS_TO_WATCH"]
     if (!validReactions.includes(reaction)) {
       return NextResponse.json({ error: "Réaction invalide" }, { status: 400 })
     }

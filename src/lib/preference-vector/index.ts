@@ -60,9 +60,12 @@ export const EMPTY_VECTOR: MemberVector = {
 // Weights applied per reaction type when aggregating. LOVED/LIKED count
 // positively; SCARED/BORED/TOO_OLD/NOT_FOR_ME count negatively. WATCHED is a
 // small positive nudge (completion is a real, if weaker, signal).
+// WANTS_TO_WATCH is declared pre-watch interest — a genuine but soft taste
+// signal (they liked the look/genre), weighted below a post-watch LIKED.
 const REACTION_WEIGHTS: Record<string, number> = {
   LOVED: 2.0,
   LIKED: 1.0,
+  WANTS_TO_WATCH: 0.75,
   WATCHED: 0.5,
   OK: 0.25,
   BORED: -1.0,

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { EyeOff } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { FamilyFitAvatars } from "@/components/media/FamilyFitAvatars"
+import { PosterActionBar } from "@/components/media/PosterActionBar"
 import { useFamilyFit } from "@/components/home/FamilyFitProvider"
 import { useSettings } from "@/contexts/SettingsContext"
 import { toMediaRouteId } from "@/lib/media-route"
@@ -156,6 +157,10 @@ export function RedesignCard({
             {media.cornerLabel}
           </span>
         )}
+
+        {/* Quick per-member triage (à voir / déjà vu / adoré). Renders null
+            unless enabled (admin-only for now). */}
+        <PosterActionBar mediaId={media.id} />
       </div>
 
       <div className="mt-2.5">
