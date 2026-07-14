@@ -59,6 +59,7 @@ Speed is the whole value. So:
 - **Preload:** ✅ `GET /api/user/reactions/all` returns the user's whole (sparse) reaction set in one query, shared across the grid via `useUserReactions` — a title already marked shows its state on load. A late preload never clobbers a fresh optimistic write (`touched` ref).
 - **Anonymous signup gate:** ✅ Logged-out visitors now see the bar too; tapping any action opens a benefit-led signup prompt (`SIGNUP_COPY` per action) with **S'inscrire** / **Se connecter** (`?callbackUrl=` back to the page). Content stays fully visible — only the *save* asks for an account (Google-blessed save-gate). This is the acquisition-funnel piece the study rates #1 (save-hook = 16× a newsletter). → **Next:** replay the intended action after signup (stash media+action, apply once a member exists).
 - **One card** (`RedesignCard`, which covers the homepage + all V2 grids). → **Next:** drop into `ApercuMediaCard` (classic grids) + `MediaCard` if any surface still renders them for logged-in users.
+- **Mobile collapse:** ✅ on small screens (<sm) the 4-button row collapses behind a single "+" toggle that expands the options (fits narrow phone posters); tablets/desktop keep the inline row. Enables covering the tiny Coin Famille cards next.
 - **No "acting as member" session switcher** (Netflix "who's watching") — would make multi-member one-tap even faster. Candidate next.
 
 ---
