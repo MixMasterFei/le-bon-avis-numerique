@@ -155,9 +155,11 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
         </div>
       )}
 
-      {/* action row — subtle at rest, brighten on card hover; always visible on
-          touch (no hover). */}
-      <div className="flex items-center justify-center gap-1.5 px-2 pb-2 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+      {/* action row — ALWAYS visible on touch devices (phones AND tablets:
+          gate on hover CAPABILITY, not screen width — an iPad is ≥sm but has
+          no hover, so a width-based hide left it stuck invisible). On real
+          mouse pointers only: subtle at rest, brighten on card hover/focus. */}
+      <div className="flex items-center justify-center gap-1.5 px-2 pb-2 opacity-100 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
         {ACTIONS.map(({ kind, label, Icon }) => {
           const count = counts[kind]
           const on = count > 0
