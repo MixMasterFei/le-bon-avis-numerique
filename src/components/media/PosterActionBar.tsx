@@ -1,12 +1,16 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Heart, Eye, Bookmark, ThumbsDown, Users, Check } from "lucide-react"
+import { Heart, Eye, Bookmark, ThumbsDown, Users, Check, Plus, X } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { posterActionsEnabled } from "@/lib/poster-actions-flag"
 import { useFamilyMembers } from "@/hooks/useFamilyMembers"
+import { useUserReactions } from "@/hooks/useUserReactions"
+
+const ACTION_KINDS = new Set(["WANTS_TO_WATCH", "WATCHED", "LOVED", "NOT_FOR_ME"])
 
 // Quick per-member triage on any poster, site-wide: "à voir" / "déjà vu" /
 // "adoré". One tap captures a real per-member reaction (feeding the taste
@@ -30,18 +34,49 @@ const ACTIONS: { kind: ActionKind; label: string; Icon: typeof Heart }[] = [
   { kind: "NOT_FOR_ME", label: "Pas pour nous", Icon: ThumbsDown },
 ]
 
+// Benefit-led copy for the anonymous signup gate — the save-hook the market
+// study names as the #1 conversion driver (16× a newsletter form). The prompt
+// sells what the account KEEPS, per the tapped action.
+const SIGNUP_COPY: Record<ActionKind, string> = {
+  WANTS_TO_WATCH: "Gardez votre liste « à voir »",
+  WATCHED: "Suivez ce que votre famille a vu",
+  LOVED: "Enregistrez vos coups de cœur",
+  NOT_FOR_ME: "Écartez ce qui n'est pas pour vous",
+}
+
 export function PosterActionBar({ mediaId }: { mediaId: string }) {
   const { data: session } = useSession()
-  const isAdmin = session?.user?.role === "ADMIN"
-  const enabled = !!session?.user && posterActionsEnabled(isAdmin)
+  const pathname = usePathname()
+  const enabled = posterActionsEnabled()
+  const loggedIn = !!session?.user
 
-  const members = useFamilyMembers(enabled)
-  // Optimistic per-member state for THIS media. Not preloaded in v1 (avoids N
-  // fetches on a grid) — starts blank and reflects what the user sets in
-  // session. Batch-preload is the immediate follow-up.
+  // Members + preload only matter for logged-in users; anonymous visitors get
+  // the signup gate instead (no fetches).
+  const members = useFamilyMembers(enabled && loggedIn)
+  const preloaded = useUserReactions(enabled && loggedIn)
+  // Optimistic per-member state for THIS media.
   const [state, setState] = useState<Record<string, ActionKind>>({})
   const [openAction, setOpenAction] = useState<ActionKind | null>(null)
+  const [signupFor, setSignupFor] = useState<ActionKind | null>(null)
   const [busy, setBusy] = useState(false)
+  // Small screens collapse the 4-button row behind a single toggle so it fits
+  // narrow posters; desktop keeps the inline row.
+  const [mobileOpen, setMobileOpen] = useState(false)
+  // Once the user interacts, a late-arriving preload must not clobber their
+  // fresh optimistic state.
+  const touched = useRef(false)
+
+  // Seed from the shared preload when it lands (one fetch for the whole grid).
+  useEffect(() => {
+    if (!preloaded || touched.current) return
+    const forMedia = preloaded[mediaId]
+    if (!forMedia) return
+    const seed: Record<string, ActionKind> = {}
+    for (const [memberId, reaction] of Object.entries(forMedia)) {
+      if (ACTION_KINDS.has(reaction)) seed[memberId] = reaction as ActionKind
+    }
+    if (Object.keys(seed).length > 0) setState(seed)
+  }, [preloaded, mediaId])
 
   const counts = useMemo(() => {
     const c: Record<ActionKind, number> = { WANTS_TO_WATCH: 0, WATCHED: 0, LOVED: 0, NOT_FOR_ME: 0 }
@@ -57,6 +92,7 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
   }
 
   async function applyToMember(memberId: string, kind: ActionKind) {
+    touched.current = true
     const current = state[memberId]
     const removing = current === kind
     // Optimistic
@@ -119,6 +155,48 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
   }
 
   const noMembers = members !== null && members.length === 0
+  const totalReactions = Object.keys(state).length
+
+  // One action button — shared by the desktop row and the mobile expanded row.
+  function actionButton(kind: ActionKind, label: string, Icon: typeof Heart) {
+    const count = counts[kind]
+    const on = count > 0
+    const open = loggedIn ? openAction === kind : signupFor === kind
+    return (
+      <button
+        key={kind}
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={(e) => {
+          if (loggedIn) {
+            onActionTap(e, kind)
+          } else {
+            stop(e)
+            setSignupFor((prev) => (prev === kind ? null : kind))
+          }
+        }}
+        className="relative inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
+        style={{
+          width: 30,
+          height: 30,
+          background: open || on ? "#fff" : "rgba(20,16,12,0.55)",
+          color: open || on ? "#1E1A15" : "#fff",
+          backdropFilter: "blur(2px)",
+        }}
+      >
+        <Icon className="h-3.5 w-3.5" fill={on && kind === "LOVED" ? "#D16A4A" : "none"} />
+        {count > 1 && (
+          <span
+            className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
+            style={{ background: "#D16A4A", color: "#fff" }}
+          >
+            {count}
+          </span>
+        )}
+      </button>
+    )
+  }
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-30" onClick={stop}>
@@ -199,43 +277,81 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
         </div>
       )}
 
-      {/* action row — ALWAYS visible on touch devices (phones AND tablets:
-          gate on hover CAPABILITY, not screen width — an iPad is ≥sm but has
-          no hover, so a width-based hide left it stuck invisible). On real
-          mouse pointers only: subtle at rest, brighten on card hover/focus. */}
-      <div className="flex items-center justify-center gap-1.5 px-2 pb-2 opacity-100 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
-        {ACTIONS.map(({ kind, label, Icon }) => {
-          const count = counts[kind]
-          const on = count > 0
-          const open = openAction === kind
-          return (
-            <button
-              key={kind}
-              type="button"
-              aria-label={label}
-              title={label}
-              onClick={(e) => onActionTap(e, kind)}
-              className="relative inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
-              style={{
-                width: 30,
-                height: 30,
-                background: open || on ? "#fff" : "rgba(20,16,12,0.55)",
-                color: open || on ? "#1E1A15" : "#fff",
-                backdropFilter: "blur(2px)",
-              }}
+      {/* Anonymous signup gate — the save-hook. The content stays fully
+          visible; only the SAVE asks for an account (Google-blessed pattern),
+          with benefit-led copy per the tapped action. */}
+      {!loggedIn && signupFor && (
+        <div className="mx-2 mb-1 rounded-xl p-2.5" style={{ background: "rgba(20,16,12,0.92)" }}>
+          <div className="text-[11.5px] font-semibold leading-snug text-white">{SIGNUP_COPY[signupFor]}</div>
+          <div className="mt-0.5 text-[10px] leading-snug text-white/70">
+            Compte famille gratuit — des repères adaptés à chaque enfant.
+          </div>
+          <div className="mt-2 flex gap-1.5">
+            <Link
+              href={`/inscription?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full px-3 py-1 text-[11px] font-bold"
+              style={{ background: "#fff", color: "#1E1A15" }}
             >
-              <Icon className="h-3.5 w-3.5" fill={on && kind === "LOVED" ? "#D16A4A" : "none"} />
-              {count > 1 && (
-                <span
-                  className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
-                  style={{ background: "#D16A4A", color: "#fff" }}
-                >
-                  {count}
-                </span>
-              )}
+              S&apos;inscrire
+            </Link>
+            <Link
+              href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full px-3 py-1 text-[11px] font-semibold"
+              style={{ background: "rgba(255,255,255,0.16)", color: "#fff" }}
+            >
+              Se connecter
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* DESKTOP: inline 4-button row. Subtle at rest, brighten on card hover;
+          hidden on small screens (they use the collapsed toggle below). */}
+      <div className="hidden items-center justify-center gap-1.5 px-2 pb-2 opacity-100 transition-opacity duration-200 sm:flex [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
+        {ACTIONS.map(({ kind, label, Icon }) => actionButton(kind, label, Icon))}
+      </div>
+
+      {/* MOBILE: a single toggle that expands the four options — fits narrow
+          posters where a 4-button row would overflow. Always visible (touch). */}
+      <div className="flex justify-center px-2 pb-2 sm:hidden">
+        {!mobileOpen ? (
+          <button
+            type="button"
+            aria-label="Réagir"
+            title="Réagir"
+            onClick={(e) => {
+              stop(e)
+              setMobileOpen(true)
+            }}
+            className="relative inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
+            style={{ width: 30, height: 30, background: totalReactions > 0 ? "#fff" : "rgba(20,16,12,0.62)", color: totalReactions > 0 ? "#1E1A15" : "#fff", backdropFilter: "blur(2px)" }}
+          >
+            <Plus className="h-4 w-4" />
+            {totalReactions > 0 && (
+              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full" style={{ background: "#D16A4A" }} />
+            )}
+          </button>
+        ) : (
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {ACTIONS.map(({ kind, label, Icon }) => actionButton(kind, label, Icon))}
+            <button
+              type="button"
+              aria-label="Fermer"
+              onClick={(e) => {
+                stop(e)
+                setMobileOpen(false)
+                setOpenAction(null)
+                setSignupFor(null)
+              }}
+              className="inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
+              style={{ width: 30, height: 30, background: "rgba(20,16,12,0.62)", color: "#fff", backdropFilter: "blur(2px)" }}
+            >
+              <X className="h-3.5 w-3.5" />
             </button>
-          )
-        })}
+          </div>
+        )}
       </div>
     </div>
   )

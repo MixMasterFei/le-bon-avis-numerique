@@ -1,6 +1,6 @@
 # Poster Actions — quick per-member triage, site-wide
 
-**Status:** v1 shipped behind an admin-only flag (2026-07). Prototype surface: `RedesignCard` (the V2 grid card admins see on `/films`, `/series`, `/jeux`, `/recherche`, `/age/*`, catalogue).
+**Status:** PUBLIC for all logged-in users since 2026-07 (validated admin-only first). Surface: `RedesignCard` (the V2 grid card used on the homepage rails, `/films`, `/series`, `/jeux`, `/recherche`, `/age/*`, catalogue). Kill-switch: `NEXT_PUBLIC_POSTER_ACTIONS="false"`. Logged-out visitors still see nothing — the anonymous→signup gate is the next increment.
 **Owner idea:** Xavier — "let a user mark love / à voir / déjà vu directly on the poster while scrolling, pick *who* per action, without opening the fiche."
 
 ---
@@ -54,12 +54,13 @@ Speed is the whole value. So:
 
 ---
 
-## v1 limitations (deliberate — validate the feel first)
+## State (post-launch)
 
-- **No preload of existing state.** A grid card starts blank even if the admin reacted before (avoids N fetches). → **Next:** a batch endpoint (`POST /api/user/reactions/batch` with visible media ids) to hydrate initial state.
-- **Logged-out users** see nothing yet. → **Next:** show the bar to anonymous users; tap → signup gate (the 16× hook, the study's #1 acquisition lever).
-- **One card only** (`RedesignCard`). → **Next:** drop into `ApercuMediaCard` (public grids) + `MediaCard` once the interaction is validated.
-- **No "acting as member" session switcher** (Netflix "who's watching") — would make multi-member one-tap even faster. Candidate v2.
+- **Preload:** ✅ `GET /api/user/reactions/all` returns the user's whole (sparse) reaction set in one query, shared across the grid via `useUserReactions` — a title already marked shows its state on load. A late preload never clobbers a fresh optimistic write (`touched` ref).
+- **Anonymous signup gate:** ✅ Logged-out visitors now see the bar too; tapping any action opens a benefit-led signup prompt (`SIGNUP_COPY` per action) with **S'inscrire** / **Se connecter** (`?callbackUrl=` back to the page). Content stays fully visible — only the *save* asks for an account (Google-blessed save-gate). This is the acquisition-funnel piece the study rates #1 (save-hook = 16× a newsletter). → **Next:** replay the intended action after signup (stash media+action, apply once a member exists).
+- **One card** (`RedesignCard`, which covers the homepage + all V2 grids). → **Next:** drop into `ApercuMediaCard` (classic grids) + `MediaCard` if any surface still renders them for logged-in users.
+- **Mobile collapse:** ✅ on small screens (<sm) the 4-button row collapses behind a single "+" toggle that expands the options (fits narrow phone posters); tablets/desktop keep the inline row. Enables covering the tiny Coin Famille cards next.
+- **No "acting as member" session switcher** (Netflix "who's watching") — would make multi-member one-tap even faster. Candidate next.
 
 ---
 
