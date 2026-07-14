@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useSession } from "next-auth/react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Heart, Eye, Bookmark, ThumbsDown, Users, Check } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
@@ -33,15 +34,30 @@ const ACTIONS: { kind: ActionKind; label: string; Icon: typeof Heart }[] = [
   { kind: "NOT_FOR_ME", label: "Pas pour nous", Icon: ThumbsDown },
 ]
 
+// Benefit-led copy for the anonymous signup gate — the save-hook the market
+// study names as the #1 conversion driver (16× a newsletter form). The prompt
+// sells what the account KEEPS, per the tapped action.
+const SIGNUP_COPY: Record<ActionKind, string> = {
+  WANTS_TO_WATCH: "Gardez votre liste « à voir »",
+  WATCHED: "Suivez ce que votre famille a vu",
+  LOVED: "Enregistrez vos coups de cœur",
+  NOT_FOR_ME: "Écartez ce qui n'est pas pour vous",
+}
+
 export function PosterActionBar({ mediaId }: { mediaId: string }) {
   const { data: session } = useSession()
-  const enabled = !!session?.user && posterActionsEnabled()
+  const pathname = usePathname()
+  const enabled = posterActionsEnabled()
+  const loggedIn = !!session?.user
 
-  const members = useFamilyMembers(enabled)
-  const preloaded = useUserReactions(enabled)
+  // Members + preload only matter for logged-in users; anonymous visitors get
+  // the signup gate instead (no fetches).
+  const members = useFamilyMembers(enabled && loggedIn)
+  const preloaded = useUserReactions(enabled && loggedIn)
   // Optimistic per-member state for THIS media.
   const [state, setState] = useState<Record<string, ActionKind>>({})
   const [openAction, setOpenAction] = useState<ActionKind | null>(null)
+  const [signupFor, setSignupFor] = useState<ActionKind | null>(null)
   const [busy, setBusy] = useState(false)
   // Once the user interacts, a late-arriving preload must not clobber their
   // fresh optimistic state.
@@ -216,6 +232,36 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
         </div>
       )}
 
+      {/* Anonymous signup gate — the save-hook. The content stays fully
+          visible; only the SAVE asks for an account (Google-blessed pattern),
+          with benefit-led copy per the tapped action. */}
+      {!loggedIn && signupFor && (
+        <div className="mx-2 mb-1 rounded-xl p-2.5" style={{ background: "rgba(20,16,12,0.92)" }}>
+          <div className="text-[11.5px] font-semibold leading-snug text-white">{SIGNUP_COPY[signupFor]}</div>
+          <div className="mt-0.5 text-[10px] leading-snug text-white/70">
+            Compte famille gratuit — des repères adaptés à chaque enfant.
+          </div>
+          <div className="mt-2 flex gap-1.5">
+            <Link
+              href={`/inscription?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full px-3 py-1 text-[11px] font-bold"
+              style={{ background: "#fff", color: "#1E1A15" }}
+            >
+              S&apos;inscrire
+            </Link>
+            <Link
+              href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-full px-3 py-1 text-[11px] font-semibold"
+              style={{ background: "rgba(255,255,255,0.16)", color: "#fff" }}
+            >
+              Se connecter
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* action row — ALWAYS visible on touch devices (phones AND tablets:
           gate on hover CAPABILITY, not screen width — an iPad is ≥sm but has
           no hover, so a width-based hide left it stuck invisible). On real
@@ -224,14 +270,21 @@ export function PosterActionBar({ mediaId }: { mediaId: string }) {
         {ACTIONS.map(({ kind, label, Icon }) => {
           const count = counts[kind]
           const on = count > 0
-          const open = openAction === kind
+          const open = loggedIn ? openAction === kind : signupFor === kind
           return (
             <button
               key={kind}
               type="button"
               aria-label={label}
               title={label}
-              onClick={(e) => onActionTap(e, kind)}
+              onClick={(e) => {
+                if (loggedIn) {
+                  onActionTap(e, kind)
+                } else {
+                  stop(e)
+                  setSignupFor((prev) => (prev === kind ? null : kind))
+                }
+              }}
               className="relative inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
               style={{
                 width: 30,

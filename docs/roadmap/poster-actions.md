@@ -57,7 +57,7 @@ Speed is the whole value. So:
 ## State (post-launch)
 
 - **Preload:** ✅ `GET /api/user/reactions/all` returns the user's whole (sparse) reaction set in one query, shared across the grid via `useUserReactions` — a title already marked shows its state on load. A late preload never clobbers a fresh optimistic write (`touched` ref).
-- **Logged-out users** still see nothing → **Next:** show the bar to anonymous visitors; tap → signup gate (the 16× hook, the study's #1 acquisition lever). This is the increment that turns the bar into the acquisition funnel.
+- **Anonymous signup gate:** ✅ Logged-out visitors now see the bar too; tapping any action opens a benefit-led signup prompt (`SIGNUP_COPY` per action) with **S'inscrire** / **Se connecter** (`?callbackUrl=` back to the page). Content stays fully visible — only the *save* asks for an account (Google-blessed save-gate). This is the acquisition-funnel piece the study rates #1 (save-hook = 16× a newsletter). → **Next:** replay the intended action after signup (stash media+action, apply once a member exists).
 - **One card** (`RedesignCard`, which covers the homepage + all V2 grids). → **Next:** drop into `ApercuMediaCard` (classic grids) + `MediaCard` if any surface still renders them for logged-in users.
 - **No "acting as member" session switcher** (Netflix "who's watching") — would make multi-member one-tap even faster. Candidate next.
 
