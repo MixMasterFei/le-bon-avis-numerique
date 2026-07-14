@@ -24,8 +24,11 @@ Reactions are **one-per-member-per-title** (`MediaReaction` unique `[familyMembe
 | Action | `ReactionType` | Meaning | Vector weight |
 |---|---|---|---|
 | À voir | `WANTS_TO_WATCH` *(new)* | pre-watch declared interest | +0.75 |
-| Déjà vu | `WATCHED` | neutral completion | +0.5 |
+| Déjà vu | `WATCHED` | neutral completion — **also the dedup signal** (picks engine excludes watched titles) | +0.5 |
 | Adoré | `LOVED` | positive post-watch | +2.0 |
+| Pas pour nous | `NOT_FOR_ME` | dislike / not for the family | **−2.0** |
+
+The negative is deliberate: it's the strongest filtering signal *and* the one a positive-only fast lane would never capture — without it the taste vector built at scroll speed skews positive and loses discriminative power. The picker also carries a **"Toute la famille"** one-tap apply/clear-for-everyone.
 
 `WANTS_TO_WATCH` added to the enum (`sql/add_wants_to_watch_reaction.sql`, `ALTER TYPE`), the API allow-list (`/api/user/reaction`), and `REACTION_WEIGHTS` (`src/lib/preference-vector/index.ts`). Setting one state replaces the member's prior state (want → watched → adoré), which the unique constraint enforces for free.
 
