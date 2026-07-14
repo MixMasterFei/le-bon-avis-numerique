@@ -41,7 +41,7 @@ The negative is deliberate: it's the strongest filtering signal *and* the one a 
 Speed is the whole value. So:
 
 - **1 member** → one tap = done (no picker).
-- **≥2 members** → tap an action reveals a member multi-select *under the poster*; tapping a chip writes that member's reaction immediately (optimistic). "Toute la famille" quick-apply is a planned addition.
+- **≥2 members** → tap an action opens a **bottom sheet** (portaled to `<body>`, so the poster's `overflow-hidden` can't clip it — the large-family bug); it lists "Toute la famille" + each member in a scrollable list, tapping a row writes that member's reaction immediately (optimistic). Locks background scroll and closes on backdrop tap / Escape.
 - Actions sit at the poster bottom, **subtle at rest, brighten on card hover** (desktop) and **always visible on touch** (mobile — no hover). Buttons `stopPropagation` so they never trigger card navigation. Filled state + a count badge show current per-member states.
 
 ---
