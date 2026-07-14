@@ -22,6 +22,7 @@ import {
 import { usePathname } from "next/navigation"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { seenLabelFr } from "@/lib/reaction-types"
 
 interface FamilyMemberWithReaction {
   id: string
@@ -53,16 +54,18 @@ interface FamilyReactionsProps {
 
 /** Per-type wording for "seen it" — a game is *joué*, a book *lu*, everything
  *  else *vu*. Shared with DashboardFamilyFeedback so the section header and the
- *  WATCHED reaction label always agree. */
+ *  WATCHED reaction label always agree. Label text comes from the shared
+ *  reaction vocabulary (src/lib/reaction-types.ts). */
 export function seenVerb(mediaType?: string): { label: string; header: string } {
+  const label = seenLabelFr(mediaType)
   switch (mediaType) {
     case "GAME":
-      return { label: "Déjà joué", header: "Vous y avez joué ?" }
+      return { label, header: "Vous y avez joué ?" }
     case "BOOK":
     case "MANGA":
-      return { label: "Déjà lu", header: "Vous l'avez lu ?" }
+      return { label, header: "Vous l'avez lu ?" }
     default:
-      return { label: "Déjà vu", header: "Vous l'avez vu ?" }
+      return { label, header: "Vous l'avez vu ?" }
   }
 }
 

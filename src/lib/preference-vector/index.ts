@@ -62,7 +62,9 @@ export const EMPTY_VECTOR: MemberVector = {
 // small positive nudge (completion is a real, if weaker, signal).
 // WANTS_TO_WATCH is declared pre-watch interest — a genuine but soft taste
 // signal (they liked the look/genre), weighted below a post-watch LIKED.
-const REACTION_WEIGHTS: Record<string, number> = {
+// Exported for the reaction-pipe sync test (every ReactionType must carry a
+// weight, so no tap is ever silently ignored by the vector recompute).
+export const REACTION_WEIGHTS: Record<string, number> = {
   LOVED: 2.0,
   LIKED: 1.0,
   WANTS_TO_WATCH: 0.75,

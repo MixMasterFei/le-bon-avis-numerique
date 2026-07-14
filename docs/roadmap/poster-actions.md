@@ -54,6 +54,12 @@ Speed is the whole value. So:
 
 ---
 
+## Data integrity (the pipe)
+
+- **One vocabulary, tested:** `src/lib/reaction-types.ts` is the single source of truth (VALID_REACTIONS + FR labels). Sync tests (`src/lib/__tests__/reaction-types.test.ts`) prove the Prisma enum, the API allow-list, `REACTION_WEIGHTS` and the UI writers (PosterActionBar, FamilyReactions) can't drift.
+- **One door:** every surface writes through `/api/user/reaction` (deep handler tests in `src/app/api/user/reaction/__tests__/route.test.ts` — auth, cross-account ownership gates, allow-list, upsert state machine, note sanitization, vector recompute). The preload endpoint has its own tests.
+- **Parent oversight:** the Member Corner "Historique" tab shows every reaction with its date and per-type label; the badge on each title opens a correction menu (switch to any other reaction, or remove). Wrong taps are fixable in two taps.
+
 ## State (post-launch)
 
 - **Preload:** ✅ `GET /api/user/reactions/all` returns the user's whole (sparse) reaction set in one query, shared across the grid via `useUserReactions` — a title already marked shows its state on load. A late preload never clobbers a fresh optimistic write (`touched` ref).

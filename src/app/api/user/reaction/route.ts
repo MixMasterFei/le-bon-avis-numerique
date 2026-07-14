@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { recomputeMemberVectorSafe } from "@/lib/preference-vector/recompute"
+import { isValidReaction, MAX_REACTION_NOTE_LENGTH } from "@/lib/reaction-types"
+import { sanitizeInput } from "@/lib/security"
 
 // GET /api/user/reaction?mediaId=xxx - Get reactions for a media item by user's family
 export async function GET(request: NextRequest) {
@@ -88,10 +90,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Média non trouvé" }, { status: 404 })
     }
 
-    // Valid reaction types. NOT_FOR_ME is intent (used by quiz anchors); the
-    // other values are organic post-watch reactions.
-    const validReactions = ["WATCHED", "LOVED", "LIKED", "OK", "SCARED", "BORED", "TOO_YOUNG", "TOO_OLD", "NOT_FOR_ME", "WANTS_TO_WATCH"]
-    if (!validReactions.includes(reaction)) {
+    // Allow-list from the shared vocabulary (src/lib/reaction-types.ts) —
+    // kept in sync with the Prisma enum by test. NOT_FOR_ME is intent (used
+    // by quiz anchors); the other values are organic post-watch reactions.
+    if (!isValidReaction(reaction)) {
       return NextResponse.json({ error: "Réaction invalide" }, { status: 400 })
     }
 
@@ -99,7 +101,15 @@ export async function POST(request: NextRequest) {
     const reactionSource: "organic" | "quiz_anchor" =
       source === "quiz_anchor" ? "quiz_anchor" : "organic"
 
-    // Upsert the reaction
+    // Optional free-text note: sanitize + cap before storing.
+    const safeNote =
+      typeof note === "string" && note.trim()
+        ? sanitizeInput(note).slice(0, MAX_REACTION_NOTE_LENGTH) || null
+        : null
+
+    // Upsert the reaction — the compound unique [familyMemberId, mediaId]
+    // makes this a per-member STATE MACHINE: setting a new reaction replaces
+    // the member's previous one for this title.
     const mediaReaction = await prisma.mediaReaction.upsert({
       where: {
         familyMemberId_mediaId: {
@@ -111,12 +121,12 @@ export async function POST(request: NextRequest) {
         familyMemberId,
         mediaId,
         reaction,
-        note: note || null,
+        note: safeNote,
         source: reactionSource,
       },
       update: {
         reaction,
-        note: note || null,
+        note: safeNote,
         source: reactionSource,
       },
     })
