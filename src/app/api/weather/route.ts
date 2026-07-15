@@ -19,7 +19,13 @@ export async function GET(request: NextRequest) {
     const lat = Number(searchParams.get("lat"))
     const lon = Number(searchParams.get("lon"))
     const name = (searchParams.get("name") ?? "").trim()
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !name) {
+    // Same bounds as the PATCH /api/user/weather-city validation — an
+    // out-of-range coordinate would only waste an upstream call.
+    if (
+      !Number.isFinite(lat) || !Number.isFinite(lon) ||
+      lat < -90 || lat > 90 || lon < -180 || lon > 180 ||
+      !name || name.length > 100
+    ) {
       return NextResponse.json({ error: "Paramètres invalides" }, { status: 400 })
     }
     const snapshot = await getWeatherForCity({ name, lat, lon })
