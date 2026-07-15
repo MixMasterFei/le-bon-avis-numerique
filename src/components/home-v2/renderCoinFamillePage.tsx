@@ -97,7 +97,7 @@ export async function renderCoinFamillePage() {
     deadlines,
     reactionCounts,
   ] = await Promise.all([
-    getCoinFamilleNews(8).catch(safe<CoinFamilleNewsItem[]>("news", [])),
+    getCoinFamilleNews(8, userId).catch(safe<CoinFamilleNewsItem[]>("news", [])),
     prisma.familyMember
       .findMany({
         where: { userId },
