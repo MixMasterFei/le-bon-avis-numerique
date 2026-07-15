@@ -41,8 +41,8 @@ The negative is deliberate: it's the strongest filtering signal *and* the one a 
 Speed is the whole value. So:
 
 - **1 member** → one tap = done (no picker).
-- **≥2 members** → tap an action reveals a member multi-select *under the poster*; tapping a chip writes that member's reaction immediately (optimistic). "Toute la famille" quick-apply is a planned addition.
-- Actions sit at the poster bottom, **subtle at rest, brighten on card hover** (desktop) and **always visible on touch** (mobile — no hover). Buttons `stopPropagation` so they never trigger card navigation. Filled state + a count badge show current per-member states.
+- **≥2 members** → tap an action opens a **bottom sheet** (portaled to `<body>`, so the poster's `overflow-hidden` can't clip it — the large-family bug); it lists "Toute la famille" + each member in a scrollable list, tapping a row writes that member's reaction immediately (optimistic). Locks background scroll and closes on backdrop tap / Escape.
+- Actions sit at the poster bottom, **always visible** on every device (desktop was hover-revealed at first; Xavier's call July 2026 — permanent icons lead users to click and discover the system). Buttons `stopPropagation` so they never trigger card navigation. Filled state + a count badge show current per-member states.
 
 ---
 
@@ -53,6 +53,12 @@ Speed is the whole value. So:
 - `src/components/media/PosterActionBar.tsx` — the shared overlay (renders null when disabled). Drop `<PosterActionBar mediaId={id} />` into any card's poster div.
 
 ---
+
+## Data integrity (the pipe)
+
+- **One vocabulary, tested:** `src/lib/reaction-types.ts` is the single source of truth (VALID_REACTIONS + FR labels). Sync tests (`src/lib/__tests__/reaction-types.test.ts`) prove the Prisma enum, the API allow-list, `REACTION_WEIGHTS` and the UI writers (PosterActionBar, FamilyReactions) can't drift.
+- **One door:** every surface writes through `/api/user/reaction` (deep handler tests in `src/app/api/user/reaction/__tests__/route.test.ts` — auth, cross-account ownership gates, allow-list, upsert state machine, note sanitization, vector recompute). The preload endpoint has its own tests.
+- **Parent oversight:** the Member Corner "Historique" tab shows every reaction with its date and per-type label; the badge on each title opens a correction menu (switch to any other reaction, or remove). Wrong taps are fixable in two taps.
 
 ## State (post-launch)
 

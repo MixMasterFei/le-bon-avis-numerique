@@ -23,12 +23,29 @@ import {
   Tag,
   AlertTriangle,
   Bookmark,
+  Eye,
+  ThumbsDown,
+  Pencil,
+  Trash2,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import {
+  VALID_REACTIONS,
+  reactionLabelFr,
+  type ReactionValue,
+} from "@/lib/reaction-types"
 import { CompletionMeter } from "./CompletionMeter"
 import { InterestsEditor } from "./InterestsEditor"
 import { MediaSearchAdd } from "./MediaSearchAdd"
@@ -43,7 +60,7 @@ import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components
 import { toMediaRouteId } from "@/lib/media-route"
 import { hasActionablePreferences, isProfileComplete } from "@/lib/family-fit-score"
 import type { MediaType } from "@/lib/types"
-import { cn, formatAgeFromBirthYear } from "@/lib/utils"
+import { cn, formatAgeFromBirthYear, formatRelativeTimeFr } from "@/lib/utils"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,14 +111,22 @@ interface MemberData {
 // Constants
 // ---------------------------------------------------------------------------
 
-const REACTION_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  LOVED: { label: "Adoré", icon: Heart, color: "text-red-500" },
-  LIKED: { label: "Bien aimé", icon: ThumbsUp, color: "text-green-500" },
-  OK: { label: "Bof", icon: Meh, color: "text-yellow-500" },
-  SCARED: { label: "A eu peur", icon: Ghost, color: "text-purple-500" },
-  BORED: { label: "S'est ennuyé", icon: Frown, color: "text-gray-500 dark:text-neutral-400" },
-  TOO_YOUNG: { label: "Trop jeune", icon: Baby, color: "text-blue-500" },
-  TOO_OLD: { label: "Pas intéressé", icon: UserX, color: "text-orange-500" },
+// Icon + color per reaction type. Labels come from the shared vocabulary
+// (reactionLabelFr, which also adapts "Déjà vu/joué/lu" to the media type).
+// MUST cover every ReactionValue — the reaction-types sync test enforces it,
+// so a poster-bar tap ("à voir", "déjà vu", "pas pour nous") can never show
+// up unlabeled in the history again.
+export const REACTION_STYLE: Record<ReactionValue, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  WATCHED: { icon: Eye, color: "text-indigo-500" },
+  LOVED: { icon: Heart, color: "text-red-500" },
+  LIKED: { icon: ThumbsUp, color: "text-green-500" },
+  OK: { icon: Meh, color: "text-yellow-500" },
+  SCARED: { icon: Ghost, color: "text-purple-500" },
+  BORED: { icon: Frown, color: "text-gray-500 dark:text-neutral-400" },
+  TOO_YOUNG: { icon: Baby, color: "text-blue-500" },
+  TOO_OLD: { icon: UserX, color: "text-orange-500" },
+  NOT_FOR_ME: { icon: ThumbsDown, color: "text-slate-500" },
+  WANTS_TO_WATCH: { icon: Bookmark, color: "text-sky-600" },
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -338,6 +363,35 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
     }
   }
 
+  // Correct a past reaction in place (parent oversight: "no, Eliott didn't
+  // love it, he was scared"). Optimistic swap; the POST upserts on the
+  // [member, media] unique key so the server state replaces atomically.
+  const changeReaction = async (mediaId: string, newReaction: ReactionValue) => {
+    const prev = member.reactions
+    setMember((m) =>
+      m
+        ? {
+            ...m,
+            reactions: m.reactions.map((r) =>
+              r.media.id === mediaId ? { ...r, reaction: newReaction } : r,
+            ),
+          }
+        : m,
+    )
+    try {
+      const res = await fetch("/api/user/reaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ familyMemberId: memberId, mediaId, reaction: newReaction }),
+      })
+      if (!res.ok) {
+        setMember((m) => (m ? { ...m, reactions: prev } : m))
+      }
+    } catch {
+      setMember((m) => (m ? { ...m, reactions: prev } : m))
+    }
+  }
+
   // Syncs local state with QuizAnchorPicker output. The picker calls the
   // /api/user/reaction endpoint itself; we just need to reflect adds/removals
   // in the in-memory member.reactions list so the rest of the UI updates.
@@ -460,7 +514,7 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
       <Tabs defaultValue="overview">
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="overview">Aperçu</TabsTrigger>
-          <TabsTrigger value="favorites">Favoris</TabsTrigger>
+          <TabsTrigger value="favorites">Historique</TabsTrigger>
           <TabsTrigger value="preferences">Préférences</TabsTrigger>
         </TabsList>
 
@@ -636,8 +690,8 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
               </CardHeader>
               <CardContent className="space-y-2">
                 {organicReactions.slice(0, 5).map((reaction) => {
-                  const config = REACTION_LABELS[reaction.reaction]
-                  const Icon = config?.icon || Meh
+                  const style = REACTION_STYLE[reaction.reaction as ReactionValue]
+                  const Icon = style?.icon || Meh
                   const routeId = toMediaRouteId(reaction.media.type as MediaType, reaction.media.id)
 
                   return (
@@ -664,11 +718,14 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                         <p className="text-sm font-medium text-gray-900 dark:text-[var(--color-ink)] truncate">{reaction.media.title}</p>
                         <p className="text-xs text-gray-400 dark:text-neutral-500">
                           {TYPE_LABELS[reaction.media.type] || reaction.media.type}
+                          {reaction.createdAt && (
+                            <> · {formatRelativeTimeFr(reaction.createdAt)}</>
+                          )}
                         </p>
                       </div>
-                      <span className={cn("flex items-center gap-1 text-xs font-medium", config?.color)}>
+                      <span className={cn("flex items-center gap-1 text-xs font-medium", style?.color)}>
                         <Icon className="h-3.5 w-3.5" />
-                        {config?.label}
+                        {reactionLabelFr(reaction.reaction, reaction.media.type)}
                       </span>
                     </Link>
                   )
@@ -778,9 +835,10 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
           {filteredReactions.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {filteredReactions.map((reaction) => {
-                const config = REACTION_LABELS[reaction.reaction]
-                const Icon = config?.icon || Meh
+                const style = REACTION_STYLE[reaction.reaction as ReactionValue]
+                const Icon = style?.icon || Meh
                 const routeId = toMediaRouteId(reaction.media.type as MediaType, reaction.media.id)
+                const currentLabel = reactionLabelFr(reaction.reaction, reaction.media.type)
 
                 return (
                   <div key={reaction.id} className="group relative">
@@ -800,32 +858,68 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
                           </div>
                         )}
 
-                        {/* Reaction badge */}
-                        <div className={cn(
-                          "absolute top-2 right-2 p-1.5 rounded-full bg-white/90 shadow-sm",
-                          config?.color
-                        )}>
-                          <Icon className="h-3.5 w-3.5" />
-                        </div>
-
-                        {/* Hover overlay with remove button */}
+                        {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                       </div>
                     </Link>
 
-                    {/* Remove button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        removeReaction(reaction.media.id)
-                      }}
-                      className="absolute top-2 left-2 p-1 rounded-full bg-white/90 shadow-sm text-gray-400 dark:text-neutral-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Retirer"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                    {/* Correction menu — the reaction badge IS the trigger.
+                        Parents can re-qualify any past reaction ("il n'a pas
+                        adoré, il a eu peur") or remove it entirely. Always
+                        tappable (no hover needed) so it works on iPad/mobile. */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className={cn(
+                            "absolute top-2 right-2 flex items-center gap-1 pl-1.5 pr-1 py-1 rounded-full bg-white/95 shadow-sm transition-transform hover:scale-105",
+                            style?.color,
+                          )}
+                          title={`${currentLabel} — corriger`}
+                          aria-label={`Réaction : ${currentLabel}. Corriger`}
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          <Pencil className="h-2.5 w-2.5 text-gray-400" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52">
+                        <DropdownMenuLabel className="text-xs">
+                          Corriger la réaction
+                        </DropdownMenuLabel>
+                        {VALID_REACTIONS.map((value) => {
+                          const optStyle = REACTION_STYLE[value]
+                          const OptIcon = optStyle.icon
+                          const active = reaction.reaction === value
+                          return (
+                            <DropdownMenuItem
+                              key={value}
+                              onClick={() => {
+                                if (!active) changeReaction(reaction.media.id, value)
+                              }}
+                              className={cn("gap-2 text-sm", active && "font-semibold")}
+                            >
+                              <OptIcon className={cn("h-4 w-4", optStyle.color)} />
+                              {reactionLabelFr(value, reaction.media.type)}
+                              {active && <Check className="h-3.5 w-3.5 ml-auto text-emerald-600" />}
+                            </DropdownMenuItem>
+                          )
+                        })}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => removeReaction(reaction.media.id)}
+                          className="gap-2 text-sm text-red-600 focus:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Retirer de l&apos;historique
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
                     <p className="mt-1.5 text-xs font-medium text-gray-900 dark:text-[var(--color-ink)] line-clamp-2">{reaction.media.title}</p>
+                    <p className="text-[11px] text-gray-400 dark:text-neutral-500">
+                      {currentLabel}
+                      {reaction.createdAt && <> · {formatRelativeTimeFr(reaction.createdAt)}</>}
+                    </p>
                   </div>
                 )
               })}
@@ -834,10 +928,11 @@ export function MemberCorner({ memberId }: MemberCornerProps) {
             <div className="text-center py-12">
               <Heart className="h-10 w-10 text-gray-200 dark:text-neutral-700 mx-auto mb-3" />
               <p className="text-sm text-gray-500 dark:text-neutral-400">
-                Aucun favori pour le moment.
+                Aucune réaction pour le moment.
               </p>
               <p className="text-xs text-gray-400 dark:text-neutral-500 mt-1">
-                Utilisez la barre de recherche ci-dessus pour ajouter les films et séries que {member.name} a adorés !
+                Réagissez sur n&apos;importe quelle affiche du site, ou utilisez la recherche
+                ci-dessus pour ajouter ce que {member.name} a adoré !
               </p>
             </div>
           )}

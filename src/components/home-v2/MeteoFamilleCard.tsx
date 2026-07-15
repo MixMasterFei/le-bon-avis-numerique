@@ -104,22 +104,36 @@ export function MeteoFamilleCard({
     }
   }
 
+  // Non-blocking notice when a city switch couldn't load its weather —
+  // without it the picker closed silently and the card kept showing the
+  // OLD city while the NEW one was already persisted server-side.
+  const [switchError, setSwitchError] = useState<string | null>(null)
+
   const onCityPicked = async (city: { name: string; lat: number; lon: number }) => {
-    // Persist server-side so the same city syncs to other devices.
-    // Refetch weather in parallel for snappier UI.
-    const [, weatherRes] = await Promise.all([
-      fetch("/api/user/weather-city", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(city),
-      }),
-      fetch(`/api/weather?lat=${city.lat}&lon=${city.lon}&name=${encodeURIComponent(city.name)}`),
-    ])
-    if (weatherRes.ok) {
-      const data = (await weatherRes.json()) as { snapshot?: WeatherSnapshot }
-      if (data.snapshot) {
+    setSwitchError(null)
+    try {
+      // Persist server-side so the same city syncs to other devices.
+      // Refetch weather in parallel for snappier UI.
+      const [, weatherRes] = await Promise.all([
+        fetch("/api/user/weather-city", {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(city),
+        }),
+        fetch(`/api/weather?lat=${city.lat}&lon=${city.lon}&name=${encodeURIComponent(city.name)}`),
+      ])
+      const data = weatherRes.ok
+        ? ((await weatherRes.json()) as { snapshot?: WeatherSnapshot })
+        : null
+      if (data?.snapshot) {
         startTransition(() => setSnapshot(data.snapshot!))
+      } else {
+        setSwitchError(`Impossible de charger la météo pour ${city.name}. Réessayez.`)
       }
+    } catch {
+      // Offline / network blip — the picker click must never reject
+      // unhandled (it is awaited from the picker's result buttons).
+      setSwitchError(`Impossible de charger la météo pour ${city.name}. Réessayez.`)
     }
     setPickerOpen(false)
   }
@@ -248,6 +262,12 @@ export function MeteoFamilleCard({
                 {geoPromptError}
               </div>
             )}
+          </div>
+        )}
+
+        {switchError && (
+          <div className="text-[11px] mb-2" style={{ color: p.accent }} role="status">
+            {switchError}
           </div>
         )}
 

@@ -5,7 +5,14 @@ import { getUpcomingCinemaMovies } from "@/lib/cinema"
 
 // Upcoming / not-yet-released titles for the homepage "Bientôt" rail.
 // Read-only; short cache like /api/cinema.
-export const revalidate = 3600
+//
+// force-dynamic, NOT `revalidate`: this handler reads request.url (the
+// ?maxAge param), so it can never be prerendered — `revalidate` made the
+// build try anyway, and Next's DYNAMIC_SERVER_USAGE bail-out landed in the
+// catch below, baking an empty 500 into the build ("Upcoming API error" in
+// the Vercel log). Caching is handled by the CDN s-maxage header on the
+// response instead, same pattern as /api/cinema.
+export const dynamic = "force-dynamic"
 
 const LIMIT = 12
 

@@ -125,6 +125,21 @@ async function resolveHomepageState(): Promise<HomepageState> {
   }
 }
 
+/** User-chosen family display name ("Famille Dupont") for the hero greeting.
+ *  Try/catch doubles as the deploy-order guard while sql/add_family_name.sql
+ *  hasn't been applied yet — the greeting just falls back to the account name. */
+async function getFamilyDisplayName(userId: string): Promise<string | null> {
+  try {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { familyName: true },
+    })
+    return u?.familyName ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Family members for the V2 hero "Votre famille sur mesure" shortcuts. */
 async function getFamilyMembersLite(userId: string) {
   try {
@@ -155,15 +170,18 @@ export default async function HomePage({
   const showV2 = v2Enabled(isAdmin) && sp.v !== "classic"
 
   if (showV2) {
-    const [heroPosters, familyMembers, homepageState] = await Promise.all([
+    const [heroPosters, familyMembers, homepageState, familyDisplayName] = await Promise.all([
       getHeroWallPosters(getWeekSeed()),
       session?.user?.id ? getFamilyMembersLite(session.user.id) : Promise.resolve([]),
       resolveHomepageState(),
+      session?.user?.id ? getFamilyDisplayName(session.user.id) : Promise.resolve(null),
     ])
     return (
       <>
         <HomepageRedesign
           isLoggedIn={isLoggedIn}
+          userName={session?.user?.name ?? null}
+          familyDisplayName={familyDisplayName}
           heroPosters={heroPosters}
           defaultMaxAge={maxAgeCap ?? 12}
           familyMembers={familyMembers}

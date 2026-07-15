@@ -94,6 +94,20 @@ function hasRealPhoto(row: NewsRow): boolean {
   return Boolean(row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl))
 }
 
+// When the Supabase image mirror fails at ingest, news-discover stamps
+// `imageCredit` with the branded-card credit ("Totem Avise") but KEEPS the raw
+// publisher URL in `sourceImageUrl`. So a row can show a real publisher photo
+// (via sourceImageUrl) while carrying the stale fallback credit — which is how
+// a genuine Télérama/Frandroid photo ended up captioned "Photo : Totem Avise".
+// When we display the real photo, credit the publisher instead of that stale
+// fallback string; keep a legitimate stored credit (e.g. an agency name) as-is.
+const FALLBACK_CREDITS = new Set(["Totem Avise", "Totem Avisé"])
+
+function realPhotoCredit(stored: string | null, publisherName: string | null): string | null {
+  if (stored && !FALLBACK_CREDITS.has(stored)) return stored
+  return publisherName ?? null
+}
+
 function rowToItem(row: NewsRow): CoinFamilleNewsItem {
   // directSource image policy (like V4/V5): prefer the real publisher photo,
   // branded category card only when there's none.
@@ -113,7 +127,7 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
     title: row.title,
     imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
     fallbackImageUrl: fb.url,
-    imageCredit: hasPhoto ? row.imageCredit : fb.credit,
+    imageCredit: hasPhoto ? realPhotoCredit(row.imageCredit, primary?.name ?? null) : fb.credit,
     imageLicenseUrl: hasPhoto ? row.imageLicenseUrl : (fb.licenseUrl ?? null),
     category: row.category,
     publishedAt: row.publishedAt.toISOString(),

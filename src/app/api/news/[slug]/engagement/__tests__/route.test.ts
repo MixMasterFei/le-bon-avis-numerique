@@ -1,0 +1,113 @@
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { NextRequest } from "next/server"
+
+// Focused tests for the reaction+reason path of the news engagement route —
+// the write side of the reader-feedback loop that trains news-discover.
+
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn(),
+}))
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    newsStory: { findUnique: vi.fn() },
+    newsStoryReaction: {
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn().mockResolvedValue(0),
+    },
+    newsSavedStory: { findUnique: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+  },
+}))
+
+import { POST } from "../route"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+const mockedAuth = vi.mocked(auth)
+const mockedPrisma = vi.mocked(prisma, true)
+
+function req(body: unknown): NextRequest {
+  return new NextRequest("http://localhost/api/news/some-story/engagement", {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json" },
+  })
+}
+
+const ctx = { params: Promise.resolve({ slug: "some-story" }) }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockedAuth.mockResolvedValue({ user: { id: "user-1" } } as never)
+  mockedPrisma.newsStory.findUnique.mockResolvedValue({ id: "story-1" } as never)
+  mockedPrisma.newsStoryReaction.findUnique.mockResolvedValue(null)
+  mockedPrisma.newsStoryReaction.count.mockResolvedValue(0 as never)
+  mockedPrisma.newsSavedStory.findUnique.mockResolvedValue(null)
+})
+
+describe("POST /api/news/[slug]/engagement — reaction + reason", () => {
+  it("401 when not authenticated", async () => {
+    mockedAuth.mockResolvedValue(null as never)
+    const res = await POST(req({ action: "reaction", type: "DISLIKE" }), ctx)
+    expect(res.status).toBe(401)
+  })
+
+  it("400 on an invalid reaction type", async () => {
+    const res = await POST(req({ action: "reaction", type: "MEH" }), ctx)
+    expect(res.status).toBe(400)
+    expect(mockedPrisma.newsStoryReaction.upsert).not.toHaveBeenCalled()
+  })
+
+  it("stores a DISLIKE with a vocabulary reason and sanitized note", async () => {
+    const res = await POST(
+      req({
+        action: "reaction",
+        type: "DISLIKE",
+        reasonCode: "anxiogene",
+        reasonNote: '<b>trop</b> de faits divers ' + "x".repeat(400),
+      }),
+      ctx,
+    )
+    expect(res.status).toBe(200)
+    const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
+    expect(call.create).toMatchObject({ type: "DISLIKE", reasonCode: "anxiogene" })
+    const note = call.create.reasonNote as string
+    expect(note).not.toContain("<b>")
+    expect(note.length).toBeLessThanOrEqual(200)
+  })
+
+  it("drops an out-of-vocabulary reason code but keeps the dislike", async () => {
+    await POST(req({ action: "reaction", type: "DISLIKE", reasonCode: "DROP TABLE" }), ctx)
+    const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
+    expect(call.create).toMatchObject({ type: "DISLIKE", reasonCode: null })
+  })
+
+  it("ignores reasons sent with a LIKE", async () => {
+    await POST(req({ action: "reaction", type: "LIKE", reasonCode: "anxiogene", reasonNote: "x" }), ctx)
+    const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
+    expect(call.create).toMatchObject({ type: "LIKE", reasonCode: null, reasonNote: null })
+  })
+
+  it("toggles off when the same reaction arrives without a reason", async () => {
+    mockedPrisma.newsStoryReaction.findUnique.mockResolvedValue({ id: "r1", type: "DISLIKE" } as never)
+    await POST(req({ action: "reaction", type: "DISLIKE" }), ctx)
+    expect(mockedPrisma.newsStoryReaction.delete).toHaveBeenCalledWith({ where: { id: "r1" } })
+    expect(mockedPrisma.newsStoryReaction.upsert).not.toHaveBeenCalled()
+  })
+
+  it("upgrades an existing DISLIKE in place when a reason arrives afterwards", async () => {
+    mockedPrisma.newsStoryReaction.findUnique.mockResolvedValue({ id: "r1", type: "DISLIKE" } as never)
+    await POST(req({ action: "reaction", type: "DISLIKE", reasonCode: "not_family" }), ctx)
+    expect(mockedPrisma.newsStoryReaction.delete).not.toHaveBeenCalled()
+    const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
+    expect(call.update).toMatchObject({ type: "DISLIKE", reasonCode: "not_family" })
+  })
+
+  it("404 when the story slug is unknown", async () => {
+    mockedPrisma.newsStory.findUnique.mockResolvedValue(null)
+    const res = await POST(req({ action: "reaction", type: "LIKE" }), ctx)
+    expect(res.status).toBe(404)
+  })
+})

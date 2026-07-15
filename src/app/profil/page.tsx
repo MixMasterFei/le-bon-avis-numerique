@@ -87,6 +87,9 @@ export default function ProfilPage() {
   // Profile edit state
   const [editProfileOpen, setEditProfileOpen] = useState(false)
   const [profileName, setProfileName] = useState("")
+  // Display family name ("Famille Dupont") — shown in the header + homepage
+  // greeting. Empty = fall back to the account name.
+  const [profileFamilyName, setProfileFamilyName] = useState("")
   const [profileAvatarValue, setProfileAvatarValue] = useState<AvatarValue>(defaultAvatarValue())
   const [savingProfile, setSavingProfile] = useState(false)
   const [profileSaved, setProfileSaved] = useState(false)
@@ -175,6 +178,9 @@ export default function ProfilPage() {
             seed: data.user.avatarSeed,
             options: data.user.avatarOptions,
           })
+          if (typeof data.user.familyName === "string") {
+            setProfileFamilyName(data.user.familyName)
+          }
           if (data.user.avatarStyle && data.user.avatarSeed) {
             setProfileAvatarValue({
               style: data.user.avatarStyle,
@@ -222,6 +228,7 @@ export default function ProfilPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: profileName,
+          familyName: profileFamilyName.trim() || null,
           avatarStyle: profileAvatarValue.style,
           avatarSeed: profileAvatarValue.seed,
           avatarOptions: profileAvatarValue.options ?? null,
@@ -393,6 +400,25 @@ export default function ProfilPage() {
                   className="bg-gray-50"
                 />
               </div>
+            </div>
+
+            {/* Family display name */}
+            <div className="space-y-2">
+              <Label htmlFor="profileFamilyName">Nom de votre famille</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500 shrink-0">Famille</span>
+                <Input
+                  id="profileFamilyName"
+                  value={profileFamilyName}
+                  onChange={(e) => setProfileFamilyName(e.target.value)}
+                  placeholder="Dupont"
+                  maxLength={60}
+                />
+              </div>
+              <p className="text-xs text-gray-400">
+                Affiché en haut du site et sur votre page d&apos;accueil («&nbsp;Bon retour,
+                famille Dupont&nbsp;!&nbsp;»). Laissez vide pour utiliser votre nom d&apos;affichage.
+              </p>
             </div>
 
             {/* Avatar */}

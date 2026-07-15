@@ -22,6 +22,7 @@ import {
 import { usePathname } from "next/navigation"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { seenLabelFr } from "@/lib/reaction-types"
 
 interface FamilyMemberWithReaction {
   id: string
@@ -53,16 +54,18 @@ interface FamilyReactionsProps {
 
 /** Per-type wording for "seen it" — a game is *joué*, a book *lu*, everything
  *  else *vu*. Shared with DashboardFamilyFeedback so the section header and the
- *  WATCHED reaction label always agree. */
+ *  WATCHED reaction label always agree. Label text comes from the shared
+ *  reaction vocabulary (src/lib/reaction-types.ts). */
 export function seenVerb(mediaType?: string): { label: string; header: string } {
+  const label = seenLabelFr(mediaType)
   switch (mediaType) {
     case "GAME":
-      return { label: "Déjà joué", header: "Vous y avez joué ?" }
+      return { label, header: "Vous y avez joué ?" }
     case "BOOK":
     case "MANGA":
-      return { label: "Déjà lu", header: "Vous l'avez lu ?" }
+      return { label, header: "Vous l'avez lu ?" }
     default:
-      return { label: "Déjà vu", header: "Vous l'avez vu ?" }
+      return { label, header: "Vous l'avez vu ?" }
   }
 }
 
@@ -89,6 +92,13 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
   // Override the WATCHED label per media type ("Déjà joué" for games etc.).
   const seenLabel = seenVerb(mediaType).label
   const labelFor = (value: string, fallback?: string) => (value === "WATCHED" ? seenLabel : fallback ?? "")
+  // Past-tense "a déjà …" phrasing for the single-choice hint, per media type.
+  const seenPastPhrase =
+    mediaType === "GAME"
+      ? "y a déjà joué"
+      : mediaType === "BOOK" || mediaType === "MANGA"
+        ? "l'a déjà lu"
+        : "l'a déjà vu"
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [members, setMembers] = useState<FamilyMemberWithReaction[]>([])
@@ -327,6 +337,13 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
         {/* Expanded view to add reactions (always shown when embedded) */}
         {(expanded || embedded) && (
           <div className={embedded ? "space-y-4" : "space-y-4 pt-2 border-t"}>
+            {/* Single-choice hint: reactions are one-per-person, and the
+                emotion options already imply the person experienced it — so
+                there's no separate "seen" to also tick. */}
+            <p className="text-xs leading-snug" style={{ color: p.ink2 }}>
+              Une seule réaction par personne — «&nbsp;{labelFor("LOVED", "Adoré")}&nbsp;» ou
+              «&nbsp;{labelFor("LIKED", "Bien aimé")}&nbsp;» veut déjà dire que la personne {seenPastPhrase}.
+            </p>
             {members.map((member) => (
               <div key={member.id} className="space-y-2">
                 <div className="flex items-center gap-2">
