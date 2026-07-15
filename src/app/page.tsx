@@ -164,6 +164,8 @@ export default async function HomePage({
       <>
         <HomepageRedesign
           isLoggedIn={isLoggedIn}
+          isAdmin={isAdmin}
+          userName={session?.user?.name ?? null}
           heroPosters={heroPosters}
           defaultMaxAge={maxAgeCap ?? 12}
           familyMembers={familyMembers}

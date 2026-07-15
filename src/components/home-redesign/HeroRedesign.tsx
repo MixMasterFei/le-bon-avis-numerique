@@ -1,8 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Search, Sparkles } from "lucide-react"
+import { Search, Sparkles, Users, Home, ArrowDown, User } from "lucide-react"
 import { Wrap, Em } from "./parts"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
@@ -20,11 +21,25 @@ interface HeroRedesignProps {
   selectedMemberIds: string[]
   onToggleMember: (member: FamilyMemberLite) => void
   isLoggedIn: boolean
+  /** Gates the Coin Famille quick proposal (mirrors the header's admin gate). */
+  isAdmin?: boolean
+  /** Account display name — "Bon retour, famille X !" greeting. */
+  userName?: string | null
 }
 
-export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn }: HeroRedesignProps) {
+export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn, isAdmin = false, userName = null }: HeroRedesignProps) {
   const router = useRouter()
   const [q, setQ] = useState("")
+
+  // Returning family: greet by name and lead with member shortcuts instead of
+  // re-asking for ages the profiles already carry. Only kicks in once at least
+  // one family member exists — a fresh account still sees the age question.
+  const hasFamily = isLoggedIn && familyMembers.length > 0
+  // "famille Dupont" from the account name's last token; single-word names
+  // fall back to the first name ("Bon retour, Xavier !").
+  const nameTokens = (userName ?? "").trim().split(/\s+/).filter(Boolean)
+  const familyName = nameTokens.length >= 2 ? nameTokens[nameTokens.length - 1] : null
+  const firstName = nameTokens[0] ?? null
 
   // Distribute posters round-robin into columns; triple each column so the
   // -33.33% drift loops seamlessly.
@@ -83,28 +98,63 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
           <b style={{ color: "var(--pine-2)" }}>Indépendant</b> · pensé pour les familles
         </span>
 
-        <h1
-          className="mx-auto mt-6 max-w-[20ch] text-[clamp(36px,5.2vw,68px)] font-bold leading-[1.05]"
-          style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
-        >
-          Trouvez des films, séries et jeux <Em tone="terra">adaptés à votre famille</Em>.
-        </h1>
-        <p className="mx-auto mt-4 max-w-[60ch] text-[clamp(16px,2vw,19px)]" style={{ color: "var(--ink-2)" }}>
-          Âges, goûts, sensibilités, plateformes : Totem Avisé vous aide à choisir en famille, sans mauvaise surprise.
-        </p>
+        {hasFamily ? (
+          <>
+            <h1
+              className="mx-auto mt-6 max-w-[20ch] text-[clamp(36px,5.2vw,68px)] font-bold leading-[1.05]"
+              style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
+            >
+              Bon retour,{" "}
+              <Em tone="terra">{familyName ? `famille ${familyName}` : firstName ? firstName : "chez vous"}</Em>
+              &nbsp;!
+            </h1>
+            <p className="mx-auto mt-4 max-w-[60ch] text-[clamp(16px,2vw,19px)]" style={{ color: "var(--ink-2)" }}>
+              Votre sélection du jour est prête, filtrée selon les âges et les sensibilités de votre
+              famille. Dites-nous pour qui, on s&apos;occupe du reste.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1
+              className="mx-auto mt-6 max-w-[20ch] text-[clamp(36px,5.2vw,68px)] font-bold leading-[1.05]"
+              style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
+            >
+              Trouvez des films, séries et jeux <Em tone="terra">adaptés à votre famille</Em>.
+            </h1>
+            <p className="mx-auto mt-4 max-w-[60ch] text-[clamp(16px,2vw,19px)]" style={{ color: "var(--ink-2)" }}>
+              Âges, goûts, sensibilités, plateformes : Totem Avisé vous aide à choisir en famille, sans mauvaise surprise.
+            </p>
+          </>
+        )}
 
         {/* Personalization module */}
         <div
           className="mx-auto mt-8 max-w-[720px] rounded-[22px] p-[22px] text-left"
           style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "var(--shadow, 0 18px 40px -28px rgba(40,28,12,.55))" }}
         >
-          <div className="flex items-center gap-2.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
-            <span className="grid h-[22px] w-[22px] place-items-center rounded-full text-[12px] text-white" style={{ background: "var(--pine)" }}>1</span>
-            Les âges de vos enfants&nbsp;?
-          </div>
+          {hasFamily ? (
+            /* Returning family: the profiles already carry the ages, so lead
+               with "who?" — selecting members re-ranks every rail below and
+               adds the personalized rail. Age chips are dropped entirely. */
+            <div className="flex items-center gap-2.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
+              <span className="grid h-[22px] w-[22px] place-items-center rounded-full" style={{ background: "var(--pine)" }}>
+                <Users className="h-3 w-3 text-white" />
+              </span>
+              Pour qui cherchez-vous aujourd&apos;hui&nbsp;?
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
+              <span className="grid h-[22px] w-[22px] place-items-center rounded-full text-[12px] text-white" style={{ background: "var(--pine)" }}>1</span>
+              Les âges de vos enfants&nbsp;?
+            </div>
+          )}
 
           <div className="mt-3">
-            <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="lg" />
+            {hasFamily ? (
+              <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="lg" />
+            ) : (
+              <AgeChips selectedKeys={selectedKeys} onToggleAge={onToggleAge} size="lg" />
+            )}
           </div>
 
           <form onSubmit={onSubmit} className="mt-[18px] flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -113,7 +163,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Un titre…"
+                placeholder={hasFamily ? "Ou cherchez un titre précis…" : "Un titre…"}
                 className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
                 style={{ color: "var(--ink)" }}
               />
@@ -127,14 +177,50 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
             </a>
           </form>
 
-          {/* Votre sélection, sur mesure — member shortcuts inline on one row
-              (or a sign-up nudge when there's no family yet). Kept compact. */}
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4" style={{ borderColor: "var(--line)" }}>
-            <span className="w-full whitespace-nowrap text-[14px] font-bold sm:w-auto" style={{ color: "var(--ink)" }}>
-              Votre sélection, sur mesure :
-            </span>
-            <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="lg" />
-          </div>
+          {hasFamily ? (
+            /* Clear proposals for a returning family — direct paths into the
+               personalized surfaces, no dead ends. */
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4" style={{ borderColor: "var(--line)" }}>
+              <span className="w-full whitespace-nowrap text-[14px] font-bold sm:w-auto" style={{ color: "var(--ink)" }}>
+                Idées rapides&nbsp;:
+              </span>
+              <a
+                href="#weekend"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"
+                style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+              >
+                <ArrowDown className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                La sélection du jour
+              </a>
+              {isAdmin && (
+                <Link
+                  href="/coin-famille"
+                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"
+                  style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+                >
+                  <Home className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                  Le Coin Famille
+                </Link>
+              )}
+              <Link
+                href="/profil"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"
+                style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+              >
+                <User className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                Ma famille
+              </Link>
+            </div>
+          ) : (
+            /* Votre sélection, sur mesure — member shortcuts inline on one row
+                (or a sign-up nudge when there's no family yet). Kept compact. */
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4" style={{ borderColor: "var(--line)" }}>
+              <span className="w-full whitespace-nowrap text-[14px] font-bold sm:w-auto" style={{ color: "var(--ink)" }}>
+                Votre sélection, sur mesure :
+              </span>
+              <FamilyChips members={familyMembers} selectedMemberIds={selectedMemberIds} onToggleMember={onToggleMember} isLoggedIn={isLoggedIn} size="lg" />
+            </div>
+          )}
         </div>
       </Wrap>
     </section>
