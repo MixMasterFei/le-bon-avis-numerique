@@ -42,7 +42,7 @@ Speed is the whole value. So:
 
 - **1 member** → one tap = done (no picker).
 - **≥2 members** → tap an action opens a **bottom sheet** (portaled to `<body>`, so the poster's `overflow-hidden` can't clip it — the large-family bug); it lists "Toute la famille" + each member in a scrollable list, tapping a row writes that member's reaction immediately (optimistic). Locks background scroll and closes on backdrop tap / Escape.
-- Actions sit at the poster bottom, **subtle at rest, brighten on card hover** (desktop) and **always visible on touch** (mobile — no hover). Buttons `stopPropagation` so they never trigger card navigation. Filled state + a count badge show current per-member states.
+- Actions sit at the poster bottom, **always visible** on every device (desktop was hover-revealed at first; Xavier's call July 2026 — permanent icons lead users to click and discover the system). Buttons `stopPropagation` so they never trigger card navigation. Filled state + a count badge show current per-member states.
 
 ---
 

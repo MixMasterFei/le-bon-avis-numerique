@@ -221,8 +221,10 @@ export function PosterActionBar({
       >
         <Icon className="h-3.5 w-3.5" fill={on && kind === "LOVED" ? "#D16A4A" : "none"} />
         {count > 1 && (
+          // Tucked to -0.5 (was -1): the overhang past the last button's edge
+          // made the whole centered row read as slightly off-center.
           <span
-            className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
+            className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-0.5 text-[9px] font-bold"
             style={{ background: "#D16A4A", color: "#fff" }}
           >
             {count}
@@ -399,9 +401,11 @@ export function PosterActionBar({
         </div>
       )}
 
-      {/* DESKTOP: inline 4-button row. Subtle at rest, brighten on card hover;
-          hidden on small screens (they use the collapsed toggle below). */}
-      <div className="hidden items-center justify-center gap-1.5 px-2 pb-2 opacity-100 transition-opacity duration-200 sm:flex [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:focus-within:opacity-100">
+      {/* DESKTOP: inline 4-button row, ALWAYS visible (was hover-revealed —
+          Xavier's call: showing the icons permanently leads users to click
+          and discover the system). Hidden on small screens (they use the
+          collapsed toggle below). */}
+      <div className="hidden items-center justify-center gap-1.5 px-2 pb-2 sm:flex">
         {ACTIONS.map(({ kind, label, Icon }) => actionButton(kind, label, Icon))}
       </div>
 
