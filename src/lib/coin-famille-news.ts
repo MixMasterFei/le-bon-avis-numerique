@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client"
 import { fallbackCard } from "@/lib/news-image"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
+import { computeCategoryAffinity, personalizedRelevance, AFFINITY_WINDOW_DAYS } from "@/lib/news-personalize"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { NewsCategoryKey } from "@/components/home-v2/apercuNewsLabels"
 
@@ -137,6 +138,39 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
   }
 }
 
+interface FamilyNewsSignals {
+  /** Stories this account explicitly disliked — never shown again. */
+  dislikedIds: Set<string>
+  /** Bounded per-category relevance adjustment from their like/dislike history. */
+  affinity: Record<string, number>
+}
+
+/**
+ * The family's own news feedback (news reactions are user-scoped, so
+ * family = account). Fail-open: any error returns neutral signals so
+ * personalization can never break the feed.
+ */
+async function getFamilyNewsSignals(userId: string): Promise<FamilyNewsSignals> {
+  try {
+    const since = new Date(Date.now() - AFFINITY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+    const rows = await prisma.newsStoryReaction.findMany({
+      where: { userId, updatedAt: { gte: since } },
+      select: { type: true, newsStoryId: true, newsStory: { select: { category: true } } },
+      orderBy: { updatedAt: "desc" },
+      take: 400,
+    })
+    return {
+      dislikedIds: new Set(rows.filter((r) => r.type === "DISLIKE").map((r) => r.newsStoryId)),
+      affinity: computeCategoryAffinity(
+        rows.map((r) => ({ type: r.type, category: String(r.newsStory.category) })),
+      ),
+    }
+  } catch (err) {
+    console.warn("[coin-famille] family news signals unavailable:", err)
+    return { dislikedIds: new Set(), affinity: {} }
+  }
+}
+
 async function fetchPool(sinceDays: number): Promise<NewsRow[]> {
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000)
   return prisma.newsStory.findMany({
@@ -163,20 +197,43 @@ async function fetchPool(sinceDays: number): Promise<NewsRow[]> {
  * and the selection favours family relevance + real photos over pure recency
  * (the audit surfaced a page led by an assault conviction, a domestic-violence
  * study and an administrative webinar, half of them on generic fallback cards).
+ *
+ * PER-FAMILY (userId): stories the account disliked are excluded from THEIR
+ * feed, and their like/dislike history nudges category relevance (bounded —
+ * see news-personalize.ts). Each family's Coin Famille drifts toward what
+ * they actually find useful; the shared pool stays identical for everyone.
  */
-export async function getCoinFamilleNews(take = 6): Promise<CoinFamilleNewsItem[]> {
-  let pool = await fetchPool(5)
+export async function getCoinFamilleNews(
+  take = 6,
+  userId?: string | null,
+): Promise<CoinFamilleNewsItem[]> {
+  const [poolFirst, signals] = await Promise.all([
+    fetchPool(5),
+    userId ? getFamilyNewsSignals(userId) : Promise.resolve(null),
+  ])
+  let pool = poolFirst
   if (pool.length < take + 2) pool = await fetchPool(10)
+
+  // Per-family exclusion — never re-show a story this family marked "pas
+  // pour nous". Starvation guard: if exclusions leave too little to fill the
+  // strand, fall back to the full pool (a repeated story beats an empty rail).
+  if (signals && signals.dislikedIds.size > 0) {
+    const kept = pool.filter((r) => !signals.dislikedIds.has(r.id))
+    if (kept.length >= Math.min(take, 4)) pool = kept
+  }
 
   const softened = pool.filter((r) => (r.editorialTone ?? "").toLowerCase() !== "grave")
   // Priority order fed to the balancer: real photo first, then family
-  // relevance, then recency. balanceNewsForFeed treats input order as priority
-  // and still prevents same-cluster stacking.
+  // relevance (adjusted by this family's category affinity), then recency.
+  // balanceNewsForFeed treats input order as priority and still prevents
+  // same-cluster stacking.
+  const rel = (r: NewsRow) =>
+    personalizedRelevance(r.relevanceScore, String(r.category), signals?.affinity)
   const prioritized = [...(softened.length >= take ? softened : pool)].sort((a, b) => {
     const photo = Number(hasRealPhoto(b)) - Number(hasRealPhoto(a))
     if (photo !== 0) return photo
-    const rel = b.relevanceScore - a.relevanceScore
-    if (Math.abs(rel) > 0.001) return rel
+    const relDiff = rel(b) - rel(a)
+    if (Math.abs(relDiff) > 0.001) return relDiff
     return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   })
   const balanced = balanceNewsForFeed(prioritized, take)
