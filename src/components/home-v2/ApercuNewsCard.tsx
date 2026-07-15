@@ -7,6 +7,7 @@ import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills, type NewsSourceRef } from "./ApercuNewsSourcePills"
 import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
+import { NewsFeedbackInline } from "./NewsFeedbackInline"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 
@@ -96,6 +97,10 @@ export function ApercuNewsCard({
             {story.summary}
           </p>
         </Link>
+        {/* Reader feedback — "utile pour votre famille ?" One tap trains the
+            news pipeline (reader signals in news-discover). */}
+        <NewsFeedbackInline slug={story.slug} />
+
         <div className="mt-auto pt-2 flex items-center justify-between gap-2">
           <ApercuNewsSourcePills sources={story.sources} compact />
           {/* suppressHydrationWarning: formatRelativeTimeFr reads

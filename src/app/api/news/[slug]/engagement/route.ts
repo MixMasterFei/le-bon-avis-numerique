@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { isDislikeReason, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
+import { sanitizeInput } from "@/lib/security"
 
 const STORY_REACTIONS = ["LIKE", "DISLIKE"] as const
 type StoryReaction = (typeof STORY_REACTIONS)[number]
@@ -88,18 +90,41 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         return NextResponse.json({ error: "Type de reaction invalide" }, { status: 400 })
       }
 
+      // Optional "why" — only meaningful on a DISLIKE. Code must be in the
+      // fixed vocabulary (news-feedback.ts); the note is free text, sanitized
+      // and capped. A LIKE (or a toggle-off) clears both.
+      const reasonCode =
+        type === "DISLIKE" && isDislikeReason(payload?.reasonCode) ? payload.reasonCode : null
+      const reasonNote =
+        type === "DISLIKE" && typeof payload?.reasonNote === "string" && payload.reasonNote.trim()
+          ? sanitizeInput(payload.reasonNote).slice(0, MAX_REASON_NOTE_LENGTH) || null
+          : null
+
       const existing = await prisma.newsStoryReaction.findUnique({
         where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
       })
 
-      if (existing?.type === type) {
+      // Same reaction WITHOUT new reason info = toggle off. Re-sending the
+      // same reaction WITH a reason updates it in place (the inline card UI
+      // sends DISLIKE first, then DISLIKE+reason when the user adds one).
+      if (existing?.type === type && !reasonCode && !reasonNote) {
         await prisma.newsStoryReaction.delete({ where: { id: existing.id } })
       } else {
-        await prisma.newsStoryReaction.upsert({
-          where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
-          update: { type },
-          create: { newsStoryId: storyId, userId, type },
-        })
+        try {
+          await prisma.newsStoryReaction.upsert({
+            where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
+            update: { type, reasonCode, reasonNote },
+            create: { newsStoryId: storyId, userId, type, reasonCode, reasonNote },
+          })
+        } catch {
+          // Deploy-order guard: reason columns not applied yet
+          // (sql/add_news_reaction_reason.sql) — store the reaction alone.
+          await prisma.newsStoryReaction.upsert({
+            where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
+            update: { type },
+            create: { newsStoryId: storyId, userId, type },
+          })
+        }
       }
     } else if (action === "save") {
       const saved = Boolean(payload?.saved)

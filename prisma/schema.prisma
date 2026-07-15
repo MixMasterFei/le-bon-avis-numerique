@@ -1201,6 +1201,11 @@ model NewsStoryReaction {
   newsStoryId String   @map("news_story_id")
   userId      String   @map("user_id")
   type        String   // "LIKE" | "DISLIKE"
+  // Optional "why" on a DISLIKE (sql/add_news_reaction_reason.sql) — feeds
+  // the reader-signals section of the news-discover synthesis prompt.
+  // reasonCode ∈ DISLIKE_REASONS (src/lib/news-feedback.ts); note is free text.
+  reasonCode  String?  @map("reason_code")
+  reasonNote  String?  @map("reason_note") @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

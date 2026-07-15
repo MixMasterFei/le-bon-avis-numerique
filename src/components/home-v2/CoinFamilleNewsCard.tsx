@@ -7,6 +7,7 @@ import { formatRelativeTimeFr } from "@/lib/utils"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuNewsSourcePills } from "./ApercuNewsSourcePills"
 import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
+import { NewsFeedbackInline } from "./NewsFeedbackInline"
 import { NEWS_CATEGORY_LABEL } from "./apercuNewsLabels"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import type { CoinFamilleNewsItem } from "@/lib/coin-famille-news"
@@ -133,6 +134,10 @@ export function CoinFamilleNewsCard({
             {formatRelativeTimeFr(story.publishedAt)}
           </span>
         </div>
+
+        {/* Reader feedback — "utile pour votre famille ?" One tap trains the
+            news pipeline (reader signals in news-discover). */}
+        <NewsFeedbackInline slug={story.slug} />
 
         {/* Totem's angle — inline accordion, NO navigation. */}
         {story.familyTakeaway ? (

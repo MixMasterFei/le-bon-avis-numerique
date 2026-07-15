@@ -28,6 +28,7 @@ const ADULT_CONTENT_AGE_FLOOR = 14
 import { extractResearch, type ResearchSidebar } from "@/lib/news-research"
 import { NEWS_SOURCES, isOfficialSourceName, type NewsSource } from "@/lib/news-sources"
 import { resolveImage, isImageLargeEnough, fallbackCard, type RssLikeItem, type ImageSourceType } from "@/lib/news-image"
+import { getReaderFeedbackSignals } from "@/lib/news-feedback-server"
 import { isLowQualityImagePublisher } from "@/lib/news-image-policy"
 import { judgeEditorial, DEFAULT_EDITORIAL_VERDICT } from "@/lib/news-editorial-judge"
 import { slugify, faviconFor } from "@/lib/news-slug"
@@ -243,6 +244,7 @@ function buildPrompt(
   items: HydratedItem[],
   existingTitles: string[],
   recentImageUrls: string[],
+  readerSignals = "",
 ): string {
   const list = items
     .map((it, idx) => {
@@ -494,7 +496,7 @@ Réponds UNIQUEMENT avec ce JSON, sans markdown, sans texte avant ou après :
 {"stories": [{"title": "...", "summary": "...", "body": "lede\\n\\n## Titre 1\\n\\nbody...\\n\\n## Titre 2\\n\\nbody...", "familyTakeaway": "60-120 mots plain text", "category": "PARENTHOOD|FILM_TV|GAMES|READING|TECH", "relevanceScore": 0.X, "imageUrl": "https://...", "sourceIndexes": [0, 3]}]}
 
 **RÈGLE D'ÉCHAPPEMENT JSON — CRITIQUE** : à l'intérieur des champs string ("title", "summary", "body"), n'utilise **JAMAIS** de double-quote ASCII " — utilise UNIQUEMENT les guillemets français « » pour les citations directes, et l'apostrophe typographique ' (ou ' droite). Une " non-échappée à l'intérieur d'un body casse le parseur JSON et toutes les histoires de la réponse sont perdues. Si tu hésites, remplace toute " par « ou » selon le contexte.
-${alreadyPublished}${recentImagesNote}
+${alreadyPublished}${recentImagesNote}${readerSignals}
 Articles :
 
 ${list}`
@@ -929,8 +931,12 @@ export async function runNewsDiscover(): Promise<DiscoverStats> {
   //     feed (otherwise low-volume institutional items get crowded out or
   //     merged into commercial clusters). Both passes index into the same
   //     `unique` array, so their stories merge cleanly into one list below.
+  // Reader signals: aggregated "pas pour nous" feedback from the last 30
+  // days (news-feedback-server.ts). Fail-open "" — never blocks the run.
+  const readerSignals = await getReaderFeedbackSignals()
+
   const [mainRaw, officialRaw] = await Promise.all([
-    callSynthesis(buildPrompt(unique, existingTitles, recentImageUrls), 7000, "main"),
+    callSynthesis(buildPrompt(unique, existingTitles, recentImageUrls, readerSignals), 7000, "main"),
     officialIdx.length > 0
       ? callSynthesis(
           buildOfficialPrompt(unique, officialIdx, existingTitles, recentImageUrls),
