@@ -12,7 +12,9 @@
  * Pure + synchronous so server pages can call it after resolving `isAdmin`.
  */
 export function isCoinFamillePublic(): boolean {
-  return process.env.COIN_FAMILLE_PUBLIC === "true"
+  // PUBLIC since July 2026 (kill-switch: set COIN_FAMILLE_PUBLIC="false" to
+  // fall back to admin-only — inverted flag, mirrors NEXT_PUBLIC_POSTER_ACTIONS).
+  return process.env.COIN_FAMILLE_PUBLIC !== "false"
 }
 
 /** True when the viewer may see Le Coin Famille — public flag on, or admin. */

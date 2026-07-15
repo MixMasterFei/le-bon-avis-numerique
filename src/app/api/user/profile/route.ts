@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sanitizeInput } from "@/lib/security"
 
 export async function PATCH(request: Request) {
   try {
@@ -10,7 +11,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    const { name, image, avatarStyle, avatarSeed, avatarOptions } = body
+    const { name, familyName, image, avatarStyle, avatarSeed, avatarOptions } = body
 
     // Build update data
     const updateData: Record<string, unknown> = {}
@@ -20,6 +21,20 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: "Nom invalide" }, { status: 400 })
       }
       updateData.name = name.trim()
+    }
+
+    // Display family name ("Famille Dupont" in the header + homepage
+    // greeting). Empty string clears it back to the `name` fallback.
+    if (familyName !== undefined) {
+      if (familyName === null || (typeof familyName === "string" && familyName.trim() === "")) {
+        updateData.familyName = null
+      } else if (typeof familyName === "string") {
+        const clean = sanitizeInput(familyName).trim().slice(0, 60)
+        if (!clean) return NextResponse.json({ error: "Nom de famille invalide" }, { status: 400 })
+        updateData.familyName = clean
+      } else {
+        return NextResponse.json({ error: "Nom de famille invalide" }, { status: 400 })
+      }
     }
 
     if (image !== undefined) {
@@ -44,7 +59,7 @@ export async function PATCH(request: Request) {
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { id: true, name: true, email: true, image: true, avatarStyle: true, avatarSeed: true, avatarOptions: true },
+      select: { id: true, name: true, familyName: true, email: true, image: true, avatarStyle: true, avatarSeed: true, avatarOptions: true },
     })
 
     return NextResponse.json({
@@ -60,6 +75,19 @@ export async function PATCH(request: Request) {
   }
 }
 
+const PROFILE_SELECT = {
+  id: true,
+  name: true,
+  familyName: true,
+  email: true,
+  image: true,
+  role: true,
+  createdAt: true,
+  avatarStyle: true,
+  avatarSeed: true,
+  avatarOptions: true,
+} as const
+
 export async function GET() {
   try {
     const session = await auth()
@@ -67,20 +95,24 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorise" }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true,
-        createdAt: true,
-        avatarStyle: true,
-        avatarSeed: true,
-        avatarOptions: true,
-      },
-    })
+    let user
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: PROFILE_SELECT,
+      })
+    } catch {
+      // Deploy-order guard: if the family_name column hasn't been added yet
+      // (sql/add_family_name.sql), fall back to the legacy shape so the
+      // header avatar + profile page keep working during the window.
+      const { familyName: _omit, ...legacySelect } = PROFILE_SELECT
+      void _omit
+      user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: legacySelect,
+      })
+      if (user) user = { ...user, familyName: null }
+    }
 
     if (!user) {
       return NextResponse.json({ error: "Utilisateur non trouve" }, { status: 404 })

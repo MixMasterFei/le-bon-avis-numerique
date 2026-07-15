@@ -21,13 +21,14 @@ interface HeroRedesignProps {
   selectedMemberIds: string[]
   onToggleMember: (member: FamilyMemberLite) => void
   isLoggedIn: boolean
-  /** Gates the Coin Famille quick proposal (mirrors the header's admin gate). */
-  isAdmin?: boolean
-  /** Account display name — "Bon retour, famille X !" greeting. */
+  /** Account display name — "Bon retour, famille X !" greeting fallback. */
   userName?: string | null
+  /** User-chosen family display name (User.familyName) — wins over the
+   *  last-name derivation when set ("Famille Dupont" everywhere). */
+  familyDisplayName?: string | null
 }
 
-export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn, isAdmin = false, userName = null }: HeroRedesignProps) {
+export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn, userName = null, familyDisplayName = null }: HeroRedesignProps) {
   const router = useRouter()
   const [q, setQ] = useState("")
 
@@ -35,10 +36,13 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
   // re-asking for ages the profiles already carry. Only kicks in once at least
   // one family member exists — a fresh account still sees the age question.
   const hasFamily = isLoggedIn && familyMembers.length > 0
+  // Preferred: the family name the user set in their profile. Fallback:
   // "famille Dupont" from the account name's last token; single-word names
   // fall back to the first name ("Bon retour, Xavier !").
   const nameTokens = (userName ?? "").trim().split(/\s+/).filter(Boolean)
-  const familyName = nameTokens.length >= 2 ? nameTokens[nameTokens.length - 1] : null
+  const familyName =
+    familyDisplayName?.trim() ||
+    (nameTokens.length >= 2 ? nameTokens[nameTokens.length - 1] : null)
   const firstName = nameTokens[0] ?? null
 
   // Distribute posters round-robin into columns; triple each column so the
@@ -192,16 +196,14 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
                 <ArrowDown className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
                 La sélection du jour
               </a>
-              {isAdmin && (
-                <Link
-                  href="/coin-famille"
-                  className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"
-                  style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
-                >
-                  <Home className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
-                  Le Coin Famille
-                </Link>
-              )}
+              <Link
+                href="/coin-famille"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"
+                style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}
+              >
+                <Home className="h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                Le Coin Famille
+              </Link>
               <Link
                 href="/profil"
                 className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13.5px] font-bold transition-opacity hover:opacity-80"

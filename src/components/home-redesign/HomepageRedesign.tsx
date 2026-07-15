@@ -22,10 +22,10 @@ import type { HomepageState } from "@/lib/homepage-time-context"
 
 interface HomepageRedesignProps {
   isLoggedIn: boolean
-  /** Gates the Coin Famille quick proposal in the hero (mirrors the header). */
-  isAdmin?: boolean
   /** Account display name — drives the "Bon retour, famille X !" greeting. */
   userName?: string | null
+  /** User-chosen family display name (User.familyName), if set. */
+  familyDisplayName?: string | null
   /** Real family-friendly poster URLs for the hero wall (weekly set). */
   heroPosters: string[]
   /** Family age floor (min(12, youngest minor)) — default weekend-rail cap. */
@@ -74,7 +74,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
   return <TopProgressBar loading={pulse} />
 }
 
-export function HomepageRedesign({ isLoggedIn, isAdmin = false, userName = null, heroPosters, defaultMaxAge, familyMembers, homepageState }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayName = null, heroPosters, defaultMaxAge, familyMembers, homepageState }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
@@ -139,8 +139,8 @@ export function HomepageRedesign({ isLoggedIn, isAdmin = false, userName = null,
           selectedMemberIds={selectedMemberIds}
           onToggleMember={toggleMember}
           isLoggedIn={isLoggedIn}
-          isAdmin={isAdmin}
           userName={userName}
+          familyDisplayName={familyDisplayName}
         />
         <StickyAgeFilter
           selectedKeys={selectedKeys}
