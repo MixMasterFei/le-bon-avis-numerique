@@ -238,6 +238,23 @@ export function MediaDashboard({
             <p className="mt-1.5 text-[12.5px] leading-[1.55]" style={{ color: C.body }}>
               {quickAnswer.answer}
             </p>
+            {/* Freshness signal — trust for parents, citability for answer
+                engines (mirrors the JSON-LD dateModified). Server-rendered,
+                so the fr-FR formatting can't cause hydration mismatches. */}
+            {media.updatedAt && (
+              <p className="mt-2 text-[11px]" style={{ color: C.faint }}>
+                Fiche mise à jour le{" "}
+                {new Date(media.updatedAt).toLocaleDateString("fr-FR", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+                {" · "}
+                <Link href="/notre-methode" className="underline underline-offset-2 hover:opacity-70">
+                  notre méthode
+                </Link>
+              </p>
+            )}
             {media.topics.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" style={{ borderColor: C.divider }}>
                 {media.topics.slice(0, 8).map((t) => (
