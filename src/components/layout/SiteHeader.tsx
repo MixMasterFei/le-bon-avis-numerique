@@ -53,15 +53,15 @@ interface NavItem {
 // partial coverage). Admins reach /mangas via direct URL or the admin
 // dashboard. Add back here when ready for public launch.
 //
-// Actualités is WIP — the news vertical (canonical feed:
-// /apercudecouverte-v5, admin-only) is being polished. Drop the
-// comingSoon flag and update href to the public route once the cron
-// is stable and quality is judged ready.
+// Actualités removed from the top nav (July 2026): the disabled
+// "Bientôt" pill was eating ~160px that the search bar needs on iPad
+// widths, for a link nobody could click. The news surface lives inside
+// the Coin Famille; re-add a nav entry only if a standalone public
+// /actualites route ships.
 const navigation: NavItem[] = [
   { name: "Films", href: "/films", icon: Film },
   { name: "Séries TV", href: "/series", icon: Tv },
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
-  { name: "Actualités", href: "/actualites", icon: Newspaper, comingSoon: true },
 ]
 
 const ageRanges = [
@@ -331,13 +331,13 @@ export function SiteHeader() {
             </div>
           </Link>
 
-          <div className="hidden lg:flex flex-1 items-center min-w-0 pl-6 xl:pl-10">
+          <div className="hidden lg:flex flex-1 items-center min-w-0 pl-6">
             <nav className="flex items-center space-x-0.5 xl:space-x-1">
               {navigation.map((item) =>
                 item.comingSoon ? (
                   <div
                     key={item.name}
-                    className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full cursor-not-allowed opacity-60 whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-medium rounded-full cursor-not-allowed opacity-60 whitespace-nowrap"
                     style={navLinkStyle}
                     title="Bientôt disponible"
                   >
@@ -354,7 +354,7 @@ export function SiteHeader() {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
+                    className="flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
                     style={navLinkStyle}
                   >
                     <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -366,7 +366,7 @@ export function SiteHeader() {
               {isAdmin && (
                 <Link
                   href="/coin-famille"
-                  className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90 whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-semibold rounded-full transition-opacity hover:opacity-90 whitespace-nowrap"
                   style={{ background: p.accent, color: "#fff" }}
                 >
                   <Home className="h-4 w-4 flex-shrink-0" />
@@ -377,7 +377,7 @@ export function SiteHeader() {
               <div ref={moreMenuRef} className="relative">
                 <button
                   onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                  className="flex items-center gap-1.5 px-2.5 xl:px-4 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
                   style={navLinkStyle}
                 >
                   Plus
@@ -454,9 +454,13 @@ export function SiteHeader() {
               </div>
             </nav>
 
+            {/* Inline search only where it genuinely fits (≥xl). Below xl
+                the full-width search row under the header takes over —
+                min-w guarantees this pill can never again be flex-crushed
+                into a fused circle next to the theme toggle (iPad bug). */}
             <form
               onSubmit={handleSearch}
-              className="hidden md:flex items-center w-full max-w-[180px] lg:max-w-[220px] xl:max-w-md ml-2 xl:ml-4 min-w-0"
+              className="hidden xl:flex flex-1 items-center min-w-[180px] max-w-md ml-3"
             >
               {/* Outer wrapper anchors the absolutely-positioned
                   dropdowns. Cannot use overflow-hidden here — the
@@ -841,7 +845,11 @@ export function SiteHeader() {
           </div>
         </div>
 
-        <form onSubmit={handleSearch} className="md:hidden pb-2">
+        {/* Full-width search row for every viewport that doesn't get the
+            inline pill (phones, iPad portrait AND landscape). This is the
+            "search is always there" guarantee: one of the two bars renders
+            at every width, with no crushable in-between band. */}
+        <form onSubmit={handleSearch} className="xl:hidden pb-2">
           <div className="relative">
             <button
               type="submit"
