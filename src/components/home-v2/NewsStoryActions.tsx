@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { DISLIKE_REASONS, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
+import { updateNewsFeedbackCache } from "@/hooks/useNewsFeedback"
 
 type StoryReaction = "LIKE" | "DISLIKE"
 
@@ -150,7 +151,7 @@ export function NewsStoryActions({
   }, [slug])
 
   const postEngagement = useCallback(
-    async (payload: Record<string, unknown>) => {
+    async (payload: Record<string, unknown>): Promise<EngagementState> => {
       const res = await fetch(`/api/news/${encodeURIComponent(slug)}/engagement`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,7 +159,9 @@ export function NewsStoryActions({
       })
       if (!res.ok) throw new Error("Engagement update failed")
       const data = await res.json()
-      setEngagement({ ...EMPTY_ENGAGEMENT, ...data })
+      const next: EngagementState = { ...EMPTY_ENGAGEMENT, ...data }
+      setEngagement(next)
+      return next
     },
     [slug],
   )
@@ -173,9 +176,17 @@ export function NewsStoryActions({
     try {
       // Toggle-off is explicit (client state decides) — the server never
       // infers intent from a missing reason.
-      await postEngagement({ action: "reaction", type, remove: removing })
+      const next = await postEngagement({ action: "reaction", type, remove: removing })
       setReasonOpen(willDislike)
-      if (willDislike) setReasonSent(false)
+      // ANY reaction change invalidates a previous "Merci" — the thanked
+      // reason belonged to a dislike that may no longer exist.
+      setReasonSent(false)
+      // Cross-surface sync: the feed cards share useNewsFeedback's cache;
+      // without this, navigating back to the feed briefly showed the
+      // pre-change reaction. The server's canonical myReaction wins.
+      if (session.user.id) {
+        updateNewsFeedbackCache(session.user.id, slug, next.myReaction ?? null)
+      }
     } catch (error) {
       console.error(error)
     } finally {
@@ -184,7 +195,6 @@ export function NewsStoryActions({
   }
 
   async function sendDislikeReason(code: string) {
-    setReasonSent(true)
     setReasonOpen(false)
     try {
       await postEngagement({
@@ -193,7 +203,10 @@ export function NewsStoryActions({
         reasonCode: code,
         reasonNote: reasonNote.trim() || undefined,
       })
+      // "Merci" only AFTER the server accepted the reason — it must never lie.
+      setReasonSent(true)
     } catch (error) {
+      setReasonSent(false)
       console.error(error)
     }
   }

@@ -35,12 +35,14 @@ function ensureLoaded(userId: string): Promise<NewsFeedbackMap> {
   if (!promise) {
     promise = load()
       .then((r) => {
+        // In-flight account-switch guard — see useUserReactions.
+        if (cacheUserId !== userId) return r
         cache = r
         subscribers.forEach((fn) => fn(r))
         return r
       })
       .catch(() => {
-        promise = null
+        if (cacheUserId === userId) promise = null
         return {}
       })
   }
@@ -70,9 +72,10 @@ export function useNewsFeedback(enabled: boolean, userId?: string | null): NewsF
   return feedback
 }
 
-/** Write-through after a successful write; `null` verdict = removal. */
-export function updateNewsFeedbackCache(slug: string, verdict: string | null): void {
-  if (!cache) return
+/** Write-through after a successful write; `null` verdict = removal.
+ *  userId must match the cache owner (account-switch guard). */
+export function updateNewsFeedbackCache(userId: string, slug: string, verdict: string | null): void {
+  if (!cache || cacheUserId !== userId) return
   const next = { ...cache }
   if (verdict === null) delete next[slug]
   else next[slug] = verdict

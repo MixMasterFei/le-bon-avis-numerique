@@ -43,13 +43,15 @@ function ensureLoaded(userId: string): Promise<QuickMember[]> {
   if (!membersPromise) {
     membersPromise = loadMembers()
       .then((m) => {
+        // In-flight account-switch guard — see useUserReactions.
+        if (cacheUserId !== userId) return m
         membersCache = m
         subscribers.forEach((fn) => fn(m))
         return m
       })
       .catch(() => {
         // Transient failure — don't cache emptiness, retry on next mount.
-        membersPromise = null
+        if (cacheUserId === userId) membersPromise = null
         return []
       })
   }

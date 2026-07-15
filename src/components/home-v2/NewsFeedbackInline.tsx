@@ -39,6 +39,9 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
   // "dislike + reason" write must reach the server in order, or a network
   // reordering makes the reasonless one read the other's row as a toggle-off.
   const requestChain = useRef<Promise<unknown>>(Promise.resolve())
+  // Operation counter: an EARLIER tap's failure must not roll back a LATER
+  // tap's optimistic state — only the newest operation owns the outcome.
+  const opCounter = useRef(0)
 
   // Seed from the shared preload (one fetch for the whole feed); never
   // clobber a fresh optimistic tap.
@@ -83,6 +86,7 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
       return
     }
     touched.current = true
+    const op = ++opCounter.current
     const previous = verdict
     const removing = verdict === next
     setVerdict(removing ? null : next)
@@ -91,8 +95,11 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
     // Toggle-off is explicit — the client knows its own state; the server
     // never has to infer intent from a missing reason.
     void send({ type: next, remove: removing }).then((ok) => {
+      // Superseded by a newer tap — that operation owns the outcome; an old
+      // failure must not roll back the newer optimistic state.
+      if (opCounter.current !== op) return
       if (ok) {
-        updateNewsFeedbackCache(slug, removing ? null : next)
+        if (userId) updateNewsFeedbackCache(userId, slug, removing ? null : next)
       } else {
         // Visible rollback — the optimistic state lied.
         setVerdict(previous)

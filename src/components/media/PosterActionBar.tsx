@@ -86,6 +86,10 @@ export function PosterActionBar({
   // Once the user interacts, a late-arriving preload must not clobber their
   // fresh optimistic state.
   const touched = useRef(false)
+  // Per-member operation counter: rapid taps can complete out of order, and
+  // an EARLIER failure must not roll back a LATER tap's optimistic state.
+  // Only the newest operation for a member owns that member's UI outcome.
+  const memberOps = useRef<Record<string, number>>({})
   // Portals need a client-side DOM target; render nothing server-side.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
@@ -180,6 +184,8 @@ export function PosterActionBar({
 
   async function applyToMember(memberId: string, kind: ActionKind) {
     touched.current = true
+    const op = (memberOps.current[memberId] = (memberOps.current[memberId] ?? 0) + 1)
+    const isCurrent = () => memberOps.current[memberId] === op
     const previous = state[memberId] // may be a DIFFERENT reaction, not just absent
     const removing = previous === kind
     // Optimistic
@@ -203,12 +209,17 @@ export function PosterActionBar({
       // A 4xx/5xx does NOT reject fetch — treat it as a failure explicitly,
       // otherwise the UI (and the Coin Famille card swap) diverge from the DB.
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      // Superseded by a newer tap for this member → that operation owns the
+      // UI and the cache; this one stays silent.
+      if (!isCurrent()) return
       // Persisted: write through the shared preload cache (so a remounted
       // card seeds post-write state) and only NOW notify the host — the
       // Coin Famille "déjà vu → swap" must not hide a card the DB rejected.
-      updateUserReactionsCache(mediaId, memberId, removing ? null : kind)
+      if (userId) updateUserReactionsCache(userId, mediaId, memberId, removing ? null : kind)
       onReact?.(kind, memberId, !removing)
     } catch {
+      // A superseded operation must NOT roll back a later tap's state.
+      if (!isCurrent()) return
       // Roll back to the EXACT previous state (which may have been another
       // reaction, not an empty slot).
       setState((prev) => {

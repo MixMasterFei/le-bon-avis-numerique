@@ -243,9 +243,18 @@ export default function ProfilPage() {
         })
         // Tell the header (and any other listener) about the new family name
         // immediately — no reload needed for « Famille X » to appear top-right.
+        // The SERVER's canonical value is dispatched (it normalizes whitespace
+        // and caps length), so the header shows exactly what was stored.
+        const saved = (await res.json().catch(() => null)) as
+          | { user?: { familyName?: string | null } }
+          | null
+        const canonicalFamilyName = saved?.user?.familyName ?? null
+        if (canonicalFamilyName !== null || !profileFamilyName.trim()) {
+          setProfileFamilyName(canonicalFamilyName ?? "")
+        }
         window.dispatchEvent(
           new CustomEvent("totem:profile-updated", {
-            detail: { familyName: profileFamilyName.trim() || null },
+            detail: { familyName: canonicalFamilyName },
           }),
         )
         // Update session name without full page reload
