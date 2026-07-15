@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@prisma/client"
-import { fallbackCard } from "@/lib/news-image"
+import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import { computeCategoryAffinity, personalizedRelevance, AFFINITY_WINDOW_DAYS } from "@/lib/news-personalize"
@@ -91,8 +91,26 @@ function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
   })
 }
 
+/**
+ * Best real photo URL for a row, or null when only the branded card exists.
+ * Two candidates, in order:
+ *  1. sourceImageUrl — the raw publisher photo (V4 directSource path);
+ *  2. imageUrl — WHEN it's a Supabase-mirrored real photo, not our generated
+ *     fallback card. Legacy rows (persisted before source_image_url existed,
+ *     or where only the mirror survived) carry a perfectly good photo here —
+ *     ignoring it was showing violet fallback cards on stories that HAD a
+ *     photo (half the Coin Famille grid on some days).
+ */
+function realPhotoUrl(row: NewsRow): string | null {
+  if (row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl)) return row.sourceImageUrl
+  if (row.imageUrl && !isFallbackCardUrl(row.imageUrl) && !isBlockedHotlinkImageUrl(row.imageUrl)) {
+    return row.imageUrl
+  }
+  return null
+}
+
 function hasRealPhoto(row: NewsRow): boolean {
-  return Boolean(row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl))
+  return realPhotoUrl(row) !== null
 }
 
 // When the Supabase image mirror fails at ingest, news-discover stamps
@@ -113,7 +131,8 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
   // directSource image policy (like V4/V5): prefer the real publisher photo,
   // branded category card only when there's none.
   const fb = fallbackCard(row.category, row.title)
-  const hasPhoto = hasRealPhoto(row)
+  const photoUrl = realPhotoUrl(row)
+  const hasPhoto = photoUrl !== null
   const sources = toSources(row.sources)
   // Publisher headline only when the source is EXPLICITLY French — otherwise we
   // show our own French factual title. A missing `country` used to count as
@@ -126,7 +145,7 @@ function rowToItem(row: NewsRow): CoinFamilleNewsItem {
     slug: row.slug,
     headline: frenchHeadline ?? row.title,
     title: row.title,
-    imageUrl: hasPhoto ? row.sourceImageUrl! : fb.url,
+    imageUrl: photoUrl ?? fb.url,
     fallbackImageUrl: fb.url,
     imageCredit: hasPhoto ? realPhotoCredit(row.imageCredit, primary?.name ?? null) : fb.credit,
     imageLicenseUrl: hasPhoto ? row.imageLicenseUrl : (fb.licenseUrl ?? null),

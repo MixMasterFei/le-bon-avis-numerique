@@ -71,11 +71,17 @@ interface FamilyMemberCardProps {
   onDelete: () => void
 }
 
+// Non-judgmental wording (was Libre/Modéré/Sensible/Strict): the schema
+// defaults average 2.2, so every untouched profile rounded to "Sensible" —
+// which read as the site pronouncing a verdict on the child. "Équilibré" is
+// the accurate name for the default/middle band, and profiles that were
+// never tuned get a distinct "Réglages par défaut" state instead of any
+// label at all (see sensitivityInfo below).
 const SENSITIVITY_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: "Libre", color: "#B8D89A" },
-  1: { label: "Modéré", color: "#F8D775" },
-  2: { label: "Sensible", color: "#E8A87C" },
-  3: { label: "Strict", color: "#D16A4A" },
+  0: { label: "Très ouvert", color: "#B8D89A" },
+  1: { label: "Ouvert", color: "#F8D775" },
+  2: { label: "Équilibré", color: "#E8A87C" },
+  3: { label: "Prudent", color: "#D16A4A" },
 }
 
 export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardProps) {
@@ -93,7 +99,13 @@ export function FamilyMemberCard({ member, onEdit, onDelete }: FamilyMemberCardP
       (member.sensitivityLanguage ?? 2) +
       (member.sensitivitySubstances ?? 2)) / 5
   )
-  const sensitivityInfo = SENSITIVITY_LABELS[avgSensitivity] ?? SENSITIVITY_LABELS[2]
+  // A profile that was never tuned (no quiz, no custom settings) shows a
+  // neutral "default settings" chip — we don't pronounce on a child whose
+  // parents haven't told us anything yet.
+  const isTuned = member.useCustomSettings ?? false
+  const sensitivityInfo = isTuned
+    ? (SENSITIVITY_LABELS[avgSensitivity] ?? SENSITIVITY_LABELS[2])
+    : { label: "Réglages par défaut", color: p.line2 }
 
   const completionPercent = getCompletionPercent(
     {

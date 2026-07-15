@@ -35,6 +35,14 @@ const ACTIONS: { kind: ActionKind; label: string; Icon: typeof Heart }[] = [
   { kind: "NOT_FOR_ME", label: "Pas pour nous", Icon: ThumbsDown },
 ]
 
+// Anonymous intent replay: when a logged-out visitor taps an action, we
+// stash it here; after signup/login (callbackUrl returns them to the same
+// page) the matching bar consumes it — single member applies instantly,
+// multi-member opens the "pour qui ?" sheet pre-set to the tapped action.
+// The save that motivated the signup must never be lost.
+const PENDING_ACTION_KEY = "totem-pending-poster-action"
+const PENDING_ACTION_TTL_MS = 24 * 60 * 60 * 1000
+
 // Benefit-led copy for the anonymous signup gate — the save-hook the market
 // study names as the #1 conversion driver (16× a newsletter form). The prompt
 // sells what the account KEEPS, per the tapped action.
@@ -108,6 +116,52 @@ export function PosterActionBar({
     }
     if (Object.keys(seed).length > 0) setState(seed)
   }, [preloaded, mediaId])
+
+  // Replay a pre-signup intent: the visitor tapped an action while logged
+  // out, signed up, and came back (callbackUrl) — the bar for THAT media
+  // finishes what they started. Single member → applied instantly;
+  // several → the "pour qui ?" sheet opens on the tapped action. Consumed
+  // once, expires after 24h, kept while the account still has no member
+  // (they may be mid-family-creation).
+  useEffect(() => {
+    if (!enabled || !loggedIn || !members) return
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(PENDING_ACTION_KEY)
+    } catch {
+      return
+    }
+    if (!raw) return
+    let pending: { mediaId?: string; kind?: string; ts?: number }
+    try {
+      pending = JSON.parse(raw)
+    } catch {
+      try { window.localStorage.removeItem(PENDING_ACTION_KEY) } catch {}
+      return
+    }
+    if (pending.mediaId !== mediaId) return
+    const stale = !pending.ts || Date.now() - pending.ts > PENDING_ACTION_TTL_MS
+    const invalid = !pending.kind || !ACTION_KINDS.has(pending.kind)
+    if (stale || invalid) {
+      try { window.localStorage.removeItem(PENDING_ACTION_KEY) } catch {}
+      return
+    }
+    if (members.length === 0) return
+    try { window.localStorage.removeItem(PENDING_ACTION_KEY) } catch {}
+    const kind = pending.kind as ActionKind
+    // Deferred out of the effect body (repo lint rule — no sync setState).
+    queueMicrotask(() => {
+      if (members.length === 1) {
+        void applyToMember(members[0].id, kind)
+      } else {
+        setMobileOpen(true)
+        setOpenAction(kind)
+      }
+    })
+    // applyToMember is stable-enough for this one-shot consume; adding it to
+    // deps would re-run the effect on every state change for no benefit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, loggedIn, members, mediaId])
 
   const counts = useMemo(() => {
     const c: Record<ActionKind, number> = { WANTS_TO_WATCH: 0, WATCHED: 0, LOVED: 0, NOT_FOR_ME: 0 }
@@ -208,6 +262,15 @@ export function PosterActionBar({
           } else {
             stop(e)
             setSignupFor((prev) => (prev === kind ? null : kind))
+            // Remember the intent so it can be replayed after signup.
+            try {
+              window.localStorage.setItem(
+                PENDING_ACTION_KEY,
+                JSON.stringify({ mediaId, kind, ts: Date.now() }),
+              )
+            } catch {
+              // Private mode — the gate still works, only the replay is lost.
+            }
           }
         }}
         className="relative inline-flex items-center justify-center rounded-full transition-transform active:scale-90"
