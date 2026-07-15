@@ -22,7 +22,10 @@ export const DISLIKE_REASONS: Record<string, string> = {
 }
 
 export function isDislikeReason(value: unknown): value is keyof typeof DISLIKE_REASONS {
-  return typeof value === "string" && value in DISLIKE_REASONS
+  // Object.hasOwn, not `in`: the `in` operator also matches inherited
+  // properties ("toString", "constructor", "__proto__"), which would let
+  // those strings through as "valid" reason codes.
+  return typeof value === "string" && Object.hasOwn(DISLIKE_REASONS, value)
 }
 
 export const MAX_REASON_NOTE_LENGTH = 200
@@ -48,7 +51,7 @@ export function formatReaderSignals(rows: ReaderSignalRow[]): string {
   // Reason counts (coded reasons only — free text is sampled, not counted).
   const reasonCounts = new Map<string, number>()
   for (const d of dislikes) {
-    if (d.reasonCode && DISLIKE_REASONS[d.reasonCode]) {
+    if (d.reasonCode && Object.hasOwn(DISLIKE_REASONS, d.reasonCode)) {
       reasonCounts.set(d.reasonCode, (reasonCounts.get(d.reasonCode) ?? 0) + 1)
     }
   }
@@ -72,12 +75,17 @@ export function formatReaderSignals(rows: ReaderSignalRow[]): string {
   // reliable defense. The CODED reasons carry the aggregate signal; the
   // titles are our own synthesized text (trusted). Notes stay in the DB for
   // human review.
-  const examples = dislikes
-    .slice(0, 5)
-    .map((d) => {
-      const why = d.reasonCode && DISLIKE_REASONS[d.reasonCode] ? ` — ${DISLIKE_REASONS[d.reasonCode]}` : ""
-      return `- « ${d.title.slice(0, 90)} »${why}`
-    })
+  // Deduped by story title — several users disliking the same story should
+  // yield one example line, not crowd out the other examples.
+  const seenTitles = new Set<string>()
+  const examples: string[] = []
+  for (const d of dislikes) {
+    if (examples.length >= 5) break
+    if (seenTitles.has(d.title)) continue
+    seenTitles.add(d.title)
+    const why = d.reasonCode && Object.hasOwn(DISLIKE_REASONS, d.reasonCode) ? ` — ${DISLIKE_REASONS[d.reasonCode]}` : ""
+    examples.push(`- « ${d.title.slice(0, 90)} »${why}`)
+  }
 
   return [
     "\n\n## SIGNAUX LECTEURS (30 derniers jours)",

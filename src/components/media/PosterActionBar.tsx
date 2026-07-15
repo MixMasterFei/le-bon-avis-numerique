@@ -9,7 +9,7 @@ import { Heart, Eye, Bookmark, ThumbsDown, Users, Check, Plus, X } from "lucide-
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { posterActionsEnabled } from "@/lib/poster-actions-flag"
 import { useFamilyMembers } from "@/hooks/useFamilyMembers"
-import { useUserReactions } from "@/hooks/useUserReactions"
+import { useUserReactions, updateUserReactionsCache } from "@/hooks/useUserReactions"
 
 const ACTION_KINDS = new Set(["WANTS_TO_WATCH", "WATCHED", "LOVED", "NOT_FOR_ME"])
 
@@ -70,9 +70,11 @@ export function PosterActionBar({
   const loggedIn = !!session?.user
 
   // Members + preload only matter for logged-in users; anonymous visitors get
-  // the signup gate instead (no fetches).
-  const members = useFamilyMembers(enabled && loggedIn)
-  const preloaded = useUserReactions(enabled && loggedIn)
+  // the signup gate instead (no fetches). The userId keys the shared caches
+  // so an account switch can never serve another family's data.
+  const userId = session?.user?.id ?? null
+  const members = useFamilyMembers(enabled && loggedIn, userId)
+  const preloaded = useUserReactions(enabled && loggedIn, userId)
   // Optimistic per-member state for THIS media.
   const [state, setState] = useState<Record<string, ActionKind>>({})
   const [openAction, setOpenAction] = useState<ActionKind | null>(null)
@@ -178,8 +180,8 @@ export function PosterActionBar({
 
   async function applyToMember(memberId: string, kind: ActionKind) {
     touched.current = true
-    const current = state[memberId]
-    const removing = current === kind
+    const previous = state[memberId] // may be a DIFFERENT reaction, not just absent
+    const removing = previous === kind
     // Optimistic
     setState((prev) => {
       const next = { ...prev }
@@ -187,28 +189,32 @@ export function PosterActionBar({
       else next[memberId] = kind
       return next
     })
-    // Notify the host optimistically (matches the old Coin Famille "déjà vu →
-    // swap" feel: act immediately, persist in the background).
-    onReact?.(kind, memberId, !removing)
     setBusy(true)
     try {
-      if (removing) {
-        await fetch(`/api/user/reaction?familyMemberId=${memberId}&mediaId=${mediaId}`, {
-          method: "DELETE",
-        })
-      } else {
-        await fetch("/api/user/reaction", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ familyMemberId: memberId, mediaId, reaction: kind }),
-        })
-      }
+      const res = removing
+        ? await fetch(`/api/user/reaction?familyMemberId=${memberId}&mediaId=${mediaId}`, {
+            method: "DELETE",
+          })
+        : await fetch("/api/user/reaction", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ familyMemberId: memberId, mediaId, reaction: kind }),
+          })
+      // A 4xx/5xx does NOT reject fetch — treat it as a failure explicitly,
+      // otherwise the UI (and the Coin Famille card swap) diverge from the DB.
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      // Persisted: write through the shared preload cache (so a remounted
+      // card seeds post-write state) and only NOW notify the host — the
+      // Coin Famille "déjà vu → swap" must not hide a card the DB rejected.
+      updateUserReactionsCache(mediaId, memberId, removing ? null : kind)
+      onReact?.(kind, memberId, !removing)
     } catch {
-      // Roll back on failure
+      // Roll back to the EXACT previous state (which may have been another
+      // reaction, not an empty slot).
       setState((prev) => {
         const next = { ...prev }
-        if (removing) next[memberId] = kind
-        else delete next[memberId]
+        if (previous === undefined) delete next[memberId]
+        else next[memberId] = previous
         return next
       })
     } finally {

@@ -200,7 +200,7 @@ describe("POST /api/user/reaction", () => {
     expect(mockedPrisma.mediaReaction.upsert.mock.calls[0][0].create).toMatchObject({ source: "organic" })
   })
 
-  it("sanitizes and caps the free-text note", async () => {
+  it("normalizes the free-text note as plain Unicode: verbatim text, control chars stripped, capped", async () => {
     loggedIn()
     ownershipOk()
     await POST(
@@ -208,11 +208,14 @@ describe("POST /api/user/reaction", () => {
         familyMemberId: "fm1",
         mediaId: "m1",
         reaction: "SCARED",
-        note: '<script>alert("x")</script>' + "a".repeat(600),
+        note: "il a eu peur à l'arrivée d'Ursula & co " + "a".repeat(600),
       }),
     )
     const note = mockedPrisma.mediaReaction.upsert.mock.calls[0][0].create.note as string
-    expect(note).not.toContain("<script>")
+    // NOT HTML-escaped (React escapes at render; entities corrupt French
+    // apostrophes) — but control chars gone and length capped.
+    expect(note).toContain("l'arrivée d'Ursula & co")
+    expect(note).not.toContain("&#x27;")
     expect(note.length).toBeLessThanOrEqual(500)
 
     vi.clearAllMocks()

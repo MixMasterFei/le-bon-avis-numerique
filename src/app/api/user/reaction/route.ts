@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { recomputeMemberVectorSafe } from "@/lib/preference-vector/recompute"
 import { isValidReaction, MAX_REACTION_NOTE_LENGTH } from "@/lib/reaction-types"
-import { sanitizeInput } from "@/lib/security"
+import { sanitizePlainText } from "@/lib/security"
 
 // GET /api/user/reaction?mediaId=xxx - Get reactions for a media item by user's family
 export async function GET(request: NextRequest) {
@@ -101,10 +101,11 @@ export async function POST(request: NextRequest) {
     const reactionSource: "organic" | "quiz_anchor" =
       source === "quiz_anchor" ? "quiz_anchor" : "organic"
 
-    // Optional free-text note: sanitize + cap before storing.
+    // Optional free-text note: plain-text normalize + cap before storing
+    // (no HTML-escaping — React escapes at render; entities corrupt text).
     const safeNote =
       typeof note === "string" && note.trim()
-        ? sanitizeInput(note).slice(0, MAX_REACTION_NOTE_LENGTH) || null
+        ? sanitizePlainText(note, MAX_REACTION_NOTE_LENGTH) || null
         : null
 
     // Upsert the reaction — the compound unique [familyMemberId, mediaId]

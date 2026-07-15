@@ -37,7 +37,9 @@ export function CoinFamillePickCard({
 }: {
   media: PickMedia
   comment?: string
-  onSeen: (id: string) => void
+  /** Fired after a persisted WATCHED write — carries WHO watched it so the
+   *  rail can hide the card for that member only (not their siblings). */
+  onSeen: (id: string, memberId: string) => void
 }) {
   const p = APERCU_PALETTE
   const [open, setOpen] = useState(false)
@@ -80,8 +82,8 @@ export function CoinFamillePickCard({
             for a fresh pick via onSeen — preserving the old rail mechanic. */}
         <PosterActionBar
           mediaId={media.id}
-          onReact={(kind, _memberId, active) => {
-            if (kind === "WATCHED" && active) onSeen(media.id)
+          onReact={(kind, memberId, active) => {
+            if (kind === "WATCHED" && active) onSeen(media.id, memberId)
           }}
         />
       </Link>

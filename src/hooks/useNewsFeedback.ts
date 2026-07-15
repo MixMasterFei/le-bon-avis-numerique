@@ -7,19 +7,30 @@ export type NewsFeedbackMap = Record<string, string>
 
 // Loaded ONCE per page and shared across every news card's inline feedback
 // buttons (same module-cache pattern as useUserReactions) — a feed of 10
-// stories triggers one fetch, not 10.
+// stories triggers one fetch, not 10. Keyed by user, failures not cached,
+// write-through updated after successful writes (see useUserReactions for
+// the rationale on each property).
+let cacheUserId: string | null = null
 let promise: Promise<NewsFeedbackMap> | null = null
 let cache: NewsFeedbackMap | null = null
 const subscribers = new Set<(r: NewsFeedbackMap) => void>()
 
+function resetIfUserChanged(userId: string): void {
+  if (cacheUserId === userId) return
+  cacheUserId = userId
+  promise = null
+  cache = null
+}
+
 async function load(): Promise<NewsFeedbackMap> {
   const res = await fetch("/api/news/feedback/all")
-  if (!res.ok) return {}
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const data = await res.json()
   return (data?.feedback as NewsFeedbackMap) ?? {}
 }
 
-function ensureLoaded(): Promise<NewsFeedbackMap> {
+function ensureLoaded(userId: string): Promise<NewsFeedbackMap> {
+  resetIfUserChanged(userId)
   if (cache) return Promise.resolve(cache)
   if (!promise) {
     promise = load()
@@ -29,7 +40,7 @@ function ensureLoaded(): Promise<NewsFeedbackMap> {
         return r
       })
       .catch(() => {
-        cache = {}
+        promise = null
         return {}
       })
   }
@@ -37,28 +48,41 @@ function ensureLoaded(): Promise<NewsFeedbackMap> {
 }
 
 /** The current user's news feedback, shared across cards. `null` while loading. */
-export function useNewsFeedback(enabled: boolean): NewsFeedbackMap | null {
-  const [feedback, setFeedback] = useState<NewsFeedbackMap | null>(cache)
+export function useNewsFeedback(enabled: boolean, userId?: string | null): NewsFeedbackMap | null {
+  const [feedback, setFeedback] = useState<NewsFeedbackMap | null>(
+    userId && cacheUserId === userId ? cache : null,
+  )
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || !userId) return
     let active = true
     const notify = (r: NewsFeedbackMap) => {
       if (active) setFeedback(r)
     }
     subscribers.add(notify)
-    ensureLoaded().then(notify)
+    ensureLoaded(userId).then(notify)
     return () => {
       active = false
       subscribers.delete(notify)
     }
-  }, [enabled])
+  }, [enabled, userId])
 
   return feedback
 }
 
+/** Write-through after a successful write; `null` verdict = removal. */
+export function updateNewsFeedbackCache(slug: string, verdict: string | null): void {
+  if (!cache) return
+  const next = { ...cache }
+  if (verdict === null) delete next[slug]
+  else next[slug] = verdict
+  cache = next
+  subscribers.forEach((fn) => fn(cache!))
+}
+
 /** Test/navigation escape hatch. */
 export function resetNewsFeedbackCache(): void {
+  cacheUserId = null
   promise = null
   cache = null
 }

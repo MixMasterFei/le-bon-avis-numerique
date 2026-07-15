@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
-import { Prisma } from "@prisma/client"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDislikeReason, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
-import { sanitizeInput } from "@/lib/security"
-
-/** Prisma P2022: the column does not exist (migration not applied yet). */
-function isMissingColumnError(err: unknown): boolean {
-  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2022"
-}
+import { sanitizePlainText } from "@/lib/security"
+import { isMissingColumnError } from "@/lib/prisma-errors"
 
 const STORY_REACTIONS = ["LIKE", "DISLIKE"] as const
 type StoryReaction = (typeof STORY_REACTIONS)[number]
@@ -101,9 +96,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       // and capped.
       const reasonCode =
         type === "DISLIKE" && isDislikeReason(payload?.reasonCode) ? payload.reasonCode : null
+      // Plain-text normalization (NOT HTML-escaping — React escapes at
+      // render, and stored entities corrupt apostrophes in French text).
       const reasonNote =
         type === "DISLIKE" && typeof payload?.reasonNote === "string" && payload.reasonNote.trim()
-          ? sanitizeInput(payload.reasonNote).slice(0, MAX_REASON_NOTE_LENGTH) || null
+          ? sanitizePlainText(payload.reasonNote, MAX_REASON_NOTE_LENGTH) || null
           : null
       const hasReason = Boolean(reasonCode || reasonNote)
 

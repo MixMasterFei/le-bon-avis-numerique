@@ -241,6 +241,13 @@ export default function ProfilPage() {
           seed: profileAvatarValue.seed,
           options: profileAvatarValue.options ?? null,
         })
+        // Tell the header (and any other listener) about the new family name
+        // immediately — no reload needed for « Famille X » to appear top-right.
+        window.dispatchEvent(
+          new CustomEvent("totem:profile-updated", {
+            detail: { familyName: profileFamilyName.trim() || null },
+          }),
+        )
         // Update session name without full page reload
         if (profileName !== session.user.name) {
           update()

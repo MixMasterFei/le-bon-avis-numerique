@@ -27,6 +27,13 @@ describe("isDislikeReason", () => {
     expect(isDislikeReason(42)).toBe(false)
   })
 
+  it("rejects inherited object properties (the `in` operator pitfall)", () => {
+    expect(isDislikeReason("toString")).toBe(false)
+    expect(isDislikeReason("constructor")).toBe(false)
+    expect(isDislikeReason("__proto__")).toBe(false)
+    expect(isDislikeReason("hasOwnProperty")).toBe(false)
+  })
+
   it("has a French label for every reason", () => {
     for (const label of Object.values(DISLIKE_REASONS)) {
       expect(label.trim().length).toBeGreaterThan(0)

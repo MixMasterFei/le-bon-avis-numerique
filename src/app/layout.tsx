@@ -99,11 +99,15 @@ export default async function RootLayout({
   // to everyone when TOTEM_PUBLIC=true. Mirrors NEWSLETTER_PUBLIC.
   const { auth } = await import("@/lib/auth")
   const { canUseTotem } = await import("@/lib/totem/access")
+  const { coinFamilleEnabled } = await import("@/lib/coin-famille-flag")
   const session = await auth()
   const totemEnabled = canUseTotem({
     isAuthenticated: !!session?.user,
     role: session?.user?.role ?? null,
   })
+  // Kill-switch coherence: when COIN_FAMILLE_PUBLIC="false", the nav buttons
+  // disappear along with the page — non-admins were being sent to a 404.
+  const showCoinFamille = coinFamilleEnabled(session?.user?.role === "ADMIN")
   // Site-wide V2 typography — admin-only until HOMEPAGE_V2_PUBLIC=true. The V2
   // font variables are only attached (and `data-v2-type="on"` set) when the
   // viewer qualifies; globals.css remaps --font-sans/--font-heading/--font-serif
@@ -185,7 +189,7 @@ export default async function RootLayout({
           <SettingsProvider>
             {hydrationDebugEnabled ? <HydrationCatcher /> : null}
             <ScrollRestoration />
-            <SiteHeader />
+            <SiteHeader showCoinFamille={showCoinFamille} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
             <CookieConsent />

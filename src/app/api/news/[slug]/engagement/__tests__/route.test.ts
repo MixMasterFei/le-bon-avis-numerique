@@ -61,13 +61,13 @@ describe("POST /api/news/[slug]/engagement — reaction + reason", () => {
     expect(mockedPrisma.newsStoryReaction.upsert).not.toHaveBeenCalled()
   })
 
-  it("stores a DISLIKE with a vocabulary reason and sanitized note", async () => {
+  it("stores a DISLIKE with a vocabulary reason and a plain-text note (control chars stripped, capped)", async () => {
     const res = await POST(
       req({
         action: "reaction",
         type: "DISLIKE",
         reasonCode: "anxiogene",
-        reasonNote: '<b>trop</b> de faits divers ' + "x".repeat(400),
+        reasonNote: "l'article  d'O'Connor & fils " + "x".repeat(400),
       }),
       ctx,
     )
@@ -75,15 +75,22 @@ describe("POST /api/news/[slug]/engagement — reaction + reason", () => {
     const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
     expect(call.create).toMatchObject({ type: "DISLIKE", reasonCode: "anxiogene" })
     const note = call.create.reasonNote as string
-    expect(note).not.toContain("<b>")
+    // Plain Unicode preserved verbatim — apostrophes and & must NOT become
+    // HTML entities (React escapes at render; entities corrupt French text).
+    expect(note).toContain("d'O'Connor & fils")
+    expect(note).not.toContain("")
+    expect(note).not.toContain("&#x27;")
     expect(note.length).toBeLessThanOrEqual(200)
   })
 
-  it("drops an out-of-vocabulary reason code but keeps the dislike", async () => {
-    await POST(req({ action: "reaction", type: "DISLIKE", reasonCode: "DROP TABLE" }), ctx)
-    const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
-    expect(call.create).toMatchObject({ type: "DISLIKE", reasonCode: null })
-  })
+  it.each([["DROP TABLE"], ["toString"], ["__proto__"], ["constructor"]])(
+    "drops the out-of-vocabulary reason code %j but keeps the dislike",
+    async (bad) => {
+      await POST(req({ action: "reaction", type: "DISLIKE", reasonCode: bad }), ctx)
+      const call = mockedPrisma.newsStoryReaction.upsert.mock.calls[0][0]
+      expect(call.create).toMatchObject({ type: "DISLIKE", reasonCode: null })
+    },
+  )
 
   it("ignores reasons sent with a LIKE", async () => {
     await POST(req({ action: "reaction", type: "LIKE", reasonCode: "anxiogene", reasonNote: "x" }), ctx)
