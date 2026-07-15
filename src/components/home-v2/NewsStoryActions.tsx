@@ -168,9 +168,12 @@ export function NewsStoryActions({
     setReacting(type)
     // Opening a DISLIKE (was something else) offers the optional "why" —
     // same reason flow as the feed cards, feeding the reader signals.
-    const willDislike = type === "DISLIKE" && engagement.myReaction !== "DISLIKE"
+    const removing = engagement.myReaction === type
+    const willDislike = type === "DISLIKE" && !removing
     try {
-      await postEngagement({ action: "reaction", type })
+      // Toggle-off is explicit (client state decides) — the server never
+      // infers intent from a missing reason.
+      await postEngagement({ action: "reaction", type, remove: removing })
       setReasonOpen(willDislike)
       if (willDislike) setReasonSent(false)
     } catch (error) {

@@ -65,13 +65,18 @@ export function formatReaderSignals(rows: ReaderSignalRow[]): string {
     .map(([cat, n]) => `${cat} (${n})`)
     .join(", ")
 
-  // A few recent disliked titles + free-text notes as concrete examples.
+  // A few recent disliked titles as concrete examples. Deliberately NO
+  // free-text notes here: reason notes are user-written and this string is
+  // injected into the editorial LLM prompt — raw user text in a prompt is an
+  // injection vector ("ignore tes instructions…"), and delimiters are not a
+  // reliable defense. The CODED reasons carry the aggregate signal; the
+  // titles are our own synthesized text (trusted). Notes stay in the DB for
+  // human review.
   const examples = dislikes
     .slice(0, 5)
     .map((d) => {
       const why = d.reasonCode && DISLIKE_REASONS[d.reasonCode] ? ` — ${DISLIKE_REASONS[d.reasonCode]}` : ""
-      const note = d.reasonNote ? ` (« ${d.reasonNote.slice(0, 120)} »)` : ""
-      return `- « ${d.title.slice(0, 90)} »${why}${note}`
+      return `- « ${d.title.slice(0, 90)} »${why}`
     })
 
   return [

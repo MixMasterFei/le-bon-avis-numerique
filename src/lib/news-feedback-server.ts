@@ -13,8 +13,11 @@ import { formatReaderSignals } from "@/lib/news-feedback"
 export async function getReaderFeedbackSignals(): Promise<string> {
   try {
     const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    // DISLIKE-only in the QUERY: the signals section only reports dislikes,
+    // and fetching all types meant a like-heavy month could push the useful
+    // dislikes out of the 300-row sample.
     const rows = await prisma.newsStoryReaction.findMany({
-      where: { updatedAt: { gte: since } },
+      where: { type: "DISLIKE", updatedAt: { gte: since } },
       select: {
         type: true,
         reasonCode: true,

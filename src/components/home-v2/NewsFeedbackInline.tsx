@@ -34,6 +34,10 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
   const [note, setNote] = useState("")
   const [showLoginNudge, setShowLoginNudge] = useState(false)
   const touched = useRef(false)
+  // Requests are serialized: the "dislike" write and the follow-up
+  // "dislike + reason" write must reach the server in order, or a network
+  // reordering makes the reasonless one read the other's row as a toggle-off.
+  const requestChain = useRef<Promise<unknown>>(Promise.resolve())
 
   // Seed from the shared preload (one fetch for the whole feed); never
   // clobber a fresh optimistic tap.
@@ -52,12 +56,17 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
     }
   }, [preloaded, slug])
 
-  const send = (body: Record<string, unknown>) =>
-    fetch(`/api/news/${encodeURIComponent(slug)}/engagement`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reaction", ...body }),
-    }).catch(() => {})
+  const send = (body: Record<string, unknown>) => {
+    const chained = requestChain.current.then(() =>
+      fetch(`/api/news/${encodeURIComponent(slug)}/engagement`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reaction", ...body }),
+      }).catch(() => {}),
+    )
+    requestChain.current = chained
+    return chained
+  }
 
   const tap = (next: Verdict) => {
     if (!loggedIn) {
@@ -69,8 +78,9 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
     setVerdict(removing ? null : next)
     setReasonOpen(!removing && next === "DISLIKE")
     setReasonSent(false)
-    // The API toggles off when the same reaction arrives without a reason.
-    void send({ type: next })
+    // Toggle-off is explicit — the client knows its own state; the server
+    // never has to infer intent from a missing reason.
+    void send({ type: next, remove: removing })
   }
 
   const sendReason = (code: string) => {
