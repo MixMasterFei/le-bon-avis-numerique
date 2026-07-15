@@ -114,7 +114,7 @@ export function MeteoFamilleCard({
     try {
       // Persist server-side so the same city syncs to other devices.
       // Refetch weather in parallel for snappier UI.
-      const [, weatherRes] = await Promise.all([
+      const [persistRes, weatherRes] = await Promise.all([
         fetch("/api/user/weather-city", {
           method: "PATCH",
           headers: { "content-type": "application/json" },
@@ -127,6 +127,12 @@ export function MeteoFamilleCard({
         : null
       if (data?.snapshot) {
         startTransition(() => setSnapshot(data.snapshot!))
+        // Weather loaded but the save failed → the widget shows the new city
+        // for this visit only. Say so instead of silently diverging from the
+        // stored city (next visit would snap back).
+        if (!persistRes.ok) {
+          setSwitchError(`${city.name} affichée, mais non enregistrée — réessayez pour la garder.`)
+        }
       } else {
         setSwitchError(`Impossible de charger la météo pour ${city.name}. Réessayez.`)
       }

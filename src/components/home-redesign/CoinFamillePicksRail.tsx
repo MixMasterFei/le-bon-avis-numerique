@@ -123,10 +123,14 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
     return response?.memberSections.find((section) => section.id === activeTab)?.items ?? []
   }, [activeTab, response])
 
-  // "Déjà vu" hides a title everywhere in this session (keyed by media id).
+  // "Déjà vu" hides a title ONLY in the scopes it concerns: the member who
+  // watched it, and the tab where the action happened. Keys are
+  // "<scope>:<mediaId>" where scope is a member id or "family". One child
+  // watching a film must not remove a perfectly relevant suggestion from a
+  // sibling's tab.
   const availableRaw = useMemo(
-    () => activeRaw.filter((item) => !dismissed.has(item.id)),
-    [activeRaw, dismissed],
+    () => activeRaw.filter((item) => !dismissed.has(`${activeTab}:${item.id}`)),
+    [activeRaw, dismissed, activeTab],
   )
 
   const heroRaw = availableRaw.length > 0 ? availableRaw[offset % availableRaw.length] : null
@@ -142,10 +146,14 @@ export function CoinFamillePicksRail({ serifClass }: { serifClass: string }) {
     setOffset(0)
   }
 
-  const handleSeen = (id: string) => {
+  const handleSeen = (id: string, memberId: string) => {
     setDismissed((prev) => {
       const next = new Set(prev)
-      next.add(id)
+      // Hide for the member who watched it AND on the tab where the parent
+      // acted (so the card visibly swaps under their finger) — siblings'
+      // tabs keep the suggestion.
+      next.add(`${memberId}:${id}`)
+      next.add(`${activeTab}:${id}`)
       return next
     })
   }

@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { DISLIKE_REASONS, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
 
 type StoryReaction = "LIKE" | "DISLIKE"
 
@@ -111,6 +112,10 @@ export function NewsStoryActions({
   const [reacting, setReacting] = useState<StoryReaction | null>(null)
   const [shareOpen, setShareOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Optional "why" after a dislike — same vocabulary as the feed cards.
+  const [reasonOpen, setReasonOpen] = useState(false)
+  const [reasonSent, setReasonSent] = useState(false)
+  const [reasonNote, setReasonNote] = useState("")
   const [canNativeShare, setCanNativeShare] = useState(false)
   const [shareUrl, setShareUrl] = useState(`/apercudecouverte/${slug}`)
 
@@ -161,12 +166,35 @@ export function NewsStoryActions({
   async function toggleReaction(type: StoryReaction) {
     if (!session?.user) return
     setReacting(type)
+    // Opening a DISLIKE (was something else) offers the optional "why" —
+    // same reason flow as the feed cards, feeding the reader signals.
+    const removing = engagement.myReaction === type
+    const willDislike = type === "DISLIKE" && !removing
     try {
-      await postEngagement({ action: "reaction", type })
+      // Toggle-off is explicit (client state decides) — the server never
+      // infers intent from a missing reason.
+      await postEngagement({ action: "reaction", type, remove: removing })
+      setReasonOpen(willDislike)
+      if (willDislike) setReasonSent(false)
     } catch (error) {
       console.error(error)
     } finally {
       setReacting(null)
+    }
+  }
+
+  async function sendDislikeReason(code: string) {
+    setReasonSent(true)
+    setReasonOpen(false)
+    try {
+      await postEngagement({
+        action: "reaction",
+        type: "DISLIKE",
+        reasonCode: code,
+        reasonNote: reasonNote.trim() || undefined,
+      })
+    } catch (error) {
+      console.error(error)
     }
   }
 
@@ -255,6 +283,55 @@ export function NewsStoryActions({
   }
 
   return (
+    <div className="flex flex-col gap-2">
+      {/* Optional dislike reason — fully skippable, the dislike is already
+          recorded. Feeds the reader-signals loop like the feed cards. */}
+      {reasonOpen && engagement.myReaction === "DISLIKE" && (
+        <div className="rounded-xl p-3" style={{ background: p.bg2, border: `1px solid ${p.line}` }}>
+          <div className="mb-2 text-xs font-semibold" style={{ color: p.ink2 }}>
+            Pourquoi&nbsp;? (facultatif — ça nous aide à mieux choisir les actus)
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(DISLIKE_REASONS).map(([code, label]) => (
+              <button
+                key={code}
+                type="button"
+                onClick={() => sendDislikeReason(code)}
+                className="rounded-full px-2.5 py-1 text-xs font-semibold transition-opacity hover:opacity-70"
+                style={{ background: p.card, color: p.ink, border: `1px solid ${p.line}` }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={reasonNote}
+            onChange={(e) => setReasonNote(e.target.value)}
+            maxLength={MAX_REASON_NOTE_LENGTH}
+            placeholder="Précisez si vous voulez…"
+            className="mt-2 w-full rounded-md px-2.5 py-1.5 text-xs outline-none"
+            style={{ background: p.card, border: `1px solid ${p.line}`, color: p.ink }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && reasonNote.trim()) sendDislikeReason("autre")
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setReasonOpen(false)}
+            className="mt-1.5 text-[11px] underline underline-offset-2 opacity-60 hover:opacity-100"
+            style={{ color: p.ink2 }}
+          >
+            Passer
+          </button>
+        </div>
+      )}
+      {reasonSent && (
+        <div className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "#5C8A5C" }}>
+          <Check className="h-3.5 w-3.5" /> Merci, c&apos;est noté&nbsp;!
+        </div>
+      )}
+
     <div className="flex flex-wrap items-center gap-2">
       {reactionButtons}
 
@@ -330,6 +407,7 @@ export function NewsStoryActions({
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }

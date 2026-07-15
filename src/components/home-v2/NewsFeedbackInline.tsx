@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import { ThumbsUp, ThumbsDown, Check } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { DISLIKE_REASONS, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
-import { useNewsFeedback } from "@/hooks/useNewsFeedback"
+import { useNewsFeedback, updateNewsFeedbackCache } from "@/hooks/useNewsFeedback"
 
 type Verdict = "LIKE" | "DISLIKE"
 
@@ -26,14 +26,19 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
   const { data: session } = useSession()
   const pathname = usePathname()
   const loggedIn = !!session?.user
+  const userId = session?.user?.id ?? null
 
-  const preloaded = useNewsFeedback(loggedIn)
+  const preloaded = useNewsFeedback(loggedIn, userId)
   const [verdict, setVerdict] = useState<Verdict | null>(null)
   const [reasonOpen, setReasonOpen] = useState(false)
   const [reasonSent, setReasonSent] = useState(false)
   const [note, setNote] = useState("")
   const [showLoginNudge, setShowLoginNudge] = useState(false)
   const touched = useRef(false)
+  // Requests are serialized: the "dislike" write and the follow-up
+  // "dislike + reason" write must reach the server in order, or a network
+  // reordering makes the reasonless one read the other's row as a toggle-off.
+  const requestChain = useRef<Promise<unknown>>(Promise.resolve())
 
   // Seed from the shared preload (one fetch for the whole feed); never
   // clobber a fresh optimistic tap.
@@ -52,12 +57,25 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
     }
   }, [preloaded, slug])
 
-  const send = (body: Record<string, unknown>) =>
-    fetch(`/api/news/${encodeURIComponent(slug)}/engagement`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "reaction", ...body }),
-    }).catch(() => {})
+  // Returns true only when the server ACCEPTED the write — a 4xx/5xx does
+  // not reject fetch, and treating it as success left the UI showing
+  // "Merci !" over a write that never happened.
+  const send = (body: Record<string, unknown>): Promise<boolean> => {
+    const chained = requestChain.current.then(async () => {
+      try {
+        const res = await fetch(`/api/news/${encodeURIComponent(slug)}/engagement`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reaction", ...body }),
+        })
+        return res.ok
+      } catch {
+        return false
+      }
+    })
+    requestChain.current = chained
+    return chained
+  }
 
   const tap = (next: Verdict) => {
     if (!loggedIn) {
@@ -65,19 +83,35 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
       return
     }
     touched.current = true
+    const previous = verdict
     const removing = verdict === next
     setVerdict(removing ? null : next)
     setReasonOpen(!removing && next === "DISLIKE")
     setReasonSent(false)
-    // The API toggles off when the same reaction arrives without a reason.
-    void send({ type: next })
+    // Toggle-off is explicit — the client knows its own state; the server
+    // never has to infer intent from a missing reason.
+    void send({ type: next, remove: removing }).then((ok) => {
+      if (ok) {
+        updateNewsFeedbackCache(slug, removing ? null : next)
+      } else {
+        // Visible rollback — the optimistic state lied.
+        setVerdict(previous)
+        setReasonOpen(false)
+      }
+    })
   }
 
   const sendReason = (code: string) => {
     touched.current = true
     setReasonSent(true)
     setReasonOpen(false)
-    void send({ type: "DISLIKE", reasonCode: code, reasonNote: note.trim() || undefined })
+    void send({ type: "DISLIKE", reasonCode: code, reasonNote: note.trim() || undefined }).then(
+      (ok) => {
+        // The dislike itself may already be stored; only the "Merci !" for
+        // the reason must not lie.
+        if (!ok) setReasonSent(false)
+      },
+    )
   }
 
   const btn = (kind: Verdict, Icon: typeof ThumbsUp, label: string) => {

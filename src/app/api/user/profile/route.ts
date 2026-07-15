@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sanitizeInput } from "@/lib/security"
+import { sanitizePlainText } from "@/lib/security"
+import { isMissingColumnError } from "@/lib/prisma-errors"
 
 export async function PATCH(request: Request) {
   try {
@@ -25,11 +26,14 @@ export async function PATCH(request: Request) {
 
     // Display family name ("Famille Dupont" in the header + homepage
     // greeting). Empty string clears it back to the `name` fallback.
+    // Plain Unicode, NOT HTML-escaped: entities would corrupt legitimate
+    // French names ("O'Connor" → "O&#x27;Connor" rendered literally by
+    // React). React escapes contextually at render time.
     if (familyName !== undefined) {
       if (familyName === null || (typeof familyName === "string" && familyName.trim() === "")) {
         updateData.familyName = null
       } else if (typeof familyName === "string") {
-        const clean = sanitizeInput(familyName).trim().slice(0, 60)
+        const clean = sanitizePlainText(familyName, 60)
         if (!clean) return NextResponse.json({ error: "Nom de famille invalide" }, { status: 400 })
         updateData.familyName = clean
       } else {
@@ -101,10 +105,11 @@ export async function GET() {
         where: { id: session.user.id },
         select: PROFILE_SELECT,
       })
-    } catch {
-      // Deploy-order guard: if the family_name column hasn't been added yet
-      // (sql/add_family_name.sql), fall back to the legacy shape so the
-      // header avatar + profile page keep working during the window.
+    } catch (err) {
+      // Deploy-order guard, NARROW: only a missing family_name column
+      // (P2022 — sql/add_family_name.sql not applied) falls back to the
+      // legacy shape. Any other DB failure is real and must bubble.
+      if (!isMissingColumnError(err)) throw err
       const { familyName: _omit, ...legacySelect } = PROFILE_SELECT
       void _omit
       user = await prisma.user.findUnique({

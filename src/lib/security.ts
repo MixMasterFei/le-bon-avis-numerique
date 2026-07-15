@@ -28,6 +28,25 @@ export function sanitizeInput(input: string): string {
 }
 
 /**
+ * Normalize free text for STORAGE as plain Unicode — strips null bytes and
+ * control characters, trims, and caps the length. Deliberately does NOT
+ * HTML-escape: React escapes contextually at render time, and storing
+ * entities corrupts legitimate text (« O'Connor » became « O&#x27;Connor »
+ * when familyName went through sanitizeInput). Use this for display names,
+ * notes and other plain-text fields; keep sanitizeInput for values that end
+ * up in raw-HTML contexts.
+ */
+export function sanitizePlainText(input: unknown, maxLength = 500): string {
+  if (typeof input !== "string") return ""
+  return input
+    .replace(/\0/g, "")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength)
+}
+
+/**
  * Sanitize search query for external API calls
  * More permissive than full sanitization but still safe
  */

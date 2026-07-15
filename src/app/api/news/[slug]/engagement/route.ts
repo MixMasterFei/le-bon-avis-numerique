@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isDislikeReason, MAX_REASON_NOTE_LENGTH } from "@/lib/news-feedback"
-import { sanitizeInput } from "@/lib/security"
+import { sanitizePlainText } from "@/lib/security"
+import { isMissingColumnError } from "@/lib/prisma-errors"
 
 const STORY_REACTIONS = ["LIKE", "DISLIKE"] as const
 type StoryReaction = (typeof STORY_REACTIONS)[number]
@@ -92,33 +93,55 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
       // Optional "why" — only meaningful on a DISLIKE. Code must be in the
       // fixed vocabulary (news-feedback.ts); the note is free text, sanitized
-      // and capped. A LIKE (or a toggle-off) clears both.
+      // and capped.
       const reasonCode =
         type === "DISLIKE" && isDislikeReason(payload?.reasonCode) ? payload.reasonCode : null
+      // Plain-text normalization (NOT HTML-escaping — React escapes at
+      // render, and stored entities corrupt apostrophes in French text).
       const reasonNote =
         type === "DISLIKE" && typeof payload?.reasonNote === "string" && payload.reasonNote.trim()
-          ? sanitizeInput(payload.reasonNote).slice(0, MAX_REASON_NOTE_LENGTH) || null
+          ? sanitizePlainText(payload.reasonNote, MAX_REASON_NOTE_LENGTH) || null
           : null
+      const hasReason = Boolean(reasonCode || reasonNote)
 
       const existing = await prisma.newsStoryReaction.findUnique({
         where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
       })
 
-      // Same reaction WITHOUT new reason info = toggle off. Re-sending the
-      // same reaction WITH a reason updates it in place (the inline card UI
-      // sends DISLIKE first, then DISLIKE+reason when the user adds one).
-      if (existing?.type === type && !reasonCode && !reasonNote) {
-        await prisma.newsStoryReaction.delete({ where: { id: existing.id } })
+      // Toggle-off is EXPLICIT (client sends remove:true from its own state).
+      // The legacy inference — same type arriving without a reason — is kept
+      // only for stale cached clients, and it's what made the two-step
+      // "dislike, then reason" flow racy: if the reasonless request was
+      // reordered AFTER the reason request, it read the row the reason
+      // request created as a toggle-off and deleted both.
+      const explicitRemove = payload?.remove === true
+      const legacyToggleOff =
+        payload?.remove === undefined && existing?.type === type && !hasReason
+
+      if (explicitRemove || legacyToggleOff) {
+        await prisma.newsStoryReaction.deleteMany({
+          where: { newsStoryId: storyId, userId },
+        })
       } else {
+        // Reason fields are only WRITTEN when the request carries one or the
+        // reaction type changes (a LIKE clears a stale dislike reason). A
+        // same-type reasonless write must NOT wipe a reason that another
+        // request (or device) already attached.
+        const typeChanged = existing !== null && existing.type !== type
+        const reasonUpdate =
+          hasReason || typeChanged ? { reasonCode, reasonNote } : {}
         try {
           await prisma.newsStoryReaction.upsert({
             where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
-            update: { type, reasonCode, reasonNote },
+            update: { type, ...reasonUpdate },
             create: { newsStoryId: storyId, userId, type, reasonCode, reasonNote },
           })
-        } catch {
-          // Deploy-order guard: reason columns not applied yet
-          // (sql/add_news_reaction_reason.sql) — store the reaction alone.
+        } catch (err) {
+          // Deploy-order guard, NARROW: only a missing reason column
+          // (P2022, sql/add_news_reaction_reason.sql not applied) retries
+          // without the reason. Anything else is a real failure and bubbles.
+          if (!isMissingColumnError(err)) throw err
+          console.warn("[news-engagement] reason columns missing, storing reaction alone")
           await prisma.newsStoryReaction.upsert({
             where: { newsStoryId_userId: { newsStoryId: storyId, userId } },
             update: { type },
