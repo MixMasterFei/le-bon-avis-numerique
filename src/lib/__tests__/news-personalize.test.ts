@@ -16,9 +16,11 @@ describe("computeCategoryAffinity", () => {
     expect(a["TECH"]).toBeLessThan(0)
   })
 
-  it("weighs a dislike more than a like (deliberate negative signal)", () => {
+  it("likes and dislikes net out symmetrically — contradictions read as neutral, not chaos", () => {
+    // A news dislike is 'less of this', not a veto (unlike a disliked movie
+    // genre). One like + one dislike on the same category cancels exactly.
     const a = computeCategoryAffinity([like("TECH"), dislike("TECH")])
-    expect(a["TECH"]).toBeLessThan(0)
+    expect(a["TECH"]).toBe(0)
   })
 
   it("clamps to the bounded range — a category can be demoted, never censored", () => {

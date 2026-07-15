@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client"
 import { fallbackCard } from "@/lib/news-image"
 import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
-import { computeCategoryAffinity, personalizedRelevance } from "@/lib/news-personalize"
+import { computeCategoryAffinity, personalizedRelevance, AFFINITY_WINDOW_DAYS } from "@/lib/news-personalize"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { NewsCategoryKey } from "@/components/home-v2/apercuNewsLabels"
 
@@ -152,8 +152,9 @@ interface FamilyNewsSignals {
  */
 async function getFamilyNewsSignals(userId: string): Promise<FamilyNewsSignals> {
   try {
+    const since = new Date(Date.now() - AFFINITY_WINDOW_DAYS * 24 * 60 * 60 * 1000)
     const rows = await prisma.newsStoryReaction.findMany({
-      where: { userId },
+      where: { userId, updatedAt: { gte: since } },
       select: { type: true, newsStoryId: true, newsStory: { select: { category: true } } },
       orderBy: { updatedAt: "desc" },
       take: 400,

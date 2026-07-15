@@ -99,7 +99,7 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
           style={{ background: "var(--card)", border: "1px solid var(--line)", color: "var(--ink-2)" }}
         >
           <Sparkles className="h-3.5 w-3.5" style={{ color: "var(--pine-2)" }} />
-          <b style={{ color: "var(--pine-2)" }}>Indépendant</b> · pensé pour les familles
+          <b style={{ color: "var(--pine-2)" }}>Indépendant et gratuit</b> · pensé pour les familles
         </span>
 
         {hasFamily ? (

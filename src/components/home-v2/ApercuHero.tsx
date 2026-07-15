@@ -84,7 +84,7 @@ export function ApercuHero({
               >
                 ✦
               </span>
-              Indépendant · pensé pour les familles
+              Indépendant et gratuit · pensé pour les familles
             </div>
 
             <h1

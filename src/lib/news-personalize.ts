@@ -21,19 +21,26 @@ export interface NewsReactionLite {
   category: string
 }
 
-// Tuning: a dislike weighs more than a like (negative signal is rarer and
-// more deliberate), and the resulting boost is bounded so a category can be
-// demoted but never censored — news breadth matters more than taste comfort,
-// and a family's feed must not collapse into a single-topic bubble.
+// Tuning — deliberately SOFT (Xavier's call, July 2026): a news dislike is
+// "this topic interests me less", NOT a hard veto like a disliked movie
+// genre (which floors the family-fit score). Likes and dislikes weigh the
+// same and net out, so a family that dislikes one TECH story and likes the
+// next simply reads as neutral on TECH — contradictions converge to zero
+// instead of making the feed oscillate. The bounded, symmetric boost
+// reorders within the feed; it can never censor a category.
 const LIKE_WEIGHT = 1
-const DISLIKE_WEIGHT = -1.5
-const POINT_VALUE = 0.06 // relevanceScore units per net point
-export const MAX_CATEGORY_BOOST = 0.2
-export const MIN_CATEGORY_BOOST = -0.3
+const DISLIKE_WEIGHT = -1
+const POINT_VALUE = 0.05 // relevanceScore units per net point
+export const MAX_CATEGORY_BOOST = 0.15
+export const MIN_CATEGORY_BOOST = -0.15
+
+// Only recent feedback shapes the feed — a dislike from last spring
+// shouldn't still steer today's selection (tastes and news cycles move).
+export const AFFINITY_WINDOW_DAYS = 90
 
 /**
  * Net like/dislike counts per category → bounded relevanceScore adjustment.
- * With relevanceScore in 0..1, ±0.2/−0.3 reorders *within* the feed without
+ * With relevanceScore in 0..1, ±0.15 reorders *within* the feed without
  * letting one enthusiastic week erase a whole category.
  */
 export function computeCategoryAffinity(rows: NewsReactionLite[]): Record<string, number> {
