@@ -173,4 +173,25 @@ export const methodeSections: MethodeSection[] = [
     ],
     after: "Nos recommandations sont indépendantes. On n'est affilié à aucun studio, distributeur ou plateforme de streaming.",
   },
+  {
+    id: "qui-est-responsable",
+    icon: "users",
+    title: "Qui est responsable ?",
+    content: [
+      "Totem Avisé est un projet indépendant, édité et maintenu par son fondateur, Xavier — parent lui-même, et premier utilisateur du site avec sa propre famille. Le projet est né d'une frustration simple : impossible de trouver, en français, une réponse fiable et rapide à « ce film est-il adapté à mes enfants ? ».",
+      "La grille d'analyse est automatisée — c'est ce qui garantit sa cohérence sur tout le catalogue — mais la responsabilité éditoriale, elle, est humaine : la méthode publiée sur cette page, les garde-fous qui empêchent qu'un contenu sensible reçoive un âge trop bas, les corrections et les choix éditoriaux sont assumés par l'éditeur du site.",
+      "Totem Avisé ne diffuse aucune publicité et n'a de lien commercial avec aucun studio, distributeur ou plateforme. Personne ne peut acheter une recommandation d'âge.",
+    ],
+  },
+  {
+    id: "corrections",
+    icon: "shield-alert",
+    title: "Une erreur ? Dites-le-nous",
+    content: [
+      "Aucune méthode n'est infaillible — et on préfère une correction rapide à une erreur qui reste en ligne. Chaque fiche comporte un bouton « Signaler une correction » : âge qui vous semble mal calibré, information factuelle inexacte, synopsis trompeur, image inappropriée… tout signalement arrive directement à l'éditeur.",
+      "Chaque signalement est vérifié, et la fiche est corrigée lorsque le signalement est fondé — la date de mise à jour affichée sur la fiche reflète alors la correction. Les votes d'âge de la communauté jouent le même rôle en continu : quand suffisamment de parents divergent de notre estimation, c'est l'estimation qui bouge.",
+      "Vous pouvez aussi nous écrire directement via la page contact pour toute question sur la méthode ou une fiche précise.",
+    ],
+    after: "Une recommandation utile est une recommandation qu'on peut contester. C'est le principe du site.",
+  },
 ]

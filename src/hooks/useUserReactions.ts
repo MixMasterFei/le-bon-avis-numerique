@@ -39,14 +39,19 @@ function ensureLoaded(userId: string): Promise<UserReactions> {
   if (!promise) {
     promise = load()
       .then((r) => {
+        // In-flight account-switch guard: if the session changed while this
+        // request was running, its result belongs to the PREVIOUS account —
+        // discard it instead of populating the new account's cache.
+        if (cacheUserId !== userId) return r
         cache = r
         subscribers.forEach((fn) => fn(r))
         return r
       })
       .catch(() => {
         // Transient failure: DON'T cache emptiness — clear the promise so
-        // the next mount retries, and serve {} for now.
-        promise = null
+        // the next mount retries, and serve {} for now. Only clear it if it
+        // is still OURS (a session switch already replaced it).
+        if (cacheUserId === userId) promise = null
         return {}
       })
   }
@@ -80,14 +85,16 @@ export function useUserReactions(enabled: boolean, userId?: string | null): User
  * Write-through after a SUCCESSFUL reaction write: keeps the shared cache in
  * sync so a component that remounts (rail swap, navigation back) seeds from
  * the post-write state, not the stale preload. Pass `reaction: null` for a
- * removal.
+ * removal. The userId must match the cache owner — a late write finishing
+ * after an account switch is discarded.
  */
 export function updateUserReactionsCache(
+  userId: string,
   mediaId: string,
   familyMemberId: string,
   reaction: string | null,
 ): void {
-  if (!cache) return
+  if (!cache || cacheUserId !== userId) return
   const forMedia = { ...(cache[mediaId] ?? {}) }
   if (reaction === null) delete forMedia[familyMemberId]
   else forMedia[familyMemberId] = reaction

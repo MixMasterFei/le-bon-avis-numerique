@@ -66,6 +66,8 @@ interface MediaPageProps {
 
 // Extended type for database items with screenshots
 interface DatabaseMediaItem extends MockMediaItem {
+  /** Last data update (ISO) — JSON-LD dateModified + visible fiche date. */
+  updatedAt?: string | null
   numberOfSeasons?: number | null
   pegiDescriptors?: string[]
   gameModes?: string[]
@@ -135,6 +137,7 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       type: dbMedia.type as MockMediaItem["type"],
       releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
       releaseStatus: dbMedia.releaseStatus,
+      updatedAt: dbMedia.updatedAt?.toISOString() ?? null,
       seoTitle: dbMedia.seoTitle,
       posterUrl: dbMedia.posterUrl || "/placeholder-poster.jpg",
       synopsisFr: dbMedia.synopsisFr,
@@ -400,6 +403,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         url: pageUrl,
         inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.director && { director: { "@type": "Person", name: media.director } }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.officialRating && { contentRating: media.officialRating }),
@@ -418,6 +422,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         url: pageUrl,
         inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.officialRating && { contentRating: media.officialRating }),
         ...(media.numberOfSeasons && { numberOfSeasons: media.numberOfSeasons }),
@@ -435,6 +440,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         url: pageUrl,
         inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.platforms.length > 0 && { gamePlatform: media.platforms }),
         ...(media.officialRating && { contentRating: media.officialRating }),
@@ -452,6 +458,7 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         url: pageUrl,
         inLanguage: "fr",
         ...(media.releaseDate && { datePublished: media.releaseDate }),
+        ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(aggregateRating && { aggregateRating }),
       }
