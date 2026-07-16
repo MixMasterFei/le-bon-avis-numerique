@@ -135,15 +135,21 @@ export function CoinFamillePage({ data, serifClass }: { data: CoinFamilleData; s
                   </p>
                 </div>
 
-                {/* Personalized picks lead the page; the curated news slots in
-                    right under them, and the "à venir" rail follows the news. */}
+                {/* Section order (Xavier, July 2026): NEWS first — it's the
+                    only section guaranteed fresh on every visit (and now
+                    per-family personalized), i.e. the daily return driver.
+                    The picks follow: valuable, but a "choosing something
+                    tonight" moment rather than a daily need. The "à venir"
+                    rail closes the page — those releases already appear on
+                    the homepage. The profile nudge stays glued to the picks
+                    it improves. */}
                 {data.hasFamily ? (
                   <div className="flex flex-col gap-8">
+                    {newsSection}
                     {data.profileNudges.length > 0 && <CoinFamilleProfileNudge members={data.profileNudges} />}
                     <DeferUntilVisible minHeight={300}>
                       <CoinFamillePicksRail serifClass={serifClass} />
                     </DeferUntilVisible>
-                    {newsSection}
                     <DeferUntilVisible minHeight={300}>
                       <CoinFamilleUpcomingRail serifClass={serifClass} timeState={data.timeState} />
                     </DeferUntilVisible>
