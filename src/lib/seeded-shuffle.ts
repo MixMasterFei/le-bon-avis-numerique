@@ -24,6 +24,33 @@ export function seededShuffle<T>(arr: T[], seed: number): T[] {
   return shuffled
 }
 
+/**
+ * Deterministic WEIGHTED sample-ordering (Efraimidis–Spirakis): each item gets
+ * key = u^(1/weight) with u seeded-uniform, then sorts by key descending. The
+ * probability that an item lands first is proportional to its weight, so higher
+ * weights are favoured — but every item can surface on a given seed.
+ *
+ * This is the "idées du jour" rotation: unlike a fixed top-N-by-score (which
+ * shows the same best-fitting titles every day), a daily seed here produces a
+ * genuinely different selection each day while still leaning toward the best
+ * matches. `weight` should be a positive number (clamped to ≥ epsilon).
+ */
+export function weightedSeededOrder<T>(
+  arr: T[],
+  weight: (item: T) => number,
+  seed: number,
+): T[] {
+  const rng = mulberry32(seed)
+  return arr
+    .map((item) => {
+      const w = Math.max(1e-6, weight(item))
+      const u = rng() || 1e-9 // avoid log(0) / 0-key ties
+      return { item, key: Math.pow(u, 1 / w) }
+    })
+    .sort((a, b) => b.key - a.key)
+    .map((entry) => entry.item)
+}
+
 /** Returns a seed that changes every Monday (ISO 8601 week number × year). */
 export function getWeekSeed(): number {
   const now = new Date()

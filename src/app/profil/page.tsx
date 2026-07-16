@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { formatAgeFromBirthYear } from "@/lib/utils"
+import { normalizeFamilyName, MAX_FAMILY_NAME_LENGTH } from "@/lib/family-name"
 import { FamilyHero } from "@/components/profile/FamilyHero"
 import { FamilyMemberCard } from "@/components/profile/FamilyMemberCard"
 import { AccountSettings } from "@/components/profile/AccountSettings"
@@ -403,7 +404,7 @@ export default function ProfilPage() {
                   autoFocus
                 />
                 <p className="text-xs text-gray-400">
-                  Affiché sur vos avis et commentaires
+                  Votre nom public, affiché sur vos avis
                 </p>
               </div>
               <div className="space-y-2">
@@ -418,23 +419,31 @@ export default function ProfilPage() {
               </div>
             </div>
 
-            {/* Family display name */}
+            {/* Family surname — one word, drives the header pill + greeting. */}
             <div className="space-y-2">
-              <Label htmlFor="profileFamilyName">Nom de votre famille</Label>
+              <Label htmlFor="profileFamilyName">Nom de famille</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 shrink-0">Famille</span>
+                <span className="text-sm font-semibold text-gray-500 shrink-0">Famille</span>
                 <Input
                   id="profileFamilyName"
                   value={profileFamilyName}
-                  onChange={(e) => setProfileFamilyName(e.target.value)}
+                  onChange={(e) => setProfileFamilyName(normalizeFamilyName(e.target.value))}
                   placeholder="Dupont"
-                  maxLength={60}
+                  maxLength={MAX_FAMILY_NAME_LENGTH}
                 />
               </div>
-              <p className="text-xs text-gray-400">
-                Affiché en haut du site et sur votre page d&apos;accueil («&nbsp;Bon retour,
-                famille Dupont&nbsp;!&nbsp;»). Laissez vide pour utiliser votre nom d&apos;affichage.
-              </p>
+              {profileFamilyName.trim() ? (
+                <p className="text-xs text-gray-400">
+                  Aperçu&nbsp;:{" "}
+                  <span className="font-medium text-gray-600">
+                    «&nbsp;Bon retour, famille {profileFamilyName.trim()}&nbsp;!&nbsp;»
+                  </span>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400">
+                  Un seul mot. Sert au bonjour en haut du site. Laissez vide si vous préférez.
+                </p>
+              )}
             </div>
 
             {/* Avatar */}

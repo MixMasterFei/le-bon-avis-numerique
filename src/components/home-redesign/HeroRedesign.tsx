@@ -7,6 +7,7 @@ import { Search, Sparkles, Users, Home, ArrowDown, User } from "lucide-react"
 import { Wrap, Em } from "./parts"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
+import { MAX_FAMILY_NAME_LENGTH } from "@/lib/family-name"
 
 // Column drift durations (s) — slow, staggered, like the prototype.
 const DRIFT = [54, 63, 47, 71, 50, 67, 44, 58]
@@ -42,7 +43,11 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
   const nameTokens = (userName ?? "").trim().split(/\s+/).filter(Boolean)
   const familyName =
     familyDisplayName?.trim() ||
-    (nameTokens.length >= 2 ? nameTokens[nameTokens.length - 1] : null)
+    // Fallback derivation is also capped so a long account surname can't
+    // blow out the greeting (matches the stored family-name constraint).
+    (nameTokens.length >= 2
+      ? nameTokens[nameTokens.length - 1].slice(0, MAX_FAMILY_NAME_LENGTH)
+      : null)
   const firstName = nameTokens[0] ?? null
 
   // Distribute posters round-robin into columns; triple each column so the
