@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sanitizePlainText } from "@/lib/security"
+import { normalizeFamilyName } from "@/lib/family-name"
 import { isMissingColumnError } from "@/lib/prisma-errors"
 
 export async function PATCH(request: Request) {
@@ -33,7 +33,10 @@ export async function PATCH(request: Request) {
       if (familyName === null || (typeof familyName === "string" && familyName.trim() === "")) {
         updateData.familyName = null
       } else if (typeof familyName === "string") {
-        const clean = sanitizePlainText(familyName, 60)
+        // One word, capped (src/lib/family-name.ts) — same rule as the client
+        // input, so the header pill and greeting can't be broken by a long or
+        // multi-word value posted directly to the API.
+        const clean = normalizeFamilyName(familyName)
         if (!clean) return NextResponse.json({ error: "Nom de famille invalide" }, { status: 400 })
         updateData.familyName = clean
       } else {

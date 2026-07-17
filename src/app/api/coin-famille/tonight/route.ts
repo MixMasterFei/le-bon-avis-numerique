@@ -5,7 +5,7 @@ import { runSmartFilter, type SmartFilterResultItem } from "@/lib/smart-filter"
 import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-time-context"
 import { getHolidayCalendar } from "@/lib/school-holidays"
 import { getMemberAge } from "@/lib/age-utils"
-import { getDaySeed, seededShuffle } from "@/lib/seeded-shuffle"
+import { getDaySeed, seededShuffle, weightedSeededOrder } from "@/lib/seeded-shuffle"
 import { synopsisHook, type FitReason } from "@/lib/totem-voice"
 
 // One request powers both the whole-family selection and every member tab.
@@ -39,18 +39,22 @@ function hashString(value: string): number {
   return hash >>> 0
 }
 
-/** Keep relevance ordering, but rotate each four-title quality band daily. */
-function rotateRanked(
+// "Idées du jour" rotation. The old rotateRanked only shuffled WITHIN each
+// four-title score band, so the top-fitting titles were the same MEMBERSHIP
+// every day (just re-ordered) — which read as "always the same" for a family
+// with settled tastes. weightedSeededOrder instead samples the whole eligible
+// pool daily, favouring fit but letting any qualified title surface, so the
+// selection genuinely changes day to day. `score - SCORE_ROTATION_FLOOR`
+// sharpens the fit preference (a 95 is ~9× as likely up front as a 55) while
+// keeping real variety.
+const SCORE_ROTATION_FLOOR = 50
+
+function rotateByFit(
   items: SmartFilterResultItem[],
   score: (item: SmartFilterResultItem) => number,
   seed: number,
 ): SmartFilterResultItem[] {
-  const ranked = [...items].sort((a, b) => score(b) - score(a))
-  const rotated: SmartFilterResultItem[] = []
-  for (let index = 0; index < ranked.length; index += 4) {
-    rotated.push(...seededShuffle(ranked.slice(index, index + 4), seed + index))
-  }
-  return rotated
+  return weightedSeededOrder(items, (item) => score(item) - SCORE_ROTATION_FLOOR, seed)
 }
 
 function memberScore(item: SmartFilterResultItem, memberId: string): number {
@@ -237,9 +241,9 @@ export async function GET() {
     !familyNegative.has(item.mediaId) &&
     (reactedMembersByMedia.get(item.mediaId)?.size ?? 0) < allMembers.length
   const familyPools = {
-    MOVIE: rotateRanked(rawPools.MOVIE.filter(familyEligible), (item) => item.familyScore, seed + 11),
-    TV: rotateRanked(rawPools.TV.filter(familyEligible), (item) => item.familyScore, seed + 23),
-    GAME: rotateRanked(rawPools.GAME.filter(familyEligible), (item) => item.familyScore, seed + 37),
+    MOVIE: rotateByFit(rawPools.MOVIE.filter(familyEligible), (item) => item.familyScore, seed + 11),
+    TV: rotateByFit(rawPools.TV.filter(familyEligible), (item) => item.familyScore, seed + 23),
+    GAME: rotateByFit(rawPools.GAME.filter(familyEligible), (item) => item.familyScore, seed + 37),
   }
   const names = new Map(allMembers.map((member) => [member.id, member.name]))
   const familyItems = mixByMoment(familyPools, mix, state).map((item) =>
@@ -268,17 +272,17 @@ export async function GET() {
       memberScore(item, member.id) >= MIN_SCORE &&
       !reactedByMember.get(member.id)?.has(item.mediaId)
     const memberPools = {
-      MOVIE: rotateRanked(
+      MOVIE: rotateByFit(
         rawPools.MOVIE.filter(eligible),
         (item) => memberScore(item, member.id),
         seed + 101 + memberIndex,
       ),
-      TV: rotateRanked(
+      TV: rotateByFit(
         rawPools.TV.filter(eligible),
         (item) => memberScore(item, member.id),
         seed + 211 + memberIndex,
       ),
-      GAME: rotateRanked(
+      GAME: rotateByFit(
         rawPools.GAME.filter(eligible),
         (item) => memberScore(item, member.id),
         seed + 307 + memberIndex,
