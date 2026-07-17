@@ -51,15 +51,18 @@ jobs:
         run: |
           set -uo pipefail
           # 1. Resolve the preview URL from the Vercel integration's deployment.
+          # 60 × 10s = 10 min: Vercel can take >5 min to register the GitHub
+          # deployment when its build queue is backed up (seen 2026-07-17,
+          # post GitHub-outage) — the old 5-min window lost the race by 7s.
           url=""
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             for id in $(gh api "repos/${REPO}/deployments?sha=${HEAD_SHA}&per_page=30" --jq '.[].id' 2>/dev/null); do
               u=$(gh api "repos/${REPO}/deployments/${id}/statuses?per_page=10" \
                 --jq 'first(.[] | select(.environment_url != null and (.environment_url|test("vercel\\.app"))) | .environment_url) // empty' 2>/dev/null || true)
               if [ -n "$u" ]; then url="$u"; break; fi
             done
             [ -n "$url" ] && break
-            echo "waiting for preview deployment ($i/30)…"; sleep 10
+            echo "waiting for preview deployment ($i/60)…"; sleep 10
           done
           if [ -z "$url" ]; then echo "::error::No Vercel preview URL found for ${HEAD_SHA}"; exit 1; fi
           echo "preview url: $url"
