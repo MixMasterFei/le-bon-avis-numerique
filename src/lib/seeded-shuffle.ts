@@ -33,7 +33,8 @@ export function seededShuffle<T>(arr: T[], seed: number): T[] {
  * This is the "idées du jour" rotation: unlike a fixed top-N-by-score (which
  * shows the same best-fitting titles every day), a daily seed here produces a
  * genuinely different selection each day while still leaning toward the best
- * matches. `weight` should be a positive number (clamped to ≥ epsilon).
+ * matches. `weight` should be a positive number (clamped to ≥ epsilon);
+ * a weight of 0 or less therefore means "eligible but rarely first".
  */
 export function weightedSeededOrder<T>(
   arr: T[],
