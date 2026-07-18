@@ -39,6 +39,24 @@ const LOW_QUALITY_IMAGE_PUBLISHERS = new Set<string>([
   "Geek Junior",
 ])
 
+// Publishers / image hosts whose article thumbnail is a flat brand graphic
+// that reads as an empty placeholder — e.g. Better Internet for Kids ships a
+// solid-violet "BIK+" card as its RSS image, which rendered as blank violet
+// tiles on the Coin Famille grid. UNLIKE LOW_QUALITY_IMAGE_PUBLISHERS above
+// (dropped at ingest), these are trusted, family-relevant sources we KEEP —
+// we only swap the unusable image for our branded category card. Consulted
+// both at ingest (resolveImage → null → the caller card-substitutes, story
+// kept) and at render (coin-famille-news realPhotoUrl) so already-stored rows
+// flip to the branded card too. Add a source by name and/or its image host.
+const CARD_ONLY_IMAGE_HOSTS = ["better-internet-for-kids.europa.eu"]
+const CARD_ONLY_IMAGE_PUBLISHERS = new Set<string>(["Better Internet for Kids (UE)"])
+
+// Strip a trailing " (…)" region tag so a stored credit "Better Internet for
+// Kids" matches the feed name "Better Internet for Kids (UE)".
+function stripRegionTag(name: string): string {
+  return name.replace(/\s*\([^)]*\)\s*$/, "").trim()
+}
+
 export function imageHostFromUrl(url: string | undefined | null): string | null {
   if (!url) return null
   try {
@@ -57,6 +75,22 @@ export function isBlockedHotlinkImageUrl(url: string | undefined | null): boolea
 export function isLowQualityImagePublisher(sourceName: string | undefined | null): boolean {
   if (!sourceName) return false
   return LOW_QUALITY_IMAGE_PUBLISHERS.has(sourceName)
+}
+
+/** Publisher whose image we skip (branded card instead) but whose article we keep. */
+export function isCardOnlyImagePublisher(name: string | undefined | null): boolean {
+  if (!name) return false
+  if (CARD_ONLY_IMAGE_PUBLISHERS.has(name)) return true
+  const base = stripRegionTag(name)
+  for (const p of CARD_ONLY_IMAGE_PUBLISHERS) if (stripRegionTag(p) === base) return true
+  return false
+}
+
+/** Image host whose graphic is an unusable flat brand card (→ branded card instead). */
+export function isCardOnlyImageUrl(url: string | undefined | null): boolean {
+  const host = imageHostFromUrl(url)
+  if (!host) return false
+  return CARD_ONLY_IMAGE_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
 }
 
 export function normalizedPublisherName(name: string): string {
