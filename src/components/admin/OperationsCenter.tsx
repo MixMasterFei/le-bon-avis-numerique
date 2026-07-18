@@ -852,98 +852,6 @@ const OPERATIONS: Array<{
   },
   {
     config: {
-      key: "newsPrewarmImagesV4",
-      endpoint: "/api/admin/news/prewarm-images-v4",
-      method: "POST",
-      body: { limit: 12 },
-      chunked: true,
-      delayMs: 1500,
-      accumKeys: [
-        "processed",
-        "updated",
-        "skipped",
-        "rejected",
-        "errors",
-        "reasonLowConfidence",
-        "reasonNoIntent",
-        "reasonNoStockMatch",
-        "reasonStorageFailed",
-        "reasonStorageDisabled",
-        "reasonStorageClientUnavailable",
-        "reasonStorageSourceHttpError",
-        "reasonStorageNonImage",
-        "reasonStoragePayloadTooSmall",
-        "reasonStorageDimensionsTooSmall",
-        "reasonStorageUploadError",
-        "reasonStorageException",
-        "reasonAlreadyPrepared",
-        "reasonAlreadyRejected",
-      ],
-      extractProgress: (data) => ({
-        processed: data.scanned || data.processed || 0,
-        total: typeof data.remaining === "number" ? (data.scanned || 0) + data.remaining : null,
-        updated: data.updated || 0,
-        skipped: (data.skipped || 0) + (data.rejected || 0),
-        errors: data.errors || 0,
-        reasonLowConfidence: data.reasonLowConfidence || 0,
-        reasonNoIntent: data.reasonNoIntent || 0,
-        reasonNoStockMatch: data.reasonNoStockMatch || 0,
-        reasonStorageFailed: data.reasonStorageFailed || 0,
-        reasonStorageDisabled: data.reasonStorageDisabled || 0,
-        reasonStorageClientUnavailable: data.reasonStorageClientUnavailable || 0,
-        reasonStorageSourceHttpError: data.reasonStorageSourceHttpError || 0,
-        reasonStorageNonImage: data.reasonStorageNonImage || 0,
-        reasonStoragePayloadTooSmall: data.reasonStoragePayloadTooSmall || 0,
-        reasonStorageDimensionsTooSmall: data.reasonStorageDimensionsTooSmall || 0,
-        reasonStorageUploadError: data.reasonStorageUploadError || 0,
-        reasonStorageException: data.reasonStorageException || 0,
-        reasonAlreadyPrepared: data.reasonAlreadyPrepared || 0,
-        reasonAlreadyRejected: data.reasonAlreadyRejected || 0,
-      }),
-      isDone: (data) => data.done === true,
-      getNextParams: (data) => {
-        if (!data.lastId) return null
-        const next = new URLSearchParams()
-        next.set("afterId", data.lastId)
-        return next
-      },
-      buildSummary: (stats) => {
-        const errs = stats.errors || 0
-        const storageDetails = [
-          stats.reasonStorageDisabled ? `${stats.reasonStorageDisabled} storage env` : "",
-          stats.reasonStorageClientUnavailable ? `${stats.reasonStorageClientUnavailable} client Supabase` : "",
-          stats.reasonStorageSourceHttpError ? `${stats.reasonStorageSourceHttpError} fetch Pexels` : "",
-          stats.reasonStorageNonImage ? `${stats.reasonStorageNonImage} non-image` : "",
-          stats.reasonStoragePayloadTooSmall ? `${stats.reasonStoragePayloadTooSmall} image trop petite` : "",
-          stats.reasonStorageDimensionsTooSmall ? `${stats.reasonStorageDimensionsTooSmall} dimensions` : "",
-          stats.reasonStorageUploadError ? `${stats.reasonStorageUploadError} upload Supabase` : "",
-          stats.reasonStorageException ? `${stats.reasonStorageException} exception` : "",
-        ].filter(Boolean)
-        const reasons = [
-          stats.reasonStorageFailed ? `${stats.reasonStorageFailed} storage${storageDetails.length ? `: ${storageDetails.join(", ")}` : ""}` : "",
-          stats.reasonNoStockMatch ? `${stats.reasonNoStockMatch} sans match` : "",
-          stats.reasonLowConfidence ? `${stats.reasonLowConfidence} confiance basse` : "",
-          stats.reasonNoIntent ? `${stats.reasonNoIntent} sans intention` : "",
-          stats.reasonAlreadyRejected ? `${stats.reasonAlreadyRejected} déjà rejetées` : "",
-        ].filter(Boolean)
-        return `${stats.updated || 0} images V4 préparées, ${stats.skipped || 0} fallback/refus${reasons.length ? ` (${reasons.join(", ")})` : ""}${errs ? `, ${errs} erreurs` : ""}`
-      },
-    },
-    label: "Préparer images V4",
-    description: "Préchauffer Pexels + miroir Supabase pour Discover V4 sans travail côté visiteur",
-    icon: Camera,
-    color: "purple",
-    statLabels: {
-      updated: "préparées",
-      skipped: "fallback/refus",
-      reasonStorageFailed: "storage",
-      reasonNoStockMatch: "sans match",
-      reasonLowConfidence: "confiance basse",
-      reasonAlreadyRejected: "déjà rejetées",
-    },
-  },
-  {
-    config: {
       key: "newsPressKitScout",
       endpoint: "/api/admin/news/press-kit-scout",
       method: "POST",
@@ -1047,7 +955,7 @@ const GROUPS: OperationGroup[] = [
   {
     label: "Actualités",
     description: "Pipeline news : nettoyage images, provenance, liens catalogue",
-    keys: ["newsCleanupImages", "newsReprocessImages", "newsReimageBacklog", "newsTagOfficial", "newsPrewarmImagesV4", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
+    keys: ["newsCleanupImages", "newsReprocessImages", "newsReimageBacklog", "newsTagOfficial", "newsPressKitScout", "newsImagesAudit", "newsReverifyRelated"],
   },
   {
     label: "Catalogue & qualité",

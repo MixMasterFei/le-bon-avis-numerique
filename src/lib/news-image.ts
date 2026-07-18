@@ -3,6 +3,8 @@ import {
   imageHostFromUrl,
   isBlockedHotlinkImageUrl,
   isLowQualityImagePublisher,
+  isCardOnlyImagePublisher,
+  isCardOnlyImageUrl,
 } from "@/lib/news-image-policy"
 import { findContextualStockPhoto } from "@/lib/stock-photo"
 
@@ -209,9 +211,15 @@ export async function resolveImage(item: RssLikeItem): Promise<ResolvedImage | n
   // the story entirely via the caller's "no image → skip" rule.
   if (isLowQualityImagePublisher(item.sourceName)) return null
 
+  // Card-only sources (e.g. Better Internet for Kids' flat-violet BIK+ card):
+  // keep the article, but return null so the caller assigns the branded
+  // category card instead of the unusable brand graphic.
+  if (isCardOnlyImagePublisher(item.sourceName)) return null
+
   const articleHost = imageHostFromUrl(item.link)
   const rssImage = extractFromRss(item)
   if (isBlockedHotlinkImageUrl(rssImage)) return null
+  if (isCardOnlyImageUrl(rssImage)) return null
 
   if (rssImage) {
     const imageHost = imageHostFromUrl(rssImage)

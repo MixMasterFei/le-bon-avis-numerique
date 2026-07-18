@@ -1,7 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import type { Prisma } from "@prisma/client"
 import { fallbackCard, isFallbackCardUrl } from "@/lib/news-image"
-import { isBlockedHotlinkImageUrl } from "@/lib/news-image-policy"
+import {
+  isBlockedHotlinkImageUrl,
+  isCardOnlyImagePublisher,
+  isCardOnlyImageUrl,
+} from "@/lib/news-image-policy"
 import { balanceNewsForFeed } from "@/lib/news-feed-balancer"
 import { computeCategoryAffinity, personalizedRelevance, AFFINITY_WINDOW_DAYS } from "@/lib/news-personalize"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
@@ -102,8 +106,26 @@ function toSources(raw: Prisma.JsonValue | null): NewsSourceRef[] {
  *     photo (half the Coin Famille grid on some days).
  */
 function realPhotoUrl(row: NewsRow): string | null {
-  if (row.sourceImageUrl && !isBlockedHotlinkImageUrl(row.sourceImageUrl)) return row.sourceImageUrl
-  if (row.imageUrl && !isFallbackCardUrl(row.imageUrl) && !isBlockedHotlinkImageUrl(row.imageUrl)) {
+  // Card-only sources ship a flat brand graphic that reads as an empty tile
+  // (Better Internet for Kids' violet BIK+ card). Treat their image as "no
+  // real photo" — by publisher (source name / credit) OR by image host — so
+  // rowToItem falls back to the branded category card. Fixes rows already
+  // persisted with the bad image, without a data migration.
+  const primaryName = toSources(row.sources)[0]?.name ?? null
+  if (isCardOnlyImagePublisher(primaryName) || isCardOnlyImagePublisher(row.imageCredit)) return null
+  if (
+    row.sourceImageUrl &&
+    !isBlockedHotlinkImageUrl(row.sourceImageUrl) &&
+    !isCardOnlyImageUrl(row.sourceImageUrl)
+  ) {
+    return row.sourceImageUrl
+  }
+  if (
+    row.imageUrl &&
+    !isFallbackCardUrl(row.imageUrl) &&
+    !isBlockedHotlinkImageUrl(row.imageUrl) &&
+    !isCardOnlyImageUrl(row.imageUrl)
+  ) {
     return row.imageUrl
   }
   return null
