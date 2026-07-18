@@ -695,11 +695,33 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
 
           <div className="flex items-center space-x-3 shrink-0 ml-auto lg:ml-0">
             <ThemeToggle className="hidden sm:inline-flex" />
+            {/* Auth slot — reserve the logged-out button footprint so the
+                loading-skeleton → Connexion/S'inscrire swap can't reflow the
+                header. This was the /inscription CLS the perf budget flagged:
+                an 80px skeleton growing into ~215px of buttons after the
+                session resolved (amplified under CI network throttling, where
+                the skeleton lingers). No reservation when logged-in — that
+                slot is the avatar, and its (unmeasured) resolve is unchanged. */}
+            <div
+              className={`flex items-center gap-3 justify-end ${
+                session?.user ? "" : "sm:min-w-[13.75rem]"
+              }`}
+            >
             {status === "loading" ? (
-              <div
-                className="h-8 w-8 xl:w-20 animate-pulse rounded-full"
-                style={{ background: p.placeholder }}
-              />
+              <div className="flex items-center gap-3" aria-hidden="true">
+                <span
+                  className="h-9 w-9 sm:hidden animate-pulse rounded-full"
+                  style={{ background: p.placeholder }}
+                />
+                <span
+                  className="hidden sm:block h-9 w-[104px] animate-pulse rounded-full"
+                  style={{ background: p.placeholder }}
+                />
+                <span
+                  className="hidden sm:block h-9 w-[98px] animate-pulse rounded-full"
+                  style={{ background: p.placeholder }}
+                />
+              </div>
             ) : session?.user ? (
               <>
                 <NotificationBell />
@@ -854,6 +876,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                 </Link>
               </>
             )}
+            </div>
 
             <button
               className="lg:hidden p-2"
