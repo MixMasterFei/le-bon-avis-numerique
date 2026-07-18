@@ -168,6 +168,19 @@ export function WeatherCityPicker({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            // City names (esp. lesser-known communes) must NOT be autocorrected
+            // — iOS was rewriting "Saint jacut" and swapping the word on Enter.
+            // We keep our own suggestion list below instead.
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="words"
+            spellCheck={false}
+            enterKeyHint="search"
+            // Enter must never mutate the field (no form submit / no autocorrect
+            // accept) — the user picks from the suggestions explicitly.
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault()
+            }}
             placeholder="Chercher une ville…"
             className="w-full pl-9 pr-9 py-2.5 rounded-lg text-sm outline-none"
             style={{

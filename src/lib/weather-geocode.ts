@@ -28,12 +28,44 @@ interface OpenMeteoGeocode {
   }>
 }
 
-export async function searchCities(query: string): Promise<GeocodedCity[]> {
-  const q = query.trim()
-  if (q.length < 2) return []
+/**
+ * Build the ordered list of query strings to try, most-specific first.
+ *
+ * Open-Meteo prefix-matches the stored `name`, and French communes live in
+ * the DB hyphenated ("Saint-Jacut-de-la-Mer", "Boulogne-Billancourt") — but
+ * users type spaces ("Saint jacut de la mer") and iOS lowercases them. So we
+ * also try a hyphenated form, then fall back to just the first two tokens as
+ * a shorter, more forgiving prefix (which still surfaces the target commune
+ * plus its siblings for the user to pick). We do NOT hyphenate blindly on the
+ * only attempt — that would break genuine space-separated names ("New York").
+ *
+ * Exported for unit testing (pure, no network).
+ */
+export function buildQueryVariants(q: string): string[] {
+  const variants: string[] = []
+  const push = (s: string) => {
+    const t = s.trim()
+    if (t.length >= 2 && !variants.some((v) => v.toLowerCase() === t.toLowerCase())) {
+      variants.push(t)
+    }
+  }
 
+  push(q) // 1. as typed — keeps "New York", "San Francisco" working
+  if (/\s/.test(q)) push(q.replace(/\s+/g, "-")) // 2. French commune form
+
+  // 3. shorter prefix: first two tokens (hyphen + space), for long names
+  //    whose full string the DB doesn't match verbatim.
+  const tokens = q.split(/[\s-]+/).filter(Boolean)
+  if (tokens.length > 2) {
+    push(tokens.slice(0, 2).join("-"))
+    push(tokens.slice(0, 2).join(" "))
+  }
+  return variants
+}
+
+async function fetchGeocode(name: string): Promise<GeocodedCity[]> {
   const url = new URL("https://geocoding-api.open-meteo.com/v1/search")
-  url.searchParams.set("name", q)
+  url.searchParams.set("name", name)
   url.searchParams.set("count", "8")
   url.searchParams.set("language", "fr")
   url.searchParams.set("format", "json")
@@ -58,6 +90,19 @@ export async function searchCities(query: string): Promise<GeocodedCity[]> {
     console.warn("[weather-geocode] search failed:", err)
     return []
   }
+}
+
+export async function searchCities(query: string): Promise<GeocodedCity[]> {
+  const q = query.trim()
+  if (q.length < 2) return []
+
+  // Try each query variant in turn; return the first that yields matches, so a
+  // commune typed with spaces still resolves via its hyphenated / prefix form.
+  for (const variant of buildQueryVariants(q)) {
+    const hits = await fetchGeocode(variant)
+    if (hits.length > 0) return hits
+  }
+  return []
 }
 
 // Reverse geocoding (lat/lon → city name) for the "Utilisez ma
