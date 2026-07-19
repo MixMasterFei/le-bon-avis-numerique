@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { RECS_THRESHOLDS } from "@/lib/recs-constants"
+import { computeAgeScore } from "@/lib/family-fit-score"
 
 // GET /api/recommendations?familyMemberId=xxx - Get recommendations for a family member
 export async function GET(request: NextRequest) {
@@ -198,7 +199,14 @@ export async function GET(request: NextRequest) {
         posterUrl: item.posterUrl,
         genres: item.genres,
         expertAgeRec: item.expertAgeRec,
-        score: 100 + (item.similarityScore * 50) + (item.dataQualityScore / 10),
+        // Fold in age proximity: this route only filtered `expertAgeRec <=
+        // childAge`, so a 6+ lookalike of something a teen loved (Cars for a
+        // 15yo) ranked purely on similarity/quality. Multiplying by the shared
+        // age score pushes too-young titles down for teens (× ~0.25) while
+        // leaving age-proximate + young-child matches ~unchanged.
+        score:
+          (100 + item.similarityScore * 50 + item.dataQualityScore / 10) *
+          computeAgeScore(item.expertAgeRec, childAge, null, item.genres),
       })
     }
 
@@ -257,8 +265,10 @@ export async function GET(request: NextRequest) {
           toneBonus = matchingTones.length * 8 // Up to 24 points for 3 matches
         }
 
-        // Combine genre match score with quality score + tone bonus
-        const totalScore = genreScore * 10 + (media.dataQualityScore / 2) + toneBonus
+        // Combine genre match score with quality score + tone bonus, then
+        // weight by age proximity (same rationale as the similar-items path).
+        const ageProximity = computeAgeScore(media.expertAgeRec, childAge, null, media.genres)
+        const totalScore = (genreScore * 10 + media.dataQualityScore / 2 + toneBonus) * ageProximity
 
         recommendations.push({
           id: media.id,
