@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, type UIMessage } from "ai"
 import { isPathAllowed } from "@/lib/totem/nav-allowlist"
+import { trackTotemError, trackTotemMessageSent } from "@/lib/analytics"
 
 interface PersistedMessage {
   id: string
@@ -57,7 +58,11 @@ export interface UseTotemChatOptions {
 export function useTotemChat(opts: UseTotemChatOptions = {}) {
   const router = useRouter()
   const conversationIdRef = useRef<string | undefined>(readStoredConversationId())
-  const [rateLimit, setRateLimit] = useState<{ retryAfterSec: number } | null>(null)
+  // `message` carries the server's French copy for daily-cap / resting
+  // states; absent for the plain hourly rate limit (component has copy).
+  const [rateLimit, setRateLimit] = useState<{ retryAfterSec: number; message?: string } | null>(
+    null,
+  )
 
   // Source page is read at REQUEST time, not memoization time. Without
   // this, navigating from / to /media/... while the sheet is mounted
@@ -89,12 +94,24 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
             conversationIdRef.current = cid
             writeStoredConversationId(cid)
           }
-          if (res.status === 429) {
+          // 429 = hourly limit or per-user daily cap; 503 totem_resting =
+          // global daily ceiling. Cap responses carry a French `message`.
+          if (res.status === 429 || res.status === 503) {
             try {
-              const data = (await res.clone().json()) as { retryAfterSec?: number }
-              setRateLimit({ retryAfterSec: data.retryAfterSec ?? 60 })
+              const data = (await res.clone().json()) as {
+                error?: string
+                retryAfterSec?: number
+                message?: string
+              }
+              if (res.status === 503 && data.error !== "totem_resting") return res
+              setRateLimit({ retryAfterSec: data.retryAfterSec ?? 60, message: data.message })
+              trackTotemError(
+                data.error === "daily_cap_reached" || data.error === "totem_resting"
+                  ? "daily_cap"
+                  : "rate_limited",
+              )
             } catch {
-              setRateLimit({ retryAfterSec: 60 })
+              if (res.status === 429) setRateLimit({ retryAfterSec: 60 })
             }
           }
           return res
@@ -119,14 +136,24 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     },
     onError: (err) => {
       console.error("[totem] chat error", err)
+      trackTotemError("stream")
     },
   })
+
+  // Belt-and-braces over the isStreaming disabled-state: `status` only
+  // flips to "submitted" after a tick, so a double Enter can slip two
+  // sends through. Ignore sends within 600ms of the previous one.
+  const lastSentAtRef = useRef(0)
 
   const sendUserMessage = useCallback(
     (text: string) => {
       const trimmed = text.trim()
       if (!trimmed) return
+      const now = Date.now()
+      if (now - lastSentAtRef.current < 600) return
+      lastSentAtRef.current = now
       setRateLimit(null)
+      trackTotemMessageSent()
       void chat.sendMessage({ text: trimmed })
     },
     [chat],
@@ -354,5 +381,8 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
     loadConversation,
     sendFeedback,
     stop: chat.stop,
+    // Re-runs the last user message — the real "Réessayer" semantics
+    // (the old retry re-submitted an already-cleared draft: a no-op).
+    regenerate: chat.regenerate,
   }
 }

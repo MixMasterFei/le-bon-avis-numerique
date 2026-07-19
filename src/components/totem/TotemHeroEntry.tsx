@@ -1,5 +1,11 @@
 "use client"
 
+// DORMANT BY DECISION (July 2026): this homepage CTA is intentionally not
+// imported anywhere yet. It is the planned "visible entry point" precondition
+// for the public launch (market-study §6.2 condition 3) — wire it into the
+// homepage hero when TOTEM_PUBLIC graduates past admin-only. The sheet's
+// totem:prefill listener (TotemSheet.tsx) is already in place for it.
+
 import { MessageCircle } from "lucide-react"
 import { TotemAlphaBadge } from "./TotemAlphaBadge"
 

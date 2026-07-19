@@ -59,3 +59,22 @@ export function trackMediaCardClick(
 ) {
   fire("media_card_click", { source })
 }
+
+// ── Totem Assistant ────────────────────────────────────────────────
+// Alpha-audit events: open-rate, usage volume, error frequency. Never
+// includes message content.
+
+/** User opened the Totem chat panel. */
+export function trackTotemOpened(source: "dock" | "hero") {
+  fire("totem_opened", { source })
+}
+
+/** User sent a chat message (count only — no content). */
+export function trackTotemMessageSent() {
+  fire("totem_message_sent")
+}
+
+/** Chat surfaced an error state to the user. */
+export function trackTotemError(kind: "stream" | "rate_limited" | "daily_cap") {
+  fire("totem_error", { kind })
+}

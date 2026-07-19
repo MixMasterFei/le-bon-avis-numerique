@@ -10,6 +10,10 @@ import { checkTotemRateLimit, getClientIpFromHeaders } from "@/lib/totem/rate-li
 import { canUseTotem } from "@/lib/totem/access"
 import { pickModel } from "@/lib/totem/model-router"
 import { parseMediaRouteId } from "@/lib/media-route"
+import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
+import { extractUsage } from "@/lib/totem/usage"
+import { truncateHistory, TOTEM_BODY_MAX_MESSAGES } from "@/lib/totem/history"
+import { checkDailyCaps, secondsUntilNextUtcDay } from "@/lib/totem/daily-cap"
 import {
   countTurnsInConversation,
   getOrCreateConversation,
@@ -43,6 +47,13 @@ export async function POST(req: NextRequest) {
 
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
     return NextResponse.json({ error: "missing_messages" }, { status: 400 })
+  }
+
+  // The history array is client-controlled; nothing legitimate approaches
+  // this (the turn cap is 20). Reject outright rather than paying to
+  // truncate a hostile payload.
+  if (body.messages.length > TOTEM_BODY_MAX_MESSAGES) {
+    return NextResponse.json({ error: "history_too_long" }, { status: 413 })
   }
 
   const lastUserMsg = [...body.messages].reverse().find((m) => m.role === "user")
@@ -90,6 +101,32 @@ export async function POST(req: NextRequest) {
         status: 429,
         headers: { "Retry-After": String(rateCheck.retryAfterSec) },
       },
+    )
+  }
+
+  // Daily caps — the cost circuit breakers. Unlike the in-memory hourly
+  // limiter above, these count persisted rows, so they hold across Vercel
+  // instances and cold starts.
+  const dailyCheck = await checkDailyCaps({ userId })
+  if (!dailyCheck.allowed) {
+    const retryAfterSec = secondsUntilNextUtcDay()
+    if (dailyCheck.scope === "user") {
+      return NextResponse.json(
+        {
+          error: "daily_cap_reached",
+          message: "Vous avez atteint la limite quotidienne d'échanges avec Totem. Revenez demain !",
+          retryAfterSec,
+        },
+        { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
+      )
+    }
+    return NextResponse.json(
+      {
+        error: "totem_resting",
+        message: "Totem se repose pour aujourd'hui. Revenez demain !",
+        retryAfterSec,
+      },
+      { status: 503, headers: { "Retry-After": String(retryAfterSec) } },
     )
   }
 
@@ -297,10 +334,19 @@ export async function POST(req: NextRequest) {
       },
       { role: "system" as const, content: dynamicTail },
     ],
-    messages: await convertToModelMessages(body.messages),
+    // Server-side history bound: the client array is truncated to the last
+    // ~6 exchanges / 16K chars — the server, not the client, decides how
+    // much history reaches the model (input-token cost control).
+    messages: await convertToModelMessages(truncateHistory(body.messages)),
     tools,
     stopWhen: stepCountIs(6),
-    onFinish: async ({ text, toolCalls, toolResults }) => {
+    // Cost bounds: per-step output cap (worst case = 6 steps × cap), a
+    // single retry instead of the SDK default of two, and a hard stream
+    // timeout under the function's maxDuration.
+    maxOutputTokens: TOTEM_MAX_OUTPUT_TOKENS,
+    maxRetries: 1,
+    abortSignal: AbortSignal.timeout(55_000),
+    onFinish: async ({ text, toolCalls, toolResults, totalUsage }) => {
       try {
         const citedMediaIds = extractCitedMediaIds(toolResults)
         await recordAssistantMessage({
@@ -311,6 +357,8 @@ export async function POST(req: NextRequest) {
           citedMediaIds,
           modelUsed,
           latencyMs: Date.now() - startedAt,
+          // Summed across all steps of the turn; null = unmeasured.
+          ...extractUsage(totalUsage),
         })
       } catch (err) {
         console.error("[totem] failed to persist assistant message", err)

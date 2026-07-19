@@ -92,6 +92,27 @@ describe("totem access gate (canUseTotem)", () => {
     })
   })
 
+  it("'off' / '0' is the kill switch — denies everyone, admins included", () => {
+    withFlag("off", () => {
+      expect(getTotemAccessMode()).toBe("off")
+      expect(canUseTotem(admin)).toBe(false)
+      expect(canUseTotem(member)).toBe(false)
+      expect(canUseTotem(anon)).toBe(false)
+    })
+    withFlag("0", () => {
+      expect(getTotemAccessMode()).toBe("off")
+      expect(canUseTotem(admin)).toBe(false)
+    })
+  })
+
+  it("'false' keeps its historical admin-only meaning (NOT off)", () => {
+    withFlag("false", () => {
+      expect(getTotemAccessMode()).toBe("admin-only")
+      expect(canUseTotem(admin)).toBe(true)
+      expect(canUseTotem(member)).toBe(false)
+    })
+  })
+
   it("'true' opens fully, anonymous included", () => {
     withFlag("true", () => {
       expect(getTotemAccessMode()).toBe("public")

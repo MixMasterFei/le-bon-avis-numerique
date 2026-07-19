@@ -46,6 +46,11 @@ const rateLimitedRoutes: Record<string, string> = {
   "/api/games": "api",
   "/api/books": "api",
   "/api/media": "api",
+  // Totem chat is the only endpoint here that fans out to a paid LLM call —
+  // give it a tight per-IP bucket instead of the generic 100/min fallback.
+  // Coarse flood defense only; the real throttles (5/h anon, 30/h auth,
+  // daily caps) live in the route via src/lib/totem/{rate-limit,daily-cap}.
+  "/api/totem/chat": "totem",
 }
 
 // Rate limit configuration
@@ -54,6 +59,7 @@ const RATE_LIMITS: Record<string, { maxRequests: number; windowMs: number }> = {
   search: { maxRequests: 30, windowMs: 60000 },
   api: { maxRequests: 100, windowMs: 60000 },
   admin: { maxRequests: 50, windowMs: 60000 },
+  totem: { maxRequests: 20, windowMs: 60000 },
 }
 
 // In-memory rate limiting (per-instance only).

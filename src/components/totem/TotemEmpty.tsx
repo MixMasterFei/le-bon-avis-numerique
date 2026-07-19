@@ -22,6 +22,11 @@ export function TotemEmpty({ sourcePage, isAuthenticated, onPickPrompt }: TotemE
           Je vous aide à choisir des <em>films</em>, <em>séries</em> et <em>jeux</em> pour
           {" "}<em>votre famille</em>. Dites-moi l&apos;âge, les goûts, ce qu&apos;il faut éviter.
         </p>
+        {/* Transparency disclosure (EU AI Act art. 50): visible once, at
+            the start of every conversation, without breaking the persona. */}
+        <p className="text-[11px] leading-snug" style={{ color: "var(--color-ink2)" }}>
+          Totem est un assistant automatisé, supervisé par l&apos;équipe du site.
+        </p>
       </div>
 
       <TotemSuggestionChips sourcePage={sourcePage} onPick={onPickPrompt} />

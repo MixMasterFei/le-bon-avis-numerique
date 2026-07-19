@@ -72,6 +72,7 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
     resetConversation,
     loadConversation,
     sendFeedback,
+    regenerate,
   } = useTotemChat({ sourcePage: pathname })
 
   const toggleAutoMode = () => {
@@ -281,8 +282,16 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
             </div>
           )}
 
-          {/* Conversation OR history */}
-          <div ref={scrollerRef} onScroll={handleScrollerScroll} className="flex-1 overflow-y-auto">
+          {/* Conversation OR history. aria-live lets screen readers
+              announce streamed answers (polite: after the user's own
+              input is done). */}
+          <div
+            ref={scrollerRef}
+            onScroll={handleScrollerScroll}
+            className="flex-1 overflow-y-auto"
+            aria-live="polite"
+            aria-busy={isStreaming}
+          >
             {view === "history" ? (
               <TotemHistoryPanel
                 activeConversationId={activeConversationId}
@@ -342,12 +351,16 @@ export function TotemSheet({ open, onOpenChange }: TotemSheetProps) {
                   </div>
                 )}
                 {error && !rateLimit && (
-                  <TotemError onRetry={() => handleSubmit()} />
+                  // regenerate() re-runs the last user message — the old
+                  // handleSubmit() retry resubmitted an already-cleared
+                  // draft, i.e. did nothing.
+                  <TotemError onRetry={() => void regenerate()} />
                 )}
                 {rateLimit && (
                   <TotemRateLimit
                     retryAfterSec={rateLimit.retryAfterSec}
                     isAuthenticated={isAuthenticated}
+                    message={rateLimit.message}
                   />
                 )}
                   </div>

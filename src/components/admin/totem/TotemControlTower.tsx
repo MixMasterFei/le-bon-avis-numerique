@@ -452,6 +452,11 @@ export function TotemControlTower() {
               value={t.sonnetTurnPct != null ? `${t.sonnetTurnPct}%` : "—"}
               sub="Tours sensibles / longs"
             />
+            <KpiTile
+              label={`Coût estimé (${days} j)`}
+              value={t.estimatedCostUsd != null ? `$${t.estimatedCostUsd.toFixed(2)}` : "—"}
+              sub={`${fmt(t.inputTokens + t.cachedInputTokens)} tokens in · ${fmt(t.outputTokens)} out — estimation`}
+            />
           </div>
         )}
 
