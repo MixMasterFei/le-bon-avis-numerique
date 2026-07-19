@@ -213,6 +213,28 @@ export function computeAgeScore(
 
   const gap = memberAge - expertAgeRec
   if (gap <= 3) return 1.0
+
+  // "Trop jeune" penalty for teenagers. Content targeted well below a teen
+  // reads as babyish ("c'est pour les petits", e.g. a 15-year-old offered
+  // Cars 6+) and discredits the whole recommendation — even when it's
+  // perfectly age-SAFE. Past ~13 the age axis must reward PROXIMITY to the
+  // member's age, not just safety. This runs BEFORE the family / VIP-brand
+  // floors below so a 6+ Pixar/brand title can't score 1.0 for a teen.
+  // Younger members skip this entirely and keep "younger content is fine"
+  // (a 9-year-old + a 6+ film is a great match).
+  //
+  // proximityFloor = memberAge − 4 → 13→9, 15→11, 17→13: content at/above it
+  // is "close enough" and scored normally; below it we dock ~0.15 per year,
+  // floored at 0.25. Cars (6+) → 0.25 for a 15-year-old, 0.55 for a 13-year-old
+  // (an older teen finds it more out of place — the curve reflects that).
+  if (memberAge >= 13) {
+    const proximityFloor = memberAge - 4
+    if (expertAgeRec < proximityFloor) {
+      const yearsTooYoung = proximityFloor - expertAgeRec
+      return Math.max(0.25, 1 - yearsTooYoung * 0.15)
+    }
+  }
+
   if (memberAge >= 16 && expertAgeRec >= 10) return 1.0
 
   const lowerTopics = (topics || []).map((t) => t.toLowerCase())

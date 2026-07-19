@@ -312,6 +312,34 @@ describe("computeAgeScore raw score (display caps live in applyFitGuardrails)", 
     expect(computeAgeScore(null, 10)).toBe(0.5)
     expect(computeAgeScore(10, null)).toBe(0.5)
   })
+
+  // "Trop jeune" penalty for teenagers — content far below a teen's age reads
+  // as babyish and must NOT score near-perfect on the age axis (the Erwan/Cars
+  // case). proximityFloor = memberAge − 4.
+  it("penalizes clearly-too-young content for a teenager (Cars 6+ for a 15yo)", () => {
+    // floor = 11; 11 − 6 = 5 years under → 1 − 5×0.15 = 0.25 (floored)
+    expect(computeAgeScore(6, 15)).toBe(0.25)
+  })
+
+  it("penalizes less harshly for a younger teen (Cars 6+ for a 13yo)", () => {
+    // floor = 9; 9 − 6 = 3 under → 1 − 0.45 = 0.55
+    expect(computeAgeScore(6, 13)).toBeCloseTo(0.55, 5)
+  })
+
+  it("keeps age-proximate content perfect for a teen (12+ for a 15yo)", () => {
+    // gap = 3 → 1.0, no penalty
+    expect(computeAgeScore(12, 15)).toBe(1)
+  })
+
+  it("only mildly dents near-proximate content (10+ for a 15yo)", () => {
+    // floor = 11; 1 under → 0.85
+    expect(computeAgeScore(10, 15)).toBeCloseTo(0.85, 5)
+  })
+
+  it("does NOT penalize younger content for a young child (Cars 6+ for a 9yo)", () => {
+    // gap = 3 → 1.0; the teen penalty is gated to memberAge >= 13
+    expect(computeAgeScore(6, 9)).toBe(1)
+  })
 })
 
 describe("applyFitGuardrails boundary cases", () => {
