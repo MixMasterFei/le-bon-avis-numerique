@@ -205,6 +205,29 @@ export async function GET(request: NextRequest) {
       for (const id of prefs.mediaIds) allSeenMediaIds.add(id)
     }
 
+    // Youngest-aware « trop jeune » exclusion. A TOO_YOUNG reaction removes a
+    // title from THIS session only when the member who dismissed it has no
+    // younger member also selected — otherwise a younger child present could
+    // still enjoy it, so we keep it (age-proximity ranking places it). Erwan
+    // (15) tagging Cars "trop jeune" must NOT kill it for a movie night that
+    // also includes a 7-year-old.
+    const memberAgeById = new Map<string, number | null>()
+    for (const m of familyMembers) {
+      memberAgeById.set(m.id, getMemberAge(m.birthYear, m.birthMonth))
+    }
+    const tooYoungReactions = await prisma.mediaReaction.findMany({
+      where: { familyMemberId: { in: memberIds }, reaction: "TOO_YOUNG" },
+      select: { mediaId: true, familyMemberId: true },
+    })
+    for (const r of tooYoungReactions) {
+      const reactorAge = r.familyMemberId ? memberAgeById.get(r.familyMemberId) ?? null : null
+      const hasYoungerSelected = familyMembers.some((m) => {
+        const a = memberAgeById.get(m.id)
+        return a != null && reactorAge != null && a < reactorAge
+      })
+      if (!hasYoungerSelected) allSeenMediaIds.add(r.mediaId)
+    }
+
     // Collect all disliked genres and avoided topics up-front so we can push
     // the exclusion into the SQL where-clause (avoids wasting the take=40
     // popularity budget on items we'd throw away post-fetch).
