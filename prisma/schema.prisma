@@ -1308,12 +1308,20 @@ model TotemMessage {
   citedMediaIds  String[] @default([]) @map("cited_media_ids")
   modelUsed      String?  @map("model_used")
   latencyMs      Int?     @map("latency_ms")
+  // Token usage per assistant message (nullable: rows predating the
+  // cost-tracking migration, and user rows, stay null — "unmeasured",
+  // never 0). Feeds the admin Control Tower's cost estimate.
+  inputTokens       Int? @map("input_tokens")
+  outputTokens      Int? @map("output_tokens")
+  cachedInputTokens Int? @map("cached_input_tokens")
   createdAt      DateTime @default(now()) @map("created_at")
 
   conversation TotemConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   feedback     TotemFeedback[]
 
   @@index([conversationId, createdAt])
+  // Daily-cap counts filter on (role, createdAt) across all conversations.
+  @@index([role, createdAt])
   @@map("totem_messages")
 }
 

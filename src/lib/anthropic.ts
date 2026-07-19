@@ -15,6 +15,7 @@ export function getAnthropic(): Anthropic {
 
 export const DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 // Higher-capability model used by Totem for grave or multi-tool turns.
-// Pinned to the Sonnet 4.6 canonical id used elsewhere in the project
-// (see news-discover.ts).
+// "claude-sonnet-4-6" IS the canonical published ID — unlike Haiku 4.5,
+// Sonnet 4.6 has no dated snapshot variant, so this does not drift the way
+// a "-latest" alias would. Same ID used by news-discover.ts.
 export const ESCALATION_MODEL = "claude-sonnet-4-6"

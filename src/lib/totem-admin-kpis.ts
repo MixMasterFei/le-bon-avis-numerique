@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { estimateCostUsd } from "@/lib/totem/cost"
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -62,6 +63,13 @@ export interface TotemAdminOverview {
     avgLatencyMs: number | null
     avgUserTurnsPerConversation: number | null
     sonnetTurnPct: number | null
+    // Token totals over the period (assistant messages with recorded usage
+    // only — rows predating the cost migration don't count) and the
+    // resulting cost ESTIMATE in USD (null when nothing measurable).
+    inputTokens: number
+    outputTokens: number
+    cachedInputTokens: number
+    estimatedCostUsd: number | null
   }
   wow: {
     conversations: number
@@ -109,6 +117,11 @@ export interface TotemMessageDetail {
   createdAt: string
   modelUsed: string | null
   latencyMs: number | null
+  inputTokens: number | null
+  outputTokens: number | null
+  cachedInputTokens: number | null
+  /** Per-message cost ESTIMATE (USD); null = unmeasured or unknown model. */
+  estimatedCostUsd: number | null
   citedMediaIds: string[]
   toolCalls: unknown
   toolResults: unknown
@@ -181,6 +194,7 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
     feedbackByDay,
     recentAssistantWithTools,
     modelGroups,
+    tokenGroups,
     sourcePageGroups,
     citedRows,
     recentDown,
@@ -259,6 +273,13 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
       where: { role: "assistant", createdAt: { gte: since }, modelUsed: { not: null } },
       _count: true,
     }),
+    // Token sums per model — folded through the per-model pricing map for
+    // the « Coût estimé » tile.
+    prisma.totemMessage.groupBy({
+      by: ["modelUsed"],
+      where: { role: "assistant", createdAt: { gte: since } },
+      _sum: { inputTokens: true, outputTokens: true, cachedInputTokens: true },
+    }),
     prisma.totemConversation.groupBy({
       by: ["sourcePage"],
       where: { startedAt: { gte: since }, sourcePage: { not: null } },
@@ -323,6 +344,24 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
   const modelTotal = modelUsage.reduce((s, m) => s + m.count, 0)
   const sonnetTurnPct =
     modelTotal > 0 ? Math.round((sonnetCount / modelTotal) * 1000) / 10 : null
+
+  // Token totals + per-model cost estimate (null when no usage recorded).
+  let inputTokens = 0
+  let outputTokens = 0
+  let cachedInputTokens = 0
+  let estimatedCostUsd: number | null = null
+  for (const g of tokenGroups) {
+    const usage = {
+      inputTokens: g._sum.inputTokens,
+      outputTokens: g._sum.outputTokens,
+      cachedInputTokens: g._sum.cachedInputTokens,
+    }
+    inputTokens += usage.inputTokens ?? 0
+    outputTokens += usage.outputTokens ?? 0
+    cachedInputTokens += usage.cachedInputTokens ?? 0
+    const cost = estimateCostUsd(g.modelUsed, usage)
+    if (cost != null) estimatedCostUsd = (estimatedCostUsd ?? 0) + cost
+  }
 
   const convDayMap = new Map(
     convByDay.map((r) => [dayKey(new Date(r.day)), Number(r.count)]),
@@ -393,6 +432,10 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
         ? Math.round(turnAgg[0].avg_turns * 10) / 10
         : null,
       sonnetTurnPct,
+      inputTokens,
+      outputTokens,
+      cachedInputTokens,
+      estimatedCostUsd,
     },
     wow: {
       conversations,
@@ -588,6 +631,14 @@ export async function fetchTotemConversationDetail(
       createdAt: m.createdAt.toISOString(),
       modelUsed: m.modelUsed,
       latencyMs: m.latencyMs,
+      inputTokens: m.inputTokens,
+      outputTokens: m.outputTokens,
+      cachedInputTokens: m.cachedInputTokens,
+      estimatedCostUsd: estimateCostUsd(m.modelUsed, {
+        inputTokens: m.inputTokens,
+        outputTokens: m.outputTokens,
+        cachedInputTokens: m.cachedInputTokens,
+      }),
       citedMediaIds: m.citedMediaIds,
       toolCalls: m.toolCalls,
       toolResults: m.toolResults,

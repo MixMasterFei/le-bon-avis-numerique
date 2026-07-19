@@ -62,6 +62,10 @@ export interface RecordAssistantMessageParams {
   citedMediaIds?: string[]
   modelUsed: string
   latencyMs: number
+  // Token usage (nullable — null means "unmeasured", never 0).
+  inputTokens?: number | null
+  outputTokens?: number | null
+  cachedInputTokens?: number | null
 }
 
 export async function recordAssistantMessage(params: RecordAssistantMessageParams) {
@@ -76,6 +80,9 @@ export async function recordAssistantMessage(params: RecordAssistantMessageParam
         citedMediaIds: params.citedMediaIds ?? [],
         modelUsed: params.modelUsed,
         latencyMs: params.latencyMs,
+        inputTokens: params.inputTokens ?? null,
+        outputTokens: params.outputTokens ?? null,
+        cachedInputTokens: params.cachedInputTokens ?? null,
       },
     }),
     prisma.totemConversation.update({

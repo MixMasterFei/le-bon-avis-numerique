@@ -8,7 +8,7 @@ export interface TotemErrorProps {
 
 export function TotemError({ onRetry }: TotemErrorProps) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+    <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
       <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
       <div className="flex-1 space-y-1.5">
         <p>Désolé, je me suis emmêlé les pinceaux. Pouvez-vous reformuler ?</p>

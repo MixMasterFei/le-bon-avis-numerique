@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { MessageCircle, X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { trackTotemOpened } from "@/lib/analytics"
 import { TotemSheet } from "./TotemSheet"
 import { TotemAlphaBadge } from "./TotemAlphaBadge"
 
@@ -16,7 +17,10 @@ export function TotemDock() {
   const pathname = usePathname()
 
   useEffect(() => {
-    const handler = () => setOpen(true)
+    const handler = () => {
+      setOpen(true)
+      trackTotemOpened("hero")
+    }
     window.addEventListener("totem:open", handler)
     return () => window.removeEventListener("totem:open", handler)
   }, [])
@@ -27,7 +31,10 @@ export function TotemDock() {
     <>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open) trackTotemOpened("dock")
+          setOpen((v) => !v)
+        }}
         aria-label={open ? "Fermer Totem" : "Ouvrir Totem"}
         aria-expanded={open}
         className={cn(
