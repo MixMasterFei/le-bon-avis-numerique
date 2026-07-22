@@ -1,10 +1,18 @@
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
-import { getNowPlayingMovies, getUpcomingMovies, getImageUrl, ImageSize, type TMDBMovie } from "@/lib/tmdb"
+import {
+  getNowPlayingMovies,
+  getUpcomingMovies,
+  discoverMovies,
+  getImageUrl,
+  ImageSize,
+  type TMDBMovie,
+} from "@/lib/tmdb"
 import { estimateAgeFromTmdbGenreIds } from "@/lib/import-helpers"
 import {
   CINEMA_TMDB_PAGES,
   EUROPEAN_LANGUAGES,
+  FRENCH_ORIGIN_COUNTRY,
   cinemaReleaseBucketPriority,
   getCinemaReleaseBucket,
   selectUpcomingCinema,
@@ -35,6 +43,8 @@ export interface CinemaMovie {
   inDatabase: boolean
   // Age is an estimate (not in DB, or in DB but not yet AI-enriched) → "âge provisoire".
   isProvisional: boolean
+  /** Made in France (production country, co-productions included) — not merely French-spoken. */
+  isFrenchProduction: boolean
 }
 
 interface CinemaFilters {
@@ -105,8 +115,57 @@ export async function isMovieNowPlaying(tmdbId: number | null | undefined): Prom
   return ids.has(tmdbId)
 }
 
+/**
+ * TMDB ids of FRENCH-MADE films released recently enough to still be playing.
+ *
+ * Why discover instead of the now_playing payload: production country is only
+ * on the movie DETAIL endpoint (`TMDBMovieDetails.production_countries`), not
+ * on list results, so marking 34 now-playing films would cost 34 detail calls
+ * per cache refresh. One discover call with `with_origin_country=FR` gives the
+ * same answer; we then intersect with the now-playing set.
+ *
+ * `with_origin_country` (not `with_original_language=fr`) is deliberate:
+ * "français" means made in France, so Belgian and Québécois films must NOT
+ * count, while a French production shot in English must. Co-productions match
+ * because TMDB tests membership of the origin-country list.
+ *
+ * The date window is wide on purpose (a year): the intersection with
+ * now_playing does the real filtering, and a French film can carry an earlier
+ * festival `primary_release_date` than its theatrical run.
+ *
+ * FAIL-SAFE: any error returns an empty set. The caller then simply marks
+ * nothing as French, the "cinéma français" row falls under its minimum and
+ * hides itself, and the main rail is untouched.
+ */
+export async function getFrenchProductionTmdbIds(): Promise<Set<number>> {
+  try {
+    const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+    const pages = await Promise.all(
+      [1, 2].map((page) =>
+        discoverMovies({
+          page,
+          with_origin_country: FRENCH_ORIGIN_COUNTRY,
+          "primary_release_date.gte": from,
+          sort_by: "popularity.desc",
+          region: "FR",
+        }),
+      ),
+    )
+    return new Set(pages.flatMap((p) => p.results || []).map((m) => m.id))
+  } catch {
+    return new Set()
+  }
+}
+
 export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<CinemaMovie[]> {
-  const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
+  // French-origin lookup runs alongside now_playing (both TMDB-cached 1h) so
+  // the "cinéma français" split costs no extra round-trip latency.
+  const [tmdbPages, frenchIds] = await Promise.all([
+    Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page))),
+    getFrenchProductionTmdbIds(),
+  ])
   const filteredMovies = sortCinemaMovies(
     uniqueEuropeanMovies(tmdbPages.flatMap((page) => page.results || [])),
   )
@@ -208,6 +267,7 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
           : null,
         inDatabase: !!db,
         isProvisional,
+        isFrenchProduction: frenchIds.has(tmdb.id),
       }
       return movie
     })

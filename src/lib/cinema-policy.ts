@@ -1,4 +1,15 @@
 export const CINEMA_TMDB_PAGES = [1, 2, 3] as const
+
+/** ISO 3166-1 code used to identify French-MADE films (production, not language). */
+export const FRENCH_ORIGIN_COUNTRY = "FR"
+
+/**
+ * Minimum French-made films needed before the dedicated "cinéma français" row
+ * renders. French theatrical supply is lumpy — some weeks carry two releases —
+ * and a half-empty labelled row reads as broken in a way a single blended row
+ * never does. Below this we simply don't show the row.
+ */
+export const MIN_FRENCH_ROW_ITEMS = 3
 export const CINEMA_RECENT_RELEASE_DAYS = 56
 export const CINEMA_REISSUE_RELEASE_DAYS = 180
 

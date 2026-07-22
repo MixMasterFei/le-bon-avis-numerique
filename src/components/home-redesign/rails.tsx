@@ -6,6 +6,7 @@ import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
+import { MIN_FRENCH_ROW_ITEMS } from "@/lib/cinema-policy"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -21,13 +22,21 @@ interface ApiMedia {
   contentMetrics?: RedesignCardMedia["contentMetrics"]
   cinemaReleaseBucket?: string
   releaseDate?: string | null
+  isFrenchProduction?: boolean
 }
+
+/**
+ * Card + the cinema-only origin flag. Kept local to the rails module so the
+ * shared card type stays free of a field only one rail cares about; the extra
+ * property rides along through the JSON caches untouched.
+ */
+type RailCard = RedesignCardMedia & { isFrenchProduction?: boolean }
 
 function asCardType(t: string | undefined, fallback: CardType): CardType {
   return t === "MOVIE" || t === "TV" || t === "GAME" ? t : fallback
 }
 
-function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
+function toCard(m: ApiMedia, fallbackType: CardType): RailCard {
   return {
     id: m.id,
     type: asCardType(m.type, fallbackType),
@@ -36,6 +45,7 @@ function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
     expertAgeRec: m.expertAgeRec ?? null,
     genres: m.genres ?? [],
     contentMetrics: m.contentMetrics ?? null,
+    isFrenchProduction: m.isFrenchProduction ?? false,
     cornerLabel:
       m.cinemaReleaseBucket === "reissue"
         ? "Reprise"
@@ -47,7 +57,7 @@ function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
 
 // Per-rail in-memory cache so re-selecting a filter is INSTANT (no refetch),
 // and a module-scoped cache survives remounts within the session.
-const RAIL_CACHE = new Map<string, RedesignCardMedia[]>()
+const RAIL_CACHE = new Map<string, RailCard[]>()
 
 // SWR-style persistence: a full page refresh paints rails from the previous
 // session's sessionStorage snapshot (no spinner, no full re-fetch), then quietly
@@ -79,7 +89,7 @@ function persistSet<T>(key: string, value: T): void {
 
 function useRail(url: string, key: string, fallbackType: CardType) {
   const cacheKey = `${key}@${url}`
-  const [items, setItems] = useState<RedesignCardMedia[]>(() => RAIL_CACHE.get(cacheKey) ?? [])
+  const [items, setItems] = useState<RailCard[]>(() => RAIL_CACHE.get(cacheKey) ?? [])
   const [loading, setLoading] = useState(!RAIL_CACHE.has(cacheKey))
   // Skeletons only on the very first load; after that, filter changes keep the
   // current cards visible until the new set arrives (no empty flash).
@@ -100,7 +110,7 @@ function useRail(url: string, key: string, fallbackType: CardType) {
     }
     // No in-memory copy (e.g. a fresh page load): paint instantly from the
     // previous session's sessionStorage snapshot, then revalidate once.
-    const persisted = persistGet<RedesignCardMedia[]>(cacheKey)
+    const persisted = persistGet<RailCard[]>(cacheKey)
     if (persisted && persisted.length) {
       didInit.current = true
       queueMicrotask(() => {
@@ -334,21 +344,51 @@ export function UpcomingRail({ maxAge }: { maxAge?: number }) {
 }
 
 // ── À l'affiche au cinéma ──
+//
+// Two rows, by design:
+//   1. the mainstream releases (TMDB popularity, as before),
+//   2. French-MADE films still playing, deduped against row 1.
+//
+// Why row 2 exists: the sort key is TMDB's GLOBAL popularity, which is driven
+// by the US market — so a French release competing on a French scale ranks
+// below mid-tier American titles and got cut by the single visible row. French
+// families largely go to see French films, and no competing guide covers them.
+//
+// Row 2 hides itself below MIN_FRENCH_ROW_ITEMS: French theatrical supply is
+// lumpy, and a half-empty labelled row reads as broken.
 export function CinemaRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/cinema${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "movies", "MOVIE")
+
+  const mainstream = items.slice(0, 6)
+  const shown = new Set(mainstream.map((m) => m.id))
+  const french = items.filter((m) => m.isFrenchProduction && !shown.has(m.id)).slice(0, 6)
+
   return (
-    <CardRailSection
-      id="cinema"
-      eyebrow="En ce moment"
-      title={<>À l&apos;affiche <Em tone="terra">au cinéma</Em> en France</>}
-      action={{ label: "Voir tout", href: "/films?sort=cinema" }}
-      items={items.slice(0, 12)}
-      loading={loading}
-      totem="compact"
-      audience={audience}
-      rankByMemberIds={rankByMemberIds}
-    />
+    <>
+      <CardRailSection
+        id="cinema"
+        eyebrow="En ce moment"
+        title={<>À l&apos;affiche <Em tone="terra">au cinéma</Em> en France</>}
+        action={{ label: "Voir tout", href: "/films?sort=cinema" }}
+        items={mainstream}
+        loading={loading}
+        totem="compact"
+        audience={audience}
+        rankByMemberIds={rankByMemberIds}
+      />
+      {french.length >= MIN_FRENCH_ROW_ITEMS && (
+        <CardRailSection
+          id="cinema-fr"
+          eyebrow="Made in France"
+          title={<>Le <Em tone="terra">cinéma français</Em> à l&apos;affiche</>}
+          items={french}
+          loading={false}
+          totem="compact"
+          rankByMemberIds={rankByMemberIds}
+        />
+      )}
+    </>
   )
 }
 
