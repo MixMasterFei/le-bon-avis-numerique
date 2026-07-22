@@ -3,6 +3,7 @@ import { fetchAdminKpis } from "@/lib/admin-kpis"
 import { sendDebtDigest } from "@/lib/email"
 import { withVerdict } from "@/lib/agent-verdict"
 import { runExpectationChecks } from "@/lib/expectations"
+import { overdueAnalysisWhere, RELEASE_ANALYSIS_GRACE_DAYS } from "@/lib/enrich-filter"
 
 /**
  * Weekly "technical & data debt" digest.
@@ -56,6 +57,12 @@ export type DebtDigestResult = {
   catalogUnenriched: number
   /** Number of "invariant" expectations currently broken (should be 0). */
   expectationFailures: number
+  /**
+   * Titles that are OUT but still have no analysis past the grace period.
+   * MUST be 0: a released title with its analysis and per-member fit switched
+   * off is a publicly wrong fiche, on exactly the pages search sends traffic to.
+   */
+  releasedAwaitingAnalysis: number
 }
 
 function hoursSince(d: Date): number {
@@ -119,6 +126,25 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
         },
       })
       .catch(() => 0),
+  ])
+
+  // ── Sorties non analysées (watchdog) ───────────────────────────────
+  // The single hard invariant of the catalogue: once a title is OUT, it must
+  // carry a real analysis. While it doesn't, the fiche publicly says the
+  // analysis is pending AND per-member fit is unavailable — i.e. the signup
+  // surface is off — on the pages search traffic actually lands on.
+  // The enrichment queue now prioritises this set (freshlyReleasedWhere), so a
+  // non-zero count here means the priority tier is not draining: investigate
+  // the enrich cron before anything else in this digest.
+  const overdueWhere = overdueAnalysisWhere()
+  const [releasedAwaitingAnalysis, releasedAwaitingList] = await Promise.all([
+    prisma.mediaItem.count({ where: { AND: [overdueWhere, { type: SCOPED_NOT }] } }),
+    prisma.mediaItem.findMany({
+      where: { AND: [overdueWhere, { type: SCOPED_NOT }] },
+      select: { title: true, type: true, releaseDate: true },
+      orderBy: { releaseDate: "desc" },
+      take: 15,
+    }),
   ])
 
   // ── Rating-quality audit (trust watchdog) ──────────────────────────
@@ -286,6 +312,26 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Enrichies mais sans topics (jeunesse, hors titres 14+) : ${noTopics}`)
   L.push("")
 
+  if (releasedAwaitingAnalysis > 0) {
+    L.push("## 🚨 Sorties non analysées (doit être 0)", "")
+    L.push(
+      `${releasedAwaitingAnalysis} titre(s) sont sortis depuis plus de ${RELEASE_ANALYSIS_GRACE_DAYS} jours sans analyse.`,
+      "Leur fiche affiche « analyse en cours » et l'adéquation par membre est indisponible — donc aucune inscription possible depuis ces pages.",
+      "La file d'enrichissement les priorise (freshlyReleasedWhere) : un compte non nul signifie que le cron d'enrichissement ne draine pas.",
+      ""
+    )
+    for (const it of releasedAwaitingList) {
+      const days = it.releaseDate
+        ? Math.floor((Date.now() - it.releaseDate.getTime()) / 86_400_000)
+        : null
+      L.push(`- [${it.type}] ${it.title}${days !== null ? ` — sorti il y a ${days} j` : ""}`)
+    }
+    if (releasedAwaitingAnalysis > releasedAwaitingList.length) {
+      L.push(`- … et ${releasedAwaitingAnalysis - releasedAwaitingList.length} autre(s)`)
+    }
+    L.push("")
+  }
+
   if (adultFlaggedCount > 0) {
     L.push("## ⚠️ Contenu adulte à retirer", "")
     L.push(`Le garde-fou d'import laisse normalement 0 — ${adultFlaggedCount} fiche(s) à vérifier/supprimer :`)
@@ -336,6 +382,13 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
 
   L.push("## Action pour toi", "")
   const todo: string[] = []
+  // Ranked first on purpose: a released title without analysis is the only
+  // item here that is publicly wrong AND blocks signups on a traffic page.
+  if (releasedAwaitingAnalysis > 0) {
+    todo.push(
+      `🚨 ${releasedAwaitingAnalysis} sortie(s) sans analyse depuis > ${RELEASE_ANALYSIS_GRACE_DAYS} j — priorité absolue : lancer l'enrichissement (/admin/operations) et vérifier le cron.`
+    )
+  }
   if (cronVerdicts.some((v) => v.state === "error" || v.state === "never")) {
     todo.push("Un job est en erreur / n'a jamais tourné — voir /admin/operations et le mail superviseur du jour.")
   }
@@ -406,10 +459,14 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   let emailSent = false
   if (opts.email !== false) {
     const expectationTag = invariantFailures.length > 0 ? `⚠ ${invariantFailures.length} attente(s) rompue(s) · ` : ""
+    // Released-without-analysis outranks everything else in the subject: it is
+    // the one state that is publicly visible and costs signups.
+    const releaseTag =
+      releasedAwaitingAnalysis > 0 ? `🚨 ${releasedAwaitingAnalysis} sortie(s) sans analyse · ` : ""
     await sendDebtDigest({
       subject: cronProblems > 0
-        ? `Dette Totem — ${expectationTag}${cronProblems} job${cronProblems > 1 ? "s" : ""} en souffrance, ${catalogUnenrichedScoped} à enrichir`
-        : `Dette Totem — ${expectationTag}RAS jobs, ${catalogUnenrichedScoped} à enrichir, ${actionQueueTotal} en file`,
+        ? `Dette Totem — ${releaseTag}${expectationTag}${cronProblems} job${cronProblems > 1 ? "s" : ""} en souffrance, ${catalogUnenrichedScoped} à enrichir`
+        : `Dette Totem — ${releaseTag}${expectationTag}RAS jobs, ${catalogUnenrichedScoped} à enrichir, ${actionQueueTotal} en file`,
       report,
     })
     emailSent = true
@@ -421,5 +478,6 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
     cronProblems,
     catalogUnenriched: catalogUnenrichedScoped,
     expectationFailures: invariantFailures.length,
+    releasedAwaitingAnalysis,
   }
 }

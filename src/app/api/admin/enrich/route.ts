@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
-import { notUnreleasedWhere, unenrichedBacklogWhere } from "@/lib/enrich-filter"
+import {
+  freshlyReleasedWhere,
+  notUnreleasedWhere,
+  unenrichedBacklogWhere,
+} from "@/lib/enrich-filter"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
 import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
@@ -577,17 +581,53 @@ export async function POST(request: NextRequest) {
     // Apply the release-date guard to every mode.
     whereClause = { AND: [whereClause, notUnreleased] }
 
-    // Find items to enrich
-    const items = await prisma.mediaItem.findMany({
-      where: whereClause,
-      include: { contentMetrics: true },
-      orderBy: recalibrate
-        ? { updatedAt: "asc" as const } // oldest-touched first → drains + terminates
-        : onlyLegacy
-          ? { tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }
-          : { createdAt: "desc" },
-      take: Math.min(limit, 50), // Max 50 at a time
-    })
+    // Find items to enrich.
+    //
+    // TWO-TIER: freshly-released-but-unanalysed titles are served FIRST, newest
+    // release first. The plain `createdAt: desc` ordering below is LIFO, and
+    // with the daily import continuously refilling the head it never reached
+    // the tail — which is precisely where the pre-release play parks its most
+    // valuable titles (imported months early, enrichable only once out). See
+    // `freshlyReleasedWhere` for the full failure write-up.
+    const take = Math.min(limit, 50) // Max 50 at a time
+    const baseOrderBy = recalibrate
+      ? { updatedAt: "asc" as const } // oldest-touched first → drains + terminates
+      : onlyLegacy
+        ? { tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }
+        : { createdAt: "desc" as const }
+
+    // Only the "needs a first analysis" modes have a fresh tier: recalibrate
+    // and onlyLegacy re-process already-enriched rows, mediaId is targeted.
+    const usePriorityTier = !mediaId && !recalibrate && !onlyLegacy
+
+    const priorityItems = usePriorityTier
+      ? await prisma.mediaItem.findMany({
+          where: { AND: [whereClause, freshlyReleasedWhere()] },
+          include: { contentMetrics: true },
+          orderBy: { releaseDate: { sort: "desc" as const, nulls: "last" as const } },
+          take,
+        })
+      : []
+
+    const fillCount = take - priorityItems.length
+    const fillItems =
+      fillCount > 0
+        ? await prisma.mediaItem.findMany({
+            where: priorityItems.length
+              ? { AND: [whereClause, { id: { notIn: priorityItems.map((i) => i.id) } }] }
+              : whereClause,
+            include: { contentMetrics: true },
+            orderBy: baseOrderBy,
+            take: fillCount,
+          })
+        : []
+
+    const items = [...priorityItems, ...fillItems]
+    if (priorityItems.length > 0) {
+      result.details.push(
+        `Priorité sorties récentes : ${priorityItems.length} titre(s) sorti(s) et non analysé(s)`
+      )
+    }
 
     result.processed = items.length
     result.details.push(`Found ${items.length} items to enrich`)
@@ -754,13 +794,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // A batch that had work to do and enriched NOTHING — every item erroring —
+    // is a hard failure, not a "partial". That is what a dead upstream looks
+    // like (OpenAI 429 quota exhausted, revoked key, provider outage).
+    //
+    // Why this matters: `partial` does not send a failure email, only `error`
+    // does. Between 11 and 22 July 2026 the OpenAI quota was exhausted and
+    // every run logged `partial` — "0 enrichis sur 5" — 111 consecutive times.
+    // Eleven days, zero titles enriched, no alert, and the catalogue silently
+    // stopped covering every new release (L'Odyssée among them). One item
+    // failing out of five is a hiccup; five out of five is an outage, and the
+    // two must not log the same severity.
+    const totalFailure = result.processed > 0 && result.enriched === 0 && result.errors > 0
     await logCronRun({
       task: "enrich",
-      status: result.errors > 0 ? "partial" : bailedOnTime ? "partial" : "success",
+      status: totalFailure
+        ? "error"
+        : result.errors > 0 || bailedOnTime
+          ? "partial"
+          : "success",
       summary:
         result.processed === 0
           ? `Backlog vide — rien a enrichir (${type})`
-          : `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
+          : totalFailure
+            ? `ÉCHEC TOTAL : 0 enrichis sur ${result.processed} (${type}) — fournisseur IA injoignable ?`
+            : `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
       details: { ...result, type, bailedOnTime },
       startTime,
     })
