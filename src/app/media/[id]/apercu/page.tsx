@@ -4,7 +4,7 @@ import { isAdmin } from "@/lib/auth"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
-import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { contentAnalysisHiddenReason } from "@/lib/release-status"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { FicheDataProvider } from "@/components/media/FicheDataContext"
 import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
@@ -41,11 +41,12 @@ export default async function MediaDashboardPage({ params }: PageProps) {
   }
 
   const routeId = toMediaRouteId(media.type, media.id)
-  const hideAnalysis = shouldHideContentAnalysis({
+  const hiddenReason = contentAnalysisHiddenReason({
     releaseDate: media.releaseDate,
     isProvisional: media.isProvisional,
     releaseStatus: media.releaseStatus,
   })
+  const hideAnalysis = hiddenReason !== null
 
   // Preview parity: same quick answer + breadcrumb as the public dashboard
   // branch in /media/[id]/page.tsx, so what admins preview is what ships.
@@ -63,6 +64,7 @@ export default async function MediaDashboardPage({ params }: PageProps) {
       roleModels: 0,
     },
     hideContentAnalysis: hideAnalysis,
+    hiddenReason,
   })
 
   return (
@@ -71,6 +73,7 @@ export default async function MediaDashboardPage({ params }: PageProps) {
         media={media}
         dbId={media.id}
         hideAnalysis={hideAnalysis}
+        hiddenReason={hiddenReason}
         quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
         breadcrumb={<DashboardBreadcrumb type={media.type} title={media.title} />}
       />

@@ -54,6 +54,32 @@ export interface ContentAnalysisGateInput {
 }
 
 /**
+ * WHY the content analysis is withheld. The two reasons look identical to the
+ * gate but must NEVER read the same to a visitor:
+ *
+ *  - "unreleased"        → nobody has seen it yet. "après la sortie" is true.
+ *  - "awaiting-analysis" → it IS out, we just haven't analysed it yet. Saying
+ *                          "après la sortie" here is a factual error, which is
+ *                          exactly what shipped on L'Odyssée for the week
+ *                          following its 15/07/2026 release.
+ *
+ * Order matters: genuinely-unreleased wins, because a future-dated title is
+ * also provisional and the release wording is the more informative of the two.
+ */
+export type ContentAnalysisHiddenReason = "unreleased" | "awaiting-analysis"
+
+export function contentAnalysisHiddenReason(
+  m: ContentAnalysisGateInput
+): ContentAnalysisHiddenReason | null {
+  if (isUnreleased(m.releaseDate)) return "unreleased"
+  if (isUnreleasedStatus(m.releaseStatus)) return "unreleased"
+  const provisional =
+    m.isProvisional ?? (m.isEnriched === false && m.expertAgeRec != null)
+  if (provisional) return "awaiting-analysis"
+  return null
+}
+
+/**
  * Should the fiche HIDE its content analysis (scores, parent prompts,
  * "réponse rapide" verdict, AggregateRating, content JSON-LD)?
  *
@@ -63,13 +89,19 @@ export interface ContentAnalysisGateInput {
  *  - TMDB says it isn't "Released" (catches null-date upcoming titles).
  *
  * The age recommendation itself stays visible (badged "à confirmer") — only
- * the content evaluation is withheld until the title is actually out.
+ * the content evaluation is withheld. This gate must stay conservative: it is
+ * the guarantee that we never publish a fabricated evaluation. To vary the
+ * WORDING without weakening the gate, use `contentAnalysisHiddenReason`.
  */
 export function shouldHideContentAnalysis(m: ContentAnalysisGateInput): boolean {
-  if (isUnreleased(m.releaseDate)) return true
-  const provisional =
-    m.isProvisional ?? (m.isEnriched === false && m.expertAgeRec != null)
-  if (provisional) return true
-  if (isUnreleasedStatus(m.releaseStatus)) return true
-  return false
+  return contentAnalysisHiddenReason(m) !== null
+}
+
+/**
+ * A title that is OUT but still unanalysed — the state that must never persist.
+ * `freshlyReleasedWhere` (enrich-filter) prioritises exactly this set, and the
+ * debt digest alerts when any member is older than the grace period.
+ */
+export function isReleasedAwaitingAnalysis(m: ContentAnalysisGateInput): boolean {
+  return contentAnalysisHiddenReason(m) === "awaiting-analysis"
 }

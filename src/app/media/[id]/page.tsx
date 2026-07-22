@@ -42,9 +42,14 @@ import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
 import { notFound } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
-import { buildQuickAnswer } from "@/lib/quick-answer"
+import { buildQuickAnswer, pendingAnalysisText } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
-import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
+import {
+  shouldHideContentAnalysis,
+  contentAnalysisHiddenReason,
+  isUnreleased,
+  isUnreleasedStatus,
+} from "@/lib/release-status"
 import {
   getMovieDetails,
   getTVDetails,
@@ -477,11 +482,21 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
   // with the SAME wording as the on-page "Réponse rapide" (single source via
   // buildQuickAnswer). For pre-release/provisional titles the answer stays an
   // honest age estimate with zero content claims (hideContentAnalysis).
-  const qa = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // Same media object as the caller's gate, so the reason cannot diverge from
+  // the `hideContentAnalysis` boolean it passed in.
+  const qa = buildQuickAnswer({
+    ...media,
+    hideContentAnalysis,
+    hiddenReason: contentAnalysisHiddenReason(media),
+  })
   // Second Q&A: the age RATIONALE ("pourquoi cet âge ?"). Same wording as the
   // on-page "Pourquoi cet âge ?" panel (single source via buildAgeRationale),
   // so answer engines can cite the reasoning, not just the number.
-  const rationale = buildAgeRationale({ ...media, hideContentAnalysis })
+  const rationale = buildAgeRationale({
+    ...media,
+    hideContentAnalysis,
+    hiddenReason: contentAnalysisHiddenReason(media),
+  })
   const faqPage = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -712,19 +727,20 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // every content-analysis surface (réponse rapide, metric bars, parent
   // prompts, AggregateRating, content JSON-LD) must stay silent — only the
   // age estimate (badged "à confirmer") shows. See @/lib/release-status.
-  const hideContentAnalysis = shouldHideContentAnalysis({
+  const hiddenReason = contentAnalysisHiddenReason({
     releaseDate: media.releaseDate,
     isProvisional: media.isProvisional,
     releaseStatus: media.releaseStatus,
   })
+  const hideContentAnalysis = hiddenReason !== null
 
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, toMediaRouteId(media.type, media.id), hideContentAnalysis)
-  const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
+  const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis, hiddenReason })
   // "Pourquoi cet âge ?" rationale — shown on hover/focus of the age badge in
   // the hero (MediaHeroEditable) and mirrored into the FAQ JSON-LD so answer
   // engines can cite the reasoning. Single source: buildAgeRationale.
-  const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis })
+  const ageRationale = buildAgeRationale({ ...media, hideContentAnalysis, hiddenReason })
 
   // ===== V3 dashboard as the public fiche — same URL, same metadata/JSON-LD,
   // new body. Admins get it now (real-URL preview); everyone once
@@ -749,6 +765,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               media={dash}
               dbId={dash.id}
               hideAnalysis={hideContentAnalysis}
+              hiddenReason={hiddenReason}
               quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
               breadcrumb={<DashboardBreadcrumb type={dash.type} title={dash.title} />}
             />
@@ -937,22 +954,28 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 className="text-[11px] font-semibold uppercase tracking-wide mb-1"
                 style={{ color: "var(--color-warm-accent)" }}
               >
-                À venir
+                {hiddenReason === "unreleased" ? "À venir" : "Analyse en cours"}
               </p>
               <h2
                 className="font-serif text-lg font-medium mb-2"
                 style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.02em" }}
               >
-                {media.releaseDate
-                  ? `Sortie prévue le ${formatDateFr(media.releaseDate)}`
-                  : "Pas encore sorti"}
+                {hiddenReason === "unreleased"
+                  ? media.releaseDate
+                    ? `Sortie prévue le ${formatDateFr(media.releaseDate)}`
+                    : "Pas encore sorti"
+                  : media.releaseDate
+                    ? `Sorti le ${formatDateFr(media.releaseDate)}`
+                    : "Analyse détaillée en préparation"}
               </h2>
               <p className="text-sm leading-relaxed" style={{ color: "var(--color-warm-ink2)" }}>
-                {`Ce ${mediaTypeLabels[media.type]?.toLowerCase() || "contenu"} n'est pas encore sorti. `}
+                {hiddenReason === "unreleased"
+                  ? `Ce ${mediaTypeLabels[media.type]?.toLowerCase() || "contenu"} n'est pas encore sorti. `
+                  : ""}
                 {media.expertAgeRec
                   ? `L'âge indiqué (dès ${media.expertAgeRec} ans) est une estimation à confirmer. `
                   : ""}
-                {"L'évaluation détaillée du contenu (violence, langage, messages…) sera publiée après sa sortie, une fois le titre visionné."}
+                {pendingAnalysisText(hiddenReason)}
               </p>
             </div>
           ) : (

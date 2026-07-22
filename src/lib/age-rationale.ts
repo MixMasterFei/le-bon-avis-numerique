@@ -1,5 +1,7 @@
 import type { MediaType } from "@/lib/media-route"
 import { isAnimationStyle } from "@/lib/age-floor"
+import type { ContentAnalysisHiddenReason } from "@/lib/release-status"
+import { pendingAnalysisText } from "@/lib/quick-answer"
 
 /**
  * Builds the public "Pourquoi cet âge ?" rationale shown on a fiche.
@@ -41,6 +43,8 @@ export interface AgeRationaleInput {
    * the rationale must make zero content claims (mirrors quick-answer.ts).
    */
   hideContentAnalysis?: boolean
+  /** Why it's hidden — wording only. See @/lib/release-status. */
+  hiddenReason?: ContentAnalysisHiddenReason | null
 }
 
 export interface AgeRationaleDriver {
@@ -111,7 +115,7 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
 
   // Provisional / pre-release: honest estimate, zero content claims.
   if (input.hideContentAnalysis) {
-    const lead = `L'âge indiqué (${ageLabel}, à confirmer) est une première estimation, basée sur le synopsis, les classifications officielles et les genres. L'analyse détaillée du contenu sera publiée après la sortie, une fois le titre visionné.`
+    const lead = `L'âge indiqué (${ageLabel}, à confirmer) est une première estimation, basée sur le synopsis, les classifications officielles et les genres. ${pendingAnalysisText(input.hiddenReason)}`
     return {
       show: true,
       isProvisional: true,

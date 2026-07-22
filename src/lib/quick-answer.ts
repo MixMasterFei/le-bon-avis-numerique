@@ -1,5 +1,6 @@
 import { mediaTypeLabels } from "@/lib/utils"
 import type { MediaType } from "@/lib/media-route"
+import type { ContentAnalysisHiddenReason } from "@/lib/release-status"
 
 export interface QuickAnswerInput {
   title: string
@@ -22,6 +23,24 @@ export interface QuickAnswerInput {
    * See `shouldHideContentAnalysis` in @/lib/release-status.
    */
   hideContentAnalysis?: boolean
+  /**
+   * WHY it's hidden — picks the wording. Omitting it yields neutral phrasing
+   * that is true in both states, deliberately: a caller that forgets to pass
+   * the reason must never end up telling a visitor that an already-released
+   * film "sortira bientôt".
+   */
+  hiddenReason?: ContentAnalysisHiddenReason | null
+}
+
+/** Wording for each withheld-analysis state. Never say "sortie" unless it's true. */
+export function pendingAnalysisText(
+  reason: ContentAnalysisHiddenReason | null | undefined
+): string {
+  if (reason === "unreleased")
+    return "L'évaluation détaillée du contenu sera publiée après sa sortie, une fois le titre visionné."
+  if (reason === "awaiting-analysis")
+    return "Le titre vient de sortir : notre analyse détaillée du contenu est en cours."
+  return "L'analyse détaillée du contenu n'est pas encore disponible."
 }
 
 export interface QuickAnswer {
@@ -46,8 +65,7 @@ export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
     const age = media.expertAgeRec && media.expertAgeRec > 0
       ? `à partir de ${media.expertAgeRec} ans (à confirmer)`
       : "à un âge encore à confirmer"
-    const pending =
-      "L'évaluation détaillée du contenu sera publiée après sa sortie, une fois le titre visionné."
+    const pending = pendingAnalysisText(media.hiddenReason)
     return {
       question,
       answer: `${media.title} est un ${typeLabel} dont l'âge est estimé ${age} par Totem Avisé. ${pending}`,

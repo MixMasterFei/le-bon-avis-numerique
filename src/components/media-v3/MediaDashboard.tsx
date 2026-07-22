@@ -16,6 +16,8 @@ import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
 import { DashboardFamilyFeedback } from "./DashboardFamilyFeedback"
 import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
+import type { ContentAnalysisHiddenReason } from "@/lib/release-status"
+import { pendingAnalysisText } from "@/lib/quick-answer"
 
 // Handoff palette (already matches the site's warm art direction).
 const C = {
@@ -64,12 +66,18 @@ export function MediaDashboard({
   media,
   dbId,
   hideAnalysis,
+  hiddenReason,
   quickAnswer,
   breadcrumb,
 }: {
   media: DashboardMedia
   dbId: string
   hideAnalysis: boolean
+  /**
+   * Why the analysis is hidden. Drives wording only — never say "après la
+   * sortie" for a title that is already out. See @/lib/release-status.
+   */
+  hiddenReason?: ContentAnalysisHiddenReason | null
   /** Visible FAQ-backing block ("à partir de quel âge ?") — same wording as the FAQPage JSON-LD. */
   quickAnswer?: { question: string; answer: string }
   /** Visible breadcrumb matching the BreadcrumbList JSON-LD; falls back to the BackButton (admin preview). */
@@ -78,7 +86,9 @@ export function MediaDashboard({
   const hasAge = media.expertAgeRec != null && media.expertAgeRec > 0
   const verdict = hasAge ? `Dès ${media.expertAgeRec} ans` : "Non évalué"
   const verdictNote = hideAnalysis
-    ? "Estimation · à confirmer après la sortie"
+    ? hiddenReason === "unreleased"
+      ? "Estimation · à confirmer après la sortie"
+      : "Estimation · analyse en cours"
     : media.isProvisional
       ? "Âge provisoire · à confirmer"
       : "Analyse automatisée · critères publiés"
@@ -283,7 +293,9 @@ export function MediaDashboard({
                 Pour ma famille
               </div>
               <p className="text-[12.5px] leading-relaxed" style={{ color: C.body }}>
-                L&apos;adéquation par membre sera disponible une fois le titre sorti et analysé.
+                {hiddenReason === "unreleased"
+                  ? "L'adéquation par membre sera disponible une fois le titre sorti et analysé."
+                  : "L'adéquation par membre sera disponible dès la publication de l'analyse."}
               </p>
             </div>
           )}
@@ -317,7 +329,7 @@ export function MediaDashboard({
             ) : (
               <p className="text-[12.5px] leading-relaxed" style={{ color: C.body }}>
                 {hideAnalysis
-                  ? "L'analyse détaillée du contenu sera publiée après la sortie."
+                  ? pendingAnalysisText(hiddenReason)
                   : "Analyse de contenu à venir pour ce titre."}
               </p>
             )}

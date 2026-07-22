@@ -5,9 +5,9 @@ import {
   toMediaRouteId,
   type MediaType,
 } from "@/lib/media-route"
-import { buildQuickAnswer } from "@/lib/quick-answer"
+import { buildQuickAnswer, pendingAnalysisText } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
-import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { contentAnalysisHiddenReason } from "@/lib/release-status"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -82,8 +82,9 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   // Pre-release / provisional fiches must not present a content evaluation
   // we haven't actually made — keep the answer an honest age estimate and
   // skip the metric dump below. See @/lib/release-status.
-  const hideContentAnalysis = shouldHideContentAnalysis(media)
-  const quick = buildQuickAnswer({ ...media, hideContentAnalysis })
+  const hiddenReason = contentAnalysisHiddenReason(media)
+  const hideContentAnalysis = hiddenReason !== null
+  const quick = buildQuickAnswer({ ...media, hideContentAnalysis, hiddenReason })
   const sectionLabel = whatParentsSectionLabel(media.type)
 
   const lines: string[] = []
@@ -106,7 +107,7 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
     // rather than printing a misleading row of 0/5 scores.
     lines.push("## Repères pour les parents", "")
     lines.push(
-      "Évaluation détaillée du contenu à publier après la sortie. L'âge indiqué est une estimation à confirmer.",
+      `${pendingAnalysisText(hiddenReason)} L'âge indiqué est une estimation à confirmer.`,
       ""
     )
   } else {

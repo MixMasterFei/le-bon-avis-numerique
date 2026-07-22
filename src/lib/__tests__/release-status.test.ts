@@ -1,10 +1,13 @@
 import { describe, it, expect } from "vitest"
 import {
+  contentAnalysisHiddenReason,
+  isReleasedAwaitingAnalysis,
   isUnreleased,
   isUnreleasedStatus,
   shouldHideContentAnalysis,
   UNRELEASED_TMDB_STATUSES,
 } from "../release-status"
+import { pendingAnalysisText } from "../quick-answer"
 
 const DAY = 864e5
 const future = new Date(Date.now() + 30 * DAY)
@@ -91,5 +94,95 @@ describe("shouldHideContentAnalysis", () => {
         releaseStatus: null,
       }),
     ).toBe(false)
+  })
+})
+
+/**
+ * Regression: L'Odyssée (imported 2025-12-23, released 2026-07-15) spent its
+ * opening week telling visitors the analysis would be published "après la
+ * sortie" — on a film that was already in cinemas, carrying ~79% of all site
+ * traffic. The gate was right to hide the analysis; the WORDING was wrong.
+ */
+describe("contentAnalysisHiddenReason", () => {
+  it("'unreleased' for a future-dated title", () => {
+    expect(contentAnalysisHiddenReason({ releaseDate: future })).toBe("unreleased")
+  })
+
+  it("'unreleased' wins over provisional for a not-yet-out title", () => {
+    expect(
+      contentAnalysisHiddenReason({ releaseDate: future, isEnriched: false, expertAgeRec: 12 }),
+    ).toBe("unreleased")
+  })
+
+  it("'unreleased' for a null-dated title with a pre-release TMDB status", () => {
+    expect(
+      contentAnalysisHiddenReason({ releaseDate: null, releaseStatus: "Post Production" }),
+    ).toBe("unreleased")
+  })
+
+  it("'awaiting-analysis' for a RELEASED but unenriched title (the L'Odyssée case)", () => {
+    expect(
+      contentAnalysisHiddenReason({
+        releaseDate: past,
+        isEnriched: false,
+        expertAgeRec: 12,
+        releaseStatus: null,
+      }),
+    ).toBe("awaiting-analysis")
+  })
+
+  it("null once the released title is enriched", () => {
+    expect(
+      contentAnalysisHiddenReason({
+        releaseDate: past,
+        isEnriched: true,
+        expertAgeRec: 12,
+        releaseStatus: "Released",
+      }),
+    ).toBeNull()
+  })
+
+  it("stays consistent with shouldHideContentAnalysis for every shape", () => {
+    const shapes = [
+      { releaseDate: future },
+      { releaseDate: past, isEnriched: false, expertAgeRec: 12 },
+      { releaseDate: past, isEnriched: true, expertAgeRec: 12, releaseStatus: "Released" },
+      { releaseDate: null, releaseStatus: "Planned" },
+      { releaseDate: null, isEnriched: true, expertAgeRec: 8, releaseStatus: null },
+      { isProvisional: true },
+    ]
+    for (const s of shapes) {
+      expect(shouldHideContentAnalysis(s)).toBe(contentAnalysisHiddenReason(s) !== null)
+    }
+  })
+})
+
+describe("isReleasedAwaitingAnalysis", () => {
+  it("true only for out-but-unanalysed", () => {
+    expect(
+      isReleasedAwaitingAnalysis({ releaseDate: past, isEnriched: false, expertAgeRec: 12 }),
+    ).toBe(true)
+    expect(isReleasedAwaitingAnalysis({ releaseDate: future })).toBe(false)
+    expect(
+      isReleasedAwaitingAnalysis({ releaseDate: past, isEnriched: true, expertAgeRec: 12 }),
+    ).toBe(false)
+  })
+})
+
+describe("pendingAnalysisText", () => {
+  it("only mentions the release for a genuinely unreleased title", () => {
+    expect(pendingAnalysisText("unreleased")).toMatch(/sortie/i)
+  })
+
+  it("NEVER defers to the release date for an already-released title", () => {
+    // The exact bug: "sera publiée après sa sortie" on a film in cinemas.
+    expect(pendingAnalysisText("awaiting-analysis")).not.toMatch(/après (sa|la) sortie/i)
+  })
+
+  it("falls back to neutral wording when the reason is unknown", () => {
+    // Fail-safe: a caller that forgets the reason must not assert a falsehood.
+    for (const v of [null, undefined]) {
+      expect(pendingAnalysisText(v)).not.toMatch(/après (sa|la) sortie/i)
+    }
   })
 })
