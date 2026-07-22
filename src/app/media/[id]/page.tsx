@@ -565,9 +565,15 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // If still not found and has type prefix, try external APIs
   if (!media && type) {
     source = "external"
+    // Off-catalog cinema/news cards mint their id as `tmdb-<id>` (cinema.ts,
+    // news-cinema-tendances.ts) — a film in French theaters that isn't imported
+    // yet, shown with a provisional age. The external fetch below needs the bare
+    // numeric id, so strip the prefix; without this, every provisional cinema
+    // card 404'd on click (parseInt("tmdb-123") is NaN).
+    const externalId = rawId.startsWith("tmdb-") ? rawId.slice(5) : rawId
     try {
       if (type === "MOVIE") {
-        const movieId = parseInt(rawId)
+        const movieId = parseInt(externalId)
         if (Number.isNaN(movieId)) throw new Error("Invalid movie id")
         const movie = await getMovieDetails(movieId)
         const certification = getFrenchCertification(movie.release_dates)
@@ -601,7 +607,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           reviews: [],
         }
       } else if (type === "TV") {
-        const tvId = parseInt(rawId)
+        const tvId = parseInt(externalId)
         if (Number.isNaN(tvId)) throw new Error("Invalid tv id")
         const show = await getTVDetails(tvId)
         const rating = getTVFrenchRating(show.content_ratings)
