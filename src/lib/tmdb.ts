@@ -332,16 +332,6 @@ export async function discoverMovies(options: {
   "primary_release_date.gte"?: string
   "primary_release_date.lte"?: string
   with_original_language?: string
-  /**
-   * ISO 3166-1 production country, e.g. "FR". Matches if the country is among
-   * the film's origin countries, so co-productions (Franco-Belgian, Franco-
-   * Italian…) count as French-made — which is what "film français" means to a
-   * French audience. Distinct from `with_original_language=fr`, which would
-   * also catch Belgian/Québécois/Swiss films and miss French productions shot
-   * in English.
-   */
-  with_origin_country?: string
-  region?: string
 }) {
   const params: Record<string, string> = {}
   Object.entries(options).forEach(([key, value]) => {
