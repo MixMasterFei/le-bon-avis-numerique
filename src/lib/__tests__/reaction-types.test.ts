@@ -36,7 +36,10 @@ describe("reaction vocabulary sync", () => {
     expect(match).not.toBeNull()
     const enumValues = match![1]
       .split("\n")
-      .map((line) => line.replace(/\/\/.*$/, "").trim())
+      // Strip \r first: on a CRLF checkout the trailing carriage return sits
+      // after the comment, and `.` never matches it — so `//.*$` failed to
+      // anchor and the comments survived, reddening this test on Windows only.
+      .map((line) => line.replace(/\r/g, "").replace(/\/\/.*$/, "").trim())
       .filter(Boolean)
     expect(new Set(enumValues)).toEqual(new Set(VALID_REACTIONS))
   })
