@@ -243,10 +243,35 @@ const typeCategoryPaths: Record<string, { path: string; label: string }> = {
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: MediaPageProps): Promise<Metadata> {
   const { id } = await params
-  const { id: rawId } = parseMediaRouteId(id)
+  const { type, id: rawId } = parseMediaRouteId(id)
 
   const media = await fetchFromDatabase(rawId)
   if (!media) {
+    // Off-catalog cinema films (id `tmdb-<id>`) aren't in the DB, so give them
+    // a real title/description here too — otherwise the browser tab and social
+    // share preview fall back to the generic site title. The page body already
+    // renders these via the external fetch below; the getMovieDetails call is
+    // TMDB-cached (revalidate 3600), shared with that render, so no extra cost.
+    if (type === "MOVIE") {
+      try {
+        const externalId = rawId.startsWith("tmdb-") ? rawId.slice(5) : rawId
+        const movieId = parseInt(externalId)
+        if (!Number.isNaN(movieId)) {
+          const movie = await getMovieDetails(movieId)
+          const year = movie.release_date ? ` (${movie.release_date.slice(0, 4)})` : ""
+          return {
+            title: `${movie.title}${year} — À partir de quel âge ? | Totem Avisé`,
+            description: movie.overview || undefined,
+            alternates: { canonical: `/media/${id}` },
+            openGraph: movie.poster_path
+              ? { images: [getImageUrl(movie.poster_path, ImageSize.poster.large)] }
+              : undefined,
+          }
+        }
+      } catch {
+        // fall through to the generic fallback
+      }
+    }
     return {
       title: "Média familial — avis par âge",
       description:
