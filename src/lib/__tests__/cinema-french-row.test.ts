@@ -75,3 +75,66 @@ describe("cinema row split", () => {
     expect(FRENCH_ORIGIN_COUNTRY).not.toBe("fr")
   })
 })
+
+/**
+ * "Cinéma français" requires French production AND French language. Mirrors the
+ * getFrenchProductionTmdbIds predicate: production FR alone flagged Nightborn
+ * (Finnish co-production) as French; language fr alone would sweep in Belgian /
+ * Québécois films. A helper matching the lib keeps the rule pinned in a test.
+ */
+function isFrenchCinema(details: {
+  production_countries?: { iso_3166_1: string }[]
+  original_language?: string
+}): boolean {
+  const madeInFrance = (details.production_countries ?? []).some((c) => c.iso_3166_1 === "FR")
+  return madeInFrance && details.original_language === "fr"
+}
+
+describe("French-cinema predicate (production AND language)", () => {
+  it("includes a French-made, French-language film", () => {
+    expect(isFrenchCinema({ production_countries: [{ iso_3166_1: "FR" }], original_language: "fr" })).toBe(true)
+  })
+
+  it("EXCLUDES a Finnish film that lists France as a minor co-production (the Nightborn case)", () => {
+    expect(
+      isFrenchCinema({
+        production_countries: [{ iso_3166_1: "FI" }, { iso_3166_1: "FR" }],
+        original_language: "fi",
+      }),
+    ).toBe(false)
+  })
+
+  it("EXCLUDES a Belgian French-language film (French-speaking, not French cinema)", () => {
+    expect(isFrenchCinema({ production_countries: [{ iso_3166_1: "BE" }], original_language: "fr" })).toBe(false)
+  })
+
+  it("includes a genuine Franco-Belgian co-production in French", () => {
+    expect(
+      isFrenchCinema({
+        production_countries: [{ iso_3166_1: "FR" }, { iso_3166_1: "BE" }],
+        original_language: "fr",
+      }),
+    ).toBe(true)
+  })
+})
+
+/** Mirrors the homepage familySafe horror filter (TMDB genre id 27 or DB genre). */
+const TMDB_HORROR = 27
+function isHorror(genreIds: number[], dbGenres: string[]): boolean {
+  if (genreIds.includes(TMDB_HORROR)) return true
+  return dbGenres.some((g) => ["horreur", "horror"].includes(g.toLowerCase()))
+}
+
+describe("homepage horror exclusion", () => {
+  it("catches horror by TMDB genre id — works for off-DB provisional films with no DB genres", () => {
+    expect(isHorror([27, 53], [])).toBe(true)
+  })
+
+  it("catches horror by DB genre when TMDB ids are absent", () => {
+    expect(isHorror([], ["Horreur"])).toBe(true)
+  })
+
+  it("leaves non-horror films alone", () => {
+    expect(isHorror([18, 36], ["Drame", "Histoire"])).toBe(false)
+  })
+})

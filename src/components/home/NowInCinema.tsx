@@ -61,7 +61,8 @@ export function NowInCinema({ showLoginHint = false }: { showLoginHint?: boolean
   useEffect(() => {
     async function fetchMovies() {
       try {
-        const res = await fetch("/api/cinema")
+        // safe=1 → no horror on the homepage (classic/V1 front page).
+        const res = await fetch("/api/cinema?safe=1")
         if (!res.ok) throw new Error("Cinema API error")
         const data = await res.json()
         if (Array.isArray(data?.movies) && data.movies.length > 0) {

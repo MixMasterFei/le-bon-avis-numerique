@@ -198,7 +198,7 @@ function useTopPicks(maxAge: number) {
     }
 
     Promise.all([
-      getJson(`/api/cinema?${age}`),
+      getJson(`/api/cinema?safe=1&${age}`),
       getJson(`/api/db/media?type=MOVIE&sort=popularity&minVotes=200&${age}&limit=30`),
       getJson(`/api/db/media?type=MOVIE&sort=newest&minVotes=80&${age}&limit=30`),
       getJson(`/api/db/media?type=TV&sort=popularity&minVotes=80&${age}&limit=30`),
@@ -357,7 +357,8 @@ export function UpcomingRail({ maxAge }: { maxAge?: number }) {
 // Row 2 hides itself below MIN_FRENCH_ROW_ITEMS: French theatrical supply is
 // lumpy, and a half-empty labelled row reads as broken.
 export function CinemaRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
-  const url = `/api/cinema${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
+  // safe=1 → no horror on the homepage (the "Voir tout" listing stays complete).
+  const url = `/api/cinema?safe=1${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "movies", "MOVIE")
 
   const mainstream = items.slice(0, 6)

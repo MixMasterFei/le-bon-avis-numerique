@@ -21,6 +21,10 @@ export async function GET(request: Request) {
     const movies = await getCinemaMovies({
       minAge: parseAge(searchParams.get("minAge")),
       maxAge: parseAge(searchParams.get("maxAge")),
+      // Homepage passes ?safe=1 to drop horror from the family front page. The
+      // full /films?sort=cinema listing calls getCinemaMovies directly without
+      // it, so it stays complete.
+      familySafe: searchParams.get("safe") === "1",
     })
 
     return NextResponse.json(

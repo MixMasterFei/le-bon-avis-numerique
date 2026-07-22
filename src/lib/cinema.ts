@@ -6,6 +6,7 @@ import {
   getMovieDetails,
   getImageUrl,
   ImageSize,
+  MovieGenres,
   type TMDBMovie,
 } from "@/lib/tmdb"
 import { estimateAgeFromTmdbGenreIds } from "@/lib/import-helpers"
@@ -43,13 +44,33 @@ export interface CinemaMovie {
   inDatabase: boolean
   // Age is an estimate (not in DB, or in DB but not yet AI-enriched) → "âge provisoire".
   isProvisional: boolean
-  /** Made in France (production country, co-productions included) — not merely French-spoken. */
+  /** Made in France AND in French — not merely French-spoken, not a minor co-prod credit. */
   isFrenchProduction: boolean
+  /** Horror by TMDB genre id or DB genre — dropped from the homepage cinema block. */
+  isHorror: boolean
 }
 
 interface CinemaFilters {
   minAge?: number
   maxAge?: number
+  /**
+   * Drop horror titles. Set on the HOMEPAGE cinema block only — a family site's
+   * front page shouldn't surface horror, even a factual "now playing" listing.
+   * The full /films?sort=cinema listing stays complete (horror shown with its
+   * age badge) so a parent browsing all releases still sees everything.
+   */
+  familySafe?: boolean
+}
+
+const TMDB_HORROR_GENRE_ID = MovieGenres.HORROR
+
+/** Horror by either signal: TMDB genre id (works for off-DB films) or DB genre. */
+function isHorror(genreIds: number[], dbGenres: string[]): boolean {
+  if (genreIds.includes(TMDB_HORROR_GENRE_ID)) return true
+  return dbGenres.some((g) => {
+    const k = g.toLowerCase()
+    return k === "horreur" || k === "horror"
+  })
 }
 
 function uniqueEuropeanMovies(tmdbMovies: TMDBMovie[]): TMDBMovie[] {
@@ -129,9 +150,16 @@ export async function isMovieNowPlaying(tmdbId: number | null | undefined): Prom
  * `next: { revalidate: 3600 }`, so each film's details are cached for an hour.
  * That is ~34 requests per hour, not per visitor.
  *
- * Production country, NOT language: "français" means made in France, so a
- * Belgian or Québécois film must not count while a French production shot in
- * English must. Co-productions match, since we test membership of the list.
+ * "Cinéma français" = made in France AND in French. Both are required:
+ *   - production country FR alone is too loose — TMDB lists France as a minor
+ *     co-production credit on foreign films, which flagged Nightborn (Yön
+ *     lapsi, a Finnish-language horror film) as French cinema.
+ *   - French LANGUAGE alone is too loose the other way — it would sweep in
+ *     Belgian and Québécois films, which are French-speaking but not French
+ *     cinema (the distinction the row is meant to make).
+ * A genuine Franco-Belgian co-production still qualifies: FR is in the country
+ * list and the film is in French. The rare loss is a French film shot in
+ * another language — an acceptable trade for not mislabelling foreign films.
  *
  * FAIL-SAFE per film: a failed lookup counts as not-French rather than
  * rejecting the batch. Worst case the "cinéma français" row falls under its
@@ -144,10 +172,11 @@ export async function getFrenchProductionTmdbIds(
     tmdbIds.map(async (id) => {
       try {
         const details = await getMovieDetails(id)
-        const isFrench = (details.production_countries ?? []).some(
+        const madeInFrance = (details.production_countries ?? []).some(
           (c) => c.iso_3166_1 === FRENCH_ORIGIN_COUNTRY,
         )
-        return isFrench ? id : null
+        const inFrench = details.original_language === "fr"
+        return madeInFrance && inFrench ? id : null
       } catch {
         return null
       }
@@ -265,12 +294,17 @@ export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<Cine
         inDatabase: !!db,
         isProvisional,
         isFrenchProduction: frenchIds.has(tmdb.id),
+        // Checked against BOTH the TMDB genre ids (present for off-DB films)
+        // and the DB genres, so a provisional not-yet-imported horror film is
+        // still caught by the homepage familySafe filter.
+        isHorror: isHorror(tmdb.genre_ids ?? [], db?.genres ?? []),
       }
       return movie
     })
     // Drop old reissues ("reprises", e.g. a restored 1902 classic): they're
     // technically "now playing" but read as obscure on a mainstream cinema rail.
     .filter((movie) => movie.cinemaReleaseBucket !== "reissue")
+    .filter((movie) => !filters.familySafe || !movie.isHorror)
     .filter((movie) => matchesAgeFilter(movie, filters))
 }
 
