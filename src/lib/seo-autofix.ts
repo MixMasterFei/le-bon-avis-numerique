@@ -53,6 +53,12 @@ const MIN_QUALITY = 50
 // Lever C — SEO meta <title> override. Same cost discipline as synopsis.
 const MAX_TITLE_REWRITES = 3
 const SEO_TITLE_MAX = 65 // Google truncates ~60 chars; keep a small margin.
+// The agent is now fed a deep pool of striking queries (see MAX_ACTIONABLE in
+// seo-striking-distance.ts) instead of just the 25 shown in the email. Most of
+// the head of that pool is already saturated, so we walk it until we find fresh
+// work — but each target still costs 2-3 DB round-trips, so cap the walk to
+// stay well inside the route's 180s budget.
+const MAX_TARGETS = 60
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for unit tests)
@@ -208,7 +214,35 @@ export interface SeoAutofixResult {
   titlesSet: number
   flagged: number
   skippedNonMedia: number
+  /** Distinct fiches examined this run (after dedup + MAX_TARGETS). */
+  targetsExamined: number
+  /** Fiches with nothing left to do on any lever — already fully optimised. */
+  saturated: number
+  /**
+   * Per-lever outcome tallies. Without these, a run that found nothing left to
+   * do and a run whose every write was rejected both reported "0 lien · 0
+   * synopsis · 0 titre", which is why a healthy saturated agent looked broken.
+   */
+  outcomes: {
+    synopsis: Record<string, number>
+    seoTitle: Record<string, number>
+    links: Record<string, number>
+  }
   section: string // markdown to append to the email
+}
+
+/** True when no lever had anything left to do on this fiche. */
+export function isSaturated(t: SeoActionTarget): boolean {
+  const doneSynopsis = t.synopsis === "covered" || t.synopsis === "no-keyword"
+  const doneTitle = t.seoTitle === "n/a" || t.seoTitle === "covered"
+  return t.linksCreated.length === 0 && Boolean(t.linksSkippedReason) && doneSynopsis && doneTitle
+}
+
+function tally(values: string[]): Record<string, number> {
+  return values.reduce<Record<string, number>>((acc, v) => {
+    acc[v] = (acc[v] ?? 0) + 1
+    return acc
+  }, {})
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +316,10 @@ async function ensureInternalLinks(
     .filter((x) => x.score >= MIN_NEIGHBOR_SCORE)
     .sort((a, b) => b.score - a.score)
     .slice(0, need)
+
+  if (ranked.length === 0) {
+    return { created: [], skippedReason: "aucun voisin assez pertinent" }
+  }
 
   const created: string[] = []
   for (const { c } of ranked) {
@@ -461,7 +499,13 @@ export async function runSeoAutofix(
   let rewritesUsed = 0
   let titleRewritesUsed = 0
 
-  for (const t of byTarget.values()) {
+  // Best-opportunity fiches first (the striking list arrives sorted), capped so
+  // a deep pool can't blow the route's time budget.
+  const ordered = [...byTarget.values()]
+    .sort((a, b) => b.opportunity - a.opportunity)
+    .slice(0, MAX_TARGETS)
+
+  for (const t of ordered) {
     const item = await prisma.mediaItem.findUnique({
       where: { id: t.id },
       select: {
@@ -571,6 +615,17 @@ export async function runSeoAutofix(
   const flagged = targets.filter(
     (t) => blocked.has(t.synopsis) || blocked.has(t.seoTitle),
   ).length
+  const saturated = targets.filter(isSaturated).length
+
+  const outcomes = {
+    synopsis: tally(targets.map((t) => t.synopsis)),
+    seoTitle: tally(targets.map((t) => t.seoTitle)),
+    links: tally(
+      targets.map((t) =>
+        t.linksCreated.length > 0 ? "created" : t.linksSkippedReason ?? "aucun",
+      ),
+    ),
+  }
 
   return {
     ran: true,
@@ -581,7 +636,12 @@ export async function runSeoAutofix(
     titlesSet,
     flagged,
     skippedNonMedia,
-    section: buildActionsSection({ dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia }),
+    targetsExamined: targets.length,
+    saturated,
+    outcomes,
+    section: buildActionsSection({
+      dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia, saturated,
+    }),
   }
 }
 
@@ -618,8 +678,9 @@ function buildActionsSection(input: {
   synopsesRewritten: number
   titlesSet: number
   skippedNonMedia: number
+  saturated: number
 }): string {
-  const { dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia } = input
+  const { dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia, saturated } = input
   const verb = dryRun ? "à faire (simulation)" : "fait"
   const lines: string[] = [
     "",
@@ -629,9 +690,11 @@ function buildActionsSection(input: {
       ? "_Mode simulation (`dryRun`) : aucune écriture en base._"
       : "_Écritures appliquées automatiquement. Le titre SEO modifie UNIQUEMENT la balise <title> (résultat Google) — jamais le nom affiché (H1/cartes)._",
     "",
+    `- Fiches examinées : **${targets.length}**`,
     `- Liens internes ${verb} : **${linksCreated}**`,
     `- Synopsis ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.synopsis === "would-rewrite").length : synopsesRewritten}**`,
     `- Titres SEO ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.seoTitle === "would-set").length : titlesSet}**`,
+    `- Fiches déjà entièrement optimisées : ${saturated}`,
     `- URLs hors fiche ignorées : ${skippedNonMedia}`,
     "",
   ]
@@ -641,8 +704,25 @@ function buildActionsSection(input: {
     return lines.join("\n")
   }
 
+  // Why nothing happened matters as much as what happened: a run with zero
+  // writes because every fiche is already optimised is a healthy run, and used
+  // to be indistinguishable from a run where every write was rejected.
+  if (linksCreated === 0 && synopsesRewritten === 0 && titlesSet === 0 && !dryRun) {
+    lines.push(
+      saturated === targets.length
+        ? `**Rien à faire : les ${targets.length} fiches concernées sont déjà entièrement optimisées** (maillage au plafond, mot-clé présent dans le synopsis et le titre SEO). C'est le résultat attendu, pas une panne.`
+        : "**Aucune écriture ce run.** Voir le détail ci-dessous pour la raison fiche par fiche.",
+      "",
+    )
+  }
+
+  // Only detail fiches where something happened or where a human decision is
+  // needed — the saturated tail would otherwise bury the signal.
+  const noteworthy = targets.filter((t) => !isSaturated(t))
+  if (noteworthy.length === 0) return lines.join("\n")
+
   lines.push("### Détail par fiche", "")
-  targets.forEach((t) => {
+  noteworthy.forEach((t) => {
     lines.push(`**${t.title}** (${t.type.toLowerCase()}, pos. ${t.position.toFixed(0)}) — « ${t.query} »`)
     if (t.linksCreated.length > 0) {
       lines.push(`- Maillage : +${t.linksCreated.length} lien(s) depuis ${t.linksCreated.map((x) => `« ${x} »`).join(", ")}`)

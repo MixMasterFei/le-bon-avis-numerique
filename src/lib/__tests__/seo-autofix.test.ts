@@ -7,6 +7,7 @@ import {
   scoreNeighbor,
   seoTitlePasses,
   rewritePasses,
+  isSaturated,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -134,6 +135,40 @@ describe("isJunkQuery", () => {
   it("does not flag a bare 'regarder' age query (only 'regarder en …' is navigational)", () => {
     expect(isJunkQuery("my dress up darling age pour regarder")).toBe(false)
     expect(isJunkQuery("regarder my dress up darling en ligne")).toBe(true)
+  })
+})
+
+describe("isSaturated", () => {
+  const base = {
+    routeId: "id", title: "T", type: "MOVIE", query: "q", position: 10,
+    linksCreated: [] as string[], titleNeedsKeyword: false,
+  }
+
+  it("is true only when every lever has nothing left to do", () => {
+    expect(
+      isSaturated({ ...base, linksSkippedReason: "déjà 13 liens dont 4 SEO", synopsis: "covered", seoTitle: "n/a" }),
+    ).toBe(true)
+  })
+
+  it("is false when a link was actually created", () => {
+    expect(
+      isSaturated({ ...base, linksCreated: ["Voisin"], synopsis: "covered", seoTitle: "n/a" }),
+    ).toBe(false)
+  })
+
+  it("is false when a lever was blocked rather than complete", () => {
+    // The whole point: a rejected rewrite must NOT read as "already optimised".
+    expect(
+      isSaturated({ ...base, linksSkippedReason: "déjà 13 liens dont 4 SEO", synopsis: "ai-failed", seoTitle: "n/a" }),
+    ).toBe(false)
+    expect(
+      isSaturated({ ...base, linksSkippedReason: "déjà 13 liens dont 4 SEO", synopsis: "covered", seoTitle: "deferred-cap" }),
+    ).toBe(false)
+  })
+
+  it("is false when maillage was skipped for lack of candidates but copy is done", () => {
+    // No reason recorded at all = we don't know; never claim saturation.
+    expect(isSaturated({ ...base, synopsis: "covered", seoTitle: "n/a" })).toBe(false)
   })
 })
 

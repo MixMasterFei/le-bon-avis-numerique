@@ -20,7 +20,15 @@ export interface StrikingQuery {
 export interface SeoStrikingResult {
   configured: boolean
   range: { startDate: string; endDate: string }
+  /** Top opportunities, for the human-readable email. Capped at MAX_REPORTED. */
   strikingQueries: StrikingQuery[]
+  /**
+   * The deeper pool the write-side agent works from. Same filter, same order,
+   * just a much longer tail — see MAX_ACTIONABLE.
+   */
+  actionableQueries: StrikingQuery[]
+  /** Number of queries matching the striking-distance filter, before any cap. */
+  totalStriking: number
   totalImpressionsAtStake: number
   report: string
 }
@@ -29,6 +37,14 @@ const POSITION_MIN = 8
 const POSITION_MAX = 20.5
 const MIN_IMPRESSIONS = 5
 const MAX_REPORTED = 25
+// The write-side agent used to be handed the SAME 25 rows the email displays.
+// Those map to ~20 distinct fiches, and once the agent had saturated them
+// (4 maillage edges + a seoTitle + a keyword-bearing synopsis each) every
+// later run could only report "0 lien · 0 synopsis · 0 titre" — not because
+// anything was broken, but because it had run out of reachable work while
+// hundreds of further pos. 8-20 queries sat just past the cut. The agent now
+// works from a much deeper pool; the email still shows the top 25.
+const MAX_ACTIONABLE = 150
 
 function pageLabel(rawUrl: string): string {
   try {
@@ -110,6 +126,8 @@ export async function runSeoStrikingDistance(opts: { minImpressions?: number } =
       configured: false,
       range: emptyRange,
       strikingQueries: [],
+      actionableQueries: [],
+      totalStriking: 0,
       totalImpressionsAtStake: 0,
       report: "GSC non configuré (variables d'environnement OAuth manquantes).",
     }
@@ -124,7 +142,7 @@ export async function runSeoStrikingDistance(opts: { minImpressions?: number } =
   })
 
   const floor = opts.minImpressions ?? MIN_IMPRESSIONS
-  const striking: StrikingQuery[] = rows
+  const ranked: StrikingQuery[] = rows
     .filter((r) => r.position >= POSITION_MIN && r.position <= POSITION_MAX && r.impressions >= floor && r.keys.length >= 2)
     .map((r) => ({
       query: r.keys[0],
@@ -137,7 +155,9 @@ export async function runSeoStrikingDistance(opts: { minImpressions?: number } =
       opportunity: r.impressions * ((21 - r.position) / 21),
     }))
     .sort((a, b) => b.opportunity - a.opportunity)
-    .slice(0, MAX_REPORTED)
+
+  const striking = ranked.slice(0, MAX_REPORTED)
+  const actionable = ranked.slice(0, MAX_ACTIONABLE)
 
   const totalImpressionsAtStake = striking.reduce((sum, q) => sum + q.impressions, 0)
 
@@ -145,6 +165,8 @@ export async function runSeoStrikingDistance(opts: { minImpressions?: number } =
     configured: true,
     range,
     strikingQueries: striking,
+    actionableQueries: actionable,
+    totalStriking: ranked.length,
     totalImpressionsAtStake,
     report: buildReport(striking, range, totalImpressionsAtStake),
   }

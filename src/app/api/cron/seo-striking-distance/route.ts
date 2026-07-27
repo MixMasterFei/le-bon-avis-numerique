@@ -55,13 +55,19 @@ export async function GET(req: NextRequest) {
 
     // Write-side: act on the opportunities (maillage + synopsis), then report
     // exactly what was done in the same email.
-    const autofix = await runSeoAutofix(result.strikingQueries, { dryRun })
+    // The email shows the top 25; the agent works from the deeper pool so it
+    // keeps finding fresh fiches once the head of the list is saturated.
+    const autofix = await runSeoAutofix(result.actionableQueries, { dryRun })
 
     let emailed = false
     if (result.strikingQueries.length > 0 || forceEmail) {
+      const wroteNothing =
+        autofix.linksCreated === 0 && autofix.synopsesRewritten === 0 && autofix.titlesSet === 0
       const fixedNote = dryRun
         ? ""
-        : ` · ${autofix.linksCreated} lien(s) · ${autofix.synopsesRewritten} synopsis · ${autofix.titlesSet} titre(s)`
+        : wroteNothing && autofix.saturated === autofix.targetsExamined
+          ? ` · ${autofix.targetsExamined} fiche(s) déjà optimisée(s)`
+          : ` · ${autofix.linksCreated} lien(s) · ${autofix.synopsesRewritten} synopsis · ${autofix.titlesSet} titre(s)`
       await sendSeoReport({
         subject: `SEO — ${result.strikingQueries.length} opportunité(s) à portée de page 1${fixedNote}`,
         report: result.report + autofix.section,
@@ -72,10 +78,12 @@ export async function GET(req: NextRequest) {
     await logCronRun({
       task: "seo-striking-distance",
       status: "success",
-      summary: `${result.strikingQueries.length} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis, ${autofix.titlesSet} titres`}${emailed ? " · email envoyé" : ""}`,
+      summary: `${result.totalStriking} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.targetsExamined} fiches examinées, ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis, ${autofix.titlesSet} titres, ${autofix.saturated} déjà optimisées`}${emailed ? " · email envoyé" : ""}`,
       details: {
         configured: true,
         strikingCount: result.strikingQueries.length,
+        totalStriking: result.totalStriking,
+        actionableCount: result.actionableQueries.length,
         totalImpressionsAtStake: result.totalImpressionsAtStake,
         range: result.range,
         emailed,
@@ -85,6 +93,11 @@ export async function GET(req: NextRequest) {
         titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
+        targetsExamined: autofix.targetsExamined,
+        saturated: autofix.saturated,
+        // Per-lever tallies — tells "nothing left to do" apart from "every
+        // write rejected" without re-reading the email.
+        outcomes: autofix.outcomes,
         // Before/after for any rewrite, so a bad one can be reverted by hand.
         rewrites: autofix.targets
           .filter((t) => t.synopsis === "rewritten")
@@ -100,6 +113,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       strikingCount: result.strikingQueries.length,
+      totalStriking: result.totalStriking,
+      actionableCount: result.actionableQueries.length,
       totalImpressionsAtStake: result.totalImpressionsAtStake,
       range: result.range,
       emailed,
@@ -110,6 +125,9 @@ export async function GET(req: NextRequest) {
         titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
+        targetsExamined: autofix.targetsExamined,
+        saturated: autofix.saturated,
+        outcomes: autofix.outcomes,
         targets: autofix.targets,
       },
       // Echo the top few so a manual trigger shows results without the email.
