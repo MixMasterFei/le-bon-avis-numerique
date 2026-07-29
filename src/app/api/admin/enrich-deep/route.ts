@@ -168,6 +168,7 @@ Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-he
 - Langage: 0=aucun. 1-2=quelques mots familiers. 3=insultes regulieres. 4=grossier frequent. 5=tres cru/haineux.
 - Substances: 0=aucune. 1-2=alcool en arriere-plan. 3=consommation montree. 4=abus au coeur du recit. 5=glorifie.
 - Achats integres (jeux): 0=aucun. 1-2=cosmetiques. 3=microtransactions presentes. 4-5=pay-to-win/loot boxes.
+CONTENU D'EPOQUE (avant ~1990), deux regles opposees a appliquer ensemble: (1) ne gonfle PAS les axes d'une comedie familiale classique — slapstick, courses-poursuites et gifles comiques restent 0-1 en violence, un baiser reste 0-1 en sexe ; (2) signale en revanche les representations datees (stereotypes de genre, d'origine, de religion, de handicap joues pour le rire) via "Stereotypes dates" / "Humour a connotation ethnique ou religieuse" et un point explicite de whatParentsNeedToKnow. Information de contexte pour les parents, formulee de facon neutre et factuelle ; ne la signale que si tu connais reellement ce ressort dans ce titre.
 COHERENCE AGE <-> METRIQUES: tes scores et l'age conseille doivent rester coherents. Un titre adapte des 6-8 ans ne porte pas de score > 2 sur un axe sauf scene precise ; si un axe te semble a 3+, releve plutot l'age. L'age prime, les axes sont secondaires.
 CLASSIFICATION OFFICIELLE = indice FAIBLE (souvent absente ou imprecise) : ne la suis pas aveuglement, ta connaissance du titre prime.
 

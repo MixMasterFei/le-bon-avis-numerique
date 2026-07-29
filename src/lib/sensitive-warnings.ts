@@ -48,6 +48,17 @@ export const VALID_SENSITIVE_WARNINGS = [
   "Vomissements",
   "Araignées, serpents ou insectes",
   "Clowns effrayants",
+  // ── Contenu d'époque ──
+  // Beaucoup de classiques familiaux (de Funès, Rabbi Jacob, comédies des
+  // années 60-80) reposent sur des ressorts comiques aujourd'hui datés :
+  // stéréotypes de genre, d'origine ou de religion joués pour le rire. Les
+  // parents veulent le savoir AVANT de lancer le film avec un enfant — c'est
+  // un repère de contexte, pas un jugement sur l'œuvre ni un appel à la
+  // censurer. Sans ces catégories, l'enrichissement n'avait aucun moyen de
+  // signaler l'information : elle se diluait dans un « ton d'époque » vague
+  // au milieu de whatParentsNeedToKnow.
+  "Stéréotypes datés",
+  "Humour à connotation ethnique ou religieuse",
 ] as const
 
 export type SensitiveWarning = (typeof VALID_SENSITIVE_WARNINGS)[number]

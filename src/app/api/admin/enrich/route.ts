@@ -279,6 +279,12 @@ Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-he
 - Achats integres (jeux): 0=aucun. 1-2=cosmetiques optionnels. 3=microtransactions presentes. 4-5=pay-to-win / loot boxes au coeur du jeu.
 Echelle generale des mots: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense.
 
+CONTENU D'EPOQUE (titres d'avant ~1990) — DEUX REGLES OPPOSEES, applique les deux:
+1. NE GONFLE PAS les axes pour une comedie familiale classique. Le slapstick (courses-poursuites, chutes, gifles comiques, gendarmes maladroits) reste 0-1 en violence, PAS 2+. Un baiser ou un quiproquo galant reste 0-1 en sexe/sensualite. Une comedie tous publics des annees 60-80 ne doit pas ressortir avec le meme profil qu'un film d'action moderne : c'est le principal defaut constate sur le catalogue patrimoine.
+2. SIGNALE en revanche les representations datees. Beaucoup de ces films reposent sur des stereotypes aujourd'hui problematiques (roles de genre, origines, religions, handicap) joues pour le rire. Quand c'est le cas, utilise "Stereotypes dates" et/ou "Humour a connotation ethnique ou religieuse" dans sensitiveWarnings, et dis-le en clair dans un point de whatParentsNeedToKnow.
+- C'est une information de CONTEXTE destinee aux parents, pas un jugement de valeur sur l'oeuvre : reste factuel et neutre, ne condamne pas, ne recommande pas d'eviter.
+- N'invente rien : ne signale ces categories que si tu connais reellement ce ressort dans ce titre precis.
+
 COHERENCE AGE <-> METRIQUES (essentiel):
 - Tes scores de sensibilite et l'age conseille doivent rester coherents. Un titre que tu juges adapte des 6-8 ans ne doit PAS porter de score > 2 ("Leger") en violence/sexe/langage/substances, sauf scene precise qui le justifie vraiment.
 - Si une scene te pousse vers 3+ sur un axe, demande-toi d'abord s'il faut RELEVER l'age conseille. L'age est le signal principal ; les axes ne sont que des reperes secondaires.
