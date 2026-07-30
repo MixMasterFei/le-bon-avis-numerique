@@ -35,6 +35,7 @@ const CRON_STALE_HOURS: Record<string, number> = {
   "family-content-agent": 200,
   "debt-digest": 200,
   "seo-striking-distance": 200,
+  "revert-unreleased": 200,
   "backfill-ratings": 220,
   streaming: 220,
   similarity: 220,

@@ -221,6 +221,21 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // Weekly (Sun) sweep of fiches enriched before their release. No
+    // outputMetric: 0 reverted is the STEADY STATE — once the enrich grace
+    // period is doing its job there is nothing left to revert, so a
+    // "produced nothing" check would false-positive every week.
+    task: "revert-unreleased",
+    staleAfterHours: 192,
+    allowRepeatedPartial: true,
+    remediation: {
+      label: "Relance revert des fiches non sorties",
+      method: "POST",
+      path: "/api/admin/revert-unreleased",
+      body: { apply: true },
+    },
+  },
+  {
     task: "streaming",
     staleAfterHours: 192,
     outputMetric: { key: "total", label: "Fiches streaming examinées" },

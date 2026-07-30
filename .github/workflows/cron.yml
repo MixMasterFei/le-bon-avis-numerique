@@ -44,6 +44,17 @@ on:
     # nudge to push them onto page 1. Off-the-hour (:23), Thursday to
     # spread load off the Wed debt-digest.
     - cron: "23 6 * * 4"
+    # Sunday 6:43 AM UTC — sweep fiches that got enriched while still
+    # unreleased back to provisional. The tooling existed (script + admin
+    # route, both logging as "revert-unreleased") but nothing ever ran it,
+    # so drift accumulated silently: "Five Nights at Freddy's 3" (in cinemas
+    # October 2027) and "The Tomorrow War 2" (no date announced) were both
+    # serving a full invented content analysis. The release-date guard can't
+    # catch those two on its own — they have NO date, so only TMDB's
+    # lifecycle status can. Cheap (~20 TMDB lookups), idempotent, and it
+    # self-heals instead of waiting for someone to notice. Off-the-hour
+    # (:43), Sunday to stay clear of the Sat batch and Thu SEO run.
+    - cron: "43 6 * * 0"
   workflow_dispatch:
     inputs:
       task:
@@ -72,8 +83,9 @@ on:
           - supervisor
           - debt-digest
           - seo-striking-distance
+          - revert-unreleased
       dry_run:
-        description: "Dry run (age-floor only): report changes without writing"
+        description: "Dry run (age-floor, revert-unreleased): report without writing"
         required: false
         type: boolean
         default: false
@@ -855,6 +867,36 @@ jobs:
           echo "::endgroup::"
 
   # ── Wednesday 06:13 UTC: weekly tech/data-debt digest ────────────
+  revert-unreleased:
+    name: Revert Unreleased To Provisional
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 10
+    if: >-
+      github.event.schedule == '43 6 * * 0' ||
+      github.event.inputs.task == 'revert-unreleased' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Sweep fiches enriched before release
+        run: |
+          echo "::group::Revert unreleased"
+          # Manual dispatch honours dry_run; the schedule always writes.
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then apply=false; else apply=true; fi
+          response=$(curl -sSL --max-time 280 -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"apply\": $apply}" \
+            "$SITE_URL/api/admin/revert-unreleased")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{dryRun, reverted, checkedNullDated, targets}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Revert unreleased failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
   debt-digest:
     name: Debt Digest
     runs-on: ubuntu-latest
