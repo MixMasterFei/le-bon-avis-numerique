@@ -14,6 +14,7 @@
  */
 
 import { escapeIGDBQuery, sanitizeNumber } from "./security"
+import { isUnreleasedStatus } from "./release-status"
 import { normalizeGameGenres } from "./igdb-genres"
 import { extractPegiDescriptors, type IGDBAgeRatingEntry } from "./pegi-descriptors"
 
@@ -346,6 +347,75 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
 
   const results = await igdbFetch<IGDBGame[]>("/games", body)
   return results[0] || null
+}
+
+/**
+ * IGDB lifecycle values (`GameStatusEnum`) that mean "the public cannot play
+ * this yet" — the game equivalent of TMDB's Planned / In Production.
+ *
+ * Deliberately NARROW. `early_access` (4) is excluded: an early-access game is
+ * publicly purchasable and played by thousands (Voices of the Void is in our
+ * catalogue), so gating its content analysis would hide a review of something
+ * people are actively playing. `offline` (5), `cancelled` (6) and `delisted`
+ * (8) are excluded for the opposite reason — they describe a game that WAS
+ * released. Only alpha, beta and rumored mean "not yet playable".
+ */
+export const IGDB_UNRELEASED_STATUSES: Record<number, string> = {
+  2: "alpha",
+  3: "beta",
+  7: "rumored",
+}
+
+// The values written here land in `releaseStatus`, which the display gate
+// reads via `isUnreleasedStatus` (see UNRELEASED_IGDB_STATUSES in
+// release-status.ts). If the two lists ever drift, a game would be marked
+// unreleased and still show its content analysis — pinned by a test.
+
+/**
+ * Fetch a game's release lifecycle, or null if unknown.
+ *
+ * Runs as its OWN request rather than joining `game_status` onto the existing
+ * field lists, and swallows every error. That is the whole point: IGDB rejects
+ * an ENTIRE query when it contains one unrecognised field — the same failure
+ * this file already documents for `age_ratings.category`. `status` is
+ * deprecated in favour of `game_status`, and which one a given API version
+ * accepts is not something we can assume. Isolating the call means a wrong or
+ * withdrawn field name costs us this one lookup instead of taking down every
+ * game import.
+ *
+ * Tries `game_status` first, falls back to the legacy `status`.
+ */
+export async function getGameReleaseStatus(gameId: number): Promise<string | null> {
+  const safeId = sanitizeNumber(gameId, 1)
+  if (!safeId) return null
+
+  for (const field of ["game_status", "status"] as const) {
+    try {
+      const results = await igdbFetch<Array<Record<string, unknown>>>(
+        "/games",
+        `fields ${field}; where id = ${safeId};`,
+      )
+      const raw = results?.[0]?.[field]
+      // `game_status` may come back as a bare enum id or as an expanded
+      // object; the legacy `status` is always a number.
+      const code =
+        typeof raw === "number"
+          ? raw
+          : typeof raw === "object" && raw !== null && typeof (raw as { id?: unknown }).id === "number"
+            ? (raw as { id: number }).id
+            : null
+      if (code === null) continue
+      return IGDB_UNRELEASED_STATUSES[code] ?? "released"
+    } catch {
+      // Unknown field / transport error — try the next spelling.
+    }
+  }
+  return null
+}
+
+/** True when a value from `getGameReleaseStatus` means "not playable yet". */
+export function isUnreleasedGameStatus(status?: string | null): boolean {
+  return isUnreleasedStatus(status)
 }
 
 /**

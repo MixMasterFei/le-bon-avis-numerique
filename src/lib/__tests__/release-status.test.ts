@@ -4,7 +4,9 @@ import {
   isUnreleasedStatus,
   shouldHideContentAnalysis,
   UNRELEASED_TMDB_STATUSES,
+  UNRELEASED_IGDB_STATUSES,
 } from "../release-status"
+import { IGDB_UNRELEASED_STATUSES } from "../igdb"
 
 const DAY = 864e5
 const future = new Date(Date.now() + 30 * DAY)
@@ -91,5 +93,35 @@ describe("shouldHideContentAnalysis", () => {
         releaseStatus: null,
       }),
     ).toBe(false)
+  })
+})
+
+describe("isUnreleasedStatus — games (IGDB vocabulary)", () => {
+  it("recognises IGDB pre-release values stored in the same column", () => {
+    for (const s of UNRELEASED_IGDB_STATUSES) {
+      expect(isUnreleasedStatus(s)).toBe(true)
+    }
+  })
+
+  it("is case-insensitive, so a lowercase status can't bypass the gate", () => {
+    // The trap: games write "rumored", TMDB writes "Rumored". A case-sensitive
+    // includes() would have let the game through with its analysis showing.
+    expect(isUnreleasedStatus("rumored")).toBe(true)
+    expect(isUnreleasedStatus("Rumored")).toBe(true)
+    expect(isUnreleasedStatus("post production")).toBe(true)
+  })
+
+  it("leaves playable games alone", () => {
+    // early_access is publicly purchasable and played; offline/cancelled/
+    // delisted describe games that WERE released.
+    for (const s of ["released", "early_access", "offline", "cancelled", "delisted"]) {
+      expect(isUnreleasedStatus(s)).toBe(false)
+    }
+  })
+
+  it("keeps the IGDB numeric map and the gate vocabulary in sync", () => {
+    expect([...Object.values(IGDB_UNRELEASED_STATUSES)].sort()).toEqual(
+      [...UNRELEASED_IGDB_STATUSES].sort(),
+    )
   })
 })

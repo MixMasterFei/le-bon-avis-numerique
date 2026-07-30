@@ -37,9 +37,28 @@ export const UNRELEASED_TMDB_STATUSES: readonly string[] = [
   "Rumored",
 ]
 
-/** True when a TMDB status string denotes a not-yet-released title. */
+/**
+ * IGDB lifecycle values (`GameStatusEnum`) meaning "not playable yet". Games
+ * store their own vocabulary in the SAME `releaseStatus` column, so the gate
+ * has to recognise both. Narrow on purpose: `early_access` is publicly
+ * playable and `offline`/`cancelled`/`delisted` describe games that WERE
+ * released — see IGDB_UNRELEASED_STATUSES in src/lib/igdb.ts.
+ */
+export const UNRELEASED_IGDB_STATUSES: readonly string[] = ["alpha", "beta", "rumored"]
+
+/**
+ * True when a status string denotes a not-yet-released title, in either the
+ * TMDB (movies/TV) or IGDB (games) vocabulary. Comparison is case-insensitive
+ * so a lowercase game status can never silently bypass the gate — the exact
+ * trap of storing "rumored" next to TMDB's "Rumored".
+ */
 export function isUnreleasedStatus(status?: string | null): boolean {
-  return !!status && UNRELEASED_TMDB_STATUSES.includes(status)
+  if (!status) return false
+  const s = status.toLowerCase()
+  return (
+    UNRELEASED_TMDB_STATUSES.some((v) => v.toLowerCase() === s) ||
+    UNRELEASED_IGDB_STATUSES.some((v) => v.toLowerCase() === s)
+  )
 }
 
 export interface ContentAnalysisGateInput {

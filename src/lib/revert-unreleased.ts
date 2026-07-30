@@ -20,6 +20,7 @@
  */
 import { prisma } from "@/lib/prisma"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { getGameReleaseStatus, isUnreleasedGameStatus } from "@/lib/igdb"
 import { isUnreleasedStatus } from "@/lib/release-status"
 
 export interface RevertTarget {
@@ -101,6 +102,45 @@ export async function revertUnreleasedToProvisional(
         await new Promise((r) => setTimeout(r, 120)) // be gentle on TMDB
       } catch (e) {
         onProgress?.(`  ! TMDB lookup failed for ${m.title}: ${e instanceof Error ? e.message : e}`)
+      }
+    }
+  }
+
+  // ── Pass C: null-dated + enriched GAMES via IGDB lifecycle ─────────
+  // Games carry no releaseStatus at all (IGDB imports never mapped one), so
+  // Passes A and B leave them with no lifecycle signal whatsoever.
+  //
+  // In practice this pass finds nothing, by design: every game DISCOVERY query
+  // filters on `total_rating_count > N`, and a rating count only accumulates
+  // once people have played the game — so an unreleased title cannot surface
+  // there. Two paths skip that filter (import by explicit id, and the
+  // developer-catalogue listing), and this pass exists for those.
+  if (!skipNull) {
+    let games = await prisma.mediaItem.findMany({
+      where: { isEnriched: true, releaseDate: null, igdbId: { not: null }, type: "GAME" },
+      select: { id: true, title: true, type: true, igdbId: true, contentMetrics: { select: { id: true } } },
+      orderBy: { updatedAt: "desc" },
+    })
+    if (limit > 0) games = games.slice(0, limit)
+    checkedNullDated += games.length
+    onProgress?.(`Pass C: checking IGDB status for ${games.length} null-dated enriched games…`)
+
+    for (const g of games) {
+      try {
+        const status = await getGameReleaseStatus(g.igdbId!)
+        if (isUnreleasedGameStatus(status)) {
+          targets.push({
+            id: g.id,
+            title: g.title,
+            type: g.type,
+            reason: `igdb status "${status}"`,
+            releaseStatus: status,
+            hadMetrics: !!g.contentMetrics,
+          })
+        }
+        await new Promise((r) => setTimeout(r, 120)) // be gentle on IGDB
+      } catch (e) {
+        onProgress?.(`  ! IGDB lookup failed for ${g.title}: ${e instanceof Error ? e.message : e}`)
       }
     }
   }
