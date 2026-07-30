@@ -365,6 +365,10 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
     "- N'invente AUCUN fait : reste fidèle au synopsis actuel et au titre.",
     "- Si la requête porte sur l'âge, réponds avec une formulation naturelle",
     "  (« dès 12 ans », « déconseillé avant 14 ans ») — le mot « âge » n'est pas obligatoire.",
+    "- PLACEMENT de l'âge : en tête de phrase (« Dès 12 ans, ... »), en fin de phrase",
+    "  (« ... une aventure à partager dès 6 ans. ») ou après un mot qui l'introduit",
+    "  (« conseillé dès 12 ans »). JAMAIS au milieu d'une proposition narrative :",
+    "  « sa vie de super-héros dès 12 ans, quand... » décrit le personnage, pas le public.",
     "- Inutile de répéter le format (« film », « série », « jeu ») : la page l'indique déjà.",
     "- Pas de bourrage de mots-clés, pas de la requête recopiée telle quelle.",
     "- Ton informatif et sobre, destiné aux parents.",
@@ -406,10 +410,76 @@ async function callJsonField(openai: OpenAI, prompt: string, field: string): Pro
   }
 }
 
+/**
+ * Words that can legitimately introduce an age phrase — either a recommendation
+ * ("conseillé dès 12 ans") or a verb of consumption ("à partager dès 6 ans") or
+ * the audience itself ("un film familial dès 8 ans"). Accent-free because the
+ * lookup runs through `normalize`.
+ */
+const AGE_PHRASE_LEAD_INS = new Set([
+  // recommendation
+  "conseille", "conseillee", "conseilles", "recommande", "recommandee", "recommandes",
+  "deconseille", "deconseillee", "adapte", "adaptee", "adaptes", "accessible", "accessibles",
+  "destine", "destinee", "destines", "reserve", "reservee", "interdit", "interdite",
+  "convient", "classe", "classee", "autorise", "autorisee", "indique", "indiquee", "approprie",
+  // consumption
+  "partager", "voir", "revoir", "regarder", "lire", "jouer", "apprecier", "decouvrir",
+  "savourer", "suivre", "visionner", "aborder",
+  // audience
+  "famille", "familles", "familial", "familiale", "public", "publics", "spectateurs",
+  "enfants", "ados", "adolescents", "jeunes", "lecteurs", "joueurs",
+])
+
+const AGE_PHRASE_RE =
+  /(?:\bdès\s+\d{1,2}\s+ans|\bà\s+partir\s+de\s+\d{1,2}\s+ans|\bavant\s+\d{1,2}\s+ans)/gi
+
+/**
+ * Does every age mention sit somewhere a French reader would accept?
+ *
+ * Lever B asks the model to work the ranking keyword into the synopsis, and
+ * when the query is an age query the keyword IS the age. Nothing checked WHERE
+ * it landed, so a run on "spider man brand new day age" produced:
+ *
+ *   « Peter Parker jongle entre ses devoirs de lycéen et sa vie de super-héros
+ *     dès 12 ans, quand de nouveaux ennemis menacent New York. »
+ *
+ * — which reads as "Peter Parker has been a superhero since he was 12", a
+ * statement about the character rather than the audience. It shipped to the
+ * meta description of the site's second-biggest page, where `generateMetadata`
+ * also prefixes "Dès 12 ans · Notre avis famille", so the SERP snippet said
+ * "dès 12 ans" twice, the second time nonsensically.
+ *
+ * An age phrase is fine when it opens a sentence, closes one, or follows a word
+ * that naturally governs it. Anything else is mid-clause and rejected. Failing
+ * closed only costs us the rewrite (the existing synopsis stays), so this leans
+ * deliberately strict.
+ */
+export function ageMentionReadsNaturally(text: string): boolean {
+  for (const m of text.matchAll(AGE_PHRASE_RE)) {
+    const start = m.index ?? 0
+    const before = text.slice(0, start)
+    const after = text.slice(start + m[0].length)
+
+    // Opens the synopsis, or a new sentence/clause after strong punctuation.
+    if (before.trim() === "") continue
+    if (/[.!?:;—–]\s*$/.test(before)) continue
+    // Closes the sentence.
+    if (after.trim() === "" || /^\s*[.!?]/.test(after)) continue
+    // Governed by a recommendation / consumption / audience word.
+    const lastWord = before.trim().split(/[\s'’]+/).pop() ?? ""
+    if (AGE_PHRASE_LEAD_INS.has(normalize(lastWord))) continue
+
+    return false
+  }
+  return true
+}
+
 /** Gate a candidate rewrite before it ever touches the DB. */
 export function rewritePasses(query: string, title: string, before: string | null, after: string): boolean {
   if (!after || after.length > SYNOPSIS_MAX) return false
   if (isJunkQuery(after)) return false
+  // An age keyword dropped mid-clause reads as a fact about the characters.
+  if (!ageMentionReadsNaturally(after)) return false
   // Must now cover the keyword it was supposed to add. The TITLE counts toward
   // coverage (same haystack as the decision gate): a synopsis describes the
   // plot and never repeats its own title, so requiring "toy story" inside the

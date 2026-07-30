@@ -7,6 +7,7 @@ import {
   scoreNeighbor,
   seoTitlePasses,
   rewritePasses,
+  ageMentionReadsNaturally,
   isSaturated,
 } from "../seo-autofix"
 
@@ -236,6 +237,51 @@ describe("seoTitlePasses", () => {
   it("rejects a junk/navigational candidate", () => {
     expect(
       seoTitlePasses("tigre et dragon age", "Tigre et Dragon", "Tigre et Dragon streaming gratuit age"),
+    ).toBe(false)
+  })
+})
+
+describe("ageMentionReadsNaturally", () => {
+  it("rejects an age dropped mid-clause", () => {
+    // The real regression: this shipped to the meta description of the site's
+    // #2 page and reads as "Peter Parker has been a superhero since age 12".
+    expect(
+      ageMentionReadsNaturally(
+        "Peter Parker jongle entre ses devoirs de lycéen et sa vie de super-héros dès 12 ans, quand de nouveaux ennemis menacent New York.",
+      ),
+    ).toBe(false)
+  })
+
+  it("accepts an age that opens the synopsis", () => {
+    expect(ageMentionReadsNaturally("Dès 6 ans : les jouets quittent leur foyer.")).toBe(true)
+    expect(ageMentionReadsNaturally("Dès 12 ans. Un jeune cinéaste se réveille.")).toBe(true)
+    expect(ageMentionReadsNaturally("Dès 16 ans — Pour séduire son béguin.")).toBe(true)
+  })
+
+  it("accepts an age that closes a sentence", () => {
+    expect(
+      ageMentionReadsNaturally("Les jouets repartent pour une aventure, à partager dès 6 ans."),
+    ).toBe(true)
+  })
+
+  it("accepts an age introduced by a recommendation word", () => {
+    expect(ageMentionReadsNaturally("Un récit d'aventure, conseillé dès 12 ans, pour les familles.")).toBe(true)
+    expect(ageMentionReadsNaturally("Un conte adapté dès 10 ans, qui change le regard.")).toBe(true)
+    expect(ageMentionReadsNaturally("Un film familial dès 8 ans, porté par ses décors.")).toBe(true)
+  })
+
+  it("accepts a synopsis with no age mention at all", () => {
+    expect(ageMentionReadsNaturally("Un directeur de poste découvre le Nord.")).toBe(true)
+  })
+
+  it("is applied by rewritePasses", () => {
+    expect(
+      rewritePasses(
+        "spider man brand new day age",
+        "Spider-Man: Brand New Day",
+        "Peter Parker jongle entre ses devoirs de lycéen et sa vie de super-héros.",
+        "Peter Parker jongle entre ses devoirs de lycéen et sa vie de super-héros dès 12 ans, quand de nouveaux ennemis menacent New York.",
+      ),
     ).toBe(false)
   })
 })
