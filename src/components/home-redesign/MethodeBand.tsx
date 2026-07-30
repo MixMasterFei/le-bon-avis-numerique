@@ -7,7 +7,7 @@ import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
 import { Band, Wrap, Em } from "./parts"
-import { vigilanceAxisLevel, totemAxesFor, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
+import { totemLevel, totemAxesFor, hasTotemData, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
 
 interface DecoderItem {
   id: string
@@ -38,7 +38,10 @@ export function MethodeBand() {
       .then((data) => {
         if (cancelled) return
         const arr: DecoderItem[] = Array.isArray(data?.items) ? data.items : []
-        const withMetrics = arr.filter((m) => m.contentMetrics)
+        // hasTotemData, not a truthy check: a ContentMetrics row can exist with
+        // every axis null, which would render a decoder showing four "Aucun" —
+        // a demo of the totem that demonstrates nothing.
+        const withMetrics = arr.filter((m) => hasTotemData(m.contentMetrics, m.type))
         const best = [...withMetrics].sort((a, b) => metricsSum(b.contentMetrics) - metricsSum(a.contentMetrics))[0] ?? arr[0] ?? null
         if (best) setItem(best)
       })
@@ -112,7 +115,15 @@ function Decoder({ item }: { item: DecoderItem | null }) {
         )}
       </div>
       {totemAxesFor(item.type).map((a) => {
-        const lvl = vigilanceAxisLevel(metrics[a.key], item.expertAgeRec)
+        // `totemLevel`, NOT `vigilanceAxisLevel`. The vigilance mapping is a
+        // card-badge SIGNAL ("y a-t-il un point à surveiller ?"): it folds raw
+        // 0–2 into one bucket and caps young-rated titles. That is fine for a
+        // coloured dot, but here the level is rendered as a WORD, and the two
+        // contracts are not interchangeable — with the vigilance mapping this
+        // card printed "Aucun" for axes our own analysis had scored 1/5, and
+        // "Léger" for a violence 3/5 that the fiche shows in its amber
+        // "Modéré" band. A word is a factual claim; it has to track the data.
+        const lvl = totemLevel(metrics[a.key])
         const words = a.words ?? TOTEM_WORDS
         return (
           <div key={a.key} className="flex items-center justify-between gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
