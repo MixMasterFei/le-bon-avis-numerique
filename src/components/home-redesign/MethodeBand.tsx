@@ -123,20 +123,37 @@ function Decoder({ item }: { item: DecoderItem | null }) {
         // card printed "Aucun" for axes our own analysis had scored 1/5, and
         // "Léger" for a violence 3/5 that the fiche shows in its amber
         // "Modéré" band. A word is a factual claim; it has to track the data.
-        const lvl = totemLevel(metrics[a.key])
+        const raw = metrics[a.key]
+        const scored = typeof raw === "number"
+        const lvl = totemLevel(raw)
         const words = a.words ?? TOTEM_WORDS
         return (
           <div key={a.key} className="flex items-center justify-between gap-3.5 border-t py-3" style={{ borderColor: "rgba(255,255,255,.12)" }}>
             <b className="text-[14.5px] text-white">{a.label}</b>
-            <span className="flex items-center gap-2 text-[12.5px] font-semibold" style={{ color: "#A9C4B3" }}>
-              {words[lvl]}
-              <i className="block" style={{ width: 11, height: 11, borderRadius: 4, background: TOTEM_COLORS[lvl] }} />
+            <span className="flex items-center gap-2.5 text-[12.5px] font-semibold" style={{ color: "#A9C4B3" }}>
+              {/* An axis with no score is "not evaluated", NOT "Aucun" — the
+                  word and the figure have to agree, so neither is shown. */}
+              {scored ? (
+                <>
+                  <span>{words[lvl]}</span>
+                  <span className="font-semibold text-white/90 tabular-nums">
+                    {raw}
+                    <small className="text-[10.5px] font-normal" style={{ color: "#8FA89A" }}>/5</small>
+                  </span>
+                </>
+              ) : (
+                <span style={{ color: "#8FA89A" }}>—</span>
+              )}
+              <i className="block" style={{ width: 11, height: 11, borderRadius: 4, background: scored ? TOTEM_COLORS[lvl] : "rgba(255,255,255,.18)" }} />
             </span>
           </div>
         )
       })}
       <div className="mt-4 text-[12px]" style={{ color: "#8FA89A" }}>
-        Un repère indicatif, pas une note. Le détail complet est sur chaque fiche.
+        {/* The old wording was "pas une note", which now reads as a flat
+            contradiction next to a "3/5". The point it was making is still
+            worth making — these are intensity marks, not a quality grade. */}
+        Des repères d&apos;intensité sur 5, pas une note de qualité. Le détail complet est sur chaque fiche.
       </div>
     </div>
   )
