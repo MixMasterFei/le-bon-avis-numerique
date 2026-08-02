@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { sanitizeSearchQuery } from "@/lib/security"
 import { PUBLIC_MEDIA_QUALITY_FLOOR } from "@/lib/media-route"
-import { escapeLike } from "@/lib/search-normalize"
+import { compactTitle, compactSql, relevanceOrderSql } from "@/lib/search-normalize"
 
 // Optional ?type= filter — restricts results to a single MediaType.
 // Anything else (or absent) returns all eligible types.
@@ -30,10 +30,19 @@ export async function GET(request: NextRequest) {
     // popularity so the best-known title surfaces first.
     // `scopedType` is validated against a closed allowlist above, so
     // interpolating it into the type clause is safe.
-    const pattern = "%" + escapeLike(query) + "%"
+    // Compacted match: punctuation is removed on BOTH sides, so "spiderman"
+    // finds "Spider-Man" and "sos fantomes" finds "S.O.S. Fantômes" — neither
+    // of which matched before. Leading articles are dropped too, so "odyssée"
+    // is an EXACT hit on "L'Odyssée" rather than a mid-string substring that
+    // ranked below "2001 : L'Odyssée de l'espace".
+    const compact = compactTitle(query)
+    if (!compact) return NextResponse.json({ suggestions: [] })
+
     const typeClause = scopedType
       ? `type = '${scopedType}'`
       : `type != 'MANGA'`
+    const ct = compactSql("title")
+    const co = compactSql("coalesce(original_title, '')")
 
     const rows = await prisma.$queryRawUnsafe<Array<{
       id: string
@@ -48,11 +57,10 @@ export async function GET(request: NextRequest) {
        WHERE ${typeClause}
          AND poster_url IS NOT NULL
          AND data_quality_score >= ${PUBLIC_MEDIA_QUALITY_FLOOR}
-         AND (unaccent(lower(title)) LIKE unaccent(lower($1)) ESCAPE '\\'
-           OR unaccent(lower(coalesce(original_title, ''))) LIKE unaccent(lower($1)) ESCAPE '\\')
-       ORDER BY tmdb_vote_count DESC NULLS LAST
+         AND (${ct} LIKE '%' || $1 || '%' OR ${co} LIKE '%' || $1 || '%')
+       ORDER BY ${relevanceOrderSql(ct, co, "$1")}
        LIMIT 8`,
-      pattern,
+      compact,
     )
 
     const suggestions = rows.map((row) => ({

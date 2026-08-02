@@ -75,14 +75,26 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Default: only show European-language content for movies/TV
-    // Games and books don't have originalLanguage from TMDB
-    if (!type || type === "MOVIE" || type === "TV") {
+    // Default: only show European-language content for movies/TV.
+    //
+    // NOT applied when the caller is searching by title. If someone types a
+    // title they want THAT title, whatever language it was shot in; a browse
+    // heuristic has no business censoring an explicit lookup.
+    //
+    // And `originalLanguage` must be allowed to be NULL. `{ in: [...] }`
+    // compiles to a SQL IN, which is UNKNOWN — not true — for NULL, so every
+    // row missing the field was silently dropped from every listing. That is
+    // 1 948 films/séries, 20.6 % of the catalogue, including "L'Odyssée"
+    // (2026) and "Le Monde de Narnia : L'Odyssée du passeur d'aurore": the
+    // reason searching "odyssée" from the mobile header returned nothing.
+    // A missing language is missing metadata, not a foreign-language title.
+    if (!searchIds && (!type || type === "MOVIE" || type === "TV")) {
       where.AND = [
         ...(where.AND ? (Array.isArray(where.AND) ? where.AND : [where.AND]) : []),
         {
           OR: [
             { originalLanguage: { in: ["fr", "en", "es", "it", "de", "pt", "nl", "da", "sv", "no", "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru"] } },
+            { originalLanguage: null },
             { type: { in: ["GAME", "BOOK", "APP"] } },
           ],
         },
@@ -109,19 +121,38 @@ export async function GET(request: NextRequest) {
         orderBy = [{ expertAgeRec: "asc" }, { createdAt: "desc" }]
     }
 
-    // Run sequentially for compatibility with pooled Postgres backends.
-    const items = await withPrismaRetry(() =>
-      prisma.mediaItem.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-        include: {
-          contentMetrics: true,
-          reviews: { select: { rating: true } },
-        },
-      })
-    )
+    // A title search must come back in RELEVANCE order — `matchMediaIdsByTitle`
+    // already ranked the ids (exact title, then prefix, then in-cinemas-now,
+    // then popularity). Falling through to the default `expertAgeRec asc` would
+    // re-sort the matches by age, so searching "odyssée" listed whichever
+    // Odyssée happens to suit the youngest audience first.
+    //
+    // The id set is capped at 200, so fetching it whole and paginating in
+    // memory is cheap and keeps the ranking intact through the other filters
+    // (type / age / genre), which a pre-sliced id list would break.
+    const relevanceSearch = searchIds !== null && !sort
+    const items = relevanceSearch
+      ? await withPrismaRetry(async () => {
+          const rank = new Map(searchIds!.map((id, i) => [id, i]))
+          const all = await prisma.mediaItem.findMany({
+            where,
+            include: { contentMetrics: true, reviews: { select: { rating: true } } },
+          })
+          all.sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity))
+          return all.slice(skip, skip + limit)
+        })
+      : await withPrismaRetry(() =>
+          prisma.mediaItem.findMany({
+            where,
+            orderBy,
+            skip,
+            take: limit,
+            include: {
+              contentMetrics: true,
+              reviews: { select: { rating: true } },
+            },
+          })
+        )
     let total = items.length
     try {
       total = await withPrismaRetry(() => prisma.mediaItem.count({ where }))
