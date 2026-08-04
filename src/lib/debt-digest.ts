@@ -3,6 +3,7 @@ import { fetchAdminKpis } from "@/lib/admin-kpis"
 import { sendDebtDigest } from "@/lib/email"
 import { withVerdict } from "@/lib/agent-verdict"
 import { runExpectationChecks } from "@/lib/expectations"
+import { checkStorageHealth } from "@/lib/supabase-storage"
 
 /**
  * Weekly "technical & data debt" digest.
@@ -244,12 +245,24 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   const actionQueueTotal =
     kpis.correctionsPending + kpis.requestsPending + kpis.newsReportsPending + kpis.disagreedAgeItems
 
+  // Stockage d'images : panne invisible par construction. Chaque appelant
+  // dégrade proprement (carte de repli pour les actus, URL TMDB distante pour
+  // les imports), donc les crons continuent de rapporter « success » pendant
+  // que plus rien n'est miroité. Une panne démarrée le 16/06/2026 a tenu sept
+  // semaines pour cette raison. Le digest hebdomadaire est le bon endroit pour
+  // la rendre visible : il couvre justement la dette lente que le superviseur
+  // quotidien ne voit pas.
+  const storage = await checkStorageHealth()
+
   // ── Build the report ────────────────────────────────────────────
   const L: string[] = []
   L.push("# Dette technique & données — Totem Avisé", "", `Date : ${new Date().toISOString()}`, "")
 
   L.push("## Lecture rapide", "")
   L.push(`- Jobs automatiques en souffrance : ${cronProblems}/${cronVerdicts.length}`)
+  L.push(
+    `- Stockage d'images : ${storage.ok ? "OK" : `EN PANNE ⚠️ (${storage.reason})`}`,
+  )
   L.push(`- Catalogue à enrichir : ${catalogUnenrichedScoped}/${kpis.catalogTotal} (hors manga)`)
   L.push(`- Fiches sans affiche : ${missingPoster} · sans âge conseillé (films/séries) : ${missingAgeRecVideo}`)
   L.push(`- Fiches qualité < 30 : ${lowQuality} · non revérifiées > 90j : ${staleVerified}`)
@@ -272,6 +285,23 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
     L.push("", `Tâches ad hoc (manuelles, non programmées) : ${adHocTasks.map((t) => `${t.task} ${t.ageHours === null ? "—" : Math.round(t.ageHours) + "h"}`).join(" · ")}`)
   }
   L.push("")
+
+  if (!storage.ok) {
+    L.push("## ⚠️ Stockage d'images en panne", "")
+    L.push(
+      `Raison : ${storage.reason}${storage.detail ? ` — ${storage.detail}` : ""}`,
+      "",
+      "Conséquences, toutes silencieuses : les actualités basculent sur la carte",
+      "de repli au lieu de leur vraie photo, et les imports (affiches, images de",
+      "fond, captures) gardent l'URL distante au lieu d'être miroitées. Les crons",
+      "continuent d'afficher « success » : chaque appelant rattrape l'erreur et",
+      "dégrade proprement, donc rien ne remonte.",
+      "",
+      "Pistes : le bucket `media-images` a-t-il été supprimé ou renommé, et la clé",
+      "SUPABASE_SERVICE_ROLE_KEY est-elle toujours valide ?",
+      "",
+    )
+  }
 
   L.push("## Dette catalogue (hors manga)", "")
   L.push(`- À enrichir : ${catalogUnenrichedScoped}`)

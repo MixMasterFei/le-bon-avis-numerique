@@ -257,3 +257,55 @@ export function isSupabaseUrl(url: string | null): boolean {
   if (!url) return false
   return url.includes("supabase.co/storage/")
 }
+
+// ── Health probe ─────────────────────────────────────────────
+
+export interface StorageHealth {
+  ok: boolean
+  /** Short machine-ish reason when not ok. */
+  reason?: string
+  /** Raw error message from the storage API, when there was one. */
+  detail?: string
+}
+
+/**
+ * Round-trip probe: upload a few bytes, then delete them.
+ *
+ * Exists because storage failures are INVISIBLE from the outside. Every call
+ * site here returns null on error and its caller degrades gracefully — news
+ * stories swap to the branded fallback card, imports keep the remote TMDB URL.
+ * So the crons go on reporting `status:"success"` while nothing is being
+ * mirrored at all. That is exactly how an upload outage starting 2026-06-16
+ * ran for seven weeks before anyone noticed: 49 failed news images, plus
+ * posters, backdrops and screenshots, every one of them swallowed.
+ *
+ * A real upload is the only honest check — the bucket can vanish or the
+ * service-role key lose its grant without anything else changing, and both
+ * surface only when you actually write.
+ */
+export async function checkStorageHealth(): Promise<StorageHealth> {
+  if (!isStorageEnabled()) return { ok: false, reason: "env_missing" }
+  const supabase = getSupabaseAdmin()
+  if (!supabase) return { ok: false, reason: "client_unavailable" }
+
+  // Fixed path: upsert makes it idempotent, so concurrent probes can't clash
+  // and no garbage accumulates if the delete below fails.
+  const probePath = "_health/probe.txt"
+  try {
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(probePath, new Uint8Array([0x6f, 0x6b]), {
+        contentType: "text/plain",
+        upsert: true,
+        cacheControl: "0",
+      })
+    if (error) {
+      return { ok: false, reason: "upload_failed", detail: error.message }
+    }
+    // Best-effort cleanup — a failure here doesn't make storage unhealthy.
+    await supabase.storage.from(BUCKET).remove([probePath]).catch(() => {})
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, reason: "exception", detail: err instanceof Error ? err.message : String(err) }
+  }
+}
