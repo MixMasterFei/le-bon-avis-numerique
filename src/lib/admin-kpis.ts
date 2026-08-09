@@ -334,8 +334,14 @@ async function fetchDailyGrowth(since: Date): Promise<DailyGrowthPoint[]> {
     GROUP BY day
     ORDER BY day ASC
   `
+  // NOTE: no MIN() in the outer SELECT. The subquery already collapses to one
+  // row per user, so re-aggregating here made `day` an aggregate expression and
+  // `GROUP BY day` then failed with Postgres 42803 ("aggregate functions are
+  // not allowed in GROUP BY"). Because the whole function is wrapped in
+  // `.catch(() => [])` at the call site, that threw away BOTH series and the
+  // admin growth chart rendered permanently empty — silently.
   const familyRows = await prisma.$queryRaw<DailyRow[]>`
-    SELECT date_trunc('day', MIN("created_at")) AS day, COUNT(*)::bigint AS count
+    SELECT date_trunc('day', "created_at") AS day, COUNT(*)::bigint AS count
     FROM (
       SELECT "user_id", MIN("created_at") AS "created_at"
       FROM "family_members"
