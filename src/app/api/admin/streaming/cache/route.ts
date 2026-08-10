@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
+import { extractProviders } from "@/lib/streaming-providers"
 
 const INTER_REQUEST_DELAY_MS = 200
 const TMDB_FETCH_TIMEOUT_MS = 8000
@@ -180,6 +181,12 @@ export async function POST(request: Request) {
               lastChecked: new Date(),
             },
           })
+          // Keep the denormalized filter column in step: no FR offer means
+          // the film must not surface under any platform filter.
+          await prisma.mediaItem.update({
+            where: { id: item.id },
+            data: { platforms: [] },
+          })
           continue
         }
 
@@ -223,6 +230,19 @@ export async function POST(request: Request) {
           await prisma.streamingAvailability.createMany({ data: records })
           updated++
         }
+
+        // Write-through to MediaItem.platforms[] — the denormalized array
+        // every platform filter reads (media-queries, smart filter, MCP
+        // tools). Until 2026-08 this route only wrote the table, so ~2,000
+        // films displayed an offer on their fiche while staying invisible
+        // to the filters (backfilled by
+        // sql/backfill_platforms_from_streaming.sql). Fresh TMDB data is
+        // authoritative here, so this also clears platforms when the last
+        // subscription/free offer disappeared.
+        await prisma.mediaItem.update({
+          where: { id: item.id },
+          data: { platforms: extractProviders(frProviders) },
+        })
       } catch {
         errors++
         statusBreakdown["exception"] = (statusBreakdown["exception"] ?? 0) + 1

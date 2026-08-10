@@ -69,6 +69,16 @@ export async function POST(request: Request) {
           stats.details.push(`${item.title}: ${providers.join(", ")}`)
         } else {
           stats.noProviders++
+          // Fresh TMDB data says no subscription/free offer — clear any
+          // stale entries so the platform filters stop surfacing the film.
+          // Only reachable with onlyEmpty=false (manual re-checks); the
+          // weekly onlyEmpty pass only ever sees already-empty arrays.
+          if (item.platforms.length > 0) {
+            await prisma.mediaItem.update({
+              where: { id: item.id },
+              data: { platforms: [] },
+            })
+          }
         }
 
         // Small delay to respect TMDB rate limits

@@ -226,16 +226,23 @@ Ce risque **ne pèse pas sur ce plan**, puisqu'il n'est pas construit sur une pr
 
 `src/lib/gsc.ts:61` supporte déjà la dimension `country` : le trafic canadien actuel est mesurable gratuitement, à tout moment.
 
-### 5.5 Bug relevé au passage : le filtre plateformes rate ~98 % des films disponibles
+### 5.5 Bug relevé au passage : le filtre plateformes ratait la plupart des films disponibles — **corrigé (2026-08-10)**
 
-Sans rapport avec le Québec, mais découvert en mesurant la couverture streaming. Deux stockages coexistent :
+Sans rapport avec le Québec, découvert en mesurant la couverture streaming. Deux stockages coexistaient sans pont :
 
-| Stockage | Lu par | Films couverts |
+| Stockage | Lu par | Écrit par |
 |---|---|---|
-| `streaming_availability` (table) | La fiche (`extras/route.ts:43`) | 4 812 films avec offre réelle (55,8 %) |
-| `media_items.platforms[]` (tableau) | **Le filtre** (`media-queries.ts:384, :482, :560`) | **525 films (6,1 %)** |
+| `streaming_availability` (table, noms TMDB bruts, tous types d'offre) | La fiche (`extras/route.ts:43`) | `admin/streaming/cache` (op admin « MAJ streaming ») |
+| `media_items.platforms[]` (tableau normalisé) | **Tous les filtres** (`media-queries.ts:384/:482/:560`, smart filter, outils MCP) | Import jour-un + cron `admin/streaming/update` (150/sem., `onlyEmpty`) |
 
-**4 701 films affichent une offre sur leur fiche mais sont invisibles au filtre plateformes.** Un utilisateur qui filtre « Netflix » rate ~98 % des films réellement disponibles. Cause probable : le backfill jour-un (`createMovieFromTmdb`) alimente `platforms[]` pour les nouveaux imports, mais le cron streaming du samedi écrit dans `streaming_availability` sans synchroniser le tableau. À corriger indépendamment de ce plan — soit en synchronisant `platforms[]` depuis la table, soit en faisant lire la table par le filtre.
+La route `cache` avait couvert ~8 000 films dans la table **sans jamais écrire le tableau**. Résultat mesuré : en sémantique filtre (offres abonnement/gratuit sur les 12 plateformes filtrables), **2 090 films/séries justifiaient une entrée de filtre et ne l'avaient pas** — 525 films filtrables au lieu de ~2 400. *The Dark Knight*, *Pulp Fiction*, *Joker* étaient invisibles au filtre Netflix. (Le chiffre « 4 701 » d'une première estimation incluait les offres location/achat, qui ne relèvent pas du filtre.)
+
+**Correctif appliqué :**
+1. **Backfill** `sql/backfill_platforms_from_streaming.sql` (exécuté en prod le 2026-08-10) : `platforms[]` ← offres SUBSCRIPTION/FREE de la table, normalisées via la même carte que `extractProviders()`, additif (ne touche jamais un tableau non vide, exclut les jeux). Résultat : **films 525 → 2 413, séries → 513**.
+2. **Write-through** dans `admin/streaming/cache` : chaque rafraîchissement de la table synchronise désormais `platforms[]` (y compris remise à vide quand l'offre a disparu — donnée TMDB fraîche faisant autorité).
+3. `admin/streaming/update` purge désormais les entrées périmées quand TMDB ne renvoie plus d'offre (atteignable en `onlyEmpty=false`).
+
+**Suite possible (non faite, à décider)** : le cron du samedi appelle `update` (150 items/sem., du plus récent au plus ancien, re-scanne indéfiniment les mêmes films sans offre — file bouchée). La route `cache` est mieux outillée (marqueur `_none`, re-check 7 jours, compteur de reste) ; la planifier à la place d'`update` serait plus sain, mais exige le câblage de monitoring complet (checklist 4 points de CLAUDE.md : `cron.yml`, `EXPECTED_TASKS`, `KNOWN_CRON_TASKS`, `CRON_STALE_HOURS`) — chantier séparé.
 
 ### 5.6 Juridique, si le Québec devient une cible affichée
 
