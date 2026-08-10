@@ -185,4 +185,5 @@ See **[Official Ratings Plan](official-ratings.md)** for full implementation det
 4. Reference docs: [UX Audit](../ux-audit-feb21.md), [Competitor Analysis](../competitor-analysis.md), [Tech Audit](../tech-audit.md)
 5. Marketing docs: [Marketing Playbook](../marketing/claude_mkt.md), [Launch Checklist](../marketing/launch-checklist.md), [Market Analysis](../marketing/market-analysis.md)
 6. Repositioning: [Marketing Repositioning (March 2026)](marketing-reposition-march2026.md)
-6. CLAUDE.md references this roadmap — the AI assistant checks it before starting work
+7. Expansion (proposal, not committed): [Extension Québec](quebec-expansion.md) — Québécois catalogue + Quebec classification used as a backstage signal, to produce the Quebec twin of the "41.3 % of Tous publics films are 12+" divergence stat
+8. CLAUDE.md references this roadmap — the AI assistant checks it before starting work
