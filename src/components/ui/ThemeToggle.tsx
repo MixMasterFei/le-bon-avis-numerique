@@ -56,22 +56,23 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={label}
       title={label}
-      // 44×44px — WCAG touch-target minimum (36px failed the Lighthouse
-      // "touch targets" audit next to the adjacent search field).
-      className={`inline-flex items-center justify-center w-11 h-11 rounded-full transition-opacity hover:opacity-70 ${className ?? ""}`}
+      // 40×40px, matching NotificationBell — the two sit side by side in
+      // the header and any mismatch reads as a bug. Was 44×44 with a
+      // tinted p.bg2 fill and a 16px glyph, which made it the heaviest
+      // element in the row. (36px had failed the Lighthouse "touch
+      // targets" audit; 40px is what the adjacent bell already ships.)
+      className={`inline-flex items-center justify-center h-10 w-10 rounded-full transition-opacity hover:opacity-70 ${className ?? ""}`}
       style={{
-        // Subtle cream/near-black pill so the toggle reads as a
-        // distinct chip instead of blending with the header.
-        background: p.bg2,
+        background: p.card,
         color: p.ink,
-        border: `1px solid ${p.line}`,
+        border: `1px solid ${p.line2}`,
       }}
     >
       {theme === null ? (
         // Invisible placeholder so layout doesn't shift before hydration.
-        <span className="block w-4 h-4" aria-hidden />
+        <span className="block w-5 h-5" aria-hidden />
       ) : (
-        <Icon className="h-4 w-4" />
+        <Icon className="h-5 w-5" />
       )}
     </button>
   )

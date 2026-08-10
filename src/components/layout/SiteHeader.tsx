@@ -327,20 +327,20 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
             <Image
               src="/logo-icon.png"
               alt="Totem Avisé"
-              width={40}
-              height={40}
+              width={32}
+              height={32}
               className="group-hover:scale-105 transition-transform duration-300"
               priority
             />
             <div className="flex items-baseline gap-1">
               <span
-                className="text-xl sm:text-2xl uppercase tracking-tight"
+                className="text-lg sm:text-xl uppercase tracking-tight"
                 style={{ fontFamily: "var(--font-anton)", color: p.ink }}
               >
                 Totem
               </span>
               <span
-                className="text-2xl sm:text-3xl uppercase"
+                className="text-xl sm:text-2xl uppercase"
                 style={{ fontFamily: "var(--font-edunline)", color: p.accent }}
               >
                 Avisé
@@ -478,10 +478,18 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
             {/* Inline search only where it genuinely fits (≥xl). Below xl
                 the full-width search row under the header takes over —
                 min-w guarantees this pill can never again be flex-crushed
-                into a fused circle next to the theme toggle (iPad bug). */}
+                into a fused circle next to the theme toggle (iPad bug).
+                The logo and the right-hand cluster are both shrink-0, and
+                the nav items are whitespace-nowrap, so this form is the
+                only elastic element in the row: it absorbs every pixel of
+                pressure. At the old 180px floor the "Tout" type selector
+                ate ~85px of it and the placeholder truncated to "Reche"
+                even on a 1080p desktop. The floor is stepped rather than
+                flat: 340px needs room the row simply doesn't have at
+                exactly xl (1280px), where the inline form first appears. */}
             <form
               onSubmit={handleSearch}
-              className="hidden xl:flex flex-1 items-center min-w-[180px] max-w-md ml-3"
+              className="hidden xl:flex flex-1 items-center min-w-[280px] 2xl:min-w-[340px] max-w-lg ml-3"
             >
               {/* Outer wrapper anchors the absolutely-positioned
                   dropdowns. Cannot use overflow-hidden here — the
@@ -496,7 +504,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                   {/* IMDB-style type scoping — pre-filters
                       /api/autocomplete so the dropdown only shows
                       matching media. */}
-                  <div ref={searchTypeMenuRef} className="relative flex-shrink-0 flex items-center pl-4 pr-3 border-r" style={{ borderColor: p.line }}>
+                  <div ref={searchTypeMenuRef} className="relative flex-shrink-0 flex items-center pl-3 pr-2 border-r" style={{ borderColor: p.line }}>
                     <button
                       type="button"
                       onClick={() => setShowSearchTypeMenu((v) => !v)}
@@ -726,10 +734,15 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
               <>
                 <NotificationBell />
                 <div className="relative">
+                {/* Avatar only — the family name lives in the dropdown
+                    header. Keeping it inline cost ~150px of the row that
+                    the search field needs, and the search was the only
+                    flexible element left to absorb the squeeze. */}
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 px-2 sm:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70"
+                  className="flex items-center p-1 rounded-full transition-colors hover:opacity-70"
                   style={{ color: p.ink }}
+                  aria-label="Menu du compte"
                 >
                   <span
                     className="inline-flex rounded-full"
@@ -744,9 +757,6 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                       size={32}
                     />
                   </span>
-                  <span className="hidden xl:inline whitespace-nowrap">
-                    {familyName ? `Famille ${familyName}` : session.user.name || session.user.email?.split("@")[0]}
-                  </span>
                 </button>
 
                 {isUserMenuOpen && (
@@ -756,9 +766,20 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                       onClick={() => setIsUserMenuOpen(false)}
                     />
                     <div
-                      className="absolute right-0 mt-2 w-52 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
+                      className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
                       style={dropdownPanelStyle}
                     >
+                      <div className="px-4 pb-2 pt-1">
+                        <div className="text-sm font-bold truncate" style={{ color: p.ink }}>
+                          {familyName ? `Famille ${familyName}` : session.user.name || session.user.email?.split("@")[0]}
+                        </div>
+                        {session.user.email && (
+                          <div className="text-xs truncate" style={{ color: p.ink2 }}>
+                            {session.user.email}
+                          </div>
+                        )}
+                      </div>
+                      <hr className="my-1" style={{ borderColor: p.line }} />
                       {showCoinFamille && (
                         <Link
                           href="/coin-famille"
