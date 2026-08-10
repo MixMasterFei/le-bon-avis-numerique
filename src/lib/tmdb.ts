@@ -616,28 +616,48 @@ export async function getTVKeywords(tvId: number): Promise<string[]> {
   }
 }
 
+// Language tiers tried, in order, until a Trailer turns up. fr-FR is the
+// tmdbFetch default and satisfies most of the catalogue; en-US covers the
+// international slate.
+//
+// fr-CA is deliberately LAST, not second: Québécois titles tag their
+// trailers fr-CA, and without this tier their fiches show no trailer at
+// all (their fr-FR *and* en-US video lists are both empty). Putting it
+// after en-US means every title that already resolves keeps its current
+// request count — the extra call only fires for titles that would
+// otherwise have shown nothing, which is exactly the Québécois case.
+// This runs inside the 5s budget of /api/media/[id]/extras.
+const VIDEO_LANGUAGE_FALLBACKS = ["en-US", "fr-CA"] as const
+
+async function fetchVideosWithLanguageFallback(path: string): Promise<TMDBVideo[]> {
+  const seen = new Set<string>()
+  const videos: TMDBVideo[] = []
+
+  const collect = (results: TMDBVideo[] | undefined) => {
+    for (const v of results ?? []) {
+      if (seen.has(v.key)) continue
+      seen.add(v.key)
+      videos.push(v)
+    }
+  }
+
+  collect((await tmdbFetch<TMDBVideosResponse>(path)).results)
+
+  for (const language of VIDEO_LANGUAGE_FALLBACKS) {
+    if (videos.some((v) => v.type === "Trailer")) break
+    collect((await tmdbFetch<TMDBVideosResponse>(path, { language })).results)
+  }
+
+  return videos
+}
+
 /**
  * Get videos for a movie (trailers, teasers, etc.)
- * Prioritizes French videos, falls back to English
+ * Prioritizes French videos, falls back to English then Québécois French.
  */
 export async function getMovieVideos(movieId: number): Promise<TMDBVideo[]> {
   try {
-    // First try French videos
-    const frResponse = await tmdbFetch<TMDBVideosResponse>(`/movie/${movieId}/videos`)
-    let videos = frResponse.results || []
-
-    // If no French trailers, try English
-    if (!videos.some(v => v.type === "Trailer")) {
-      const enResponse = await tmdbFetch<TMDBVideosResponse>(`/movie/${movieId}/videos`, {
-        language: "en-US"
-      })
-      // Add English videos that aren't duplicates
-      const existingKeys = new Set(videos.map(v => v.key))
-      const newVideos = (enResponse.results || []).filter(v => !existingKeys.has(v.key))
-      videos = [...videos, ...newVideos]
-    }
-
-    return videos
+    return await fetchVideosWithLanguageFallback(`/movie/${movieId}/videos`)
   } catch {
     return []
   }
@@ -648,19 +668,7 @@ export async function getMovieVideos(movieId: number): Promise<TMDBVideo[]> {
  */
 export async function getTVVideos(tvId: number): Promise<TMDBVideo[]> {
   try {
-    const frResponse = await tmdbFetch<TMDBVideosResponse>(`/tv/${tvId}/videos`)
-    let videos = frResponse.results || []
-
-    if (!videos.some(v => v.type === "Trailer")) {
-      const enResponse = await tmdbFetch<TMDBVideosResponse>(`/tv/${tvId}/videos`, {
-        language: "en-US"
-      })
-      const existingKeys = new Set(videos.map(v => v.key))
-      const newVideos = (enResponse.results || []).filter(v => !existingKeys.has(v.key))
-      videos = [...videos, ...newVideos]
-    }
-
-    return videos
+    return await fetchVideosWithLanguageFallback(`/tv/${tvId}/videos`)
   } catch {
     return []
   }

@@ -163,6 +163,31 @@ Import : preset dans `src/components/admin/ImportPresetsBar.tsx` (`PRESETS`, :30
 
 ---
 
+## 4 bis. Décisions prises (2026-08-10)
+
+### « Ne regarder la classification québécoise que pour les films québécois » — écarté
+
+Variante envisagée puis écartée, pour deux raisons factuelles :
+
+1. **Inimplémentable en l'état** : `media_items` n'a **aucune colonne de pays** (vérifié en base — seuls `original_language` et `original_title` existent). TMDB fournit `production_countries` (`tmdb.ts:153`) mais rien ne l'écrit. Identifier « les films québécois » exigerait migration + backfill TMDB sur 8 623 films — l'option « simple » coûte plus cher que l'option générale.
+2. **Elle tue la statistique** : le jeu de données du MCC classe *tous* les films diffusés au Québec (Avatar, Disney, films français…). La valeur est précisément le recouvrement avec le catalogue existant. Restreint aux productions québécoises, l'échantillon tombe à quelques dizaines de titres non représentatifs.
+
+L'objectif de non-perturbation est atteint autrement : table séparée (`media_ratings`), rien d'affiché, la phase 0 ne fait **aucune écriture** (téléchargement CSV + appariement hors ligne + calcul).
+
+### Plateformes de streaming pour les films québécois — rien à faire
+
+Question : que faire si un film québécois est disponible au Québec mais sur aucune plateforme française ?
+
+Réponse mesurée en base : c'est **déjà l'état normal d'un tiers du catalogue**. Sur 8 623 films, 4 812 (55,8 %) ont une offre de streaming FR réelle, et **2 706 sont explicitement marqués « aucune offre en France »** (lignes `provider='_none'` dans `streaming_availability`). La fiche gère ce cas depuis toujours : le bloc plateformes est simplement absent. Un film québécois sans offre FR sera traité exactement comme *ces* 2 706 films. La valeur de la fiche est l'âge conseillé argumenté, pas le lien de visionnage.
+
+Ne **pas** afficher les offres de streaming québécoises (Crave, Club illico, Tou.tv) : le public est français, ce serait du bruit. Le jour où un vrai public québécois existe, `StreamingAvailability.country` est déjà prêt (indexé, dans la clé unique) — il suffira de paramétrer le fetch (`tmdb.ts:569/:581`, codé `.results?.FR`) et les lectures (`extras/route.ts:44`).
+
+### Trailers YouTube — corrigé (fait, commit du 2026-08-10)
+
+Le vrai trou était là : `getMovieVideos`/`getTVVideos` (`src/lib/tmdb.ts`) tentaient fr-FR puis en-US. Or les trailers des films québécois sont souvent tagués **fr-CA** chez TMDB → aucune des deux requêtes ne les trouvait, fiche sans trailer. Corrigé par un 3e palier fr-CA, tenté **en dernier** : les titres qui résolvaient déjà gardent le même nombre de requêtes, l'appel supplémentaire ne part que pour les titres qui n'auraient rien affiché. Bénéficie aussi aux 2 titres québécois déjà en base.
+
+---
+
 ## 5. Points de vigilance
 
 ### 5.1 Le 41,3 % doit être audité avant publication
@@ -201,7 +226,18 @@ Ce risque **ne pèse pas sur ce plan**, puisqu'il n'est pas construit sur une pr
 
 `src/lib/gsc.ts:61` supporte déjà la dimension `country` : le trafic canadien actuel est mesurable gratuitement, à tout moment.
 
-### 5.5 Juridique, si le Québec devient une cible affichée
+### 5.5 Bug relevé au passage : le filtre plateformes rate ~98 % des films disponibles
+
+Sans rapport avec le Québec, mais découvert en mesurant la couverture streaming. Deux stockages coexistent :
+
+| Stockage | Lu par | Films couverts |
+|---|---|---|
+| `streaming_availability` (table) | La fiche (`extras/route.ts:43`) | 4 812 films avec offre réelle (55,8 %) |
+| `media_items.platforms[]` (tableau) | **Le filtre** (`media-queries.ts:384, :482, :560`) | **525 films (6,1 %)** |
+
+**4 701 films affichent une offre sur leur fiche mais sont invisibles au filtre plateformes.** Un utilisateur qui filtre « Netflix » rate ~98 % des films réellement disponibles. Cause probable : le backfill jour-un (`createMovieFromTmdb`) alimente `platforms[]` pour les nouveaux imports, mais le cron streaming du samedi écrit dans `streaming_availability` sans synchroniser le tableau. À corriger indépendamment de ce plan — soit en synchronisant `platforms[]` depuis la table, soit en faisant lire la table par le filtre.
+
+### 5.6 Juridique, si le Québec devient une cible affichée
 
 Non bloquant tant que le Québec reste une source de données, mais à ne pas découvrir plus tard : Loi 25 (autorité = la **CAI**, pas la CNIL ; consentement des mineurs à **13 ans** contre 15 en France), et surtout `src/app/mentions-legales/page.tsx:239-243` — « régies par le droit français », « les tribunaux français seront seuls compétents » — clause qui ne tient pas face à un consommateur québécois.
 
