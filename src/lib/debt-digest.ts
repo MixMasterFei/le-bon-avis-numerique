@@ -37,6 +37,8 @@ const CRON_STALE_HOURS: Record<string, number> = {
   "debt-digest": 200,
   "seo-striking-distance": 200,
   "revert-unreleased": 200,
+  // Monthly job — 800h ≈ 33 days, one cadence plus margin.
+  "game-guides-check": 800,
   "backfill-ratings": 220,
   streaming: 220,
   similarity: 220,

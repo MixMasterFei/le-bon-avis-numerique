@@ -115,6 +115,7 @@ const KNOWN_CRON_TASKS = [
   "debt-digest",            // Wednesday — tech/data-debt weekly digest
   "seo-striking-distance",  // Thursday — GSC striking-distance opportunities
   "revert-unreleased",      // Sunday — un-enrich fiches evaluated before release
+  "game-guides-check",      // Monthly (1st) — Parents' Guide re-read reminder
   "cron-supervisor",        // Daily — health check + remediation digest
   "heartbeat",              // Daily — Vercel-Cron watchdog for the GH Actions pipeline
 ]

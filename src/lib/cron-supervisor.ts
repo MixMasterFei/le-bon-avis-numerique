@@ -236,6 +236,18 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // Monthly (1st) freshness reminder for the Parents' Guide "état du jeu"
+    // blocks. allowRepeatedPartial: "partial" is the EXPECTED state whenever
+    // a block is due for its monthly re-read or a publisher link 404s — both
+    // are human to-dos, not job failures, so they must not page the
+    // supervisor every month. No outputMetric: the job produces a report,
+    // not rows. 800h ≈ 33 days, so a normal monthly cadence never reads as
+    // stale but a genuinely skipped month does.
+    task: "game-guides-check",
+    staleAfterHours: 800,
+    allowRepeatedPartial: true,
+  },
+  {
     task: "streaming",
     staleAfterHours: 192,
     outputMetric: { key: "total", label: "Fiches streaming examinées" },

@@ -64,6 +64,12 @@ on:
     # self-heals instead of waiting for someone to notice. Off-the-hour
     # (:43), Sunday to stay clear of the Sat batch and Thu SEO run.
     - cron: "43 6 * * 0"
+    # 1st of each month, 6:33 AM UTC — Parents' Guide review reminder.
+    # Does NOT re-verify facts (no machine can): it reports how old each
+    # human verification is and whether the publishers' official links still
+    # resolve, then emails one short re-read list. Monthly because the
+    # "état du jeu" blocks are the perishable half of those pages.
+    - cron: "33 6 1 * *"
   workflow_dispatch:
     inputs:
       task:
@@ -93,8 +99,9 @@ on:
           - debt-digest
           - seo-striking-distance
           - revert-unreleased
+          - game-guides-check
       dry_run:
-        description: "Dry run (age-floor, revert-unreleased): report without writing"
+        description: "Dry run (age-floor, revert-unreleased, game-guides-check): report without writing/emailing"
         required: false
         type: boolean
         default: false
@@ -905,6 +912,35 @@ jobs:
           echo "$body" | jq '{dryRun, reverted, checkedNullDated, targets}' 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Revert unreleased failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  game-guides-check:
+    name: Game Guides Freshness Check
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '33 6 1 * *' ||
+      github.event.inputs.task == 'game-guides-check' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Audit guide freshness and official links
+        run: |
+          echo "::group::Game guides check"
+          # dry_run suppresses the email but still reports, so a manual
+          # dispatch can be inspected without pinging the inbox.
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then qs="?dryRun=1"; else qs=""; fi
+          response=$(curl -sSfL --max-time 120 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/game-guides-check$qs")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{stats, broken}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Game guides check failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"

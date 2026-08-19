@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck } from "lucide-react"
 import { isAdmin } from "@/lib/auth"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
+import { guideFreshness } from "@/lib/game-guide-freshness"
 import { getGameGuide, GAME_GUIDES } from "@/lib/game-guides"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
@@ -47,6 +48,8 @@ export default async function GameGuidePage({
   const guide = getGameGuide(key)
   if (!guide) notFound()
   if (!gameGuideEnabled(await isAdmin())) notFound()
+
+  const freshness = guideFreshness(guide)
 
   const p = APERCU_PALETTE
 
@@ -132,6 +135,22 @@ export default async function GameGuidePage({
               souvent et par paliers selon les pays — en cas de doute, la page officielle
               de l&apos;éditeur fait foi.
             </p>
+
+            {/* The date alone is a passive stamp: a reader has no idea whether
+                30 days is normal here. When the block passes its review window
+                the page says so out loud, in the reader's own view — the
+                monthly cron only reaches our inbox. Evaluated per request (the
+                route is dynamic), so it cannot silently rot. */}
+            {freshness.state !== "fresh" && (
+              <p
+                className="text-xs mb-4 rounded-lg px-3 py-2"
+                style={{ background: `${p.accent}14`, color: p.ink }}
+              >
+                {freshness.ageDays === null
+                  ? "La date de vérification de ce bloc est incorrecte : considérez-le comme non vérifié et fiez-vous aux liens officiels ci-dessous."
+                  : `Ce bloc n'a pas été relu depuis ${freshness.ageDays} jours. Les réglages ont pu changer depuis : les liens officiels ci-dessous font foi.`}
+              </p>
+            )}
 
             <Bullets items={guide.stateOfPlay.facts} p={p} />
 
