@@ -4,6 +4,9 @@ export const revalidate = 3600
 import { cache, Suspense } from "react"
 import type { Metadata } from "next"
 import { buildFicheTitle } from "@/lib/fiche-title"
+import { BookOpen } from "lucide-react"
+import { guideKeyForTitle } from "@/lib/game-guides"
+import { gameGuideEnabled } from "@/lib/game-guide-flag"
 import Image from "next/image"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
@@ -723,6 +726,14 @@ export default async function MediaPage({ params }: MediaPageProps) {
     releaseStatus: media.releaseStatus,
   })
 
+  // Games only, and only when a guide has actually been written for this
+  // title. Admin-gated behind the same flag as the guide pages themselves, so
+  // the button never points at a 404 for the public.
+  const guideKey =
+    media.type === "GAME" && gameGuideEnabled(await isAdmin())
+      ? guideKeyForTitle(media.title)
+      : null
+
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, toMediaRouteId(media.type, media.id), hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
@@ -871,6 +882,23 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   <div className="mt-1 mb-2">
                     <PlatformIcons platforms={media.platforms} variant="hero" />
                   </div>
+                )}
+
+                {/* "Guide parents" — the entry point for a parent who does not
+                    know the game at all. Sits above the watch/action row and
+                    below the age verdict, so it reads as "still lost? start
+                    here" rather than competing with the verdict itself.
+                    Deliberately NOT styled as the primary CTA: the signup hook
+                    is the conversion path, this is discovery that feeds it. */}
+                {guideKey && (
+                  <Link
+                    href={`/jeux/guide/${guideKey}`}
+                    className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-opacity hover:opacity-90"
+                    style={{ background: "var(--gold, #D89B2A)", color: "#23201C" }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Guide parents : comprendre {media.title}
+                  </Link>
                 )}
 
                 {/* Où le regarder + bande-annonce — loaded client-side */}
