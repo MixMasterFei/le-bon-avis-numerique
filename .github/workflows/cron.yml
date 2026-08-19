@@ -44,6 +44,15 @@ on:
     # nudge to push them onto page 1. Off-the-hour (:23), Thursday to
     # spread load off the Wed debt-digest.
     - cron: "23 6 * * 4"
+    # Monday 6:53 AM UTC — backfill the high-search games behind
+    # /jeux/quel-age from the curated seed list. It was dispatch-only, so it
+    # only ran when someone remembered — which is why Among Us, Brawl Stars
+    # and GTA sat in the seed list for weeks while being absent from the
+    # catalogue. Idempotent and seed-driven: it imports only what is missing,
+    # so a weekly run just keeps the list and the catalogue in sync as the
+    # list grows. Off-the-hour (:53), Monday to stay clear of the Sunday
+    # revert sweep and the Wednesday/Thursday reports.
+    - cron: "53 6 * * 1"
     # Sunday 6:43 AM UTC — sweep fiches that got enriched while still
     # unreleased back to provisional. The tooling existed (script + admin
     # route, both logging as "revert-unreleased") but nothing ever ran it,
@@ -222,12 +231,15 @@ jobs:
           done
           echo "::endgroup::"
 
-  # ── Dispatch-only: backfill the high-search games for /jeux/quel-age ─────
+  # ── Weekly (Mon) + dispatch: backfill high-search games for /jeux/quel-age ─
   games-top-names:
     name: Games — grab the biggest names
     runs-on: ubuntu-latest
     environment: Production
-    if: github.event.inputs.task == 'games-top-names'
+    if: >-
+      github.event.schedule == '53 6 * * 1' ||
+      github.event.inputs.task == 'games-top-names' ||
+      github.event.inputs.task == 'all'
     steps:
       # Idempotent, seed-list driven (src/app/jeux/quel-age/topGames.data.ts).
       # Searches IGDB for each big-name title and imports the ones missing from

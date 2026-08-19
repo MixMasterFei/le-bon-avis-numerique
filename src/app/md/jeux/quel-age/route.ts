@@ -60,6 +60,13 @@ export async function GET() {
     lines.push("")
     lines.push(r.seed.parentNote, "")
     if (qa) lines.push(qa.sensitiveText, "")
+    // Named mechanics and settings — the citable part for answer engines,
+    // and the reason this page is worth quoting over a bare PEGI number.
+    if (r.seed.familyIssues?.length) {
+      lines.push("Points concrets pour les familles :", "")
+      for (const issue of r.seed.familyIssues) lines.push(`- ${issue}`)
+      lines.push("")
+    }
   }
 
   lines.push("## Adapter ces repères à votre enfant", "")

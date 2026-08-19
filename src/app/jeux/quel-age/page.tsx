@@ -258,6 +258,27 @@ export default async function GamesAgePillarPage() {
                           {r.qa.sensitiveText}
                         </p>
                       )}
+                      {/* The concrete family-side issues. This is the part a
+                          parent (or an answer engine) can actually act on —
+                          a named mechanic or setting beats "contient des
+                          achats intégrés". */}
+                      {r.seed.familyIssues && r.seed.familyIssues.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {r.seed.familyIssues.map((issue) => (
+                            <li
+                              key={issue}
+                              className="text-xs leading-snug pl-3 relative"
+                              style={{ color: p.ink2 }}
+                            >
+                              <span
+                                className="absolute left-0 top-[0.45em] inline-block h-1 w-1 rounded-full"
+                                style={{ background: p.accent }}
+                              />
+                              {issue}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </Link>
                 </li>

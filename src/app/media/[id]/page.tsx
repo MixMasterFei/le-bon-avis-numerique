@@ -3,6 +3,7 @@ export const revalidate = 3600
 
 import { cache, Suspense } from "react"
 import type { Metadata } from "next"
+import { buildFicheTitle } from "@/lib/fiche-title"
 import Image from "next/image"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
@@ -264,16 +265,20 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   })
 
   const hasAge = media.expertAgeRec && media.expertAgeRec > 0
-  const ageStr = hasAge
-    ? hide
-      ? ` — Dès ${media.expertAgeRec} ans (à confirmer)`
-      : ` — Dès ${media.expertAgeRec} ans`
-    : ""
 
   // The striking-distance agent can set a `seoTitle` override that puts a
   // ranking keyword in the SERP <title> WITHOUT renaming the work (the H1,
   // cards and structured-data name all stay `media.title`). See seo-autofix.
-  const title = media.seoTitle?.trim() || `${media.title}${ageStr}`
+  // `buildFicheTitle` carries the "âge" wording that every click-earning query
+  // contains. It is the FLOOR: a hand-tuned `seoTitle` from the striking-
+  // distance agent still wins where one exists. See @/lib/fiche-title.
+  const title =
+    media.seoTitle?.trim() ||
+    buildFicheTitle({
+      title: media.title,
+      age: media.expertAgeRec,
+      provisional: hide,
+    })
 
   const typeLabel = typeLabels[media.type] || "Média"
 
