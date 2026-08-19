@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
+import { BookOpen } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
 import { DashboardScreenshots } from "./DashboardScreenshots"
 import { DashboardSensitiveWarnings } from "./DashboardSensitiveWarnings"
@@ -66,6 +67,7 @@ export function MediaDashboard({
   hideAnalysis,
   quickAnswer,
   breadcrumb,
+  guideKey,
 }: {
   media: DashboardMedia
   dbId: string
@@ -74,6 +76,8 @@ export function MediaDashboard({
   quickAnswer?: { question: string; answer: string }
   /** Visible breadcrumb matching the BreadcrumbList JSON-LD; falls back to the BackButton (admin preview). */
   breadcrumb?: React.ReactNode
+  /** Parents' Guide slug when one exists for this game. Resolved server-side. */
+  guideKey?: string | null
 }) {
   const hasAge = media.expertAgeRec != null && media.expertAgeRec > 0
   const verdict = hasAge ? `Dès ${media.expertAgeRec} ans` : "Non évalué"
@@ -178,6 +182,22 @@ export function MediaDashboard({
                     </Link>
                   ))}
                 </div>
+              )}
+
+              {/* "Guide parents" — for a parent who does not know the game at
+                  all. The V3 body returns before the classic body renders, so
+                  this button has to exist here too: putting it only in the
+                  classic hero made it dead code for every admin, who are
+                  exactly the people the flag lets through today. */}
+              {guideKey && (
+                <Link
+                  href={`/jeux/guide/${guideKey}`}
+                  className="mt-3 inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[12.5px] font-bold transition-opacity hover:opacity-90"
+                  style={{ background: "var(--gold, #D89B2A)", color: "#23201C" }}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Guide parents : comprendre {media.title}
+                </Link>
               )}
             </div>
 

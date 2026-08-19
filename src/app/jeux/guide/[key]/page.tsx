@@ -1,15 +1,21 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck } from "lucide-react"
+import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck, Gamepad2 } from "lucide-react"
 import { isAdmin } from "@/lib/auth"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
 import { guideFreshness } from "@/lib/game-guide-freshness"
 import { getGameGuide, GAME_GUIDES } from "@/lib/game-guides"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { SafeImage } from "@/components/ui/SafeImage"
+import { DashboardScreenshots } from "@/components/media-v3/DashboardScreenshots"
+import { getGuideGameMedia } from "@/lib/game-guide-media"
+import { PlatformIcons } from "@/components/media/PlatformIcons"
 
-// Guides are hand-written and change only when a human edits them, so they can
-// cache hard. The dated "état du jeu" block is what carries freshness, not ISR.
+// The editorial copy is hand-written and ages slowly, but the page also pulls
+// live catalogue furniture (cover, stills, platforms, current age) and reads
+// the session for the admin gate — so it renders per request. The dated
+// "état du jeu" block is what carries freshness here, never ISR.
 export const revalidate = 3600
 
 const baseUrl = "https://totemavise.com"
@@ -51,6 +57,22 @@ export default async function GameGuidePage({
 
   const freshness = guideFreshness(guide)
 
+  // Real imagery for the guide. Null when the game is not in the catalogue
+  // yet — the guide still renders, just without the visual furniture.
+  const game = await getGuideGameMedia(guide.key)
+
+  // Hero art, best-landscape-first. Games in this catalogue have no backdrop
+  // (the import only stores covers + stills), and a portrait cover stretched
+  // into a 16:9 band crops to mush — so a still beats the cover here. The
+  // cover then floats over it, which is what gives the page its editorial
+  // shape rather than a plain banner.
+  const heroImage = game?.backdropUrl ?? game?.screenshots[0]?.url ?? game?.posterUrl ?? null
+  // Don't repeat the still in the gallery if it is already the hero.
+  const galleryShots =
+    game && heroImage === game.screenshots[0]?.url
+      ? game.screenshots.slice(1)
+      : (game?.screenshots ?? [])
+
   const p = APERCU_PALETTE
 
   return (
@@ -65,21 +87,103 @@ export default async function GameGuidePage({
           Les jeux, à partir de quel âge
         </Link>
 
-        <p
-          className="text-[12px] font-bold uppercase tracking-[0.16em] mb-2"
-          style={{ color: p.accent }}
-        >
-          Guide parents
-        </p>
-        <h1
-          className="font-serif text-[clamp(28px,5vw,42px)] leading-[1.08] mb-3"
-          style={{ color: p.ink }}
-        >
-          {guide.name}
-        </h1>
-        <p className="text-lg leading-snug mb-10" style={{ color: p.ink2 }}>
+        {/* Editorial hero. A parent arriving here is already unsure; a wall of
+            text reads as homework. The artwork gives the page a face and, more
+            usefully, lets them recognise the thing their kid has been talking
+            about. Falls back to the plain title when the catalogue has no
+            image — never an empty frame. */}
+        {heroImage ? (
+          <div
+            className="relative overflow-hidden rounded-2xl mb-6"
+            style={{ border: `1px solid ${p.line}` }}
+          >
+            <SafeImage
+              src={heroImage}
+              alt={`${guide.name} — image du jeu`}
+              width={1280}
+              height={720}
+              className="w-full h-[200px] sm:h-[280px] object-cover"
+              fallbackClassName="w-full h-[200px] sm:h-[280px]"
+              priority
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(20,16,12,.92) 0%, rgba(20,16,12,.55) 45%, rgba(20,16,12,.15) 100%)",
+              }}
+            />
+            <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-7 flex items-end gap-4">
+              {game?.posterUrl && (
+                <SafeImage
+                  src={game.posterUrl}
+                  alt=""
+                  aria-hidden="true"
+                  width={120}
+                  height={160}
+                  className="hidden sm:block w-[84px] h-[112px] rounded-lg object-cover shadow-lg shrink-0"
+                  fallbackClassName="hidden sm:block w-[84px] h-[112px] rounded-lg"
+                  style={{ border: "1px solid rgba(255,255,255,.25)" }}
+                />
+              )}
+              <div className="min-w-0">
+                <p
+                  className="text-[11px] font-bold uppercase tracking-[0.16em] mb-1.5"
+                  style={{ color: "#F0C97A" }}
+                >
+                  Guide parents
+                </p>
+                <h1
+                  className="font-serif text-[clamp(26px,5vw,42px)] leading-[1.08] text-white"
+                >
+                  {guide.name}
+                </h1>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p
+              className="text-[12px] font-bold uppercase tracking-[0.16em] mb-2"
+              style={{ color: p.accent }}
+            >
+              Guide parents
+            </p>
+            <h1
+              className="font-serif text-[clamp(28px,5vw,42px)] leading-[1.08] mb-3"
+              style={{ color: p.ink }}
+            >
+              {guide.name}
+            </h1>
+          </>
+        )}
+
+        <p className="text-lg leading-snug mb-4" style={{ color: p.ink2 }}>
           {guide.tagline}
         </p>
+
+        {/* Live catalogue strip — age and platforms come from the fiche, so the
+            guide can never contradict it. Links back to the fiche, which is
+            the page that owns the age verdict. */}
+        {game && (
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-10 pb-6"
+            style={{ borderBottom: `1px solid ${p.line}` }}
+          >
+            {game.expertAgeRec != null && game.expertAgeRec > 0 && (
+              <Link
+                href={`/media/${game.id}`}
+                className="rounded-full px-3 py-1.5 text-sm font-bold hover:opacity-90"
+                style={{ background: p.accent, color: "#fff" }}
+              >
+                Dès {game.expertAgeRec} ans — voir la fiche
+              </Link>
+            )}
+            {game.platforms.length > 0 && (
+              <PlatformIcons platforms={game.platforms} />
+            )}
+          </div>
+        )}
 
         {/* ── Layer 1: understanding. No date — this ages slowly. ── */}
         <Section title="Ce que c'est vraiment" p={p}>
@@ -92,6 +196,26 @@ export default async function GameGuidePage({
           <Bullets items={guide.whatHappens} p={p} />
         </Section>
 
+        {/* What the described session actually looks like. Placed right after
+            the description so the words and the pictures reinforce each other
+            — a parent who has never seen the game gets the visual answer in
+            the same beat as the written one. Reuses the fiche gallery
+            (dedupe + lightbox) rather than a second implementation. */}
+        {game && galleryShots.length > 0 && (
+          <div className="mb-10">
+            <h2
+              className="font-serif text-xl mb-1"
+              style={{ color: p.ink }}
+            >
+              Ce que votre enfant voit à l&apos;écran
+            </h2>
+            <p className="text-sm mb-4" style={{ color: p.ink2 }}>
+              Images du jeu tel qu&apos;il se présente. Cliquez pour agrandir.
+            </p>
+            <DashboardScreenshots screenshots={galleryShots} title={guide.name} />
+          </div>
+        )}
+
         <Section title="Pourquoi les enfants y tiennent" p={p}>
           <p className="leading-relaxed" style={{ color: p.ink }}>
             {guide.whyKidsLove}
@@ -99,19 +223,31 @@ export default async function GameGuidePage({
         </Section>
 
         <Section title="Les décisions qui vous reviennent" p={p}>
-          <div className="space-y-4">
-            {guide.decisions.map((d) => (
+          {/* Numbered so a parent can see at a glance how many calls they
+              actually have to make — the list being finite is itself
+              reassuring. */}
+          <div className="space-y-3">
+            {guide.decisions.map((d, i) => (
               <div
                 key={d.question}
-                className="rounded-xl p-4"
+                className="rounded-xl p-4 flex gap-3.5"
                 style={{ background: p.card, border: `1px solid ${p.line}` }}
               >
-                <p className="font-semibold mb-1" style={{ color: p.ink }}>
-                  {d.question}
-                </p>
-                <p className="text-sm leading-relaxed" style={{ color: p.ink2 }}>
-                  {d.detail}
-                </p>
+                <span
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
+                  style={{ background: `${p.accent}1F`, color: p.accent }}
+                  aria-hidden="true"
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-semibold mb-1" style={{ color: p.ink }}>
+                    {d.question}
+                  </p>
+                  <p className="text-sm leading-relaxed" style={{ color: p.ink2 }}>
+                    {d.detail}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -183,12 +319,26 @@ export default async function GameGuidePage({
           </div>
         </section>
 
-        <Section title="Jouer avec votre enfant" p={p}>
-          <p className="leading-relaxed mb-3" style={{ color: p.ink }}>
-            {guide.playTogether.intro}
-          </p>
-          <Bullets items={guide.playTogether.ideas} p={p} />
-        </Section>
+        {/* The one section that asks the parent to DO something rather than
+            worry about something. Given its own warm block so it reads as the
+            payoff of the page, not another advisory. */}
+        <section className="mb-10">
+          <div
+            className="rounded-2xl p-5 sm:p-6"
+            style={{ background: `${p.accent}0F`, border: `1px solid ${p.accent}33` }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Gamepad2 className="h-4.5 w-4.5" style={{ color: p.accent }} />
+              <h2 className="font-serif text-xl" style={{ color: p.ink }}>
+                Jouer avec votre enfant
+              </h2>
+            </div>
+            <p className="leading-relaxed mb-3" style={{ color: p.ink }}>
+              {guide.playTogether.intro}
+            </p>
+            <Bullets items={guide.playTogether.ideas} p={p} />
+          </div>
+        </section>
 
         {/* Advanced tier: for parents who game, just not this one. */}
         <details className="mb-10 group">

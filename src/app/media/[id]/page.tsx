@@ -767,6 +767,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               hideAnalysis={hideContentAnalysis}
               quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
               breadcrumb={<DashboardBreadcrumb type={dash.type} title={dash.title} />}
+              guideKey={guideKey}
             />
           </FicheDataProvider>
         </>
