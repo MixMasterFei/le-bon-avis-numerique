@@ -1,0 +1,22 @@
+-- Applied 2026-08-19. Recorded here because this project keeps its schema
+-- changes as manual SQL (see CLAUDE.md) — the statement is already live.
+--
+-- Supabase flagged `rls_disabled_in_public` (ERROR) on public.release_alerts:
+-- it was the ONE table in the public schema exposed to PostgREST without
+-- row-level security. Every other table already sat at "RLS enabled, no
+-- policies", which denies anon/authenticated outright, so this brings the last
+-- one in line. After applying, the project has zero ERROR-level advisories.
+--
+-- Safe for the app, and this is verifiable rather than assumed:
+--   SELECT relrowsecurity, relforcerowsecurity, pg_get_userbyid(relowner)
+--   FROM pg_class WHERE relname = 'release_alerts';
+--   -> rls_enabled = true, rls_forced = FALSE, owner = postgres
+-- `relforcerowsecurity = false` means the table OWNER bypasses RLS, and Prisma
+-- connects as postgres. Same shape as media_items and users, which the site
+-- reads and writes continuously.
+--
+-- No policy is created on purpose: nothing should reach this table over
+-- PostgREST at all.
+--
+-- Rollback: ALTER TABLE public.release_alerts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.release_alerts ENABLE ROW LEVEL SECURITY;
