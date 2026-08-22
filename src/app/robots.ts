@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next"
 // Private/auth-only or legacy surfaces no crawler should index.
 const PRIVATE_PATHS = [
   "/admin/",
+  "/steph",
   "/api/",
   "/profil/",
   "/chez-vous",

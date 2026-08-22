@@ -138,6 +138,11 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Parents' Guide data + pages | `src/lib/game-guides.ts` + `src/app/jeux/guide/[key]/page.tsx` (admin-gated via `src/lib/game-guide-flag.ts`) |
 | Guide freshness audit | `src/lib/game-guide-freshness.ts` |
 | Guide freshness admin panel | `src/components/admin/panels/GameGuidesPanel.tsx` (`/admin/operations#guides`) |
+| Espace pilotage (Steph) — pages | `src/app/steph/` (`page.tsx` tableau de bord, `projet/` deck, `carte/` mindmap) |
+| Espace pilotage — données | `src/lib/steph/dashboard-data.ts` (`fetchStephDashboard`, `classifyTask`, `computeWeather`) |
+| Espace pilotage — glossaire des crons | `src/lib/steph/pipeline-glossary.ts` (`PIPELINE_TASKS`, `describeTask`) |
+| Espace pilotage — contenu éditorial | `src/lib/steph/knowledge.ts` (`DECK`, `MINDMAP`) |
+| Espace pilotage — composants | `src/components/steph/` |
 | Marketing playbook | `docs/marketing/claude_mkt.md` |
 | Launch checklist | `docs/marketing/launch-checklist.md` |
 | Market analysis | `docs/marketing/market-analysis.md` |
@@ -351,6 +356,36 @@ The unified authenticated user hub. `/chez-vous` redirects here (kept for bookma
 **Note:** Recommendation components live in `src/components/chez-vous/` (historical, imported from Profile page).
 
 ---
+
+## Espace de pilotage `/steph` (lecture seule)
+
+A second, deliberately non-technical console living beside `/admin`. `/admin` is the
+operator's cockpit (queues, re-run buttons, raw task ids); `/steph` is a **reading**
+surface for a non-developer co-owner: plain French, no jargon, and **nothing on it
+mutates data**.
+
+| Route | What it is |
+|---|---|
+| `/steph` | Dashboard: a plain-language health verdict ("météo"), the four headline numbers, every cron task grouped into six families with a "what it does / why it matters" explainer, catalogue split, family funnel, engagement, and the human-decision queues (which link into `/admin`). |
+| `/steph/projet` | 12-chapter written brief on what Totem Avisé is — identity, method, catalogue, audience, family account, the pipeline, acquisition, what's left to do, business model, and a house glossary. |
+| `/steph/carte` | Interactive mindmap: 7 branches (identity, catalogue, audience, family account, pipes, acquisition, what's next), each node carrying an "En place / En cours / À faire" pill. SVG radial diagram on desktop, branch list on mobile, plus a "tout déplier" printable view. |
+
+**Access.** `staffRoutes` in `src/middleware.ts` gates `/steph` for **ADMIN or MODERATOR**
+(unlike `adminRoutes`, which stays ADMIN-only), each page re-checks the role server-side,
+and `/steph` is in `PRIVATE_PATHS` (robots) with `robots: { index: false }` metadata. The
+header shows a "Pilotage" entry for staff. Giving a collaborator a MODERATOR account is
+the intended way to open `/steph` without handing over `/admin`.
+
+**Three rules when editing this space**
+
+1. **Numbers are never hardcoded in prose.** The deck marks live figures as
+   `{ live: "catalogueTotal" }` in `knowledge.ts` and the page fills them from the DB —
+   a briefing document whose numbers rot is worse than no document.
+2. **The dashboard is built on `fetchAdminKpis()`**, not on parallel queries, so `/admin`
+   and `/steph` can never disagree about the same figure.
+3. **Staleness thresholds mirror `EXPECTED_TASKS`** (`src/lib/cron-supervisor.ts`).
+   When you add a cron, add it to `PIPELINE_TASKS` too — a test
+   (`src/lib/__tests__/steph-dashboard.test.ts`) fails if `/steph` would show a raw task id.
 
 ## Admin Dashboard
 

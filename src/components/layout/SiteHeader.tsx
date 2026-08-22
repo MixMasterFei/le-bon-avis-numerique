@@ -31,6 +31,7 @@ import {
   Smartphone,
   Clock,
   Home,
+  Gauge,
 } from "lucide-react"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
 import { ThemeToggle } from "@/components/ui/ThemeToggle"
@@ -300,6 +301,9 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
   }
 
   const isAdmin = session?.user?.role === "ADMIN"
+  // L'espace de pilotage /steph est en lecture seule : il s'ouvre aussi aux
+  // modérateurs, là où /admin reste strictement réservé aux administrateurs.
+  const isStaff = isAdmin || session?.user?.role === "MODERATOR"
 
   const navLinkStyle = {
     color: p.ink,
@@ -816,6 +820,17 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                         <Users className="h-4 w-4" />
                         Ma famille
                       </Link>
+                      {isStaff && (
+                        <Link
+                          href="/steph"
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:opacity-70"
+                          style={{ color: p.ink }}
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <Gauge className="h-4 w-4" />
+                          Pilotage
+                        </Link>
+                      )}
                       {isAdmin && (
                         <Link
                           href="/admin"
@@ -1126,6 +1141,17 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                   <Users className="h-5 w-5" />
                   Ma famille
                 </Link>
+                {isStaff && (
+                  <Link
+                    href="/steph"
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg transition-opacity hover:opacity-70"
+                    style={{ color: p.ink }}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Gauge className="h-5 w-5" />
+                    Pilotage
+                  </Link>
+                )}
                 {isAdmin && (
                   <Link
                     href="/admin"
