@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
 
 const MEDIA_ID = "2a7f0579-f70d-4717-a0aa-d2b4838492f1"
 const SEO_TITLE = "Spider-Man: Brand New Day — À partir de quel âge ? Dès 12 ans"
 
-export async function POST() {
-  if (!isCronOrAdminAuthorized()) {
+export async function POST(req: NextRequest) {
+  if (!(await isCronOrAdminAuthorized(req))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
