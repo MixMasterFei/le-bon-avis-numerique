@@ -4,8 +4,9 @@ import type { MetadataRoute } from "next"
 const PRIVATE_PATHS = [
   "/admin/",
   "/api/",
-  "/profil/",
+  "/profil",
   "/chez-vous",
+  "/coin-famille",
   "/mes-avis/",
   "/ma-liste/",
   "/mes-favoris/",
@@ -15,6 +16,7 @@ const PRIVATE_PATHS = [
   "/apercufilmslist",
   "/apercufoyer",
   "/apercudecouverte",
+  "/inscription",
 ]
 
 // AI bots we explicitly allow. This now includes the INDEX/TRAINING crawlers

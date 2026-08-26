@@ -15,7 +15,7 @@ export const revalidate = 3600
 const baseUrl = "https://totemavise.com"
 
 export const metadata: Metadata = {
-  title: "À partir de quel âge ? Les jeux vidéo que les enfants réclament | Totem Avisé",
+  title: "À partir de quel âge ? Les jeux vidéo que les enfants réclament",
   description:
     "Fortnite, Roblox, Minecraft, GTA… à partir de quel âge ? Pour chaque jeu très demandé : l'âge conseillé, la classification PEGI et les points à vérifier avant de laisser jouer votre enfant.",
   keywords: [
@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     title: "À partir de quel âge ? Les jeux vidéo que les enfants réclament | Totem Avisé",
     description:
       "Pour chaque jeu très demandé : l'âge conseillé, la classification PEGI et les points à vérifier avant de laisser jouer votre enfant.",
+    url: `${baseUrl}/jeux/quel-age`,
     type: "website",
     locale: "fr_FR",
     siteName: "Totem Avisé",

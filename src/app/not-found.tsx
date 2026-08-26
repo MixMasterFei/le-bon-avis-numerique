@@ -1,7 +1,15 @@
+import type { Metadata } from "next"
 import { Search, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+
+export const metadata: Metadata = {
+  title: "Page introuvable",
+  description: "La page que vous recherchez n'existe pas ou a été déplacée.",
+  robots: { index: false, follow: true },
+  alternates: {},
+}
 
 export default function NotFound() {
   const p = APERCU_PALETTE

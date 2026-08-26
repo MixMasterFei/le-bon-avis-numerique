@@ -53,7 +53,7 @@ export function CinemaTendancesCard({
                 {t.posterUrl && (
                   <Image
                     src={t.posterUrl}
-                    alt=""
+                    alt={t.expertAgeRec !== null ? `${t.title} — dès ${t.expertAgeRec} ans` : t.title}
                     fill
                     sizes="48px"
                     className="object-cover"

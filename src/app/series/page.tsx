@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import dynamic from "next/dynamic"
+import { redirect, notFound } from "next/navigation"
 import { fetchSeries, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
@@ -54,7 +55,8 @@ export async function generateMetadata({
 }: SeriesPageProps): Promise<Metadata> {
   const params = await searchParams
   const maxAge = get(params, "maxAge") ? parseInt(get(params, "maxAge")!) : undefined
-  const page = get(params, "page") ? parseInt(get(params, "page")!) : 1
+  const rawPage = get(params, "page")
+  const page = rawPage ? parseInt(rawPage) : 1
   const q = get(params, "q")
   const hasFilters = !!(
     get(params, "topics") ||
@@ -83,18 +85,24 @@ export async function generateMetadata({
     title += ` — Page ${page}`
   }
 
+  // Canonical: page 1 (or missing) → clean hub URL; page 2+ → self
   let canonical = "/series"
   if (!hasFilters && page > 1) {
     canonical = `/series?page=${page}`
   }
 
+  // SEO: noindex for pagination pages 2+ to avoid thin/duplicate content
+  const robots = page > 1 ? { index: false, follow: true } : undefined
+
   return {
     title,
     description,
     alternates: { canonical },
+    robots,
     openGraph: {
       title: `${title} | Totem Avisé`,
       description,
+      url: `https://totemavise.com${canonical}`,
       images: [
         { url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" },
       ],
@@ -109,6 +117,24 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   const isAdmin =
     (session?.user as { role?: string } | undefined)?.role === "ADMIN"
   const showV2 = v2Enabled(isAdmin) && get(params, "v") !== "classic"
+
+  // Pagination validation: reject non-integer, negative, or zero pages with 404
+  const rawPage = get(params, "page")
+  if (rawPage !== undefined) {
+    const parsedPage = parseInt(rawPage)
+    if (!Number.isFinite(parsedPage) || parsedPage < 1 || rawPage !== String(parsedPage)) {
+      notFound()
+    }
+    // Redirect page=1 to clean URL (avoid duplicate content)
+    if (parsedPage === 1) {
+      const sp = new URLSearchParams()
+      for (const [k, v] of Object.entries(params)) {
+        if (k !== "page" && typeof v === "string") sp.set(k, v)
+      }
+      const qs = sp.toString()
+      redirect(qs ? `/series?${qs}` : "/series")
+    }
+  }
 
   const page = Math.max(1, parseInt2(get(params, "page"), 1))
   const search = (get(params, "q") ?? "").trim()
@@ -257,6 +283,12 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
   const totalPages = useSmartRerank
     ? Math.max(1, Math.ceil((smart?.total ?? 0) / PAGE_SIZE))
     : result?.pagination.totalPages ?? 1
+
+  // 404 for page beyond last page (after we know totalPages)
+  if (page > totalPages) {
+    notFound()
+  }
+
   // Catalogue-scale count for the "X séries analysées" headline (unfiltered by
   // the fr/en browse gate that shrinks totalItems).
   const catalogTotal = await countAnalyzedMedia("TV")
@@ -294,11 +326,11 @@ export default async function SeriesPage({ searchParams }: SeriesPageProps) {
         "@context": "https://schema.org",
         "@type": "ItemList",
         name: "Séries TV pour la famille",
-        numberOfItems: totalItems,
+        numberOfItems: items.length,
         itemListElement: items.slice(0, 20).map((item, idx) => ({
           "@type": "ListItem",
           position: (page - 1) * PAGE_SIZE + idx + 1,
-          url: `${baseUrl}/media/${encodeURIComponent(item.id)}`,
+          url: `${baseUrl}/media/tv:${encodeURIComponent(item.id)}`,
           name: item.title,
         })),
       }

@@ -72,8 +72,9 @@ export const metadata: Metadata = {
     apple: { url: "/icon.png", sizes: "256x256", type: "image/png" },
   },
   openGraph: {
-    title: "Totem Avisé",
-    description: "Trouvez les films, séries et jeux parfaits pour votre famille",
+    title: "Totem Avisé — Films, Séries TV et Jeux Vidéo en famille",
+    description: "Trouvez les films, séries et jeux parfaits pour votre famille. Avis indépendants et recommandations d'âge selon les goûts et sensibilités de chacun.",
+    url: "https://totemavise.com",
     locale: "fr_FR",
     type: "website",
     siteName: "Totem Avisé",
