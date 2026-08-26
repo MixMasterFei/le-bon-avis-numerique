@@ -22,7 +22,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // /mangas intentionally omitted — admin-only during soft launch.
     // /livres removed — books aren't part of the offering (route redirects to home).
     { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/recommandations`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // /recommandations omitted — client-side filtering page that SSR-renders
+    // with "0 résultats" (thin content); noindex set via layout.tsx.
     { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/notre-methode`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },

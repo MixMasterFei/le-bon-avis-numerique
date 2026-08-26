@@ -1,5 +1,18 @@
 {
   "regions": ["dub1"],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.totemavise.com"
+        }
+      ],
+      "destination": "https://totemavise.com/:path*",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/heartbeat",
