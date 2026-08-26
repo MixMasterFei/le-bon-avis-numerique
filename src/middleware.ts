@@ -121,9 +121,34 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   }
 
   // ===== SEO: Media route prefix normalization =====
-  // Unprefixed /media/{id} should 301 to /media/{type}:{id} for canonical URL.
-  // This is now handled in the page itself with permanentRedirect() for full
-  // DB-backed type resolution. Middleware cannot determine the media type.
+  // Unprefixed /media/{uuid} must 301 to /media/{type}:{uuid} for canonical URL.
+  // Next.js permanentRedirect() returns 308, not 301, so we handle it here.
+  // Pattern: /media/{uuid} where uuid is a valid UUID v4 (no colon = no type prefix)
+  const mediaMatch = pathname.match(/^\/media\/([^/:]+)$/)
+  if (mediaMatch) {
+    const rawId = mediaMatch[1]
+    // UUID v4 pattern (case-insensitive)
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (UUID_REGEX.test(rawId)) {
+      try {
+        // Fetch media type from internal API
+        const apiUrl = new URL(`/api/internal/media-type/${rawId}`, request.url)
+        const res = await fetch(apiUrl, { method: "GET" })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.type) {
+            const canonicalPath = `/media/${data.type.toLowerCase()}:${rawId}`
+            const url = request.nextUrl.clone()
+            url.pathname = canonicalPath
+            return NextResponse.redirect(url, { status: 301 })
+          }
+        }
+        // If API fails or type not found, let the page handle it (will 404)
+      } catch {
+        // Silently fall through to let the page handle errors
+      }
+    }
+  }
 
   // AI-visibility telemetry: log AI crawlers (GPTBot, ClaudeBot, Perplexity…)
   // and AI-assistant referrals (chatgpt.com, perplexity.ai…). Middleware is
