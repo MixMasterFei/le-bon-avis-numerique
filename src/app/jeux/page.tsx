@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
-import dynamic from "next/dynamic"
-import { redirect, notFound } from "next/navigation"
+import dynamicImport from "next/dynamic"
+import { permanentRedirect, notFound } from "next/navigation"
 import { fetchGames, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
@@ -11,13 +11,15 @@ import { runSmartFilter } from "@/lib/smart-filter"
 
 // Admin-only V2 catalogue, code-split so its chunk + fonts stay out of the
 // public bundle. Classic /jeux is unchanged for anon/non-admin.
-const CatalogueRedesign = dynamic(() =>
+const CatalogueRedesign = dynamicImport(() =>
   import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
     (m) => m.CatalogueRedesign,
   ),
 )
 
-export const revalidate = 300
+// Force dynamic rendering to ensure notFound() returns HTTP 404 (not 200 with 404 UI).
+// ISR caches the 404 page HTML but may serve it with status 200; force-dynamic avoids this.
+export const dynamic = "force-dynamic"
 
 const DEFAULT_MIN_AGE = 2
 const DEFAULT_MAX_AGE = 18
@@ -131,13 +133,14 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
       notFound()
     }
     // Redirect page=1 to clean URL (avoid duplicate content)
+    // Uses 301 (permanent) for SEO; middleware also handles this, this is a fallback.
     if (parsedPage === 1) {
       const sp = new URLSearchParams()
       for (const [k, v] of Object.entries(params)) {
         if (k !== "page" && typeof v === "string") sp.set(k, v)
       }
       const qs = sp.toString()
-      redirect(qs ? `/jeux?${qs}` : "/jeux")
+      permanentRedirect(qs ? `/jeux?${qs}` : "/jeux")
     }
   }
 
