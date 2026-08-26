@@ -30,6 +30,10 @@ export interface TopGameSeed {
   parentNote: string
   /** Concrete family-side issues: mechanics, settings, mismatches. */
   familyIssues?: string[]
+  /** Override: skip alias lookup and use this exact catalogue id. */
+  forcedId?: string
+  /** Override: use this exact FAQ answer instead of the generated one. */
+  customFaqAnswer?: string
 }
 
 export const TOP_GAMES: TopGameSeed[] = [
@@ -118,8 +122,12 @@ export const TOP_GAMES: TopGameSeed[] = [
     familyIssues: [
       "Le mode Ultimate Team repose sur des pochettes de joueurs au contenu aléatoire, achetables en argent réel.",
       "Le reste du jeu (matchs, carrière, local à plusieurs) ne comporte aucune de ces mécaniques.",
-      "Les dépenses se font par petits montants répétés, souvent invisibles jusqu'au relevé bancaire.",
+      "Les dépenses passent par petits montants, souvent invisibles jusqu'au relevé bancaire. Les achats se coupent dans les réglages console et le compte enfant EA — ils ne sont pas actifs par défaut.",
+      "FC 26 reste PEGI 3. FC 27 (septembre 2026) sera PEGI 16 : les pochettes payantes au hasard deviennent un critère d'âge sur les nouveaux jeux, pas un recalcul des opus déjà classés 3.",
     ],
+    forcedId: "095106fa-bc48-4bd9-9461-adc1ae2a088e",
+    customFaqAnswer:
+      "EA Sports FC 26 est un jeu vidéo conseillé à partir de 7 ans par Totem Avisé. Points à vérifier : consumérisme. Points favorables : messages positifs, modèles positifs.",
   },
   {
     key: "call-of-duty",
