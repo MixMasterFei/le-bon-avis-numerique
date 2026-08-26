@@ -122,7 +122,12 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   // ===== SEO: Media route prefix normalization =====
   // Unprefixed /media/{uuid} must 301 to /media/{type}:{uuid} for canonical URL.
-  // Next.js permanentRedirect() returns 308, not 301, so we handle it here.
+  // Next.js permanentRedirect() returns 308, not 301, so we handle it via rewrite.
+  // 
+  // IMPORTANT: We use rewrite (not fetch) to avoid Vercel Deployment Protection.
+  // A fetch() to the same deployment requires auth cookies that Googlebot won't have.
+  // Rewrite stays in-process and the Route Handler returns the 301 directly.
+  //
   // Pattern: /media/{uuid} where uuid is a valid UUID v4 (no colon = no type prefix)
   const mediaMatch = pathname.match(/^\/media\/([^/:]+)$/)
   if (mediaMatch) {
@@ -130,23 +135,10 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     // UUID v4 pattern (case-insensitive)
     const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (UUID_REGEX.test(rawId)) {
-      try {
-        // Fetch media type from internal API
-        const apiUrl = new URL(`/api/internal/media-type/${rawId}`, request.url)
-        const res = await fetch(apiUrl, { method: "GET" })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.type) {
-            const canonicalPath = `/media/${data.type.toLowerCase()}:${rawId}`
-            const url = request.nextUrl.clone()
-            url.pathname = canonicalPath
-            return NextResponse.redirect(url, { status: 301 })
-          }
-        }
-        // If API fails or type not found, let the page handle it (will 404)
-      } catch {
-        // Silently fall through to let the page handle errors
-      }
+      // Rewrite to internal Route Handler that does DB lookup and returns 301
+      const url = request.nextUrl.clone()
+      url.pathname = `/api/internal/media-canonical/${rawId}`
+      return NextResponse.rewrite(url)
     }
   }
 
