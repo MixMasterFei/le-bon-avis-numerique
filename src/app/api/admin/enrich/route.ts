@@ -485,10 +485,17 @@ export async function POST(request: NextRequest) {
       details: [],
     }
 
-    // Build query based on type
+    // Build query based on type.
+    // MANGA is explicitly excluded from all automated enrichment pipelines:
+    // the manga catalog is internal-only (not public) and should not consume
+    // enrichment budget or appear in job logs. The weekly-manga import route
+    // exists for historical data but is no longer called by cron (see cron.yml).
+    const PUBLIC_TYPES = ["MOVIE", "TV", "GAME"] as const
     const typeFilter = type === "all"
-      ? {}
-      : { type: type.toUpperCase() as "MOVIE" | "TV" | "GAME" | "MANGA" }
+      ? { type: { in: [...PUBLIC_TYPES] } }
+      : type === "manga"
+        ? { type: "MANGA" as const } // explicit single-title admin override only
+        : { type: type.toUpperCase() as (typeof PUBLIC_TYPES)[number] }
 
     // Never fully enrich a title that hasn't been released yet — there's
     // no content to assess, so the model confabulates content metrics
