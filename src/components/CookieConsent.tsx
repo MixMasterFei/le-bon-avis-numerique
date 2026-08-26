@@ -51,7 +51,7 @@ export function CookieConsent() {
   if (!showBanner) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
+    <div className="fixed bottom-0 left-0 right-0 z-[70] animate-in slide-in-from-bottom duration-300">
       <div className="mx-auto max-w-5xl px-4 pb-4">
         <div className="bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
           {!showDetails ? (
@@ -63,7 +63,7 @@ export function CookieConsent() {
                     <Cookie className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-sm text-gray-600">
-                    Nous utilisons des cookies pour ameliorer votre experience.{" "}
+                    Nous utilisons des cookies pour améliorer votre expérience.{" "}
                     <Link href="/confidentialite" className="text-primary hover:underline">
                       En savoir plus
                     </Link>
@@ -124,7 +124,7 @@ export function CookieConsent() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Session et securite du site.
+                        Session et sécurité du site.
                       </p>
                     </div>
                     <div className="w-9 h-5 bg-primary rounded-full relative cursor-not-allowed shrink-0">
@@ -158,7 +158,7 @@ export function CookieConsent() {
                     <div className="mr-4">
                       <h3 className="font-medium text-gray-900 text-sm">Marketing</h3>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Publicites pertinentes.
+                        Publicités pertinentes.
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0">
