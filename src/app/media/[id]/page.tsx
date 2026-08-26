@@ -62,7 +62,7 @@ import {
 import { getGameDetails, transformGame } from "@/lib/igdb"
 import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
-import type { MediaItem as MockMediaItem } from "@/lib/types"
+import type { MediaItem as MockMediaItem, MediaType } from "@/lib/types"
 
 interface MediaPageProps {
   params: Promise<{ id: string }>
@@ -84,7 +84,31 @@ interface DatabaseMediaItem extends MockMediaItem {
 }
 
 // Helper to fetch from database directly (cached to avoid duplicate queries in generateMetadata + page)
-const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Promise<DatabaseMediaItem | null> {
+// UUID v4 regex (case-insensitive)
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Pure integer regex (no leading zeros except for "0" itself)
+const PURE_INTEGER_REGEX = /^(0|[1-9]\d*)$/
+
+// Looks like a UUID prefix (8+ hex chars, possibly with hyphens)
+const UUID_PREFIX_REGEX = /^[0-9a-f]{8,}(-[0-9a-f]*)*$/i
+
+function isFullUuid(s: string): boolean {
+  return UUID_REGEX.test(s)
+}
+
+function isPureInteger(s: string): boolean {
+  return PURE_INTEGER_REGEX.test(s)
+}
+
+function isUuidPrefix(s: string): boolean {
+  return UUID_PREFIX_REGEX.test(s) && !isFullUuid(s)
+}
+
+const fetchFromDatabase = cache(async function fetchFromDatabase(
+  id: string,
+  expectedType?: MediaType | null
+): Promise<DatabaseMediaItem | null> {
   try {
     // Common include configuration - simplified to avoid potential schema mismatches
     const includeConfig = {
@@ -104,35 +128,103 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(id: string): Pr
       },
     }
 
-    // Try to find by UUID first
-    let dbMedia = await prisma.mediaItem.findUnique({
-      where: { id },
-      include: includeConfig,
-    })
+    let dbMedia = null
 
-    // If not found by UUID, try by tmdbId
-    if (!dbMedia) {
-      const numericId = parseInt(id)
-      if (!isNaN(numericId)) {
+    // 1. Try exact UUID match
+    if (isFullUuid(id)) {
+      dbMedia = await prisma.mediaItem.findUnique({
+        where: { id },
+        include: includeConfig,
+      })
+    }
+    // 2. If it looks like a UUID prefix (hex chars), try prefix match
+    else if (isUuidPrefix(id)) {
+      // Normalize: remove hyphens for prefix search, then search with LIKE
+      const normalizedPrefix = id.replace(/-/g, "").toLowerCase()
+      // Build the UUID prefix pattern (re-insert hyphens at standard positions)
+      // UUID format: 8-4-4-4-12 = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      let likePattern = normalizedPrefix
+      // If prefix is longer than 8, we need to account for the first hyphen position
+      if (normalizedPrefix.length > 8) {
+        likePattern = normalizedPrefix.slice(0, 8) + "-" + normalizedPrefix.slice(8)
+      }
+      if (normalizedPrefix.length > 12) {
+        likePattern = likePattern.slice(0, 13) + "-" + likePattern.slice(13)
+      }
+      if (normalizedPrefix.length > 16) {
+        likePattern = likePattern.slice(0, 18) + "-" + likePattern.slice(18)
+      }
+      if (normalizedPrefix.length > 20) {
+        likePattern = likePattern.slice(0, 23) + "-" + likePattern.slice(23)
+      }
+
+      // Build the where clause with optional type filter
+      const whereClause: { id: { startsWith: string }; type?: MediaType } = {
+        id: { startsWith: likePattern },
+      }
+      if (expectedType) {
+        whereClause.type = expectedType
+      }
+
+      // Find all matches
+      const matches = await prisma.mediaItem.findMany({
+        where: whereClause,
+        include: includeConfig,
+        take: 2, // We only need to know if there's 0, 1, or >1 matches
+      })
+
+      if (matches.length === 1) {
+        dbMedia = matches[0]
+      } else if (matches.length > 1) {
+        // Ambiguous prefix - return null (will 404)
+        return null
+      }
+      // If 0 matches with type filter, try without type to see if it exists with wrong type
+      // (this will be caught by type validation below and 404)
+      if (!dbMedia && expectedType) {
+        const anyMatch = await prisma.mediaItem.findFirst({
+          where: { id: { startsWith: likePattern } },
+          include: includeConfig,
+        })
+        if (anyMatch) {
+          // Found with different type - return it so the type check below can 404
+          dbMedia = anyMatch
+        }
+      }
+    }
+    // 3. Only try numeric ID lookup if it's a PURE integer (not hex that starts with digits)
+    else if (isPureInteger(id)) {
+      const numericId = parseInt(id, 10)
+
+      // Try tmdbId first (movies/TV)
+      if (!expectedType || expectedType === "MOVIE" || expectedType === "TV") {
         dbMedia = await prisma.mediaItem.findFirst({
-          where: { tmdbId: numericId },
+          where: {
+            tmdbId: numericId,
+            ...(expectedType ? { type: expectedType } : {}),
+          },
           include: includeConfig,
         })
       }
-    }
 
-    // If still not found, try by igdbId
-    if (!dbMedia) {
-      const numericId = parseInt(id)
-      if (!isNaN(numericId)) {
+      // Try igdbId (games)
+      if (!dbMedia && (!expectedType || expectedType === "GAME")) {
         dbMedia = await prisma.mediaItem.findFirst({
-          where: { igdbId: numericId },
+          where: {
+            igdbId: numericId,
+            ...(expectedType ? { type: expectedType } : {}),
+          },
           include: includeConfig,
         })
       }
     }
 
     if (!dbMedia) return null
+
+    // Type validation: if URL specified a type, the found media must match
+    if (expectedType && dbMedia.type !== expectedType) {
+      return null
+    }
 
     return {
       id: dbMedia.id,
@@ -242,9 +334,9 @@ const typeCategoryPaths: Record<string, { path: string; label: string }> = {
 // Generate dynamic metadata for SEO
 export async function generateMetadata({ params }: MediaPageProps): Promise<Metadata> {
   const { id } = await params
-  const { id: rawId } = parseMediaRouteId(id)
+  const { type, id: rawId } = parseMediaRouteId(id)
 
-  const media = await fetchFromDatabase(rawId)
+  const media = await fetchFromDatabase(rawId, type)
   if (!media) {
     return {
       title: "Média familial — avis par âge",
@@ -544,7 +636,8 @@ export default async function MediaPage({ params }: MediaPageProps) {
   let dbId: string | null = null // Track actual database UUID for reactions
 
   // First, try to fetch from database (works with UUID or external IDs)
-  media = await fetchFromDatabase(rawId)
+  // Pass expectedType to enforce type matching and prevent cross-type collisions
+  media = await fetchFromDatabase(rawId, type)
   if (media) {
     source = "database"
     dbId = media.id // This is the actual database UUID
@@ -552,6 +645,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
     // SEO: 301 redirect non-canonical URLs to the canonical form
     // 1. Unprefixed URLs → add type prefix
     // 2. TMDB/IGDB numeric IDs → redirect to UUID
+    // 3. UUID prefixes → redirect to full UUID
     const canonicalId = toMediaRouteId(media.type, media.id)
     let decodedId = id
     try {
@@ -569,11 +663,12 @@ export default async function MediaPage({ params }: MediaPageProps) {
   }
 
   // If still not found and has type prefix, try external APIs
-  if (!media && type) {
+  // Only attempt if rawId is a pure integer (not a truncated UUID or hex string)
+  if (!media && type && isPureInteger(rawId)) {
     source = "external"
     try {
       if (type === "MOVIE") {
-        const movieId = parseInt(rawId)
+        const movieId = parseInt(rawId, 10)
         if (Number.isNaN(movieId)) throw new Error("Invalid movie id")
         const movie = await getMovieDetails(movieId)
         const certification = getFrenchCertification(movie.release_dates)
@@ -607,7 +702,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           reviews: [],
         }
       } else if (type === "TV") {
-        const tvId = parseInt(rawId)
+        const tvId = parseInt(rawId, 10)
         if (Number.isNaN(tvId)) throw new Error("Invalid tv id")
         const show = await getTVDetails(tvId)
         const rating = getTVFrenchRating(show.content_ratings)
@@ -639,7 +734,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
           reviews: [],
         }
       } else if (type === "GAME") {
-        const gameId = parseInt(rawId)
+        const gameId = parseInt(rawId, 10)
         if (Number.isNaN(gameId)) throw new Error("Invalid game id")
         const game = await getGameDetails(gameId)
         if (!game) throw new Error("Game not found")
