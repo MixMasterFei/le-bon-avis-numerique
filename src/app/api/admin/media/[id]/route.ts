@@ -6,6 +6,7 @@ import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
 const ALLOWED_FIELDS = [
   "title",
   "synopsisFr",
+  "seoTitle",
   "expertAgeRec",
   "genres",
   "officialRating",
