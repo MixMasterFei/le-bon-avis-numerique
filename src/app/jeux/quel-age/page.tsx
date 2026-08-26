@@ -45,9 +45,10 @@ export default async function GamesAgePillarPage() {
   const rows = await fetchTopGameRows()
 
   // One honest verdict per row, from the shared builder so the wording matches
-  // the fiche and the /md layer exactly.
+  // the fiche and the /md layer exactly. Seeds with customFaqAnswer override
+  // the generated answer text.
   const enriched = rows.map((r) => {
-    const qa = r.contentMetrics
+    let qa = r.contentMetrics
       ? buildQuickAnswer({
           title: r.seed.name,
           type: "GAME",
@@ -55,6 +56,9 @@ export default async function GamesAgePillarPage() {
           contentMetrics: r.contentMetrics,
         })
       : null
+    if (qa && r.customFaqAnswer) {
+      qa = { ...qa, answer: r.customFaqAnswer }
+    }
     const pegi = getOfficialRatingDisplay(r.officialRating, "GAME")
     return { ...r, qa, pegiLabel: pegi?.label ?? null }
   })
