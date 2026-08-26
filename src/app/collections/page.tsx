@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { Trophy, CalendarDays } from "lucide-react"
@@ -12,6 +13,19 @@ import { CollectionIcon } from "@/components/collections/CollectionIcon"
 // plain crawlable HTML.
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
+
+export const metadata: Metadata = {
+  title: "Collections — Sélections thématiques pour toute la famille",
+  description:
+    "Sélections thématiques de films, séries et jeux vidéo adaptés aux enfants et aux ados, avec âge conseillé.",
+  alternates: { canonical: "/collections" },
+  openGraph: {
+    title: "Collections — Sélections thématiques pour toute la famille | Totem Avisé",
+    description:
+      "Sélections thématiques de films, séries et jeux vidéo adaptés aux enfants et aux ados, avec âge conseillé.",
+    url: `${baseUrl}/collections`,
+  },
+}
 
 export default async function CollectionsPage() {
   const p = APERCU_PALETTE
@@ -140,7 +154,7 @@ function CollectionCard({ collection }: { collection: CollectionSummary }) {
                 <div key={i} className="relative overflow-hidden">
                   <Image
                     src={url}
-                    alt=""
+                    alt={`${collection.title} — aperçu ${i + 1}`}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

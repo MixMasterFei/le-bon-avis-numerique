@@ -44,7 +44,7 @@ import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
@@ -548,6 +548,19 @@ export default async function MediaPage({ params }: MediaPageProps) {
   if (media) {
     source = "database"
     dbId = media.id // This is the actual database UUID
+
+    // SEO: 301 redirect non-canonical URLs to the canonical form
+    // 1. Unprefixed URLs → add type prefix
+    // 2. TMDB/IGDB numeric IDs → redirect to UUID
+    const canonicalId = toMediaRouteId(media.type, media.id)
+    let decodedId = id
+    try {
+      decodedId = decodeURIComponent(id)
+    } catch { /* keep original */ }
+
+    if (decodedId !== canonicalId) {
+      redirect(`/media/${canonicalId}`)
+    }
   }
 
   // If not in database and no type prefix, check mock data

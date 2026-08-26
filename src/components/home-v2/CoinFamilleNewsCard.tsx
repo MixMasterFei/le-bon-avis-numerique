@@ -64,7 +64,7 @@ export function CoinFamilleNewsCard({
             >
               <Image
                 src={src}
-                alt=""
+                alt={story.headline}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 50vw, 25vw"
@@ -76,7 +76,7 @@ export function CoinFamilleNewsCard({
           ) : (
             <Image
               src={src}
-              alt=""
+              alt={story.headline}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 50vw, 25vw"

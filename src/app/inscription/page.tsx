@@ -6,11 +6,13 @@ export const metadata: Metadata = {
   title: "Inscription",
   description:
     "Rejoignez les familles qui choisissent leurs films, séries et jeux en confiance. Inscription gratuite, sans recommandation opaque.",
+  robots: { index: false, follow: true },
   alternates: { canonical: "/inscription" },
   openGraph: {
     title: "Créer un compte famille | Totem Avisé",
     description:
       "Créez votre profil famille pour obtenir des repères par âge, par goûts et par sensibilités.",
+    url: "https://totemavise.com/inscription",
     type: "website",
     locale: "fr_FR",
     siteName: "Totem Avisé",

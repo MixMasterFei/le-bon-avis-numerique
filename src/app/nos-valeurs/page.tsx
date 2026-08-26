@@ -3,11 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Comment ça marche | Totem Avisé",
+  title: "Comment ça marche",
   description: "Comment Totem Avisé analyse chaque contenu sur 8 dimensions pour recommander les films, séries et jeux adaptés à votre famille.",
-  // Override the root layout's canonical "/" so this page isn't
-  // merged with the homepage in Google's index.
   alternates: { canonical: "/nos-valeurs" },
+  openGraph: {
+    title: "Comment ça marche | Totem Avisé",
+    description: "Comment Totem Avisé analyse chaque contenu sur 8 dimensions pour recommander les films, séries et jeux adaptés à votre famille.",
+    url: "https://totemavise.com/nos-valeurs",
+  },
 }
 
 const contentMetrics = [

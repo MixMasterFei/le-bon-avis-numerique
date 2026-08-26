@@ -6,16 +6,20 @@ import { methodeSections, type MethodeIcon } from "./notre-methode.data"
 export const metadata = {
   // Lengthened from "Notre méthode | Totem Avisé" (28 chars, below 30
   // recommended) to clarify what the page covers in search results.
-  title: "Notre méthode d'évaluation des contenus | Totem Avisé",
+  title: "Notre méthode d'évaluation des contenus",
   // Lengthened from 96 to 144 chars (target 120+) so Google has more
   // signal for the page topic in SERPs.
   description:
     "Comment Totem Avisé évalue les films, séries et jeux pour les familles : analyse en 8 dimensions, recommandations d'âge, compatibilité familiale.",
-  // Override the root layout's canonical "/" so this page isn't
-  // merged with the homepage in Google's index.
   alternates: {
     canonical: "/notre-methode",
     types: { "text/markdown": "/md/notre-methode" },
+  },
+  openGraph: {
+    title: "Notre méthode d'évaluation des contenus | Totem Avisé",
+    description:
+      "Comment Totem Avisé évalue les films, séries et jeux pour les familles : analyse en 8 dimensions, recommandations d'âge, compatibilité familiale.",
+    url: "https://totemavise.com/notre-methode",
   },
 }
 
