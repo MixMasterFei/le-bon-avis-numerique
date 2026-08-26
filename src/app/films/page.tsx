@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
-import dynamic from "next/dynamic"
-import { redirect, notFound } from "next/navigation"
+import dynamicImport from "next/dynamic"
+import { permanentRedirect, notFound } from "next/navigation"
 import { fetchMovies, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
@@ -11,7 +11,7 @@ import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 // Admin-only V2 catalogue. Dynamically imported so its chunk + the 3 V2 fonts
 // never ship to anonymous/public visitors (the default classic view is served
 // to everyone else).
-const CatalogueRedesign = dynamic(() =>
+const CatalogueRedesign = dynamicImport(() =>
   import("@/components/home-redesign/catalogue/CatalogueRedesign").then(
     (m) => m.CatalogueRedesign,
   ),
@@ -20,7 +20,9 @@ import { isCinemaSort } from "@/lib/cinema-policy"
 import { getCinemaMovies } from "@/lib/cinema"
 import { runSmartFilter } from "@/lib/smart-filter"
 
-export const revalidate = 300
+// Force dynamic rendering to ensure notFound() returns HTTP 404 (not 200 with 404 UI).
+// ISR caches the 404 page HTML but may serve it with status 200; force-dynamic avoids this.
+export const dynamic = "force-dynamic"
 
 const DEFAULT_MIN_AGE = 2
 const DEFAULT_MAX_AGE = 18
@@ -134,13 +136,14 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
       notFound()
     }
     // Redirect page=1 to clean URL (avoid duplicate content)
+    // Uses 301 (permanent) for SEO; middleware also handles this, this is a fallback.
     if (parsedPage === 1) {
       const sp = new URLSearchParams()
       for (const [k, v] of Object.entries(params)) {
         if (k !== "page" && typeof v === "string") sp.set(k, v)
       }
       const qs = sp.toString()
-      redirect(qs ? `/films?${qs}` : "/films")
+      permanentRedirect(qs ? `/films?${qs}` : "/films")
     }
   }
 

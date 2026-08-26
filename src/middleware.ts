@@ -77,7 +77,53 @@ const rateLimitStore = new Map<
 const RATE_LIMIT_DISABLED = process.env.ALLOW_TEST_SEED === "true"
 
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams, host } = request.nextUrl
+
+  // ===== SEO: www → apex 301 =====
+  // Canonical domain is totemavise.com (no www). Permanent redirect ensures
+  // search engines consolidate link equity and don't index the www variant.
+  if (host.startsWith("www.")) {
+    const url = request.nextUrl.clone()
+    url.host = host.replace(/^www\./, "")
+    return NextResponse.redirect(url, { status: 301 })
+  }
+
+  // ===== SEO: Pagination normalization for catalogue pages =====
+  // - page=1 → 301 to clean URL (avoid duplicate content)
+  // - page invalid (non-integer, ≤0, >999) → 404 (hard limit, prevents abuse)
+  const catalogueRoutes = ["/films", "/series", "/jeux"]
+  if (catalogueRoutes.includes(pathname)) {
+    const rawPage = searchParams.get("page")
+    if (rawPage !== null) {
+      const parsedPage = parseInt(rawPage, 10)
+      const isValidInteger = Number.isFinite(parsedPage) && rawPage === String(parsedPage)
+
+      // Invalid page syntax or out of reasonable range → 404
+      // 100 pages × 24 items = 2400 items; current catalogues are well under this.
+      // This catches obvious abuse while letting the page handle edge cases.
+      if (!isValidInteger || parsedPage < 1 || parsedPage > 100) {
+        return new NextResponse(
+          `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page introuvable</title></head><body><h1>404 — Page introuvable</h1><p>Cette page n'existe pas.</p><p><a href="/">Retour à l'accueil</a></p></body></html>`,
+          {
+            status: 404,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          }
+        )
+      }
+
+      // page=1 → 301 redirect to clean URL
+      if (parsedPage === 1) {
+        const url = request.nextUrl.clone()
+        url.searchParams.delete("page")
+        return NextResponse.redirect(url, { status: 301 })
+      }
+    }
+  }
+
+  // ===== SEO: Media route prefix normalization =====
+  // Unprefixed /media/{id} should 301 to /media/{type}:{id} for canonical URL.
+  // This is now handled in the page itself with permanentRedirect() for full
+  // DB-backed type resolution. Middleware cannot determine the media type.
 
   // AI-visibility telemetry: log AI crawlers (GPTBot, ClaudeBot, Perplexity…)
   // and AI-assistant referrals (chatgpt.com, perplexity.ai…). Middleware is

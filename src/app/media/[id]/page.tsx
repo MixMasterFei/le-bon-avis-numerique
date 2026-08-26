@@ -44,7 +44,7 @@ import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
-import { notFound, redirect } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
@@ -653,7 +653,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
     } catch { /* keep original */ }
 
     if (decodedId !== canonicalId) {
-      redirect(`/media/${canonicalId}`)
+      permanentRedirect(`/media/${canonicalId}`)
     }
   }
 
