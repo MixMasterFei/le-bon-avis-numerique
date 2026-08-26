@@ -77,8 +77,16 @@ export function ApercuFilmsList({
   notice,
 }: ApercuFilmsListProps) {
   const p = APERCU_PALETTE
-  // Headline = catalogue scale ("X analysés"), NOT the filtered page total.
-  const headlineTotal = catalogTotal ?? total
+  // Headline = filtered total when any filter is active, else catalogue scale
+  // ("X analysés"). This ensures users see the correct count after filtering.
+  const hasActiveFilters =
+    initialFilters.search.length > 0 ||
+    initialFilters.topics.length > 0 ||
+    initialFilters.platforms.length > 0 ||
+    initialFilters.familyMemberIds.length > 0 ||
+    initialFilters.minAge > 2 ||
+    initialFilters.maxAge < 18
+  const headlineTotal = hasActiveFilters ? total : (catalogTotal ?? total)
   const countNoun = headlineTotal === 1 ? itemNoun.singular : itemNoun.plural
 
   return (

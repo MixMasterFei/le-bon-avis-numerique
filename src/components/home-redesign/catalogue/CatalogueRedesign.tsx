@@ -49,8 +49,16 @@ export function CatalogueRedesign({
   defaultMaxAge = 18,
   aboveGrid,
 }: CatalogueRedesignProps) {
-  // Headline = catalogue scale ("X analysés"), NOT the filtered page total.
-  const headlineTotal = catalogTotal ?? total
+  // Headline = filtered total when any filter is active, else catalogue scale
+  // ("X analysés"). This ensures users see the correct count after filtering.
+  const hasActiveFilters =
+    initialFilters.search.length > 0 ||
+    initialFilters.topics.length > 0 ||
+    initialFilters.platforms.length > 0 ||
+    initialFilters.familyMemberIds.length > 0 ||
+    initialFilters.minAge > defaultMinAge ||
+    initialFilters.maxAge < defaultMaxAge
+  const headlineTotal = hasActiveFilters ? total : (catalogTotal ?? total)
   const countNoun = headlineTotal === 1 ? itemNoun.singular : itemNoun.plural
 
   // Toggle should return to classic on the same page + filters.

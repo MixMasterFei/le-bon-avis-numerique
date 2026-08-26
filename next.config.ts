@@ -23,6 +23,7 @@ const nextConfig: NextConfig = {
       { source: "/bd/:path*", destination: "/", permanent: true },
       { source: "/apps", destination: "/", permanent: true },
       { source: "/apps/:path*", destination: "/", permanent: true },
+      { source: "/notre-histoire", destination: "/a-propos", permanent: true },
     ]
   },
   images: {
