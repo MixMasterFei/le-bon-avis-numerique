@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextFetchEvent, NextRequest } from "next/server"
 import { detectAiBot, detectAiReferrer, classifyAiSurface } from "@/lib/ai-bots"
+import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -172,6 +173,36 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     } catch {
       // Telemetry must never affect the request.
     }
+  }
+
+  // ===== Enforce robots.txt on crawlers that ignore it =====
+  // robots.txt already tells every crawler group to stay out of PRIVATE_PATHS,
+  // but compliance is voluntary and some crawlers simply don't. Meta-ExternalAgent
+  // alone fetched /coin-famille 126 912 times over 5 days in Aug 2026 — and
+  // /coin-famille is `force-dynamic` (session + family members + smart-filter
+  // passes), so every one of those hits was an uncacheable serverless render
+  // plus Prisma round-trips on a pooler capped at 1 connection. That is what
+  // drove the Vercel "Edge Requests traffic spike" / usage-anomaly alerts, the
+  // Pro-credit burn, and the connection-pool timeouts on /media/[id].
+  //
+  // Answering 403 here costs one middleware invocation and stops the render and
+  // the DB work. This only enforces what robots.txt already advertises — it is
+  // not a new policy, so the "allow AI bots to index the catalog" strategy in
+  // robots.ts is untouched: public surfaces stay fully crawlable.
+  //
+  // Deliberately placed AFTER the telemetry block above so blocked crawlers are
+  // still recorded in ai_bot_hits and the cost avoided stays measurable.
+  if (
+    isPrivatePath(pathname) &&
+    !isAiFacingEndpoint(pathname) &&
+    detectAiBot(request.headers.get("user-agent"))
+  ) {
+    return applySecurityHeaders(
+      new NextResponse(null, {
+        status: 403,
+        headers: { "X-Robots-Tag": "noindex, nofollow" },
+      }),
+    )
   }
 
   // Apply rate limiting for API routes

@@ -28,7 +28,12 @@ describe("robots.txt", () => {
     for (const r of rules()) {
       expect(r.disallow).toContain("/admin/")
       expect(r.disallow).toContain("/api/")
-      expect(r.disallow).toContain("/profil/")
+      // Bare "/profil", not "/profil/": the trailing-slash form would leave the
+      // bare /profil URL itself crawlable. Same reason /coin-famille and
+      // /inscription are listed bare — those are exactly the URLs crawlers hit.
+      expect(r.disallow).toContain("/profil")
+      expect(r.disallow).toContain("/coin-famille")
+      expect(r.disallow).toContain("/inscription")
     }
   })
 

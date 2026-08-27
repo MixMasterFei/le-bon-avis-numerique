@@ -1,23 +1,9 @@
 import type { MetadataRoute } from "next"
+import { PRIVATE_PATHS } from "@/lib/private-paths"
 
 // Private/auth-only or legacy surfaces no crawler should index.
-const PRIVATE_PATHS = [
-  "/admin/",
-  "/api/",
-  "/profil",
-  "/chez-vous",
-  "/coin-famille",
-  "/mes-avis/",
-  "/ma-liste/",
-  "/mes-favoris/",
-  "/studio/",
-  "/apercu",
-  "/apercufilm",
-  "/apercufilmslist",
-  "/apercufoyer",
-  "/apercudecouverte",
-  "/inscription",
-]
+// Shared with the middleware, which ENFORCES this list against crawlers that
+// ignore robots.txt (see src/lib/private-paths.ts).
 
 // AI bots we explicitly allow. This now includes the INDEX/TRAINING crawlers
 // (GPTBot, ClaudeBot, CCBot, Google-Extended) on top of the live "answer"
@@ -63,7 +49,7 @@ export default function robots(): MetadataRoute.Robots {
       ...AI_BOTS.map((userAgent) => ({
         userAgent,
         allow: "/",
-        disallow: PRIVATE_PATHS,
+        disallow: [...PRIVATE_PATHS],
       })),
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
