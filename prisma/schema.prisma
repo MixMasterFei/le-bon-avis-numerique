@@ -202,6 +202,7 @@ model MediaItem {
   dataQualityScore Int        @default(0) @map("data_quality_score") // 0-100
   isEnriched       Boolean    @default(false) @map("is_enriched") // Has expert content
   lastVerifiedAt   DateTime?  @map("last_verified_at")
+  streamingCheckedAt DateTime? @map("streaming_checked_at") @db.Timestamptz(6)
   enrichedBy       String?    @map("enriched_by") // User ID who enriched
 
   createdAt DateTime @default(now()) @map("created_at")

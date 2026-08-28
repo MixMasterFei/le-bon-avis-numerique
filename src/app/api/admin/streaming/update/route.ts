@@ -32,11 +32,15 @@ export async function POST(request: Request) {
       whereClause.platforms = { isEmpty: false }
     }
 
-    // Least-recently-verified first, and every scanned row gets stamped below
+    // Least-recently-checked first, and every scanned row gets stamped below
     // — a stateless self-rotating queue. The old `createdAt desc` + offset
     // pagination re-scanned the same newest window on every Saturday run:
     // 6 consecutive runs logged "0 plateformes MAJ, 50 sans provider" while
     // rows carrying platforms went 4+ months unverified.
+    //
+    // streamingCheckedAt, NOT lastVerifiedAt: that other column gates the
+    // weekly poster-refresh sweep (30 j) and the debt digest (90 j) — stamping
+    // it here would defer poster checks and flatter the debt metric.
     const mediaItems = await prisma.mediaItem.findMany({
       where: whereClause,
       select: {
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
         type: true,
         platforms: true,
       },
-      orderBy: { lastVerifiedAt: { sort: "asc", nulls: "first" } },
+      orderBy: { streamingCheckedAt: { sort: "asc", nulls: "first" } },
       skip: offset,
       take: limit,
     })
@@ -71,7 +75,7 @@ export async function POST(request: Request) {
         if (providers.length > 0) {
           await prisma.mediaItem.update({
             where: { id: item.id },
-            data: { platforms: providers, lastVerifiedAt: new Date() },
+            data: { platforms: providers, streamingCheckedAt: new Date() },
           })
           stats.updated++
           stats.details.push(`${item.title}: ${providers.join(", ")}`)
@@ -81,7 +85,7 @@ export async function POST(request: Request) {
           // catch. (A TMDB error never lands here — it throws into the catch.)
           await prisma.mediaItem.update({
             where: { id: item.id },
-            data: { platforms: [], lastVerifiedAt: new Date() },
+            data: { platforms: [], streamingCheckedAt: new Date() },
           })
           stats.updated++
           stats.details.push(`${item.title}: plus aucune plateforme (retiré)`)
@@ -91,7 +95,7 @@ export async function POST(request: Request) {
           // of jamming on the same head window forever.
           await prisma.mediaItem.update({
             where: { id: item.id },
-            data: { lastVerifiedAt: new Date() },
+            data: { streamingCheckedAt: new Date() },
           })
         }
 
