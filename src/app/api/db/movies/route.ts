@@ -37,10 +37,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await fetchMovies(filters)
-    return NextResponse.json({
-      movies: result.items,
-      pagination: result.pagination,
-    })
+    // CDN-cacheable: public catalogue data, no session reads; the weekly
+    // shuffle is part of the URL (seed/query), so per-URL caching is correct.
+    // Every anonymous homepage visit used to re-run the full Prisma query.
+    return NextResponse.json(
+      {
+        movies: result.items,
+        pagination: result.pagination,
+      },
+      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } },
+    )
   } catch (error) {
     console.error("Movies API error:", error)
     return NextResponse.json(

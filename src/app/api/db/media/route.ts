@@ -196,6 +196,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // CDN-cacheable — public catalogue data, no session reads (see /api/db/movies).
     return NextResponse.json({
       items: transformedItems,
       pagination: {
@@ -204,7 +205,7 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    }, { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } })
   } catch (error) {
     console.error("Database error:", error)
     // Degraded mode: return basic media rows without joins/count to keep homepage usable.

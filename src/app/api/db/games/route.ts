@@ -30,10 +30,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await fetchGames(filters)
-    return NextResponse.json({
-      games: result.items,
-      pagination: result.pagination,
-    })
+    // CDN-cacheable — same rationale as /api/db/movies.
+    return NextResponse.json(
+      {
+        games: result.items,
+        pagination: result.pagination,
+      },
+      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } },
+    )
   } catch (error) {
     console.error("Games API error:", error)
     return NextResponse.json(

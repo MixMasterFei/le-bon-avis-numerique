@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
       seed,
       maxAge: Number.isFinite(parsedMaxAge) ? parsedMaxAge : undefined,
     })
-    return NextResponse.json({ items, seed })
+    // CDN-cacheable — the re-roll seed is a query param, so each roll is its
+    // own cache entry and « Recharger » still works.
+    return NextResponse.json({ items, seed }, { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } })
   } catch (error) {
     console.error("Expert picks error:", error)
     return NextResponse.json(

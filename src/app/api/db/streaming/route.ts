@@ -136,12 +136,18 @@ export async function GET(request: NextRequest) {
       total = movies.length
     }
 
-    return NextResponse.json({
-      provider,
-      movies,
-      total,
-      lastUpdated: streamingEntries[0]?.lastChecked || null,
-    })
+    // CDN-cacheable — provider rails rotate weekly (seeded), data refreshes on
+    // the Saturday cron; an hour of CDN cache costs nothing and stops every
+    // anonymous visit from re-running the availability join.
+    return NextResponse.json(
+      {
+        provider,
+        movies,
+        total,
+        lastUpdated: streamingEntries[0]?.lastChecked || null,
+      },
+      { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } },
+    )
   } catch (error) {
     console.error("Streaming query error:", error)
     // Degraded mode: fallback to movie list so homepage section still renders.
