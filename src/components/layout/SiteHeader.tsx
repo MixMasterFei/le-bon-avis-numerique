@@ -37,6 +37,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle"
 import { NotificationBell } from "@/components/layout/NotificationBell"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { useRecentSearches } from "@/hooks/useRecentSearches"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface NavItem {
   name: string
@@ -674,12 +675,12 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                                   )}
                                 </div>
                               </div>
-                              {s.ageRec !== null && (
+                              {ageBadgeLabel(s.ageRec) && (
                                 <span
                                   className="text-[11px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
                                   style={{ background: p.bg2, color: p.ink }}
                                 >
-                                  {s.ageRec}+
+                                  {ageBadgeLabel(s.ageRec)}
                                 </span>
                               )}
                             </button>

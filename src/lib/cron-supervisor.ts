@@ -260,7 +260,11 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
   {
     task: "streaming",
     staleAfterHours: 192,
-    outputMetric: { key: "total", label: "Fiches streaming examinées" },
+    // `updated`, not `total`: total is the scan-window size (a constant ~50,
+    // so it can never collapse). With the re-verify rotation, `updated` is a
+    // real liveness signal — six consecutive "0 plateformes MAJ" runs went
+    // unnoticed for two weeks under the old metric.
+    outputMetric: { key: "updated", label: "Plateformes mises à jour" },
     remediation: {
       label: "Relance streaming films batch réduit",
       method: "POST",

@@ -6,6 +6,7 @@ import { Film } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ageBadgeColor } from "./apercuTheme"
 import type { CinemaTendance } from "@/lib/news-cinema-tendances"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 /**
  * Sidebar widget: family-friendly films currently in cinemas. Replaces
@@ -67,12 +68,12 @@ export function CinemaTendancesCard({
                 >
                   {t.title}
                 </div>
-                {t.expertAgeRec !== null && (
+                {ageBadgeLabel(t.expertAgeRec) && (
                   <span
                     className="inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-bold"
                     style={{ background: ageColor.bg, color: ageColor.text }}
                   >
-                    {t.expertAgeRec}+
+                    {ageBadgeLabel(t.expertAgeRec)}
                   </span>
                 )}
               </div>

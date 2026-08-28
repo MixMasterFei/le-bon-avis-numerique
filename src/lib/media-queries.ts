@@ -156,7 +156,7 @@ function applyLanguageFilter(
   }
 }
 
-function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxAge?: number) {
+export function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxAge?: number) {
   if (!minAge && !maxAge) return
 
   const ageFilter: Record<string, unknown> = { not: null }
@@ -175,13 +175,22 @@ function applyAgeFilter(where: Prisma.MediaItemWhereInput, minAge?: number, maxA
   // thematic "Disney" tag (on adult films like The Florida Project) would let
   // genuinely mature titles bypass every age cap — the leak that put Bayonetta
   // in the default family games rail.
+  //
+  // And the ceiling must also honour the CALLER'S maxAge when it is stricter:
+  // the bypass exists to lift young classics past a minAge bound (Totoro 5+
+  // on a filter centered at 10), NEVER to raise content above the parent's
+  // requested ceiling. Before this min(), a maxAge=10 rail served VIP-tagged
+  // PEGI-12 games and a maxAge=6 rail served age-10 VIP films — an age cap a
+  // parent set is a safety promise, not a ranking hint.
+  const vipCeiling =
+    typeof maxAge === "number" ? Math.min(FAMILY_VIP_AGE_CEILING, maxAge) : FAMILY_VIP_AGE_CEILING
   appendAnd(where, {
     OR: [
       { expertAgeRec: ageFilter },
       {
         AND: [
           { topics: { hasSome: [...FAMILY_VIP_BRAND_TOPICS] } },
-          { expertAgeRec: { not: null, lte: FAMILY_VIP_AGE_CEILING } },
+          { expertAgeRec: { not: null, lte: vipCeiling } },
         ],
       },
     ],

@@ -212,8 +212,35 @@ describe("seoTitlePasses", () => {
       seoTitlePasses(
         "tigre et dragon age minimum",
         "Tigre et Dragon",
+        "Tigre et Dragon : âge minimum ? Dès 12 ans",
+      ),
+    ).toBe(true)
+  })
+
+  it("rejects a title over the real SERP budget (52 + « | Totem Avisé »)", () => {
+    // 57 chars passed the old local 65 cap and clipped in Google — the layout
+    // suffix makes the true page-specific budget MAX_TITLE (52).
+    expect(
+      seoTitlePasses(
+        "tigre et dragon age minimum",
+        "Tigre et Dragon",
         "Tigre et Dragon : âge minimum ? Avis famille (dès 12 ans)",
       ),
+    ).toBe(false)
+  })
+
+  it("rejects a title asserting an age the fiche disagrees with", () => {
+    // "dès 6 ans" over an 8-ans verdict shipped to production (The Sheep
+    // Detectives) — the SERP must never contradict the page.
+    expect(
+      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — dès 6 ans", 8),
+    ).toBe(false)
+    expect(
+      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — dès 8 ans", 8),
+    ).toBe(true)
+    // No age wording in the candidate → nothing to contradict.
+    expect(
+      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — quel âge ?", 8),
     ).toBe(true)
   })
 

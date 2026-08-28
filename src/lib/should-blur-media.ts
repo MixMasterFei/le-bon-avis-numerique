@@ -25,6 +25,9 @@
  *   - src/components/media/MediaCard.tsx (listing pages)
  *   - src/components/media/BlurredPoster.tsx (media detail hero)
  *   - src/components/home-redesign/RedesignCard.tsx (V2 rails)
+ *   - src/components/home-v2/ApercuMediaCard.tsx (homepage/catalogue cards)
+ * Every call site MUST pass `genres` — the horror trigger is the only
+ * protection for titles whose ContentMetrics don't exist yet.
  *
  * The user-facing toggle that disables this entirely lives in
  * SettingsContext (`blur18Plus`) and is configurable from

@@ -24,6 +24,7 @@ import OpenAI from "openai"
 import { MediaType } from "@prisma/client"
 import { prisma } from "./prisma"
 import { parseMediaRouteId } from "./media-route"
+import { seoTitleMatchesAge, MAX_TITLE } from "./fiche-title"
 import type { StrikingQuery } from "./seo-striking-distance"
 
 // How many inbound similarity edges a target should have before we stop adding
@@ -52,7 +53,10 @@ const SYNOPSIS_MAX = 400
 const MIN_QUALITY = 50
 // Lever C — SEO meta <title> override. Same cost discipline as synopsis.
 const MAX_TITLE_REWRITES = 3
-const SEO_TITLE_MAX = 65 // Google truncates ~60 chars; keep a small margin.
+// The real page-specific budget is MAX_TITLE (52): the root layout appends
+// " | Totem Avisé" (14 chars) and Google shows ~60. The old local 65 ignored
+// the suffix, so 9 of the first 14 overrides clipped in the SERP.
+const SEO_TITLE_MAX = MAX_TITLE
 // The agent is now fed a deep pool of striking queries (see MAX_ACTIONABLE in
 // seo-striking-distance.ts) instead of just the 25 shown in the email. Most of
 // the head of that pool is already saturated, so we walk it until we find fresh
@@ -521,13 +525,21 @@ function buildTitlePrompt(target: TargetItem, query: string): string {
 }
 
 /** Gate a candidate meta title before it touches the DB. */
-export function seoTitlePasses(query: string, realTitle: string, candidate: string): boolean {
+export function seoTitlePasses(
+  query: string,
+  realTitle: string,
+  candidate: string,
+  expertAgeRec?: number | null,
+): boolean {
   if (!candidate || candidate.length > SEO_TITLE_MAX) return false
   if (isJunkQuery(candidate)) return false
   // Stay faithful — the real work title must still be present (no rename).
   if (!normalize(candidate).includes(normalize(realTitle))) return false
   // Must now cover the ranking keyword it was meant to add.
   if (!keywordPresent(query, candidate)) return false
+  // Never assert an age the fiche disagrees with — a <title> saying
+  // "dès 6 ans" over an 8-ans verdict is a family-trust bug, not SEO.
+  if (expertAgeRec !== undefined && !seoTitleMatchesAge(candidate, expertAgeRec)) return false
   return true
 }
 
@@ -663,7 +675,7 @@ export async function runSeoAutofix(
     } else {
       titleRewritesUsed++
       const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title")
-      if (draft && seoTitlePasses(t.query, item.title, draft)) {
+      if (draft && seoTitlePasses(t.query, item.title, draft, item.expertAgeRec)) {
         await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: draft } })
         seoTitle = "set"
         seoTitleAfter = draft

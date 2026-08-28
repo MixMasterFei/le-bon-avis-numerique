@@ -57,6 +57,19 @@ export function getOfficialRatingDisplay(rating: string | null, type: string) {
   return csaRatings.find(r => r.value === rating)
 }
 
+/**
+ * Human label for an official-rating code, never the raw enum. "PEGI_7" was
+ * rendering verbatim in the fiche header chip (and in JSON-LD contentRating).
+ * Falls back to an underscore-stripped form for legacy raw values ("TP",
+ * "12") the tables don't cover.
+ */
+export function officialRatingLabel(rating: string | null | undefined, type: string): string | null {
+  if (!rating) return null
+  const known = getOfficialRatingDisplay(rating, type)
+  if (known) return known.label
+  return rating.replace(/_/g, " ")
+}
+
 // Format date in French
 export function formatDateFr(date: Date | string): string {
   const d = new Date(date)

@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache"
 import dynamic from "next/dynamic"
 import { getMemberAge } from "@/lib/age-utils"
 import { getWeekSeed, seededShuffle } from "@/lib/seeded-shuffle"
+import { inSeason } from "@/lib/seasonal"
 import { HomepageApercu } from "@/components/home-v2/HomepageApercu"
 import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
 import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggle"
@@ -35,11 +36,18 @@ const getHeroWallPosters = unstable_cache(
         dataQualityScore: { gte: 60 },
         contentMetrics: { violence: { lte: 2 }, sexNudity: { lte: 1 } },
       },
-      select: { posterUrl: true },
+      select: { posterUrl: true, title: true, genres: true, topics: true },
       orderBy: { tmdbVoteCount: "desc" },
       take: 120,
     })
-    const urls = pool.map((p) => p.posterUrl).filter((u): u is string => !!u)
+    // Seasonal gate: the 120-poster family pool is dense with Noël titles
+    // (L'Étrange Noël de monsieur Jack, Maman j'ai encore raté l'avion…), so
+    // without this the weekly shuffle regularly planted a Christmas poster in
+    // the August hero wall — the first image a visitor sees.
+    const urls = pool
+      .filter(inSeason())
+      .map((p) => p.posterUrl)
+      .filter((u): u is string => !!u)
     return seededShuffle(urls, _weekSeed).slice(0, 32)
   },
   ["home-v2-hero-wall"],

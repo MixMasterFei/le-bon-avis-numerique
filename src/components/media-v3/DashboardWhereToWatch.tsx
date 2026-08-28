@@ -52,6 +52,7 @@ function ProviderRows({ providers }: { providers: Provider[] }) {
                   alt={p.provider_name}
                   width={22}
                   height={22}
+                  onError={(e) => { e.currentTarget.style.display = "none" }}
                   className="h-full w-full object-cover"
                 />
               )}

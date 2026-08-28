@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
 import { getSimilarMedia } from "@/lib/similar-media"
@@ -28,7 +29,7 @@ export async function DashboardSimilar({
     <div className="grid auto-cols-[minmax(140px,1fr)] grid-flow-col gap-4 overflow-x-auto pb-1">
       {items.map((item) => {
         const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null
-        const age = item.expertAgeRec != null && item.expertAgeRec > 0 ? `${item.expertAgeRec}+` : null
+        const age = ageBadgeLabel(item.expertAgeRec) // « TP » pour 0, jamais un badge vide
         // Age-band colour (young=green … 16+=pink) with near-black text, matching
         // the "Par âge" grid — legible over any poster, unlike the old flat green.
         const ageBadge = ageBadgeColor(item.expertAgeRec)

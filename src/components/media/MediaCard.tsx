@@ -19,6 +19,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { useSettings } from "@/contexts/SettingsContext"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 const typeIcons = {
   MOVIE: Film,
@@ -217,7 +218,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
             )}
             {/* Gradient overlay on hover */}
             <div className="absolute inset-0 bg-gradient-to-t from-violet-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            {media.expertAgeRec && media.expertAgeRec > 0 && (
+            {typeof media.expertAgeRec === "number" && media.expertAgeRec >= 0 && (
               <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
                 <AgeBadge age={media.expertAgeRec} size="xs" />
                 {media.isProvisional && <ProvisionalBadge size="xs" />}
@@ -320,7 +321,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
           {/* Ratings Row: Age + Family Gauge + Community Rating */}
           <div className="flex items-center gap-1.5 flex-wrap mt-2">
             {/* Age Badge - Only show when expert has rated */}
-            {media.expertAgeRec && media.expertAgeRec > 0 && (
+            {typeof media.expertAgeRec === "number" && media.expertAgeRec >= 0 && (
               <div className={cn(
                 "inline-flex items-center justify-center px-2 py-1 rounded-full text-[11px] font-bold text-white shadow-sm",
                 media.expertAgeRec <= 3
@@ -333,7 +334,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
                   ? "bg-gradient-to-r from-orange-500 to-amber-400"
                   : "bg-gradient-to-r from-rose-500 to-red-400"
               )}>
-                {media.expertAgeRec}+
+                {ageBadgeLabel(media.expertAgeRec)}
               </div>
             )}
 

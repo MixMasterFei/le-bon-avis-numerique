@@ -13,6 +13,7 @@ import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
 import { cn } from "@/lib/utils"
 import { APERCU_PALETTE, ageBadgeColor, genreBadgeColor, genreLabelFr } from "./apercuTheme"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 export interface ApercuCardMedia {
   id: string
@@ -21,6 +22,8 @@ export interface ApercuCardMedia {
   posterUrl: string | null
   cornerLabel?: string | null
   expertAgeRec?: number | null
+  /** Age is an estimate (imported, not yet AI-analysed) — badge « à confirmer ». */
+  isProvisional?: boolean
   genres?: string[] | null
   contentMetrics?: {
     violence?: number | null
@@ -67,8 +70,8 @@ export function ApercuMediaCard({
 
   const familyFit = getFamilyFit(media.id)
 
-  const ageLabel =
-    typeof media.expertAgeRec === "number" ? `${media.expertAgeRec}+` : null
+  // « TP » pour 0 (tous publics) — jamais « 0+ », jamais un badge vide.
+  const ageLabel = ageBadgeLabel(media.expertAgeRec)
   const ageColors = ageBadgeColor(media.expertAgeRec)
 
   const titleClass =
@@ -79,9 +82,11 @@ export function ApercuMediaCard({
   // wrapping off-screen due to max-h clipping.
   const visibleGenres = (media.genres ?? []).slice(0, size === "sm" ? 2 : 3)
 
-  // Same blur rule used everywhere else on the site (15+ AND any
-  // content metric >= 3). Eye-overlay reveals on click; tooltip
-  // points users to the parameters toggle.
+  // Same blur rule used everywhere else on the site (15+ AND any content
+  // metric >= 3, OR horror genre at 12+). `genres` is REQUIRED for the horror
+  // trigger: an in-theatre horror film is exactly the title with no
+  // ContentMetrics yet, and omitting it here left Insidious unblurred on the
+  // public homepage while every other card component blurred it.
   const shouldBlur =
     !revealed &&
     shouldBlurMedia(
@@ -92,6 +97,7 @@ export function ApercuMediaCard({
         sexNudity: media.contentMetrics?.sexNudity,
         language: media.contentMetrics?.language,
         substanceUse: media.contentMetrics?.substanceUse,
+        genres: media.genres,
       },
       settings.blur18Plus,
     )
@@ -139,7 +145,7 @@ export function ApercuMediaCard({
         )}
         {ageLabel && (
           <div
-            className="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight z-20"
+            className="absolute top-1.5 left-1.5 flex flex-col items-center px-2 py-0.5 rounded-md text-[11px] font-bold tracking-tight z-20"
             style={{
               background: ageColors.bg,
               color: ageColors.text,
@@ -147,6 +153,13 @@ export function ApercuMediaCard({
             }}
           >
             {ageLabel}
+            {/* Honesty on estimates: an imported-but-unanalysed age must never
+                read as a confirmed verdict (CLAUDE.md, provisional ratings). */}
+            {media.isProvisional && (
+              <span className="text-[7px] font-semibold uppercase tracking-wide leading-tight opacity-80">
+                à confirmer
+              </span>
+            )}
           </div>
         )}
         {media.cornerLabel && (

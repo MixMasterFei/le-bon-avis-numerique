@@ -22,7 +22,7 @@ export interface SeasonalCandidate {
 
 const CHRISTMAS =
   /\b(noel|noels|christmas|xmas|giftmas|santa|jingle|nutcracker|reveillon|scrooge|grinch)\b/
-const HALLOWEEN = /\b(halloween)\b/
+const HALLOWEEN = /\bhallowe'?en\b/
 
 /** Months (0-indexed) where each season is in-season. */
 const CHRISTMAS_MONTHS = new Set([10, 11]) // novembre – décembre
@@ -56,4 +56,17 @@ export function isOutOfSeason(
 /** Convenience predicate for `Array#filter`. */
 export function inSeason(month0: number = new Date().getMonth()) {
   return (m: SeasonalCandidate) => !isOutOfSeason(m, month0)
+}
+
+/**
+ * Server-side alias kept for the expert-picks / discover-digest call sites,
+ * which pass a `Date`. Replaces the former `src/lib/seasonal-filter.ts` —
+ * two divergent seasonal matchers is exactly how the platforms rail served
+ * Christmas in August while expert-picks didn't.
+ */
+export function isSeasonalMismatch(
+  data: SeasonalCandidate,
+  now: Date = new Date(),
+): boolean {
+  return isOutOfSeason(data, now.getMonth())
 }

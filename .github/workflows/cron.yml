@@ -590,11 +590,16 @@ jobs:
           github.event.inputs.task != 'similarity'
         run: |
           echo "::group::Streaming movies"
-          for offset in 0 50 100; do
+          # Pass 1: fill rows with NO platforms (new imports the day-one fetch
+          # missed). Passes 2-3: re-verify EXISTING assignments, least-recently
+          # verified first (onlyEmpty:false) — the route stamps every scanned
+          # row, so consecutive calls advance through the catalogue by
+          # themselves; offsets would double-skip and are deliberately absent.
+          for body in '{"limit":50,"mediaType":"MOVIE"}' '{"limit":50,"onlyEmpty":false,"mediaType":"MOVIE"}' '{"limit":50,"onlyEmpty":false,"mediaType":"MOVIE"}'; do
             curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d "{\"limit\":50,\"offset\":$offset,\"mediaType\":\"MOVIE\"}" \
+              -d "$body" \
               "$SITE_URL/api/admin/streaming/update" | jq -r '.stats.updated // 0' 2>/dev/null
             sleep 1
           done
@@ -606,11 +611,12 @@ jobs:
           github.event.inputs.task != 'similarity'
         run: |
           echo "::group::Streaming TV"
-          for offset in 0 50 100; do
+          # Same split as the movies step: 1 fill pass + 2 re-verify passes.
+          for body in '{"limit":50,"mediaType":"TV"}' '{"limit":50,"onlyEmpty":false,"mediaType":"TV"}' '{"limit":50,"onlyEmpty":false,"mediaType":"TV"}'; do
             curl -sSL -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d "{\"limit\":50,\"offset\":$offset,\"mediaType\":\"TV\"}" \
+              -d "$body" \
               "$SITE_URL/api/admin/streaming/update" | jq -r '.stats.updated // 0' 2>/dev/null
             sleep 1
           done

@@ -34,6 +34,7 @@ export function ApercuNowInCinema({ serifClass }: { serifClass: string }) {
                   substanceUse?: number | null
                 } | null
                 cinemaReleaseBucket?: string
+                isProvisional?: boolean
               }) => ({
                 id: m.id,
                 type: "MOVIE" as const,
@@ -46,6 +47,7 @@ export function ApercuNowInCinema({ serifClass }: { serifClass: string }) {
                       ? "Avant-prem."
                       : null,
                 expertAgeRec: m.expertAgeRec ?? null,
+                isProvisional: m.isProvisional === true,
                 genres: m.genres ?? [],
                 contentMetrics: m.contentMetrics ?? null,
               })

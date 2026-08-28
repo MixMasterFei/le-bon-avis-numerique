@@ -3,7 +3,7 @@ import type { Prisma, NewsCategory } from "@prisma/client"
 import type { NewsSourceRef } from "@/components/home-v2/ApercuNewsSourcePills"
 import type { ApercuNewsCardData } from "@/components/home-v2/ApercuNewsCard"
 import type { ApercuCardMedia } from "@/components/home-v2/ApercuMediaCard"
-import { isSeasonalMismatch } from "@/lib/seasonal-filter"
+import { isSeasonalMismatch } from "@/lib/seasonal"
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 

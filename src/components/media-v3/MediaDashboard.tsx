@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { ageSentenceLabel } from "@/lib/age-label"
 import Link from "next/link"
 import { BookOpen } from "lucide-react"
 import { BackButton } from "@/components/ui/BackButton"
@@ -17,6 +18,7 @@ import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
 import { DashboardFamilyFeedback } from "./DashboardFamilyFeedback"
 import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
+import { officialRatingLabel } from "@/lib/utils"
 
 // Handoff palette (already matches the site's warm art direction).
 const C = {
@@ -79,8 +81,10 @@ export function MediaDashboard({
   /** Parents' Guide slug when one exists for this game. Resolved server-side. */
   guideKey?: string | null
 }) {
-  const hasAge = media.expertAgeRec != null && media.expertAgeRec > 0
-  const verdict = hasAge ? `Dès ${media.expertAgeRec} ans` : "Non évalué"
+  // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), never « Non
+  // évalué » (that reading is the Oak-Street bug, see @/lib/age-label).
+  const hasAge = typeof media.expertAgeRec === "number" && media.expertAgeRec >= 0
+  const verdict = ageSentenceLabel(media.expertAgeRec) ?? "Non évalué"
   const verdictNote = hideAnalysis
     ? "Estimation · à confirmer après la sortie"
     : media.isProvisional
@@ -146,7 +150,7 @@ export function MediaDashboard({
                     className="rounded-full px-2 py-[3px] text-[10.5px] font-medium"
                     style={{ color: C.muted, background: C.page }}
                   >
-                    {media.officialRating} · classif. officielle
+                    {officialRatingLabel(media.officialRating, media.type)} · classif. officielle
                   </span>
                 )}
               </div>

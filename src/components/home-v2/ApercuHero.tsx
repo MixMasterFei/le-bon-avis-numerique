@@ -5,6 +5,7 @@ import { HeroSearch } from "@/components/home/HeroSearch"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 export interface HeroPick {
   id: string
@@ -201,8 +202,7 @@ function HeroPosterCard({
   priority?: boolean
 }) {
   const p = APERCU_PALETTE
-  const ageLabel =
-    pick.expertAgeRec !== null ? `${pick.expertAgeRec}+` : null
+  const ageLabel = ageBadgeLabel(pick.expertAgeRec) // « TP » pour 0
 
   return (
     <Link

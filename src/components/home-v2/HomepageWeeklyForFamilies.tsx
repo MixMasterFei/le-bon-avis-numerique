@@ -7,6 +7,7 @@ import { Film, Gamepad2, Newspaper } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import { APERCU_PALETTE } from "./apercuTheme"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface MediaPick {
   id: string
@@ -88,7 +89,7 @@ export function HomepageWeeklyForFamilies({ serifClass }: { serifClass: string }
             text={cinema ? "Une sortie récente à vérifier selon l'âge et la sensibilité de votre foyer." : "Le module se remplit dès que les données cinéma sont disponibles."}
             href={cinema ? `/media/${toMediaRouteId(cinema.type, cinema.id)}` : "/films?sort=cinema"}
             imageUrl={cinema?.posterUrl ?? null}
-            badge={cinema?.expertAgeRec !== null && cinema?.expertAgeRec !== undefined ? `${cinema.expertAgeRec}+` : "Cinéma"}
+            badge={ageBadgeLabel(cinema?.expertAgeRec) ?? "Cinéma"}
             serifClass={serifClass}
           />
           <WeeklyCard

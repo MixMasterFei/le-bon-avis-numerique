@@ -39,6 +39,7 @@ export function BlurredPoster({
 }: BlurredPosterProps) {
   const { settings } = useSettings()
   const [revealed, setRevealed] = useState(false)
+  const [failed, setFailed] = useState(false)
   const shouldBlur = !revealed && shouldBlurMedia(
     {
       type: mediaType ?? "MOVIE",
@@ -55,8 +56,9 @@ export function BlurredPoster({
   return (
     <>
       <Image
-        src={src}
+        src={failed ? "/placeholder-poster.jpg" : src}
         alt={alt}
+        onError={() => setFailed(true)}
         fill
         className={cn("object-cover transition-all duration-300", shouldBlur && "blur-sm brightness-90", className)}
         sizes={sizes}

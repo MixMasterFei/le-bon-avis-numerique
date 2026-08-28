@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react"
 import { Play, Share2, Heart, Clapperboard, Calendar } from "lucide-react"
 import { useFamilyFitData, useExtrasData } from "@/components/media/FicheDataContext"
 import { familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import { ageBadgeLabel, ageSentenceLabel } from "@/lib/age-label"
 
 // Prototype status colours (green / blue / warn / coral).
 const BAND_CHIP: Record<FamilyFitBand, { bg: string; border: string; text: string; mark: string }> = {
@@ -174,15 +175,15 @@ export function MediaDashboardBar({
               {title}
             </span>
             <span className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--color-ink2)" }}>
-              {expertAgeRec ? (
+              {typeof expertAgeRec === "number" && expertAgeRec >= 0 ? (
                 <>
                   <span
                     className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
                     style={{ background: AMBER_BADGE }}
                   >
-                    {expertAgeRec}+
+                    {ageBadgeLabel(expertAgeRec)}
                   </span>
-                  <span>Dès {expertAgeRec} ans{provisional ? " · à confirmer" : ""}</span>
+                  <span>{ageSentenceLabel(expertAgeRec)}{provisional ? " · à confirmer" : ""}</span>
                 </>
               ) : (
                 <span>Âge à venir</span>

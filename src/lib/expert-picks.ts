@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
-import { isSeasonalMismatch } from "@/lib/seasonal-filter"
+import { isSeasonalMismatch } from "@/lib/seasonal"
 
 /**
  * Expert Picks — curated mix of highly-rated, family-friendly media across

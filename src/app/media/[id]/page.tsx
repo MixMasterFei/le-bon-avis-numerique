@@ -3,7 +3,7 @@ export const revalidate = 3600
 
 import { cache, Suspense } from "react"
 import type { Metadata } from "next"
-import { buildFicheTitle } from "@/lib/fiche-title"
+import { buildFicheTitle, seoTitleMatchesAge } from "@/lib/fiche-title"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
@@ -43,7 +43,7 @@ import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
 import { mockMediaItems } from "@/lib/mock-data"
-import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
+import { mediaTypeLabels, formatDateFr, officialRatingLabel } from "@/lib/utils"
 import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
@@ -366,9 +366,15 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   // cards and structured-data name all stay `media.title`). See seo-autofix.
   // `buildFicheTitle` carries the "âge" wording that every click-earning query
   // contains. It is the FLOOR: a hand-tuned `seoTitle` from the striking-
-  // distance agent still wins where one exists. See @/lib/fiche-title.
+  // distance agent still wins where one exists — UNLESS the age it embeds no
+  // longer matches the current verdict (seoTitleMatchesAge): a stale override
+  // asserting "dès 6 ans" over an 8-ans fiche is self-healed back to the
+  // default here, whatever wrote it.
+  const storedSeoTitle = media.seoTitle?.trim()
   const title =
-    media.seoTitle?.trim() ||
+    (storedSeoTitle && seoTitleMatchesAge(storedSeoTitle, media.expertAgeRec)
+      ? storedSeoTitle
+      : null) ||
     buildFicheTitle({
       title: media.title,
       age: media.expertAgeRec,
@@ -488,6 +494,14 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         }
       : undefined
 
+  // Totem's recommended age as a schema.org age range ("10-" = 10 and up).
+  // Omitted for hidden/provisional analyses — we don't assert unconfirmed ages
+  // to machines any more than to humans.
+  const typicalAgeRange =
+    !hideContentAnalysis && typeof media.expertAgeRec === "number" && media.expertAgeRec > 0
+      ? `${media.expertAgeRec}-`
+      : null
+
   // Main entity based on type
   let mainEntity: Record<string, unknown>
 
@@ -506,7 +520,10 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.director && { director: { "@type": "Person", name: media.director } }),
         ...(media.genres.length > 0 && { genre: media.genres }),
-        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(media.officialRating && { contentRating: officialRatingLabel(media.officialRating, media.type) }),
+        // Totem's own verdict, machine-readable — the answer to "à partir de
+        // quel âge", which is the query family these pages rank on.
+        ...(typicalAgeRange && { typicalAgeRange }),
         ...(media.duration && { duration: `PT${media.duration}M` }),
         ...(aggregateRating && { aggregateRating }),
       }
@@ -524,7 +541,8 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         ...(media.releaseDate && { datePublished: media.releaseDate }),
         ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.genres.length > 0 && { genre: media.genres }),
-        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(media.officialRating && { contentRating: officialRatingLabel(media.officialRating, media.type) }),
+        ...(typicalAgeRange && { typicalAgeRange }),
         ...(media.numberOfSeasons && { numberOfSeasons: media.numberOfSeasons }),
         ...(aggregateRating && { aggregateRating }),
       }
@@ -543,7 +561,8 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
         ...(media.updatedAt && { dateModified: media.updatedAt }),
         ...(media.genres.length > 0 && { genre: media.genres }),
         ...(media.platforms.length > 0 && { gamePlatform: media.platforms }),
-        ...(media.officialRating && { contentRating: media.officialRating }),
+        ...(media.officialRating && { contentRating: officialRatingLabel(media.officialRating, media.type) }),
+        ...(typicalAgeRange && { typicalAgeRange }),
         ...(aggregateRating && { aggregateRating }),
       }
       break

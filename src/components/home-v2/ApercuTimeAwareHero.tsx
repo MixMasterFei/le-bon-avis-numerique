@@ -13,6 +13,8 @@ import {
 import { getDaySeed, seededShuffle } from "@/lib/seeded-shuffle"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ApercuMediaCard, type ApercuCardMedia } from "./ApercuMediaCard"
+import { getNowPlayingTmdbIds } from "@/lib/cinema"
+import { inSeason } from "@/lib/seasonal"
 
 interface HeroLink {
   label: string
@@ -33,6 +35,8 @@ const baseSelect = {
   posterUrl: true,
   expertAgeRec: true,
   genres: true,
+  topics: true,
+  isEnriched: true,
   trendingScore: true,
   contentMetrics: {
     select: {
@@ -55,6 +59,7 @@ function toCard(row: DBRow): ApercuCardMedia {
     title: row.title,
     posterUrl: row.posterUrl,
     expertAgeRec: row.expertAgeRec,
+    isProvisional: !row.isEnriched && row.expertAgeRec != null,
     genres: row.genres,
     contentMetrics: row.contentMetrics,
   }
@@ -102,6 +107,7 @@ async function fetchStreamingFallback(ageCap: number, take: number): Promise<DBR
         type: { in: ["MOVIE", "TV"] },
         posterUrl: { not: null, startsWith: "http" },
         platforms: { isEmpty: false },
+        isEnriched: true,
         expertAgeRec: { not: null, lte: ageCap },
         tmdbVoteCount: { gte: 200 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
@@ -121,6 +127,7 @@ async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
       where: {
         type: "TV",
         posterUrl: { not: null, startsWith: "http" },
+        isEnriched: true,
         expertAgeRec: { not: null, lte: ageCap },
         tmdbVoteCount: { gte: 300 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
@@ -130,7 +137,7 @@ async function fetchFamilyTV(ageCap: number, take: number): Promise<DBRow[]> {
       select: baseSelect,
     }),
   )
-  return dayPick(pool, take)
+  return dayPick(pool.filter(inSeason()), take)
 }
 
 // Minimum recognizability floor — for games this is the IGDB rating
@@ -147,6 +154,7 @@ async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> 
       where: {
         type: "GAME",
         posterUrl: { not: null, startsWith: "http" },
+        isEnriched: true,
         expertAgeRec: { not: null, lte: ageCap },
         tmdbVoteCount: { gte: GAME_MIN_VOTES },
       },
@@ -159,7 +167,7 @@ async function fetchFamilyGames(ageCap: number, take: number): Promise<DBRow[]> 
       select: baseSelect,
     }),
   )
-  return dayPick(pool, take)
+  return dayPick(pool.filter(inSeason()), take)
 }
 
 // Family-friendly streaming films for "tonight" — popular-platform movies,
@@ -172,6 +180,7 @@ async function fetchStreamingFilms(ageCap: number, take: number): Promise<DBRow[
         type: "MOVIE",
         posterUrl: { not: null, startsWith: "http" },
         platforms: { hasSome: POPULAR_PROVIDERS },
+        isEnriched: true,
         expertAgeRec: { not: null, lte: ageCap },
         tmdbVoteCount: { gte: 200 },
         NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
@@ -181,7 +190,7 @@ async function fetchStreamingFilms(ageCap: number, take: number): Promise<DBRow[
       select: baseSelect,
     }),
   )
-  return dayPick(pool, take)
+  return dayPick(pool.filter(inSeason()), take)
 }
 
 // High-quality family films for the holidays rail — day-rotated over a
@@ -192,6 +201,7 @@ async function fetchQualityFilms(ageCap: number, take: number): Promise<DBRow[]>
       where: {
         type: "MOVIE",
         posterUrl: { not: null, startsWith: "http" },
+        isEnriched: true,
         expertAgeRec: { not: null, lte: ageCap },
         dataQualityScore: { gte: 70 },
         tmdbVoteCount: { gte: 500 },
@@ -202,7 +212,7 @@ async function fetchQualityFilms(ageCap: number, take: number): Promise<DBRow[]>
       select: baseSelect,
     }),
   )
-  return dayPick(pool, take)
+  return dayPick(pool.filter(inSeason()), take)
 }
 
 async function fetchTonight(ageCap: number): Promise<HeroData> {
@@ -240,7 +250,7 @@ async function fetchWeekend(ageCap: number): Promise<HeroData> {
   let extras: ApercuCardMedia[] = []
   if (series.length === 0 || games.length === 0) {
     const fallback = await fetchStreamingFallback(ageCap, 2)
-    extras = fallback.map(toCard)
+    extras = fallback.filter(inSeason()).map(toCard)
   }
 
   return {
@@ -301,6 +311,7 @@ async function fetchDefault(ageCap: number): Promise<HeroData> {
         where: {
           type: { in: ["MOVIE", "TV", "GAME"] },
           posterUrl: { not: null, startsWith: "http" },
+          isEnriched: true,
           dataQualityScore: { gte: 70 },
           expertAgeRec: { not: null, lte: ageCap },
           tmdbVoteCount: { gte: 500 },
@@ -326,7 +337,7 @@ async function fetchDefault(ageCap: number): Promise<HeroData> {
     ),
   ])
 
-  const shuffled = dayPick(pool, 3).map(toCard)
+  const shuffled = dayPick(pool.filter(inSeason()), 3).map(toCard)
   const fresh = newest.slice(0, 1).map(toCard)
   return {
     cards: dedupeAndCap([...shuffled, ...fresh], 4),
@@ -337,34 +348,33 @@ async function fetchDefault(ageCap: number): Promise<HeroData> {
   }
 }
 
-// Cinema slice — uses TMDB now_playing via the existing /api/cinema
-// endpoint logic. To avoid an internal HTTP hop in a server component
-// we replicate the minimal call here using the same TMDB helper.
+// Cinema slice — intersects the catalogue with TMDB now_playing (region=FR),
+// the ONLY accurate "in French theaters" source (CLAUDE.md forbids the
+// releaseDate proxy this used to run on: it surfaced a Disney+ streaming film
+// as the top "cinema" pick, and with no upper date bound a future-dated
+// import could occupy the slot). getNowPlayingTmdbIds is itself cached ~1h
+// and this whole hero is wrapped in unstable_cache(revalidate: 600), so the
+// TMDB roundtrip cost is negligible.
 async function fetchCinemaSlice(limit: number, ageCap?: number): Promise<ApercuCardMedia[]> {
-  // Reuse the structured DB-cinema crossover by querying our catalog
-  // for movies the cron has flagged as "in cinema" (we sort by recent
-  // TMDB vote count among movies released within the last 6 months).
-  // Avoids an extra TMDB roundtrip for the homepage hero.
-  const sixMonthsAgo = new Date()
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  const nowPlayingIds = await getNowPlayingTmdbIds()
+  if (nowPlayingIds.size === 0) return []
 
   const where = {
     type: "MOVIE" as const,
     posterUrl: { not: null, startsWith: "http" },
-    releaseDate: { gte: sixMonthsAgo },
-    tmdbVoteCount: { gte: 50 },
+    tmdbId: { in: [...nowPlayingIds] },
     expertAgeRec: typeof ageCap === "number" ? { lte: ageCap, not: null } : { not: null },
     NOT: { genres: { hasSome: ["Horreur", "Horror"] } },
   }
   const rows = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
       where,
-      orderBy: [{ releaseDate: "desc" }, { tmdbVoteCount: "desc" }],
-      take: limit,
+      orderBy: [{ tmdbVoteCount: { sort: "desc" as const, nulls: "last" as const } }],
+      take: limit * 2,
       select: baseSelect,
     }),
   )
-  return rows.map(toCard)
+  return rows.filter(inSeason()).slice(0, limit).map(toCard)
 }
 
 const getHeroData = unstable_cache(

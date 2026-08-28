@@ -330,6 +330,7 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
             ? "Avant-prem."
             : null,
       expertAgeRec: m.expertAgeRec,
+      isProvisional: m.isProvisional === true,
       genres: m.genres,
       releaseDate: m.releaseDate,
       contentMetrics: cm

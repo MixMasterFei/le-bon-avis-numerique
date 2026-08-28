@@ -87,7 +87,12 @@ export function ApercuNewsSourcePills({
           >
             {s.favicon && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.favicon} alt="" className="w-3 h-3 rounded-sm" />
+              <img
+                src={s.favicon}
+                alt=""
+                className="w-3 h-3 rounded-sm"
+                onError={(e) => { e.currentTarget.style.display = "none" }}
+              />
             )}
             <span className="truncate max-w-[140px]">{s.name}</span>
             {flags.length > 0 && (

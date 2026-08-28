@@ -26,9 +26,17 @@ export async function POST(request: Request) {
 
     if (onlyEmpty) {
       whereClause.platforms = { isEmpty: true }
+    } else {
+      // Rotation pass: RE-verify existing assignments (a title that left
+      // Netflix must lose its badge). Empty rows belong to the other pass.
+      whereClause.platforms = { isEmpty: false }
     }
 
-    // Get movies that need updating
+    // Least-recently-verified first, and every scanned row gets stamped below
+    // — a stateless self-rotating queue. The old `createdAt desc` + offset
+    // pagination re-scanned the same newest window on every Saturday run:
+    // 6 consecutive runs logged "0 plateformes MAJ, 50 sans provider" while
+    // rows carrying platforms went 4+ months unverified.
     const mediaItems = await prisma.mediaItem.findMany({
       where: whereClause,
       select: {
@@ -38,7 +46,7 @@ export async function POST(request: Request) {
         type: true,
         platforms: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { lastVerifiedAt: { sort: "asc", nulls: "first" } },
       skip: offset,
       take: limit,
     })
@@ -63,12 +71,28 @@ export async function POST(request: Request) {
         if (providers.length > 0) {
           await prisma.mediaItem.update({
             where: { id: item.id },
-            data: { platforms: providers },
+            data: { platforms: providers, lastVerifiedAt: new Date() },
           })
           stats.updated++
           stats.details.push(`${item.title}: ${providers.join(", ")}`)
+        } else if (!onlyEmpty && item.platforms.length > 0) {
+          // Successful fetch, zero FR providers: the title left streaming.
+          // Keeping the stale badge is the exact failure this pass exists to
+          // catch. (A TMDB error never lands here — it throws into the catch.)
+          await prisma.mediaItem.update({
+            where: { id: item.id },
+            data: { platforms: [], lastVerifiedAt: new Date() },
+          })
+          stats.updated++
+          stats.details.push(`${item.title}: plus aucune plateforme (retiré)`)
         } else {
           stats.noProviders++
+          // Stamp anyway so the rotation moves past provider-less rows instead
+          // of jamming on the same head window forever.
+          await prisma.mediaItem.update({
+            where: { id: item.id },
+            data: { lastVerifiedAt: new Date() },
+          })
         }
 
         // Small delay to respect TMDB rate limits

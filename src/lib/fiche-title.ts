@@ -50,3 +50,24 @@ export function buildFicheTitle({ title, age, provisional }: FicheTitleInput): s
   // Name alone already eats the budget: keep the age, drop the question.
   return name + (provisional ? ` — ${ans} (à confirmer)` : ` — ${ans}`)
 }
+
+/**
+ * Does a stored `seoTitle` override still agree with the CURRENT recommended
+ * age? Overrides embed the age as text ("… Dès 12 ans") and nothing
+ * invalidates them when the age moves (age-floor sweep, re-enrichment, admin
+ * edit) — production served "dès 6 ans" in the <title> of a fiche whose
+ * verdict was 8. A SERP contradicting the page is worse than no override, so
+ * the render path discards a stale one and falls back to buildFicheTitle,
+ * which can never disagree.
+ *
+ * An override with NO age wording is always consistent (nothing to contradict).
+ */
+export function seoTitleMatchesAge(
+  seoTitle: string,
+  age: number | null | undefined,
+): boolean {
+  const m = seoTitle.match(/d[èe]s (\d{1,2}) ans/i)
+  if (!m) return true
+  if (typeof age !== "number" || age <= 0) return false
+  return Number(m[1]) === age
+}

@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface AgeBadgeProps {
   age: number | null | undefined
@@ -15,8 +16,9 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
     lg: "h-16 w-16 text-2xl",
   }
 
-  // Treat 0, null, undefined as "not rated yet"
-  const isRated = age !== null && age !== undefined && age > 0
+  // 0 = « Tous publics » (a REAL rating); only null/undefined mean "not
+  // rated yet". Rendering TP as "?" was the Oak-Street bug (see age-label).
+  const isRated = typeof age === "number" && age >= 0
 
   const getBgColor = (age: number | null | undefined) => {
     if (!isRated) return "bg-gray-500"
@@ -37,7 +39,7 @@ export function AgeBadge({ age, size = "md", label, className }: AgeBadgeProps) 
         )}
         title={label || "Âge recommandé"}
       >
-        {isRated ? `${age}+` : "?"}
+        {isRated ? ageBadgeLabel(age) : "?"}
       </div>
       {label && (
         <span className="text-xs text-gray-600 font-medium">{label}</span>
