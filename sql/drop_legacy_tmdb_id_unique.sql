@@ -1,0 +1,11 @@
+-- 2026-08-28 · Fix the persistent silent import failures (1-2 tvShows.errors on
+-- every daily import run, imported:0). Uniqueness moved to (tmdb_id, type) —
+-- media_items_tmdb_id_type_key — because TMDB movie and TV ids are separate,
+-- numerically overlapping namespaces (see prisma/schema.prisma @@unique([tmdbId, type])).
+-- The legacy single-column unique index was never dropped, so any TV import whose
+-- TMDB id equals an existing movie's id fails P2002 forever, swallowed by the
+-- importers' bare catch. media_items_tmdb_id_idx (non-unique) remains for lookups.
+--
+-- APPLIED to production 2026-08-28 (Supabase migration drop_legacy_tmdb_id_unique).
+-- Kept here per the project's manual-SQL-migration convention.
+DROP INDEX IF EXISTS media_items_tmdb_id_key;

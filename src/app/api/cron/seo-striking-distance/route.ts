@@ -7,7 +7,11 @@ import { sendSeoReport } from "@/lib/email"
 
 // Write-side: the agent runs maillage + up to 3 sequential ~35s gpt-5-mini
 // synopsis rewrites on top of the GSC pull, so the old 60s ceiling would time out.
-export const maxDuration = 180
+// 300, not 180: the funnel now genuinely reaches MAX_TARGETS=60 fiches (the
+// query-level cap no longer starves it), and the worst-case LLM budget
+// (3 synopses + 3 titres at the 35s AbortController ceiling) is ~210s on its
+// own. Pro plan allows 300.
+export const maxDuration = 300
 
 export async function GET(req: NextRequest) {
   if (!(await isCronOrAdminAuthorized(req))) {
@@ -93,6 +97,9 @@ export async function GET(req: NextRequest) {
         titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
+        distinctTargets: autofix.distinctTargets,
+        droppedByCap: autofix.droppedByCap,
+        missingItems: autofix.missingItems,
         targetsExamined: autofix.targetsExamined,
         saturated: autofix.saturated,
         // Per-lever tallies — tells "nothing left to do" apart from "every
@@ -125,6 +132,9 @@ export async function GET(req: NextRequest) {
         titlesSet: autofix.titlesSet,
         flagged: autofix.flagged,
         skippedNonMedia: autofix.skippedNonMedia,
+        distinctTargets: autofix.distinctTargets,
+        droppedByCap: autofix.droppedByCap,
+        missingItems: autofix.missingItems,
         targetsExamined: autofix.targetsExamined,
         saturated: autofix.saturated,
         outcomes: autofix.outcomes,

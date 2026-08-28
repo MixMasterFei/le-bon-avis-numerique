@@ -4,7 +4,7 @@ import { withVerdict } from "@/lib/agent-verdict"
 
 type CronStatus = "success" | "error" | "partial"
 
-type RecentLog = {
+export type RecentLog = {
   task: string
   status: CronStatus
   summary: string
@@ -22,9 +22,16 @@ type OutputMetric = {
   minBaseline?: number
 }
 
-type ExpectedTask = {
+export type ExpectedTask = {
   task: string
   staleAfterHours: number
+  // ISO date (YYYY-MM-DD) this entry was added to EXPECTED_TASKS. A task with
+  // NO cron_logs at all is only flagged "missing" once staleAfterHours have
+  // elapsed since this date — a freshly registered cron legitimately has zero
+  // runs until its first scheduled fire (e.g. a monthly job added mid-month).
+  // Inert once the task has logged at least once; entries without it keep the
+  // historical behaviour (zero runs alarms immediately).
+  activatedAt?: string
   allowRepeatedPartial?: boolean
   remediation?: Remediation
   outputMetric?: OutputMetric
@@ -69,7 +76,7 @@ export type CronSupervisorResult = {
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || "https://totemavise.com"
 const MAX_REMEDIATIONS = 4
 
-const EXPECTED_TASKS: ExpectedTask[] = [
+export const EXPECTED_TASKS: ExpectedTask[] = [
   { task: "import", staleAfterHours: 36, outputMetric: { key: "totalExamined", label: "Items TMDB examinés" } },
   { task: "import-games", staleAfterHours: 36, outputMetric: { key: "fetched", label: "Jeux récupérés" } },
   { task: "release-alerts", staleAfterHours: 36, outputMetric: { key: "notified", label: "Alertes de sortie envoyées" } },
@@ -245,6 +252,9 @@ const EXPECTED_TASKS: ExpectedTask[] = [
     // stale but a genuinely skipped month does.
     task: "game-guides-check",
     staleAfterHours: 800,
+    // Registered 2026-08-19; first scheduled fire 2026-09-01 ("33 6 1 * *").
+    // Without activatedAt the supervisor flagged "missing" daily in that gap.
+    activatedAt: "2026-08-19",
     allowRepeatedPartial: true,
   },
   {
@@ -299,15 +309,21 @@ function groupByTask(logs: RecentLog[]): Map<string, RecentLog[]> {
   return byTask
 }
 
-function detectIssues(logs: RecentLog[]): Issue[] {
+export function detectIssues(logs: RecentLog[], expectedTasks: ExpectedTask[] = EXPECTED_TASKS): Issue[] {
   const byTask = groupByTask(logs)
   const issues: Issue[] = []
 
-  for (const expected of EXPECTED_TASKS) {
+  for (const expected of expectedTasks) {
     const taskLogs = byTask.get(expected.task) ?? []
     const latest = taskLogs[0]
 
     if (!latest) {
+      // Zero runs EVER. A task activated less than its own staleness window
+      // ago simply hasn't reached its first scheduled fire yet — not an
+      // anomaly. (An invalid activatedAt yields NaN, which fails this check
+      // and alarms: a watchdog should fail loud, not silent.)
+      const activatedAt = expected.activatedAt ? new Date(expected.activatedAt) : null
+      if (activatedAt && hoursSince(activatedAt) <= expected.staleAfterHours) continue
       issues.push({
         task: expected.task,
         status: "missing",

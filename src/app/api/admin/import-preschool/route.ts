@@ -178,7 +178,8 @@ export async function POST(req: NextRequest) {
         stats.imported++
         importedTitles.push(details.name)
         await new Promise((r) => setTimeout(r, 120))
-      } catch {
+      } catch (e) {
+        console.error(`[import-preschool] Import failed for tmdbId=${tvId}:`, e instanceof Error ? e.message : e)
         stats.errors++
       }
     }

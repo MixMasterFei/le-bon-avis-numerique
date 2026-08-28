@@ -198,7 +198,8 @@ async function importMoviesFromSource(
       const created = await createMovieFromTmdb(details, { providers })
       if (created) stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
-    } catch {
+    } catch (e) {
+      console.error(`[cron] Movie import failed for tmdbId=${movie.id} "${movie.title}":`, e instanceof Error ? e.message : e)
       stats.errors++
     }
   }
@@ -296,7 +297,10 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
       })
       stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
-    } catch {
+    } catch (e) {
+      // Named, not swallowed: the bare catch hid a P2002 on a legacy unique
+      // index for WEEKS (same 1-2 errors every run, imported:0).
+      console.error(`[cron] TV import failed for tmdbId=${show.id} "${show.name}":`, e instanceof Error ? e.message : e)
       stats.errors++
     }
   }

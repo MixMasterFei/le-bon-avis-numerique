@@ -44,7 +44,17 @@ const MAX_REPORTED = 25
 // anything was broken, but because it had run out of reachable work while
 // hundreds of further pos. 8-20 queries sat just past the cut. The agent now
 // works from a much deeper pool; the email still shows the top 25.
-const MAX_ACTIONABLE = 150
+//
+// The pool must be capped in DISTINCT FICHES, not queries: hot fiches emit
+// dozens of query variants each ("wicked âge", "wicked à partir de quel âge",
+// "avis wicked parents"…) and, opportunity being impressions-weighted, those
+// variants monopolise the head of the ranking. A 150-query window had shrunk
+// to 7 distinct fiches by Aug 2026 (all already saturated) — the exact
+// starvation this pool was meant to fix, reproduced one level up. The
+// per-fiche cap lives downstream (MAX_TARGETS in seo-autofix.ts, applied
+// AFTER dedup); this bound only mirrors the GSC rowLimit so the query-level
+// slice can never bind first.
+const MAX_ACTIONABLE = 5000
 
 function pageLabel(rawUrl: string): string {
   try {

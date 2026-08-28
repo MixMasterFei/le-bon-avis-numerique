@@ -290,16 +290,6 @@ export function computeSensitivityScore(
   return count === 0 ? 1.0 : total / count
 }
 
-// Genres that, when present on a media item, soften the dislike-genre gate.
-// Rationale: TMDB tags Shrek 2 with "Romance" (Shrek + Fiona) and La Tortue
-// rouge with "Drame" (emotional beats) even though both are clearly family
-// animations. A kid who picks "j'évite la romance" in the quiz means
-// "no adult-romance films" — not "exclude every animation with a romantic
-// subplot".
-const FAMILY_FRIENDLY_GENRE_MARKERS = new Set([
-  "animation", "famille", "familial", "family",
-])
-
 export function computeGenreScore(mediaGenres: string[], favoriteGenres: string[], dislikedGenres: string[] = []): number {
   if (favoriteGenres.length === 0 && dislikedGenres.length === 0) return 0.5
 

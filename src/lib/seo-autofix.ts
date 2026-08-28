@@ -214,6 +214,12 @@ export interface SeoAutofixResult {
   titlesSet: number
   flagged: number
   skippedNonMedia: number
+  /** Distinct fiches the actionable pool resolved to, BEFORE the MAX_TARGETS cap. */
+  distinctTargets: number
+  /** Distinct fiches dropped by the MAX_TARGETS cap this run. */
+  droppedByCap: number
+  /** Fiche ids parsed from GSC URLs but absent from the DB. */
+  missingItems: number
   /** Distinct fiches examined this run (after dedup + MAX_TARGETS). */
   targetsExamined: number
   /** Fiches with nothing left to do on any lever — already fully optimised. */
@@ -574,6 +580,10 @@ export async function runSeoAutofix(
   const ordered = [...byTarget.values()]
     .sort((a, b) => b.opportunity - a.opportunity)
     .slice(0, MAX_TARGETS)
+  // No silent caps: record what the fiche-level bound left on the table so
+  // cron_logs can distinguish "pool exhausted" from "pool truncated".
+  const droppedByCap = byTarget.size - ordered.length
+  let missingItems = 0
 
   for (const t of ordered) {
     const item = await prisma.mediaItem.findUnique({
@@ -583,7 +593,10 @@ export async function runSeoAutofix(
         director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
       },
     })
-    if (!item) continue
+    if (!item) {
+      missingItems++
+      continue
+    }
 
     const links = await ensureInternalLinks(item, dryRun)
 
@@ -706,6 +719,9 @@ export async function runSeoAutofix(
     titlesSet,
     flagged,
     skippedNonMedia,
+    distinctTargets: byTarget.size,
+    droppedByCap,
+    missingItems,
     targetsExamined: targets.length,
     saturated,
     outcomes,
