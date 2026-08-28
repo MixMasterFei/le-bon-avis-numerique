@@ -41,6 +41,11 @@ export interface CollectionDef {
   timeless?: boolean
   /** Hand-picked item IDs in display order (preferred). */
   curatedIds?: string[]
+  /** Seasonal collections: 0-indexed months where the collection is IN season.
+   *  Drives the /collections ordering (in-season first) — a page leading with
+   *  « Films de Noël » in August reads as an unmaintained site. Absent =
+   *  always in season. */
+  months?: number[]
   /** Dynamic query fallback (only when curatedIds is absent). */
   query?: CollectionQuery
 }
@@ -48,7 +53,9 @@ export interface CollectionDef {
 /** Featured on the homepage strip — order matters, keep to 4. */
 export const COLLECTION_HIGHLIGHTS = [
   "top-films-famille",
-  "films-vacances-ete",
+  // Rentrée (fin août–septembre) — remplace la sélection « vacances d'été »
+  // qui menait la strip jusqu'ici ; l'été reste accessible sur /collections.
+  "films-rentree",
   "top-jeux-famille",
   "meilleurs-films-2026",
 ] as const
@@ -310,6 +317,7 @@ export const COLLECTIONS: CollectionDef[] = [
   // ── Seasonal collections ───────────────────────────────────────────
   {
     id: "films-noel-famille",
+    months: [10, 11],
     timeless: true,
     title: "Films de Noël en famille",
     description: "Les classiques et nouveautés pour des fêtes magiques en famille.",
@@ -338,6 +346,7 @@ export const COLLECTIONS: CollectionDef[] = [
   },
   {
     id: "films-halloween-enfants",
+    months: [9],
     timeless: true,
     title: "Films d'Halloween pour enfants",
     description: "Frissons légers et citrouilles : des films d'Halloween adaptés aux enfants, sans cauchemars.",
@@ -361,6 +370,7 @@ export const COLLECTIONS: CollectionDef[] = [
   },
   {
     id: "films-vacances-ete",
+    months: [5, 6, 7],
     title: "Films pour les vacances d'été",
     description: "Soleil, aventures et bonne humeur : la sélection parfaite pour les vacances.",
     intro: "Les grandes vacances, c'est aussi les jours de pluie, les après-midi trop chauds pour sortir et les longs trajets en voiture. Ces films sentent bon l'été, l'aventure et la liberté. Pile ce qu'il faut pour les journées où on veut rêver un peu sans bouger du canapé.",
@@ -389,6 +399,29 @@ export const COLLECTIONS: CollectionDef[] = [
       "7794734b-8013-4338-a671-b11f0433a283", // Paddington au Pérou (6 ans)
       "d7624f2d-53f1-4899-81e5-0553f8c418a8", // Mufasa : Le Roi Lion (6 ans)
     ],
+  },
+
+  {
+    id: "films-rentree",
+    title: "Films pour la rentrée",
+    description: "École, amitié, confiance en soi : des films qui accompagnent la rentrée, du CP au collège.",
+    intro: "Cartables prêts, boule au ventre ou impatience — la rentrée remue toujours quelque chose. Ces films parlent d'école, de nouveaux amis, de trouver sa place et de croire en soi. Parfaits pour lancer l'année du bon pied, ou pour dédramatiser la veille du grand jour.",
+    emoji: "🎒",
+    limit: 14,
+    category: "seasonal",
+    months: [7, 8], // août–septembre
+    lastUpdated: "2026-08",
+    // Query-driven on purpose: the École/Harcèlement topics + the shared
+    // Bayesian ordering give a strong, self-refreshing list (Wonder, Retour
+    // vers le futur, Les Quatre Cents Coups…) without hand-picked ids to
+    // maintain. Films only — the same query on TV drowns in teen dramas.
+    query: {
+      type: "MOVIE",
+      topics: ["École", "Harcèlement"],
+      maxAge: 12,
+      excludeGenres: ["Horreur", "Thriller", "Romance"],
+      minVotes: 300,
+    },
   },
 
   // ── Gaming collections (disjoint by design — see header) ───────────

@@ -33,7 +33,14 @@ export default async function CollectionsPage() {
   const collections = await getCollectionSummaries()
 
   const topCollections = collections.filter((c) => c.category === "top")
-  const seasonalCollections = collections.filter((c) => c.category === "seasonal")
+  // In-season collections lead; out-of-season ones stay listed (their pages
+  // are permanent SEO surfaces) but sink to the end — the block used to open
+  // on « Films de Noël » in August, which reads as an unmaintained site.
+  const month = new Date().getMonth()
+  const inSeason = (c: (typeof collections)[number]) => !c.months || c.months.includes(month)
+  const seasonalCollections = collections
+    .filter((c) => c.category === "seasonal")
+    .sort((a, b) => Number(inSeason(b)) - Number(inSeason(a)))
 
   // CollectionPage + ItemList of the collections themselves.
   const jsonLd = {

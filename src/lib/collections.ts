@@ -30,6 +30,8 @@ export interface CollectionSummary {
   lastUpdated: string
   count: number
   previewPosters: string[]
+  /** Seasonal in-season months (0-indexed) — see CollectionDef.months. */
+  months?: number[]
 }
 
 const ITEM_SELECT = {
@@ -191,6 +193,7 @@ export const getCollectionSummaries = cache(async (): Promise<CollectionSummary[
         lastUpdated: collection.lastUpdated,
         count,
         previewPosters: posters,
+        months: collection.months,
       }
     }),
   )
