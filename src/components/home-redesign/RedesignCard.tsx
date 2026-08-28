@@ -11,6 +11,7 @@ import { useSettings } from "@/contexts/SettingsContext"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { shouldBlurMedia, BLUR_TOOLTIP } from "@/lib/should-blur-media"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { cn } from "@/lib/utils"
 import { genreLabelFr, genreBadgeColor } from "@/components/home-v2/apercuTheme"
 import { TotemRating } from "./TotemRating"
@@ -26,6 +27,9 @@ export interface RedesignCardMedia {
   genres?: string[] | null
   contentMetrics?: TotemMetrics | null
   cornerLabel?: string | null
+  /** Age is still an estimate (imported but not yet analysed). Badged
+   *  "à confirmer" and never shown with a content totem. */
+  provisional?: boolean
 }
 
 const TYPE_LABELS: Record<RedesignCardMedia["type"], string> = {
@@ -65,8 +69,13 @@ export function RedesignCard({
 
   const familyFit = getFamilyFit(media.id)
   const visibleGenres = (media.genres ?? []).slice(0, 2)
-  const showTotem = !upcoming && hasTotemData(media.contentMetrics, media.type)
-  const ageLabel = typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
+  // A provisional title has no trustworthy content analysis, so it never gets a
+  // totem — only the age, badged "à confirmer".
+  const unconfirmed = upcoming || media.provisional === true
+  const showTotem = !unconfirmed && hasTotemData(media.contentMetrics, media.type)
+  // "TP" for a tous-publics (0) title. Testing `> 0` rendered NO badge at all,
+  // which read as "not rated" on the family rail.
+  const ageLabel = ageBadgeLabel(media.expertAgeRec)
 
   const shouldBlur =
     !revealed &&
@@ -78,6 +87,7 @@ export function RedesignCard({
         sexNudity: media.contentMetrics?.sexNudity,
         language: media.contentMetrics?.language,
         substanceUse: media.contentMetrics?.substanceUse,
+        genres: media.genres,
       },
       settings.blur18Plus,
     )
@@ -144,7 +154,7 @@ export function RedesignCard({
               <span className="text-[14px] font-extrabold leading-none text-white" style={{ fontFamily: "var(--font-bricolage)" }}>
                 {ageLabel}
               </span>
-              {upcoming && <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-white/75">à confirmer</span>}
+              {unconfirmed && <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wide text-white/75">à confirmer</span>}
             </div>
           )
         )}

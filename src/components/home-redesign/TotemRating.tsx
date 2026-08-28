@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { ageBadgeLabel, ageSentenceLabel } from "@/lib/age-label"
 import {
   totemAxesFor,
   vigilanceAxisLevel,
@@ -32,7 +33,9 @@ interface TotemRatingProps {
  */
 export function TotemRating({ age, metrics, variant, type, genres }: TotemRatingProps) {
   const [open, setOpen] = useState(false)
-  const ageLabel = typeof age === "number" && age > 0 ? `${age}+` : "?"
+  // "TP" for tous publics (0) — a real rating, not a missing one; "?" only when
+  // we genuinely have no age.
+  const ageLabel = ageBadgeLabel(age) ?? "?"
   const m = metrics ?? {}
   // Categories worth flagging = axes the (age-anchored) coarse level marks ≥1.
   const flagged = totemAxesFor(type).filter((a) => vigilanceAxisLevel(m[a.key], age) >= 1)
@@ -116,8 +119,8 @@ export function TotemRating({ age, metrics, variant, type, genres }: TotemRating
         aria-hidden={!open}
       >
         <div className="mb-2 text-[11px] font-semibold leading-snug" style={{ color: "#C9BCA8" }}>
-          {typeof age === "number" && age > 0 ? (
-            <>Dès <b className="font-bold text-white">{age} ans</b></>
+          {ageSentenceLabel(age) ? (
+            <b className="font-bold text-white">{ageSentenceLabel(age)}</b>
           ) : (
             <>Repères de contenu</>
           )}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import {
   getRecentGames,
+  getFreshReleases,
   getPopularGames,
   getIGDBImageUrl,
   getPegiInfo,
@@ -30,6 +31,14 @@ export const maxDuration = 60
 // no point importing what we'd then have to filter out everywhere.
 
 const MIN_VOTE_COUNT = 20
+// Separate, much lower floor for the just-released window. IGDB rating counts
+// accumulate over weeks, so `MIN_VOTE_COUNT` is structurally unreachable for a
+// game that shipped this month — which is why this job logged "0 jeux importés
+// (99 déjà en base)" every day for a month while the catalogue's newest console
+// release stayed a month old. The tight date window + cover + console-platform
+// filters carry the quality gate here instead.
+const MIN_FRESH_VOTE_COUNT = 3
+const FRESH_WINDOW_DAYS = 90
 const MAX_IMPORT_PER_RUN = 25 // Vercel 60s ceiling — each Prisma create
                               // is fast but the IGDB fetches dominate;
                               // 25 fits with comfortable headroom.
@@ -94,16 +103,18 @@ async function importBatch(
   source: string,
   remainingBudget: number,
   stats: ImportStats,
+  minVoteCount: number = MIN_VOTE_COUNT,
 ): Promise<number> {
   if (remainingBudget <= 0 || games.length === 0) return 0
 
   // Defensive popularity floor — IGDB helpers already filter, but
   // re-check here so loosening their thresholds doesn't flood the
-  // catalog with shovelware.
+  // catalog with shovelware. The fresh-release pass passes its own,
+  // lower floor (see MIN_FRESH_VOTE_COUNT).
   const eligible = games.filter((g) => {
     if (!g.cover?.image_id) return false
     const count = g.total_rating_count ?? 0
-    if (count < MIN_VOTE_COUNT) {
+    if (count < minVoteCount) {
       stats.belowThreshold++
       return false
     }
@@ -180,6 +191,29 @@ export async function GET(req: NextRequest) {
       stats,
     )
 
+    // Just-released window with a token popularity floor. Wrapped in its own
+    // try/catch: this is the newest query in the job, so a bad response here
+    // must never cost us the two passes above.
+    if (stats.imported < MAX_IMPORT_PER_RUN) {
+      try {
+        const fresh = await getFreshReleases(60, {
+          days: FRESH_WINDOW_DAYS,
+          minRatingCount: MIN_FRESH_VOTE_COUNT,
+        })
+        stats.fetched += fresh.length
+        sources.fresh = await importBatch(
+          fresh,
+          "fresh",
+          MAX_IMPORT_PER_RUN - stats.imported,
+          stats,
+          MIN_FRESH_VOTE_COUNT,
+        )
+      } catch (err) {
+        stats.errors++
+        console.warn("[weekly-games-import] fresh-release pass failed:", err)
+      }
+    }
+
     // Top-up from popular games — catches catalog gaps where a
     // mainstream title (e.g. an older but still-popular Switch game)
     // never made it into our DB. IGDB filter here is `> 100` ratings
@@ -201,7 +235,7 @@ export async function GET(req: NextRequest) {
       task: "import-games",
       status: stats.errors > 0 ? "partial" : "success",
       summary: `${stats.imported} jeux importés (${stats.alreadyHad} déjà en base, ${stats.belowThreshold} sous seuil) en ${duration}s`,
-      details: { ...stats, sources, MIN_VOTE_COUNT, MAX_IMPORT_PER_RUN },
+      details: { ...stats, sources, MIN_VOTE_COUNT, MIN_FRESH_VOTE_COUNT, FRESH_WINDOW_DAYS, MAX_IMPORT_PER_RUN },
       startTime,
     })
 

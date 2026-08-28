@@ -685,6 +685,47 @@ describe("catalog card family-fit gates", () => {
     })
     expect(level).toBe("moderate")
   })
+
+  it("lets a teen keep a full verdict on MODERATE violence", () => {
+    // Regression: the teen cap fired at violence >= 3, i.e. "modéré" on the
+    // 0-5 scale — where essentially every action / adventure / superhero title
+    // sits. A 15-year-old on a 12+ Spider-Man was flattened to "À vérifier"
+    // however well age, genres and stated tolerance matched.
+    for (const memberAge of [13, 15]) {
+      expect(
+        capCatalogCardFitLevel("excellent", {
+          memberAge,
+          metrics: { violence: 3, toneTags: ["Action intense"] },
+          maturePenaltySeverity: null,
+          prefPillar: "love",
+        }),
+      ).toBe("excellent")
+    }
+  })
+
+  it("still caps a teen on MARKED violence", () => {
+    // 4 is the line the rest of the system draws for "high violence"
+    // (computeMatureContentPenalty, isFamilyWarningContent).
+    expect(
+      capCatalogCardFitLevel("excellent", {
+        memberAge: 15,
+        metrics: { violence: 4, toneTags: [] },
+        maturePenaltySeverity: null,
+        prefPillar: "love",
+      }),
+    ).toBe("moderate")
+  })
+
+  it("keeps the under-13 rule at moderate violence", () => {
+    expect(
+      capCatalogCardFitLevel("excellent", {
+        memberAge: 12,
+        metrics: { violence: 3, toneTags: [] },
+        maturePenaltySeverity: null,
+        prefPillar: "love",
+      }),
+    ).toBe("moderate")
+  })
 })
 
 describe("positive content copy guard", () => {

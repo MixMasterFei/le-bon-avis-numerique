@@ -94,6 +94,9 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Cron auth helper | `src/lib/cron-auth.ts` |
 | Cron activity logger | `src/lib/cron-log.ts` |
 | Seeded shuffle (homepage rotation) | `src/lib/seeded-shuffle.ts` |
+| Seasonal gate (no Noël in August) | `src/lib/seasonal.ts` |
+| Age badge formatting (0 = « TP ») | `src/lib/age-label.ts` |
+| Poster blur rules | `src/lib/should-blur-media.ts` |
 | TMDB API | `src/lib/tmdb.ts` |
 | IGDB API | `src/lib/igdb.ts` |
 | Google Books API | `src/lib/google-books.ts` |
@@ -276,7 +279,9 @@ Imported films get an estimated `expertAgeRec` immediately (French CSA → forei
 - **Curated surfaces stay expert-only.** `fetchMovies`/`fetchSeries` keep the `isEnriched: true` gate by default; pass `includeProvisional: true` (API: `?includeProvisional=1`) to also surface provisional films. Enabled only on **search** (`/films/recherche`), **`/films?sort=newest`**, and the **cinema** view (off-DB now_playing films get an age estimated from TMDB `genre_ids` in `src/lib/cinema.ts`). Homepage rails, recommendations, and family-fit remain expert-only.
 - **Smart filter (`/api/filter/smart`) is expert-only** (`isEnriched: true` in `buildSmartFilterWhere`): provisional films have no `ContentMetrics`, so per-member sensitivity scoring can't include them safely.
 - **Imports populate platforms day-one** (`createMovieFromTmdb` calls watch-providers) so a freshly-imported Netflix film is filterable before the Saturday streaming cron. Provider strings are normalized via the shared `src/lib/streaming-providers.ts` (`"Netflix"`, not `"Netflix France"` — filter UIs must match).
-- **Backfill** old null-age films via `POST /api/admin/backfill-provisional-age` (admin "Backfill âges provisoires" preset), estimating from stored `officialRating`/`genres` only. Theatrical top-ups: admin "Cinéma (sorties en salle)" preset (`source=now_playing`).
+- **Backfill** old null-age films via `POST /api/admin/backfill-provisional-age` (admin "Backfill âges provisoires" preset), estimating from stored `officialRating`/`genres` only. The same call also re-floors false "Tous publics" rows (`expertAgeRec: 0` + a mature genre → genre heuristic, see `floorTousPublicsByGenre`). Theatrical top-ups: admin "Cinéma (sorties en salle)" preset (`source=now_playing`).
+- **`expertAgeRec: 0` is a rating, not a gap.** It means "Tous publics" and must render as `TP` / « Tous publics » (`src/lib/age-label.ts`), never as a blank badge — a blank badge reads as "not rated yet". A TP title carrying a mature genre (thriller / mystère / crime / guerre / horreur) is a *false* TP: the provisional estimator floors it to the genre heuristic instead.
+- **The homepage family picks rail never leads with a provisional title.** `TopPicksRail` filters `isProvisional` out of its cinema pool — a film whose age is still a genre guess can't be a family recommendation. Provisional films stay in the factual "À l'affiche au cinéma" rail, badged "à confirmer".
 
 ---
 

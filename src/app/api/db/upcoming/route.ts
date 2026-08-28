@@ -15,6 +15,11 @@ import { getUpcomingCinemaMovies } from "@/lib/cinema"
 export const dynamic = "force-dynamic"
 
 const LIMIT = 12
+// Candidates fetched per source BEFORE the family age cap is applied. The age
+// filter below can legitimately reject most of a soonest-first slice (a family
+// capped at 10 keeps roughly one theatrical release in six), so cutting at
+// LIMIT first left the rail with two cards. Over-fetch, then filter, then cut.
+const CANDIDATE_POOL = LIMIT * 6
 
 export async function GET(request: Request) {
   try {
@@ -27,7 +32,7 @@ export async function GET(request: Request) {
       // upcoming?region=FR minus what's already now-playing). NOT the stored
       // primary release_date, which can sit in the future for a film already in
       // cinemas and would wrongly show it as "à venir".
-      getUpcomingCinemaMovies(LIMIT).catch(() => []),
+      getUpcomingCinemaMovies(CANDIDATE_POOL).catch(() => []),
       // TV + games: a single, unambiguous release date (no theatrical / now-playing
       // split), so the stored future-date filter is reliable for these.
       prisma.mediaItem
@@ -52,7 +57,7 @@ export async function GET(request: Request) {
             releaseDate: true,
           },
           orderBy: { releaseDate: "asc" }, // soonest first; null dates last
-          take: LIMIT,
+          take: CANDIDATE_POOL,
         })
         .catch(() => []),
     ])
@@ -86,9 +91,13 @@ export async function GET(request: Request) {
     // Applied AFTER the merge so it also covers the off-DB TMDB cinema
     // candidates (their ages are provisional genre estimates), not just the
     // stored TV/GAME rows.
-    const merged = [...movieItems, ...otherItems].filter((m) =>
-      maxAge === null ? true : typeof m.expertAgeRec === "number" && m.expertAgeRec <= maxAge,
-    )
+    const merged = [...movieItems, ...otherItems]
+      // A card with no artwork reads as a broken tile on this rail, and we now
+      // have a deep enough candidate pool to simply skip those.
+      .filter((m) => typeof m.posterUrl === "string" && m.posterUrl.startsWith("http"))
+      .filter((m) =>
+        maxAge === null ? true : typeof m.expertAgeRec === "number" && m.expertAgeRec <= maxAge,
+      )
 
     // Merge and order by soonest release; unknown dates sink to the end.
     const items = merged

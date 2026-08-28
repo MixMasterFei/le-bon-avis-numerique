@@ -961,6 +961,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     expertAgeRec={media.expertAgeRec}
                     violenceScore={media.contentMetrics?.violence}
                     mediaType={media.type}
+                    genres={media.genres}
                     sizes="(max-width: 640px) 160px, (max-width: 1024px) 192px, 210px"
                     priority
                   />

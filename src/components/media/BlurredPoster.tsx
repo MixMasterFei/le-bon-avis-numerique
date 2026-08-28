@@ -16,6 +16,8 @@ interface BlurredPosterProps {
   languageScore?: number | null
   substanceUseScore?: number | null
   mediaType?: string
+  /** Media genres — drives the horror blur trigger (see should-blur-media). */
+  genres?: string[] | null
   className?: string
   sizes?: string
   priority?: boolean
@@ -30,6 +32,7 @@ export function BlurredPoster({
   languageScore,
   substanceUseScore,
   mediaType,
+  genres,
   className,
   sizes,
   priority,
@@ -44,6 +47,7 @@ export function BlurredPoster({
       sexNudity: sexNudityScore,
       language: languageScore,
       substanceUse: substanceUseScore,
+      genres,
     },
     settings.blur18Plus,
   )

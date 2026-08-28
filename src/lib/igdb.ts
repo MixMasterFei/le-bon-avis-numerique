@@ -480,6 +480,46 @@ export async function getRecentGames(limit = 100): Promise<IGDBGame[]> {
   return igdbFetch<IGDBGame[]>("/games", body)
 }
 
+/**
+ * Just-released console games, with a LOW popularity floor.
+ *
+ * `getRecentGames` requires `total_rating_count > 20` over a 6-month window,
+ * which is the right gate for the catalogue at large but structurally blind to
+ * the newest releases: IGDB rating counts accumulate over weeks, so a game
+ * that shipped this month has almost none. That is why the daily import
+ * reported "0 jeux importés (99 déjà en base)" for a month straight while
+ * genuinely new titles piled up outside the catalogue.
+ *
+ * The window is deliberately tight (default 90 days) and the floor is a token
+ * one: a handful of ratings is still enough to separate a real release from a
+ * zero-signal asset flip, and `cover != null` + the console-platform filter do
+ * most of the shovelware filtering already.
+ */
+export async function getFreshReleases(
+  limit = 60,
+  { days = 90, minRatingCount = 3 }: { days?: number; minRatingCount?: number } = {},
+): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 60
+  const safeDays = sanitizeNumber(days, 1, 365) || 90
+  const safeMin = sanitizeNumber(minRatingCount, 0, 1000) ?? 3
+  const now = Math.floor(Date.now() / 1000)
+  const since = now - safeDays * 24 * 60 * 60
+
+  const body = `
+    fields name, summary, cover.url, cover.image_id, first_release_date,
+           genres.name, platforms.name, platforms.abbreviation,
+           ${IGDB_AGE_RATING_FIELDS},
+           involved_companies.company.name, involved_companies.developer,
+           themes.name,
+           total_rating, total_rating_count;
+    where first_release_date > ${since} & first_release_date < ${now} & cover != null & platforms = ${CONSOLE_FILTER} & total_rating_count > ${safeMin};
+    sort first_release_date desc;
+    limit ${safeLimit};
+  `
+
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
 // Platform IDs for specific platform queries
 const PLATFORM_IDS = {
   SWITCH: 130,

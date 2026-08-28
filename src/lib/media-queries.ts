@@ -111,6 +111,13 @@ const CONSOLE_PLATFORMS = [
 
 const DEFAULT_GAME_MIN_QUALITY = 60
 
+// Recency exemption for the games popularity floor — see fetchGames below.
+// Mirrors MIN_FRESH_VOTE_COUNT / FRESH_WINDOW_DAYS in the games import cron:
+// what we let INTO the catalogue as a fresh release must also be allowed OUT
+// onto the "sortis récemment" rail, or the import change is invisible.
+const GAME_FRESH_MIN_VOTES = 3
+const GAME_FRESH_WINDOW_DAYS = 90
+
 // ── Shared where-clause builders ─────────────────────────────────────
 
 function appendAnd(where: Prisma.MediaItemWhereInput, ...conditions: Prisma.MediaItemWhereInput[]) {
@@ -578,11 +585,31 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
 
   // Popularity floor — IGDB rating count, stored as tmdbVoteCount.
   // Keeps obscure indie shovelware out of recency-sorted surfaces
-  // (homepage rail + /jeux?sort=releaseDate). AAA pre-release titles
-  // accumulate hundreds of IGDB ratings well before launch so this
-  // doesn't suppress legitimate marquee releases.
+  // (homepage rail + /jeux?sort=releaseDate).
+  //
+  // The floor is relaxed for JUST-RELEASED games. IGDB rating counts accumulate
+  // over weeks, so a full-price console release that shipped this month sits
+  // well under 20 and was invisible on the very rail meant to show it — the
+  // homepage "sortis récemment" rail could go a month without its newest card
+  // changing. A brand-new title still needs a real signal (GAME_FRESH_MIN_VOTES
+  // ratings), which is what separates it from a zero-signal asset flip.
   if (typeof filters.minVoteCount === "number" && filters.minVoteCount > 0) {
-    where.tmdbVoteCount = { gte: filters.minVoteCount }
+    if (filters.minVoteCount > GAME_FRESH_MIN_VOTES) {
+      const freshSince = new Date(Date.now() - GAME_FRESH_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+      appendAnd(where, {
+        OR: [
+          { tmdbVoteCount: { gte: filters.minVoteCount } },
+          {
+            AND: [
+              { releaseDate: { gte: freshSince } },
+              { tmdbVoteCount: { gte: GAME_FRESH_MIN_VOTES } },
+            ],
+          },
+        ],
+      })
+    } else {
+      where.tmdbVoteCount = { gte: filters.minVoteCount }
+    }
   }
 
   applySearchFilter(where, filters.search, false) // Games: title only

@@ -8,6 +8,7 @@ import { Bell, Check } from "lucide-react"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
+import { ageMetaLabel } from "@/lib/age-label"
 
 export interface UpcomingItem {
   id: string
@@ -35,6 +36,11 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
   const pathname = usePathname()
   const [notified, setNotified] = useState(false)
   const [busy, setBusy] = useState(false)
+  // A dead / missing poster URL used to render the browser's broken-image icon
+  // in the card header ("Dans les cordes"). Fall back to the flat placeholder
+  // tint instead — this is a raw <img> (not SafeImage) because the header is a
+  // cropped band, not a fill container.
+  const [posterFailed, setPosterFailed] = useState(false)
 
   // Hydrate the real subscription state (server-side) for logged-in users.
   useEffect(() => {
@@ -86,7 +92,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
 
   const href = `/media/${toMediaRouteId(item.type, item.id)}`
   const genreStr = item.genres.slice(0, 2).map(genreLabelFr).join(" · ")
-  const ageStr = typeof item.expertAgeRec === "number" && item.expertAgeRec > 0 ? `conseillé ${item.expertAgeRec}+` : null
+  const ageStr = ageMetaLabel(item.expertAgeRec)
   const meta = [genreStr, ageStr].filter(Boolean).join(" · ")
 
   let month: string | null = null
@@ -106,7 +112,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
     >
       <Link href={href} className="block">
         <div className="relative h-[108px] overflow-hidden" style={{ background: "var(--placeholder, #E6DFCE)" }}>
-          {item.posterUrl && (
+          {item.posterUrl && !posterFailed && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={tmdbPosterAtSize(item.posterUrl, "w342")}
@@ -114,6 +120,7 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
               className="absolute inset-0 h-full w-full object-cover"
               style={{ objectPosition: "center 22%" }}
               loading="lazy"
+              onError={() => setPosterFailed(true)}
             />
           )}
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,0) 62%)" }} />

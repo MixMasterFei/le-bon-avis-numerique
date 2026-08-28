@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { estimateProvisionalAgeFromStored } from "@/lib/import-helpers"
+import { estimateProvisionalAgeFromStored, floorTousPublicsByGenre } from "@/lib/import-helpers"
 
 // Admin-gated by middleware (/api/admin/*). Mutates many rows → keep batches small.
 export const maxDuration = 60
@@ -12,6 +12,11 @@ export const maxDuration = 60
  * heuristic) — no TMDB refetch. Leaves isEnriched = false so the UI shows the
  * "âge provisoire" badge. Each call drains the next `limit` rows; click again
  * (or re-POST) until `remaining` reaches 0.
+ *
+ * Second pass: re-floor films already stored at `expertAgeRec: 0` ("Tous
+ * publics") that carry a mature genre. A TP thriller sits below every age
+ * filter on the site AND renders without a badge, so it reads as "not rated" on
+ * a family rail. Idempotent and monotonic — the floor only ever raises an age.
  */
 export async function POST(request: Request) {
   try {
@@ -42,6 +47,23 @@ export async function POST(request: Request) {
       updated++
     }
 
+    // Second pass — false "Tous publics" on mature-genre titles.
+    let reFloored = 0
+    const tpMature = await prisma.mediaItem.findMany({
+      where: { type: { in: ["MOVIE", "TV"] }, expertAgeRec: 0 },
+      select: { id: true, genres: true },
+      take: limit,
+    })
+    for (const film of tpMature) {
+      const floored = floorTousPublicsByGenre(0, film.genres)
+      if (floored == null || floored <= 0) continue
+      await prisma.mediaItem.update({
+        where: { id: film.id },
+        data: { expertAgeRec: floored },
+      })
+      reFloored++
+    }
+
     const remaining = await prisma.mediaItem.count({
       where: { type: { in: ["MOVIE", "TV"] }, expertAgeRec: null },
     })
@@ -49,6 +71,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       count: updated,
+      reFloored,
       remaining,
       done: remaining === 0,
     })

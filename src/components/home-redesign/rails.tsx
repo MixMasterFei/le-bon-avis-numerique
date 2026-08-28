@@ -6,6 +6,7 @@ import { CardRailSection, Em, Band, Wrap, SectionHead } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
+import { isOutOfSeason } from "@/lib/seasonal"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -21,6 +22,8 @@ interface ApiMedia {
   contentMetrics?: RedesignCardMedia["contentMetrics"]
   cinemaReleaseBucket?: string
   releaseDate?: string | null
+  /** /api/cinema only: the age is an estimate (not in DB, or not yet enriched). */
+  isProvisional?: boolean
 }
 
 function asCardType(t: string | undefined, fallback: CardType): CardType {
@@ -36,6 +39,7 @@ function toCard(m: ApiMedia, fallbackType: CardType): RedesignCardMedia {
     expertAgeRec: m.expertAgeRec ?? null,
     genres: m.genres ?? [],
     contentMetrics: m.contentMetrics ?? null,
+    provisional: m.isProvisional === true,
     cornerLabel:
       m.cinemaReleaseBucket === "reissue"
         ? "Reprise"
@@ -77,8 +81,20 @@ function persistSet<T>(key: string, value: T): void {
   }
 }
 
-function useRail(url: string, key: string, fallbackType: CardType) {
-  const cacheKey = `${key}@${url}`
+/**
+ * `filterKey` + `filter`: an optional predicate applied to the raw API rows
+ * before they become cards. Used for the seasonal gate (no Noël in August).
+ * The key is part of the cache key so two rails on the same URL with different
+ * filters can't share a cached result.
+ */
+function useRail(
+  url: string,
+  key: string,
+  fallbackType: CardType,
+  opts: { filter?: (m: ApiMedia) => boolean; filterKey?: string } = {},
+) {
+  const { filter, filterKey = "" } = opts
+  const cacheKey = `${key}@${url}#${filterKey}`
   const [items, setItems] = useState<RedesignCardMedia[]>(() => RAIL_CACHE.get(cacheKey) ?? [])
   const [loading, setLoading] = useState(!RAIL_CACHE.has(cacheKey))
   // Skeletons only on the very first load; after that, filter changes keep the
@@ -114,7 +130,7 @@ function useRail(url: string, key: string, fallbackType: CardType) {
       .then((data) => {
         if (cancelled) return
         const arr = Array.isArray(data?.[key]) ? (data[key] as ApiMedia[]) : []
-        const mapped = arr.map((m) => toCard(m, fallbackType))
+        const mapped = (filter ? arr.filter(filter) : arr).map((m) => toCard(m, fallbackType))
         RAIL_CACHE.set(cacheKey, mapped)
         persistSet(cacheKey, mapped)
         setItems(mapped)
@@ -123,8 +139,23 @@ function useRail(url: string, key: string, fallbackType: CardType) {
       .catch(() => { if (!cancelled && !didInit.current) setItems([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
+    // `filter` is recreated per render by callers; `filterKey` is the stable
+    // identity that decides when a refetch is actually needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, key, fallbackType, cacheKey])
   return { items, loading }
+}
+
+/** Month-aware seasonal gate shared by every rail (see @/lib/seasonal). */
+function useSeasonalFilter() {
+  const month = new Date().getMonth()
+  return useMemo(
+    () => ({
+      filter: (m: ApiMedia) => !isOutOfSeason(m, month),
+      filterKey: `season:${month}`,
+    }),
+    [month],
+  )
 }
 
 // ── Top picks — time-aware, quality, in-season ("Pour ce soir / ce week-end…") ──
@@ -134,21 +165,6 @@ function useRail(url: string, key: string, fallbackType: CardType) {
 // MIX shifts by moment: the weekend leans films, weeknights lean séries + jeux.
 // Everything is age-gated and passes each endpoint's public quality floor, and
 // out-of-season holiday titles (no Noël in June) are filtered out.
-
-const SEASONAL = {
-  christmas: /(no[eë]l|christmas|santa|p[eè]re no[eë]l)/,
-  halloween: /halloween/,
-}
-
-/** Drop holiday-themed titles when we're not in their season. */
-function isOutOfSeason(m: ApiMedia, month0: number): boolean {
-  const hay = `${m.title} ${(m.genres ?? []).join(" ")} ${(m.topics ?? []).join(" ")}`.toLowerCase()
-  const decSeason = month0 === 10 || month0 === 11 // nov–déc
-  const octSeason = month0 === 9 // oct
-  if (!decSeason && SEASONAL.christmas.test(hay)) return true
-  if (!octSeason && SEASONAL.halloween.test(hay)) return true
-  return false
-}
 
 interface TopPools {
   cinema: RedesignCardMedia[]
@@ -200,7 +216,18 @@ function useTopPicks(maxAge: number) {
         const next: TopPools = {
           // Cinema = TMDB now_playing region=FR (already French theatrical), games
           // have no streaming providers — so neither gets the FR-availability gate.
-          cinema: list(cin, "movies").filter(inSeason).map((m) => toCard(m, "MOVIE")),
+          //
+          // Provisional titles are excluded HERE and only here: this rail is the
+          // "what should we watch together" recommendation, and a film whose age
+          // is still a genre guess (no AI pass, no content analysis) can't be
+          // recommended to a family — that is how a thriller stored at "Tous
+          // publics" led the rail with no badge at all. Those films still show
+          // in the dedicated "À l'affiche au cinéma" rail, which is a factual
+          // listing and badges them "à confirmer".
+          cinema: list(cin, "movies")
+            .filter((m) => m.isProvisional !== true)
+            .filter(inSeason)
+            .map((m) => toCard(m, "MOVIE")),
           films,
           series: list(tv, "items").filter(relevant).map((m) => toCard(m, "TV")),
           games: list(gm, "games").filter(inSeason).map((m) => toCard(m, "GAME")),
@@ -359,8 +386,11 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
   // sélection" link to /recherche — an empty search box, which read as a
   // broken page with no movies.
   const [seed, setSeed] = useState<number | null>(null)
-  const url = `/api/db/expert-picks?limit=10${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}${seed !== null ? `&seed=${seed}` : ""}`
-  const { items, loading } = useRail(url, "items", "MOVIE")
+  // Over-fetch (14 for a 10-card row) so the seasonal gate can drop a couple of
+  // Noël titles without leaving a short row.
+  const url = `/api/db/expert-picks?limit=14${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}${seed !== null ? `&seed=${seed}` : ""}`
+  const season = useSeasonalFilter()
+  const { items, loading } = useRail(url, "items", "MOVIE", season)
   return (
     <CardRailSection
       alt
@@ -369,7 +399,7 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
       title={<>Nos <Em tone="pine">coups de cœur</Em> du moment</>}
       lead="Des valeurs sûres pour la famille, avec un âge conseillé et une analyse du contenu."
       onReload={() => setSeed(Math.floor(Math.random() * 1_000_000))}
-      items={items}
+      items={items.slice(0, 10)}
       loading={loading}
       totem="full"
       showType
@@ -384,11 +414,21 @@ export function GamesRail({ maxAge, audience, rankByMemberIds }: { maxAge?: numb
   const url = `/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
   const { items, loading } = useRail(url, "games", "GAME")
   if (!loading && items.length < 3) return null
+  // Say the cap out loud. This rail is age-capped like every other browse rail
+  // (default: the youngest child in the family), so a household with a 10-year
+  // old legitimately never sees the PEGI 12/16 releases of the last few weeks —
+  // and without this line that reads as "the catalogue is out of date" rather
+  // than "these are filtered for your family".
+  const capNote =
+    typeof maxAge === "number" && maxAge < 18
+      ? ` Filtré pour les moins de ${maxAge + 1} ans — les sorties PEGI plus élevées sont sur la page Jeux vidéo.`
+      : ""
   return (
     <CardRailSection
       id="jeux"
       eyebrow="Sur les consoles cette semaine"
       title={<>Sortis récemment en <Em tone="terra">jeux vidéo</Em></>}
+      lead={`Les dernières sorties consoles, avec l'âge conseillé et les points de vigilance.${capNote}`}
       action={{ label: "Voir tout", href: "/jeux?sort=releaseDate" }}
       items={items.slice(0, 12)}
       loading={loading}

@@ -175,6 +175,7 @@ export function MediaCard({ media, className, variant = "default", familyFit }: 
       sexNudity: media.contentMetrics?.sexNudity,
       language: media.contentMetrics?.language,
       substanceUse: media.contentMetrics?.substanceUse,
+      genres: media.genres,
     },
     settings.blur18Plus,
   )
@@ -400,6 +401,7 @@ export function MediaCardHorizontal({ media, className }: MediaCardProps) {
       sexNudity: media.contentMetrics?.sexNudity,
       language: media.contentMetrics?.language,
       substanceUse: media.contentMetrics?.substanceUse,
+      genres: media.genres,
     },
     settings.blur18Plus,
   )

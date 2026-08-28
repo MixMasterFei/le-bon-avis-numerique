@@ -3,8 +3,20 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Band, Wrap, SectionHead, Em } from "./parts"
+import { isOutOfSeason } from "@/lib/seasonal"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 import { useRankedByFit } from "./useRankedByFit"
+
+interface StreamingRow {
+  id: string
+  type?: string
+  title: string
+  posterUrl: string | null
+  expertAgeRec?: number | null
+  genres?: string[]
+  topics?: string[]
+  contentMetrics?: RedesignCardMedia["contentMetrics"]
+}
 
 interface Provider {
   id: string
@@ -36,21 +48,29 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    fetch(`/api/db/streaming?provider=${encodeURIComponent(sel.search)}&limit=12&maxAge=${cap}&type=SUBSCRIPTION&shuffle=weekly&language=fr,en`)
+    // Over-fetch (24 for a 12-card row): the seasonal gate below can legitimately
+    // drop several titles — Netflix's family catalogue is dense with Noël films
+    // and the rail was serving them in August, which is the loudest possible
+    // "this site is stale" signal.
+    const month = new Date().getMonth()
+    fetch(`/api/db/streaming?provider=${encodeURIComponent(sel.search)}&limit=24&maxAge=${cap}&type=SUBSCRIPTION&shuffle=weekly&language=fr,en`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (cancelled) return
-        const arr = Array.isArray(data?.movies) ? data.movies : []
+        const arr: StreamingRow[] = Array.isArray(data?.movies) ? data.movies : []
         setItems(
-          arr.map((m: { id: string; type?: string; title: string; posterUrl: string | null; expertAgeRec?: number | null; genres?: string[]; contentMetrics?: RedesignCardMedia["contentMetrics"] }) => ({
-            id: m.id,
-            type: m.type === "TV" ? "TV" : "MOVIE",
-            title: m.title,
-            posterUrl: m.posterUrl,
-            expertAgeRec: m.expertAgeRec ?? null,
-            genres: m.genres ?? [],
-            contentMetrics: m.contentMetrics ?? null,
-          })),
+          arr
+            .filter((m) => !isOutOfSeason({ title: m.title, genres: m.genres, topics: m.topics }, month))
+            .slice(0, 12)
+            .map((m) => ({
+              id: m.id,
+              type: m.type === "TV" ? ("TV" as const) : ("MOVIE" as const),
+              title: m.title,
+              posterUrl: m.posterUrl,
+              expertAgeRec: m.expertAgeRec ?? null,
+              genres: m.genres ?? [],
+              contentMetrics: m.contentMetrics ?? null,
+            })),
         )
         setTotal(typeof data?.total === "number" ? data.total : arr.length)
       })

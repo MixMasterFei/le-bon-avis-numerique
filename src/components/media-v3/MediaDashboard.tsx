@@ -116,6 +116,7 @@ export function MediaDashboard({
                 expertAgeRec={media.expertAgeRec}
                 violenceScore={media.metrics?.violence}
                 mediaType={media.type}
+                genres={media.genres}
                 sizes="(max-width: 640px) 106px, 126px"
                 priority
               />

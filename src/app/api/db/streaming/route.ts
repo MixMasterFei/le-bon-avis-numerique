@@ -101,6 +101,10 @@ export async function GET(request: NextRequest) {
         expertAgeRec: entry.media.expertAgeRec,
         communityAgeRec: entry.media.communityAgeRec,
         genres: entry.media.genres,
+        // Needed by the homepage seasonal gate: enrichment tags holiday titles
+        // "Noël" / "Halloween" even when the title doesn't say so, so topics —
+        // not the title — are what keep Christmas films off an August rail.
+        topics: entry.media.topics,
         contentMetrics: entry.media.contentMetrics,
         toneTags: entry.media.contentMetrics?.toneTags || [],
         streaming: {
@@ -169,6 +173,7 @@ export async function GET(request: NextRequest) {
           expertAgeRec: movie.expertAgeRec,
           communityAgeRec: movie.communityAgeRec,
           genres: movie.genres,
+          topics: movie.topics,
           contentMetrics: null,
           streaming: {
             provider,

@@ -729,7 +729,20 @@ export function capCatalogCardFitLevel(level: FitLevel, input: CatalogCardLevelC
     capped = capLevel(capped, "moderate")
   }
 
-  if (input.memberAge != null && input.memberAge < 16 && input.metrics.violence >= 3) {
+  // Teens (13-15): only MARKED violence caps the meter, not moderate violence.
+  //
+  // This used to fire at `violence >= 3`, which silently flattened every teen's
+  // verdict on the films actually made for them: on the 0-5 ContentMetrics
+  // scale 3 is "modéré", and essentially every action / adventure / superhero
+  // title sits there. A 15-year-old on a 12+ Spider-Man was capped to
+  // "À vérifier" (1 heart) no matter how well age, genres and stated tolerance
+  // matched — which reads as "the site doesn't know my kid".
+  //
+  // 4 is the line the rest of the system already draws for "high violence":
+  // computeMatureContentPenalty, isFamilyWarningContent and the card totem
+  // (vigilanceAxisLevel maps raw 3 → "léger", raw 4 → "à noter") all use it.
+  // Under-13s keep the stricter `>= 3` rule immediately above.
+  if (input.memberAge != null && input.memberAge < 16 && input.metrics.violence >= 4) {
     capped = capLevel(capped, "moderate")
   }
 

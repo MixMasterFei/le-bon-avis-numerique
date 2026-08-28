@@ -76,6 +76,29 @@ function ageFromGenreNames(names: string[]): number {
   return base
 }
 
+/**
+ * "Tous publics" is the most lenient French rating there is, and the CNC hands
+ * it to plenty of films no family guide would put in front of a child — a
+ * science-fiction / mystery / THRILLER can ship as TP and land in our catalogue
+ * at `expertAgeRec: 0`, i.e. below every age filter on the site and unbadged on
+ * the cards ("La fin d'Oak Street" on the family rail).
+ *
+ * So when the only signal is a TP/U certification AND the film carries a mature
+ * genre, we prefer the genre heuristic. Deliberately narrow:
+ *   - only the age-0 bucket (a TP 12 or TP 10 already carries information),
+ *   - only mature genres — a TP animation or family comedy keeps its 0, so
+ *     genuinely all-ages titles stay visible to the youngest filters.
+ *
+ * Same doctrine as `age-floor.ts`: our recommendation may be stricter than a
+ * lenient CSA/CNC rating, never more permissive.
+ */
+export function floorTousPublicsByGenre(csaAge: number, genreNames: string[]): number | null {
+  if (csaAge !== 0) return null
+  const keys = genreNames.map(norm)
+  if (!keys.some((k) => MATURE_GENRES.has(k))) return null
+  return ageFromGenreNames(genreNames)
+}
+
 // TMDB numeric genre id → name (movie genres), for callers that only have ids
 // (e.g. the cinema overlay using now_playing results, which carry genre_ids).
 const GENRE_ID_TO_NAME: Record<number, string> = {
@@ -117,7 +140,12 @@ export function estimateProvisionalAge(details: TMDBMovieDetails): {
   const frCert = getFrenchCertification(details.release_dates)
   const internalRating = mapCertificationToInternal(frCert)
   const csaAge = certificationToAge(frCert)
-  if (csaAge != null) return { age: csaAge, source: "csa", internalRating }
+  if (csaAge != null) {
+    const genreNames = details.genres?.map((g) => g.name) ?? []
+    const floored = floorTousPublicsByGenre(csaAge, genreNames)
+    if (floored != null) return { age: floored, source: "genre", internalRating }
+    return { age: csaAge, source: "csa", internalRating }
+  }
 
   const foreign = foreignCertAge(details.release_dates)
   if (foreign != null) return { age: foreign, source: "foreign", internalRating }
@@ -136,7 +164,10 @@ export function estimateProvisionalAgeFromStored(args: {
     TOUS_PUBLICS: 0, CSA_10: 10, CSA_12: 12, CSA_16: 16, CSA_18: 18,
   }
   if (args.officialRating && args.officialRating in internalToAge) {
-    return { age: internalToAge[args.officialRating], source: "csa" }
+    const csaAge = internalToAge[args.officialRating]
+    const floored = floorTousPublicsByGenre(csaAge, args.genres)
+    if (floored != null) return { age: floored, source: "genre" }
+    return { age: csaAge, source: "csa" }
   }
   return { age: ageFromGenreNames(args.genres), source: "genre" }
 }

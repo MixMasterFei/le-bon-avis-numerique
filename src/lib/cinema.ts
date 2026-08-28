@@ -238,6 +238,8 @@ export interface UpcomingCinemaMovie {
  * to a real fiche (and carries a real, not provisional, age when enriched).
  */
 export async function getUpcomingCinemaMovies(limit = 12): Promise<UpcomingCinemaMovie[]> {
+  // NOTE: `limit` cuts the list BEFORE any caller-side age filtering, so
+  // callers that filter afterwards must over-fetch here (see /api/db/upcoming).
   let upcoming: TMDBMovie[]
   let nowPlayingIds: Set<number>
   try {
@@ -284,11 +286,18 @@ export async function getUpcomingCinemaMovies(limit = 12): Promise<UpcomingCinem
   for (const tmdb of candidates) {
     const db = dbByTmdbId.get(tmdb.id)
     if (!db) continue
+    // `getImageUrl(null)` returns "/placeholder-poster.jpg", a file that does
+    // not exist in /public — emitting it produced a broken-image card on the
+    // "Bientôt" rail ("Dans les cordes"). Keep the field honestly null so the
+    // caller can drop the item or paint its own placeholder.
+    const posterUrl =
+      db.posterUrl ||
+      (tmdb.poster_path ? getImageUrl(tmdb.poster_path, ImageSize.poster.medium) : null)
     items.push({
       id: db.id,
       type: "MOVIE",
       title: db.title,
-      posterUrl: db.posterUrl || getImageUrl(tmdb.poster_path, ImageSize.poster.medium),
+      posterUrl,
       expertAgeRec: db.expertAgeRec ?? estimateAgeFromTmdbGenreIds(tmdb.genre_ids ?? []),
       genres: db.genres ?? [],
       releaseDate: tmdb.release_date || null,
