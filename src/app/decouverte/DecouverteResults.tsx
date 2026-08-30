@@ -4,6 +4,7 @@ import { getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { sanitizeSearchQuery } from "@/lib/security"
 import { computeStripes, resolveBoard } from "@/lib/nl-search/resolve-blocks"
 import { fallbackPlan, type NlPlan } from "@/lib/nl-search/blocks"
+import { needsCareBanner } from "@/lib/nl-search/care"
 import { checkNlDailyCaps } from "@/lib/nl-search/daily-cap"
 import { parseNlQuery } from "@/lib/nl-search/parse"
 import { checkNlRateLimit } from "@/lib/nl-search/rate-limit"
@@ -175,6 +176,7 @@ export async function DecouverteResults({
       degraded={degraded}
       isLoggedIn={!!userId}
       isIdle={isIdle}
+      showCareBanner={needsCareBanner(query)}
       slots={slots}
     />
   )

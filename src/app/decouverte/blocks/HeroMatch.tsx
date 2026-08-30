@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
+import { useSettings } from "@/contexts/SettingsContext"
+import { shouldBlurMedia } from "@/lib/should-blur-media"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
 import { Em } from "@/components/home-redesign/parts"
@@ -22,6 +24,20 @@ import type { BlockMeta, HeroData } from "@/lib/nl-search/resolve-blocks"
  */
 export function HeroMatch({ meta, hero }: { meta: BlockMeta; hero: HeroData }) {
   const { card, backdropUrl, screenshots, synopsis, voiceLine, quickAnswer, ageRationale } = hero
+  const { settings } = useSettings()
+  // The wide art is already withheld server-side for mature titles; the poster
+  // follows the same per-user rule as every card on the site.
+  const blurPoster = shouldBlurMedia(
+    {
+      type: card.type,
+      expertAgeRec: card.expertAgeRec,
+      violence: (card.contentMetrics as { violence?: number } | null)?.violence,
+      sexNudity: (card.contentMetrics as { sexNudity?: number } | null)?.sexNudity,
+      language: (card.contentMetrics as { language?: number } | null)?.language,
+      substanceUse: (card.contentMetrics as { substanceUse?: number } | null)?.substanceUse,
+    },
+    settings.blur18Plus,
+  )
   const href = `/media/${toMediaRouteId(card.type, card.id)}`
   const eyebrow = meta.eyebrow ?? meta.title ?? "Notre meilleure pioche"
   const wide = backdropUrl ?? screenshots[0] ?? null
@@ -67,7 +83,7 @@ export function HeroMatch({ meta, hero }: { meta: BlockMeta; hero: HeroData }) {
                 alt={card.title}
                 fill
                 sizes="(max-width: 768px) 40vw, 200px"
-                className="object-cover"
+                className={blurPoster ? "object-cover blur-md brightness-90" : "object-cover"}
                 fallbackClassName="h-full w-full"
               />
             )}

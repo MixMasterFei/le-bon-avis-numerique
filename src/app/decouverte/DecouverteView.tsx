@@ -9,6 +9,7 @@ import { MemberMonogram } from "@/components/home-redesign/MemberMonogram"
 import { memberColor } from "@/components/home-redesign/family"
 import { v2FontVars } from "@/components/home-redesign/fonts"
 import { Em } from "@/components/home-redesign/parts"
+import { CARE_BANNER } from "@/lib/nl-search/care"
 import { NL_SEARCH_SUGGESTIONS } from "@/lib/nl-search/suggestions"
 import { AVOID_RULES } from "@/lib/nl-search/vocab"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
@@ -178,6 +179,7 @@ export function DecouverteView({
   degraded,
   isLoggedIn,
   isIdle,
+  showCareBanner = false,
   slots,
 }: {
   query: string
@@ -187,6 +189,8 @@ export function DecouverteView({
   isLoggedIn: boolean
   /** True when the visitor has not asked anything yet — a bare /decouverte. */
   isIdle: boolean
+  /** Self-harm expressions in the query: show the helplines with the results. */
+  showCareBanner?: boolean
   /** Streamed sections, keyed by their position in the plan. */
   slots?: Record<number, ReactNode>
 }) {
@@ -278,6 +282,19 @@ export function DecouverteView({
           <div className="mt-6 max-w-[720px]">
             <SearchBar initial={query} isPending={isNavigating} onSearch={search} />
           </div>
+
+          {showCareBanner && (
+            <div
+              className="mt-5 max-w-[640px] rounded-[14px] px-5 py-4"
+              style={{ background: "var(--pine)", color: "#FBF5EA" }}
+              role="note"
+            >
+              <p className="text-[14.5px] font-bold">{CARE_BANNER.title}</p>
+              <p className="mt-1 text-[13.5px]" style={{ color: "rgba(251,245,234,.88)" }}>
+                {CARE_BANNER.body}
+              </p>
+            </div>
+          )}
 
           {degraded && (
             <p
@@ -399,13 +416,18 @@ export function DecouverteView({
                 )
               })}
 
-              {selectedMemberName && (
-                <div className="mx-auto max-w-[1240px] px-5 pb-10 sm:px-7">
+              <div className="mx-auto max-w-[1240px] px-5 pb-10 sm:px-7">
+                {selectedMemberName && (
                   <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                     Classé selon le profil de {selectedMemberName}.
                   </p>
-                </div>
-              )}
+                )}
+                <p className="mt-2 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+                  Page assemblée automatiquement d&apos;après votre demande. Les âges conseillés et
+                  les analyses proviennent de la base Totem Avisé&nbsp;: ils ne sont jamais générés
+                  à la volée.
+                </p>
+              </div>
           </div>
         )}
       </div>

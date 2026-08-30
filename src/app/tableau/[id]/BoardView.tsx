@@ -144,6 +144,11 @@ export function BoardView({
               Décrivez ce que vous cherchez pour votre famille, et Totem Avisé assemble une
               sélection avec un âge conseillé argumenté pour chaque titre.
             </p>
+            <p className="mx-auto mt-4 max-w-[62ch] text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+              Cette page est assemblée automatiquement d&apos;après la demande d&apos;origine.
+              Les âges conseillés et les analyses proviennent de la base Totem Avisé&nbsp;: ils ne
+              sont jamais générés à la volée.
+            </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 href="/decouverte"

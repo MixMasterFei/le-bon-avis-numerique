@@ -57,6 +57,10 @@ export interface BlockMeta {
 
 export interface HeroData {
   card: AssembledCard
+  /** True when the site's 15+ blur rule fires for this title — the hero then
+   *  renders poster-led with the art hidden, exactly like a RedesignCard
+   *  blurs, instead of putting a mature backdrop full-bleed on the board. */
+  matureArt: boolean
   /** Wide art for the full-bleed treatment. Null for every game. */
   backdropUrl: string | null
   screenshots: string[]
@@ -122,7 +126,16 @@ export interface SectionImage {
  */
 async function sectionImageFor(items: AssembledCard[]): Promise<SectionImage | null> {
   if (items.length === 0) return null
-  const ids = items.slice(0, 8).map((i) => i.id)
+  // Server-side there is no per-user blur setting to consult, so section art
+  // is conservative by construction: only titles clearly below the site's
+  // blur trigger (15+) may lend their image to a band. A 15+ title can still
+  // BE on the board — its card handles its own blur — it just never becomes
+  // the section's decor.
+  const ids = items
+    .filter((i) => i.expertAgeRec !== null && i.expertAgeRec < 15)
+    .slice(0, 8)
+    .map((i) => i.id)
+  if (ids.length === 0) return null
   try {
     const backdrop = await prisma.mediaItem.findFirst({
       where: { id: { in: ids }, backdropUrl: { not: null } },
@@ -232,6 +245,16 @@ async function resolveHero(card: AssembledCard, personalized: boolean): Promise<
 
   const reason = personalized ? deriveFitReason(card) : null
 
+  // Same trigger as shouldBlurMedia (age >= 15 AND one metric >= 3), computed
+  // server-side without the user toggle: the toggle loosens CARD blur for the
+  // adult who set it, but a full-bleed board hero is a bigger, more public
+  // surface, so it stays conservative for everyone.
+  const matureArt =
+    row.type !== "GAME" &&
+    row.expertAgeRec !== null &&
+    row.expertAgeRec >= 15 &&
+    (metrics.violence >= 3 || metrics.sexNudity >= 3 || metrics.language >= 3 || metrics.substanceUse >= 3)
+
   const seenUrls = new Set<string>(row.backdropUrl ? [row.backdropUrl] : [])
   const screenshots: string[] = []
   for (const shot of row.screenshots) {
@@ -243,8 +266,9 @@ async function resolveHero(card: AssembledCard, personalized: boolean): Promise<
 
   return {
     card,
-    backdropUrl: row.backdropUrl,
-    screenshots,
+    matureArt,
+    backdropUrl: matureArt ? null : row.backdropUrl,
+    screenshots: matureArt ? [] : screenshots,
     synopsis: row.synopsisFr,
     voiceLine: reason ? totemVoiceLine(reason, row.synopsisFr) : null,
     quickAnswer,

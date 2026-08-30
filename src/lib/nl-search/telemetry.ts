@@ -15,6 +15,13 @@ import { buildPlan, type NlPlan } from "./blocks"
 import type { NlIntent, NlResolutionStatus } from "./types"
 
 const CACHE_TTL_DAYS = 7
+/** Raw query text can contain what people type about their children, so rows
+ *  are not kept forever: pruned opportunistically past this age. Aggregate
+ *  cost dashboards only ever look at recent windows. */
+const RETENTION_DAYS = 90
+/** Roughly one prune per N writes — enough to keep the table bounded without
+ *  adding a cron, cheap enough to ride on a request. */
+const PRUNE_EVERY = 50
 
 /** Normalized cache key: case/accent/whitespace-insensitive. */
 export function hashQuery(query: string): string {
@@ -71,6 +78,16 @@ export async function recordNlSearch(input: RecordNlSearchInput): Promise<void> 
     })
   } catch (error) {
     console.error("[nl-search] telemetry write failed:", error)
+  }
+
+  // Fire-and-forget retention sweep: personal-ish text ages out by itself.
+  if (Math.floor(Math.random() * PRUNE_EVERY) === 0) {
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000)
+    prisma.nlSearchQuery
+      .deleteMany({ where: { createdAt: { lt: cutoff } } })
+      .catch(() => {
+        // A missed sweep is caught by a later one.
+      })
   }
 }
 

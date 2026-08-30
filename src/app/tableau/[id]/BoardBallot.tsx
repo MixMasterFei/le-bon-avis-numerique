@@ -176,6 +176,11 @@ export function BoardBallot({
         </p>
       )}
 
+      <p className="mt-3 text-[12px]" style={{ color: "var(--ink-3)" }}>
+        Votre prénom est visible par les personnes disposant du lien, et uniquement par elles.
+        Les votes sont supprimés avec le tableau. Aucun compte, aucun suivi.
+      </p>
+
       <ul className="mt-6 grid gap-x-10 gap-y-1 lg:grid-cols-2">
         {ordered.map((item) => {
           const tally = tallyOf.get(item.id)
