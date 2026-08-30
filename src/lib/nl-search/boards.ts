@@ -46,6 +46,8 @@ export interface BoardRecord {
   title: string | null
   saved: boolean
   createdAt: Date
+  /** Ballot candidates snapshotted at creation; empty on legacy boards. */
+  ballotMediaIds: string[]
 }
 
 export interface CreateBoardInput {
@@ -56,6 +58,8 @@ export interface CreateBoardInput {
   /** "share" → short-lived snapshot. "save" → kept, named, listed. */
   mode: "share" | "save"
   title?: string | null
+  /** Titles the ballot will accept votes on (cap enforced by the caller). */
+  ballotMediaIds?: string[]
 }
 
 export async function createBoard(input: CreateBoardInput): Promise<BoardRecord | null> {
@@ -77,8 +81,9 @@ export async function createBoard(input: CreateBoardInput): Promise<BoardRecord 
         title,
         saved,
         expiresAt,
+        ballotMediaIds: (input.ballotMediaIds ?? []).slice(0, 24),
       },
-      select: { id: true, userId: true, query: true, title: true, saved: true, createdAt: true },
+      select: { id: true, userId: true, query: true, title: true, saved: true, createdAt: true, ballotMediaIds: true },
     })
     return {
       id: row.id,
@@ -89,6 +94,7 @@ export async function createBoard(input: CreateBoardInput): Promise<BoardRecord 
       title: row.title,
       saved: row.saved,
       createdAt: row.createdAt,
+      ballotMediaIds: row.ballotMediaIds,
     }
   } catch (error) {
     console.error("[nl-search] board create failed:", error)
@@ -107,6 +113,7 @@ export async function loadBoard(id: string): Promise<BoardRecord | null> {
       select: {
         id: true, userId: true, query: true, intent: true, plan: true,
         title: true, saved: true, expiresAt: true, createdAt: true,
+        ballotMediaIds: true,
       },
     })
     if (!row) return null
@@ -124,6 +131,7 @@ export async function loadBoard(id: string): Promise<BoardRecord | null> {
       title: row.title,
       saved: row.saved,
       createdAt: row.createdAt,
+      ballotMediaIds: row.ballotMediaIds ?? [],
     }
   } catch (error) {
     console.error("[nl-search] board load failed:", error)

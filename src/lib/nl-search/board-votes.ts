@@ -15,6 +15,7 @@
 import { randomBytes } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { sanitizePlainText } from "@/lib/security"
+import type { ResolvedBoard } from "./resolve-blocks"
 
 export const BADGES_PER_VOTER = 3
 /** Per title per voter — all three badges on one film is allowed. */
@@ -25,6 +26,37 @@ export const MAX_VOTERS_PER_BOARD = 80
 const NAME_MAX_LEN = 24
 
 export const VOTER_COOKIE = "totem_votant"
+
+export const MAX_BALLOT_CANDIDATES = 20
+
+export interface BallotCandidate {
+  id: string
+  title: string
+  posterUrl: string | null
+  expertAgeRec: number | null
+}
+
+/**
+ * The titles a board's ballot offers: what is actually on the board, hero
+ * first, de-duplicated, capped. Shared by the page (display), the share route
+ * (the snapshot the vote route enforces) and nothing else — one definition of
+ * "on the board" is the whole point.
+ */
+export function collectBallotCandidates(board: ResolvedBoard): BallotCandidate[] {
+  const seen = new Set<string>()
+  const out: BallotCandidate[] = []
+  for (const block of board.blocks) {
+    const cards =
+      block.kind === "hero" ? [block.hero.card] : block.kind === "grid" || block.kind === "rail" ? block.items : []
+    for (const card of cards) {
+      if (seen.has(card.id)) continue
+      seen.add(card.id)
+      out.push({ id: card.id, title: card.title, posterUrl: card.posterUrl, expertAgeRec: card.expertAgeRec })
+      if (out.length >= MAX_BALLOT_CANDIDATES) return out
+    }
+  }
+  return out
+}
 
 export function newVoterToken(): string {
   return randomBytes(24).toString("hex")
@@ -121,6 +153,13 @@ export async function castVote(opts: {
 
   try {
     return await prisma.$transaction(async (tx) => {
+      // The budget check below is read-then-write across DIFFERENT rows of the
+      // unique key, so under READ COMMITTED two concurrent +1 taps on two
+      // titles both read "nothing spent yet" and both commit — four badges
+      // held. The advisory lock serializes THIS VOTER on THIS BOARD for the
+      // rest of the transaction; different voters never contend.
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`${boardId}:${voterToken}`}, 0))`
+
       const mine = await tx.decouverteBoardVote.findMany({
         where: { boardId, voterToken },
         select: { mediaId: true, badges: true },
@@ -134,8 +173,13 @@ export async function castVote(opts: {
       if (next < 0 || next > MAX_BADGES_PER_TITLE) return { ok: false as const, reason: "invalid" as const }
       if (spentElsewhere + next > BADGES_PER_VOTER) return { ok: false as const, reason: "budget" as const }
 
-      // A NEW voter joins the board only while there is room.
+      // A NEW voter joins the board only while there is room. Racing new
+      // voters are different tokens, so the per-voter lock above cannot
+      // serialize them — the board-wide lock does, taken only on this first
+      // vote so ordinary taps never queue behind it. Lock order is fixed
+      // (voter, then board), so the pair cannot deadlock.
       if (mine.length === 0 && delta === 1) {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`board:${boardId}`}, 0))`
         const voters = await tx.decouverteBoardVote.findMany({
           where: { boardId },
           select: { voterToken: true },

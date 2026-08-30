@@ -1384,6 +1384,9 @@ model DecouverteBoard {
   title     String?
   /// false = a short-lived share snapshot; true = kept by its owner.
   saved     Boolean   @default(false)
+  /// The ballot's candidate titles, snapshotted at share time. The vote route
+  /// enforces membership against this; empty = legacy board, no enforcement.
+  ballotMediaIds String[] @default([]) @map("ballot_media_ids")
   expiresAt DateTime? @map("expires_at")
   viewCount Int       @default(0) @map("view_count")
   createdAt DateTime  @default(now()) @map("created_at")

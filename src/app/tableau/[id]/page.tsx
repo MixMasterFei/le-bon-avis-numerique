@@ -7,11 +7,11 @@ import { canUseNlSearch } from "@/lib/nl-search/access"
 import { loadBoard, noteBoardView } from "@/lib/nl-search/boards"
 import {
   BADGES_PER_VOTER,
+  collectBallotCandidates,
   isValidVoterToken,
   readBallot,
   VOTER_COOKIE,
 } from "@/lib/nl-search/board-votes"
-import type { BallotItem } from "./BoardBallot"
 import { computeStripes, resolveBoard } from "@/lib/nl-search/resolve-blocks"
 import { DeferredBlock, DeferredBlockSkeleton } from "@/app/decouverte/blocks/DeferredBlock"
 import { BoardView } from "./BoardView"
@@ -74,24 +74,7 @@ export default async function TableauPage({ params }: { params: Promise<{ id: st
   // on your own private search would be talking to yourself.
   const cookieToken = (await cookies()).get(VOTER_COOKIE)?.value
   const voterToken = isValidVoterToken(cookieToken) ? cookieToken : null
-  const ballotSeen = new Set<string>()
-  const ballotItems: BallotItem[] = []
-  for (const block of resolved.blocks) {
-    const cards =
-      block.kind === "hero" ? [block.hero.card] : block.kind === "grid" || block.kind === "rail" ? block.items : []
-    for (const card of cards) {
-      if (ballotSeen.has(card.id)) continue
-      ballotSeen.add(card.id)
-      ballotItems.push({
-        id: card.id,
-        title: card.title,
-        posterUrl: card.posterUrl,
-        expertAgeRec: card.expertAgeRec,
-      })
-      if (ballotItems.length >= 20) break
-    }
-    if (ballotItems.length >= 20) break
-  }
+  const ballotItems = collectBallotCandidates(resolved)
   const ballot = ballotItems.length >= 2 ? await readBallot(id, voterToken) : null
 
   const seenIds = resolved.blocks.flatMap((block) =>

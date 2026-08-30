@@ -12,6 +12,13 @@
 -- on that title (1..3). The 3-badge budget is enforced in the route inside a
 -- transaction; the CHECK below is the backstop.
 
+-- The ballot's candidate set, snapshotted when the board is shared: the vote
+-- route enforces membership against this list, so badges can only land on the
+-- titles the board actually offered. Empty for boards shared before this
+-- column existed (those accept any catalogue title, as before).
+ALTER TABLE "decouverte_boards"
+  ADD COLUMN IF NOT EXISTS "ballot_media_ids" TEXT[] NOT NULL DEFAULT '{}';
+
 CREATE TABLE IF NOT EXISTS "decouverte_board_votes" (
   "id" TEXT NOT NULL DEFAULT gen_random_uuid(),
   "board_id" TEXT NOT NULL,

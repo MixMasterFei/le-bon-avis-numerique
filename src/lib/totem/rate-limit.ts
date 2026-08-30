@@ -67,9 +67,15 @@ export function checkTotemRateLimit(opts: {
 }
 
 export function getClientIpFromHeaders(headers: Headers): string {
+  // Trust order matters: this key feeds rate-limit buckets, so an
+  // attacker-controlled header means an attacker-controlled bucket. On Vercel,
+  // x-real-ip and x-vercel-forwarded-for are SET BY THE PLATFORM; a client
+  // cannot inject them. cf-connecting-ip is deliberately not honored — this
+  // site does not sit behind Cloudflare, so that header arrives straight from
+  // the client and rotating it minted a fresh bucket per request.
   return (
-    headers.get("cf-connecting-ip") ||
     headers.get("x-real-ip") ||
+    headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   )

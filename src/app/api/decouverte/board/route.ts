@@ -5,6 +5,8 @@ import { sanitizeSearchQuery } from "@/lib/security"
 import { getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { canUseNlSearch } from "@/lib/nl-search/access"
 import { createBoard, deleteBoard, listSavedBoards, MAX_SAVED_BOARDS } from "@/lib/nl-search/boards"
+import { collectBallotCandidates } from "@/lib/nl-search/board-votes"
+import { resolveBoard } from "@/lib/nl-search/resolve-blocks"
 import { fallbackPlan } from "@/lib/nl-search/blocks"
 import { checkBoardRateLimit } from "@/lib/nl-search/rate-limit"
 import { findCachedParse, hashQuery } from "@/lib/nl-search/telemetry"
@@ -83,6 +85,14 @@ export async function POST(request: Request) {
     }
   }
 
+  // Resolve once at creation to snapshot the ballot's candidate titles. This
+  // is what lets the vote route enforce "badges land on the board's titles"
+  // with a column read instead of re-resolving the board on every tap.
+  // Resolved AS THE PUBLIC SEES IT (no user), so the snapshot never depends
+  // on the owner's family data.
+  const resolved = await resolveBoard({ intent, plan, query, userId: null })
+  const candidates = collectBallotCandidates(resolved)
+
   const board = await createBoard({
     query,
     intent,
@@ -90,6 +100,7 @@ export async function POST(request: Request) {
     userId,
     mode,
     title: typeof body.title === "string" ? body.title : null,
+    ballotMediaIds: candidates.map((c) => c.id),
   })
   if (!board) {
     return NextResponse.json({ error: "Impossible de créer le tableau." }, { status: 500 })

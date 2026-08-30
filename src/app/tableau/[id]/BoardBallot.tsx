@@ -5,14 +5,9 @@ import { Minus, Plus } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { Em } from "@/components/home-redesign/parts"
-import type { BallotTally } from "@/lib/nl-search/board-votes"
+import type { BallotCandidate, BallotTally } from "@/lib/nl-search/board-votes"
 
-export interface BallotItem {
-  id: string
-  title: string
-  posterUrl: string | null
-  expertAgeRec: number | null
-}
+export type BallotItem = BallotCandidate
 
 interface BallotResponse {
   tallies: BallotTally[]
@@ -56,8 +51,16 @@ export function BoardBallot({
   const spent = useMemo(() => Object.values(myVotes).reduce((sum, n) => sum + n, 0), [myVotes])
   const remaining = Math.max(0, budget - spent)
   const tallyOf = useMemo(() => new Map(tallies.map((t) => [t.mediaId, t])), [tallies])
-  const leaderId = tallies.length > 0 && tallies[0].badges > 0 ? tallies[0].mediaId : null
-  const leaderTitle = leaderId ? items.find((i) => i.id === leaderId)?.title ?? null : null
+  const leader = useMemo(() => {
+    let best: { id: string; title: string; badges: number } | null = null
+    for (const item of items) {
+      const badges = tallyOf.get(item.id)?.badges ?? 0
+      if (badges > 0 && (!best || badges > best.badges)) best = { id: item.id, title: item.title, badges }
+    }
+    return best
+  }, [items, tallyOf])
+  const leaderId = leader?.id ?? null
+  const leaderTitle = leader?.title ?? null
 
   async function vote(mediaId: string, delta: 1 | -1) {
     const trimmed = name.trim()

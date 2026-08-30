@@ -68,6 +68,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ce tableau n'existe plus." }, { status: 404 })
   }
 
+  // Badges land on the board's own titles. Legacy boards (shared before the
+  // snapshot column existed) have an empty list and keep the old behavior.
+  if (board.ballotMediaIds.length > 0 && !board.ballotMediaIds.includes(mediaId)) {
+    return NextResponse.json({ error: "Ce titre ne fait pas partie du tableau." }, { status: 400 })
+  }
+
   const jar = await cookies()
   const existing = jar.get(VOTER_COOKIE)?.value
   const voterToken = isValidVoterToken(existing) ? existing : newVoterToken()
