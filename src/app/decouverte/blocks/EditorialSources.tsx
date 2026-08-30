@@ -7,9 +7,9 @@ import type { BlockMeta, BlogCard } from "@/lib/nl-search/resolve-blocks"
 import { accentFor, BoardBand } from "./BoardSections"
 
 /** Titles that are not out yet. Age-capped upstream — see @/lib/upcoming. */
-export function UpcomingBlock({ meta, items, alt }: { meta: BlockMeta; items: UpcomingItem[]; alt: boolean }) {
+export function UpcomingBlock({ meta, items, alt, folio }: { meta: BlockMeta; items: UpcomingItem[]; alt: boolean; folio?: string | null }) {
   return (
-    <BoardBand meta={meta} accent={accentFor("upcoming")} alt={alt} fallbackTitle="À surveiller prochainement">
+    <BoardBand meta={meta} accent={accentFor("upcoming")} alt={alt} fallbackTitle="À surveiller prochainement" folio={folio} count={items.length}>
       <div className="v2-row-up">
         {items.map((item) => (
           <UpcomingCard key={item.id} item={item} />
@@ -19,9 +19,9 @@ export function UpcomingBlock({ meta, items, alt }: { meta: BlockMeta; items: Up
   )
 }
 
-export function BlogBlock({ meta, items, alt }: { meta: BlockMeta; items: BlogCard[]; alt: boolean }) {
+export function BlogBlock({ meta, items, alt, folio }: { meta: BlockMeta; items: BlogCard[]; alt: boolean; folio?: string | null }) {
   return (
-    <BoardBand meta={meta} accent={accentFor("blogPicks")} alt={alt} fallbackTitle="Pour aller plus loin">
+    <BoardBand meta={meta} accent={accentFor("blogPicks")} alt={alt} fallbackTitle="Pour aller plus loin" folio={folio}>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((post) => (
           <Link

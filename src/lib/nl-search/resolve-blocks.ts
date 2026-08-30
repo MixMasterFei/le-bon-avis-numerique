@@ -68,6 +68,9 @@ export interface HeroData {
   voiceLine: string | null
   quickAnswer: QuickAnswer | null
   ageRationale: AgeRationale | null
+  /** The catalogue's parent-facing bullets — the spread's pull-quote and list. */
+  whatParentsNeedToKnow: string[]
+  toneTags: string[]
   hideContentAnalysis: boolean
   officialRating: string | null
   director: string | null
@@ -186,6 +189,7 @@ async function resolveHero(card: AssembledCard, personalized: boolean): Promise<
         select: {
           violence: true, sexNudity: true, language: true, consumerism: true,
           substanceUse: true, positiveMessages: true, roleModels: true,
+          whatParentsNeedToKnow: true, toneTags: true,
         },
       },
       // Over-fetched because ~a third of the rows are exact URL duplicates.
@@ -262,6 +266,8 @@ async function resolveHero(card: AssembledCard, personalized: boolean): Promise<
     voiceLine: reason ? totemVoiceLine(reason, row.synopsisFr) : null,
     quickAnswer,
     ageRationale: ageRationale.show ? ageRationale : null,
+    whatParentsNeedToKnow: hideContentAnalysis ? [] : (row.contentMetrics?.whatParentsNeedToKnow ?? []),
+    toneTags: row.contentMetrics?.toneTags ?? [],
     hideContentAnalysis,
     officialRating: row.officialRating,
     director: row.director,

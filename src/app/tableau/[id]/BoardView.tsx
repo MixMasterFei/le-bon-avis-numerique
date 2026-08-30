@@ -7,6 +7,8 @@ import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { v2FontVars } from "@/components/home-redesign/fonts"
 import { Em } from "@/components/home-redesign/parts"
 import { computeStripes, type ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
+import type { AssembledCard } from "@/lib/nl-search/assemble"
+import { BoardIndex } from "@/app/decouverte/blocks/BoardIndex"
 import { HeroMatch } from "@/app/decouverte/blocks/HeroMatch"
 import {
   EditorialBlock,
@@ -26,6 +28,18 @@ import type { BallotTally } from "@/lib/nl-search/board-votes"
  * board carries is whatever it was composed with, and a viewer who is not the
  * owner never receives family data at all (see page.tsx).
  */
+
+/** Rubric numbers ("01", "02"…) for CONTENT sections, aligned to `blocks`. The
+ *  hero is the cover, not a rubric, and editorial blocks carry no number. */
+function computeFolios(blocks: ResolvedBoard["blocks"]): (string | null)[] {
+  let n = 0
+  return blocks.map((block) => {
+    if (block.kind === "editorial" || block.kind === "hero") return null
+    n += 1
+    return String(n).padStart(2, "0")
+  })
+}
+
 export function BoardView({
   title,
   query,
@@ -50,6 +64,19 @@ export function BoardView({
   } | null
 }) {
   const stripes = computeStripes(board.blocks)
+  const folios = computeFolios(board.blocks)
+  const indexSeen = new Set<string>()
+  const indexItems: AssembledCard[] = []
+  for (const block of board.blocks) {
+    const cards = block.kind === "hero" ? [block.hero.card] : block.kind === "grid" || block.kind === "rail" ? block.items : []
+    for (const card of cards) {
+      if (indexSeen.has(card.id)) continue
+      indexSeen.add(card.id)
+      indexItems.push(card)
+    }
+  }
+  const indexFolio = String(folios.filter(Boolean).length + 1).padStart(2, "0")
+  const issueDate = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
   return (
     <FamilyFitProvider>
       <div
@@ -58,11 +85,28 @@ export function BoardView({
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
         <div className="mx-auto max-w-[1240px] px-5 py-12 sm:px-7">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" style={{ color: "var(--pine-2)" }} />
-            <span className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--terra)" }}>
-              Un tableau Totem Avisé
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5" style={{ borderColor: "var(--line)" }}>
+            <div className="flex items-center gap-3.5">
+              <svg width="30" height="27" viewBox="0 0 34 30" fill="none" aria-hidden="true">
+                <path d="M4 4c2.4 5.4 7 8.4 13 8.4S27.6 9.4 30 4" stroke="var(--ink)" strokeWidth="2.4" strokeLinecap="round" />
+                <circle cx="17" cy="19" r="7.6" stroke="var(--ink)" strokeWidth="2.4" />
+                <circle cx="14.4" cy="18" r="1.3" fill="var(--ink)" />
+                <circle cx="19.6" cy="18" r="1.3" fill="var(--ink)" />
+              </svg>
+              <div>
+                <p className="text-[19px] font-bold leading-tight" style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}>
+                  TOTEM <span style={{ color: "var(--terra)" }}>AVISÉ</span>
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
+                  Le magazine de vos soirées
+                </p>
+              </div>
+            </div>
+            <p className="text-right text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+              Numéro composé pour votre foyer
+              <br />
+              <span style={{ color: "var(--ink-3)" }}>{issueDate}</span>
+            </p>
           </div>
 
           <h1
@@ -103,22 +147,24 @@ export function BoardView({
               if (block.kind === "hero") return <div key={key} {...reveal}><HeroMatch meta={block.meta} hero={block.hero} /></div>
               if (block.kind === "editorial") return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
               const alt = stripes[index]
-              if (block.kind === "upcoming") return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={alt} /></div>
-              if (block.kind === "blog") return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={alt} /></div>
+              if (block.kind === "upcoming") return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={alt} folio={folios[index]} /></div>
+              if (block.kind === "blog") return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={alt} folio={folios[index]} /></div>
               if (block.kind === "grid") {
                 return (
                   <div key={key} {...reveal}>
-                    <GridBlock meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} />
+                    <GridBlock meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} folio={folios[index]} />
                   </div>
                 )
               }
               return (
                 <div key={key} {...reveal}>
-                  <RailBlock blockKey={block.key} meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} />
+                  <RailBlock blockKey={block.key} meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} folio={folios[index]} />
                 </div>
               )
             })
           )}
+
+          <BoardIndex items={indexItems} folio={indexFolio} />
 
           {ballot && (
             <BoardBallot

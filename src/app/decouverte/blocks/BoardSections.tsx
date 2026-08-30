@@ -172,28 +172,55 @@ function Cards({
  * The section shell
  * ------------------------------------------------------------------ */
 
-function SectionHead({ meta, accent, fallback }: { meta: BlockMeta; accent: Accent; fallback: string }) {
+function SectionHead({
+  meta,
+  accent,
+  fallback,
+  folio,
+  count,
+}: {
+  meta: BlockMeta
+  accent: Accent
+  fallback: string
+  /** Rubric number ("01"), per the magazine spec. */
+  folio?: string | null
+  /** Item count shown against the rule, tabular. */
+  count?: number
+}) {
   return (
-    <div className="mb-6">
-      {meta.eyebrow && (
+    <div className="mb-7">
+      <div className="flex items-end justify-between gap-4 border-t pt-4" style={{ borderColor: "var(--line)" }}>
         <div className="flex items-center gap-2.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: ACCENT_VAR[accent] }} />
-          <span
-            className="text-[12.5px] font-bold uppercase tracking-[0.16em]"
-            style={{ color: ACCENT_VAR[accent] }}
-          >
-            {meta.eyebrow}
+          <span className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: ACCENT_VAR[accent] }}>
+            {meta.eyebrow ?? fallback}
           </span>
         </div>
-      )}
-      <div className="mt-2">
-        <BoardHeading title={meta.title ?? fallback} em={meta.em} tone={accent} />
+        {typeof count === "number" && count > 0 && (
+          <span className="text-[12.5px] font-semibold tabular-nums" style={{ color: "var(--ink-3)" }}>
+            {count} {count > 1 ? "titres" : "titre"}
+          </span>
+        )}
       </div>
-      {meta.lead && (
-        <p className="mt-2.5 max-w-[56ch] text-[15px]" style={{ color: "var(--ink-2)" }}>
-          {meta.lead}
-        </p>
-      )}
+      <div className="mt-3 flex items-start gap-5">
+        {folio && (
+          <span
+            aria-hidden
+            className="mt-1 text-[clamp(30px,4vw,52px)] font-bold leading-none"
+            style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.04em", color: ACCENT_VAR[accent], opacity: 0.42 }}
+          >
+            {folio}
+          </span>
+        )}
+        <div className="min-w-0">
+          <BoardHeading title={meta.title ?? fallback} em={meta.em} tone={accent} />
+          {meta.lead && (
+            <p className="mt-2.5 max-w-[56ch] text-[15px]" style={{ color: "var(--ink-2)" }}>
+              {meta.lead}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -209,6 +236,8 @@ export function BoardBand({
   alt,
   sectionImage,
   fallbackTitle,
+  folio,
+  count,
   children,
 }: {
   meta: BlockMeta
@@ -216,6 +245,8 @@ export function BoardBand({
   alt: boolean
   sectionImage?: SectionImage | null
   fallbackTitle: string
+  folio?: string | null
+  count?: number
   children: ReactNode
 }) {
   const dark = meta.variant === "dark"
@@ -277,7 +308,7 @@ export function BoardBand({
       }
     >
       <div className={CONTAINER}>
-        <SectionHead meta={meta} accent={dark ? "gold" : accent} fallback={fallbackTitle} />
+        <SectionHead meta={meta} accent={dark ? "gold" : accent} fallback={fallbackTitle} folio={folio} count={count} />
         {children}
       </div>
     </section>
@@ -293,14 +324,16 @@ export function GridBlock({
   items,
   alt,
   sectionImage,
+  folio,
 }: {
   meta: BlockMeta
   items: RedesignCardMedia[]
   alt: boolean
   sectionImage?: SectionImage | null
+  folio?: string | null
 }) {
   return (
-    <BoardBand meta={meta} accent="terra" alt={alt} sectionImage={sectionImage} fallbackTitle="La sélection">
+    <BoardBand meta={meta} accent="terra" alt={alt} sectionImage={sectionImage} fallbackTitle="La sélection" folio={folio} count={items.length}>
       <Cards variant={meta.variant} items={items} accent="terra" />
     </BoardBand>
   )
@@ -312,16 +345,18 @@ export function RailBlock({
   items,
   alt,
   sectionImage,
+  folio,
 }: {
   blockKey: NlBlockKey
   meta: BlockMeta
   items: RedesignCardMedia[]
   alt: boolean
   sectionImage?: SectionImage | null
+  folio?: string | null
 }) {
   const accent = accentFor(blockKey)
   return (
-    <BoardBand meta={meta} accent={accent} alt={alt} sectionImage={sectionImage} fallbackTitle="Une autre piste">
+    <BoardBand meta={meta} accent={accent} alt={alt} sectionImage={sectionImage} fallbackTitle="Une autre piste" folio={folio} count={items.length}>
       <Cards variant={meta.variant} items={items} accent={accent} />
     </BoardBand>
   )

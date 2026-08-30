@@ -107,7 +107,7 @@ export function BoardBallot({
         <div className="flex items-center gap-2.5">
           <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "var(--terra)" }} />
           <span className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--terra)" }}>
-            Le vote
+            Dernière page · le vote
           </span>
         </div>
         <h2

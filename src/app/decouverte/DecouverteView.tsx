@@ -13,6 +13,7 @@ import { CARE_BANNER } from "@/lib/nl-search/care"
 import { NL_SEARCH_SUGGESTIONS } from "@/lib/nl-search/suggestions"
 import { AVOID_RULES } from "@/lib/nl-search/vocab"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
+import { BoardIndex } from "./blocks/BoardIndex"
 import { computeStripes, type ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
@@ -155,6 +156,18 @@ function MemberFilter({
   )
 }
 
+
+/** Rubric numbers ("01", "02"…) for CONTENT sections, aligned to `blocks`. The
+ *  hero is the cover, not a rubric, and editorial blocks carry no number. */
+function computeFolios(blocks: ResolvedBoard["blocks"]): (string | null)[] {
+  let n = 0
+  return blocks.map((block) => {
+    if (block.kind === "editorial" || block.kind === "hero") return null
+    n += 1
+    return String(n).padStart(2, "0")
+  })
+}
+
 function Suggestions() {
   return (
     <div className="mt-5 flex flex-wrap gap-2">
@@ -223,6 +236,22 @@ export function DecouverteView({
   }, [selectedMemberId])
 
   const stripes = useMemo(() => computeStripes(board.blocks), [board.blocks])
+  const folios = useMemo(() => computeFolios(board.blocks), [board.blocks])
+  // Every title on the board, deduped, for the back-page index.
+  const indexItems = useMemo(() => {
+    const seen = new Set<string>()
+    const out: AssembledCard[] = []
+    for (const block of board.blocks) {
+      const cards = block.kind === "hero" ? [block.hero.card] : block.kind === "grid" || block.kind === "rail" ? block.items : []
+      for (const card of cards) {
+        if (seen.has(card.id)) continue
+        seen.add(card.id)
+        out.push(card)
+      }
+    }
+    return out
+  }, [board.blocks])
+  const indexFolio = String((folios.filter(Boolean).length ?? 0) + 1).padStart(2, "0")
 
   const selectedMemberName = board.members.find((m) => m.id === selectedMemberId)?.name ?? null
   const headline = buildHeadline(intent)
@@ -379,10 +408,10 @@ export function DecouverteView({
                   return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
                 }
                 if (block.kind === "upcoming") {
-                  return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
+                  return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={stripes[index]} folio={folios[index]} /></div>
                 }
                 if (block.kind === "blog") {
-                  return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
+                  return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={stripes[index]} folio={folios[index]} /></div>
                 }
 
                 const ranked = rank(block.items)
@@ -396,6 +425,7 @@ export function DecouverteView({
                         items={ranked.map(toRedesignCard)}
                         alt={stripes[index]}
                         sectionImage={block.sectionImage}
+                        folio={folios[index]}
                       />
                     </div>
                   )
@@ -408,10 +438,13 @@ export function DecouverteView({
                       items={ranked.map(toRedesignCard)}
                       alt={stripes[index]}
                       sectionImage={block.sectionImage}
+                      folio={folios[index]}
                     />
                   </div>
                 )
               })}
+
+              <BoardIndex items={indexItems} folio={indexFolio} />
 
               <div className="mx-auto max-w-[1240px] px-5 pb-10 sm:px-7">
                 {selectedMemberName && (

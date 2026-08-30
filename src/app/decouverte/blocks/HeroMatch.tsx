@@ -7,202 +7,348 @@ import { shouldBlurMedia } from "@/lib/should-blur-media"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
 import { Em } from "@/components/home-redesign/parts"
+import { totemAxesFor, totemLevel, TOTEM_COLORS, TOTEM_WORDS } from "@/components/home-redesign/totem"
+import type { TotemMetrics } from "@/components/home-redesign/totem"
 import type { BlockMeta, HeroData } from "@/lib/nl-search/resolve-blocks"
 
+const CREAM = "#FBF5EA"
+
 /**
- * The board's opening statement: one title, given real estate.
+ * « La une » + « la grande séance » : the board's opening spread, per the
+ * approved canvas. Two covers, chosen by what art actually exists — the dark
+ * cinematic one when a backdrop or still is available (films/séries), the
+ * light poster-led one otherwise (every game, and any title whose art the
+ * mature gate withheld server-side). Below the cover, the feature article:
+ * lede with drop cap, pull-quote from the catalogue's parent bullets, and the
+ * verdict card with the totem meters.
  *
- * Two treatments, chosen by what art actually exists. Films and series have a
- * reliable `backdropUrl` and get the full-bleed cinematic version; games never
- * have one (the importer stores covers and stills only), so they get a
- * poster-led composition on warm paper. The poster path is not a degraded
- * fallback — it has to look deliberate, because it is what every game renders.
- *
- * Everything written here is either catalogue data or one of the deterministic
- * builders (quick answer, age rationale, totem voice line). Nothing on this
- * block is generated at request time.
+ * Guardrails preserved from the previous hero: matureArt strips wide art
+ * server-side, the poster follows the per-user blur rule, and a provisional /
+ * unreleased title shows its age « à confirmer » with no content analysis.
  */
 export function HeroMatch({ meta, hero }: { meta: BlockMeta; hero: HeroData }) {
   const { card, backdropUrl, screenshots, synopsis, voiceLine, quickAnswer, ageRationale } = hero
   const { settings } = useSettings()
-  // The wide art is already withheld server-side for mature titles; the poster
-  // follows the same per-user rule as every card on the site.
+  const metrics = (card.contentMetrics ?? null) as TotemMetrics | null
+
   const blurPoster = shouldBlurMedia(
     {
       type: card.type,
       expertAgeRec: card.expertAgeRec,
-      violence: (card.contentMetrics as { violence?: number } | null)?.violence,
-      sexNudity: (card.contentMetrics as { sexNudity?: number } | null)?.sexNudity,
-      language: (card.contentMetrics as { language?: number } | null)?.language,
-      substanceUse: (card.contentMetrics as { substanceUse?: number } | null)?.substanceUse,
+      violence: metrics?.violence,
+      sexNudity: metrics?.sexNudity,
+      language: metrics?.language,
+      substanceUse: metrics?.substanceUse,
     },
     settings.blur18Plus,
   )
+
   const href = `/media/${toMediaRouteId(card.type, card.id)}`
-  const eyebrow = meta.eyebrow ?? meta.title ?? "Notre meilleure pioche"
   const wide = backdropUrl ?? screenshots[0] ?? null
+  const dark = !!wide
   const age = card.expertAgeRec
 
+  const kickerColor = dark ? "var(--gold)" : "var(--pine-2)"
+  const inkMain = dark ? "#FFFDF8" : "var(--ink)"
+  const inkSoft = dark ? "rgba(251,245,234,.85)" : "var(--ink-2)"
+
   return (
-    <section className="relative mt-10 overflow-hidden rounded-[22px]" style={{ border: "1px solid var(--line)" }}>
-      {wide && (
-        <div className="absolute inset-0" aria-hidden>
-          <SafeImage
-            src={wide}
-            alt=""
-            fill
-            sizes="(max-width: 1024px) 100vw, 1200px"
-            className="object-cover"
-            fallbackClassName="h-full w-full"
-          />
-          {/* Two scrims: one to seat the text, one to keep the paper palette
-              present so the block still reads as part of the site. */}
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(105deg, rgba(20,15,10,.92) 0%, rgba(20,15,10,.72) 45%, rgba(20,15,10,.35) 100%)" }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(to top, rgba(20,15,10,.55) 0%, rgba(0,0,0,0) 55%)" }}
-          />
-        </div>
-      )}
-
+    <section className="mt-10">
+      {/* ── La une ─────────────────────────────────────────────────── */}
       <div
-        className="relative flex flex-col gap-6 p-6 sm:p-8 md:flex-row md:gap-8 md:p-10"
-        style={wide ? undefined : { background: "var(--card)" }}
+        className="relative overflow-hidden rounded-[22px]"
+        style={{ border: "1px solid var(--line)", background: dark ? "#101B17" : "var(--paper-2)" }}
       >
-        <Link href={href} className="shrink-0 self-start transition-transform duration-200 hover:-translate-y-1">
+        {dark ? (
+          <div className="absolute inset-0" aria-hidden>
+            <SafeImage src={wide!} alt="" fill sizes="(max-width: 1024px) 100vw, 1200px" className="object-cover" fallbackClassName="h-full w-full" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(100deg, rgba(12,17,14,.94) 0%, rgba(12,17,14,.72) 45%, rgba(12,17,14,.22) 80%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,14,.6) 0%, rgba(0,0,0,0) 50%)" }} />
+          </div>
+        ) : (
           <div
-            className="relative aspect-[2/3] w-[132px] overflow-hidden rounded-[14px] sm:w-[164px] md:w-[196px]"
-            style={{ background: "var(--placeholder, #E6DFCE)", boxShadow: "0 18px 40px -22px rgba(20,15,10,.75)" }}
-          >
-            {card.posterUrl && (
-              <SafeImage
-                src={tmdbPosterAtSize(card.posterUrl, "w342")}
-                alt={card.title}
-                fill
-                sizes="(max-width: 768px) 40vw, 200px"
-                className={blurPoster ? "object-cover blur-md brightness-90" : "object-cover"}
-                fallbackClassName="h-full w-full"
-              />
-            )}
-          </div>
-        </Link>
+            className="absolute -right-24 -top-24 h-[420px] w-[420px]"
+            style={{ background: "var(--pine-soft)", borderRadius: "41% 59% 54% 46% / 47% 44% 56% 53%" }}
+            aria-hidden
+          />
+        )}
 
-        <div className="min-w-0 flex-1">
-          <p
-            className="text-[12.5px] font-bold uppercase tracking-[0.16em]"
-            style={{ color: wide ? "#E8B48A" : "var(--terra)" }}
-          >
-            {eyebrow}
-          </p>
-
-          <h2
-            className="mt-2 text-[clamp(26px,3.6vw,44px)] font-bold leading-[1.05]"
-            style={{
-              fontFamily: "var(--font-bricolage)",
-              letterSpacing: "-0.02em",
-              color: wide ? "#FFFDF8" : "var(--ink)",
-            }}
-          >
-            <Link href={href}>{card.title}</Link>
-          </h2>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {age !== null && (
-              <span
-                className="rounded-full px-3 py-1 text-[13px] font-bold"
-                style={{ background: wide ? "rgba(255,253,248,.16)" : "var(--pine-soft)", color: wide ? "#FFFDF8" : "var(--pine)" }}
-              >
-                {quickAnswer?.age ?? `Dès ${age} ans`}
+        <div className="relative flex flex-col gap-7 p-7 sm:p-10 md:flex-row md:items-center md:gap-10">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: kickerColor }} />
+              <span className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: kickerColor }}>
+                À la une
               </span>
-            )}
-            {card.genres.slice(0, 3).map((genre) => (
-              <span
-                key={genre}
-                className="rounded-full px-3 py-1 text-[12.5px] font-semibold"
-                style={{
-                  background: wide ? "rgba(255,253,248,.10)" : "var(--paper-2)",
-                  color: wide ? "rgba(255,253,248,.86)" : "var(--ink-2)",
-                  border: wide ? "1px solid rgba(255,253,248,.18)" : "1px solid var(--line)",
-                }}
-              >
-                {genre}
-              </span>
-            ))}
-          </div>
+            </div>
 
-          {(voiceLine || synopsis) && (
-            <p
-              className="mt-4 max-w-[62ch] text-[15.5px] leading-relaxed"
-              style={{ color: wide ? "rgba(255,253,248,.90)" : "var(--ink-2)" }}
+            <h2
+              className="mt-3 text-[clamp(34px,4.6vw,64px)] font-bold leading-[1.02]"
+              style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: inkMain }}
             >
-              {voiceLine ?? synopsis}
+              <Link href={href}>{card.title}</Link>
+            </h2>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2.5">
+              {age !== null && (
+                <span
+                  className="rounded-full px-4 py-1.5 text-[14px] font-bold"
+                  style={dark ? { background: "var(--pine-soft)", color: "var(--pine)" } : { background: "var(--pine)", color: CREAM }}
+                >
+                  {quickAnswer?.age ?? `Dès ${age} ans`}
+                </span>
+              )}
+              {card.genres.slice(0, 3).map((genre) => (
+                <span
+                  key={genre}
+                  className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
+                  style={
+                    dark
+                      ? { border: "1px solid rgba(251,245,234,.3)", color: "rgba(251,245,234,.9)" }
+                      : { border: "1px solid var(--line)", background: "var(--card)", color: "var(--ink)" }
+                  }
+                >
+                  {genre}
+                </span>
+              ))}
+            </div>
+
+            {(voiceLine || synopsis) && (
+              <p
+                className="mt-5 max-w-[56ch] text-[clamp(16px,1.6vw,19px)] leading-[1.5]"
+                style={{ fontFamily: "var(--font-newsreader)", fontStyle: "italic", fontWeight: 500, color: inkSoft }}
+              >
+                {voiceLine ?? synopsis}
+              </p>
+            )}
+
+            {hero.hideContentAnalysis && (
+              <p className="mt-4 text-[12.5px]" style={{ color: dark ? "rgba(251,245,234,.66)" : "var(--ink-3)" }}>
+                Âge provisoire, à confirmer après la sortie.
+              </p>
+            )}
+          </div>
+
+          <Link href={href} className="shrink-0 self-center transition-transform duration-200 hover:-translate-y-1 md:self-auto">
+            <div
+              className="relative aspect-[2/3] w-[150px] overflow-hidden rounded-[16px] sm:w-[190px] md:w-[220px]"
+              style={{
+                background: "var(--placeholder, #E6DFCE)",
+                transform: "rotate(-2.5deg)",
+                boxShadow: "0 34px 70px -28px rgba(12,17,14,.75)",
+                border: dark ? "1px solid rgba(251,245,234,.2)" : "1px solid var(--line)",
+              }}
+            >
+              {card.posterUrl && (
+                <SafeImage
+                  src={tmdbPosterAtSize(card.posterUrl, "w342")}
+                  alt={card.title}
+                  fill
+                  sizes="(max-width: 768px) 45vw, 220px"
+                  className={blurPoster ? "object-cover blur-md brightness-90" : "object-cover"}
+                  fallbackClassName="h-full w-full"
+                />
+              )}
+            </div>
+          </Link>
+        </div>
+      </div>
+
+      {/* ── La grande séance ───────────────────────────────────────── */}
+      <div className="mt-8 grid gap-10 md:grid-cols-[minmax(0,1fr)_396px] md:gap-12">
+        <div className="min-w-0">
+          {synopsis && (
+            <p className="text-[16px] leading-[1.7]" style={{ color: "var(--ink-2)", maxWidth: "64ch" }}>
+              <span
+                className="float-left pr-3 pt-1 text-[58px] font-bold leading-[0.8]"
+                style={{ fontFamily: "var(--font-bricolage)", color: "var(--terra)" }}
+              >
+                {synopsis.trim().charAt(0)}
+              </span>
+              {synopsis.trim().slice(1)}
             </p>
           )}
 
-          {ageRationale && ageRationale.drivers.length > 0 && (
-            <div className="mt-5">
-              <p
-                className="text-[12.5px] font-bold uppercase tracking-[0.14em]"
-                style={{ color: wide ? "rgba(255,253,248,.62)" : "var(--ink-3)" }}
-              >
+          {hero.whatParentsNeedToKnow.length > 0 && (
+            <figure className="mt-7 border-y py-6" style={{ borderTopWidth: 2, borderTopColor: "var(--ink)", borderBottomColor: "var(--line)", margin: "28px 0 0" }}>
+              <div className="flex items-start gap-4">
+                <span aria-hidden className="text-[54px] leading-[0.7]" style={{ fontFamily: "var(--font-newsreader)", fontStyle: "italic", color: "var(--terra)" }}>
+                  «
+                </span>
+                <div>
+                  <blockquote
+                    className="max-w-[44ch] text-[clamp(19px,2vw,24px)] leading-[1.42]"
+                    style={{ fontFamily: "var(--font-newsreader)", fontStyle: "italic", fontWeight: 500, color: "var(--ink)" }}
+                  >
+                    {hero.whatParentsNeedToKnow[0]}&nbsp;»
+                  </blockquote>
+                  <figcaption className="mt-2.5 text-[10.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
+                    Points de vigilance · analyse Totem Avisé
+                  </figcaption>
+                </div>
+              </div>
+            </figure>
+          )}
+
+          {ageRationale && (ageRationale.drivers.length > 0 || ageRationale.positives.length > 0) && (
+            <div className="mt-7">
+              <p className="text-[11.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
                 Ce qui pèse dans l&apos;âge conseillé
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2.5">
                 {ageRationale.drivers.slice(0, 4).map((driver) => (
                   <span
                     key={driver.key}
-                    className="rounded-full px-3 py-1 text-[12.5px] font-semibold"
-                    style={{
-                      background: wide ? "rgba(255,253,248,.10)" : "var(--paper-2)",
-                      color: wide ? "rgba(255,253,248,.86)" : "var(--ink-2)",
-                      border: wide ? "1px solid rgba(255,253,248,.18)" : "1px solid var(--line)",
-                    }}
+                    className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
+                    style={{ background: "rgba(224,144,42,.14)", border: "1px solid rgba(224,144,42,.35)", color: "#8A5A14" }}
                   >
                     {driver.label} · {driver.level}
+                  </span>
+                ))}
+                {ageRationale.positives.slice(0, 3).map((positive) => (
+                  <span
+                    key={positive}
+                    className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold"
+                    style={{ background: "var(--pine-soft)", border: "1px solid rgba(46,92,77,.3)", color: "var(--pine)" }}
+                  >
+                    {positive}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          {meta.lead && (
-            <p
-              className="mt-4 max-w-[60ch] text-[14px]"
-              style={{ color: wide ? "rgba(255,253,248,.72)" : "var(--ink-3)" }}
-            >
-              {meta.lead}
-            </p>
+          {screenshots.length > 1 && (
+            <div className="mt-7">
+              <div className="grid grid-cols-3 gap-3.5">
+                {screenshots.slice(dark ? 1 : 0, dark ? 4 : 3).map((url) => (
+                  <div key={url} className="relative aspect-video overflow-hidden rounded-[12px]" style={{ border: "1px solid var(--line)" }}>
+                    <SafeImage src={url} alt="" fill sizes="(max-width: 768px) 33vw, 300px" className="object-cover" fallbackClassName="h-full w-full" />
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
+                Images du titre
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Le verdict */}
+        <aside
+          className="h-fit rounded-[18px] p-7"
+          style={{ background: "var(--card)", border: "1px solid var(--line)", boxShadow: "0 18px 40px -28px rgba(40,28,12,.55)" }}
+        >
+          <p className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--terra)" }}>
+            Le verdict
+          </p>
+          <p className="mt-1.5 text-[clamp(34px,3vw,44px)] font-bold leading-none" style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--pine)" }}>
+            {age !== null ? `Dès ${age} ans` : "Âge à confirmer"}
+          </p>
+          <p className="mt-2 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+            {hero.hideContentAnalysis
+              ? "Estimation avant sortie, précisée ensuite."
+              : "Âge conseillé par Totem Avisé, affiné par les votes des familles."}
+          </p>
+
+          {!hero.hideContentAnalysis && metrics && (
+            <>
+              <div className="my-5 h-px" style={{ background: "var(--line)" }} />
+              <div className="flex flex-col gap-3">
+                {totemAxesFor(card.type).map((axis) => {
+                  const level = totemLevel(metrics[axis.key as keyof TotemMetrics] as number | null | undefined)
+                  const words = axis.words ?? TOTEM_WORDS
+                  return (
+                    <div key={axis.key} className="flex items-center justify-between gap-3">
+                      <span className="text-[13.5px] font-semibold" style={{ color: "var(--ink)" }}>
+                        {axis.label}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                          {words[level]}
+                        </span>
+                        <span className="flex gap-1.5" aria-hidden>
+                          {[1, 2, 3].map((step) => (
+                            <span
+                              key={step}
+                              className="inline-block h-[9px] w-[9px] rounded-full"
+                              style={{ background: level >= step ? TOTEM_COLORS[level] : "var(--line)" }}
+                            />
+                          ))}
+                        </span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <Link
-              href={href}
-              className="rounded-full px-5 py-[11px] text-[14.5px] font-bold text-white transition-opacity hover:opacity-90"
-              style={{ background: "var(--terra)" }}
-            >
-              Voir la fiche
-            </Link>
-            {hero.hideContentAnalysis && (
-              <span className="text-[12.5px]" style={{ color: wide ? "rgba(255,253,248,.70)" : "var(--ink-3)" }}>
-                Âge provisoire, à confirmer après la sortie
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+          {hero.whatParentsNeedToKnow.length > 1 && (
+            <>
+              <div className="my-5 h-px" style={{ background: "var(--line)" }} />
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
+                Ce que les parents doivent savoir
+              </p>
+              <ul className="mt-2.5 flex flex-col gap-2">
+                {hero.whatParentsNeedToKnow.slice(1, 3).map((item) => (
+                  <li key={item} className="text-[13.5px] leading-[1.55]" style={{ color: "var(--ink-2)" }}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
-      {screenshots.length > 1 && (
-        <div className="relative grid grid-cols-3 gap-1 p-1 sm:grid-cols-4" style={{ background: wide ? "rgba(20,15,10,.55)" : "var(--paper-2)" }}>
-          {screenshots.slice(0, 4).map((url, index) => (
-            <div key={url} className={`relative aspect-video overflow-hidden rounded-[8px] ${index === 3 ? "hidden sm:block" : ""}`}>
-              <SafeImage src={url} alt="" fill sizes="25vw" className="object-cover" fallbackClassName="h-full w-full" />
-            </div>
-          ))}
-        </div>
-      )}
+          {(card.memberScores?.length ?? 0) > 0 && (
+            <>
+              <div className="my-5 h-px" style={{ background: "var(--line)" }} />
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
+                Chez vous
+              </p>
+              <div className="mt-2.5 flex flex-col gap-2.5">
+                {card.memberScores!.slice(0, 4).map((member) => (
+                  <div key={member.memberId} className="flex items-center gap-2.5">
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold" style={{ color: "var(--ink)" }}>
+                      {member.memberName}
+                    </span>
+                    <span className="block h-[6px] w-[38%] overflow-hidden rounded-full" style={{ background: "var(--line)" }}>
+                      <span className="block h-full rounded-full" style={{ width: `${Math.max(4, Math.min(100, member.score))}%`, background: "var(--pine-2)" }} />
+                    </span>
+                    <span className="w-[4ch] text-right text-[13.5px] font-bold tabular-nums" style={{ fontFamily: "var(--font-bricolage)", color: "var(--pine)" }}>
+                      {Math.round(member.score)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {hero.platforms.length > 0 && (
+            <>
+              <div className="my-5 h-px" style={{ background: "var(--line)" }} />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--ink-3)" }}>
+                  Où le voir&nbsp;:
+                </span>
+                {hero.platforms.slice(0, 3).map((platform) => (
+                  <span key={platform} className="rounded-full px-3 py-1 text-[12.5px] font-semibold" style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink)" }}>
+                    {platform}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+
+          <Link
+            href={href}
+            className="mt-6 block rounded-full px-5 py-[11px] text-center text-[14px] font-bold text-white transition-opacity hover:opacity-90"
+            style={{ background: "var(--terra)" }}
+          >
+            Voir la fiche complète
+          </Link>
+        </aside>
+      </div>
     </section>
   )
 }
@@ -228,8 +374,8 @@ export function BoardHeading({
   } as const
   const className =
     as === "h2"
-      ? "text-[clamp(26px,3.4vw,40px)] font-bold leading-[1.04]"
-      : "text-[clamp(20px,2.4vw,28px)] font-bold leading-[1.06]"
+      ? "text-[clamp(30px,4.4vw,52px)] font-bold leading-[1.04] max-w-[16ch]"
+      : "text-[clamp(22px,2.6vw,30px)] font-bold leading-[1.06]"
 
   if (index < 0 || !em) {
     return (
