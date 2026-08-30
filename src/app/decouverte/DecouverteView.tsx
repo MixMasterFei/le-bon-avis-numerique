@@ -15,6 +15,7 @@ import { AVOID_RULES } from "@/lib/nl-search/vocab"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
 import { BoardIndex } from "./blocks/BoardIndex"
 import { computeStripes, type ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
+import { intentToSearchParams, NL_MAX_EXCLUDED } from "@/lib/nl-search/validate"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
 import { ShareSaveBar } from "./ShareSaveBar"
@@ -51,50 +52,102 @@ function buildHeadline(intent: NlIntent): string {
   return parts.join(" · ")
 }
 
+/**
+ * One field, two conversations. With a board on screen the default is a
+ * FOLLOW-UP — « plutôt des séries », « sans frayeurs » — refined against the
+ * current selection; the second pill switches back to a fresh question. The
+ * refine input is its own value, so toggling never eats what was typed.
+ */
 function SearchBar({
   initial,
   isPending,
+  canRefine,
   onSearch,
+  onRefine,
 }: {
   initial: string
   isPending: boolean
+  canRefine: boolean
   onSearch: (term: string) => void
+  onRefine: (suite: string) => void
 }) {
   const [value, setValue] = useState(initial)
+  const [refineValue, setRefineValue] = useState("")
+  const [mode, setMode] = useState<"affiner" | "nouvelle">("affiner")
+  const [prevInitial, setPrevInitial] = useState(initial)
+  const refining = canRefine && mode === "affiner"
+
+  // A navigation landed a new question (a refinement, a suggestion chip):
+  // realign the field with the page instead of showing the previous text.
+  // State adjusted during render, per the React docs — not in an effect.
+  if (prevInitial !== initial) {
+    setPrevInitial(initial)
+    setValue(initial)
+    setRefineValue("")
+  }
+
+  const modePill = (target: "affiner" | "nouvelle", label: string) => {
+    const on = mode === target
+    return (
+      <button
+        type="button"
+        onClick={() => setMode(target)}
+        aria-pressed={on}
+        className="rounded-full px-3.5 py-1.5 text-[12.5px] font-bold transition-colors"
+        style={{
+          background: on ? "var(--pine)" : "var(--paper-2)",
+          color: on ? "#fff" : "var(--ink-2)",
+          border: `1.5px solid ${on ? "var(--pine)" : "var(--line)"}`,
+        }}
+      >
+        {label}
+      </button>
+    )
+  }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        const term = value.trim()
-        if (term) onSearch(term)
-      }}
-      className="flex flex-col gap-3 sm:flex-row sm:items-center"
-    >
-      <label
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-full px-[18px] py-[13px] sm:flex-1"
-        style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}
+    <div>
+      {canRefine && (
+        <div className="mb-2.5 flex flex-wrap items-center gap-2">
+          {modePill("affiner", "Affiner cette sélection")}
+          {modePill("nouvelle", "Nouvelle recherche")}
+        </div>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const term = (refining ? refineValue : value).trim()
+          if (!term) return
+          if (refining) onRefine(term)
+          else onSearch(term)
+        }}
+        className="flex flex-col gap-3 sm:flex-row sm:items-center"
       >
-        <Search className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--ink-3)" }} />
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Décrivez ce que vous cherchez…"
-          aria-label="Décrivez ce que vous cherchez"
-          className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
-          style={{ color: "var(--ink)" }}
-        />
-      </label>
-      <button
-        type="submit"
-        disabled={isPending}
-        className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white transition-opacity disabled:opacity-70 sm:w-auto"
-        style={{ background: "var(--terra)" }}
-      >
-        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-        {isPending ? "Je vous compose ça…" : "Chercher"}
-      </button>
-    </form>
+        <label
+          className="flex w-full min-w-0 items-center gap-2.5 rounded-full px-[18px] py-[13px] sm:flex-1"
+          style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}
+        >
+          <Search className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--ink-3)" }} />
+          <input
+            value={refining ? refineValue : value}
+            onChange={(e) => (refining ? setRefineValue(e.target.value) : setValue(e.target.value))}
+            placeholder={refining ? "Précisez : plutôt des séries, sans frayeurs, pour un plus jeune…" : "Décrivez ce que vous cherchez…"}
+            aria-label={refining ? "Précisez votre demande" : "Décrivez ce que vous cherchez"}
+            className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
+            style={{ color: "var(--ink)" }}
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white transition-opacity disabled:opacity-70 sm:w-auto"
+          style={{ background: "var(--terra)" }}
+        >
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {isPending ? (refining ? "On ajuste…" : "Je vous compose ça…") : refining ? "Affiner" : "Chercher"}
+        </button>
+      </form>
+    </div>
   )
 }
 
@@ -213,12 +266,52 @@ export function DecouverteView({
   // this component survives the same-route navigation, so anything we latch on
   // submit stays latched — which left the whole board dimmed permanently.
   const [isNavigating, startNavigation] = useTransition()
+  const [isRefining, setIsRefining] = useState(false)
+  const [refineError, setRefineError] = useState<string | null>(null)
+  const isPending = isNavigating || isRefining
 
   // Without a transition the navigation is invisible: React keeps the rendered
   // board while the new payload streams and the route-level Suspense fallback
   // never re-appears, so the page just sits there for the length of the call.
   const search = (term: string) => {
+    setRefineError(null)
     startNavigation(() => router.push(`/decouverte?q=${encodeURIComponent(term)}`))
+  }
+
+  // A follow-up on the board on screen. The server refines the interpretation
+  // once and answers with a fully materialized param URL; rendering that URL
+  // never re-interprets. On any refusal the current board stays untouched.
+  const refine = async (suite: string) => {
+    setRefineError(null)
+    setIsRefining(true)
+    try {
+      const currentParams = intentToSearchParams(intent, "")
+      const response = await fetch("/api/decouverte/affiner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: query, suite, params: Object.fromEntries(currentParams.entries()) }),
+      })
+      const data = await response.json()
+      if (!response.ok || typeof data?.url !== "string") {
+        setRefineError(typeof data?.error === "string" ? data.error : "Une erreur est survenue. Réessayez.")
+        return
+      }
+      startNavigation(() => router.push(data.url))
+    } catch {
+      setRefineError("Une erreur est survenue. Réessayez.")
+    } finally {
+      setIsRefining(false)
+    }
+  }
+
+  // « Pas celui-là » : the id joins the intent's exclusions and the SAME board
+  // re-renders from the URL — deterministic, free, and over-fetched headroom
+  // means the next candidate slides into the emptied spot.
+  const removeCard = (id: string) => {
+    if (intent.excludedIds.includes(id) || intent.excludedIds.length >= NL_MAX_EXCLUDED) return
+    const next = { ...intent, excludedIds: [...intent.excludedIds, id] }
+    const sp = intentToSearchParams(next, query)
+    startNavigation(() => router.replace(`/decouverte?${sp.toString()}`, { scroll: false }))
   }
 
   // Re-rank in place for the selected child: their own score decides the order,
@@ -257,6 +350,9 @@ export function DecouverteView({
   const headline = buildHeadline(intent)
   const isSearchable = intent.mode !== "hors_sujet" && !isIdle
   const hasBoard = board.blocks.length > 0 && board.mainCount > 0
+  // At the exclusion cap a removal would silently no-op, so the control hides.
+  const canRemove = isSearchable && hasBoard && intent.excludedIds.length < NL_MAX_EXCLUDED
+  const onRemove = canRemove ? removeCard : undefined
 
   return (
     <FamilyFitProvider>
@@ -309,7 +405,18 @@ export function DecouverteView({
           ) : null}
 
           <div className="mt-6 max-w-[720px]">
-            <SearchBar initial={query} isPending={isNavigating} onSearch={search} />
+            <SearchBar
+              initial={query}
+              isPending={isPending}
+              canRefine={hasBoard && isSearchable}
+              onSearch={search}
+              onRefine={refine}
+            />
+            {refineError && (
+              <p className="mt-2.5 text-[13.5px] font-semibold" style={{ color: "var(--terra)" }}>
+                {refineError}
+              </p>
+            )}
           </div>
 
           {showCareBanner && (
@@ -391,7 +498,7 @@ export function DecouverteView({
         </div>
 
         {hasBoard && intent.mode !== "hors_sujet" && !isIdle && (
-          <div style={{ opacity: isNavigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
+          <div style={{ opacity: isPending ? 0.55 : 1, transition: "opacity 150ms ease" }}>
               {board.blocks.map((block, index) => {
                 const key = `${block.key}-${index}`
                 const reveal = {
@@ -399,7 +506,12 @@ export function DecouverteView({
                   style: { animationDelay: `${Math.min(index, 6) * 90}ms` },
                 } as const
                 if (block.kind === "hero") {
-                  return <div key={key} {...reveal}><HeroMatch meta={block.meta} hero={block.hero} /></div>
+                  const heroId = block.hero.card.id
+                  return (
+                    <div key={key} {...reveal}>
+                      <HeroMatch meta={block.meta} hero={block.hero} onDismiss={onRemove ? () => removeCard(heroId) : undefined} />
+                    </div>
+                  )
                 }
                 if (block.kind === "deferred") {
                   return <div key={key} {...reveal}>{slots?.[block.index] ?? null}</div>
@@ -426,6 +538,7 @@ export function DecouverteView({
                         alt={stripes[index]}
                         sectionImage={block.sectionImage}
                         folio={folios[index]}
+                        onRemove={onRemove}
                       />
                     </div>
                   )
@@ -439,6 +552,7 @@ export function DecouverteView({
                       alt={stripes[index]}
                       sectionImage={block.sectionImage}
                       folio={folios[index]}
+                      onRemove={onRemove}
                     />
                   </div>
                 )

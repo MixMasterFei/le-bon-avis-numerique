@@ -3,6 +3,7 @@ import {
   hasStructuredParams,
   intentFromSearchParams,
   intentToSearchParams,
+  NL_MAX_EXCLUDED,
   validateNlIntent,
 } from "../validate"
 
@@ -181,5 +182,58 @@ describe("URL round-trip", () => {
     const params = intentToSearchParams(validateNlIntent({ mediaType: "MOVIE", maxAge: 8 }), "q")
     expect(params.has("type")).toBe(false)
     expect(params.get("age")).toBe("8")
+  })
+})
+
+describe("removed titles (excludedIds / retire)", () => {
+  it("round-trips removals through the URL", () => {
+    const original = validateNlIntent({ maxAge: 8, themes: ["Animaux"], excludedIds: ["abc123", "def-456_XY"] })
+    expect(original.excludedIds).toEqual(["abc123", "def-456_XY"])
+
+    const params = intentToSearchParams(original, "films d'animaux")
+    expect(params.get("retire")).toBe("abc123,def-456_XY")
+
+    const restored = intentFromSearchParams(Object.fromEntries(params.entries()))
+    expect(restored.excludedIds).toEqual(["abc123", "def-456_XY"])
+  })
+
+  it("counts retire as a structured param, so a removal never re-interprets", () => {
+    expect(hasStructuredParams({ q: "un film", retire: "abc123" })).toBe(true)
+  })
+
+  it("keeps removals on a keyword-mode intent", () => {
+    // A rescued or degraded board is still curatable: no filters, only removals.
+    const intent = intentFromSearchParams({ q: "dinosaures rigolos", retire: "abc123" })
+    expect(intent.mode).toBe("texte")
+    expect(intent.excludedIds).toEqual(["abc123"])
+  })
+
+  it("drops hostile or malformed ids silently", () => {
+    const intent = validateNlIntent({
+      maxAge: 8,
+      excludedIds: [
+        "abc123",
+        "a", // too short
+        "x".repeat(80), // too long
+        "id with spaces",
+        "id;DROP TABLE", // not in the id alphabet
+        "../etc/passwd",
+        42 as unknown as string,
+        "abc123", // duplicate
+      ],
+    })
+    expect(intent.excludedIds).toEqual(["abc123"])
+  })
+
+  it("caps the list at NL_MAX_EXCLUDED", () => {
+    const many = Array.from({ length: NL_MAX_EXCLUDED + 10 }, (_, i) => `media${i}xxxx`)
+    const intent = validateNlIntent({ maxAge: 8, excludedIds: many })
+    expect(intent.excludedIds).toHaveLength(NL_MAX_EXCLUDED)
+  })
+
+  it("never lets exclusions survive an off-topic verdict", () => {
+    const intent = validateNlIntent({ horsSujet: true, excludedIds: ["abc123"] })
+    expect(intent.mode).toBe("hors_sujet")
+    expect(intent.excludedIds).toEqual([])
   })
 })

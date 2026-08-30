@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { X } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { useSettings } from "@/contexts/SettingsContext"
 import { shouldBlurMedia } from "@/lib/should-blur-media"
@@ -26,7 +27,17 @@ const CREAM = "#FBF5EA"
  * server-side, the poster follows the per-user blur rule, and a provisional /
  * unreleased title shows its age « à confirmer » with no content analysis.
  */
-export function HeroMatch({ meta, hero }: { meta: BlockMeta; hero: HeroData }) {
+export function HeroMatch({
+  meta,
+  hero,
+  onDismiss,
+}: {
+  meta: BlockMeta
+  hero: HeroData
+  /** « Pas celui-là » on the cover itself — the next best match takes the une.
+   *  Absent on shared boards, where viewers must not curate. */
+  onDismiss?: () => void
+}) {
   const { card, backdropUrl, screenshots, synopsis, voiceLine, quickAnswer, ageRationale } = hero
   const { settings } = useSettings()
   const metrics = (card.contentMetrics ?? null) as TotemMetrics | null
@@ -71,6 +82,23 @@ export function HeroMatch({ meta, hero }: { meta: BlockMeta; hero: HeroData }) {
             style={{ background: "var(--pine-soft)", borderRadius: "41% 59% 54% 46% / 47% 44% 56% 53%" }}
             aria-hidden
           />
+        )}
+
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            title="Retirer ce titre de la sélection"
+            aria-label={`Retirer ${card.title} de la sélection`}
+            className="absolute right-4 top-4 z-20 grid h-8 w-8 place-items-center rounded-full transition-opacity hover:opacity-75"
+            style={
+              dark
+                ? { background: "rgba(251,245,234,.14)", border: "1px solid rgba(251,245,234,.3)", color: CREAM }
+                : { background: "var(--card)", border: "1px solid var(--line)", color: "var(--ink-2)" }
+            }
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
 
         <div className="relative flex flex-col gap-7 p-7 sm:p-10 md:flex-row md:items-center md:gap-10">

@@ -16,6 +16,19 @@ import type { NlIntent } from "./types"
 
 /** Mirrored from PersonalizedRail — the proven "fits everyone" threshold. */
 const MIN_SCORE = 40
+/** Refill headroom: never fetch unboundedly however long the removal list. */
+const MAX_FETCH = 60
+
+/** Over-fetch by the removal count so a removed card is REPLACED, not a hole. */
+function fetchBudget(limit: number, excluded: string[]): number {
+  return Math.min(MAX_FETCH, limit + excluded.length)
+}
+
+function dropExcluded(cards: AssembledCard[], excluded: string[], limit: number): AssembledCard[] {
+  if (excluded.length === 0) return cards.slice(0, limit)
+  const banned = new Set(excluded)
+  return cards.filter((card) => !banned.has(card.id)).slice(0, limit)
+}
 
 export interface AssembledCard {
   id: string
@@ -135,14 +148,14 @@ async function runAnonFilter(intent: NlIntent, limit: number, maxAgeOverride?: n
   const rows = await prisma.mediaItem.findMany({
     where,
     select: CARD_SELECT,
-    take: limit,
+    take: fetchBudget(limit, intent.excludedIds),
     orderBy: [
       { tmdbVoteCount: { sort: "desc", nulls: "last" } },
       { tmdbRating: { sort: "desc", nulls: "last" } },
       { dataQualityScore: "desc" },
     ],
   })
-  return rows.map(rowToCard)
+  return dropExcluded(rows.map(rowToCard), intent.excludedIds, limit)
 }
 
 /** Logged-in path: per-member scoring, so each card carries its fit. */
@@ -158,7 +171,7 @@ async function runFamilyFilter(
     userId,
     familyMemberIds: memberIds,
     mediaType: intent.mediaType,
-    limit,
+    limit: fetchBudget(limit, intent.excludedIds),
     // ALL selected members must fit — a title that doesn't suit the youngest is
     // excluded, not averaged away (same contract as the homepage rail).
     strictMode: true,
@@ -177,7 +190,10 @@ async function runFamilyFilter(
     maxViolence: avoid.maxViolence,
   })
   if (!result) return null
-  return { items: result.results.map(smartItemToCard), members: result.members }
+  return {
+    items: dropExcluded(result.results.map(smartItemToCard), intent.excludedIds, limit),
+    members: result.members,
+  }
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react"
 import Link from "next/link"
+import { X } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { RedesignCard, type RedesignCardMedia } from "@/components/home-redesign/RedesignCard"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
@@ -114,14 +115,50 @@ function NumberedItem({ media, rank, accent }: { media: RedesignCardMedia; rank:
   )
 }
 
+/**
+ * The « pas celui-là » control. A sibling overlay, not a child of the card's
+ * link — clicking it must remove, never navigate. It sits at the top right of
+ * the poster, next to the age totem, per the family's curation flow: hidden
+ * until hover on fine pointers, always visible on touch. When `onRemove` is
+ * absent (shared boards, the /tableau view) the card renders exactly as before.
+ */
+function Removable({
+  media,
+  onRemove,
+  children,
+}: {
+  media: RedesignCardMedia
+  onRemove?: (id: string) => void
+  children: ReactNode
+}) {
+  if (!onRemove) return <>{children}</>
+  return (
+    <div className="group/rm relative">
+      {children}
+      <button
+        type="button"
+        onClick={() => onRemove(media.id)}
+        title="Retirer de cette sélection"
+        aria-label={`Retirer ${media.title} de cette sélection`}
+        className="absolute right-14 top-2.5 z-30 grid h-7 w-7 place-items-center rounded-full text-white backdrop-blur-[3px] transition-opacity hover:opacity-100 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover/rm:opacity-100"
+        style={{ background: "rgba(15,12,8,.55)", border: "1px solid rgba(255,255,255,.22)" }}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+}
+
 function Cards({
   variant,
   items,
   accent,
+  onRemove,
 }: {
   variant: NlBlockVariant
   items: RedesignCardMedia[]
   accent: Accent
+  onRemove?: (id: string) => void
 }) {
   // Each variant states what it needs; anything short of that falls back to the
   // plain grid rather than rendering a broken shape.
@@ -129,7 +166,23 @@ function Cards({
     return (
       <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
         {items.slice(0, 8).map((media, index) => (
-          <NumberedItem key={media.id} media={media} rank={index + 1} accent={accent} />
+          <div key={media.id} className="group/rm relative flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <NumberedItem media={media} rank={index + 1} accent={accent} />
+            </div>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(media.id)}
+                title="Retirer de cette sélection"
+                aria-label={`Retirer ${media.title} de cette sélection`}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full transition-opacity hover:opacity-100 sm:opacity-0 sm:focus-visible:opacity-100 sm:group-hover/rm:opacity-100"
+                style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink-3)" }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         ))}
       </div>
     )
@@ -140,10 +193,14 @@ function Cards({
     return (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="col-span-2 row-span-2">
-          <RedesignCard media={lead} totem="full" showType />
+          <Removable media={lead} onRemove={onRemove}>
+            <RedesignCard media={lead} totem="full" showType />
+          </Removable>
         </div>
         {rest.slice(0, 8).map((media) => (
-          <RedesignCard key={media.id} media={media} totem="compact" showType />
+          <Removable key={media.id} media={media} onRemove={onRemove}>
+            <RedesignCard media={media} totem="compact" showType />
+          </Removable>
         ))}
       </div>
     )
@@ -153,7 +210,9 @@ function Cards({
     return (
       <div className="v2-row-lg">
         {items.map((media) => (
-          <RedesignCard key={media.id} media={media} totem="full" showType />
+          <Removable key={media.id} media={media} onRemove={onRemove}>
+            <RedesignCard media={media} totem="full" showType />
+          </Removable>
         ))}
       </div>
     )
@@ -162,7 +221,9 @@ function Cards({
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
       {items.map((media) => (
-        <RedesignCard key={media.id} media={media} totem="compact" showType />
+        <Removable key={media.id} media={media} onRemove={onRemove}>
+          <RedesignCard media={media} totem="compact" showType />
+        </Removable>
       ))}
     </div>
   )
@@ -325,16 +386,18 @@ export function GridBlock({
   alt,
   sectionImage,
   folio,
+  onRemove,
 }: {
   meta: BlockMeta
   items: RedesignCardMedia[]
   alt: boolean
   sectionImage?: SectionImage | null
   folio?: string | null
+  onRemove?: (id: string) => void
 }) {
   return (
     <BoardBand meta={meta} accent="terra" alt={alt} sectionImage={sectionImage} fallbackTitle="La sélection" folio={folio} count={items.length}>
-      <Cards variant={meta.variant} items={items} accent="terra" />
+      <Cards variant={meta.variant} items={items} accent="terra" onRemove={onRemove} />
     </BoardBand>
   )
 }
@@ -346,6 +409,7 @@ export function RailBlock({
   alt,
   sectionImage,
   folio,
+  onRemove,
 }: {
   blockKey: NlBlockKey
   meta: BlockMeta
@@ -353,11 +417,12 @@ export function RailBlock({
   alt: boolean
   sectionImage?: SectionImage | null
   folio?: string | null
+  onRemove?: (id: string) => void
 }) {
   const accent = accentFor(blockKey)
   return (
     <BoardBand meta={meta} accent={accent} alt={alt} sectionImage={sectionImage} fallbackTitle="Une autre piste" folio={folio} count={items.length}>
-      <Cards variant={meta.variant} items={items} accent={accent} />
+      <Cards variant={meta.variant} items={items} accent={accent} onRemove={onRemove} />
     </BoardBand>
   )
 }

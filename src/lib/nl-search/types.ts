@@ -23,6 +23,10 @@ export interface NlIntentRaw {
   railSecondaire?: string | null
   /** Short French labels restating the interpretation, for the chips. */
   libelles?: string[]
+  /** Catalogue ids the household removed from the board (the X on a card).
+   *  Never emitted by the model — it only survives validation so stored
+   *  boards and URLs round-trip; it can only ever EXCLUDE content. */
+  excludedIds?: string[]
 }
 
 export type NlSearchMode =
@@ -53,6 +57,7 @@ export interface NlIntent {
   titre: string | null
   railSecondaire: NlSecondaryRail | null
   libelles: string[]
+  excludedIds: string[]
 }
 
 /** How the page resolved its interpretation — mirrors nl_search_queries.status. */

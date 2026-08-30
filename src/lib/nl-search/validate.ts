@@ -27,6 +27,10 @@ const MAX_PLATFORMS = 2
 const MAX_LABELS = 4
 const LABEL_MAX_LEN = 40
 const TITLE_MAX_LEN = 80
+/** Enough for a picky evening; keeps the URL and the query bounded. The view
+ *  hides the remove control at the cap so a removal never silently no-ops. */
+export const NL_MAX_EXCLUDED = 40
+const ID_PATTERN = /^[A-Za-z0-9_-]{5,64}$/
 
 /** Youngest/oldest age we accept on a family-media query. */
 const AGE_MIN = 0
@@ -47,7 +51,21 @@ function emptyIntent(mode: NlIntent["mode"], mediaType: NlMediaType = "MOVIE"): 
     titre: null,
     railSecondaire: null,
     libelles: [],
+    excludedIds: [],
   }
+}
+
+/** Catalogue ids only — anything shaped differently is dropped silently. */
+function toExcludedIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  const out: string[] = []
+  for (const raw of value) {
+    if (typeof raw !== "string") continue
+    const id = raw.trim()
+    if (ID_PATTERN.test(id) && !out.includes(id)) out.push(id)
+    if (out.length >= NL_MAX_EXCLUDED) break
+  }
+  return out
 }
 
 function toMediaType(value: unknown): NlMediaType {
@@ -124,6 +142,7 @@ export function validateNlIntent(raw: unknown): NlIntent {
     const platforms = canonicalList(input.platforms, platformsForType(mediaType), MAX_PLATFORMS)
     const eviter = toAvoidKeys(input.eviter)
     const libelles = toLabels(input.libelles)
+    const excludedIds = toExcludedIds(input.excludedIds)
 
     const titreRaw = typeof input.titre === "string" ? sanitizePlainText(input.titre, TITLE_MAX_LEN).trim() : ""
     const titre = titreRaw.length >= 2 ? titreRaw : null
@@ -141,9 +160,9 @@ export function validateNlIntent(raw: unknown): NlIntent {
       maxAge !== null || minAge !== null || themes.length > 0 || platforms.length > 0 || eviter.length > 0
 
     if (titre) {
-      return { mode: "titre", mediaType, maxAge, minAge, themes, platforms, eviter, titre, railSecondaire, libelles }
+      return { mode: "titre", mediaType, maxAge, minAge, themes, platforms, eviter, titre, railSecondaire, libelles, excludedIds }
     }
-    if (!hasFilters) return emptyIntent("texte", mediaType)
+    if (!hasFilters) return { ...emptyIntent("texte", mediaType), excludedIds }
 
     // A secondary "younger siblings" rail only makes sense below a known age.
     const rail = railSecondaire === "plus_jeunes" && maxAge === null ? null : railSecondaire
@@ -161,6 +180,7 @@ export function validateNlIntent(raw: unknown): NlIntent {
       titre: null,
       railSecondaire: finalRail,
       libelles,
+      excludedIds,
     }
   } catch {
     return emptyIntent("texte")
@@ -173,6 +193,8 @@ export function validateNlIntent(raw: unknown): NlIntent {
 
 export interface NlSearchParams {
   q?: string
+  /** Comma-joined removed catalogue ids (the X on a card). */
+  retire?: string
   type?: string
   age?: string
   ageMin?: string
@@ -189,7 +211,7 @@ export interface NlSearchParams {
 export function hasStructuredParams(params: NlSearchParams): boolean {
   return Boolean(
     params.type || params.age || params.ageMin || params.themes ||
-    params.plateformes || params.sans || params.titre || params.hs,
+    params.plateformes || params.sans || params.titre || params.hs || params.retire,
   )
 }
 
@@ -218,6 +240,7 @@ export function intentFromSearchParams(params: NlSearchParams): NlIntent {
     // Labels are display-only and are re-derived from the filters on a param
     // render, so they never need to survive in the URL.
     libelles: [],
+    excludedIds: split(params.retire),
   })
 }
 
@@ -237,5 +260,6 @@ export function intentToSearchParams(intent: NlIntent, query: string): URLSearch
   if (intent.eviter.length > 0) sp.set("sans", intent.eviter.join(","))
   if (intent.titre) sp.set("titre", intent.titre)
   if (intent.railSecondaire) sp.set("rail", intent.railSecondaire)
+  if (intent.excludedIds.length > 0) sp.set("retire", intent.excludedIds.join(","))
   return sp
 }

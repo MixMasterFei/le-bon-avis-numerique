@@ -378,8 +378,11 @@ async function resolveMainItems(
 ): Promise<{ items: AssembledCard[]; members: { id: string; name: string }[]; personalized: boolean }> {
   if (intent.mode === "hors_sujet") return { items: [], members: [], personalized: false }
 
+  const banned = new Set(intent.excludedIds)
+  const notBanned = (id: string) => !banned.has(id)
+
   if (intent.mode === "titre" && intent.titre) {
-    const ids = await matchMediaIdsByTitle(intent.titre, { limit: MAIN_LIMIT })
+    const ids = (await matchMediaIdsByTitle(intent.titre, { limit: MAIN_LIMIT + banned.size })).filter(notBanned)
     return { items: await fetchByIds(ids, MAIN_LIMIT), members: [], personalized: false }
   }
 
@@ -388,7 +391,7 @@ async function resolveMainItems(
       matchMediaIdsByTheme(query, { limit: 40 }),
       matchMediaIdsByTitle(query, { limit: 12 }),
     ])
-    const merged = Array.from(new Set([...titleIds, ...themeIds]))
+    const merged = Array.from(new Set([...titleIds, ...themeIds])).filter(notBanned)
     return { items: await fetchByIds(merged, MAIN_LIMIT), members: [], personalized: false }
   }
 
