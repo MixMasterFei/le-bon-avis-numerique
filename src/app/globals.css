@@ -446,3 +446,20 @@ html {
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
 .stagger-5 { animation-delay: 0.5s; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   Recherche magique — the board assembles instead of snapping into place.
+   Reuses the existing `fade-in` keyframe (opacity + 10px rise); the delay
+   is set per block inline, so the sections land in reading order.
+   `both` matters: it holds a block hidden through its delay rather than
+   letting it flash before the animation starts.
+   ───────────────────────────────────────────────────────────────────── */
+[data-home="v2"] .board-block-reveal {
+  animation: fade-in 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-home="v2"] .board-block-reveal {
+    animation: none;
+  }
+}

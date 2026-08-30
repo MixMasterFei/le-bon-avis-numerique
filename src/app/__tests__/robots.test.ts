@@ -28,7 +28,9 @@ describe("robots.txt", () => {
     for (const r of rules()) {
       expect(r.disallow).toContain("/admin/")
       expect(r.disallow).toContain("/api/")
-      expect(r.disallow).toContain("/profil/")
+      // No trailing slash: the rule has to cover /profil itself, not only its
+      // children. Broadened in the crawl-trap fix (#95); this pin lagged behind.
+      expect(r.disallow).toContain("/profil")
     }
   })
 

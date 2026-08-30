@@ -15,7 +15,7 @@ export function DecouverteSkeleton({ query }: { query?: string }) {
       <div className="mx-auto max-w-[1240px] px-5 py-12 sm:px-7">
         {query ? (
           <p className="text-[13px] font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--terra)" }}>
-            Nous composons votre sélection…
+            Je vous compose ça, un instant…
           </p>
         ) : (
           <div className="h-4 w-48 animate-pulse rounded" style={{ background: "var(--placeholder, #E6DFCE)" }} />

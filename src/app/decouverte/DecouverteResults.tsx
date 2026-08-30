@@ -1,3 +1,4 @@
+import { Suspense, type ReactNode } from "react"
 import { headers } from "next/headers"
 import { getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { sanitizeSearchQuery } from "@/lib/security"
@@ -14,6 +15,7 @@ import {
   type NlSearchParams,
 } from "@/lib/nl-search/validate"
 import type { NlIntent, NlResolutionStatus } from "@/lib/nl-search/types"
+import { DeferredBlock, DeferredBlockSkeleton } from "./blocks/DeferredBlock"
 import { DecouverteView } from "./DecouverteView"
 
 /**
@@ -115,6 +117,27 @@ export async function DecouverteResults({
   const { intent, plan, degraded } = await resolveIntent(params, query, userId)
   const board = await resolveBoard({ intent, plan, query, userId })
 
+  // Sections that reach TMDB or Sanity stream in behind their own boundaries,
+  // so a slow third party delays one row instead of the whole answer.
+  const seenIds = board.blocks.flatMap((block) =>
+    block.kind === "grid" || block.kind === "rail" ? block.items.map((item) => item.id) : [],
+  )
+  const slots: Record<number, ReactNode> = {}
+  for (const block of board.blocks) {
+    if (block.kind !== "deferred") continue
+    slots[block.index] = (
+      <Suspense fallback={<DeferredBlockSkeleton />}>
+        <DeferredBlock
+          blockKey={block.key}
+          meta={block.meta}
+          intent={intent}
+          query={query}
+          seenIds={seenIds}
+        />
+      </Suspense>
+    )
+  }
+
   return (
     <DecouverteView
       query={query}
@@ -122,6 +145,7 @@ export async function DecouverteResults({
       board={board}
       degraded={degraded}
       isLoggedIn={!!userId}
+      slots={slots}
     />
   )
 }

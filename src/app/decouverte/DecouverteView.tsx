@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { Search, Sparkles } from "lucide-react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { MemberMonogram } from "@/components/home-redesign/MemberMonogram"
@@ -17,6 +17,7 @@ import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
 import { HeroMatch } from "./blocks/HeroMatch"
 import { EditorialBlock, GridBlock, RailBlock, toRedesignCard } from "./blocks/BoardSections"
+import { BlogBlock, NewsBlock, UpcomingBlock } from "./blocks/EditorialSources"
 
 const TYPE_NOUN: Record<NlIntent["mediaType"], string> = {
   MOVIE: "Films",
@@ -166,12 +167,15 @@ export function DecouverteView({
   board,
   degraded,
   isLoggedIn,
+  slots,
 }: {
   query: string
   intent: NlIntent
   board: ResolvedBoard
   degraded: boolean
   isLoggedIn: boolean
+  /** Streamed sections, keyed by their position in the plan. */
+  slots?: Record<number, ReactNode>
 }) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
 
@@ -298,20 +302,36 @@ export function DecouverteView({
             <>
               {board.blocks.map((block, index) => {
                 const key = `${block.key}-${index}`
+                const reveal = {
+                  className: "board-block-reveal",
+                  style: { animationDelay: `${Math.min(index, 6) * 90}ms` },
+                } as const
                 if (block.kind === "hero") {
-                  return <HeroMatch key={key} meta={block.meta} hero={block.hero} />
+                  return <div key={key} {...reveal}><HeroMatch meta={block.meta} hero={block.hero} /></div>
+                }
+                if (block.kind === "deferred") {
+                  return <div key={key} {...reveal}>{slots?.[block.index] ?? null}</div>
                 }
                 if (block.kind === "editorial") {
-                  return <EditorialBlock key={key} variant={block.key} meta={block.meta} />
+                  return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
+                }
+                if (block.kind === "upcoming") {
+                  return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} /></div>
+                }
+                if (block.kind === "news") {
+                  return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} /></div>
+                }
+                if (block.kind === "blog") {
+                  return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} /></div>
                 }
 
                 const ranked = rank(block.items)
                 if (ranked.length === 0) return null
 
                 if (block.kind === "grid") {
-                  return <GridBlock key={key} meta={block.meta} items={ranked.map(toRedesignCard)} />
+                  return <div key={key} {...reveal}><GridBlock meta={block.meta} items={ranked.map(toRedesignCard)} /></div>
                 }
-                return <RailBlock key={key} meta={block.meta} items={ranked.map(toRedesignCard)} />
+                return <div key={key} {...reveal}><RailBlock meta={block.meta} items={ranked.map(toRedesignCard)} /></div>
               })}
 
               {selectedMemberName && (
