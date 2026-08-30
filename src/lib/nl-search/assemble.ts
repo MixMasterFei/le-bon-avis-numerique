@@ -25,6 +25,13 @@ export interface AssembledCard {
   expertAgeRec: number | null
   genres: string[]
   contentMetrics: Record<string, unknown> | null
+  /** Feeds the richer editorial atoms (lede lines); null on thin rows. */
+  synopsisFr?: string | null
+  topics?: string[]
+  releaseDate?: string | null
+  /** Anonymous path only — the family engine's select doesn't carry it, and
+   *  section-level wide art resolves separately (sectionImageFor). */
+  backdropUrl?: string | null
   /** Per-member fit, present only for a logged-in family. */
   memberScores?: { memberId: string; memberName: string; score: number }[]
 }
@@ -37,6 +44,10 @@ type MediaRow = {
   expertAgeRec: number | null
   genres: string[]
   contentMetrics: unknown
+  synopsisFr: string | null
+  topics: string[]
+  releaseDate: Date | null
+  backdropUrl: string | null
 }
 
 function toType(type: string): AssembledCard["type"] {
@@ -52,6 +63,10 @@ function rowToCard(row: MediaRow): AssembledCard {
     expertAgeRec: row.expertAgeRec,
     genres: row.genres ?? [],
     contentMetrics: (row.contentMetrics as Record<string, unknown> | null) ?? null,
+    synopsisFr: row.synopsisFr,
+    topics: row.topics ?? [],
+    releaseDate: row.releaseDate ? row.releaseDate.toISOString() : null,
+    backdropUrl: row.backdropUrl,
   }
 }
 
@@ -64,6 +79,9 @@ function smartItemToCard(item: SmartFilterResultItem): AssembledCard {
     expertAgeRec: item.expertAgeRec,
     genres: item.genres ?? [],
     contentMetrics: item.contentMetrics,
+    synopsisFr: item.synopsisFr,
+    topics: item.topics ?? [],
+    releaseDate: item.releaseDate ? item.releaseDate.toISOString() : null,
     memberScores: item.memberScores.map((m) => ({
       memberId: m.memberId,
       memberName: m.memberName,
@@ -80,6 +98,10 @@ const CARD_SELECT = {
   expertAgeRec: true,
   genres: true,
   contentMetrics: true,
+  synopsisFr: true,
+  topics: true,
+  releaseDate: true,
+  backdropUrl: true,
 } as const
 
 /**

@@ -90,8 +90,8 @@ export interface BlogCard {
 
 export type ResolvedBlock =
   | { kind: "hero"; key: "heroMatch"; meta: BlockMeta; hero: HeroData }
-  | { kind: "grid"; key: "mediaGrid"; meta: BlockMeta; items: AssembledCard[]; sectionImage?: string | null }
-  | { kind: "rail"; key: NlBlockKey; meta: BlockMeta; items: AssembledCard[]; sectionImage?: string | null }
+  | { kind: "grid"; key: "mediaGrid"; meta: BlockMeta; items: AssembledCard[]; sectionImage?: SectionImage | null }
+  | { kind: "rail"; key: NlBlockKey; meta: BlockMeta; items: AssembledCard[]; sectionImage?: SectionImage | null }
   | { kind: "upcoming"; key: "upcoming"; meta: BlockMeta; items: UpcomingItem[] }
   | { kind: "news"; key: "newsPicks"; meta: BlockMeta; items: NewsCard[] }
   | { kind: "blog"; key: "blogPicks"; meta: BlockMeta; items: BlogCard[] }
@@ -107,19 +107,35 @@ export interface ResolvedBoard {
   mainCount: number
 }
 
+export interface SectionImage {
+  url: string
+  /** Backdrops are hero-grade; stills are patchier and slightly lower trust. */
+  kind: "backdrop" | "screenshot"
+}
+
 /**
  * Wide art for a fullBleed section, taken from the titles the section already
- * contains. Games never have a backdrop, so a games section simply comes back
- * null and the renderer falls back to the plain grid.
+ * contains. Two passes: a backdrop (MOVIE/TV only — the importer stores none
+ * for games), then a screenshot, which is the one wide-art seam that also
+ * covers games. Returning null tells the renderer to fall back to the plain
+ * band rather than stretching a 2:3 poster into mush.
  */
-async function sectionImageFor(items: AssembledCard[]): Promise<string | null> {
+async function sectionImageFor(items: AssembledCard[]): Promise<SectionImage | null> {
   if (items.length === 0) return null
+  const ids = items.slice(0, 8).map((i) => i.id)
   try {
-    const row = await prisma.mediaItem.findFirst({
-      where: { id: { in: items.slice(0, 8).map((i) => i.id) }, backdropUrl: { not: null } },
+    const backdrop = await prisma.mediaItem.findFirst({
+      where: { id: { in: ids }, backdropUrl: { not: null } },
       select: { backdropUrl: true },
     })
-    return row?.backdropUrl ?? null
+    if (backdrop?.backdropUrl) return { url: backdrop.backdropUrl, kind: "backdrop" }
+
+    const still = await prisma.mediaScreenshot.findFirst({
+      where: { mediaId: { in: ids } },
+      orderBy: { order: "asc" },
+      select: { url: true },
+    })
+    return still?.url ? { url: still.url, kind: "screenshot" } : null
   } catch {
     return null
   }
@@ -216,7 +232,7 @@ async function resolveHero(card: AssembledCard, personalized: boolean): Promise<
 
   const reason = personalized ? deriveFitReason(card) : null
 
-  const seenUrls = new Set<string>()
+  const seenUrls = new Set<string>(row.backdropUrl ? [row.backdropUrl] : [])
   const screenshots: string[] = []
   for (const shot of row.screenshots) {
     if (!shot.url || seenUrls.has(shot.url)) continue

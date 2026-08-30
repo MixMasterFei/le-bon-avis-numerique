@@ -9,7 +9,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { Em } from "@/components/home-redesign/parts"
 import type { NlBlockKey, NlBlockVariant } from "@/lib/nl-search/blocks"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
-import type { BlockMeta } from "@/lib/nl-search/resolve-blocks"
+import type { BlockMeta, SectionImage } from "@/lib/nl-search/resolve-blocks"
 import { BoardHeading } from "./HeroMatch"
 
 export function toRedesignCard(card: AssembledCard): RedesignCardMedia {
@@ -214,7 +214,7 @@ export function BoardBand({
   meta: BlockMeta
   accent: Accent
   alt: boolean
-  sectionImage?: string | null
+  sectionImage?: SectionImage | null
   fallbackTitle: string
   children: ReactNode
 }) {
@@ -229,7 +229,7 @@ export function BoardBand({
         <div className="relative mb-8 overflow-hidden py-[68px]">
           <div className="absolute inset-0" aria-hidden>
             <SafeImage
-              src={sectionImage!}
+              src={sectionImage!.url}
               alt=""
               fill
               sizes="100vw"
@@ -297,7 +297,7 @@ export function GridBlock({
   meta: BlockMeta
   items: RedesignCardMedia[]
   alt: boolean
-  sectionImage?: string | null
+  sectionImage?: SectionImage | null
 }) {
   return (
     <BoardBand meta={meta} accent="terra" alt={alt} sectionImage={sectionImage} fallbackTitle="La sélection">
@@ -317,7 +317,7 @@ export function RailBlock({
   meta: BlockMeta
   items: RedesignCardMedia[]
   alt: boolean
-  sectionImage?: string | null
+  sectionImage?: SectionImage | null
 }) {
   const accent = accentFor(blockKey)
   return (
