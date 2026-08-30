@@ -9,7 +9,6 @@
  * Failure policy: each block resolves independently and catches its own errors,
  * so a TMDB hiccup costs one section rather than the whole board.
  */
-import { NewsCategory, NewsStoryStatus, type Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { getCinemaMovies } from "@/lib/cinema"
 import { buildQuickAnswer, type QuickAnswer } from "@/lib/quick-answer"
@@ -41,7 +40,7 @@ const HERO_SCREENSHOTS = 4
  * back as `deferred` placeholders and streamed into their own Suspense
  * boundaries instead, so the results paint first and the rest fills in.
  */
-const SLOW_BLOCKS = new Set<NlBlockKey>(["cinemaNow", "upcoming", "newsPicks", "blogPicks"])
+const SLOW_BLOCKS = new Set<NlBlockKey>(["cinemaNow", "upcoming", "blogPicks"])
 
 /* ------------------------------------------------------------------ *
  * Shapes
@@ -76,15 +75,6 @@ export interface HeroData {
   platforms: string[]
 }
 
-export interface NewsCard {
-  slug: string
-  title: string
-  summary: string
-  imageUrl: string | null
-  category: string
-  publishedAt: string
-}
-
 export interface BlogCard {
   slug: string
   title: string
@@ -97,7 +87,6 @@ export type ResolvedBlock =
   | { kind: "grid"; key: "mediaGrid"; meta: BlockMeta; items: AssembledCard[]; sectionImage?: SectionImage | null }
   | { kind: "rail"; key: NlBlockKey; meta: BlockMeta; items: AssembledCard[]; sectionImage?: SectionImage | null }
   | { kind: "upcoming"; key: "upcoming"; meta: BlockMeta; items: UpcomingItem[] }
-  | { kind: "news"; key: "newsPicks"; meta: BlockMeta; items: NewsCard[] }
   | { kind: "blog"; key: "blogPicks"; meta: BlockMeta; items: BlogCard[] }
   | { kind: "editorial"; key: NlEditorialBlock; meta: BlockMeta }
   /** Placeholder for a section that streams in separately — see SLOW_BLOCKS. */
@@ -354,85 +343,10 @@ async function resolveRail(block: NlPlanBlock, ctx: RailContext): Promise<Assemb
 }
 
 /* ------------------------------------------------------------------ *
- * Editorial sources: news and blog
+ * Editorial sources: blog
  * ------------------------------------------------------------------ */
 
-const MAX_NEWS = 3
 const MAX_BLOG = 3
-/** related_media_ids carries no index, so the probe set stays deliberately small. */
-const NEWS_RELATED_PROBE = 12
-
-const NEWS_CATEGORY_FOR: Record<string, NewsCategory> = {
-  MOVIE: NewsCategory.FILM_TV,
-  TV: NewsCategory.FILM_TV,
-  GAME: NewsCategory.GAMES,
-}
-
-/**
- * News worth putting on this board. Two passes: stories explicitly about a
- * title already selected above, then a keyword top-up in the matching section.
- *
- * `editorialTone: "grave"` is excluded throughout — the same rule the family
- * feed applies. A board someone assembled for a Saturday night is not where a
- * grave story belongs.
- */
-async function resolveNewsPicks(intent: NlIntent, query: string, mediaIds: string[]): Promise<NewsCard[]> {
-  const select = {
-    slug: true, title: true, summary: true, imageUrl: true,
-    category: true, publishedAt: true,
-  } as const
-  const base: Prisma.NewsStoryWhereInput = {
-    status: NewsStoryStatus.PUBLISHED,
-    storyType: "BRIEF",
-    NOT: { editorialTone: "grave" },
-  }
-
-  const picked = new Map<string, NewsCard>()
-  const push = (rows: { slug: string; title: string; summary: string; imageUrl: string; category: string; publishedAt: Date }[]) => {
-    for (const row of rows) {
-      if (picked.size >= MAX_NEWS || picked.has(row.slug)) continue
-      picked.set(row.slug, {
-        slug: row.slug,
-        title: row.title,
-        summary: row.summary,
-        imageUrl: row.imageUrl,
-        category: row.category,
-        publishedAt: row.publishedAt.toISOString(),
-      })
-    }
-  }
-
-  if (mediaIds.length > 0) {
-    push(await prisma.newsStory.findMany({
-      where: { ...base, relatedMediaIds: { hasSome: mediaIds.slice(0, NEWS_RELATED_PROBE) } },
-      select,
-      orderBy: { publishedAt: "desc" },
-      take: MAX_NEWS,
-    }))
-  }
-
-  if (picked.size < MAX_NEWS) {
-    const terms = [...intent.themes, query].map((t) => t.trim()).filter((t) => t.length >= 4)
-    const category = NEWS_CATEGORY_FOR[intent.mediaType]
-    push(await prisma.newsStory.findMany({
-      where: {
-        ...base,
-        ...(category ? { category } : {}),
-        ...(terms.length > 0
-          ? { OR: terms.flatMap((term) => [
-              { title: { contains: term, mode: "insensitive" as const } },
-              { summary: { contains: term, mode: "insensitive" as const } },
-            ]) }
-          : {}),
-      },
-      select,
-      orderBy: { publishedAt: "desc" },
-      take: MAX_NEWS,
-    }))
-  }
-
-  return Array.from(picked.values())
-}
 
 async function resolveBlogPicks(intent: NlIntent, query: string): Promise<BlogCard[]> {
   const term = intent.themes[0] ?? query
@@ -493,10 +407,6 @@ export async function resolveDeferredBlock(opts: {
     if (key === "upcoming") {
       const items = await getUpcomingItems(intent.maxAge)
       return items.length >= MIN_RAIL_ITEMS ? { kind: "upcoming", key: "upcoming", meta, items } : null
-    }
-    if (key === "newsPicks") {
-      const items = await resolveNewsPicks(intent, query, seenIds)
-      return items.length > 0 ? { kind: "news", key: "newsPicks", meta, items } : null
     }
     if (key === "blogPicks") {
       const items = await resolveBlogPicks(intent, query)
@@ -586,11 +496,6 @@ export async function resolveBoard(opts: ResolveBoardOptions): Promise<ResolvedB
         if (block.block === "upcoming") {
           const items = await getUpcomingItems(intent.maxAge)
           return items.length >= MIN_RAIL_ITEMS ? { kind: "upcoming", key: "upcoming", meta, items } : null
-        }
-
-        if (block.block === "newsPicks") {
-          const items = await resolveNewsPicks(intent, query, Array.from(seen))
-          return items.length > 0 ? { kind: "news", key: "newsPicks", meta, items } : null
         }
 
         if (block.block === "blogPicks") {

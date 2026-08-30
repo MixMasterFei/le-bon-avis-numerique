@@ -34,8 +34,6 @@ export const NL_CONTENT_BLOCKS = [
   "cinemaNow",
   /** Released soon, with the "prévenez-moi" toggle. */
   "upcoming",
-  /** Related news briefs. */
-  "newsPicks",
   /** Related blog reading. */
   "blogPicks",
   /** The same request, for a younger sibling. */

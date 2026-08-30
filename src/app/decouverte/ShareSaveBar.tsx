@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { useSearchParams } from "next/navigation"
-import { Bookmark, Check, Link2, Loader2 } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Bookmark, Check, Link2, Loader2, Vote } from "lucide-react"
 
-type Status = "idle" | "sharing" | "shared" | "saving" | "saved" | "error"
+type Status = "idle" | "sharing" | "shared" | "saving" | "saved" | "voting" | "error"
 
 /**
  * Turns the board on screen into something you can send or keep.
@@ -15,6 +15,7 @@ type Status = "idle" | "sharing" | "shared" | "saving" | "saved" | "error"
  * board never costs an interpretation call.
  */
 export function ShareSaveBar({ query, isLoggedIn }: { query: string; isLoggedIn: boolean }) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<Status>("idle")
   const [shareUrl, setShareUrl] = useState<string | null>(null)
@@ -24,9 +25,9 @@ export function ShareSaveBar({ query, isLoggedIn }: { query: string; isLoggedIn:
 
   const params = Object.fromEntries(searchParams.entries())
 
-  async function createBoard(mode: "share" | "save", boardTitle?: string) {
+  async function createBoard(mode: "share" | "save", boardTitle?: string, thenVote = false) {
     setError(null)
-    setStatus(mode === "share" ? "sharing" : "saving")
+    setStatus(thenVote ? "voting" : mode === "share" ? "sharing" : "saving")
     try {
       const response = await fetch("/api/decouverte/board", {
         method: "POST",
@@ -41,6 +42,12 @@ export function ShareSaveBar({ query, isLoggedIn }: { query: string; isLoggedIn:
       }
 
       const absolute = `${window.location.origin}${data.url}`
+      if (thenVote) {
+        // The ballot lives on the shared board: create it and go straight
+        // there, ready to place badges and pass the phone around.
+        router.push(data.url)
+        return
+      }
       if (mode === "share") {
         setShareUrl(absolute)
         // Native share sheet on mobile, clipboard everywhere else. Both can be
@@ -62,11 +69,21 @@ export function ShareSaveBar({ query, isLoggedIn }: { query: string; isLoggedIn:
     }
   }
 
-  const busy = status === "sharing" || status === "saving"
+  const busy = status === "sharing" || status === "saving" || status === "voting"
 
   return (
     <div className="mt-6">
       <div className="flex flex-wrap items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => createBoard("share", undefined, true)}
+          disabled={busy}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13.5px] font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+          style={{ background: "var(--pine)" }}
+        >
+          {status === "voting" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Vote className="h-4 w-4" />}
+          Voter en famille
+        </button>
         <button
           type="button"
           onClick={() => createBoard("share")}

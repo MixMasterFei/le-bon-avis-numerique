@@ -19,7 +19,7 @@ import { ChipsInterpretation } from "./ChipsInterpretation"
 import { ShareSaveBar } from "./ShareSaveBar"
 import { HeroMatch } from "./blocks/HeroMatch"
 import { EditorialBlock, GridBlock, RailBlock, toRedesignCard } from "./blocks/BoardSections"
-import { BlogBlock, NewsBlock, UpcomingBlock } from "./blocks/EditorialSources"
+import { BlogBlock, UpcomingBlock } from "./blocks/EditorialSources"
 
 const TYPE_NOUN: Record<NlIntent["mediaType"], string> = {
   MOVIE: "Films",
@@ -380,9 +380,6 @@ export function DecouverteView({
                 }
                 if (block.kind === "upcoming") {
                   return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
-                }
-                if (block.kind === "news") {
-                  return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
                 }
                 if (block.kind === "blog") {
                   return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>

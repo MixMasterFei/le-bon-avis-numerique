@@ -98,11 +98,22 @@ export interface BallotState {
   voterCount: number
 }
 
+const EMPTY_BALLOT: BallotState = { tallies: [], myVotes: {}, myName: null, voterCount: 0 }
+
 export async function readBallot(boardId: string, voterToken: string | null): Promise<BallotState> {
-  const rows = await prisma.decouverteBoardVote.findMany({
-    where: { boardId },
-    select: { mediaId: true, badges: true, voterName: true, voterToken: true },
-  })
+  // A tally read failure (a database not yet migrated included) must degrade
+  // to an empty ballot, never take the shared board down with it: the vote
+  // POST will report its own, clearer error.
+  let rows: { mediaId: string; badges: number; voterName: string; voterToken: string }[]
+  try {
+    rows = await prisma.decouverteBoardVote.findMany({
+      where: { boardId },
+      select: { mediaId: true, badges: true, voterName: true, voterToken: true },
+    })
+  } catch (error) {
+    console.error("[nl-search] ballot read failed:", error)
+    return EMPTY_BALLOT
+  }
 
   const byMedia = new Map<string, { badges: number; voters: { name: string; badges: number }[] }>()
   const myVotes: Record<string, number> = {}

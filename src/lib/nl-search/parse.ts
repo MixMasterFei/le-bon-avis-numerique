@@ -54,7 +54,6 @@ Sections disponibles :
 - crossType : le même besoin dans un autre média (préciser mediaType, forcément différent du type demandé).
 - cinemaNow : ce qui est à l'affiche en France en ce moment.
 - upcoming : ce qui sort prochainement.
-- newsPicks : des actualités liées au sujet.
 - blogPicks : des articles de fond liés au sujet.
 - youngerSiblings : la même demande pour un cadet (seulement si un âge est donné).
 - displayTitle : un grand titre d'articulation au milieu de la page.
@@ -62,7 +61,7 @@ Sections disponibles :
 - closingCta : l'invitation finale.
 
 Règles de composition :
-7. PERTINENCE — ne retiens que ce qui sert vraiment la demande. Une soirée famille appelle volontiers cinemaNow ou crossType ; une question sur un thème précis appelle plutôt newsPicks ou blogPicks. Dans le doute, moins de sections vaut mieux que plus.
+7. PERTINENCE — ne retiens que ce qui sert vraiment la demande. Une soirée famille appelle volontiers cinemaNow ou crossType ; une question sur un thème précis appelle plutôt blogPicks. Dans le doute, moins de sections vaut mieux que plus.
 8. TITRES — français, 4 à 8 mots, ton chaleureux et concret, vouvoiement. Ils décrivent la SÉLECTION, jamais une qualité des œuvres (« Pour ce soir en famille » et non « Les meilleurs films »). Pas de tiret cadratin, pas de point d'exclamation.
 9. EM — un ou deux mots du titre à mettre en valeur. « em » doit être une portion exacte du titre, recopiée à l'identique.
 10. EYEBROW — 1 à 3 mots en surtitre (ex. « Ce soir », « En ce moment », « Pour les plus jeunes »).

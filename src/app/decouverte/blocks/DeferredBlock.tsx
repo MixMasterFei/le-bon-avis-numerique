@@ -2,7 +2,7 @@ import { resolveDeferredBlock, type BlockMeta } from "@/lib/nl-search/resolve-bl
 import type { NlBlockKey } from "@/lib/nl-search/blocks"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { RailBlock, toRedesignCard } from "./BoardSections"
-import { BlogBlock, NewsBlock, UpcomingBlock } from "./EditorialSources"
+import { BlogBlock, UpcomingBlock } from "./EditorialSources"
 
 /**
  * One section that reaches a third party (TMDB, Sanity), rendered inside its
@@ -29,7 +29,6 @@ export async function DeferredBlock({
   if (!resolved) return null
 
   if (resolved.kind === "upcoming") return <UpcomingBlock meta={resolved.meta} items={resolved.items} alt={alt} />
-  if (resolved.kind === "news") return <NewsBlock meta={resolved.meta} items={resolved.items} alt={alt} />
   if (resolved.kind === "blog") return <BlogBlock meta={resolved.meta} items={resolved.items} alt={alt} />
   if (resolved.kind === "rail") {
     return (

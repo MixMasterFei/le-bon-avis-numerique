@@ -14,7 +14,7 @@ import {
   RailBlock,
   toRedesignCard,
 } from "@/app/decouverte/blocks/BoardSections"
-import { BlogBlock, NewsBlock, UpcomingBlock } from "@/app/decouverte/blocks/EditorialSources"
+import { BlogBlock, UpcomingBlock } from "@/app/decouverte/blocks/EditorialSources"
 import { BoardBallot, type BallotItem } from "./BoardBallot"
 import type { BallotTally } from "@/lib/nl-search/board-votes"
 
@@ -104,7 +104,6 @@ export function BoardView({
               if (block.kind === "editorial") return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
               const alt = stripes[index]
               if (block.kind === "upcoming") return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={alt} /></div>
-              if (block.kind === "news") return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} alt={alt} /></div>
               if (block.kind === "blog") return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={alt} /></div>
               if (block.kind === "grid") {
                 return (
