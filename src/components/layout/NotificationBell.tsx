@@ -9,8 +9,10 @@ import {
   MessageCircle,
   Newspaper,
   Sparkles,
+  X,
 } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { NOTIFICATIONS_CHANGED } from "@/lib/notification-events"
 import { formatRelativeTimeFr } from "@/lib/utils"
 
 interface NotificationItem {
@@ -55,8 +57,18 @@ export function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications()
+    // The 60 s poll stays as the background floor; the event below is what
+    // makes a just-created notification appear immediately (see
+    // @/lib/notification-events).
     const timer = window.setInterval(fetchNotifications, 60_000)
-    return () => window.clearInterval(timer)
+    const onChanged = () => fetchNotifications()
+    window.addEventListener(NOTIFICATIONS_CHANGED, onChanged)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener(NOTIFICATIONS_CHANGED, onChanged)
+    }
+    // fetchNotifications only calls stable state setters, so the mount-time
+    // closure stays correct for the component's lifetime.
   }, [])
 
   useEffect(() => {
@@ -108,11 +120,41 @@ export function NotificationBell() {
     }
   }
 
+  async function removeNotification(id: string) {
+    const item = items.find((n) => n.id === id)
+    if (!item) return
+    const previousItems = items
+    const previousCount = unreadCount
+
+    // Optimistic: the row disappears on click, and the badge drops with it when
+    // the removed notification was still unread.
+    setItems((current) => current.filter((n) => n.id !== id))
+    if (!item.readAt) setUnreadCount((count) => Math.max(0, count - 1))
+
+    try {
+      const res = await fetch(`/api/user/notifications?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      })
+      if (!res.ok) throw new Error("delete failed")
+      const data = await res.json()
+      setUnreadCount(Number(data.unreadCount) || 0)
+    } catch (error) {
+      console.error(error)
+      setItems(previousItems)
+      setUnreadCount(previousCount)
+    }
+  }
+
   return (
     <div className="relative" ref={panelRef}>
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          // Opening the panel is an explicit "show me what's current" —
+          // refetch rather than showing whatever the last poll left behind.
+          if (!open) fetchNotifications()
+          setOpen((value) => !value)
+        }}
         className="relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-opacity hover:opacity-70"
         style={{ color: p.ink, border: `1px solid ${p.line2}`, background: p.card }}
         aria-label="Notifications"
@@ -162,7 +204,7 @@ export function NotificationBell() {
                 const unread = !item.readAt
                 const content = (
                   <div
-                    className="flex gap-3 px-4 py-3 text-left transition-colors hover:opacity-80"
+                    className="flex gap-3 py-3 pl-4 pr-11 text-left transition-colors hover:opacity-80"
                     style={{ background: unread ? p.bg2 : p.card, borderBottom: `1px solid ${p.line}` }}
                   >
                     <span
@@ -185,27 +227,39 @@ export function NotificationBell() {
                   </div>
                 )
 
-                return item.href ? (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    onClick={() => {
-                      markRead(item.id)
-                      setOpen(false)
-                    }}
-                    className="block"
-                  >
-                    {content}
-                  </Link>
-                ) : (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => markRead(item.id)}
-                    className="block w-full"
-                  >
-                    {content}
-                  </button>
+                return (
+                  <div key={item.id} className="relative">
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        onClick={() => {
+                          markRead(item.id)
+                          setOpen(false)
+                        }}
+                        className="block"
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => markRead(item.id)}
+                        className="block w-full"
+                      >
+                        {content}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeNotification(item.id)}
+                      title="Supprimer"
+                      aria-label={`Supprimer la notification : ${item.title}`}
+                      className="absolute right-2 top-2.5 inline-flex h-7 w-7 items-center justify-center rounded-full opacity-55 transition hover:bg-black/10 hover:opacity-100 focus-visible:opacity-100"
+                      style={{ color: p.ink2 }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 )
               })
             )}

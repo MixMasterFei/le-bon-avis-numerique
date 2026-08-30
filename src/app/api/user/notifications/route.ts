@@ -44,6 +44,42 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * DELETE /api/user/notifications?id=<id> — remove one notification.
+ *
+ * `deleteMany` scoped by userId, never `delete({ where: { id } })`: the id
+ * comes from the client, so ownership has to be part of the WHERE clause or
+ * anyone could delete anyone's row. Same pattern as the updateMany calls in
+ * POST. A foreign or already-deleted id simply matches nothing and returns the
+ * same success shape — no existence oracle.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorise" }, { status: 401 })
+    }
+
+    const id = request.nextUrl.searchParams.get("id")
+    if (!id) {
+      return NextResponse.json({ error: "id requis" }, { status: 400 })
+    }
+
+    const { count } = await prisma.notification.deleteMany({
+      where: { id, userId: session.user.id },
+    })
+
+    const unreadCount = await prisma.notification.count({
+      where: { userId: session.user.id, readAt: null },
+    })
+
+    return NextResponse.json({ success: true, deleted: count, unreadCount })
+  } catch (error) {
+    console.error("Delete notification error:", error)
+    return NextResponse.json({ error: "Erreur" }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()

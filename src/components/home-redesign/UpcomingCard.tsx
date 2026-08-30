@@ -9,6 +9,7 @@ import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
 import { ageMetaLabel } from "@/lib/age-label"
+import { pingNotifications } from "@/lib/notification-events"
 
 export interface UpcomingItem {
   id: string
@@ -82,7 +83,13 @@ export function UpcomingCard({ item }: { item: UpcomingItem }) {
             body: JSON.stringify({ mediaId: item.id, releaseDate: item.releaseDate }),
           })
         : await fetch(`/api/user/release-alert?mediaId=${item.id}`, { method: "DELETE" })
-      if (!res.ok) setNotified(!next) // revert on failure
+      if (!res.ok) {
+        setNotified(!next) // revert on failure
+      } else if (next) {
+        // The confirmation notification is written synchronously by the POST
+        // above; wake the bell now instead of leaving it up to 60 s behind.
+        pingNotifications()
+      }
     } catch {
       setNotified(!next)
     } finally {
