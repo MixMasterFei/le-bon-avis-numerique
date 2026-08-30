@@ -118,10 +118,30 @@ export async function DecouverteResults({
   // a keyword search for the empty string and always come back with nothing.
   const isIdle = !query && !hasStructuredParams(params)
 
-  const { intent, plan, degraded } = await resolveIntent(params, query, userId)
-  const board = isIdle
+  let { intent, plan, degraded } = await resolveIntent(params, query, userId)
+  let board = isIdle
     ? { blocks: [], personalized: false, members: [], mainCount: 0 }
     : await resolveBoard({ intent, plan, query, userId })
+
+  // A rejection must still try to help. The classifier is deliberately strict
+  // about abuse and system-directed text, which means it sometimes rejects a
+  // sincere sentence ("j'adore les animaux"). Before showing "nous n'avons pas
+  // compris", sweep the catalogue by keyword: if the words match real titles,
+  // the person gets results under an honest keyword headline. True garbage and
+  // abuse match nothing in a family catalogue, so the dead end self-selects
+  // for exactly the cases that deserve it.
+  const MIN_RESCUE_RESULTS = 3
+  if (intent.mode === "hors_sujet" && query) {
+    const rescueIntent = validateNlIntent(null) // → mode "texte"
+    const rescuePlan = fallbackPlan(rescueIntent)
+    const rescue = await resolveBoard({ intent: rescueIntent, plan: rescuePlan, query, userId })
+    if (rescue.mainCount >= MIN_RESCUE_RESULTS) {
+      intent = rescueIntent
+      plan = rescuePlan
+      board = rescue
+      degraded = false
+    }
+  }
 
   // Sections that reach TMDB or Sanity stream in behind their own boundaries,
   // so a slow third party delays one row instead of the whole answer.
