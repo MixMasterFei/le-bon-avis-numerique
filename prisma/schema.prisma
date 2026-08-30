@@ -63,6 +63,7 @@ model User {
   totemConversations    TotemConversation[]
   releaseAlerts         ReleaseAlert[]
   nlSearchQueries       NlSearchQuery[]
+  decouverteBoards      DecouverteBoard[]
 
   @@map("users")
 }
@@ -1364,4 +1365,33 @@ model NlSearchQuery {
   @@index([status, createdAt])
   @@index([userId, createdAt])
   @@map("nl_search_queries")
+}
+
+/// A saved or shared « Recherche magique » board.
+///
+/// Stores the PLAN, never the rendered page: the board is re-composed against
+/// live catalogue data on every view, so its facts stay current while its
+/// composition stays stable. See prisma/migrations/manual/012_decouverte_boards.sql.
+model DecouverteBoard {
+  id        String    @id
+  userId    String?   @map("user_id")
+  query     String
+  /// The clamped NlIntent.
+  intent    Json
+  /// The ordered NlPlan.
+  plan      Json
+  title     String?
+  /// false = a short-lived share snapshot; true = kept by its owner.
+  saved     Boolean   @default(false)
+  expiresAt DateTime? @map("expires_at")
+  viewCount Int       @default(0) @map("view_count")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Cascade: a board is personal content, not aggregate telemetry.
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@map("decouverte_boards")
 }

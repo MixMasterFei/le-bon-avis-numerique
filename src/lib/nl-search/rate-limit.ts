@@ -59,3 +59,35 @@ export function checkNlRateLimit(opts: {
   store.set(key, bucket)
   return { allowed: true, remaining: limit - bucket.count, retryAfterSec: 0, limit }
 }
+
+/**
+ * Separate, tighter window for creating boards. Sharing is a write that
+ * produces a public URL, so it gets its own budget rather than drawing on the
+ * search one — a burst of share clicks must not cost anyone their searches.
+ */
+const BOARD_ANON_LIMIT = 5
+const BOARD_AUTH_LIMIT = 20
+
+export function checkBoardRateLimit(opts: { userId: string | null; ip: string }): NlRateLimitResult {
+  const now = Date.now()
+  const isAuth = !!opts.userId
+  const key = isAuth ? `nlb:user:${opts.userId}` : `nlb:anon:${opts.ip}`
+  const limit = isAuth ? BOARD_AUTH_LIMIT : BOARD_ANON_LIMIT
+
+  const bucket = store.get(key)
+  if (!bucket || bucket.resetAt < now) {
+    store.set(key, { count: 1, resetAt: now + HOUR_MS })
+    return { allowed: true, remaining: limit - 1, retryAfterSec: 0, limit }
+  }
+  if (bucket.count >= limit) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSec: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+      limit,
+    }
+  }
+  bucket.count += 1
+  store.set(key, bucket)
+  return { allowed: true, remaining: limit - bucket.count, retryAfterSec: 0, limit }
+}

@@ -105,7 +105,9 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Media detail page | `src/app/media/[id]/page.tsx` |
 | Family fit API (scoring) | `src/app/api/media/[id]/family-fit/route.ts` |
 | Family fit card (UI) | `src/components/media/FamilyFitCard.tsx` |
-| Recherche magique (NL search) | `src/lib/nl-search/` + `src/app/decouverte/` — one Haiku call turns the question into WHITELISTED filter params (`vocab.ts` + `validate.ts`); `assemble.ts` then builds the page from `runSmartFilter` / `matchMediaIdsBy*` alone. No LLM at render time, and none of it can emit an age or a fact. |
+| Recherche magique (NL search) | `src/lib/nl-search/` + `src/app/decouverte/` — one Haiku call returns BOTH whitelisted filter params (`vocab.ts` + `validate.ts`) and a page PLAN: which sections the board is built from, in what order, with French headings. `blocks.ts` is the block registry + the director that whitelists/caps/repairs the plan and falls back to a static one. `resolve-blocks.ts` fills each section from `runSmartFilter` / `matchMediaIdsBy*` / cinema / news / blog. No LLM at render time, and nothing generated can be an age or a fact. |
+| Composed board sections | `src/app/decouverte/blocks/` — `HeroMatch` (full-bleed backdrop for MOVIE/TV, poster-led for GAME: **`backdropUrl` is always null for games**), `BoardSections` (grid/rail/editorial), `EditorialSources` (news/blog/upcoming), `DeferredBlock` (the sections that reach TMDB or Sanity, streamed in their own Suspense boundary so a slow third party never delays the answer). |
+| Shared / saved boards | `src/lib/nl-search/boards.ts` + `src/app/tableau/[id]/` + `POST/GET/DELETE /api/decouverte/board`. Stores the PLAN, never rendered HTML — a board re-composes against live data on every view, so its composition is stable but its ages stay current. **A non-owner viewer never receives family data** (resolved as signed-out): a forwarded link must not disclose who lives in the house. Share links expire after 30 days; saved boards do not. Migration `012_decouverte_boards.sql`. |
 | Profile page | `src/app/profil/page.tsx` |
 | Family recommendations | `src/components/chez-vous/FamilyRecommendationsSection.tsx` |
 | Family movie night | `src/components/chez-vous/FamilyMovieNightSection.tsx` |
@@ -413,6 +415,9 @@ NL_SEARCH_PUBLIC                  # « Recherche magique » rollout — the natu
                                   # /decouverte itself only checks this flag, so a shared link keeps working.
                                   # Gate: src/lib/nl-search/access.ts.
 NL_SEARCH_DAILY_USER_CAP          # Recherche magique: max INTERPRETED queries/day per authenticated user (default 20).
+                                  # Boards (/tableau/[id]) follow the SAME NL_SEARCH_PUBLIC gate: while the feature is
+                                  # admin-only, a shared board link is admin-only too. Board creation has its own hourly
+                                  # limiter (5/h anon, 20/h auth) so a burst of share clicks can't spend the search budget.
 NL_SEARCH_GLOBAL_DAILY_CAP        # Recherche magique: max interpreted queries/day across everyone (default 200) —
                                   # the cost circuit breaker. Counted from persisted nl_search_queries rows with
                                   # status:"llm", so accurate across Vercel instances. Cache hits, chip edits and

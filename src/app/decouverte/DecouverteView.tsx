@@ -15,6 +15,7 @@ import type { AssembledCard } from "@/lib/nl-search/assemble"
 import type { ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
+import { ShareSaveBar } from "./ShareSaveBar"
 import { HeroMatch } from "./blocks/HeroMatch"
 import { EditorialBlock, GridBlock, RailBlock, toRedesignCard } from "./blocks/BoardSections"
 import { BlogBlock, NewsBlock, UpcomingBlock } from "./blocks/EditorialSources"
@@ -281,6 +282,8 @@ export function DecouverteView({
               )}
             </p>
           )}
+
+          {hasBoard && <ShareSaveBar query={query} isLoggedIn={isLoggedIn} />}
 
           {intent.mode === "hors_sujet" ? (
             <div className="mt-10">
