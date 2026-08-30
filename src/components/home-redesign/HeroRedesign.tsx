@@ -8,6 +8,7 @@ import { Wrap, Em } from "./parts"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
 import { MAX_FAMILY_NAME_LENGTH } from "@/lib/family-name"
+import { NL_SEARCH_SUGGESTIONS } from "@/lib/nl-search/suggestions"
 
 // Column drift durations (s) — slow, staggered, like the prototype.
 const DRIFT = [54, 63, 47, 71, 50, 67, 44, 58]
@@ -27,9 +28,13 @@ interface HeroRedesignProps {
   /** User-chosen family display name (User.familyName) — wins over the
    *  last-name derivation when set ("Famille Dupont" everywhere). */
   familyDisplayName?: string | null
+  /** When true, the field takes a described request ("un film pas trop
+   *  effrayant pour 8 ans") and routes to /decouverte instead of the plain
+   *  title search. Gated by NL_SEARCH_PUBLIC (see @/lib/nl-search/access). */
+  nlSearchEnabled?: boolean
 }
 
-export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn, userName = null, familyDisplayName = null }: HeroRedesignProps) {
+export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMembers, selectedMemberIds, onToggleMember, isLoggedIn, userName = null, familyDisplayName = null, nlSearchEnabled = false }: HeroRedesignProps) {
   const router = useRouter()
   const [q, setQ] = useState("")
 
@@ -58,7 +63,12 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const term = q.trim()
-    if (term) router.push(`/recherche?q=${encodeURIComponent(term)}`)
+    if (!term) return
+    router.push(
+      nlSearchEnabled
+        ? `/decouverte?q=${encodeURIComponent(term)}`
+        : `/recherche?q=${encodeURIComponent(term)}`,
+    )
   }
 
   return (
@@ -168,11 +178,22 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
 
           <form onSubmit={onSubmit} className="mt-[18px] flex flex-col gap-3 sm:flex-row sm:items-center">
             <label className="flex w-full min-w-0 items-center gap-2.5 rounded-full px-[18px] py-[13px] sm:flex-1" style={{ background: "var(--paper-2)", border: "1px solid var(--line)" }}>
-              <Search className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--ink-3)" }} />
+              {nlSearchEnabled ? (
+                <Sparkles className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--pine-2)" }} />
+              ) : (
+                <Search className="h-[17px] w-[17px] shrink-0" style={{ color: "var(--ink-3)" }} />
+              )}
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder={hasFamily ? "Ou cherchez un titre précis…" : "Un titre…"}
+                placeholder={
+                  nlSearchEnabled
+                    ? "Décrivez ce que vous cherchez : « un film pas trop effrayant pour 8 ans »…"
+                    : hasFamily
+                      ? "Ou cherchez un titre précis…"
+                      : "Un titre…"
+                }
+                aria-label={nlSearchEnabled ? "Décrivez ce que vous cherchez" : "Rechercher un titre"}
                 className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
                 style={{ color: "var(--ink)" }}
               />
@@ -185,6 +206,23 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
               Voir la sélection
             </a>
           </form>
+
+          {/* Example questions: they teach the shape of a good request (an age,
+              a taste, a reservation) far faster than any explanatory copy. */}
+          {nlSearchEnabled && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {NL_SEARCH_SUGGESTIONS.map((s) => (
+                <Link
+                  key={s}
+                  href={`/decouverte?q=${encodeURIComponent(s)}`}
+                  className="rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-opacity hover:opacity-75"
+                  style={{ background: "var(--paper-2)", border: "1px solid var(--line)", color: "var(--ink-2)" }}
+                >
+                  {s}
+                </Link>
+              ))}
+            </div>
+          )}
 
           {hasFamily ? (
             /* Clear proposals for a returning family — direct paths into the

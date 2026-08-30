@@ -205,6 +205,38 @@ describe("buildSmartFilterWhere", () => {
     expect(where.originalLanguage).toEqual({ in: ["fr", "en"] })
   })
 
+  // Query-level "sans …" exclusions (a described search asking to avoid
+  // frayeurs/violence), which no member profile can express.
+  it("excludes requested tags from BOTH genres and topics", () => {
+    const where = buildSmartFilterWhere({ ...baseInput, excludeTags: ["Horreur", "Zombies"] })
+    const notArr = where.NOT as Array<Record<string, { hasSome: string[] }>>
+    expect(notArr).toHaveLength(2)
+    expect(notArr[0].genres.hasSome).toEqual(["Horreur", "Zombies"])
+    expect(notArr[1].topics.hasSome).toEqual(["Horreur", "Zombies"])
+  })
+
+  it("stacks query exclusions on top of the strict-mode dislike block", () => {
+    const where = buildSmartFilterWhere({
+      ...baseInput,
+      strictMode: true,
+      members: [{ dislikedGenres: ["Thriller"] }],
+      excludeTags: ["Horreur"],
+    })
+    // One clause from the dislike block, two from the query exclusions.
+    expect(where.NOT as unknown[]).toHaveLength(3)
+  })
+
+  it("applies a violence ceiling via the contentMetrics relation", () => {
+    const where = buildSmartFilterWhere({ ...baseInput, maxViolence: 2 })
+    expect(where.contentMetrics).toEqual({ violence: { lte: 2 } })
+  })
+
+  it("adds neither clause when the query asks for no exclusions", () => {
+    const where = buildSmartFilterWhere({ ...baseInput, excludeTags: [] })
+    expect(where.NOT).toBeUndefined()
+    expect(where.contentMetrics).toBeUndefined()
+  })
+
   it("searches BOTH title and originalTitle (so 'Spirited Away' finds 'Le Voyage de Chihiro')", () => {
     const where = buildSmartFilterWhere({ ...baseInput, search: "Spirited Away" })
     const andArr = (where.AND as Array<{ OR?: Array<Record<string, unknown>> }>) || []

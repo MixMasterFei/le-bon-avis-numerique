@@ -62,6 +62,7 @@ model User {
   notifications         Notification[]
   totemConversations    TotemConversation[]
   releaseAlerts         ReleaseAlert[]
+  nlSearchQueries       NlSearchQuery[]
 
   @@map("users")
 }
@@ -1336,4 +1337,31 @@ model TotemFeedback {
 
   @@index([messageId])
   @@map("totem_feedback")
+}
+
+/// One row per "Recherche magique" (/decouverte) resolution. Doubles as the
+/// parse cache (query_hash → intent) and the daily-cap counter (status:"llm"),
+/// so a repeated question never pays for a second interpretation.
+/// See prisma/migrations/manual/011_nl_search.sql for the status vocabulary.
+model NlSearchQuery {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  query        String
+  queryHash    String   @map("query_hash")
+  intent       Json?
+  status       String
+  model        String?
+  inputTokens  Int?     @map("input_tokens")
+  outputTokens Int?     @map("output_tokens")
+  latencyMs    Int?     @map("latency_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // SetNull, not Cascade: the cost history is aggregate telemetry that should
+  // survive an account deletion (detached), unlike Totem conversations.
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([queryHash, createdAt])
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("nl_search_queries")
 }

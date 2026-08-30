@@ -60,6 +60,10 @@ export interface RunSmartFilterParams {
   language?: string
   minAge?: number
   maxAge?: number
+  /** Genres/topics to exclude outright (query-level "sans …", see scoring.ts). */
+  excludeTags?: string[]
+  /** Ceiling on ContentMetrics.violence (0-5). */
+  maxViolence?: number
   /** Size of the popularity-ordered window scored in memory. */
   take?: number
 }
@@ -96,6 +100,8 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
     language = "",
     minAge,
     maxAge,
+    excludeTags = [],
+    maxViolence,
     take = 1000,
   } = params
 
@@ -149,6 +155,8 @@ export async function runSmartFilter(params: RunSmartFilterParams): Promise<RunS
     maxAge,
     youngestAge,
     strictMode,
+    excludeTags,
+    maxViolence,
   })
 
   const mediaItems = await prisma.mediaItem.findMany({

@@ -105,6 +105,7 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Media detail page | `src/app/media/[id]/page.tsx` |
 | Family fit API (scoring) | `src/app/api/media/[id]/family-fit/route.ts` |
 | Family fit card (UI) | `src/components/media/FamilyFitCard.tsx` |
+| Recherche magique (NL search) | `src/lib/nl-search/` + `src/app/decouverte/` — one Haiku call turns the question into WHITELISTED filter params (`vocab.ts` + `validate.ts`); `assemble.ts` then builds the page from `runSmartFilter` / `matchMediaIdsBy*` alone. No LLM at render time, and none of it can emit an age or a fact. |
 | Profile page | `src/app/profil/page.tsx` |
 | Family recommendations | `src/components/chez-vous/FamilyRecommendationsSection.tsx` |
 | Family movie night | `src/components/chez-vous/FamilyMovieNightSection.tsx` |
@@ -404,6 +405,20 @@ GAME_GUIDES_PUBLIC                # Parents' Guide rollout (/jeux/guide/[key] + 
                                   # "true" = public. Default is closed on purpose: a guide asserting a parental
                                   # control that no longer exists does real harm, so each "état du jeu" block must
                                   # be read end-to-end by a human first. Gate: src/lib/game-guide-flag.ts.
+NL_SEARCH_PUBLIC                  # « Recherche magique » rollout — the natural-language search field in the V2 hero
+                                  # + the /decouverte results page. EXACT TOTEM_PUBLIC semantics: unset = admin-only
+                                  # (launch default) · "auth" = logged-in users · "true"/"1" = public · "off"/"0" =
+                                  # KILL SWITCH (field hidden, /decouverte redirects to /recherche, admins included).
+                                  # Layered UNDER the V2 gate at the entry point (the field lives in the V2 hero), but
+                                  # /decouverte itself only checks this flag, so a shared link keeps working.
+                                  # Gate: src/lib/nl-search/access.ts.
+NL_SEARCH_DAILY_USER_CAP          # Recherche magique: max INTERPRETED queries/day per authenticated user (default 20).
+NL_SEARCH_GLOBAL_DAILY_CAP        # Recherche magique: max interpreted queries/day across everyone (default 200) —
+                                  # the cost circuit breaker. Counted from persisted nl_search_queries rows with
+                                  # status:"llm", so accurate across Vercel instances. Cache hits, chip edits and
+                                  # keyword fallbacks are free and never consume cap; hitting the cap DEGRADES to
+                                  # keyword search rather than erroring. Hourly limits (10/h anon by IP, 30/h auth)
+                                  # are separate and in-memory. Fails CLOSED if the count query errors.
 SEO_AGENT_AUTOFIX                 # KILL-SWITCH (inverted since 2026-07-10): the weekly seo-striking-distance cron WRITES by default IN PRODUCTION ONLY (maillage + synopsis rewrites + seoTitle overrides; fail-closed on previews/local via VERCEL_ENV guard). Set to "false" to fall back to report-only. ?dryRun=1 forces report-only for one run. See Automation notes.
 PEXELS_API_KEY                    # DEPRECATED (May 2026). Stock-photo fallback removed from news-image.ts in the news-pipeline simplification. Safe to remove from Vercel env. Stock-image cache table left in place for now.
 UNSPLASH_ACCESS_KEY               # DEPRECATED (May 2026). Same as PEXELS_API_KEY — stock-photo tier removed.

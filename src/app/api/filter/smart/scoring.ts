@@ -51,6 +51,15 @@ export interface WhereClauseInput {
   maxAge?: number
   youngestAge: number | null
   strictMode: boolean
+  /**
+   * Genres/topics excluded outright, on top of the strict-mode dislike
+   * exclusion. Query-level, not profile-level: it carries an explicit "sans …"
+   * asked for in a search ("pas trop effrayant"), which no member profile can
+   * express. Only ever TIGHTENS the result set.
+   */
+  excludeTags?: string[]
+  /** Ceiling on ContentMetrics.violence (0-5). Same query-level intent. */
+  maxViolence?: number
 }
 
 // Builds the Prisma where-clause used by the smart filter route. Pure function
@@ -89,6 +98,24 @@ export function buildSmartFilterWhere(input: WhereClauseInput): Record<string, a
         { genres: { hasSome: blockedGenres } },
       ]
     }
+  }
+
+  // Explicit "sans …" exclusions from the query itself. Composed into the same
+  // NOT array as the strict-mode dislike block, so the two stack instead of
+  // overwriting each other.
+  if (input.excludeTags && input.excludeTags.length > 0) {
+    where.NOT = [
+      ...(where.NOT || []),
+      { genres: { hasSome: input.excludeTags } },
+      { topics: { hasSome: input.excludeTags } },
+    ]
+  }
+
+  // Violence ceiling. Titles with no ContentMetrics row can't satisfy it and
+  // are dropped by the relation filter — correct here: an unscored title must
+  // not pass a "no violence" request by default.
+  if (typeof input.maxViolence === "number") {
+    where.contentMetrics = { violence: { lte: input.maxViolence } }
   }
 
   if (input.platforms && input.platforms.length > 0) {

@@ -34,6 +34,8 @@ interface HomepageRedesignProps {
   familyMembers: FamilyMemberLite[]
   /** Paris-time moment for the first rail (tonight / weekend / holidays / day). */
   homepageState: HomepageState
+  /** Natural-language search in the hero (NL_SEARCH_PUBLIC, see nl-search/access). */
+  nlSearchEnabled?: boolean
 }
 
 /**
@@ -74,7 +76,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
   return <TopProgressBar loading={pulse} />
 }
 
-export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayName = null, heroPosters, defaultMaxAge, familyMembers, homepageState }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayName = null, heroPosters, defaultMaxAge, familyMembers, homepageState, nlSearchEnabled = false }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
@@ -141,6 +143,7 @@ export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayNam
           isLoggedIn={isLoggedIn}
           userName={userName}
           familyDisplayName={familyDisplayName}
+          nlSearchEnabled={nlSearchEnabled}
         />
         <StickyAgeFilter
           selectedKeys={selectedKeys}

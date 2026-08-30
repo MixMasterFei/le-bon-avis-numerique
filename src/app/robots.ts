@@ -17,6 +17,10 @@ const PRIVATE_PATHS = [
   "/apercufoyer",
   "/apercudecouverte",
   "/inscription",
+  // Per-visitor query results: one URL per question asked, so an unbounded
+  // space with nothing indexable in it (the pages carry noindex too). Every
+  // title it links to is already reachable from the catalogue.
+  "/decouverte",
 ]
 
 // AI bots we explicitly allow. This now includes the INDEX/TRAINING crawlers
