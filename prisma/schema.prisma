@@ -222,6 +222,7 @@ model MediaItem {
   userContentMetrics    UserContentMetrics[]
   contentRequests       ContentRequest[]
   screenshots           MediaScreenshot[]
+  boardVotes            DecouverteBoardVote[]
   ageVotes              AgeVote[]
   familyWarningVotes    FamilyWarningVote[]
   triggerVotes          TriggerVote[]
@@ -1391,7 +1392,30 @@ model DecouverteBoard {
   // Cascade: a board is personal content, not aggregate telemetry.
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  votes DecouverteBoardVote[]
+
   @@index([userId, createdAt])
   @@index([expiresAt])
   @@map("decouverte_boards")
+}
+
+/// One voter's badges on one title of a shared board (1..3). The voter is an
+/// anonymous browser token + a typed first name — no account required. The
+/// 3-badge-per-voter budget is enforced in the vote route, in a transaction.
+model DecouverteBoardVote {
+  id         String   @id @default(uuid())
+  boardId    String   @map("board_id")
+  voterToken String   @map("voter_token")
+  voterName  String   @map("voter_name")
+  mediaId    String   @map("media_id")
+  badges     Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  board DecouverteBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  media MediaItem       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, voterToken, mediaId])
+  @@index([boardId])
+  @@map("decouverte_board_votes")
 }

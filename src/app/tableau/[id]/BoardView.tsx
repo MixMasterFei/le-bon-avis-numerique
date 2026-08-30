@@ -15,6 +15,8 @@ import {
   toRedesignCard,
 } from "@/app/decouverte/blocks/BoardSections"
 import { BlogBlock, NewsBlock, UpcomingBlock } from "@/app/decouverte/blocks/EditorialSources"
+import { BoardBallot, type BallotItem } from "./BoardBallot"
+import type { BallotTally } from "@/lib/nl-search/board-votes"
 
 /**
  * A shared board. Same sections as /decouverte, without the search chrome —
@@ -30,12 +32,22 @@ export function BoardView({
   board,
   slots,
   isOwner,
+  ballot,
 }: {
   title: string | null
   query: string
   board: ResolvedBoard
   slots?: Record<number, ReactNode>
   isOwner: boolean
+  ballot?: {
+    boardId: string
+    items: BallotItem[]
+    budget: number
+    initialTallies: BallotTally[]
+    initialMyVotes: Record<string, number>
+    initialMyName: string | null
+    initialVoterCount: number
+  } | null
 }) {
   const stripes = computeStripes(board.blocks)
   return (
@@ -107,6 +119,18 @@ export function BoardView({
                 </div>
               )
             })
+          )}
+
+          {ballot && (
+            <BoardBallot
+              boardId={ballot.boardId}
+              items={ballot.items}
+              budget={ballot.budget}
+              initialTallies={ballot.initialTallies}
+              initialMyVotes={ballot.initialMyVotes}
+              initialMyName={ballot.initialMyName}
+              initialVoterCount={ballot.initialVoterCount}
+            />
           )}
 
           <section className="mt-16 border-t pt-12 text-center" style={{ borderColor: "var(--line)" }}>

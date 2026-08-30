@@ -91,3 +91,32 @@ export function checkBoardRateLimit(opts: { userId: string | null; ip: string })
   store.set(key, bucket)
   return { allowed: true, remaining: limit - bucket.count, retryAfterSec: 0, limit }
 }
+
+/**
+ * Voting taps its own window: a ballot round involves several taps per person
+ * (3 badges plus corrections), so the ceiling is higher than board creation —
+ * but still an hourly wall against scripted ballot stuffing from one address.
+ */
+const VOTE_LIMIT = 60
+
+export function checkVoteRateLimit(ip: string): NlRateLimitResult {
+  const now = Date.now()
+  const key = `nlv:anon:${ip}`
+
+  const bucket = store.get(key)
+  if (!bucket || bucket.resetAt < now) {
+    store.set(key, { count: 1, resetAt: now + HOUR_MS })
+    return { allowed: true, remaining: VOTE_LIMIT - 1, retryAfterSec: 0, limit: VOTE_LIMIT }
+  }
+  if (bucket.count >= VOTE_LIMIT) {
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSec: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
+      limit: VOTE_LIMIT,
+    }
+  }
+  bucket.count += 1
+  store.set(key, bucket)
+  return { allowed: true, remaining: VOTE_LIMIT - bucket.count, retryAfterSec: 0, limit: VOTE_LIMIT }
+}
