@@ -49,25 +49,23 @@ function buildHeadline(intent: NlIntent): string {
   return parts.join(" · ")
 }
 
-function SearchBar({ initial, onPendingChange }: { initial: string; onPendingChange?: (pending: boolean) => void }) {
-  const router = useRouter()
+function SearchBar({
+  initial,
+  isPending,
+  onSearch,
+}: {
+  initial: string
+  isPending: boolean
+  onSearch: (term: string) => void
+}) {
   const [value, setValue] = useState(initial)
-  const [isPending, startTransition] = useTransition()
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
         const term = value.trim()
-        if (!term) return
-        // Without startTransition the navigation is invisible: React keeps the
-        // rendered board while the new payload streams and the route-level
-        // Suspense fallback never re-appears, so the page just sits there for
-        // the length of the interpretation call.
-        startTransition(() => {
-          onPendingChange?.(true)
-          router.push(`/decouverte?q=${encodeURIComponent(term)}`)
-        })
+        if (term) onSearch(term)
       }}
       className="flex flex-col gap-3 sm:flex-row sm:items-center"
     >
@@ -193,7 +191,18 @@ export function DecouverteView({
   slots?: Record<number, ReactNode>
 }) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
-  const [navigating, setNavigating] = useState(false)
+  const router = useRouter()
+  // The transition owns the pending flag. An ad-hoc boolean cannot work here:
+  // this component survives the same-route navigation, so anything we latch on
+  // submit stays latched — which left the whole board dimmed permanently.
+  const [isNavigating, startNavigation] = useTransition()
+
+  // Without a transition the navigation is invisible: React keeps the rendered
+  // board while the new payload streams and the route-level Suspense fallback
+  // never re-appears, so the page just sits there for the length of the call.
+  const search = (term: string) => {
+    startNavigation(() => router.push(`/decouverte?q=${encodeURIComponent(term)}`))
+  }
 
   // Re-rank in place for the selected child: their own score decides the order,
   // and anything the engine flagged as a poor fit for them drops out. Pure
@@ -265,7 +274,7 @@ export function DecouverteView({
           ) : null}
 
           <div className="mt-6 max-w-[720px]">
-            <SearchBar initial={query} onPendingChange={setNavigating} />
+            <SearchBar initial={query} isPending={isNavigating} onSearch={search} />
           </div>
 
           {degraded && (
@@ -331,7 +340,7 @@ export function DecouverteView({
               <Suggestions />
             </div>
           ) : (
-            <div style={{ opacity: navigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
+            <div style={{ opacity: isNavigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
               {board.blocks.map((block, index) => {
                 const key = `${block.key}-${index}`
                 const reveal = {
