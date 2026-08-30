@@ -143,6 +143,48 @@ describe("buildPlan — degradation", () => {
   })
 })
 
+describe("buildPlan — layout variants", () => {
+  it("keeps a whitelisted variant", () => {
+    const plan = buildPlan([block("mediaGrid", { variant: "wide" })], intentOf())
+    expect(plan[0].variant).toBe("wide")
+  })
+
+  it("falls back to the plain grid for an invented one", () => {
+    const plan = buildPlan([block("mediaGrid", { variant: "parallax3d" })], intentOf())
+    expect(plan[0].variant).toBe("grid")
+  })
+
+  it("never lets two dark bands touch", () => {
+    const plan = buildPlan(
+      [
+        block("mediaGrid", { variant: "dark" }),
+        block("cinemaNow", { variant: "dark" }),
+        block("crossType", { variant: "dark" }),
+      ],
+      intentOf(),
+    )
+    for (let i = 1; i < plan.length; i++) {
+      expect(plan[i].variant === "dark" && plan[i - 1].variant === "dark").toBe(false)
+    }
+  })
+
+  it("ignores a variant on the hero and on editorial blocks", () => {
+    const plan = buildPlan(
+      [
+        block("heroMatch", { variant: "dark" }),
+        block("mediaGrid"),
+        // Followed by a real section: a trailing editorial block is dropped as
+        // a heading that introduces nothing, which is tested separately.
+        block("displayTitle", { title: "Un grand titre", variant: "mosaic" }),
+        block("cinemaNow"),
+      ],
+      intentOf(),
+    )
+    expect(plan.find((b) => b.block === "heroMatch")?.variant).toBe("grid")
+    expect(plan.find((b) => b.block === "displayTitle")?.variant).toBe("grid")
+  })
+})
+
 describe("splitTitleForEm", () => {
   it("locates the accent words inside the title", () => {
     expect(splitTitleForEm("Pour ce soir en famille", "ce soir")).toEqual({

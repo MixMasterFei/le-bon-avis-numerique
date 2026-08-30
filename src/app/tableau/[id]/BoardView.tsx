@@ -6,7 +6,7 @@ import type { ReactNode } from "react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { v2FontVars } from "@/components/home-redesign/fonts"
 import { Em } from "@/components/home-redesign/parts"
-import type { ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
+import { computeStripes, type ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
 import { HeroMatch } from "@/app/decouverte/blocks/HeroMatch"
 import {
   EditorialBlock,
@@ -37,6 +37,7 @@ export function BoardView({
   slots?: Record<number, ReactNode>
   isOwner: boolean
 }) {
+  const stripes = computeStripes(board.blocks)
   return (
     <FamilyFitProvider>
       <div
@@ -89,13 +90,22 @@ export function BoardView({
               if (block.kind === "deferred") return <div key={key} {...reveal}>{slots?.[block.index] ?? null}</div>
               if (block.kind === "hero") return <div key={key} {...reveal}><HeroMatch meta={block.meta} hero={block.hero} /></div>
               if (block.kind === "editorial") return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
-              if (block.kind === "upcoming") return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} /></div>
-              if (block.kind === "news") return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} /></div>
-              if (block.kind === "blog") return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} /></div>
+              const alt = stripes[index]
+              if (block.kind === "upcoming") return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={alt} /></div>
+              if (block.kind === "news") return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} alt={alt} /></div>
+              if (block.kind === "blog") return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={alt} /></div>
               if (block.kind === "grid") {
-                return <div key={key} {...reveal}><GridBlock meta={block.meta} items={block.items.map(toRedesignCard)} /></div>
+                return (
+                  <div key={key} {...reveal}>
+                    <GridBlock meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} />
+                  </div>
+                )
               }
-              return <div key={key} {...reveal}><RailBlock meta={block.meta} items={block.items.map(toRedesignCard)} /></div>
+              return (
+                <div key={key} {...reveal}>
+                  <RailBlock blockKey={block.key} meta={block.meta} items={block.items.map(toRedesignCard)} alt={alt} sectionImage={block.sectionImage} />
+                </div>
+              )
             })
           )}
 

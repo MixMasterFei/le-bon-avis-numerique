@@ -4,46 +4,24 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { UpcomingCard, type UpcomingItem } from "@/components/home-redesign/UpcomingCard"
 import type { BlockMeta, BlogCard, NewsCard } from "@/lib/nl-search/resolve-blocks"
-import { BoardHeading } from "./HeroMatch"
-
-function SectionHead({ meta, fallback }: { meta: BlockMeta; fallback: string }) {
-  return (
-    <div className="mb-5">
-      {meta.eyebrow && (
-        <p className="text-[12.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--terra)" }}>
-          {meta.eyebrow}
-        </p>
-      )}
-      <div className="mt-1.5">
-        <BoardHeading title={meta.title ?? fallback} em={meta.em} as="h3" />
-      </div>
-      {meta.lead && (
-        <p className="mt-2 max-w-[56ch] text-[15px]" style={{ color: "var(--ink-2)" }}>
-          {meta.lead}
-        </p>
-      )}
-    </div>
-  )
-}
+import { accentFor, BoardBand } from "./BoardSections"
 
 /** Titles that are not out yet. Age-capped upstream — see @/lib/upcoming. */
-export function UpcomingBlock({ meta, items }: { meta: BlockMeta; items: UpcomingItem[] }) {
+export function UpcomingBlock({ meta, items, alt }: { meta: BlockMeta; items: UpcomingItem[]; alt: boolean }) {
   return (
-    <section className="mt-14 border-t pt-10" style={{ borderColor: "var(--line)" }}>
-      <SectionHead meta={meta} fallback="À surveiller prochainement" />
+    <BoardBand meta={meta} accent={accentFor("upcoming")} alt={alt} fallbackTitle="À surveiller prochainement">
       <div className="v2-row-up">
         {items.map((item) => (
           <UpcomingCard key={item.id} item={item} />
         ))}
       </div>
-    </section>
+    </BoardBand>
   )
 }
 
-export function NewsBlock({ meta, items }: { meta: BlockMeta; items: NewsCard[] }) {
+export function NewsBlock({ meta, items, alt }: { meta: BlockMeta; items: NewsCard[]; alt: boolean }) {
   return (
-    <section className="mt-14 border-t pt-10" style={{ borderColor: "var(--line)" }}>
-      <SectionHead meta={meta} fallback="À lire autour du sujet" />
+    <BoardBand meta={meta} accent={accentFor("newsPicks")} alt={alt} fallbackTitle="À lire autour du sujet">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((story) => (
           <Link
@@ -78,14 +56,13 @@ export function NewsBlock({ meta, items }: { meta: BlockMeta; items: NewsCard[] 
           </Link>
         ))}
       </div>
-    </section>
+    </BoardBand>
   )
 }
 
-export function BlogBlock({ meta, items }: { meta: BlockMeta; items: BlogCard[] }) {
+export function BlogBlock({ meta, items, alt }: { meta: BlockMeta; items: BlogCard[]; alt: boolean }) {
   return (
-    <section className="mt-14 border-t pt-10" style={{ borderColor: "var(--line)" }}>
-      <SectionHead meta={meta} fallback="Pour aller plus loin" />
+    <BoardBand meta={meta} accent={accentFor("blogPicks")} alt={alt} fallbackTitle="Pour aller plus loin">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((post) => (
           <Link
@@ -113,6 +90,6 @@ export function BlogBlock({ meta, items }: { meta: BlockMeta; items: BlogCard[] 
           </Link>
         ))}
       </div>
-    </section>
+    </BoardBand>
   )
 }

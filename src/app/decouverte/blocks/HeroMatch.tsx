@@ -196,10 +196,12 @@ export function BoardHeading({
   title,
   em,
   as = "h2",
+  tone = "terra",
 }: {
   title: string
   em: string | null
   as?: "h2" | "h3"
+  tone?: "terra" | "pine" | "gold"
 }) {
   const Tag = as
   const index = em ? title.toLowerCase().indexOf(em.toLowerCase()) : -1
@@ -223,7 +225,7 @@ export function BoardHeading({
   return (
     <Tag className={className} style={style}>
       {title.slice(0, index)}
-      <Em tone="terra">{title.slice(index, index + em.length)}</Em>
+      <Em tone={tone}>{title.slice(index, index + em.length)}</Em>
       {title.slice(index + em.length)}
     </Tag>
   )

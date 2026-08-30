@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from "react"
 import { headers } from "next/headers"
 import { getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { sanitizeSearchQuery } from "@/lib/security"
-import { resolveBoard } from "@/lib/nl-search/resolve-blocks"
+import { computeStripes, resolveBoard } from "@/lib/nl-search/resolve-blocks"
 import { fallbackPlan, type NlPlan } from "@/lib/nl-search/blocks"
 import { checkNlDailyCaps } from "@/lib/nl-search/daily-cap"
 import { parseNlQuery } from "@/lib/nl-search/parse"
@@ -128,9 +128,11 @@ export async function DecouverteResults({
   const seenIds = board.blocks.flatMap((block) =>
     block.kind === "grid" || block.kind === "rail" ? block.items.map((item) => item.id) : [],
   )
+  const stripes = computeStripes(board.blocks)
+
   const slots: Record<number, ReactNode> = {}
-  for (const block of board.blocks) {
-    if (block.kind !== "deferred") continue
+  board.blocks.forEach((block, i) => {
+    if (block.kind !== "deferred") return
     slots[block.index] = (
       <Suspense fallback={<DeferredBlockSkeleton />}>
         <DeferredBlock
@@ -139,10 +141,11 @@ export async function DecouverteResults({
           intent={intent}
           query={query}
           seenIds={seenIds}
+          alt={stripes[i]}
         />
       </Suspense>
     )
-  }
+  })
 
   return (
     <DecouverteView

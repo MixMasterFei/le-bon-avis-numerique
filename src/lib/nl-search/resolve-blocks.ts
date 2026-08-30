@@ -25,7 +25,7 @@ import {
   runNlQuery,
   type AssembledCard,
 } from "./assemble"
-import { isEditorialBlock, type NlBlockKey, type NlEditorialBlock, type NlPlan, type NlPlanBlock } from "./blocks"
+import { isEditorialBlock, type NlBlockKey, type NlBlockVariant, type NlEditorialBlock, type NlPlan, type NlPlanBlock } from "./blocks"
 import type { NlIntent } from "./types"
 
 const MAIN_LIMIT = 24
@@ -52,6 +52,7 @@ export interface BlockMeta {
   title: string | null
   em: string | null
   lead: string | null
+  variant: NlBlockVariant
 }
 
 export interface HeroData {
@@ -89,14 +90,14 @@ export interface BlogCard {
 
 export type ResolvedBlock =
   | { kind: "hero"; key: "heroMatch"; meta: BlockMeta; hero: HeroData }
-  | { kind: "grid"; key: "mediaGrid"; meta: BlockMeta; items: AssembledCard[] }
-  | { kind: "rail"; key: NlBlockKey; meta: BlockMeta; items: AssembledCard[] }
+  | { kind: "grid"; key: "mediaGrid"; meta: BlockMeta; items: AssembledCard[]; sectionImage?: string | null }
+  | { kind: "rail"; key: NlBlockKey; meta: BlockMeta; items: AssembledCard[]; sectionImage?: string | null }
   | { kind: "upcoming"; key: "upcoming"; meta: BlockMeta; items: UpcomingItem[] }
   | { kind: "news"; key: "newsPicks"; meta: BlockMeta; items: NewsCard[] }
   | { kind: "blog"; key: "blogPicks"; meta: BlockMeta; items: BlogCard[] }
   | { kind: "editorial"; key: NlEditorialBlock; meta: BlockMeta }
   /** Placeholder for a section that streams in separately — see SLOW_BLOCKS. */
-  | { kind: "deferred"; key: NlBlockKey; meta: BlockMeta; index: number }
+  | { kind: "deferred"; key: NlBlockKey; meta: BlockMeta; index: number; variant: NlBlockVariant }
 
 export interface ResolvedBoard {
   blocks: ResolvedBlock[]
@@ -106,8 +107,26 @@ export interface ResolvedBoard {
   mainCount: number
 }
 
+/**
+ * Wide art for a fullBleed section, taken from the titles the section already
+ * contains. Games never have a backdrop, so a games section simply comes back
+ * null and the renderer falls back to the plain grid.
+ */
+async function sectionImageFor(items: AssembledCard[]): Promise<string | null> {
+  if (items.length === 0) return null
+  try {
+    const row = await prisma.mediaItem.findFirst({
+      where: { id: { in: items.slice(0, 8).map((i) => i.id) }, backdropUrl: { not: null } },
+      select: { backdropUrl: true },
+    })
+    return row?.backdropUrl ?? null
+  } catch {
+    return null
+  }
+}
+
 function metaOf(block: NlPlanBlock): BlockMeta {
-  return { eyebrow: block.eyebrow, title: block.title, em: block.em, lead: block.lead }
+  return { eyebrow: block.eyebrow, title: block.title, em: block.em, lead: block.lead, variant: block.variant }
 }
 
 /* ------------------------------------------------------------------ *
@@ -429,6 +448,7 @@ export async function resolveDeferredBlock(opts: {
   seenIds: string[]
 }): Promise<ResolvedBlock | null> {
   const { key, meta, intent, query, seenIds } = opts
+  const variant = meta.variant
   try {
     if (key === "upcoming") {
       const items = await getUpcomingItems(intent.maxAge)
@@ -445,13 +465,31 @@ export async function resolveDeferredBlock(opts: {
     if (key === "cinemaNow") {
       const seen = new Set(seenIds)
       const items = (await resolveCinemaRail(intent)).filter((i) => !seen.has(i.id))
-      return items.length >= MIN_RAIL_ITEMS ? { kind: "rail", key: "cinemaNow", meta, items } : null
+      if (items.length < MIN_RAIL_ITEMS) return null
+      const sectionImage = variant === "fullBleed" ? await sectionImageFor(items) : null
+      return { kind: "rail", key: "cinemaNow", meta, items, sectionImage }
     }
     return null
   } catch (error) {
     console.error(`[nl-search] deferred block "${key}" failed:`, error)
     return null
   }
+}
+
+/**
+ * Which sections take the alternate background, aligned to `blocks`.
+ *
+ * Counted over CONTENT sections only: an editorial block sitting between two
+ * bands must not break the alternation, or the stripe reads as a mistake.
+ */
+export function computeStripes(blocks: ResolvedBlock[]): boolean[] {
+  let n = 0
+  return blocks.map((block) => {
+    if (block.kind === "editorial") return false
+    const alt = n % 2 === 1
+    n += 1
+    return alt
+  })
 }
 
 export interface ResolveBoardOptions {
@@ -497,11 +535,12 @@ export async function resolveBoard(opts: ResolveBoardOptions): Promise<ResolvedB
 
         if (block.block === "mediaGrid") {
           if (gridItems.length === 0) return null
-          return { kind: "grid", key: "mediaGrid", meta, items: gridItems }
+          const sectionImage = block.variant === "fullBleed" ? await sectionImageFor(gridItems) : null
+          return { kind: "grid", key: "mediaGrid", meta, items: gridItems, sectionImage }
         }
 
         if (SLOW_BLOCKS.has(block.block)) {
-          return { kind: "deferred", key: block.block, meta, index }
+          return { kind: "deferred", key: block.block, meta, index, variant: block.variant }
         }
 
         if (block.block === "upcoming") {
@@ -522,7 +561,8 @@ export async function resolveBoard(opts: ResolveBoardOptions): Promise<ResolvedB
         const items = (await resolveRail(block, ctx)).filter((i) => !seen.has(i.id))
         if (items.length < MIN_RAIL_ITEMS) return null
         for (const item of items) seen.add(item.id)
-        return { kind: "rail", key: block.block, meta, items }
+        const sectionImage = block.variant === "fullBleed" ? await sectionImageFor(items) : null
+        return { kind: "rail", key: block.block, meta, items, sectionImage }
       } catch (error) {
         console.error(`[nl-search] block "${block.block}" failed:`, error)
         return null

@@ -12,7 +12,7 @@ import { Em } from "@/components/home-redesign/parts"
 import { NL_SEARCH_SUGGESTIONS } from "@/lib/nl-search/suggestions"
 import { AVOID_RULES } from "@/lib/nl-search/vocab"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
-import type { ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
+import { computeStripes, type ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
 import { ShareSaveBar } from "./ShareSaveBar"
@@ -218,6 +218,8 @@ export function DecouverteView({
     }
   }, [selectedMemberId])
 
+  const stripes = useMemo(() => computeStripes(board.blocks), [board.blocks])
+
   const selectedMemberName = board.members.find((m) => m.id === selectedMemberId)?.name ?? null
   const headline = buildHeadline(intent)
   const isSearchable = intent.mode !== "hors_sujet" && !isIdle
@@ -233,7 +235,7 @@ export function DecouverteView({
         className={`${v2FontVars} min-h-screen`}
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
-        <div className="mx-auto max-w-[1240px] px-5 py-12 sm:px-7">
+        <div className="mx-auto max-w-[1240px] px-5 pt-12 pb-4 sm:px-7">
           <Link href="/" className="text-[13.5px] font-bold" style={{ color: "var(--terra)" }}>
             ← Retour à l&apos;accueil
           </Link>
@@ -317,14 +319,14 @@ export function DecouverteView({
           {hasBoard && <ShareSaveBar query={query} isLoggedIn={isLoggedIn} />}
 
           {isIdle ? (
-            <div className="mt-8">
+            <div className="mt-8 pb-12">
               <p className="text-[13px] font-semibold" style={{ color: "var(--ink-3)" }}>
                 Idées rapides&nbsp;:
               </p>
               <Suggestions />
             </div>
           ) : intent.mode === "hors_sujet" ? (
-            <div className="mt-10">
+            <div className="mt-10 pb-12">
               <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
                 Décrivez plutôt ce que vous cherchez pour votre famille — un âge, une envie, ce
                 que vous préférez éviter.
@@ -332,15 +334,18 @@ export function DecouverteView({
               <Suggestions />
             </div>
           ) : !hasBoard ? (
-            <div className="mt-10">
+            <div className="mt-10 pb-12">
               <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
                 Aucun titre ne correspond à ces critères. Essayez d&apos;élargir l&apos;âge ou de
                 retirer un filtre.
               </p>
               <Suggestions />
             </div>
-          ) : (
-            <div style={{ opacity: isNavigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
+          ) : null}
+        </div>
+
+        {hasBoard && intent.mode !== "hors_sujet" && !isIdle && (
+          <div style={{ opacity: isNavigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
               {board.blocks.map((block, index) => {
                 const key = `${block.key}-${index}`
                 const reveal = {
@@ -357,32 +362,52 @@ export function DecouverteView({
                   return <div key={key} {...reveal}><EditorialBlock variant={block.key} meta={block.meta} /></div>
                 }
                 if (block.kind === "upcoming") {
-                  return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} /></div>
+                  return <div key={key} {...reveal}><UpcomingBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
                 }
                 if (block.kind === "news") {
-                  return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} /></div>
+                  return <div key={key} {...reveal}><NewsBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
                 }
                 if (block.kind === "blog") {
-                  return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} /></div>
+                  return <div key={key} {...reveal}><BlogBlock meta={block.meta} items={block.items} alt={stripes[index]} /></div>
                 }
 
                 const ranked = rank(block.items)
                 if (ranked.length === 0) return null
 
                 if (block.kind === "grid") {
-                  return <div key={key} {...reveal}><GridBlock meta={block.meta} items={ranked.map(toRedesignCard)} /></div>
+                  return (
+                    <div key={key} {...reveal}>
+                      <GridBlock
+                        meta={block.meta}
+                        items={ranked.map(toRedesignCard)}
+                        alt={stripes[index]}
+                        sectionImage={block.sectionImage}
+                      />
+                    </div>
+                  )
                 }
-                return <div key={key} {...reveal}><RailBlock meta={block.meta} items={ranked.map(toRedesignCard)} /></div>
+                return (
+                  <div key={key} {...reveal}>
+                    <RailBlock
+                      blockKey={block.key}
+                      meta={block.meta}
+                      items={ranked.map(toRedesignCard)}
+                      alt={stripes[index]}
+                      sectionImage={block.sectionImage}
+                    />
+                  </div>
+                )
               })}
 
               {selectedMemberName && (
-                <p className="mt-6 text-[13px]" style={{ color: "var(--ink-3)" }}>
-                  Classé selon le profil de {selectedMemberName}.
-                </p>
+                <div className="mx-auto max-w-[1240px] px-5 pb-10 sm:px-7">
+                  <p className="text-[13px]" style={{ color: "var(--ink-3)" }}>
+                    Classé selon le profil de {selectedMemberName}.
+                  </p>
+                </div>
               )}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </FamilyFitProvider>
   )

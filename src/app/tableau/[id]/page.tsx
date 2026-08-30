@@ -4,7 +4,7 @@ import { notFound } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { canUseNlSearch } from "@/lib/nl-search/access"
 import { loadBoard, noteBoardView } from "@/lib/nl-search/boards"
-import { resolveBoard } from "@/lib/nl-search/resolve-blocks"
+import { computeStripes, resolveBoard } from "@/lib/nl-search/resolve-blocks"
 import { DeferredBlock, DeferredBlockSkeleton } from "@/app/decouverte/blocks/DeferredBlock"
 import { BoardView } from "./BoardView"
 
@@ -63,9 +63,10 @@ export default async function TableauPage({ params }: { params: Promise<{ id: st
   const seenIds = resolved.blocks.flatMap((block) =>
     block.kind === "grid" || block.kind === "rail" ? block.items.map((item) => item.id) : [],
   )
+  const stripes = computeStripes(resolved.blocks)
   const slots: Record<number, ReactNode> = {}
-  for (const block of resolved.blocks) {
-    if (block.kind !== "deferred") continue
+  resolved.blocks.forEach((block, i) => {
+    if (block.kind !== "deferred") return
     slots[block.index] = (
       <Suspense fallback={<DeferredBlockSkeleton />}>
         <DeferredBlock
@@ -74,10 +75,11 @@ export default async function TableauPage({ params }: { params: Promise<{ id: st
           intent={board.intent}
           query={board.query}
           seenIds={seenIds}
+          alt={stripes[i]}
         />
       </Suspense>
     )
-  }
+  })
 
   return (
     <BoardView

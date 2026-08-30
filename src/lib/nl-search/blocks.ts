@@ -54,6 +54,33 @@ export const NL_EDITORIAL_BLOCKS = [
 
 export const NL_BLOCK_KEYS = [...NL_CONTENT_BLOCKS, ...NL_EDITORIAL_BLOCKS] as const
 
+/**
+ * How a section is SHAPED. The plan chooses this alongside the block itself, so
+ * two boards about different questions do not read as the same page with the
+ * words swapped.
+ *
+ * These are layout names, not content: a variant can never change which titles
+ * appear or what they say. Every one degrades to "grid" at render time when its
+ * preconditions are missing — too few items for a mosaic, no wide art for a
+ * full-bleed — so the model can be optimistic without breaking a page.
+ */
+export const NL_BLOCK_VARIANTS = [
+  /** The plain responsive grid. The floor everything falls back to. */
+  "grid",
+  /** First card at 2×2 with the rest packed around it. */
+  "mosaic",
+  /** Large numerals beside each title, magazine-list style. */
+  "numbered",
+  /** The section sits in a dark pine band — the strongest rhythm break. */
+  "dark",
+  /** Section header set over a title's own backdrop. */
+  "fullBleed",
+  /** Fewer, larger cards (.v2-row-lg). */
+  "wide",
+] as const
+
+export type NlBlockVariant = (typeof NL_BLOCK_VARIANTS)[number]
+
 export type NlContentBlock = (typeof NL_CONTENT_BLOCKS)[number]
 export type NlEditorialBlock = (typeof NL_EDITORIAL_BLOCKS)[number]
 export type NlBlockKey = (typeof NL_BLOCK_KEYS)[number]
@@ -78,6 +105,8 @@ export interface NlPlanBlockRaw {
   mediaType?: string
   /** `mediaRail` only — narrows the slice. */
   themes?: string[]
+  /** How to shape the section. */
+  variant?: string
 }
 
 /** Validated: what the renderer actually receives. */
@@ -89,6 +118,7 @@ export interface NlPlanBlock {
   lead: string | null
   mediaType: NlMediaType | null
   themes: string[]
+  variant: NlBlockVariant
 }
 
 export type NlPlan = NlPlanBlock[]
@@ -118,6 +148,14 @@ function toBlockKey(value: unknown): NlBlockKey | null {
   if (typeof value !== "string") return null
   const trimmed = value.trim()
   return (NL_BLOCK_KEYS as readonly string[]).includes(trimmed) ? (trimmed as NlBlockKey) : null
+}
+
+function toVariant(value: unknown): NlBlockVariant {
+  if (typeof value !== "string") return "grid"
+  const trimmed = value.trim()
+  return (NL_BLOCK_VARIANTS as readonly string[]).includes(trimmed)
+    ? (trimmed as NlBlockVariant)
+    : "grid"
 }
 
 function toMediaTypeOrNull(value: unknown): NlMediaType | null {
@@ -181,6 +219,9 @@ function validateBlock(raw: unknown, intent: NlIntent): NlPlanBlock | null {
     lead: toText(input.lead, LEAD_MAX_LEN),
     mediaType,
     themes,
+    // The hero has its own fixed treatment, and an editorial block is already a
+    // shape in its own right — a variant on either is meaningless.
+    variant: block === "heroMatch" || isEditorialBlock(block) ? "grid" : toVariant(input.variant),
   }
 }
 
@@ -202,19 +243,19 @@ export function fallbackPlan(intent: NlIntent): NlPlan {
   if (intent.mode === "hors_sujet") return []
 
   const plan: NlPlan = [
-    { block: "heroMatch", eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [] },
-    { block: "mediaGrid", eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [] },
+    { block: "heroMatch", eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [], variant: "grid" },
+    { block: "mediaGrid", eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [], variant: "grid" },
   ]
 
   if (intent.railSecondaire === "plus_jeunes") {
     plan.push({
       block: "youngerSiblings",
-      eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [],
+      eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [], variant: "wide",
     })
   } else if (intent.railSecondaire === "en_serie") {
     plan.push({
       block: "mediaRail",
-      eyebrow: null, title: null, em: null, lead: null, mediaType: "TV", themes: [],
+      eyebrow: null, title: null, em: null, lead: null, mediaType: "TV", themes: [], variant: "wide",
     })
   }
 
@@ -280,7 +321,13 @@ export function buildPlan(raw: unknown, intent: NlIntent): NlPlan {
       // A younger-siblings rail needs an age to step down from.
       if (candidate.block === "youngerSiblings" && intent.maxAge === null) continue
 
-      out.push(candidate)
+      const previousBlock = out[out.length - 1]
+      if (candidate.variant === "dark" && previousBlock?.variant === "dark") {
+        // Two dark bands in a row read as one big slab, not as two sections.
+        out.push({ ...candidate, variant: "grid" })
+      } else {
+        out.push(candidate)
+      }
       used.set(candidate.block, seen + 1)
     }
 
@@ -290,7 +337,7 @@ export function buildPlan(raw: unknown, intent: NlIntent): NlPlan {
       const insertAt = out[0]?.block === "heroMatch" ? 1 : 0
       out.splice(insertAt, 0, {
         block: "mediaGrid",
-        eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [],
+        eyebrow: null, title: null, em: null, lead: null, mediaType: null, themes: [], variant: "grid",
       })
     }
 
