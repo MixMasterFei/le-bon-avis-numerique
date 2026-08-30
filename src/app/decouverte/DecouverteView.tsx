@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { Search, Sparkles } from "lucide-react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
-import { RedesignCard, type RedesignCardMedia } from "@/components/home-redesign/RedesignCard"
 import { MemberMonogram } from "@/components/home-redesign/MemberMonogram"
 import { memberColor } from "@/components/home-redesign/family"
 import { v2FontVars } from "@/components/home-redesign/fonts"
 import { Em } from "@/components/home-redesign/parts"
 import { NL_SEARCH_SUGGESTIONS } from "@/lib/nl-search/suggestions"
 import { AVOID_RULES } from "@/lib/nl-search/vocab"
-import type { AssembledCard, AssembledResults } from "@/lib/nl-search/assemble"
+import type { AssembledCard } from "@/lib/nl-search/assemble"
+import type { ResolvedBoard } from "@/lib/nl-search/resolve-blocks"
 import type { NlIntent } from "@/lib/nl-search/types"
 import { ChipsInterpretation } from "./ChipsInterpretation"
+import { HeroMatch } from "./blocks/HeroMatch"
+import { EditorialBlock, GridBlock, RailBlock, toRedesignCard } from "./blocks/BoardSections"
 
 const TYPE_NOUN: Record<NlIntent["mediaType"], string> = {
   MOVIE: "Films",
@@ -22,17 +24,8 @@ const TYPE_NOUN: Record<NlIntent["mediaType"], string> = {
   GAME: "Jeux",
 }
 
-function toCard(card: AssembledCard): RedesignCardMedia {
-  return {
-    id: card.id,
-    type: card.type,
-    title: card.title,
-    posterUrl: card.posterUrl,
-    expertAgeRec: card.expertAgeRec,
-    genres: card.genres,
-    contentMetrics: card.contentMetrics as RedesignCardMedia["contentMetrics"],
-  }
-}
+/** Below this score a title is a poor fit for the selected child, not a ranking. */
+const MEMBER_FIT_FLOOR = 50
 
 /**
  * Headline restating the request. Built from the interpretation's own labels
@@ -93,7 +86,7 @@ function SearchBar({ initial }: { initial: string }) {
 }
 
 /**
- * "Pour qui ?" — switching child re-sorts the SAME results client-side from the
+ * "Pour qui ?" — switching child re-sorts the SAME board client-side from the
  * per-member scores already attached to each card. No request, no new
  * interpretation: asking "and for my other son?" is instant and free.
  */
@@ -150,16 +143,6 @@ function MemberFilter({
   )
 }
 
-function CardGrid({ items }: { items: RedesignCardMedia[] }) {
-  return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-      {items.map((m) => (
-        <RedesignCard key={m.id} media={m} totem="compact" showType />
-      ))}
-    </div>
-  )
-}
-
 function Suggestions() {
   return (
     <div className="mt-5 flex flex-wrap gap-2">
@@ -180,13 +163,13 @@ function Suggestions() {
 export function DecouverteView({
   query,
   intent,
-  results,
+  board,
   degraded,
   isLoggedIn,
 }: {
   query: string
   intent: NlIntent
-  results: AssembledResults
+  board: ResolvedBoard
   degraded: boolean
   isLoggedIn: boolean
 }) {
@@ -195,22 +178,29 @@ export function DecouverteView({
   // Re-rank in place for the selected child: their own score decides the order,
   // and anything the engine flagged as a poor fit for them drops out. Pure
   // client-side arithmetic over data already on the page.
-  const orderedItems = useMemo(() => {
-    if (!selectedMemberId) return results.items
-    return results.items
-      .map((item) => ({ item, score: item.memberScores?.find((s) => s.memberId === selectedMemberId)?.score }))
-      .filter((entry) => entry.score === undefined || entry.score >= 50)
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .map((entry) => entry.item)
-  }, [results.items, selectedMemberId])
+  const rank = useMemo(() => {
+    return (items: AssembledCard[]): AssembledCard[] => {
+      if (!selectedMemberId) return items
+      return items
+        .map((item) => ({ item, score: item.memberScores?.find((s) => s.memberId === selectedMemberId)?.score }))
+        .filter((entry) => entry.score === undefined || entry.score >= MEMBER_FIT_FLOOR)
+        .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+        .map((entry) => entry.item)
+    }
+  }, [selectedMemberId])
 
-  const selectedMemberName = results.members.find((m) => m.id === selectedMemberId)?.name ?? null
+  const selectedMemberName = board.members.find((m) => m.id === selectedMemberId)?.name ?? null
   const headline = buildHeadline(intent)
   const isSearchable = intent.mode !== "hors_sujet"
+  const hasBoard = board.blocks.length > 0 && board.mainCount > 0
 
   return (
     <FamilyFitProvider>
+      {/* data-home="v2" is REQUIRED: every --paper/--ink/--terra token and the
+          .v2-row grid classes are declared only inside that selector. Without it
+          the page renders with no palette at all. */}
       <div
+        data-home="v2"
         className={`${v2FontVars} min-h-screen`}
         style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
       >
@@ -262,17 +252,13 @@ export function DecouverteView({
 
           {isSearchable && <ChipsInterpretation intent={intent} query={query} />}
 
-          {results.personalized && (
-            <MemberFilter
-              members={results.members}
-              selectedId={selectedMemberId}
-              onSelect={setSelectedMemberId}
-            />
+          {board.personalized && (
+            <MemberFilter members={board.members} selectedId={selectedMemberId} onSelect={setSelectedMemberId} />
           )}
 
           {/* Sign-up nudge — shown only where it is TRUE that an account adds
               something: results exist but carry no per-child scoring. */}
-          {!results.personalized && orderedItems.length > 0 && (
+          {!board.personalized && hasBoard && (
             <p className="mt-5 text-[13.5px]" style={{ color: "var(--ink-2)" }}>
               {isLoggedIn ? (
                 <>
@@ -292,48 +278,48 @@ export function DecouverteView({
             </p>
           )}
 
-          <div className="mt-10">
-            {intent.mode === "hors_sujet" ? (
-              <div>
-                <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
-                  Décrivez plutôt ce que vous cherchez pour votre famille — un âge, une envie, ce
-                  que vous préférez éviter.
-                </p>
-                <Suggestions />
-              </div>
-            ) : orderedItems.length === 0 ? (
-              <div>
-                <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
-                  {selectedMemberName
-                    ? `Aucun titre de cette sélection ne convient à ${selectedMemberName}. Essayez « Toute la famille » ou élargissez les critères.`
-                    : "Aucun titre ne correspond à ces critères. Essayez d'élargir l'âge ou de retirer un filtre."}
-                </p>
-                {!selectedMemberName && <Suggestions />}
-              </div>
-            ) : (
-              <>
-                <CardGrid items={orderedItems.map(toCard)} />
-                {selectedMemberName && (
-                  <p className="mt-4 text-[13px]" style={{ color: "var(--ink-3)" }}>
-                    Classé selon le profil de {selectedMemberName}.
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-
-          {results.secondary && results.secondary.items.length > 0 && (
-            <div className="mt-14 border-t pt-10" style={{ borderColor: "var(--line)" }}>
-              <h2
-                className="text-[clamp(20px,2.4vw,28px)] font-bold"
-                style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
-              >
-                {results.secondary.title}
-              </h2>
-              <div className="mt-6">
-                <CardGrid items={results.secondary.items.map(toCard)} />
-              </div>
+          {intent.mode === "hors_sujet" ? (
+            <div className="mt-10">
+              <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
+                Décrivez plutôt ce que vous cherchez pour votre famille — un âge, une envie, ce
+                que vous préférez éviter.
+              </p>
+              <Suggestions />
             </div>
+          ) : !hasBoard ? (
+            <div className="mt-10">
+              <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
+                Aucun titre ne correspond à ces critères. Essayez d&apos;élargir l&apos;âge ou de
+                retirer un filtre.
+              </p>
+              <Suggestions />
+            </div>
+          ) : (
+            <>
+              {board.blocks.map((block, index) => {
+                const key = `${block.key}-${index}`
+                if (block.kind === "hero") {
+                  return <HeroMatch key={key} meta={block.meta} hero={block.hero} />
+                }
+                if (block.kind === "editorial") {
+                  return <EditorialBlock key={key} variant={block.key} meta={block.meta} />
+                }
+
+                const ranked = rank(block.items)
+                if (ranked.length === 0) return null
+
+                if (block.kind === "grid") {
+                  return <GridBlock key={key} meta={block.meta} items={ranked.map(toRedesignCard)} />
+                }
+                return <RailBlock key={key} meta={block.meta} items={ranked.map(toRedesignCard)} />
+              })}
+
+              {selectedMemberName && (
+                <p className="mt-6 text-[13px]" style={{ color: "var(--ink-3)" }}>
+                  Classé selon le profil de {selectedMemberName}.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

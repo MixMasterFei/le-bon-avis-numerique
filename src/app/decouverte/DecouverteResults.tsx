@@ -1,7 +1,8 @@
 import { headers } from "next/headers"
 import { getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { sanitizeSearchQuery } from "@/lib/security"
-import { assembleResults } from "@/lib/nl-search/assemble"
+import { resolveBoard } from "@/lib/nl-search/resolve-blocks"
+import { fallbackPlan, type NlPlan } from "@/lib/nl-search/blocks"
 import { checkNlDailyCaps } from "@/lib/nl-search/daily-cap"
 import { parseNlQuery } from "@/lib/nl-search/parse"
 import { checkNlRateLimit } from "@/lib/nl-search/rate-limit"
@@ -32,23 +33,38 @@ async function resolveIntent(
   params: NlSearchParams,
   query: string,
   userId: string | null,
-): Promise<{ intent: NlIntent; status: NlResolutionStatus; degraded: boolean }> {
-  // 1. The URL already carries an interpretation.
+): Promise<{ intent: NlIntent; plan: NlPlan; status: NlResolutionStatus; degraded: boolean }> {
+  // 1. The URL already carries an interpretation. The COMPOSITION, however, is
+  //    not in the URL — it would make shared links unwieldy — so we still look
+  //    the plan up by question. That is a cached read, never a model call: a
+  //    chip edit keeps the board it was composed as, instead of collapsing back
+  //    to the default layout.
   if (hasStructuredParams(params)) {
-    return { intent: intentFromSearchParams(params), status: "params", degraded: false }
+    const intent = intentFromSearchParams(params)
+    const cachedPlan = query ? (await findCachedParse(hashQuery(query)))?.plan : null
+    return {
+      intent,
+      plan: cachedPlan && cachedPlan.length > 0 ? cachedPlan : fallbackPlan(intent),
+      status: "params",
+      degraded: false,
+    }
   }
 
   if (!query) {
-    return { intent: validateNlIntent(null), status: "params", degraded: false }
+    const intent = validateNlIntent(null)
+    return { intent, plan: fallbackPlan(intent), status: "params", degraded: false }
   }
 
   const queryHash = hashQuery(query)
 
-  // 2. Someone already asked this — reuse the reading.
+  // 2. Someone already asked this — reuse the reading and its composition.
   const cached = await findCachedParse(queryHash)
   if (cached) {
-    await recordNlSearch({ query, queryHash, status: "cache", userId, intent: cached })
-    return { intent: cached, status: "cache", degraded: false }
+    await recordNlSearch({
+      query, queryHash, status: "cache", userId,
+      intent: cached.intent, plan: cached.plan,
+    })
+    return { intent: cached.intent, plan: cached.plan, status: "cache", degraded: false }
   }
 
   // 3. Budget guards. Both DEGRADE rather than erroring: the visitor still gets
@@ -59,7 +75,7 @@ async function resolveIntent(
   if (!rate.allowed || (caps && !caps.allowed)) {
     const intent = validateNlIntent(null) // → mode "texte"
     await recordNlSearch({ query, queryHash, status: "blocked", userId })
-    return { intent, status: "blocked", degraded: true }
+    return { intent, plan: fallbackPlan(intent), status: "blocked", degraded: true }
   }
 
   // 4. The one billable call.
@@ -67,26 +83,25 @@ async function resolveIntent(
   if (!parsed) {
     const intent = validateNlIntent(null)
     await recordNlSearch({ query, queryHash, status: "fallback", userId })
-    return { intent, status: "fallback", degraded: true }
+    return { intent, plan: fallbackPlan(intent), status: "fallback", degraded: true }
   }
+
+  const status: NlResolutionStatus = parsed.intent.mode === "hors_sujet" ? "hors_sujet" : "llm"
 
   await recordNlSearch({
     query,
     queryHash,
-    status: parsed.intent.mode === "hors_sujet" ? "hors_sujet" : "llm",
+    status,
     userId,
     intent: parsed.intent,
+    plan: parsed.plan,
     model: parsed.model,
     inputTokens: parsed.inputTokens,
     outputTokens: parsed.outputTokens,
     latencyMs: parsed.latencyMs,
   })
 
-  return {
-    intent: parsed.intent,
-    status: parsed.intent.mode === "hors_sujet" ? "hors_sujet" : "llm",
-    degraded: false,
-  }
+  return { intent: parsed.intent, plan: parsed.plan, status, degraded: false }
 }
 
 export async function DecouverteResults({
@@ -97,14 +112,14 @@ export async function DecouverteResults({
   userId: string | null
 }) {
   const query = sanitizeSearchQuery(typeof params.q === "string" ? params.q : "")
-  const { intent, degraded } = await resolveIntent(params, query, userId)
-  const results = await assembleResults({ intent, query, userId })
+  const { intent, plan, degraded } = await resolveIntent(params, query, userId)
+  const board = await resolveBoard({ intent, plan, query, userId })
 
   return (
     <DecouverteView
       query={query}
       intent={intent}
-      results={results}
+      board={board}
       degraded={degraded}
       isLoggedIn={!!userId}
     />

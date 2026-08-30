@@ -8,6 +8,7 @@ import { v2FontVars } from "@/components/home-redesign/fonts"
 export function DecouverteSkeleton({ query }: { query?: string }) {
   return (
     <div
+      data-home="v2"
       className={`${v2FontVars} min-h-screen`}
       style={{ background: "var(--paper)", color: "var(--ink)", fontFamily: "var(--font-hanken), system-ui, sans-serif" }}
     >
