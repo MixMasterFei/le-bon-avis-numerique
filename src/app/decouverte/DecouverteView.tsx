@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState, type ReactNode } from "react"
-import { Search, Sparkles } from "lucide-react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
+import { Loader2, Search, Sparkles } from "lucide-react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { MemberMonogram } from "@/components/home-redesign/MemberMonogram"
 import { memberColor } from "@/components/home-redesign/family"
@@ -49,16 +49,25 @@ function buildHeadline(intent: NlIntent): string {
   return parts.join(" · ")
 }
 
-function SearchBar({ initial }: { initial: string }) {
+function SearchBar({ initial, onPendingChange }: { initial: string; onPendingChange?: (pending: boolean) => void }) {
   const router = useRouter()
   const [value, setValue] = useState(initial)
+  const [isPending, startTransition] = useTransition()
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault()
         const term = value.trim()
-        if (term) router.push(`/decouverte?q=${encodeURIComponent(term)}`)
+        if (!term) return
+        // Without startTransition the navigation is invisible: React keeps the
+        // rendered board while the new payload streams and the route-level
+        // Suspense fallback never re-appears, so the page just sits there for
+        // the length of the interpretation call.
+        startTransition(() => {
+          onPendingChange?.(true)
+          router.push(`/decouverte?q=${encodeURIComponent(term)}`)
+        })
       }}
       className="flex flex-col gap-3 sm:flex-row sm:items-center"
     >
@@ -78,10 +87,12 @@ function SearchBar({ initial }: { initial: string }) {
       </label>
       <button
         type="submit"
-        className="w-full shrink-0 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white sm:w-auto"
+        disabled={isPending}
+        className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white transition-opacity disabled:opacity-70 sm:w-auto"
         style={{ background: "var(--terra)" }}
       >
-        Chercher
+        {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isPending ? "Je vous compose ça…" : "Chercher"}
       </button>
     </form>
   )
@@ -168,6 +179,7 @@ export function DecouverteView({
   board,
   degraded,
   isLoggedIn,
+  isIdle,
   slots,
 }: {
   query: string
@@ -175,10 +187,13 @@ export function DecouverteView({
   board: ResolvedBoard
   degraded: boolean
   isLoggedIn: boolean
+  /** True when the visitor has not asked anything yet — a bare /decouverte. */
+  isIdle: boolean
   /** Streamed sections, keyed by their position in the plan. */
   slots?: Record<number, ReactNode>
 }) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null)
+  const [navigating, setNavigating] = useState(false)
 
   // Re-rank in place for the selected child: their own score decides the order,
   // and anything the engine flagged as a poor fit for them drops out. Pure
@@ -196,7 +211,7 @@ export function DecouverteView({
 
   const selectedMemberName = board.members.find((m) => m.id === selectedMemberId)?.name ?? null
   const headline = buildHeadline(intent)
-  const isSearchable = intent.mode !== "hors_sujet"
+  const isSearchable = intent.mode !== "hors_sujet" && !isIdle
   const hasBoard = board.blocks.length > 0 && board.mainCount > 0
 
   return (
@@ -225,7 +240,9 @@ export function DecouverteView({
             className="mt-3 max-w-[24ch] text-[clamp(28px,4vw,46px)] font-bold leading-[1.06]"
             style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--ink)" }}
           >
-            {intent.mode === "hors_sujet" ? (
+            {isIdle ? (
+              <>Que cherchez-<Em tone="terra">vous</Em>&nbsp;?</>
+            ) : intent.mode === "hors_sujet" ? (
               <>Nous n&apos;avons pas <Em tone="terra">compris</Em> cette recherche</>
             ) : headline ? (
               headline
@@ -236,14 +253,19 @@ export function DecouverteView({
             )}
           </h1>
 
-          {query && intent.mode !== "hors_sujet" && (
+          {isIdle ? (
+            <p className="mt-3 max-w-[60ch] text-[15px]" style={{ color: "var(--ink-2)" }}>
+              Décrivez ce que vous cherchez pour votre famille&nbsp;: un âge, une envie, ce que
+              vous préférez éviter. Totem Avisé compose la sélection.
+            </p>
+          ) : query && intent.mode !== "hors_sujet" ? (
             <p className="mt-3 max-w-[60ch] text-[15px]" style={{ color: "var(--ink-2)" }}>
               Votre demande&nbsp;: « {query} »
             </p>
-          )}
+          ) : null}
 
           <div className="mt-6 max-w-[720px]">
-            <SearchBar initial={query} />
+            <SearchBar initial={query} onPendingChange={setNavigating} />
           </div>
 
           {degraded && (
@@ -285,7 +307,14 @@ export function DecouverteView({
 
           {hasBoard && <ShareSaveBar query={query} isLoggedIn={isLoggedIn} />}
 
-          {intent.mode === "hors_sujet" ? (
+          {isIdle ? (
+            <div className="mt-8">
+              <p className="text-[13px] font-semibold" style={{ color: "var(--ink-3)" }}>
+                Idées rapides&nbsp;:
+              </p>
+              <Suggestions />
+            </div>
+          ) : intent.mode === "hors_sujet" ? (
             <div className="mt-10">
               <p className="text-[15px]" style={{ color: "var(--ink-2)" }}>
                 Décrivez plutôt ce que vous cherchez pour votre famille — un âge, une envie, ce
@@ -302,7 +331,7 @@ export function DecouverteView({
               <Suggestions />
             </div>
           ) : (
-            <>
+            <div style={{ opacity: navigating ? 0.55 : 1, transition: "opacity 150ms ease" }}>
               {board.blocks.map((block, index) => {
                 const key = `${block.key}-${index}`
                 const reveal = {
@@ -342,7 +371,7 @@ export function DecouverteView({
                   Classé selon le profil de {selectedMemberName}.
                 </p>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

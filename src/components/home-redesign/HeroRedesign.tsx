@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { Search, Sparkles, Users, Home, ArrowDown, User } from "lucide-react"
+import { useState, useTransition } from "react"
+import { Search, Sparkles, Users, Home, ArrowDown, User, Loader2 } from "lucide-react"
 import { Wrap, Em } from "./parts"
 import { AgeChips } from "./AgeChips"
 import { FamilyChips, type FamilyMemberLite } from "./FamilyChips"
@@ -60,15 +60,22 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
   const columns: string[][] = Array.from({ length: COLS }, () => [])
   heroPosters.forEach((src, i) => columns[i % COLS].push(src))
 
+  const [isPending, startTransition] = useTransition()
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const term = q.trim()
     if (!term) return
-    router.push(
-      nlSearchEnabled
-        ? `/decouverte?q=${encodeURIComponent(term)}`
-        : `/recherche?q=${encodeURIComponent(term)}`,
-    )
+    // Wrapped in a transition so the button can report that something is
+    // happening: interpreting a question takes a second or two, and a CTA that
+    // looks inert reads as broken.
+    startTransition(() => {
+      router.push(
+        nlSearchEnabled
+          ? `/decouverte?q=${encodeURIComponent(term)}`
+          : `/recherche?q=${encodeURIComponent(term)}`,
+      )
+    })
   }
 
   return (
@@ -198,13 +205,25 @@ export function HeroRedesign({ heroPosters, selectedKeys, onToggleAge, familyMem
                 style={{ color: "var(--ink)" }}
               />
             </label>
-            <a
-              href="#weekend"
-              className="w-full shrink-0 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white sm:w-auto"
-              style={{ background: "var(--terra)" }}
-            >
-              Voir la sélection
-            </a>
+            {nlSearchEnabled ? (
+              <button
+                type="submit"
+                disabled={isPending}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white transition-opacity disabled:opacity-70 sm:w-auto"
+                style={{ background: "var(--terra)" }}
+              >
+                {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isPending ? "Je vous compose ça…" : "Chercher"}
+              </button>
+            ) : (
+              <a
+                href="#weekend"
+                className="w-full shrink-0 whitespace-nowrap rounded-full px-5 py-[13px] text-center text-[14.5px] font-bold text-white sm:w-auto"
+                style={{ background: "var(--terra)" }}
+              >
+                Voir la sélection
+              </a>
+            )}
           </form>
 
           {/* Example questions: they teach the shape of a good request (an age,

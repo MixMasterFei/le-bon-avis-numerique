@@ -114,8 +114,14 @@ export async function DecouverteResults({
   userId: string | null
 }) {
   const query = sanitizeSearchQuery(typeof params.q === "string" ? params.q : "")
+  // Nothing asked yet: render the invitation. Resolving a board here would run
+  // a keyword search for the empty string and always come back with nothing.
+  const isIdle = !query && !hasStructuredParams(params)
+
   const { intent, plan, degraded } = await resolveIntent(params, query, userId)
-  const board = await resolveBoard({ intent, plan, query, userId })
+  const board = isIdle
+    ? { blocks: [], personalized: false, members: [], mainCount: 0 }
+    : await resolveBoard({ intent, plan, query, userId })
 
   // Sections that reach TMDB or Sanity stream in behind their own boundaries,
   // so a slow third party delays one row instead of the whole answer.
@@ -145,6 +151,7 @@ export async function DecouverteResults({
       board={board}
       degraded={degraded}
       isLoggedIn={!!userId}
+      isIdle={isIdle}
       slots={slots}
     />
   )
