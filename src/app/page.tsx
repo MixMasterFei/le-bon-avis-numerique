@@ -9,6 +9,7 @@ import { HomepageApercu } from "@/components/home-v2/HomepageApercu"
 import { ApercuTimeAwareHero } from "@/components/home-v2/ApercuTimeAwareHero"
 import { AdminVariantToggle } from "@/components/home-redesign/AdminVariantToggle"
 import { v2Enabled } from "@/lib/v2-flag"
+import { canUseNlSearch } from "@/lib/nl-search/access"
 import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-time-context"
 import { getHolidayCalendar } from "@/lib/school-holidays"
 import { getExpertPicks } from "@/lib/expert-picks"
@@ -194,6 +195,7 @@ export default async function HomePage({
           defaultMaxAge={maxAgeCap ?? 12}
           familyMembers={familyMembers}
           homepageState={homepageState}
+          nlSearchEnabled={canUseNlSearch({ isAuthenticated: isLoggedIn, role: session?.user?.role })}
         />
         <AdminVariantToggle variant="v2" />
       </>

@@ -62,6 +62,8 @@ model User {
   notifications         Notification[]
   totemConversations    TotemConversation[]
   releaseAlerts         ReleaseAlert[]
+  nlSearchQueries       NlSearchQuery[]
+  decouverteBoards      DecouverteBoard[]
 
   @@map("users")
 }
@@ -221,6 +223,7 @@ model MediaItem {
   userContentMetrics    UserContentMetrics[]
   contentRequests       ContentRequest[]
   screenshots           MediaScreenshot[]
+  boardVotes            DecouverteBoardVote[]
   ageVotes              AgeVote[]
   familyWarningVotes    FamilyWarningVote[]
   triggerVotes          TriggerVote[]
@@ -1337,4 +1340,86 @@ model TotemFeedback {
 
   @@index([messageId])
   @@map("totem_feedback")
+}
+
+/// One row per "Recherche magique" (/decouverte) resolution. Doubles as the
+/// parse cache (query_hash → intent) and the daily-cap counter (status:"llm"),
+/// so a repeated question never pays for a second interpretation.
+/// See prisma/migrations/manual/011_nl_search.sql for the status vocabulary.
+model NlSearchQuery {
+  id           String   @id @default(uuid())
+  userId       String?  @map("user_id")
+  query        String
+  queryHash    String   @map("query_hash")
+  intent       Json?
+  status       String
+  model        String?
+  inputTokens  Int?     @map("input_tokens")
+  outputTokens Int?     @map("output_tokens")
+  latencyMs    Int?     @map("latency_ms")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // SetNull, not Cascade: the cost history is aggregate telemetry that should
+  // survive an account deletion (detached), unlike Totem conversations.
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([queryHash, createdAt])
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@map("nl_search_queries")
+}
+
+/// A saved or shared « Recherche magique » board.
+///
+/// Stores the PLAN, never the rendered page: the board is re-composed against
+/// live catalogue data on every view, so its facts stay current while its
+/// composition stays stable. See prisma/migrations/manual/012_decouverte_boards.sql.
+model DecouverteBoard {
+  id        String    @id
+  userId    String?   @map("user_id")
+  query     String
+  /// The clamped NlIntent.
+  intent    Json
+  /// The ordered NlPlan.
+  plan      Json
+  title     String?
+  /// false = a short-lived share snapshot; true = kept by its owner.
+  saved     Boolean   @default(false)
+  /// The ballot's candidate titles, snapshotted at share time. The vote route
+  /// enforces membership against this; empty = legacy board, no enforcement.
+  ballotMediaIds String[] @default([]) @map("ballot_media_ids")
+  expiresAt DateTime? @map("expires_at")
+  viewCount Int       @default(0) @map("view_count")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  // Cascade: a board is personal content, not aggregate telemetry.
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  votes DecouverteBoardVote[]
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@map("decouverte_boards")
+}
+
+/// One voter's badges on one title of a shared board (1..3). The voter is an
+/// anonymous browser token + a typed first name — no account required. The
+/// 3-badge-per-voter budget is enforced in the vote route, in a transaction.
+model DecouverteBoardVote {
+  id         String   @id @default(uuid())
+  boardId    String   @map("board_id")
+  voterToken String   @map("voter_token")
+  voterName  String   @map("voter_name")
+  mediaId    String   @map("media_id")
+  badges     Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  board DecouverteBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  media MediaItem       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, voterToken, mediaId])
+  @@index([boardId])
+  @@map("decouverte_board_votes")
 }

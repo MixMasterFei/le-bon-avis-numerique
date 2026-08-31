@@ -25,6 +25,7 @@ import { AvatarPicker, defaultAvatarValue, type AvatarValue } from "@/components
 import { FamilyRecommendationsSection } from "@/components/chez-vous/FamilyRecommendationsSection"
 import { FamilyMovieNightSection } from "@/components/chez-vous/FamilyMovieNightSection"
 import { UserListsPreview } from "@/components/chez-vous/UserListsPreview"
+import { SavedBoardsPreview } from "@/components/profile/SavedBoardsPreview"
 
 interface UserStats {
   reviews: number
@@ -679,7 +680,13 @@ export default function ProfilPage() {
         <div className="mt-4">
           {discoveryTab === "recommendations" && <FamilyRecommendationsSection />}
           {discoveryTab === "movienight" && <FamilyMovieNightSection />}
-          {discoveryTab === "lists" && <UserListsPreview />}
+          {discoveryTab === "lists" && (
+            <>
+              <UserListsPreview />
+              {/* Self-hides when the user has no saved boards. */}
+              <SavedBoardsPreview />
+            </>
+          )}
         </div>
       </section>
 

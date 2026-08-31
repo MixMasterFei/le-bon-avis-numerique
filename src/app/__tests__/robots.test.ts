@@ -28,12 +28,14 @@ describe("robots.txt", () => {
     for (const r of rules()) {
       expect(r.disallow).toContain("/admin/")
       expect(r.disallow).toContain("/api/")
-      // Bare "/profil", not "/profil/": the trailing-slash form would leave the
-      // bare /profil URL itself crawlable. Same reason /coin-famille and
-      // /inscription are listed bare — those are exactly the URLs crawlers hit.
+      // No trailing slash: the rule has to cover /profil itself, not only its
+      // children. Broadened in the crawl-trap fix (#95); this pin lagged behind.
+      // Same reason /coin-famille and /inscription are listed bare — those are
+      // exactly the URLs crawlers hit.
       expect(r.disallow).toContain("/profil")
       expect(r.disallow).toContain("/coin-famille")
       expect(r.disallow).toContain("/inscription")
+      expect(r.disallow).toContain("/decouverte")
     }
   })
 

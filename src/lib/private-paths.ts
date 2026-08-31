@@ -24,6 +24,10 @@ export const PRIVATE_PATHS = [
   "/apercufoyer",
   "/apercudecouverte",
   "/inscription",
+  // Per-visitor query results: one URL per question asked, so an unbounded
+  // space with nothing indexable in it (the pages carry noindex too). Every
+  // title it links to is already reachable from the catalogue.
+  "/decouverte",
 ] as const
 
 /**
