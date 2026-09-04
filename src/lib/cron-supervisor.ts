@@ -81,9 +81,18 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
   { task: "import-games", staleAfterHours: 36, outputMetric: { key: "fetched", label: "Jeux récupérés" } },
   { task: "release-alerts", staleAfterHours: 36, outputMetric: { key: "notified", label: "Alertes de sortie envoyées" } },
   {
+    // Deliberately NO outputMetric, same reasoning as synopsis-audit below:
+    // `processed` is assigned `items.length` — the size of the QUEUE, not a
+    // measure of the task's health. So "processed collapsed to 0" says the
+    // backlog is empty, which is the success state, and the summary says so
+    // in as many words ("Backlog vide — rien a enrichir"). It fired for real
+    // on 2026-09-03: three runs enriched 50 + 50 + 50, drained the backlog,
+    // and the supervisor read the resulting 0-then-6 as "probablement un bug
+    // en amont". The failure modes that DO matter here stay covered — a broken
+    // run raises `errors` (status error/partial), and a backlog that stops
+    // draining is exactly what the weekly debt digest counts (unenriched).
     task: "enrich",
     staleAfterHours: 36,
-    outputMetric: { key: "processed", label: "Items traités (enrichissement)" },
     remediation: {
       label: "Relance enrichissement batch réduit",
       method: "POST",
@@ -92,9 +101,10 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
     },
   },
   {
+    // No outputMetric — identical shape to `enrich` above: `processed` is
+    // `items.length`, so it tracks the queue, not the task.
     task: "enrich-deep",
     staleAfterHours: 36,
-    outputMetric: { key: "processed", label: "Items traités (deep)" },
     remediation: {
       label: "Relance deep enrichment batch réduit",
       method: "POST",
