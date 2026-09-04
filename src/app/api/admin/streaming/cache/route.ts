@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
+import { extractProviders } from "@/lib/streaming-providers"
 
 const INTER_REQUEST_DELAY_MS = 200
 const TMDB_FETCH_TIMEOUT_MS = 8000
@@ -180,6 +181,13 @@ export async function POST(request: Request) {
               lastChecked: new Date(),
             },
           })
+          // No FR offer at all: the film must stop surfacing under any
+          // platform filter. Cleared from a FRESH TMDB answer, never from the
+          // (often months-old) streaming_availability table.
+          await prisma.mediaItem.update({
+            where: { id: item.id },
+            data: { platforms: [], streamingCheckedAt: new Date() },
+          })
           continue
         }
 
@@ -223,6 +231,22 @@ export async function POST(request: Request) {
           await prisma.streamingAvailability.createMany({ data: records })
           updated++
         }
+
+        // Write-through to MediaItem.platforms[] — the denormalised array every
+        // platform filter actually reads (media-queries, smart filter, MCP
+        // tools). This route only ever wrote the streaming_availability table,
+        // so the two stores drifted apart in BOTH directions: films with a live
+        // Netflix offer stayed unfilterable, and films whose offer had expired
+        // kept their badge. Writing here fixes it at the source, on fresh TMDB
+        // data, for the high-throughput path.
+        //
+        // streamingCheckedAt is stamped so this route feeds the same rotation
+        // cursor as /api/admin/streaming/update — otherwise the Saturday cron
+        // keeps re-picking titles this route just refreshed.
+        await prisma.mediaItem.update({
+          where: { id: item.id },
+          data: { platforms: extractProviders(frProviders), streamingCheckedAt: new Date() },
+        })
       } catch {
         errors++
         statusBreakdown["exception"] = (statusBreakdown["exception"] ?? 0) + 1
