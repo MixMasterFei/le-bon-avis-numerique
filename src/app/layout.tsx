@@ -10,8 +10,7 @@ import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
 import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
-import { Analytics } from "@vercel/analytics/react"
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { ConsentedAnalytics } from "@/components/providers/ConsentedAnalytics"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { v2FontVars } from "@/components/home-redesign/fonts"
 import { V2TypeProvider } from "@/components/providers/V2TypeProvider"
@@ -177,12 +176,6 @@ export default async function RootLayout({
             }),
           }}
         />
-        <script async src="https://plausible.io/js/pa-MN5ajAMFjoUl7-CmL25FQ.js" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)};plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init();`,
-          }}
-        />
       </head>
       <body className="min-h-screen flex flex-col">
         <V2TypeProvider value={v2TypeOn}>
@@ -198,8 +191,7 @@ export default async function RootLayout({
           </SettingsProvider>
         </SessionProvider>
         </V2TypeProvider>
-        <Analytics />
-        <SpeedInsights />
+        <ConsentedAnalytics />
       </body>
     </html>
   )

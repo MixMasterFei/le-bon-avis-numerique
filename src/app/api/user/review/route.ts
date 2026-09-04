@@ -40,6 +40,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (familyMemberId != null && typeof familyMemberId !== "string") {
+      return NextResponse.json({ error: "Membre de famille invalide" }, { status: 400 })
+    }
+    const cleanFamilyMemberId = familyMemberId || null
+    if (cleanFamilyMemberId) {
+      const member = await prisma.familyMember.findFirst({
+        where: { id: cleanFamilyMemberId, userId: session.user.id },
+        select: { id: true },
+      })
+      // The same response for another household's ID and a nonexistent ID
+      // prevents this endpoint from exposing whether a child profile exists.
+      if (!member) {
+        return NextResponse.json({ error: "Membre de famille non trouvé" }, { status: 404 })
+      }
+    }
+
     // Validate + bound all user-supplied values before they touch the DB.
     const cleanRating = Math.min(5, Math.max(1, Math.round(Number(rating) || 0)))
     const cleanAge =
@@ -66,7 +82,7 @@ export async function POST(request: NextRequest) {
           rating: cleanRating,
           ageSuggestion: cleanAge,
           comment: cleanComment,
-          familyMemberId: familyMemberId || null,
+          familyMemberId: cleanFamilyMemberId,
         },
       })
       await recomputeCommunityAge(mediaId)
@@ -82,7 +98,7 @@ export async function POST(request: NextRequest) {
         rating: cleanRating,
         ageSuggestion: cleanAge,
         comment: cleanComment,
-        familyMemberId: familyMemberId || null,
+        familyMemberId: cleanFamilyMemberId,
       },
     })
 

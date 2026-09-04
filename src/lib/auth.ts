@@ -5,6 +5,8 @@ import Google from "next-auth/providers/google"
 import { compare } from "bcryptjs"
 import { prisma } from "./db"
 import type { Adapter } from "next-auth/adapters"
+import { createSessionVersion, decodeSessionToken, validateSessionToken } from "./auth-session"
+import { handleGoogleAccountLinking } from "./google-account-linking"
 
 const googleClientId =
   process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID
@@ -36,6 +38,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
   adapter: PrismaAdapter(prisma) as Adapter,
   trustHost: true,
   session: { strategy: "jwt" },
+  jwt: { decode: decodeSessionToken },
   pages: {
     signIn: "/connexion",
     error: "/connexion",
@@ -49,12 +52,12 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
         password: { label: "Mot de passe", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (typeof credentials?.email !== "string" || typeof credentials?.password !== "string" || !credentials.email || !credentials.password) {
           throw new Error("Email et mot de passe requis")
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
+          where: { email: credentials.email.toLowerCase().trim() },
         })
 
         if (!user || !user.password) {
@@ -62,7 +65,7 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
         }
 
         const isPasswordValid = await compare(
-          credentials.password as string,
+          credentials.password,
           user.password
         )
 
@@ -81,47 +84,18 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
           name: user.name,
           image: user.image,
           role: user.role,
+          authVersion: await createSessionVersion(user),
         }
       },
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
-      // Auto-link Google OAuth to existing accounts (Google verifies emails)
-      if (account?.provider === "google" && user.email) {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: { accounts: true },
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        return handleGoogleAccountLinking({
+          user, account, profile,
+          getAuthenticatedUserId: async () => (await auth())?.user?.id ?? null,
         })
-        if (existingUser) {
-          // Check if this Google account is already linked
-          const alreadyLinked = existingUser.accounts.some(
-            (a) => a.provider === "google"
-          )
-          if (!alreadyLinked) {
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-              },
-            })
-            // Update user profile with Google data if missing
-            if (!existingUser.image && user.image) {
-              await prisma.user.update({
-                where: { id: existingUser.id },
-                data: { image: user.image, emailVerified: new Date() },
-              })
-            }
-          }
-        }
       }
       return true
     },
@@ -133,73 +107,14 @@ export const { handlers, signIn, signOut, auth, unstable_update: updateSession }
       // Default post-login destination
       return `${baseUrl}/profil`
     },
-    async jwt({ token, user, trigger }) {
-      if (user) {
-        token.id = user.id as string
-        token.role = (user as { role?: string }).role || "USER"
-      }
-      // Fetch user data if we have sub (from OAuth) but not id
-      if (!token.id && token.sub) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.sub },
-            select: { id: true, role: true, name: true, onboardingCompleted: true },
-          })
-          if (dbUser) {
-            token.id = dbUser.id
-            token.role = dbUser.role
-            token.name = dbUser.name
-            token.onboardingCompleted = dbUser.onboardingCompleted
-          }
-        } catch (error) {
-          console.error("[auth] JWT: failed to fetch user by sub:", error)
-          // Safe default — don't block login
-          token.onboardingCompleted = token.onboardingCompleted ?? true
-        }
-      }
-      // Fetch onboardingCompleted on first sign-in if not yet set
-      if (token.id && token.onboardingCompleted === undefined) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { onboardingCompleted: true },
-          })
-          if (dbUser) {
-            token.onboardingCompleted = dbUser.onboardingCompleted
-          }
-        } catch (error) {
-          console.error("[auth] JWT: failed to fetch onboardingCompleted:", error)
-          token.onboardingCompleted = true
-        }
-      }
-      // Refresh user data on update trigger
-      if (trigger === "update" && token.id) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { name: true, role: true, image: true, onboardingCompleted: true },
-          })
-          if (dbUser) {
-            token.name = dbUser.name
-            token.role = dbUser.role
-            token.picture = dbUser.image
-            token.onboardingCompleted = dbUser.onboardingCompleted
-          }
-        } catch (error) {
-          console.error("[auth] JWT: failed to refresh user data:", error)
-        }
-      }
-      return token
-    },
+    jwt: validateSessionToken,
     async session({ session, token }) {
       if (session.user) {
         session.user.id = (token.id || token.sub) as string
         session.user.role = token.role as string
         session.user.onboardingCompleted = token.onboardingCompleted as boolean ?? true
         // Keep name and image in sync with token
-        if (token.name) {
-          session.user.name = token.name as string
-        }
+        session.user.name = token.name
         if (token.picture !== undefined) {
           session.user.image = token.picture as string | null
         }

@@ -1,31 +1,57 @@
 /**
  * Plausible custom-event helpers.
  *
- * Plausible's global `window.plausible(eventName, { props })` is loaded
- * by the snippet in `src/app/layout.tsx`. These typed wrappers keep
- * the event names + prop shapes consistent across the codebase so the
- * Plausible dashboard stays clean (no typos or mixed casing).
+ * Uses the documented Events API so every request checks current consent.
+ * The hosted tracker keeps engagement listeners after unmount and those
+ * requests bypass transformRequest, so it cannot safely handle revocation.
+ * https://plausible.io/docs/events-api
  */
+
+import { hasAnalyticsConsent } from "@/lib/cookie-consent"
 
 type PlausibleProps = Record<string, string | number | boolean>
 
-declare global {
-  interface Window {
-    plausible?: (
-      event: string,
-      options?: { props?: PlausibleProps; callback?: () => void }
-    ) => void
+function analyticsUrl(value: string): string | null {
+  try {
+    const url = new URL(value)
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null
+    // Reset/verification tokens and other personal data can appear in search
+    // parameters or fragments. Neither page URLs nor referrers may send them.
+    return `${url.origin}${url.pathname}`
+  } catch {
+    return null
   }
 }
 
 function fire(event: string, props?: PlausibleProps) {
   if (typeof window === "undefined") return
-  if (typeof window.plausible !== "function") return
+  if (!hasAnalyticsConsent()) return
+  // Keep local development and preview deployments out of production stats.
+  if (!["totemavise.com", "www.totemavise.com"].includes(window.location.hostname)) return
+  const url = analyticsUrl(window.location.href)
+  if (!url) return
   try {
-    window.plausible(event, props ? { props } : undefined)
+    void fetch("https://plausible.io/api/event", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      credentials: "omit",
+      keepalive: true,
+      body: JSON.stringify({
+        name: event,
+        domain: "totemavise.com",
+        url,
+        referrer: analyticsUrl(document.referrer),
+        ...(props ? { props } : {}),
+      }),
+    }).catch(() => { /* Analytics must never break the app. */ })
   } catch {
     // Swallow — analytics must never break the app.
   }
+}
+
+/** Initial view after consent and subsequent client-side route changes. */
+export function trackPageview() {
+  fire("pageview")
 }
 
 /** User completed signup (after successful POST /api/auth/register). */

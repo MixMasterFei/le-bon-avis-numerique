@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { CardRailSection, Em } from "./parts"
 import type { RedesignCardMedia } from "./RedesignCard"
+import { fitsHomepageAge } from "@/lib/homepage-age-cap"
 
 interface SmartResult {
   mediaId: string
@@ -82,7 +83,8 @@ export function PersonalizedRail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey, maxAge])
 
-  if (!loading && items.length < 3) return null
+  const eligible = items.filter((item) => fitsHomepageAge(item, maxAge))
+  if (!loading && eligible.length < 3) return null
 
   return (
     <CardRailSection
@@ -90,7 +92,7 @@ export function PersonalizedRail({
       eyebrow="Sur-mesure"
       title={<>Spécialement pour <Em tone="terra">{title}</Em></>}
       lead="Classé selon ses goûts et ses sensibilités — pas seulement son âge."
-      items={items}
+      items={eligible}
       loading={loading}
       totem="full"
       showType

@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { TopProgressBar } from "@/components/ui/TopProgressBar"
 import { DeferUntilVisible } from "./DeferUntilVisible"
-import { APERCU_AGE_BUCKETS } from "@/components/home-v2/apercuTheme"
 import { getMemberAge } from "@/lib/age-utils"
+import { homepageAgeCap } from "@/lib/homepage-age-cap"
 import { v2FontVars } from "./fonts"
 import { HeroRedesign } from "./HeroRedesign"
 import { StickyAgeFilter } from "./StickyAgeFilter"
@@ -87,21 +87,14 @@ export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayNam
     setSelectedMemberIds((prev) => (prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id]))
 
   // Audience cap that adapts the WHOLE homepage:
-  //  - members selected → the YOUNGEST selected child's age, so a family
-  //    selection shows content everyone can actually watch (and each picked
-  //    member fits every card);
-  //  - only age bands → the oldest selected band;
+  //  - the youngest selected member or age-band lower bound wins, including
+  //    when both controls are used, so the selection suits every viewer;
   //  - nothing → no filter.
   const selectedMembers = familyMembers.filter((m) => selectedMemberIds.includes(m.id))
   const memberAges = selectedMembers
     .map((m) => getMemberAge(m.birthYear, m.birthMonth))
     .filter((a): a is number => typeof a === "number")
-  const bandMax = APERCU_AGE_BUCKETS.filter((b) => selectedKeys.includes(b.key)).map((b) => b.maxAge)
-  const globalMaxAge = memberAges.length
-    ? Math.min(...memberAges)
-    : bandMax.length
-      ? Math.max(...bandMax)
-      : undefined
+  const globalMaxAge = homepageAgeCap(selectedKeys, memberAges)
   // The family age cap that EVERY browse rail falls back to when the visitor
   // hasn't picked an age/member yet (globalMaxAge is undefined). Defined once
   // and passed to all of them so no rail can silently ship un-capped — the gap

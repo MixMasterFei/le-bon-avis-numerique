@@ -1,3 +1,5 @@
+import { getClientIpFromHeaders } from "./client-ip"
+
 /**
  * Security utilities for input sanitization and rate limiting
  */
@@ -194,18 +196,7 @@ export function checkRateLimit(
  * Get client identifier for rate limiting
  */
 export function getClientIdentifier(request: Request): string {
-  // Try to get real IP from various headers
-  const forwarded = request.headers.get("x-forwarded-for")
-  const realIp = request.headers.get("x-real-ip")
-  const cfConnectingIp = request.headers.get("cf-connecting-ip")
-
-  const ip =
-    cfConnectingIp ||
-    realIp ||
-    forwarded?.split(",")[0]?.trim() ||
-    "unknown"
-
-  return ip
+  return getClientIpFromHeaders(request.headers)
 }
 
 /**

@@ -3,15 +3,15 @@ import { prisma } from "@/lib/prisma"
 /**
  * Daily message caps for the Totem Assistant — the cost circuit breakers.
  *
- * Unlike the hourly limiter (src/lib/totem/rate-limit.ts, in-memory and
- * per-instance), these caps count persisted totem_messages rows via Prisma,
- * so they are ACCURATE across Vercel instances and cold starts with zero
- * new infrastructure (no Redis).
+ * These caps count persisted totem_messages rows via Prisma across instances.
+ * They are an additional cost guard, not atomic spend reservations: concurrent
+ * in-flight responses are not counted until persisted. The hourly limiter
+ * reserves requests atomically in the shared database before a model call.
  *
  * Two scopes:
  *  - per authenticated user  (TOTEM_DAILY_USER_CAP, default 50/day)
  *  - global across everyone  (TOTEM_GLOBAL_DAILY_CAP, default 1000/day)
- * Anonymous users skip the per-user count (they're on the 5/h in-memory
+ * Anonymous users skip the per-user count (they're on the shared 5/h
  * limiter) but are covered by the global ceiling.
  *
  * Both env-tunable so the numbers can move without a deploy.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import dynamicImport from "next/dynamic"
 import { permanentRedirect, notFound } from "next/navigation"
+import { parseCataloguePage } from "@/lib/pagination"
 import { fetchGames, countAnalyzedMedia } from "@/lib/media-queries"
 import { auth } from "@/lib/auth"
 import { v2Enabled } from "@/lib/v2-flag"
@@ -128,8 +129,8 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
   // Pagination validation: reject non-integer, negative, or zero pages with 404
   const rawPage = get(params, "page")
   if (rawPage !== undefined) {
-    const parsedPage = parseInt(rawPage)
-    if (!Number.isFinite(parsedPage) || parsedPage < 1 || rawPage !== String(parsedPage)) {
+    const parsedPage = parseCataloguePage(rawPage)
+    if (parsedPage === null) {
       notFound()
     }
     // Redirect page=1 to clean URL (avoid duplicate content)

@@ -1,54 +1,43 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useSyncExternalStore } from "react"
 import { Cookie, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-
-interface CookiePreferences {
-  essential: boolean
-  analytics: boolean
-  marketing: boolean
-}
+import {
+  ESSENTIAL_ONLY,
+  WITH_ANALYTICS,
+  getCookieConsent,
+  getServerCookieConsent,
+  saveCookieConsent,
+  subscribeCookieConsent,
+  type CookiePreferences,
+} from "@/lib/cookie-consent"
 
 export function CookieConsent() {
-  const [showBanner, setShowBanner] = useState(false)
+  const consent = useSyncExternalStore(subscribeCookieConsent, getCookieConsent, getServerCookieConsent)
+  const [delayElapsed, setDelayElapsed] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
-  const [preferences, setPreferences] = useState<CookiePreferences>({
-    essential: true,
-    analytics: false,
-    marketing: false,
-  })
+  const [preferences, setPreferences] = useState<CookiePreferences>(ESSENTIAL_ONLY)
 
   useEffect(() => {
-    const consent = localStorage.getItem("cookie-consent")
-    if (!consent) {
-      const timer = setTimeout(() => setShowBanner(true), 800)
-      return () => clearTimeout(timer)
-    }
+    const timer = setTimeout(() => setDelayElapsed(true), 800)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleAcceptAll = () => {
-    const allAccepted = { essential: true, analytics: true, marketing: true }
-    localStorage.setItem("cookie-preferences", JSON.stringify(allAccepted))
-    localStorage.setItem("cookie-consent", "accepted")
-    setShowBanner(false)
+    saveCookieConsent(WITH_ANALYTICS, "accepted")
   }
 
   const handleRejectAll = () => {
-    const onlyEssential = { essential: true, analytics: false, marketing: false }
-    localStorage.setItem("cookie-preferences", JSON.stringify(onlyEssential))
-    localStorage.setItem("cookie-consent", "declined")
-    setShowBanner(false)
+    saveCookieConsent(ESSENTIAL_ONLY, "declined")
   }
 
   const handleSavePreferences = () => {
-    localStorage.setItem("cookie-preferences", JSON.stringify(preferences))
-    localStorage.setItem("cookie-consent", "customized")
-    setShowBanner(false)
+    saveCookieConsent(preferences, "customized")
   }
 
-  if (!showBanner) return null
+  if (!delayElapsed || consent.choice !== "pending") return null
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[70] animate-in slide-in-from-bottom duration-300">
@@ -63,7 +52,7 @@ export function CookieConsent() {
                     <Cookie className="h-4 w-4 text-primary" />
                   </div>
                   <p className="text-sm text-gray-600">
-                    Nous utilisons des cookies pour améliorer votre expérience.{" "}
+                    Avec votre accord, nous mesurons l’utilisation et les performances du site.{" "}
                     <Link href="/confidentialite" className="text-primary hover:underline">
                       En savoir plus
                     </Link>
@@ -137,12 +126,13 @@ export function CookieConsent() {
                     <div className="mr-4">
                       <h3 className="font-medium text-gray-900 text-sm">Analytiques</h3>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Comprendre comment vous utilisez le site.
+                        Mesurer l’utilisation et les performances du site.
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer shrink-0">
                       <input
                         type="checkbox"
+                        aria-label="Autoriser la mesure d’audience"
                         className="sr-only peer"
                         checked={preferences.analytics}
                         onChange={(e) =>
@@ -158,17 +148,16 @@ export function CookieConsent() {
                     <div className="mr-4">
                       <h3 className="font-medium text-gray-900 text-sm">Marketing</h3>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Publicités pertinentes.
+                        Aucun traceur publicitaire utilisé.
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <label className="relative inline-flex items-center cursor-not-allowed shrink-0">
                       <input
                         type="checkbox"
                         className="sr-only peer"
-                        checked={preferences.marketing}
-                        onChange={(e) =>
-                          setPreferences({ ...preferences, marketing: e.target.checked })
-                        }
+                        aria-label="Marketing non utilisé"
+                        checked={false}
+                        disabled
                       />
                       <div className="w-9 h-5 bg-gray-200 peer-checked:bg-primary rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" />
                     </label>

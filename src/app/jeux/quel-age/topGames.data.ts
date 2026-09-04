@@ -3,7 +3,8 @@
 // name — the "[jeu] quel âge" query class the market study flags as unowned
 // whitespace. The page looks each up in the catalogue at request time and only
 // renders the ones that exist and are enriched (self-heals as the catalogue
-// fills). `aliases` are lowercased title fragments matched against DB titles;
+// fills). `aliases` support guide discovery; catalogue rows use exact full
+// titles, optionally supplied by `catalogueTitles` for a franchise or edition.
 // `parentNote` is an honest one-line reason parents search the title — a
 // framing of the question, never a Totem content verdict (those come from the
 // fiche's own analysis).
@@ -26,6 +27,8 @@ export interface TopGameSeed {
   name: string
   /** Lowercased title fragments matched against catalogue titles (contains). */
   aliases: string[]
+  /** Exact full titles, in editorial preference order, for catalogue identity. */
+  catalogueTitles?: string[]
   /** Honest one-line reason parents look this title up (not a content claim). */
   parentNote: string
   /** Concrete family-side issues: mechanics, settings, mismatches. */
@@ -41,6 +44,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "fortnite",
     name: "Fortnite",
     aliases: ["fortnite"],
+    catalogueTitles: ["fortnite", "fortnite battle royale"],
     parentNote:
       "Battle royale en ligne omniprésent dans les cours de récré : les parents s'interrogent sur le chat vocal, les inconnus et les achats intégrés.",
     familyIssues: [
@@ -67,6 +71,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "minecraft",
     name: "Minecraft",
     aliases: ["minecraft"],
+    catalogueTitles: ["minecraft", "minecraft: java edition", "minecraft: bedrock edition"],
     parentNote:
       "Bac à sable créatif très demandé dès le primaire : les parents veulent situer l'âge et le mode multijoueur.",
     familyIssues: [
@@ -79,6 +84,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "gta",
     name: "Grand Theft Auto (GTA)",
     aliases: ["grand theft auto", "gta"],
+    catalogueTitles: ["grand theft auto v", "grand theft auto iv", "grand theft auto: san andreas"],
     parentNote:
       "Série d'action pour adultes que les plus jeunes réclament : la question de l'âge revient sans cesse.",
     familyIssues: [
@@ -133,6 +139,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "call-of-duty",
     name: "Call of Duty",
     aliases: ["call of duty"],
+    catalogueTitles: ["call of duty: black ops 6", "call of duty: modern warfare iii", "call of duty: warzone"],
     parentNote:
       "Jeu de tir militaire pour adolescents et adultes fréquemment réclamé plus tôt.",
     familyIssues: [
@@ -169,6 +176,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "fall-guys",
     name: "Fall Guys",
     aliases: ["fall guys"],
+    catalogueTitles: ["fall guys", "fall guys: ultimate knockout"],
     parentNote:
       "Party game coloré de type course à obstacles, souvent perçu comme adapté aux enfants.",
   },
@@ -183,6 +191,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "mario-kart",
     name: "Mario Kart",
     aliases: ["mario kart"],
+    catalogueTitles: ["mario kart world", "mario kart 8 deluxe", "mario kart 8"],
     parentNote:
       "Jeu de course familial emblématique de Nintendo, un grand classique des questions d'âge.",
   },
@@ -190,6 +199,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "zelda",
     name: "The Legend of Zelda",
     aliases: ["legend of zelda", "zelda"],
+    catalogueTitles: ["the legend of zelda: tears of the kingdom", "the legend of zelda: breath of the wild"],
     parentNote:
       "Aventure Nintendo acclamée : les parents veulent savoir à partir de quel âge la proposer.",
   },
@@ -197,6 +207,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "pokemon",
     name: "Pokémon",
     aliases: ["pokémon", "pokemon"],
+    catalogueTitles: ["pokémon scarlet", "pokemon scarlet", "pokémon violet", "pokemon violet"],
     parentNote:
       "Licence de créatures à collectionner adorée des enfants, déclinée en de nombreux jeux.",
   },
@@ -204,6 +215,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "animal-crossing",
     name: "Animal Crossing",
     aliases: ["animal crossing"],
+    catalogueTitles: ["animal crossing: new horizons", "animal crossing: new leaf", "animal crossing"],
     parentNote:
       "Simulation de vie paisible souvent citée comme idéale pour les jeunes joueurs.",
   },
@@ -211,6 +223,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "splatoon",
     name: "Splatoon",
     aliases: ["splatoon"],
+    catalogueTitles: ["splatoon 3", "splatoon 2", "splatoon"],
     parentNote:
       "Jeu de tir coloré à l'encre, pensé pour un public jeune mais joué en ligne.",
   },
@@ -218,6 +231,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "super-smash-bros",
     name: "Super Smash Bros.",
     aliases: ["super smash bros", "smash bros"],
+    catalogueTitles: ["super smash bros. ultimate", "super smash bros. for wii u", "super smash bros."],
     parentNote:
       "Jeu de combat festif réunissant les héros Nintendo, très demandé en famille.",
   },
@@ -225,6 +239,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "overwatch",
     name: "Overwatch",
     aliases: ["overwatch"],
+    catalogueTitles: ["overwatch 2", "overwatch"],
     parentNote:
       "Jeu de tir en équipe stylisé : coloré, mais en ligne et compétitif.",
   },
@@ -239,6 +254,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "les-sims",
     name: "Les Sims",
     aliases: ["les sims", "the sims"],
+    catalogueTitles: ["the sims 4", "les sims 4", "the sims 3", "les sims 3"],
     parentNote:
       "Simulation de vie ouverte : les parents s'interrogent sur les thèmes adultes et les extensions.",
   },
@@ -253,6 +269,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "sonic",
     name: "Sonic",
     aliases: ["sonic"],
+    catalogueTitles: ["sonic superstars", "sonic frontiers", "sonic mania"],
     parentNote:
       "Le hérisson rapide de SEGA, une valeur sûre des jeux de plateforme pour enfants.",
   },
@@ -267,6 +284,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "five-nights-at-freddys",
     name: "Five Nights at Freddy's",
     aliases: ["five nights at freddy", "fnaf"],
+    catalogueTitles: ["five nights at freddy's", "five nights at freddy’s"],
     parentNote:
       "Jeu d'horreur devenu une licence enfantine (peluches, films, vidéos) : l'écart entre l'univers et le jeu lui-même surprend beaucoup de parents.",
     familyIssues: [
@@ -340,6 +358,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "rainbow-six-siege",
     name: "Rainbow Six Siege",
     aliases: ["rainbow six"],
+    catalogueTitles: ["tom clancy's rainbow six siege", "tom clancy’s rainbow six siege", "rainbow six siege"],
     parentNote:
       "Jeu de tir tactique réaliste réclamé au collège, classé pour adultes.",
     familyIssues: [
@@ -364,6 +383,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "toca-boca",
     name: "Toca Boca (Toca Life World)",
     aliases: ["toca boca", "toca life"],
+    catalogueTitles: ["toca boca world", "toca life world", "toca life: world"],
     parentNote:
       "Univers de jeu libre pour jeunes enfants, souvent la première application de jeu installée.",
     familyIssues: [
@@ -376,6 +396,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "just-dance",
     name: "Just Dance",
     aliases: ["just dance"],
+    catalogueTitles: ["just dance 2026 edition", "just dance 2025 edition", "just dance 2024 edition", "just dance"],
     parentNote:
       "Jeu de danse familial, l'un des rares titres joués physiquement à plusieurs.",
     familyIssues: [
@@ -388,6 +409,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "mario-party",
     name: "Mario Party",
     aliases: ["mario party"],
+    catalogueTitles: ["super mario party jamboree", "mario party superstars", "super mario party"],
     parentNote:
       "Jeu de plateau festif Nintendo, classique des soirées en famille.",
     familyIssues: [
@@ -400,6 +422,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "super-mario",
     name: "Super Mario",
     aliases: ["super mario"],
+    catalogueTitles: ["super mario bros. wonder", "super mario odyssey", "super mario 3d world + bowser's fury"],
     parentNote:
       "La série de plateforme la plus universelle, référence pour situer les autres jeux.",
     familyIssues: [
@@ -424,6 +447,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "assassins-creed",
     name: "Assassin's Creed",
     aliases: ["assassin's creed", "assassins creed"],
+    catalogueTitles: ["assassin's creed shadows", "assassin's creed mirage", "assassin's creed valhalla", "assassin's creed"],
     parentNote:
       "Série d'action historique dont les épisodes ne partagent pas tous la même classification.",
     familyIssues: [
@@ -436,6 +460,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "red-dead-redemption",
     name: "Red Dead Redemption",
     aliases: ["red dead redemption"],
+    catalogueTitles: ["red dead redemption 2", "red dead redemption"],
     parentNote:
       "Western en monde ouvert du même éditeur que GTA, classé pour adultes.",
     familyIssues: [
@@ -448,6 +473,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "the-last-of-us",
     name: "The Last of Us",
     aliases: ["the last of us"],
+    catalogueTitles: ["the last of us part i", "the last of us remastered", "the last of us"],
     parentNote:
       "Récit post-apocalyptique très commenté depuis la série, réclamé par des adolescents.",
     familyIssues: [
@@ -484,6 +510,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "lego",
     name: "Jeux LEGO",
     aliases: ["lego"],
+    catalogueTitles: ["lego star wars: the skywalker saga", "lego harry potter collection", "lego marvel super heroes"],
     parentNote:
       "Adaptations LEGO des grandes licences, valeur sûre du jeu à deux parent-enfant.",
     familyIssues: [
@@ -496,6 +523,7 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "crash-bandicoot",
     name: "Crash Bandicoot",
     aliases: ["crash bandicoot"],
+    catalogueTitles: ["crash bandicoot n. sane trilogy", "crash bandicoot 4: it's about time", "crash bandicoot"],
     parentNote:
       "Plateforme d'action rétro revenue en remaster, souvent découverte par les parents eux-mêmes.",
     familyIssues: [

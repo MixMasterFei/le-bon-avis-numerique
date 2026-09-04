@@ -306,8 +306,10 @@ export default function ConfidentialitePage() {
                 (session, securite). Pas de consentement requis.
               </li>
               <li>
-                <strong>Cookies analytiques :</strong> Pour comprendre l&apos;utilisation
-                du site. Soumis a votre consentement.
+                <strong>Mesure d’audience et de performance :</strong> Plausible,
+                Vercel Analytics et Vercel Speed Insights mesurent l’utilisation
+                et les performances du site, uniquement avec votre accord.
+                Ces outils fonctionnent sans cookies publicitaires.
               </li>
             </ul>
             <p>
