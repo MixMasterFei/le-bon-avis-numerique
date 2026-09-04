@@ -1,76 +1,81 @@
 ---
-title: "IA générative : ce qu'il faut se dire en famille avant de laisser un ado l'utiliser seul"
+title: "IA et ados : de quoi parler au-delà des devoirs"
 slug: "ia-generative-enfants-conversations"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "parentalite-numerique"
-excerpt: "Avant de laisser un ado utiliser seul une IA générative, mieux vaut avoir parlé de vérité, de données personnelles, d'images truquées et de devoirs."
-seoTitle: "IA générative et enfants : en parler avant de laisser faire"
-seoDescription: "IA générative et enfants : ce qu'il faut se dire en famille avant de laisser un ado utiliser ces outils seul, sans tout interdire ni tout autoriser."
+excerpt: "Une IA peut aider à écrire ou expliquer. Elle peut aussi se tromper, recevoir trop d'informations privées ou devenir un confident envahissant. Six conversations pour poser les limites."
+seoTitle: "IA et adolescents : six conversations à avoir ensemble"
+seoDescription: "Informations privées, erreurs, images truquées, confiance : six conversations concrètes pour accompagner un adolescent qui utilise une IA générative."
 internalLinks:
-  - "/guides"
-  - "/objectif"
+  - "/blog/chatgpt-devoirs-parents"
 sourceLinks:
-  - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
-  - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
-  - "https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647"
-  - "https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028"
+  - "https://openai.com/policies/eu-terms-of-use/"
+  - "https://e-enfance.org/besoin-daide/"
+  - "https://openai.com/index/introducing-parental-controls/"
 ---
 
-# IA générative : ce qu'il faut se dire en famille avant de laisser un ado l'utiliser seul
+# IA et ados : de quoi parler au-delà des devoirs
 
-L'IA générative est déjà entrée dans la vie des ados, souvent avant que les parents s'en aperçoivent. Elle rédige un brouillon, résume un chapitre, corrige une dictée, traduit, invente une image, explique une notion de maths à 22 h quand personne d'autre n'est disponible. Pour certains adultes, ça ressemble à une machine à tricher. Pour d'autres, à un outil de travail formidable. Pour un enfant, c'est surtout quelque chose de gratuit, rapide, et bluffant de confiance.
+Votre ado vous montre une image fabriquée avec une IA. Vous trouvez le résultat amusant. Puis il vous raconte qu'il utilise aussi le même service pour préparer un message à un ami, demander conseil ou raconter une mauvaise journée.
 
-La tentation, comme souvent avec le numérique, c'est de basculer dans un des deux camps : tout interdire ou tout laisser faire. Aucun des deux ne tient longtemps. Interdire pousse l'usage dans la clandestinité, où il n'y a plus aucun garde-fou. Laisser faire revient à confier un outil puissant à quelqu'un qui n'a pas encore les réflexes pour s'en méfier. Entre les deux, il y a un terrain plus utile : avoir parlé de quelques choses avant, pour que l'enfant ne soit pas seul quand l'outil se trompe.
+La discussion ne se limite plus aux devoirs. Il faut pouvoir parler de ce qu'on confie à l'outil, de la confiance qu'on lui accorde et du moment où l'on ferme la conversation. Voici six points à aborder, sans organiser une conférence familiale.
 
-Voici ce qui nous semble valoir la peine d'être abordé. Pas comme un grand discours en une fois, plutôt comme des remarques glissées au fil des semaines, idéalement devant l'écran, avec l'outil ouvert.
+## 1. « Qu'est-ce que tu fais avec cet outil ? »
 
-## Une IA ne sait pas : elle fabrique une réponse plausible
+Commencez par lui demander de vous montrer un usage qu'il accepte de partager. Une idée de dessin, un exercice inventé, un texte à reformuler : le concret vous dira davantage qu'un débat général sur l'IA.
 
-C'est probablement le point le plus important, et le plus contre-intuitif. Un outil d'IA répond avec le même aplomb qu'il dise vrai ou qu'il dise n'importe quoi. Il peut inventer une citation, attribuer un livre au mauvais auteur, mélanger deux dates, ou produire une explication parfaitement structurée et parfaitement fausse. Le problème, pour un ado, c'est qu'une réponse bien tournée a l'air d'une réponse juste.
+Vérifiez ensuite les conditions du service. Les règles ne sont pas identiques partout. Pour ChatGPT, les [conditions européennes](https://openai.com/policies/eu-terms-of-use/) fixent un minimum de 13 ans, ou l'âge minimum applicable dans le pays, et demandent l'autorisation parentale avant 18 ans. Un compte adulte prêté à un enfant n'est pas une façon de contourner ces conditions.
 
-Le mieux est de le montrer plutôt que de le dire. Posez ensemble une question dont vous connaissez déjà la réponse, et regardez si l'outil tient la route. Ou demandez-lui une source précise, puis vérifiez si elle existe vraiment. Il arrive qu'elle soit pure invention, avec un titre et un numéro de page crédibles. L'idée n'est pas de ridiculiser l'outil, mais de faire passer un réflexe simple : une réponse, même fluide, se vérifie ailleurs avant d'être recopiée ou citée.
+Pour les questions scolaires, notre guide [ChatGPT et devoirs](/blog/chatgpt-devoirs-parents) entre dans le détail. Les règles scolaires s'ajoutent à celles du service. Être autorisé à utiliser un outil à la maison ne signifie pas qu'on peut s'en servir pour chaque devoir.
 
-## Ce qu'on tape dans une IA peut nous échapper
+Vous pouvez demander : « Dans ce que tu me montres, quelle partie vient de toi et quelle partie vient de l'outil ? » L'objectif est de comprendre, pas de lui faire défendre chaque clic.
 
-La deuxième chose touche aux données. Les ados ont vite fait de coller dans une conversation tout ce qui leur passe sous la main : un message reçu d'un ami, une photo de classe, un document scolaire, un souci personnel un peu intime. Ils ne réalisent pas toujours que ce que l'on saisit dans un outil d'IA grand public peut être traité et conservé selon les règles du service, qui varient d'une application et d'un compte à l'autre.
+## 2. « Qu'est-ce qu'on garde pour soi ? »
 
-La règle de base se dit en une phrase : pas d'information personnelle qui n'a rien à faire là. Pas de nom complet, d'adresse, de numéro, d'établissement, de photo d'un camarade, de secret de famille. La CNIL a d'ailleurs fait des mineurs et de l'IA deux de ses priorités affichées dans son plan stratégique 2025-2028, en insistant sur le dialogue avec les enfants, les parents et les enseignants. À la maison, ça se traduit beaucoup plus simplement : ce que tu ne donnerais pas à un inconnu dans la rue, ne le donne pas non plus à une IA.
+Un exercice tapé à la main et la photographie d'un document scolaire complet n'exposent pas les mêmes informations. Sur une photo, on peut retrouver un nom, un établissement, une adresse ou les remarques d'un enseignant.
 
-## Se faire aider, ce n'est pas se faire remplacer
+Posez une règle familiale concrète : **pas de mot de passe, de document d'identité, d'information médicale ni de conversation privée d'une autre personne dans un outil d'IA.** Pour demander une aide sur un texte, retirez les noms et les détails qui ne servent pas à la question.
 
-Vient ensuite la question des devoirs, celle qui inquiète le plus de parents. La règle tient en une phrase : l'IA peut expliquer, faire réviser, interroger, mais elle ne rend pas le travail à la place de l'enfant. Le meilleur test, utilisé aussi par beaucoup d'enseignants, c'est de pouvoir expliquer avec ses mots ce qu'on vient de rendre. L'Éducation nationale a d'ailleurs posé un cadre clair : l'usage pédagogique des IA génératives par les élèves, accompagné par un enseignant, est autorisé à partir de la 4e, et se faire faire un devoir par une IA sans autorisation ni travail personnel d'appropriation est considéré comme une fraude.
+« Reformule ce message où je demande à un ami de me rendre un livre » suffit. Le nom de l'ami, son numéro et la capture de toute votre conversation n'aident pas à formuler la demande.
 
-## Une image générée peut mentir très bien
+S'il a déjà transmis une information privée, commencez par regarder calmement ce qui a été envoyé et à quel service. Consultez les options de suppression et l'aide officielle. Si un mot de passe a été partagé, changez-le sur le compte concerné. Effacer une conversation n'est pas une raison pour considérer automatiquement que toute trace a disparu.
 
-L'IA ne produit pas que du texte. Elle fabrique aussi des images, des voix, des vidéos, des montages, et avec un réalisme qui progresse vite. C'est fascinant pour un ado, et c'est précisément là que se concentrent les dérives : photo truquée d'un camarade, fausse capture pour humilier quelqu'un, voix imitée, contenu sexualisé. Le fameux « c'était pour rire » ne change rien aux dégâts quand l'image circule.
+## 3. « Comment vérifier une réponse bien écrite ? »
 
-Le message à faire passer est concret : fabriquer ou diffuser l'image de quelqu'un sans son accord peut causer un tort réel, durable, et parfois relever de la loi. Avant de créer ou de partager, une seule question suffit la plupart du temps. Est-ce que la personne concernée serait d'accord pour que cette image existe et tourne ? Si la réponse est non, ça s'arrête là.
+Proposez une petite vérification sur un sujet sans enjeu : la date de sortie d'un film, le nom d'un réalisateur ou une règle d'un jeu que vous connaissez.
 
-Dans la même veine, il vaut la peine de rappeler qu'une IA n'est jamais neutre. Elle a appris sur des contenus humains, donc elle en répète aussi les travers : clichés sur les métiers, sur les genres, sur certaines cultures. Pas besoin d'un cours sur le sujet. Demandez-lui de décrire « un scientifique », « une infirmière », « un gamer », et observez ensemble quels portraits par défaut elle propose. Ça suffit à montrer qu'une réponse d'IA n'est pas une vérité tombée du ciel.
+Comparez la réponse à une source identifiable. Si l'outil cite une page, ouvrez-la : existe-t-elle et dit-elle réellement ce qui est affirmé ? S'il n'y a pas de source, cherchez-en une ailleurs.
 
-## Ton style, et ce que tu publies, restent à toi
+Le but n'est pas de piéger l'IA à tout prix. Une réponse correcte permet aussi de s'exercer. Votre ado doit surtout pouvoir distinguer **une réponse convaincante** et **une information vérifiée**.
 
-Deux points reviennent souvent et se rejoignent. D'abord le style. Beaucoup d'ados passent leurs textes à la moulinette de l'IA pour les « rendre plus propres ». À petite dose, corriger l'orthographe ou repérer une lourdeur, c'est très bien. À forte dose, tout finit lissé, interchangeable, et la voix de l'élève s'efface, alors qu'elle fait partie de ce qu'il est en train d'apprendre. Une consigne raisonnable ressemble à : aide-moi à améliorer ce texte en gardant ma façon d'écrire. À l'enfant ensuite de garder ou d'écarter ce qu'on lui propose.
+Pour une question de santé, de sécurité ou une décision importante, un échange avec un professionnel ou un adulte compétent reste nécessaire. Une tournure rassurante n'est pas une preuve.
 
-Ensuite la responsabilité, qui est sans doute le mot de la fin. « C'est l'IA qui l'a fait » n'est pas une excuse. Dès qu'un ado publie, partage, rend ou envoie quelque chose, il en porte une part. Que ce soit un devoir, une image, une blague ou un commentaire, l'outil n'est que l'outil ; celui qui clique sur « envoyer » reste celui qui décide. Dit ainsi, ça peut sembler sévère, mais c'est surtout une invitation à ralentir une seconde avant de diffuser.
+## 4. « Peut-on fabriquer une image de quelqu'un pour rire ? »
 
-## Donner un cadre sans fermer la porte
+Prenez un exemple sans créer l'image : un élève met le visage d'un camarade sur une affiche humiliante, puis l'envoie au groupe de classe.
 
-Inutile de transformer tout cela en règlement intérieur affiché sur le frigo. Quelques repères tenus dans la durée valent mieux qu'une longue charte que personne ne relit. Au début, on accompagne : on s'installe à côté, on regarde ce que l'ado en fait, on commente. Les données personnelles, elles, ne se négocient pas. Pour l'école, on demande que l'enfant puisse toujours dire en quoi l'IA l'a aidé. Et les informations qui comptent se recoupent ailleurs avant d'être tenues pour vraies.
+Demandez ce qui se passe pour le camarade. Sait-il qui recevra l'image ? Peut-il faire cesser sa circulation ? Le fait que le montage soit faux change-t-il l'humiliation ressentie ?
 
-Ce cadre se desserre avec l'âge. Un collégien et un lycéen n'ont pas la même autonomie, c'est normal. Mais même un grand ado a besoin de repères, en particulier sur les images, les sources et ce qu'il accepte de confier à un service en ligne. L'autonomie se gagne par étapes, pas d'un coup.
+Votre règle peut tenir en une phrase : **on ne fabrique ni ne partage d'image humiliante, intime ou trompeuse d'une personne.** Le fait de disposer de sa photo ne donne pas carte blanche.
 
-## Un sujet de culture générale, pas une affaire d'experts
+Si votre ado reçoit ce type de contenu, demandez-lui de ne pas le relayer. S'il en est la cible, aidez-le à obtenir du soutien et à signaler les faits. Le [3018, proposé par e-Enfance](https://e-enfance.org/besoin-daide/), accompagne les jeunes et les familles confrontés aux violences numériques. Il n'a pas à régler cela seul.
 
-L'école avance, elle aussi. Le ministère de l'Éducation nationale déploie le parcours Pix IA, expérimenté depuis 2025 puis généralisé à partir de 2026 pour certains niveaux (4e, 2nde et première année de CAP), avec une mise en œuvre qui s'étale sur les années scolaires 2025-2026 et 2026-2027. Cela dit quelque chose d'utile aux parents : l'IA n'est pas un sujet réservé aux passionnés de technologie, c'est devenu une compétence numérique de base, au même titre que reconnaître une publicité ou protéger un mot de passe.
+## 5. « Quand l'outil devient un confident »
 
-Chez Totem Avisé, notre [mission](/objectif) est d'aider les familles à comprendre les contenus et les outils qui traversent le quotidien des enfants. L'IA générative en fait partie, au même rang que les algorithmes de recommandation ou les réseaux sociaux : apprendre à se servir d'un outil sans lui abandonner son propre jugement. Nos [guides parents](/guides) sont là pour creuser chaque sujet sans prérequis technique.
+Une IA disponible à toute heure peut sembler plus facile à aborder qu'un parent. Votre ado peut poser une question embarrassante ou essayer de mettre ses émotions en mots. Vous pouvez entendre ce besoin sans lui faire honte.
 
-La meilleure manière d'aborder tout ça reste de partir d'exemples. Demandez à l'IA de résumer un texte, puis cherchez ensemble ce qu'elle a oublié. Faites-lui inventer une image, puis discutez de ce qui sonne faux. Posez-lui une question sur un domaine que votre ado maîtrise bien, et laissez-le repérer les approximations. Trois petites expériences faites côte à côte rendent l'outil moins magique, et bien plus facile à manier seul ensuite. C'est largement plus efficace qu'une interdiction que personne ne tiendra.
+Expliquez aussi la limite : le service produit des réponses, mais n'est ni un ami qui le connaît dans la vie, ni un soignant. Une réponse qui paraît attentive peut être inadaptée à ce qu'il traverse.
 
-## Pour aller plus loin
+Demandez-lui vers qui il pourrait se tourner si une conversation l'inquiétait ou lui donnait envie de s'isoler. Ce peut être vous, un autre proche, l'infirmier scolaire ou un professionnel. Prévoyez plusieurs personnes possibles : votre enfant n'a pas à vous choisir comme confident pour avoir le droit d'être aidé.
 
-- [Création du comité d'anticipation en éducation et déploiement du parcours Pix IA (Éducation nationale)](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899)
-- [Les intelligences artificielles et leurs usages en éducation (Éduscol)](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education)
-- [Cadre d'usage de l'IA en éducation (Éducation nationale)](https://www.education.gouv.fr/cadre-d-usage-de-l-ia-en-education-450647)
-- [IA, mineurs, cybersécurité, quotidien numérique : la CNIL publie son plan stratégique 2025-2028 (CNIL)](https://www.cnil.fr/fr/ia-mineurs-cybersecurite-quotidien-numerique-la-cnil-publie-son-plan-strategique-2025-2028)
+S'il exprime une détresse, prenez-la au sérieux. Ne réduisez pas la discussion à une dispute sur le téléphone.
+
+## 6. « Quelles limites pose-t-on pour les prochaines semaines ? »
+
+Choisissez quelques engagements observables : les usages autorisés, les informations qu'on ne transmet pas, le moment où l'on s'arrête et la personne à prévenir en cas de problème.
+
+Pour ChatGPT, les [contrôles parentaux décrits par OpenAI](https://openai.com/index/introducing-parental-controls/) permettent de lier les comptes parent et adolescent et d'ajuster certains réglages. Vérifiez les options disponibles au moment de la configuration. Elles complètent la discussion ; elles ne garantissent pas qu'aucune réponse problématique n'apparaîtra.
+
+Fixez un moment pour refaire le point après quelques utilisations. Trois questions peuvent suffire : « Qu'est-ce qui t'a aidé ? Qu'est-ce qui t'a semblé faux ou bizarre ? Qu'est-ce que tu préfères faire sans ? »
+
+Laissez aussi une porte ouverte entre ces échanges : **« Si quelque chose te met mal à l'aise, tu peux me le montrer. On commencera par s'en occuper. »**

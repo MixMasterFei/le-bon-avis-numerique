@@ -162,7 +162,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     dateModified: post._updatedAt || post.publishedAt,
     inLanguage: "fr-FR",
     articleSection,
-    author: { "@type": "Person", name: post.author },
+    author: {
+      "@type": post.author === "Totem Avisé" ? "Organization" : "Person",
+      name: post.author,
+    },
     publisher: {
       "@type": "Organization",
       name: "Totem Avisé",
@@ -292,8 +295,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             {post.author}
           </div>
           <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--color-ink2)" }}>
-            Article rédigé à partir de sources officielles (Éducation nationale,
-            CNIL, e-Enfance, santé publique), selon{" "}
+            Les sources utilisées sont liées dans l’article. Pour comprendre les
+            repères présentés sur Totem Avisé, consultez{" "}
             <Link href="/notre-methode" className="underline" style={{ color: "var(--color-accent)" }}>
               notre méthode
             </Link>

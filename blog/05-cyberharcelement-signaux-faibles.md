@@ -1,111 +1,97 @@
 ---
-title: "Cyberharcèlement : les signaux faibles que les parents repèrent souvent trop tard"
+title: "Cyberharcèlement : que faire quand son enfant est visé ?"
 slug: "cyberharcelement-signaux-faibles"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "parentalite-numerique"
-excerpt: "Le cyberharcèlement ne commence pas toujours par une alerte évidente. Voici les signaux faibles, les bons réflexes et les ressources à connaître."
-seoTitle: "Cyberharcèlement enfant : signes et réflexes parents"
-seoDescription: "Cyberharcèlement enfant : signaux faibles, preuves à garder, dialogue à ouvrir et numéro 3018 à connaître."
-internalLinks:
-  - "/guides"
-  - "/objectif"
+excerpt: "Écoutez l'enfant, gardez les éléments utiles et demandez de l'aide. En France, le 3018 accompagne les familles face aux violences numériques."
+seoTitle: "Cyberharcèlement enfant — signes et premiers gestes"
+seoDescription: "Les signes qui méritent une conversation, quoi conserver, un message à adapter pour l'école et les contacts utiles en France, dont le 3018."
+internalLinks: []
 sourceLinks:
-  - "https://www.3018.fr/"
+  - "https://e-enfance.org/besoin-daide/"
   - "https://www.service-public.gouv.fr/particuliers/vosdroits/F32239"
-  - "https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement"
+  - "https://www.gendarmerie.interieur.gouv.fr/gendinfo/actualites/2023/3114-le-numero-national-dedie-a-la-prevention-du-suicide"
+  - "https://www.education.gouv.fr/agir-pour-la-sante-mentale-des-enfants-et-des-jeunes-450198"
 ---
 
-# Cyberharcèlement : les signaux faibles que les parents repèrent souvent trop tard
+# Cyberharcèlement : que faire quand son enfant est visé ?
 
-Le cyberharcèlement ressemble rarement à l'image qu'on s'en fait. On imagine un message de menace explicite, une vidéo humiliante, un enfant en larmes au milieu du salon. Dans les faits, ça commence souvent par presque rien. Un téléphone retourné un peu trop vite quand un parent passe. Un rire qui s'éteint d'un coup. Une notification qui fait sursauter. Un enfant qui traîne le matin pour aller à l'école et qui n'arrive pas à dire pourquoi.
+Votre enfant change d'humeur après un message. Il ne veut plus aller à une activité qu'il aimait. Ou il vous montre enfin ce qui circule dans un groupe depuis plusieurs jours.
 
-Aucun parent ne voit tout, et ce n'est pas un défaut. Une bonne partie de la vie sociale des enfants et des ados se joue dans des espaces fermés : groupes de classe, messageries, stories, commentaires sous une vidéo, parties de jeu en ligne. Les adultes arrivent presque toujours après coup. L'idée n'est donc pas de surveiller chaque écran, mais de savoir reconnaître les petits signes qui méritent qu'on ouvre une porte.
+Vous n'avez pas besoin d'avoir tout compris pour commencer à l'aider. Écoutez ce qu'il raconte, dites-lui que vous prenez la situation au sérieux et cherchez avec lui le prochain adulte à contacter.
 
-## Pourquoi c'est si difficile à voir venir
+En France, le **3018** accompagne les jeunes et les familles face au harcèlement et aux violences numériques. Le service est gratuit, anonyme et confidentiel, tous les jours de 9 h à 23 h, par téléphone et via son application. Vous pouvez appeler avec un doute, sans attendre de savoir qualifier juridiquement les faits. [Contacter le 3018](https://e-enfance.org/besoin-daide/).
 
-Le harcèlement entre enfants existait bien avant le smartphone. Le numérique ne l'a pas inventé, il en a changé la mécanique. Avant, la cour de récréation s'arrêtait à 16 h 30. Maintenant, ça continue le soir, le week-end, pendant les vacances. Des témoins invisibles assistent à la scène sans qu'on sache qui. Les traces peuvent rester des mois ou s'effacer en quelques secondes. Et tout cela peut se passer en plein jour sur un compte public comme au fond d'un groupe privé que personne d'autre ne voit.
+## Les changements qui méritent une conversation
 
-Du côté de l'enfant, plusieurs freins se cumulent. La honte, d'abord : beaucoup pensent qu'ils ont « cherché » ce qui leur arrive. La peur de la sanction, ensuite, car perdre le téléphone, c'est aussi perdre le lien avec ses amis. La crainte d'envenimer les choses si un adulte débarque. Il arrive même qu'un enfant protège ceux qui le harcèlent, simplement parce qu'ils font partie de sa bande.
+Un écran refermé à votre arrivée ne prouve rien. Un adolescent a aussi besoin d'intimité. Ce qui mérite votre attention, c'est un changement qui dure, plusieurs signes qui se cumulent ou une réaction liée à certains échanges.
 
-C'est pour ça que la toute première réaction parentale pèse si lourd. Si parler revient à se faire confisquer son téléphone, l'enfant apprend à se taire. Si parler veut dire être cru, aidé, accompagné, il a beaucoup plus de chances de revenir vous voir une deuxième fois.
+L'enfant peut éviter un groupe, une activité ou une personne sans réussir à expliquer pourquoi. Il peut devenir très inquiet à chaque notification, vérifier son téléphone pendant la nuit, vouloir supprimer ses photos ou demander brusquement à changer d'établissement.
 
-## Les signaux faibles à prendre au sérieux
+Des troubles du sommeil, une fatigue inhabituelle, des maux de ventre ou un retrait peuvent avoir de nombreuses causes. Ils justifient de prendre des nouvelles et, s'ils persistent, de demander un avis médical. Ne cherchez pas à établir seul un diagnostic à partir d'une liste.
 
-Aucun de ces signes ne prouve, à lui seul, un cyberharcèlement. Un ado peut être de mauvaise humeur pour mille raisons, et un enfant qui cache son écran regarde peut-être juste une vidéo idiote. C'est l'accumulation qui doit attirer l'œil, pas l'indice isolé.
+Commencez par ce que vous avez observé : « Depuis quelques jours, tu sembles inquiet quand ce groupe t'écrit. Est-ce qu'il se passe quelque chose ? » Puis laissez du temps pour répondre.
 
-**Un rapport au téléphone qui se tend.** L'enfant qui ne lâchait plus son écran s'en désintéresse soudain. Ou, à l'inverse, il ne peut plus s'en détacher, guette chaque notification, dort moins, vérifie un groupe en boucle, devient anxieux dès que la batterie faiblit. Ce qui compte n'est pas le temps passé, c'est la tension qui entoure l'objet.
+## Quand l'enfant commence à raconter
 
-**Une humeur qui bascule après un message.** Tout allait bien il y a une minute, puis une notification arrive et l'enfant se ferme, s'énerve, quitte la pièce, devient agressif ou étrangement silencieux. La bonne entrée en matière n'est pas « Montre-moi ton téléphone », mais quelque chose comme : « J'ai l'impression que ce message t'a touché. Tu veux qu'on en parle maintenant, ou plus tard ? »
+Choisissez un endroit où vous pouvez l'écouter. Évitez de répondre immédiatement à sa place ou de contacter les autres parents dans la colère.
 
-**Un retrait social qui apparaît sans raison claire.** Il ne veut plus aller à une activité qu'il adorait. Il cesse de parler de certains copains. Il réclame de changer de place en classe, de groupe, de trajet. Il décline un anniversaire sans explication. Le harcèlement en ligne et celui de la vie réelle se chevauchent très souvent.
+Quelques phrases peuvent aider :
 
-**Une gêne nouvelle vis-à-vis de son image.** Il refuse d'être pris en photo, veut effacer d'anciennes images, demande si telle story a été vue, s'inquiète d'un montage, d'un surnom, d'une capture qui circulerait. Cela peut trahir une moquerie, une rumeur ou une photo qui passe de main en main.
+- « Merci de m'en avoir parlé. »
+- « Ce qu'on te fait subir n'est pas de ta faute. »
+- « Tu peux me montrer ce que tu veux, on regardera ensemble. »
+- « Je vais t'expliquer les démarches que je propose. »
 
-À cela s'ajoutent parfois des signes physiques : maux de ventre, fatigue, réveils nocturnes, perte d'appétit, difficulté à se concentrer. Ils ne désignent pas spécifiquement le cyberharcèlement, mais ils accompagnent souvent un stress social qui s'installe.
+Ne promettez pas de ne rien dire à personne. Vous aurez peut-être besoin de l'école, d'un professionnel ou des autorités pour le protéger. Vous pouvez en revanche lui expliquer qui sera contacté et pourquoi.
 
-## Des phrases qui ouvrent plutôt qu'un interrogatoire
+S'il a lui-même répondu, insulté quelqu'un ou envoyé une image qu'il regrette, cela ne retire rien à son droit d'être aidé. Vous pourrez reparler de ses actes une fois la situation prise en charge.
 
-Quand on s'inquiète, on veut comprendre, et vite. C'est humain. Le problème, c'est qu'une rafale de questions pousse souvent l'enfant à se refermer. Mieux vaut commencer par le rassurer.
+## Conserver les éléments sans les faire circuler
 
-« Tu ne seras pas puni parce que tu me racontes quelque chose. »
-« Je ne vais pas te confisquer ton téléphone sans comprendre ce qui se passe. »
-« Si quelqu'un te fait du mal en ligne, le problème, ce n'est pas toi. »
-« On peut regarder ensemble, ou tu me racontes, comme tu préfères. »
-« On va y aller par étapes, rien ne presse. »
+Avant de supprimer des messages ou de fermer un compte, gardez les renseignements utiles : dates, pseudonymes, adresses des contenus, nom du groupe, captures des échanges. Conservez le contexte, pas seulement une phrase isolée. [Service-Public détaille les preuves et les démarches possibles](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239).
 
-Ces phrases ne règlent rien à elles seules. Mais elles déplacent le cadre. Elles disent, en substance : je suis de ton côté, pas en face de toi.
+Vous pouvez tenir une note courte :
 
-## Si l'enfant se confie
+- Date et plateforme.
+- Ce qui a été publié ou envoyé.
+- Compte ou groupe concerné.
+- Conséquence observée ou racontée par l'enfant.
+- Démarche déjà faite et réponse reçue.
 
-**À faire maintenant, dans l'ordre :**
+Évitez de transférer les contenus humiliants dans un groupe de parents. Cela peut prolonger leur diffusion. Si des images intimes d'un mineur sont en cause, ne les repartagez pas ; demandez au 3018 ou aux forces de l'ordre comment procéder.
 
-- Écouter et croire l'enfant, sans paniquer devant lui.
-- Conserver les preuves : captures d'écran datées, pseudos, liens, noms de groupes.
-- Ne pas répondre à chaud, et ne pas confronter directement le ou les auteurs présumés.
-- Contacter l'établissement scolaire et, si besoin, le 3018 (gratuit, tous les jours de 9 h à 23 h).
+Bloquer un compte et signaler un contenu peuvent limiter les contacts. Ces démarches ne remplacent pas l'aide nécessaire si la situation continue.
 
-Le premier réflexe, c'est de respirer. Même si ce que vous entendez vous choque. Même si vous avez envie d'appeler la terre entière dans la seconde. L'enfant scrute votre visage, et s'il vous voit paniquer, il peut regretter d'avoir parlé.
+## Écrire à l'établissement scolaire
 
-Vient ensuite la question des preuves. Gardez tout ce que vous pouvez : captures d'écran, pseudos, dates et heures, liens, noms de groupes, messages vocaux. Ne répondez surtout pas à chaud, sous le coup de la colère, et n'effacez rien trop vite. Ces éléments serviront peut-être à l'établissement scolaire, à une plateforme ou à un signalement officiel.
+Si des élèves sont impliqués, informez l'établissement, même si les échanges ont lieu hors des cours. Décrivez les faits connus, sans présenter une supposition comme une certitude.
 
-Bloquez et signalez quand c'est utile. La plupart des réseaux disposent d'outils de signalement, souvent enfouis dans les menus. Le 3018, dont nous reparlons plus bas, sait guider les familles dans ces démarches et obtenir, dans certains cas, le retrait rapide de contenus.
+Voici un message à adapter :
 
-Enfin, si des camarades sont impliqués, contactez l'établissement. Même quand les messages tombent à 22 h, le conflit appartient le plus souvent à la vie scolaire, et l'école a désormais des obligations en la matière.
+« Bonjour, mon enfant m'a signalé des messages et publications qui le visent sur [plateforme ou groupe]. Les faits dont j'ai connaissance datent de [dates]. J'ai conservé les éléments disponibles. Il m'indique que cela affecte [son sommeil, sa venue en classe, ses relations…]. Je souhaite un échange rapide pour convenir des mesures de protection et du suivi. Pouvez-vous me préciser à qui transmettre ces éléments et quand nous pourrons faire le point ? »
 
-## Le 3018, à connaître avant d'en avoir besoin
+Utilisez le canal officiel de l'établissement pour les informations personnelles. Gardez une copie du message et demandez un interlocuteur identifié ainsi qu'une date de suivi.
 
-En France, le 3018 est le numéro national gratuit, anonyme et confidentiel pour les jeunes victimes de violences numériques. Porté par l'association e-Enfance, il est joignable 7 jours sur 7, de 9 h à 23 h, par téléphone, par tchat et via une application. L'équipe réunit des juristes, des psychologues et des spécialistes du numérique.
+Le 3018 peut vous accompagner dans ces démarches. Un signalement ou une plainte reste également possible auprès des forces de l'ordre ; l'accord de l'auteur présumé n'est pas nécessaire pour demander de l'aide.
 
-Concrètement, le 3018 accompagne aussi bien les jeunes que les parents et les professionnels. Il conseille sur les démarches, aide à conserver les preuves et dispose de procédures accélérées pour faire retirer en quelques heures des comptes ou des contenus nuisibles, auprès des principales plateformes et messageries. Depuis le 1er janvier 2024, c'est aussi le point d'entrée unique pour signaler une situation de harcèlement entre élèves.
+## En cas de danger immédiat
 
-Inutile d'attendre que la situation soit « assez grave » pour s'y intéresser. Un simple appel, ou un coup d'œil aux ressources de l'application, peut déjà clarifier les prochaines étapes. Vous pouvez d'ailleurs présenter ce numéro à votre enfant en amont, sans dramatiser : « Si un jour quelque chose se passe en ligne et que tu n'oses pas m'en parler tout de suite, il existe aussi des adultes formés pour aider. »
+Si votre enfant parle de se faire du mal, prenez ses propos au sérieux. En France, le **3114**, numéro national de prévention du suicide, répond aussi à l'entourage, gratuitement, 24 h sur 24 et 7 jours sur 7. En cas d'urgence vitale ou de passage à l'acte imminent, appelez le **15**. [Repères et contacts](https://www.gendarmerie.interieur.gouv.fr/gendinfo/actualites/2023/3114-le-numero-national-dedie-a-la-prevention-du-suicide), [conduite en situation de crise](https://www.education.gouv.fr/agir-pour-la-sante-mentale-des-enfants-et-des-jeunes-450198).
 
-## Prévenir sans mettre l'enfant sous cloche
+Ces numéros concernent la France. Ailleurs, contactez les services locaux d'urgence et d'aide aux jeunes.
 
-Répéter « internet, c'est dangereux » ne sert pas à grand-chose. Les enfants captent très vite la peur des adultes, puis la rangent dans un coin. La prévention qui marche est nettement plus concrète et plus pratique.
+## Après le premier signalement
 
-Montrez-lui comment faire une capture d'écran, comment bloquer un compte, comment régler ses paramètres de confidentialité. Explorez ces réglages ensemble plutôt que de les imposer. Expliquez aussi qu'une vanne de groupe peut devenir de la violence dès qu'elle vise toujours la même personne, et parlez du rôle des témoins : liker, partager ou simplement rester dans un groupe qui humilie quelqu'un, ce n'est jamais neutre.
+Revenez vers l'enfant. Demandez si les messages ont cessé, si un autre compte a pris le relais et comment se passent les moments à l'école. Le retrait d'un contenu n'efface pas forcément ce qu'il a vécu.
 
-Une règle simple aide beaucoup les plus jeunes : si un message, une image ou une demande doit absolument rester secret vis-à-vis des adultes de confiance, c'est déjà, en soi, un signal d'alerte.
+Gardez aussi les activités et les personnes qui lui font du bien. Il ne devrait pas avoir à disparaître de toute vie sociale pour échapper à ceux qui le harcèlent.
 
-La [parentalité numérique](/guides) ne se résume pas à de la surveillance. C'est un apprentissage qui s'étale dans le temps : repérer les situations qui dérapent, oser demander de l'aide, protéger les autres et savoir réparer quand on a soi-même participé à une moquerie.
+Avant même qu'un problème arrive, vous pouvez enregistrer le 3018 ensemble et montrer comment bloquer ou signaler un compte. C'est une conversation utile à avoir un jour ordinaire, quand personne n'est encore inquiet.
 
-## Le lien avec les réseaux et les contenus
+## Sources
 
-Le cyberharcèlement ne naît pas uniquement sur les réseaux sociaux, mais ceux-ci l'amplifient. Groupes de classe, commentaires, stories, jeux en ligne, messageries : tout cela forme un même écosystème, où une moquerie peut rebondir d'une appli à l'autre. C'est pour cette raison que l'ouverture d'un premier compte ou l'arrivée d'un premier smartphone gagne à s'accompagner de discussions sur les limites, l'image de soi, le respect et les recours possibles.
-
-Chez Totem Avisé, notre [mission](/objectif) consiste à aider les familles à choisir et à accompagner les contenus numériques avec un peu plus de repères. Cela vaut pour les films et les jeux, mais aussi pour les conversations autour de ce que les enfants traversent en ligne.
-
-## Garder le lien avant de viser le contrôle parfait
-
-Aucun contrôle parental ne remplacera un enfant capable de dire : « Il se passe quelque chose. » Les outils comptent, les paramètres comptent, les limites comptent. Le lien, lui, compte encore davantage.
-
-L'objectif n'est pas que votre enfant vous raconte tout, aucun ado ne le fera jamais. L'objectif, c'est qu'il sache qu'en cas de problème, il peut revenir vers vous sans être humilié, puni, ni accusé d'avoir été naïf. Le cyberharcèlement fonctionne en isolant sa cible ; le premier geste d'un parent consiste donc à faire exactement l'inverse, en rejoignant l'enfant, en croyant sa détresse, en gardant les preuves et en avançant pas à pas.
-
-Et si un doute sérieux s'installe, n'attendez pas la certitude. Parlez-en, documentez, contactez l'établissement si besoin, et gardez le 3018 à portée de main.
-
-## Pour aller plus loin
-
-- [3018, le numéro national contre les violences numériques (e-Enfance / 3018)](https://www.3018.fr/)
-- [Cyberharcèlement (Service-Public)](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239)
-- [Cyberharcèlement des enfants et adolescents (Ma Sécurité)](https://www.masecurite.interieur.gouv.fr/fr/demarches-en-ligne/plateforme-signalement-cyberharcelement)
+- [3018 — Contacts et accompagnement](https://e-enfance.org/besoin-daide/)
+- [Service-Public — Cyberharcèlement](https://www.service-public.gouv.fr/particuliers/vosdroits/F32239)
+- [Gendarmerie nationale — Le 3114](https://www.gendarmerie.interieur.gouv.fr/gendinfo/actualites/2023/3114-le-numero-national-dedie-a-la-prevention-du-suicide)
+- [Éducation nationale — Santé mentale et situations de crise](https://www.education.gouv.fr/agir-pour-la-sante-mentale-des-enfants-et-des-jeunes-450198)

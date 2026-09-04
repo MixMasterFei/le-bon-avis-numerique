@@ -1,88 +1,96 @@
 ---
-title: "Jeux vidéo en famille : comment reconnaître un jeu qui fait vraiment du bien"
+title: "Trois jeux vidéo à partager en famille, trois façons de jouer"
 slug: "jeux-video-en-famille"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "jeux-video"
-excerpt: "Tous les jeux vidéo ne se valent pas. Coopération, créativité, frustration, achats, jeu en ligne : les critères à regarder avant de dire oui."
-seoTitle: "Jeux vidéo en famille : comment bien choisir"
-seoDescription: "Jeux vidéo en famille : critères simples pour choisir un jeu adapté, coopératif, créatif et vraiment plaisant."
+excerpt: "Vérifiez l'âge, le mode local, les commandes et la place de chacun. Minecraft, Kirby et Overcooked 2 illustrent trois façons très différentes de jouer ensemble."
+seoTitle: "Jeux vidéo en famille — choisir pour jouer ensemble"
+seoDescription: "Minecraft, Kirby, Overcooked 2 : modes de jeu, coopération, difficulté et achats à vérifier pour choisir un jeu familial adapté à vos joueurs."
 internalLinks:
+  - "/media/game:f746214a-3978-473c-9ee0-949fafb0d8be"
   - "/jeux"
-  - "/collections"
-  - "/notre-methode"
-  - "/inscription"
 sourceLinks:
-  - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent"
-  - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
+  - "https://www.minecraft.net/fr-fr/article/parents--guide-minecraft"
+  - "https://www.nintendo.com/fr-fr/Jeux/Jeux-Nintendo-Switch/Kirby-et-le-monde-oublie-2045110.html"
+  - "https://www.team17.com/news/overcooked-2-faq"
+  - "https://pegi.info/fr/page/que-signifient-les-logos"
 ---
 
-# Jeux vidéo en famille : comment reconnaître un jeu qui fait vraiment du bien
+# Trois jeux vidéo à partager en famille, trois façons de jouer
 
-« Tu éteins dans cinq minutes. » La phrase, et la négociation qui suit, sont familières à presque tous les parents. Peu de loisirs cristallisent autant de tensions que le jeu vidéo, sans doute parce qu'on le juge encore en bloc : d'un côté « ça rend accro », de l'autre « c'est un loisir comme un autre ». La réalité est plus intéressante. Un même jeu peut être un moment de coopération, de fous rires, de stratégie ou de coordination, et devenir, quelques jours plus tard, une source de tensions, de frustration, d'achats répétés ou de contacts avec des inconnus.
+Le jeu est présenté comme « familial », les personnages sont souriants, et pourtant la partie tourne court. Un enfant ne comprend pas les commandes, l'autre décide de tout, le parent passe son temps à chercher son personnage.
 
-Ce qui compte, ce n'est donc pas de trancher entre le bon et le mauvais jeu dans l'absolu. C'est de savoir lequel convient à votre enfant, à son âge, et au cadre que vous posez à la maison. Un jeu qui fait du bien n'est pas forcément un jeu éducatif au sens scolaire. C'est souvent un jeu qui respecte l'âge, qui donne envie d'essayer et de recommencer sans exploser, et qui laisse l'enfant capable de passer à autre chose une fois la console éteinte.
+Avant d'acheter, regardez la place que chacun aura manette en main. Combien peut-on être sur le même appareil ? Que fait le deuxième joueur ? Faut-il lire vite, gérer un chronomètre ou déplacer la caméra ? Ces détails comptent pour une soirée en famille.
 
-## Ce qui se passe après la partie
+Les trois exemples suivants permettent de comparer des façons de jouer. Les caractéristiques citées viennent des éditeurs. Le choix final dépend aussi de l'âge, du matériel et de ce que vos enfants aiment faire.
 
-On a tendance à juger un jeu pendant qu'il est allumé. Pourtant, le meilleur indicateur arrive après. Un enfant qui éteint sans crise, qui raconte ce qu'il a fait, qui veut vous montrer une construction ou un niveau réussi, vit autre chose que celui qui ressort irritable, obsédé par la revanche, incapable de venir à table.
+## Construire ensemble dans Minecraft
 
-Un bon jeu peut frustrer, et c'est parfois utile. Mais la frustration doit rester traversable. Si chaque session se termine en explosion, le problème n'est pas forcément l'enfant : c'est peut-être le mauvais mode, le mauvais moment de la journée, ou une durée trop longue. Observer l'humeur d'après en dit souvent plus long qu'un grand débat de principe sur les écrans.
+Le mode Créatif de Minecraft met l'accent sur la construction, avec des ressources disponibles et des possibilités différentes du mode Survie, où la faim et la santé font partie du jeu. Le [guide officiel pour les parents](https://www.minecraft.net/fr-fr/article/parents--guide-minecraft) explique cette distinction.
 
-## Coopération ou compétition : ça change tout
+Un projet simple peut servir de départ : construire une maison avec une pièce imaginée par chacun, ou inventer un parc avec un chemin pour le visiter. Vous avez alors une activité commune à regarder, même si tout le monde n'a pas la même aisance avec les commandes.
 
-Les jeux coopératifs s'intègrent plus facilement à une vie de famille. On avance ensemble, on se répartit les rôles, le plus grand aide le plus jeune, et un parent peut participer sans rien y connaître. Un titre comme *Overcooked*, accessible aux plus jeunes, repose justement sur l'entraide : on échoue et on rit ensemble plutôt que les uns contre les autres. D'autres jeux très coopératifs, comme *It Takes Two*, s'adressent à des joueurs plus grands. Là encore, mieux vaut vérifier l'âge conseillé et les thèmes abordés avant de se lancer : un bon jeu de coopération n'est pas forcément adapté à tous les âges.
+**À vérifier avant :** l'édition du jeu, la plateforme, les appareils nécessaires et la façon de rejoindre le même monde. Les possibilités de jeu à plusieurs ne sont pas identiques partout. Un monde privé entre proches est également différent d'un serveur public.
 
-Les jeux compétitifs ne sont pas à bannir pour autant. Ils apprennent à perdre, à se concentrer, à progresser. Mais ils demandent un peu plus de maturité : certains enfants vivent très mal la défaite, d'autres deviennent durs avec eux-mêmes ou avec leurs frères et sœurs. Avant de choisir, le bon réflexe est de regarder si le jeu se joue ensemble ou les uns contre les autres, si un adulte peut rejoindre une partie sans s'entraîner pendant des heures, et si la difficulté s'ajuste pour qu'un joueur plus fort n'écrase pas systématiquement les autres. Un jeu vraiment familial, c'est un jeu où plusieurs âges cohabitent sans que l'un s'ennuie pendant que l'autre subit.
+**La question qui départage :** votre enfant aime-t-il inventer ce qu'il veut faire, ou préfère-t-il une mission donnée par le jeu ? Un espace très ouvert peut plaire à l'un et laisser l'autre sans idée.
 
-## Quand le « gratuit » n'est pas vraiment gratuit
+Convenez d'une fin, par exemple la visite de la construction suivie d'une sauvegarde. Il restera toujours une fenêtre à ajouter.
 
-Un jeu téléchargé sans frais n'est pas forcément un jeu simple. Beaucoup contiennent des achats intégrés, des récompenses quotidiennes, des passes de saison, des monnaies virtuelles ou des coffres à ouvrir. Pour un enfant, la frontière entre « jouer » et « payer pour avancer » n'a rien d'évident. Les petites sommes, les skins et les offres à durée limitée créent une pression réelle, et on peut très bien aimer un jeu tout en refusant son modèle économique.
+## Partir à deux dans Kirby et le monde oublié
 
-Avant d'installer, regardez s'il y a des achats dans l'application, si on peut les bloquer techniquement, et si l'enfant peut progresser sans dépenser. Une règle simple aide beaucoup : aucun achat sans validation d'un adulte, même avec de l'argent de poche. Pas pour contrôler chaque plaisir, mais pour faire comprendre que le numérique est aussi un espace commercial.
+La version Nintendo Switch de Kirby et le monde oublié permet de jouer à deux en local : l'un contrôle Kirby, l'autre Bandana Waddle Dee. Nintendo propose aussi un mode Brise de printemps, conçu pour être plus accessible. [Présentation officielle](https://www.nintendo.com/fr-fr/Jeux/Jeux-Nintendo-Switch/Kirby-et-le-monde-oublie-2045110.html).
 
-## Le jeu en ligne, une vraie étape d'autonomie
+Cette formule donne un objectif commun, mais les rôles sont différents. Avant de décider qui joue quoi, regardez ce que chacun peut faire. Si les deux enfants veulent toujours Kirby, prévoyez un tour au prochain niveau plutôt que de régler la question au milieu d'un passage difficile.
 
-Jouer seul à une aventure n'a rien à voir avec jouer en ligne face à des inconnus. Le multijoueur ajoute des voix, des messages, des équipes, parfois une pression sociale forte. C'est souvent là que les difficultés apparaissent : insultes, exclusion, demandes d'ajout, contenus partagés, voire harcèlement.
+**À vérifier avant :** la classification de l'édition choisie, les combats, les commandes et le matériel nécessaire pour jouer à deux. Le mode plus accessible ne retire pas tous les obstacles ni tous les contenus susceptibles d'impressionner.
 
-Pour les plus jeunes, on conseille de commencer par le jeu local, sur le même canapé, ou en ligne uniquement avec des amis déjà connus, chat désactivé et pseudo qui ne dévoile pas l'identité. Le « en ligne avec n'importe qui » n'est pas interdit pour toujours. C'est simplement une étape qui peut attendre que l'enfant soit prêt, un peu comme on n'envoie pas un débutant seul sur une route fréquentée.
+**La question qui départage :** vos joueurs acceptent-ils d'avoir des personnages aux possibilités différentes ? Cela peut convenir à un duo parent-enfant et moins bien à deux enfants qui veulent exactement le même rôle.
 
-## Les jeux créatifs : un beau potentiel, à encadrer quand même
+## Cuisiner à plusieurs dans Overcooked 2
 
-Certains jeux laissent construire, inventer, explorer, résoudre. Les jeux de construction, de programmation simple, de simulation ou de dessin peuvent être formidables. *Minecraft* en mode créatif en est l'exemple le plus connu : un enfant peut y passer des heures à bâtir, démolir, recommencer.
+Dans Overcooked 2, il faut préparer et servir des plats en se répartissant les tâches. La [FAQ de Team17](https://www.team17.com/news/overcooked-2-faq) confirme des parties jusqu'à quatre joueurs, en local ou en ligne, selon la configuration.
 
-Mais la créativité ne supprime pas le besoin de cadre. Un jeu ouvert peut aussi devenir compulsif quand l'enfant n'arrive plus à s'arrêter, ou quand un serveur en ligne ajoute sa propre pression sociale. Le bon signe, c'est quand l'enfant parle de ce qu'il a fait : il montre, explique, modifie. Quelques questions suffisent à nourrir ça sans transformer le jeu en devoir : « Qu'est-ce que tu as construit ? », « Comment tu as trouvé cette solution ? », « Tu me montres ? »
+La coopération y est très visible. Elle peut aussi devenir tendue quand les commandes s'accumulent et que la cuisine change. Un enfant à qui l'on répète « plus vite » ne profite pas forcément de la séance.
 
-## Ce que disent (et ne disent pas) les classifications
+**À vérifier avant :** les commandes, le rythme et les options présentes dans votre version. Team17 décrit notamment un mode entraînement sans limite de temps introduit dans une mise à jour ; vérifiez sa disponibilité dans le jeu installé.
 
-Les classifications par âge sont utiles, mais elles ne racontent pas tout. Un jeu peut être correct côté contenu et rester trop difficile, trop rapide ou trop social pour un enfant donné. À l'inverse, un titre conseillé un peu plus haut peut convenir s'il est accompagné et si les éléments sensibles restent faibles.
+**La question qui départage :** aimez-vous les petits défis sous pression, ou cherchez-vous une activité tranquille ? Le mot « coopératif » ne répond pas à cette question.
 
-Sur Totem Avisé, la page [Jeux vidéo](/jeux) permet de regarder un titre avec des repères familiaux, et nos [collections](/collections) rassemblent des sélections par envie ou par âge. Notre [méthode](/notre-methode) tient compte de plusieurs dimensions à la fois : violence, langage, peur, achats possibles, interactions en ligne, mais aussi valeur éducative, coopération et présence de modèles positifs. L'idée n'est pas de dénicher le jeu parfait, mais de savoir précisément ce qu'on choisit avant de dire oui.
+Vous pouvez consulter la [fiche Overcooked 2](/media/game:f746214a-3978-473c-9ee0-949fafb0d8be), puis recouper les modes et options avec l'éditeur pour votre plateforme.
 
-## Accompagner même quand on n'aime pas jouer
+## Lire PEGI sans lui demander de mesurer la difficulté
 
-« Je ne comprends rien aux jeux vidéo » revient souvent dans la bouche des parents. C'est parfaitement normal, et ce n'est pas un obstacle. Accompagner ne veut pas dire être bon manette en main.
+La classification PEGI renseigne sur l'âge approprié au contenu et ses descripteurs. Elle ne garantit pas que l'enfant comprendra les commandes, saura lire les instructions ou appréciera le rythme. Les [explications de PEGI](https://pegi.info/fr/page/que-signifient-les-logos) permettent de comprendre les avertissements.
 
-Vous pouvez vous asseoir dix minutes, demander les commandes, laisser l'enfant expliquer, jouer un niveau facile, rire de votre maladresse. Cette présence change déjà beaucoup de choses. Elle vous laisse percevoir le ton du jeu, le niveau de frustration, le vocabulaire, les interactions, les sollicitations d'achat. Et elle montre à l'enfant que ce qu'il fait à l'écran n'est pas un monde fermé dont vous seriez exclu.
+Partez de cette classification. Ajoutez ensuite les difficultés propres à vos joueurs. Accompagner un enfant aide à expliquer et à intervenir, mais ne fait pas disparaître un contenu prévu pour des plus grands.
 
-## Concrètement, avant d'installer un jeu
+Méfiez-vous aussi des titres proches : une suite, une édition différente ou un autre jeu de la même série peut proposer des modes et contenus différents.
 
-Pas besoin d'une grille d'évaluation compliquée. Quelques minutes à regarder une fiche, une bande-annonce ou la page du jeu suffisent en général. Sept points couvrent l'essentiel, et ce sont aussi les repères que nous affichons sur chaque fiche [Jeux vidéo](/jeux) :
+## La fiche à remplir avant l'achat
 
-- **Âge PEGI**, et l'écart éventuel avec l'âge réel de votre enfant.
-- **Violence** et intensité des scènes.
-- **Chat en ligne** et présence d'inconnus.
-- **Achats intégrés**, et possibilité de les bloquer.
-- **Jeu local** possible, à plusieurs sur le même canapé.
-- **Difficulté** ajustable, pour que plusieurs âges cohabitent.
-- **Facilité à s'arrêter** une fois la partie terminée.
+Pour deux ou trois jeux qui vous tentent, notez :
 
-La dernière question est la plus parlante : qu'est-ce que ce jeu apporte vraiment, de la coopération, de la stratégie, de la créativité, de la détente ou simplement du rire partagé ? Si vous séchez sur l'un ou l'autre point, ce n'est pas grave. C'est même la meilleure raison de jeter un œil avant d'installer.
+- **Version et plateforme :** de quel jeu parle-t-on exactement ?
+- **Âge et contenus :** quelle classification et quels points sensibles ?
+- **Joueurs :** combien sur place, et avec combien d'appareils ou de manettes ?
+- **Commandes :** lecture, caméra, rapidité, précision ?
+- **Contacts :** jeu local, proches invités ou inconnus ?
+- **Dépenses :** jeu complet, abonnement, extensions ou achats supplémentaires ?
+- **Fin de séance :** pause, sauvegarde et durée approximative d'une partie ?
 
-Le jeu vidéo peut être un excellent loisir de famille. Il fait rire, réfléchir, coopérer, échouer et recommencer, et il rapproche parfois un parent et un enfant quand l'adulte accepte d'entrer un peu dans son univers. Ce qu'on surveille, au fond, c'est simplement qu'il garde sa place : qu'il n'avale ni le sommeil, ni les repas, ni les devoirs, ni l'humeur de la maison une fois la console éteinte.
+Une case vide est une question à résoudre. Consultez la boutique officielle, l'aide de l'éditeur ou une démonstration de la version concernée. Le prix d'achat seul ne dit pas tout le coût d'une partie à plusieurs.
 
-Pour aller plus loin, vous pouvez explorer les [jeux vidéo](/jeux) analysés sur Totem, ou créer un [profil famille](/inscription) pour obtenir des repères adaptés à chaque enfant.
+## Faire une première séance courte
 
-## Pour aller plus loin
+Prévoyez un début où personne n'a besoin de réussir vite. Laissez chaque joueur essayer ses commandes. Évitez de reprendre immédiatement la manette à l'enfant qui cherche.
 
-- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)
-- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+Après la partie, demandez ce que chacun voudrait refaire et ce qui l'a agacé. Vous pouvez changer de rôle, de mode ou de jeu. Une première soirée peu convaincante ne dit pas que votre famille n'aime pas jouer ensemble.
+
+Pour trouver d'autres pistes, partez des [jeux du catalogue](/jeux) et gardez votre petite fiche de choix. Le meilleur candidat sera celui dont vous comprenez les contraintes avant de l'installer.
+
+## Sources
+
+- [Minecraft — Guide pour les parents](https://www.minecraft.net/fr-fr/article/parents--guide-minecraft)
+- [Nintendo — Kirby et le monde oublié](https://www.nintendo.com/fr-fr/Jeux/Jeux-Nintendo-Switch/Kirby-et-le-monde-oublie-2045110.html)
+- [Team17 — Overcooked 2 et ses modes](https://www.team17.com/news/overcooked-2-faq)
+- [PEGI — Signification des classifications](https://pegi.info/fr/page/que-signifient-les-logos)

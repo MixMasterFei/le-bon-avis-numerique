@@ -1,88 +1,87 @@
 ---
-title: "YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas"
+title: "YouTube, TikTok et Netflix au-delà du compteur de minutes"
 slug: "qualite-contenu-plus-que-chronometre"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "temps-ecran"
-excerpt: "Deux heures d'écran ne se valent pas toujours. Le contenu, le contexte, le moment et l'accompagnement changent tout."
-seoTitle: "Temps d'écran : pourquoi le chronomètre ne suffit pas"
-seoDescription: "YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas et comment regarder la qualité des contenus."
+excerpt: "Regardez ce qui a été choisi, ce qui s'enchaîne et ce que l'écran prend comme place. Deux réglages de lecture peuvent déjà faciliter la fin d'une séance."
+seoTitle: "Temps d'écran — choisir les contenus et les réglages"
+seoDescription: "Film, série ou vidéos recommandées : comparez les situations et réglez la lecture automatique sur Netflix et YouTube pour mieux choisir en famille."
 internalLinks:
-  - "/guides"
-  - "/notre-methode"
   - "/films"
-  - "/series"
 sourceLinks:
-  - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent"
+  - "https://help.netflix.com/fr/node/2102"
+  - "https://help.netflix.com/fr-ca/node/121518"
+  - "https://support.google.com/youtube/answer/6327615?hl=fr"
   - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age"
-  - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
 ---
 
-# YouTube, TikTok, Netflix : pourquoi le temps d'écran ne suffit pas
+# YouTube, TikTok et Netflix au-delà du compteur de minutes
 
-Quand on s'inquiète des écrans à la maison, la première question qui vient est presque toujours la même : combien de temps ? C'est compréhensible. Le temps se voit, se mesure, se négocie. Une demi-heure, une heure, deux heures. On peut régler une alarme, couper le wifi, afficher un planning sur le frigo.
+Le téléphone indique quarante minutes de vidéo. Il ne dit pas si votre enfant cherchait une recette, suivait un épisode choisi ou regardait ce que l'application proposait ensuite. Pour comprendre l'usage, le compteur a besoin d'un peu de contexte.
 
-Sauf que dans une vraie soirée de famille, le chronomètre ne dit pas grand-chose de ce qui s'est vraiment passé. Une heure de film choisi ensemble ne laisse pas la même trace qu'une heure de vidéos courtes qui s'enchaînent toutes seules. Une partie de jeu coopératif avec un parent n'a rien à voir avec une demi-heure de disputes en ligne. Et un documentaire regardé en début d'après-midi ne pèse pas comme une série trop intense lancée juste avant de dormir.
+La durée reste importante. Un programme intéressant peut aussi repousser le sommeil, prendre toute la place dans l'après-midi ou faire oublier le reste. Choisir un contenu adapté ne donne pas un crédit de minutes illimité.
 
-La durée compte, nous ne le contestons pas. Mais le contenu, le moment, le support et l'accompagnement comptent au moins autant. C'est ce que nous voyons tous les jours en construisant les fiches Totem.
+Voici une façon de regarder une séance de plus près, puis de modifier ce qui rend l'arrêt difficile.
 
-## Pourquoi le temps rassure autant
+## La même durée peut recouvrir plusieurs situations
 
-Le temps d'écran a un mérite : c'est une mesure simple dans un sujet qui ne l'est pas. Il pose une limite nette, il évite d'avoir à discuter de chaque application une par une, et il rend aux parents le sentiment de garder la main. Difficile de lui en vouloir.
+**Une vidéo cherchée pour faire quelque chose.** Votre enfant veut fabriquer un avion en papier. Il regarde un tutoriel, fait pause pour plier, revient sur une étape et ferme quand il a terminé. Vous pouvez vérifier la vidéo avant et poser le papier à côté de l'écran. La fin correspond à un résultat visible.
 
-Les repères officiels s'appuient d'ailleurs sur la durée, surtout pour les plus jeunes. Ameli et l'Éducation nationale rappellent qu'il faut protéger le sommeil, le langage, l'activité physique, les repas et les moments sans écran. Ces repères restent utiles et nous les reprenons volontiers.
+**Un épisode connu.** L'enfant choisit une histoire dont vous connaissez le ton. La séance a une durée annoncée, mais l'épisode suivant peut démarrer automatiquement. Ici, le réglage de lecture compte autant que la phrase « un seul épisode ».
 
-Le problème commence si la durée devient le seul tableau de bord. Un enfant peut très bien respecter sa limite à la minute près et passer ce temps sur des contenus qui ne sont pas pour lui. Un autre peut dépasser un peu, mais devant un film adapté, avec un adulte à côté et une coupure claire à la fin. La même quantité de minutes recouvre deux expériences qui n'ont rien de comparable. La vraie question, c'est plutôt : qu'est-ce que cet écran remplace, et qu'est-ce qu'il apporte ?
+**Un fil de recommandations.** L'enfant ouvre l'application sans titre précis et passe d'une vidéo à l'autre. Les sujets et la durée sont moins prévisibles. Vous ne validez plus une œuvre, mais un accès à un flux de contenus.
 
-## Tous les écrans ne sollicitent pas l'enfant pareil
+Ces exemples ne permettent pas de classer chaque usage en « bon » ou « mauvais ». Ils montrent où porter votre attention : sur la vidéo choisie, l'enchaînement ou les recommandations.
 
-On range sous le mot « écran » des objets qui n'ont presque rien en commun. Un film, une série, une vidéo courte, un jeu, une messagerie, un réseau social : ce sont des mondes différents.
+## La question à poser avant de lancer
 
-Un film a un début, un milieu, une fin. Il demande de suivre une histoire et il offre une vraie pause au générique. Une série peut être tout aussi riche, mais la lecture automatique fait souvent glisser vers l'épisode suivant sans qu'aucune décision soit prise. Les vidéos courtes, elles, sont construites pour relancer vite : une surprise, une émotion, une récompense immédiate, puis on repart. Un jeu vidéo peut faire travailler la coordination, la stratégie, la coopération ou l'imagination, mais il peut aussi devenir frustrant, compétitif, ou pousser à des achats. Quant aux messageries et aux réseaux, ils ne se contentent pas de divertir : ils transportent le regard des autres, les invitations, les conflits, l'impression qu'il faut répondre tout de suite.
+« Qu'est-ce que tu as envie de regarder ? »
 
-Dire « une heure d'écran » revient donc parfois à mettre dans le même sac une promenade, un repas en famille, une dispute et un cours de musique. Le chiffre est le même, le contenu n'a aucun rapport.
+Si la réponse est un titre, vérifiez sa durée et ce qu'il contient. Si la réponse est seulement le nom d'une plateforme, demandez si l'enfant cherche quelque chose en particulier. Vous pouvez l'aider à choisir avant d'ouvrir la page d'accueil.
 
-## Quatre questions avant de parler de minutes
+Il est possible de regarder une vidéo juste pour rire. Tout loisir n'a pas à produire un apprentissage. En revanche, connaître le contenu et savoir quand on s'arrête rend la décision plus facile à discuter.
 
-Avant de négocier la durée, nous proposons de regarder ailleurs. Quatre questions suffisent souvent à clarifier la situation.
+Pour un film ou une série, partez d'une [fiche Totem Avisé](/films) : lisez les repères d'âge et les points de vigilance disponibles, puis regardez si la durée convient au moment prévu.
 
-D'abord, est-ce de son âge ? Ce n'est pas qu'une affaire de violence. Un contenu peut être trop complexe, trop anxiogène, trop sexualisé ou trop cynique pour un enfant donné. Ensuite, est-ce choisi ou subi ? Un contenu décidé à l'avance a plus de chances d'être digéré qu'un flux qui s'impose. Troisième point, est-ce accompagné ou solitaire ? Regarder avec un adulte, ou simplement pouvoir en parler après, change beaucoup l'expérience, surtout chez les plus petits. Et enfin, est-ce au bon moment ? Le même dessin animé peut être parfait un samedi après-midi et un mauvais choix dix minutes avant le coucher.
+## Netflix et les deux lectures automatiques
 
-Ces questions ont un effet secondaire appréciable : elles font sortir de la bagarre du « encore cinq minutes » et ramènent la discussion sur ce qui se passe vraiment à l'écran.
+Netflix distingue les aperçus qui se lancent pendant la recherche et l'épisode suivant qui commence à la fin d'une série. Désactiver l'un ne désactive pas nécessairement l'autre.
 
-## YouTube et TikTok : la question du flux
+Pour les aperçus, ouvrez les réglages du profil concerné et cherchez **Lecture automatique des aperçus**. La [notice Netflix](https://help.netflix.com/fr/node/2102) détaille le chemin selon l'appareil. Vous pouvez couper cette option pour parcourir le catalogue sans bande-annonce qui démarre à chaque arrêt.
 
-Les plateformes de vidéos courtes ou recommandées ont une particularité qui mérite qu'on s'y arrête. Elles ne demandent pas toujours à l'enfant de choisir. Elles proposent, relancent, ajustent. L'enfant a l'impression de regarder « un peu », alors que c'est l'enchaînement qui a décidé pour lui.
+Vérifiez séparément **Lecture automatique de l'épisode suivant**, dans les paramètres de lecture du profil. [Netflix explique ce réglage ici](https://help.netflix.com/fr-ca/node/121518). Après modification, contrôlez le résultat sur l'appareil utilisé par l'enfant ; une actualisation peut être nécessaire.
 
-Cela ne veut pas dire qu'il faut bannir la moindre vidéo courte chez les ados, ce serait illusoire. Mais il vaut la peine de comprendre le mécanisme. Plus une vidéo est brève, moins il y a de pause naturelle pour s'arrêter. Plus la recommandation est personnalisée, plus le flux peut enfermer dans une seule tonalité : le rire, le choc, la comparaison, parfois la colère.
+Cela ne ferme pas l'application à sa place. Cela laisse au moins le générique redevenir un moment où l'on décide de continuer ou de s'arrêter.
 
-Une habitude simple aide beaucoup : distinguer ce qu'on cherche et ce qui défile. Aller voir une recette, une bande-annonce, une explication de maths ou la vidéo d'un créateur précis n'a rien à voir avec scroller sans fin une page d'accueil qui se remplit toute seule.
+## YouTube et les vidéos proposées après
 
-## Netflix et le réflexe « encore un épisode »
+YouTube dispose d'un réglage de lecture automatique. Son emplacement dépend du téléphone, de l'ordinateur ou de la télévision. L'[aide officielle](https://support.google.com/youtube/answer/6327615?hl=fr) montre les réglages correspondants et précise que les paramètres peuvent différer d'un appareil à l'autre.
 
-Les plateformes de streaming paraissent plus tranquilles, et elles proposent souvent d'excellents contenus familiaux. Mais elles ont leurs propres mécaniques : la lecture automatique, des saisons entières disponibles d'un coup, des fins d'épisode qui donnent envie de continuer, et des profils enfants parfois trop permissifs.
+Vérifiez donc la télévision du salon aussi, même si vous avez déjà réglé le téléphone. La désactivation de la lecture automatique ne retire pas les recommandations et ne transforme pas YouTube en catalogue intégralement adapté à un enfant.
 
-La parade tient en un mot : décider avant. Combien d'épisodes ce soir, quel film, à quelle heure on s'arrête, ensemble ou seul ? Si l'enfant tranche après chaque épisode, il tranche au pire moment, celui où il a le moins envie de couper. C'est exactement là que nos pages [Films](/films) et [Séries](/series) servent : l'âge conseillé, la classification, les thèmes sensibles et les messages positifs sont indiqués avant le lancement. Poser un cadre est toujours plus facile quand on sait ce qu'on va regarder.
+Le plus simple, pour une séance accompagnée, reste souvent d'ouvrir directement la vidéo choisie. Fermez ensuite la page au lieu de laisser la recherche suivante se faire au hasard des miniatures.
 
-## Les jeux vidéo méritent un regard fin
+## Les vidéos courtes et les comptes adolescents
 
-On juge encore souvent les jeux vidéo en bloc, et c'est dommage. Une partie coopérative, créative ou familiale peut être un très bon moment. Un jeu compétitif, violent, ou ouvert sur des échanges avec des inconnus demande nettement plus d'attention. Là encore, le chronomètre ne dit pas l'essentiel.
+Un format court ne garantit pas une séance courte. Plusieurs vidéos peuvent se succéder sans qu'une fin soit clairement annoncée. Le sujet peut aussi changer très vite.
 
-Pour s'y retrouver, mieux vaut regarder le type de jeu, la présence ou non d'un mode en ligne, les achats intégrés, le niveau de frustration qu'il génère, et l'écart éventuel entre l'âge PEGI affiché et l'âge réellement adapté à votre enfant. Le meilleur indicateur reste souvent l'après. Un enfant calme, content, capable de passer à autre chose, c'est plutôt bon signe. Un enfant irritable, absorbé, incapable de décrocher, c'est un signal à écouter, bien plus parlant qu'un nombre de minutes.
+Avant d'autoriser une application comme TikTok, vérifiez ses conditions d'âge, ses protections pour les mineurs et le cadre que vous avez choisi à la maison. Les réglages de temps ne remplacent pas cette décision d'accès.
 
-## Protéger d'abord les moments fragiles
+Quand l'utilisation est autorisée, parlez aussi de ce qui apparaît : quelles vidéos l'enfant retrouve-t-il souvent, lesquelles le gênent, sait-il masquer un contenu ou demander de l'aide ? Vous n'avez pas besoin d'interpréter chaque geste comme le signe d'un problème.
 
-Regarder la qualité d'un contenu ne dispense pas de protéger certains moments de la journée : le matin, les repas, la nuit, le dernier quart d'heure avant le coucher. L'essentiel est que ce cadre horaire se combine avec le regard sur le contenu : bien choisir ce qu'on regarde et préserver les bons moments ne s'opposent pas, les deux avancent ensemble.
+## Observer l'après sans tirer de conclusion trop vite
 
-## Installer une culture du choix
+Un enfant fâché d'arrêter ne prouve pas que le programme était nocif. Il peut être déçu, fatigué ou interrompu au mauvais moment. Une seule soirée renseigne peu.
 
-Le plus utile, sur la durée, c'est de rendre le choix visible. Au lieu de dire « tu as droit à une heure », essayez « qu'est-ce qu'on choisit pour cette heure ? ». Un film, un jeu, une vidéo précise, un épisode, une recherche. La formulation change tout : l'écran cesse d'être un robinet ouvert qu'on referme à regret pour devenir une suite de décisions.
+Si les difficultés se répètent, notez ce que vous pouvez changer : la durée, l'heure, l'enchaînement automatique, le contenu ou la manière d'annoncer la fin. Modifiez un élément et observez plusieurs séances, sans transformer cela en surveillance permanente.
 
-C'est l'idée qui guide notre [méthode](/notre-methode) : regarder les contenus finement plutôt que de les classer en bons ou mauvais. Un même titre peut être trop tôt pour un enfant et parfait deux ans plus tard. Un autre peut être court mais envahissant. Un autre encore peut devenir un vrai rendez-vous familial.
+Pour le sommeil, gardez les [repères d'Ameli](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age) à portée de main. Un film bien choisi reste un écran, et sa fin doit laisser le temps de préparer le coucher.
 
-Si vous voulez vous lancer sans tout révolutionner, choisissez une soirée par semaine où le contenu se décide ensemble. Un film adapté, un épisode choisi, une partie en famille, puis quelques minutes pour en parler. Vous verrez vite que la conversation glisse du « combien de temps » vers le « qu'est-ce qu'on a aimé ». Gardez sous la main nos [guides parents](/guides) au moment de choisir.
+Ce soir, vous pouvez simplement vérifier les deux réglages Netflix ou celui de YouTube sur l'appareil familial. Puis choisir avec votre enfant le contenu de la prochaine séance. Vous saurez au moins ce que vous avez décidé ensemble.
 
-## Pour aller plus loin
+## Sources
 
-- [Écrans et santé des enfants et des adolescents (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-sante-enfant-adolescent)
-- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
-- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Netflix — Lecture automatique des aperçus](https://help.netflix.com/fr/node/2102)
+- [Netflix — Lecture automatique de l'épisode suivant](https://help.netflix.com/fr-ca/node/121518)
+- [YouTube — Lecture automatique](https://support.google.com/youtube/answer/6327615?hl=fr)
+- [Ameli — Usage des écrans selon l'âge](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
