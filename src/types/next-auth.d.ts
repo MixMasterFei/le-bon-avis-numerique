@@ -15,6 +15,7 @@ declare module "next-auth" {
 
   interface User extends DefaultUser {
     role: string
+    authVersion?: string
   }
 }
 
@@ -23,5 +24,6 @@ declare module "next-auth/jwt" {
     id: string
     role: string
     onboardingCompleted?: boolean
+    authVersion?: string
   }
 }

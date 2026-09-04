@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Band, Wrap, SectionHead, Em } from "./parts"
 import { isOutOfSeason } from "@/lib/seasonal"
 import { RedesignCard, type RedesignCardMedia } from "./RedesignCard"
 import { useRankedByFit } from "./useRankedByFit"
+import { fitsHomepageAge } from "@/lib/homepage-age-cap"
 
 interface StreamingRow {
   id: string
@@ -42,7 +43,8 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
   // Family-oriented section: default cap 12; when the homepage age filter is
   // active, follow it.
   const cap = typeof maxAge === "number" ? maxAge : 12
-  const ranked = useRankedByFit(items, rankByMemberIds)
+  const eligible = useMemo(() => items.filter((item) => fitsHomepageAge(item, cap)), [items, cap])
+  const ranked = useRankedByFit(eligible, rankByMemberIds)
 
   useEffect(() => {
     let cancelled = false
@@ -125,7 +127,7 @@ export function PlatformsSection({ maxAge, audience, rankByMemberIds }: { maxAge
             <div className="mt-3 text-[14px]" style={{ color: "var(--ink-2)" }}>
               {total.toLocaleString("fr-FR")} titres sur {sel.label} ·{" "}
               <Link
-                href={`/films/recherche?platforms=${encodeURIComponent(sel.filter)}&maxAge=12`}
+                href={`/films/recherche?platforms=${encodeURIComponent(sel.filter)}&maxAge=${cap}`}
                 className="font-bold"
                 style={{ color: "var(--terra)" }}
               >

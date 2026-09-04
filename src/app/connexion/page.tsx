@@ -40,7 +40,7 @@ function safeCallback(raw: string | null): string {
 const OAUTH_ERRORS: Record<string, string> = {
   CredentialsSignin: "Email ou mot de passe incorrect",
   OAuthAccountNotLinked:
-    "Ce compte est déjà associé à une autre méthode de connexion",
+    "Connectez-vous d’abord avec la méthode déjà utilisée pour ce compte afin d’associer Google.",
   OAuthCallbackError:
     "Erreur lors de la connexion avec Google. Veuillez réessayer.",
   OAuthSignin: "Erreur lors de l'initialisation de la connexion Google",

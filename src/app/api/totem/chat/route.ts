@@ -89,7 +89,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "totem_disabled" }, { status: 403 })
   }
 
-  const rateCheck = checkTotemRateLimit({ userId, ip })
+  const rateCheck = await checkTotemRateLimit({ userId, ip })
+  if (rateCheck.unavailable) {
+    return NextResponse.json(
+      {
+        error: "totem_unavailable",
+        message: "Totem est momentanément indisponible. Réessayez dans un instant.",
+        retryAfterSec: rateCheck.retryAfterSec,
+      },
+      { status: 503, headers: { "Retry-After": String(rateCheck.retryAfterSec), "Cache-Control": "no-store" } },
+    )
+  }
   if (!rateCheck.allowed) {
     return NextResponse.json(
       {
@@ -104,9 +114,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Daily caps — the cost circuit breakers. Unlike the in-memory hourly
-  // limiter above, these count persisted rows, so they hold across Vercel
-  // instances and cold starts.
+  // Daily caps count persisted responses across instances. The hourly guard
+  // above reserves requests atomically before any model call.
   const dailyCheck = await checkDailyCaps({ userId })
   if (!dailyCheck.allowed) {
     const retryAfterSec = secondsUntilNextUtcDay()

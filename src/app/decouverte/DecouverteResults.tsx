@@ -73,7 +73,7 @@ async function resolveIntent(
   // 3. Budget guards. Both DEGRADE rather than erroring: the visitor still gets
   //    keyword results, just without the interpretation niceties.
   const ip = getClientIpFromHeaders(await headers())
-  const rate = checkNlRateLimit({ userId, ip })
+  const rate = await checkNlRateLimit({ userId, ip })
   const caps = rate.allowed ? await checkNlDailyCaps({ userId }) : null
   if (!rate.allowed || (caps && !caps.allowed)) {
     const intent = validateNlIntent(null) // → mode "texte"

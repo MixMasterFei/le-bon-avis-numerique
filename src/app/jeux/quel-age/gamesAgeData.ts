@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
+import { catalogueTitlesForSeed, matchCuratedGame } from "@/lib/curated-game-matching"
 import { TOP_GAMES, type TopGameSeed } from "./topGames.data"
 
 // Shared server-side data source for the games "quel âge" pillar: used by the
@@ -29,7 +30,7 @@ export type GameRow = {
 // Look each curated title up in the catalogue. Only enriched games with a
 // poster and an age recommendation qualify (the fiche they link to must be
 // worth landing on). A single OR query, then attribute each result to the
-// best-matching seed by title fragment — highest data quality wins.
+// exact, curated title. Data quality never determines a game's identity.
 // Seeds with `forcedId` bypass alias matching and fetch that exact game.
 export async function fetchTopGameRows(): Promise<GameRow[]> {
   // Separate seeds with forced IDs from those needing alias lookup.
@@ -72,7 +73,7 @@ export async function fetchTopGameRows(): Promise<GameRow[]> {
 
   // Fetch alias-matched games.
   const orClauses = aliasSeeds.flatMap((g) =>
-    g.aliases.map((a) => ({ title: { contains: a, mode: "insensitive" as const } })),
+    catalogueTitlesForSeed(g).map((title) => ({ title: { equals: title, mode: "insensitive" as const } })),
   )
 
   const aliasMatches =
@@ -105,7 +106,6 @@ export async function fetchTopGameRows(): Promise<GameRow[]> {
                 },
               },
             },
-            take: 300,
           }),
         )
       : []
@@ -116,10 +116,11 @@ export async function fetchTopGameRows(): Promise<GameRow[]> {
   for (const seed of TOP_GAMES) {
     if (seed.forcedId) {
       const match = forcedById.get(seed.forcedId)
-      if (!match) continue
+      if (!match || usedIds.has(match.id)) continue
       usedIds.add(match.id)
       rows.push({
-        seed,
+        // A franchise's rating belongs to this exact release, not every opus.
+        seed: { ...seed, name: match.title },
         id: match.id,
         title: match.title,
         posterUrl: match.posterUrl,
@@ -129,19 +130,11 @@ export async function fetchTopGameRows(): Promise<GameRow[]> {
         customFaqAnswer: seed.customFaqAnswer,
       })
     } else {
-      const candidates = aliasMatches
-        .filter((m) => {
-          if (usedIds.has(m.id)) return false
-          const t = m.title.toLowerCase()
-          return seed.aliases.some((a) => t.includes(a))
-        })
-        .sort((a, b) => b.dataQualityScore - a.dataQualityScore)
-
-      const best = candidates[0]
-      if (!best) continue
+      const best = matchCuratedGame(seed, aliasMatches)
+      if (!best || usedIds.has(best.id)) continue
       usedIds.add(best.id)
       rows.push({
-        seed,
+        seed: { ...seed, name: best.title },
         id: best.id,
         title: best.title,
         posterUrl: best.posterUrl,

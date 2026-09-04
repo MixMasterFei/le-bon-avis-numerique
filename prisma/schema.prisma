@@ -99,6 +99,16 @@ model Session {
   @@map("sessions")
 }
 
+// Short-lived, server-only auth/paid-request throttles shared by all instances.
+model AuthRateLimit {
+  key       String   @id
+  count     Int
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+
+  @@index([expiresAt], map: "auth_rate_limits_expires_at_idx")
+  @@map("auth_rate_limits")
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique

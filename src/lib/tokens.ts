@@ -1,5 +1,6 @@
 import { prisma } from "./db"
 import { randomBytes } from "crypto"
+import type { Prisma } from "@prisma/client"
 
 // Generate a secure random token
 export function generateToken(): string {
@@ -83,9 +84,10 @@ export async function createPasswordResetToken(
 
 // Verify and consume a password reset token
 export async function verifyPasswordResetToken(
-  token: string
+  token: string,
+  db: Pick<Prisma.TransactionClient, "verificationToken"> = prisma,
 ): Promise<{ email: string } | null> {
-  const verificationToken = await prisma.verificationToken.findUnique({
+  const verificationToken = await db.verificationToken.findUnique({
     where: { token },
   })
 
@@ -99,17 +101,19 @@ export async function verifyPasswordResetToken(
   }
 
   // Check if expired
-  if (verificationToken.expires < new Date()) {
-    await prisma.verificationToken.delete({
+  if (verificationToken.expires <= new Date()) {
+    await db.verificationToken.deleteMany({
       where: { token },
     })
     return null
   }
 
-  // Delete the token (one-time use)
-  await prisma.verificationToken.delete({
-    where: { token },
+  // Only the request that consumes this row may reset the password. A second
+  // concurrent request returns an invalid token instead of updating it again.
+  const consumed = await db.verificationToken.deleteMany({
+    where: { token, expires: { gt: new Date() } },
   })
+  if (consumed.count !== 1) return null
 
   // Extract email from identifier
   const email = verificationToken.identifier.replace("reset:", "")

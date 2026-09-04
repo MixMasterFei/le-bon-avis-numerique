@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { token, password } = body
 
-    if (!token || !password) {
+    if (typeof token !== "string" || typeof password !== "string" || !token || !password) {
       return NextResponse.json(
         { error: "Token et mot de passe requis" },
         { status: 400 }
@@ -24,24 +24,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the token
-    const result = await verifyPasswordResetToken(token)
+    const hashedPassword = await hash(password, 12)
 
-    if (!result) {
+    // Consume the one-time token and replace the password atomically. A failed
+    // database update leaves the token usable for a retry. auth-session binds
+    // every JWT to the previous hash, so this also revokes all prior sessions.
+    const reset = await prisma.$transaction(async (tx) => {
+      const result = await verifyPasswordResetToken(token, tx)
+      if (!result) return false
+
+      await tx.user.update({
+        where: { email: result.email },
+        data: { password: hashedPassword },
+      })
+      return true
+    })
+
+    if (!reset) {
       return NextResponse.json(
         { error: "Token invalide ou expiré" },
         { status: 400 }
       )
     }
-
-    // Hash new password
-    const hashedPassword = await hash(password, 12)
-
-    // Update user's password
-    await prisma.user.update({
-      where: { email: result.email },
-      data: { password: hashedPassword },
-    })
 
     return NextResponse.json({
       message: "Mot de passe réinitialisé avec succès",

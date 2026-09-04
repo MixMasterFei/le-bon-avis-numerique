@@ -1,3 +1,4 @@
+import { parsePagination } from "@/lib/pagination"
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
@@ -8,8 +9,11 @@ import { Prisma } from "@prisma/client"
 // Unified media endpoint - fetches all types with filtering
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const page = parseInt(searchParams.get("page") || "1")
-  const limit = parseInt(searchParams.get("limit") || "20")
+  const pagination = parsePagination(searchParams.get("page"), searchParams.get("limit"))
+  if (!pagination) {
+    return NextResponse.json({ error: "Pagination invalide (limite : 1 à 100)." }, { status: 400 })
+  }
+  const { page, limit, skip } = pagination
   const type = searchParams.get("type") // MOVIE, TV, GAME, or null for all
   const minAge = searchParams.get("minAge")
   const maxAge = searchParams.get("maxAge")
@@ -18,17 +22,12 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get("sort") // "popularity" | "rating" | "newest" | "age" | default (age+date)
   const minVotes = searchParams.get("minVotes") // minimum tmdbVoteCount
 
-  const skip = (page - 1) * limit
-
-  // Resolve a title search up-front to accent-insensitive ids so "Amelie"
-  // matches "Amélie". Done outside the where builder because it needs the
-  // Postgres `unaccent` extension, which Prisma's `contains` can't call.
-  let searchIds: string[] | null = null
-  if (search && search.trim().length >= 1) {
-    searchIds = await matchMediaIdsByTitle(search, { limit: 200 })
-  }
-
   try {
+    // Keep lookup failures inside the same fail-closed response as query failures.
+    let searchIds: string[] | null = null
+    if (search && search.trim().length >= 1) {
+      searchIds = await matchMediaIdsByTitle(search, { limit: 200 })
+    }
     // Public gate: poster + quality floor (≥30) + no manga — the SAME bar as
     // the sitemap and category pages. This endpoint feeds user-facing surfaces
     // (header search, recommendations), so it must not surface incomplete /
@@ -208,58 +207,10 @@ export async function GET(request: NextRequest) {
     }, { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200" } })
   } catch (error) {
     console.error("Database error:", error)
-    // Degraded mode: return basic media rows without joins/count to keep homepage usable.
-    try {
-      const fallbackItems = await withPrismaRetry(() =>
-        prisma.mediaItem.findMany({
-          where: {
-            ...publicMediaWhere,
-            ...(type && ["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"].includes(type)
-              ? { type: type as "MOVIE" | "TV" | "GAME" | "BOOK" | "APP" }
-              : {}),
-          },
-          orderBy: { createdAt: "desc" },
-          skip,
-          take: limit,
-        })
-      )
-
-      return NextResponse.json({
-        items: fallbackItems.map((item) => ({
-          id: item.id,
-          tmdbId: item.tmdbId,
-          igdbId: item.igdbId,
-          title: item.title,
-          originalTitle: item.originalTitle,
-          type: item.type,
-          synopsisFr: item.synopsisFr,
-          posterUrl: item.posterUrl,
-          backdropUrl: item.backdropUrl,
-          releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
-          duration: item.duration,
-          director: item.director,
-          genres: item.genres,
-          platforms: item.platforms,
-          topics: item.topics,
-          officialRating: item.officialRating,
-          expertAgeRec: item.expertAgeRec,
-          communityAgeRec: item.communityAgeRec,
-          contentMetrics: null,
-        })),
-        pagination: {
-          page,
-          limit,
-          total: skip + fallbackItems.length,
-          totalPages: fallbackItems.length === 0 ? 0 : page,
-        },
-        degraded: true,
-      })
-    } catch (fallbackError) {
-      console.error("Media fallback failed:", fallbackError)
-      return NextResponse.json(
-        { error: "Failed to fetch media from database" },
-        { status: 500 }
-      )
-    }
+    // Never drop the age/search filters to manufacture successful results.
+    return NextResponse.json(
+      { error: "Le catalogue est temporairement indisponible. Veuillez réessayer." },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "30" } },
+    )
   }
 }

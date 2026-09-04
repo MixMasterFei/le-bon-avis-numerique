@@ -102,7 +102,13 @@ export async function POST(request: Request) {
   // renders, so unlike the page there is no keyword degradation — just an
   // honest "later".
   const ip = getClientIpFromHeaders(await headers())
-  const rate = checkNlRateLimit({ userId, ip })
+  const rate = await checkNlRateLimit({ userId, ip })
+  if (rate.unavailable) {
+    return NextResponse.json(
+      { error: "L'interprétation est momentanément indisponible. Réessayez dans un instant." },
+      { status: 503, headers: { "Retry-After": String(rate.retryAfterSec), "Cache-Control": "no-store" } },
+    )
+  }
   const caps = rate.allowed ? await checkNlDailyCaps({ userId }) : null
   if (!rate.allowed || (caps && !caps.allowed)) {
     await recordNlSearch({ query: combined, queryHash: combinedHash, status: "blocked", userId })

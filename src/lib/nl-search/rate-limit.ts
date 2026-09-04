@@ -1,10 +1,7 @@
-// In-memory sliding-window limiter for the interpretation step.
+// Atomic shared hourly limiter for interpretation and refinement.
 // Anon: 10 queries / hour / IP. Auth: 30 / hour / userId.
-//
-// Same shape and same known limit as src/lib/totem/rate-limit.ts (counters are
-// per-instance on Vercel Fluid Compute and reset on cold start) — the accurate
-// ceiling is the DB-counted daily cap in daily-cap.ts. Kept as a SEPARATE store
-// from Totem's so a busy chat can't spend the search budget or vice versa.
+// A separate namespace keeps chat and search budgets independent.
+import { checkSharedRateLimit } from "../auth-rate-limit"
 
 const HOUR_MS = 60 * 60 * 1000
 
@@ -18,46 +15,42 @@ interface Bucket {
 
 const store = new Map<string, Bucket>()
 
+// The non-paid board and ballot limits remain local. Keep their cleanup even
+// though paid searches no longer use this store.
+function cleanupLocalStore(now: number) {
+  if (store.size > 5000) {
+    for (const [key, bucket] of store.entries()) {
+      if (bucket.resetAt < now) store.delete(key)
+    }
+  }
+}
+
 export interface NlRateLimitResult {
   allowed: boolean
   remaining: number
   retryAfterSec: number
   limit: number
+  unavailable?: boolean
 }
 
-export function checkNlRateLimit(opts: {
+export async function checkNlRateLimit(opts: {
   userId: string | null
   ip: string
-}): NlRateLimitResult {
-  const now = Date.now()
+}): Promise<NlRateLimitResult> {
   const isAuth = !!opts.userId
-  const key = isAuth ? `nls:user:${opts.userId}` : `nls:anon:${opts.ip}`
+  const key = isAuth ? `user:${opts.userId}` : `anon:${opts.ip}`
   const limit = isAuth ? AUTH_LIMIT : ANON_LIMIT
 
-  if (store.size > 5000) {
-    for (const [k, v] of store.entries()) {
-      if (v.resetAt < now) store.delete(k)
-    }
+  const result = await checkSharedRateLimit(key, {
+    namespace: "nl-search-hourly", maxRequests: limit, windowMs: HOUR_MS,
+  })
+  return {
+    allowed: result.allowed,
+    remaining: result.remaining,
+    retryAfterSec: result.allowed ? 0 : Math.max(1, Math.ceil(result.resetIn / 1000)),
+    limit,
+    ...(result.unavailable ? { unavailable: true } : {}),
   }
-
-  const bucket = store.get(key)
-  if (!bucket || bucket.resetAt < now) {
-    store.set(key, { count: 1, resetAt: now + HOUR_MS })
-    return { allowed: true, remaining: limit - 1, retryAfterSec: 0, limit }
-  }
-
-  if (bucket.count >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
-      retryAfterSec: Math.max(1, Math.ceil((bucket.resetAt - now) / 1000)),
-      limit,
-    }
-  }
-
-  bucket.count += 1
-  store.set(key, bucket)
-  return { allowed: true, remaining: limit - bucket.count, retryAfterSec: 0, limit }
 }
 
 /**
@@ -70,6 +63,7 @@ const BOARD_AUTH_LIMIT = 20
 
 export function checkBoardRateLimit(opts: { userId: string | null; ip: string }): NlRateLimitResult {
   const now = Date.now()
+  cleanupLocalStore(now)
   const isAuth = !!opts.userId
   const key = isAuth ? `nlb:user:${opts.userId}` : `nlb:anon:${opts.ip}`
   const limit = isAuth ? BOARD_AUTH_LIMIT : BOARD_ANON_LIMIT
@@ -101,6 +95,7 @@ const VOTE_LIMIT = 60
 
 export function checkVoteRateLimit(ip: string): NlRateLimitResult {
   const now = Date.now()
+  cleanupLocalStore(now)
   const key = `nlv:anon:${ip}`
 
   const bucket = store.get(key)

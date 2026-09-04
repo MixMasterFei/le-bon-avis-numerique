@@ -7,6 +7,7 @@ import type { RedesignCardMedia } from "./RedesignCard"
 import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 import { isOutOfSeason } from "@/lib/seasonal"
+import { fitsHomepageAge } from "@/lib/homepage-age-cap"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -91,7 +92,7 @@ function useRail(
   url: string,
   key: string,
   fallbackType: CardType,
-  opts: { filter?: (m: ApiMedia) => boolean; filterKey?: string } = {},
+  opts: { filter?: (m: ApiMedia) => boolean; filterKey?: string; maxAge?: number } = {},
 ) {
   const { filter, filterKey = "" } = opts
   const cacheKey = `${key}@${url}#${filterKey}`
@@ -143,7 +144,9 @@ function useRail(
     // identity that decides when a refetch is actually needed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, key, fallbackType, cacheKey])
-  return { items, loading }
+  // A tightened age filter applies immediately, including while fetching or
+  // reading sessionStorage. Previous cards may only remain if they still fit.
+  return { items: items.filter((item) => fitsHomepageAge(item, opts.maxAge)), loading }
 }
 
 /** Month-aware seasonal gate shared by every rail (see @/lib/seasonal). */
@@ -262,10 +265,11 @@ export function TopPicksRail({ maxAge, audience, rankByMemberIds, state }: { max
     // shown, so a day seed yields a genuinely different selection each day.
     const seed = getDaySeed() + nonce
     const mix = TOP_MIX[state]
-    const pick = (arr: RedesignCardMedia[], n: number, s: number) => seededShuffle(arr, s).slice(0, n)
+    const eligible = (item: RedesignCardMedia) => fitsHomepageAge(item, maxAge)
+    const pick = (arr: RedesignCardMedia[], n: number, s: number) => seededShuffle(arr.filter(eligible), s).slice(0, n)
     // Cinema leads (big new releases first); the rest is shuffled together so
     // films / séries / jeux interleave instead of sitting in type blocks.
-    const lead = pools.cinema.slice(0, mix.cinema)
+    const lead = pools.cinema.filter(eligible).slice(0, mix.cinema)
     const rest = seededShuffle(
       [
         ...pick(pools.films, mix.films, seed),
@@ -283,7 +287,7 @@ export function TopPicksRail({ maxAge, audience, rankByMemberIds, state }: { max
       }
     }
     return out.slice(0, 12)
-  }, [pools, state, nonce])
+  }, [pools, state, nonce, maxAge])
 
   return (
     <CardRailSection
@@ -334,7 +338,7 @@ function useUpcoming(maxAge?: number) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [maxAge])
-  return { items, loading }
+  return { items: items.filter((item) => fitsHomepageAge(item, maxAge)), loading }
 }
 
 export function UpcomingRail({ maxAge }: { maxAge?: number }) {
@@ -363,7 +367,7 @@ export function UpcomingRail({ maxAge }: { maxAge?: number }) {
 // ── À l'affiche au cinéma ──
 export function CinemaRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/cinema${typeof maxAge === "number" ? `?maxAge=${maxAge}` : ""}`
-  const { items, loading } = useRail(url, "movies", "MOVIE")
+  const { items, loading } = useRail(url, "movies", "MOVIE", { maxAge })
   return (
     <CardRailSection
       id="cinema"
@@ -390,7 +394,7 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
   // Noël titles without leaving a short row.
   const url = `/api/db/expert-picks?limit=14${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}${seed !== null ? `&seed=${seed}` : ""}`
   const season = useSeasonalFilter()
-  const { items, loading } = useRail(url, "items", "MOVIE", season)
+  const { items, loading } = useRail(url, "items", "MOVIE", { ...season, maxAge })
   return (
     <CardRailSection
       alt
@@ -412,7 +416,7 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
 // ── Sortis récemment en jeux vidéo (self-hides < 3) ──
 export function GamesRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
   const url = `/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
-  const { items, loading } = useRail(url, "games", "GAME")
+  const { items, loading } = useRail(url, "games", "GAME", { maxAge })
   if (!loading && items.length < 3) return null
   // Say the cap out loud. This rail is age-capped like every other browse rail
   // (default: the youngest child in the family), so a household with a 10-year

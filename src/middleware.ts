@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server"
+import { getClientIpFromHeaders } from "@/lib/client-ip"
+import { parseCataloguePage } from "@/lib/pagination"
+import { checkAuthRateLimit } from "@/lib/auth-rate-limit"
 import type { NextFetchEvent, NextRequest } from "next/server"
 import { detectAiBot, detectAiReferrer, classifyAiSurface } from "@/lib/ai-bots"
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
@@ -80,7 +83,9 @@ const rateLimitStore = new Map<
 // is only ever set in the isolated CI test environment (it also gates the
 // dev-only seed route), so it doubles as a safe "skip rate limiting here"
 // signal. It is NEVER set on public production.
-const RATE_LIMIT_DISABLED = process.env.ALLOW_TEST_SEED === "true"
+const RATE_LIMIT_DISABLED = process.env.ALLOW_TEST_SEED === "true" &&
+  !process.env.VERCEL_ENV &&
+  (process.env.NODE_ENV === "test" || process.env.CI === "true")
 
 export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname, searchParams, host } = request.nextUrl
@@ -96,18 +101,13 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   // ===== SEO: Pagination normalization for catalogue pages =====
   // - page=1 → 301 to clean URL (avoid duplicate content)
-  // - page invalid (non-integer, ≤0, >999) → 404 (hard limit, prevents abuse)
+  // - invalid syntax/offset overflow → 404; pages validate their actual totals
   const catalogueRoutes = ["/films", "/series", "/jeux"]
   if (catalogueRoutes.includes(pathname)) {
     const rawPage = searchParams.get("page")
     if (rawPage !== null) {
-      const parsedPage = parseInt(rawPage, 10)
-      const isValidInteger = Number.isFinite(parsedPage) && rawPage === String(parsedPage)
-
-      // Invalid page syntax or out of reasonable range → 404
-      // 100 pages × 24 items = 2400 items; current catalogues are well under this.
-      // This catches obvious abuse while letting the page handle edge cases.
-      if (!isValidInteger || parsedPage < 1 || parsedPage > 100) {
+      const parsedPage = parseCataloguePage(rawPage)
+      if (parsedPage === null) {
         return new NextResponse(
           `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page introuvable</title></head><body><h1>404 — Page introuvable</h1><p>Cette page n'existe pas.</p><p><a href="/">Retour à l'accueil</a></p></body></html>`,
           {
@@ -212,10 +212,19 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   // Apply rate limiting for API routes
   if (pathname.startsWith("/api/") && !RATE_LIMIT_DISABLED) {
-    const clientIp = getClientIp(request)
+    const clientIp = getClientIpFromHeaders(request.headers)
     const limitType = getRateLimitType(pathname)
 
-    const rateLimitResult = await checkRateLimit(clientIp, limitType)
+    const rateLimitResult = limitType === "auth"
+      ? await checkAuthRateLimit(clientIp)
+      : await checkRateLimit(clientIp, limitType)
+
+    if ("unavailable" in rateLimitResult && rateLimitResult.unavailable) {
+      return applySecurityHeaders(NextResponse.json(
+        { error: "Authentification temporairement indisponible. Veuillez réessayer." },
+        { status: 503, headers: { "Retry-After": "60", "Cache-Control": "no-store" } },
+      ))
+    }
 
     if (!rateLimitResult.allowed) {
       return applySecurityHeaders(new NextResponse(
@@ -339,9 +348,19 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
       // on its own — without an explicit `secret` it THROWS ("Must pass
       // `secret`"), which the catch below used to swallow, leaving this whole
       // redirect silently dead (new users never saw /onboarding at all).
-      const token = await getToken({ req: request, secret: process.env.AUTH_SECRET })
+      const token = await getToken({
+        req: request,
+        secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+        secureCookie: request.nextUrl.protocol === "https:",
+      })
       if (token && token.onboardingCompleted === false) {
-        return NextResponse.redirect(new URL("/onboarding", request.url))
+        // A raw JWT may have been revoked by a reset/deletion, or its onboarding
+        // state may have changed on another device. Confirm before redirecting.
+        const { auth } = await import("@/lib/auth")
+        const session = await auth()
+        if (session?.user && session.user.onboardingCompleted === false) {
+          return NextResponse.redirect(new URL("/onboarding", request.url))
+        }
       }
     } catch (error) {
       // Token parsing failed — don't block the request, but never fail
@@ -351,20 +370,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   }
 
   return applySecurityHeaders(NextResponse.next())
-}
-
-// Get client IP from request headers
-function getClientIp(request: NextRequest): string {
-  const forwarded = request.headers.get("x-forwarded-for")
-  const realIp = request.headers.get("x-real-ip")
-  const cfConnectingIp = request.headers.get("cf-connecting-ip")
-
-  return (
-    cfConnectingIp ||
-    realIp ||
-    forwarded?.split(",")[0]?.trim() ||
-    "unknown"
-  )
 }
 
 // Determine rate limit type for a route
@@ -438,6 +443,7 @@ function checkInMemoryRateLimit(
 }
 
 export const config = {
+  runtime: "nodejs",
   matcher: [
     // Match all routes except static files and Next.js internals
     "/((?!_next/static|_next/image|favicon.ico|icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)",

@@ -1,58 +1,45 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { Cookie, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
-interface CookiePreferences {
-  essential: boolean
-  analytics: boolean
-  marketing: boolean
-}
+import {
+  ESSENTIAL_ONLY,
+  WITH_ANALYTICS,
+  getCookieConsent,
+  getServerCookieConsent,
+  saveCookieConsent,
+  subscribeCookieConsent,
+  type CookieConsentState,
+  type CookiePreferences,
+} from "@/lib/cookie-consent"
 
 export default function CookiesPage() {
-  const [preferences, setPreferences] = useState<CookiePreferences>({
-    essential: true, // Always required
-    analytics: false,
-    marketing: false,
-  })
+  const consent = useSyncExternalStore(subscribeCookieConsent, getCookieConsent, getServerCookieConsent)
+  const [draft, setDraft] = useState<{ consent: CookieConsentState; preferences: CookiePreferences } | null>(null)
+  const preferences = draft?.consent === consent ? draft.preferences : consent.preferences
   const [saved, setSaved] = useState(false)
-
-  useEffect(() => {
-    // Load saved preferences
-    const savedPrefs = localStorage.getItem("cookie-preferences")
-    if (savedPrefs) {
-      try {
-        const parsed = JSON.parse(savedPrefs)
-        queueMicrotask(() => setPreferences((prev) => ({ ...prev, ...parsed })))
-      } catch {
-        // Ignore parse errors
-      }
-    }
-  }, [])
+  const [persisted, setPersisted] = useState(true)
 
   const handleSave = () => {
-    localStorage.setItem("cookie-preferences", JSON.stringify(preferences))
-    localStorage.setItem("cookie-consent", "customized")
+    setPersisted(saveCookieConsent(preferences, "customized"))
+    setDraft(null)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
 
   const handleAcceptAll = () => {
-    const allAccepted = { essential: true, analytics: true, marketing: true }
-    setPreferences(allAccepted)
-    localStorage.setItem("cookie-preferences", JSON.stringify(allAccepted))
-    localStorage.setItem("cookie-consent", "accepted")
+    setPersisted(saveCookieConsent(WITH_ANALYTICS, "accepted"))
+    setDraft(null)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
 
   const handleRejectAll = () => {
-    const onlyEssential = { essential: true, analytics: false, marketing: false }
-    setPreferences(onlyEssential)
-    localStorage.setItem("cookie-preferences", JSON.stringify(onlyEssential))
-    localStorage.setItem("cookie-consent", "declined")
+    setPersisted(saveCookieConsent(ESSENTIAL_ONLY, "declined"))
+    setDraft(null)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
@@ -64,23 +51,26 @@ export default function CookiesPage() {
       description:
         "Ces cookies sont necessaires au fonctionnement du site. Ils permettent d'utiliser les fonctionnalites de base comme la navigation et l'acces aux zones securisees.",
       required: true,
+      unused: false,
       examples: ["Session utilisateur", "Preferences de langue", "Securite"],
     },
     {
       id: "analytics",
-      name: "Cookies analytiques",
+      name: "Mesure d’audience et de performance",
       description:
-        "Ces cookies nous aident a comprendre comment les visiteurs interagissent avec le site en collectant des informations anonymes.",
+        "Avec votre accord, Plausible, Vercel Analytics et Vercel Speed Insights mesurent la fréquentation, les interactions et les performances du site. Ces outils fonctionnent sans cookies publicitaires.",
       required: false,
-      examples: ["Pages visitees", "Temps passe sur le site", "Source du trafic"],
+      unused: false,
+      examples: ["Pages visitées", "Performances du site", "Source du trafic"],
     },
     {
       id: "marketing",
       name: "Cookies marketing",
       description:
-        "Ces cookies sont utilises pour suivre les visiteurs sur les sites web afin d'afficher des publicites pertinentes.",
+        "Nous n’utilisons aucun traceur publicitaire ou de remarketing. Cette catégorie est désactivée.",
       required: false,
-      examples: ["Publicites personnalisees", "Reseaux sociaux", "Remarketing"],
+      unused: true,
+      examples: ["Non utilisé"],
     },
   ]
 
@@ -92,8 +82,8 @@ export default function CookiesPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Gestion des cookies</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Nous utilisons des cookies pour ameliorer votre experience sur notre site.
-          Vous pouvez personnaliser vos preferences ci-dessous.
+          Les cookies essentiels permettent le fonctionnement du site.
+          Vous pouvez choisir d’autoriser la mesure d’audience et de performance ci-dessous.
         </p>
       </div>
 
@@ -120,17 +110,21 @@ export default function CookiesPage() {
                   {category.required && (
                     <span className="text-xs text-gray-500">Toujours actif</span>
                   )}
+                  {category.unused && (
+                    <span className="text-xs text-gray-500">Non utilisé</span>
+                  )}
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
+                    aria-label={category.name}
                     className="sr-only peer"
                     checked={preferences[category.id as keyof CookiePreferences]}
-                    disabled={category.required}
+                    disabled={category.required || category.unused}
                     onChange={(e) =>
-                      setPreferences({
-                        ...preferences,
-                        [category.id]: e.target.checked,
+                      setDraft({
+                        consent,
+                        preferences: { ...preferences, [category.id]: e.target.checked },
                       })
                     }
                   />
@@ -138,7 +132,7 @@ export default function CookiesPage() {
                     className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all ${
                       category.required
                         ? "bg-primary cursor-not-allowed"
-                        : "bg-gray-200 peer-checked:bg-primary"
+                        : category.unused ? "bg-gray-200 cursor-not-allowed" : "bg-gray-200 peer-checked:bg-primary"
                     }`}
                   />
                 </label>
@@ -164,13 +158,15 @@ export default function CookiesPage() {
       {/* Save Button */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          Vos preferences sont sauvegardees localement dans votre navigateur.
+          {persisted
+            ? "Vos préférences sont sauvegardées localement dans votre navigateur."
+            : "Votre choix est appliqué pour cette visite. Le stockage du navigateur est indisponible."}
         </p>
         <Button onClick={handleSave}>
           {saved ? (
             <>
               <Check className="mr-2 h-4 w-4" />
-              Preferences sauvegardees
+              {persisted ? "Préférences sauvegardées" : "Préférences appliquées"}
             </>
           ) : (
             "Sauvegarder mes preferences"
@@ -195,6 +191,7 @@ export default function CookiesPage() {
           <p>
             Conformement au RGPD, vous avez le droit de retirer votre consentement
             a tout moment en modifiant vos preferences sur cette page.
+            Le retrait arrête les nouvelles mesures ; il n’efface pas les données déjà transmises.
           </p>
         </CardContent>
       </Card>
