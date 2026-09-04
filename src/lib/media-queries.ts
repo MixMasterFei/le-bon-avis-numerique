@@ -72,6 +72,7 @@ export interface TransformedMediaItem {
   posterUrl?: string | null
   backdropUrl?: string | null
   releaseDate: string | null
+  releaseStatus?: string | null
   duration?: number | null
   numberOfSeasons?: number | null
   director?: string | null
@@ -266,6 +267,7 @@ function transformItem(item: PrismaMediaWithRelations): TransformedMediaItem {
     posterUrl: item.posterUrl,
     backdropUrl: item.backdropUrl,
     releaseDate: item.releaseDate?.toISOString().split("T")[0] || null,
+    releaseStatus: item.releaseStatus,
     duration: item.duration,
     numberOfSeasons: item.numberOfSeasons,
     director: item.director,

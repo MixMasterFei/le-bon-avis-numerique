@@ -1,5 +1,6 @@
 import { fetchMovies, fetchSeries, fetchGames, type TransformedMediaItem } from "@/lib/media-queries"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -82,7 +83,7 @@ export async function buildSelectionMarkdown(
     minQuality: 50,
   })
   // Keep the explicit promise true even if a browse-page exception changes.
-  const items = result.items.filter((item) => item.expertAgeRec != null && item.expertAgeRec > 0 && item.expertAgeRec <= age && !item.isProvisional)
+  const items = result.items.filter((item) => item.expertAgeRec != null && item.expertAgeRec > 0 && item.expertAgeRec <= age && item.contentMetrics != null && !shouldHideContentAnalysis(item))
 
   const htmlUrl = `${SITE_URL}${config.htmlPath}?maxAge=${age}`
 

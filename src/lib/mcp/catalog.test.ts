@@ -122,6 +122,9 @@ describe("assessment fidelity", () => {
     db.movies.mockResolvedValue({ items: [
       { ...movie, releaseDate: "1999-03-31", expertAgeRec: 14 },
       { ...movie, releaseDate: "1999-03-31", expertAgeRec: 6, isProvisional: true },
+      { ...movie, releaseDate: "1999-03-31", expertAgeRec: 6, releaseStatus: "alpha" },
+      { ...movie, releaseDate: "2099-03-31", expertAgeRec: 6 },
+      { ...movie, releaseDate: "1999-03-31", expertAgeRec: 6, contentMetrics: null },
       { ...movie, releaseDate: "1999-03-31", expertAgeRec: 7 },
     ] })
     const result = await recommendForAge(7)
