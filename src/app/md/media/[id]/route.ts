@@ -1,6 +1,7 @@
 import { toMediaRouteId } from "@/lib/media-route"
 import { renderMediaMarkdown } from "@/lib/markdown/media-md"
 import { loadMediaMdInput } from "@/lib/markdown/media-md-data"
+import { markdownUnavailable } from "@/lib/markdown/http"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -30,7 +31,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     input = await loadMediaMdInput(id)
   } catch (error) {
     console.error("[md/media] DB query failed:", error instanceof Error ? error.message : error)
-    return notFoundResponse()
+    return markdownUnavailable()
   }
 
   if (!input) return notFoundResponse()

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
-import { parseMediaRouteId, isPublicMedia, type MediaType } from "@/lib/media-route"
+import { parseMediaRouteId, publicMediaWhere, type MediaType } from "@/lib/media-route"
+import { withPrismaRetry } from "@/lib/prisma-retry"
 import type { MediaMdInput } from "@/lib/markdown/media-md"
 
 // Shared fiche loader for the markdown surfaces: the /md/media/[id] route and
@@ -13,39 +14,22 @@ import type { MediaMdInput } from "@/lib/markdown/media-md"
  * item doesn't exist or isn't publicly visible.
  */
 export async function loadMediaMdInput(routeIdOrRaw: string): Promise<MediaMdInput | null> {
-  const { id: rawId } = parseMediaRouteId(routeIdOrRaw)
-
-  let dbMedia = await prisma.mediaItem.findUnique({
-    where: { id: rawId },
+  let decoded: string
+  try { decoded = decodeURIComponent(routeIdOrRaw.trim()) } catch { return null }
+  const { type, id: rawId } = parseMediaRouteId(decoded)
+  if (decoded.includes(":") && !type) return null
+  if (type === "MANGA") return null
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId)
+  const numeric = /^[1-9]\d*$/.test(rawId) && Number(rawId) <= 2147483647
+  // Provider IDs only have meaning within their namespace. Never try TMDB
+  // first for a game, or turn a malformed UUID/"603oops" into a numeric ID.
+  if (!uuid && !(numeric && (type === "MOVIE" || type === "TV" || type === "GAME"))) return null
+  const identifier = uuid ? { id: rawId } : type === "GAME" ? { igdbId: Number(rawId) } : { tmdbId: Number(rawId) }
+  const dbMedia = await withPrismaRetry(() => prisma.mediaItem.findFirst({
+    where: { ...publicMediaWhere, ...identifier, ...(type ? { type } : {}) },
     include: { contentMetrics: true },
-  })
-
-  if (!dbMedia) {
-    const numericId = parseInt(rawId)
-    if (!Number.isNaN(numericId)) {
-      dbMedia =
-        (await prisma.mediaItem.findFirst({
-          where: { tmdbId: numericId },
-          include: { contentMetrics: true },
-        })) ||
-        (await prisma.mediaItem.findFirst({
-          where: { igdbId: numericId },
-          include: { contentMetrics: true },
-        }))
-    }
-  }
-
+  }))
   if (!dbMedia) return null
-
-  if (
-    !isPublicMedia({
-      posterUrl: dbMedia.posterUrl,
-      dataQualityScore: dbMedia.dataQualityScore,
-      type: dbMedia.type as MediaType,
-    })
-  ) {
-    return null
-  }
 
   const metrics = dbMedia.contentMetrics
   return {
@@ -59,6 +43,12 @@ export async function loadMediaMdInput(routeIdOrRaw: string): Promise<MediaMdInp
     isEnriched: dbMedia.isEnriched,
     releaseStatus: (dbMedia as unknown as { releaseStatus?: string | null }).releaseStatus ?? null,
     updatedAt: dbMedia.updatedAt,
+    hasContentAnalysis: metrics !== null,
+    assessmentSource: metrics?.enrichmentSource ?? null,
+    assessedAt: metrics?.pass2At ?? metrics?.pass1At ?? null,
+    assessmentConfidence: metrics?.enrichmentConfidence ?? null,
+    sensitiveWarnings: metrics?.sensitiveWarnings ?? [],
+    sensitiveWarningsAt: metrics?.sensitiveWarningsAt ?? null,
     topics: dbMedia.topics || [],
     genres: dbMedia.genres || [],
     contentMetrics: metrics

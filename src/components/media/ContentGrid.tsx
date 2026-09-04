@@ -2,6 +2,7 @@
 
 import { Progress } from "@/components/ui/progress"
 import { cn, contentMetricLabels } from "@/lib/utils"
+import { deriveEducationalValue } from "@/lib/educational-value"
 
 interface ContentMetrics {
   violence: number
@@ -20,18 +21,6 @@ interface ContentGridProps {
   compact?: boolean
   className?: string
   topics?: string[]
-}
-
-function deriveEducationalValue(metrics: ContentMetrics, topics: string[] = []): number {
-  const lowerTopics = topics.map((topic) => topic.toLowerCase())
-  if (lowerTopics.some((topic) => topic.includes("éducatif") || topic.includes("educatif") || topic.includes("documentaire"))) {
-    return 5
-  }
-  if (lowerTopics.some((topic) => topic.includes("science") || topic.includes("histoire") || topic.includes("culture"))) {
-    return 4
-  }
-
-  return Math.max(0, Math.min(5, Math.round((metrics.positiveMessages + metrics.roleModels) / 3)))
 }
 
 export function ContentGrid({

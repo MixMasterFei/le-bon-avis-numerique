@@ -31,6 +31,8 @@ const LEADING_ARTICLES = "l|le|la|les|the|a|an|un|une"
 export function compactTitle(input: string): string {
   return input
     .toLowerCase()
+    .replace(/œ/g, "oe")
+    .replace(/æ/g, "ae")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(new RegExp(`^(?:${LEADING_ARTICLES})['’\\s]+`), "")

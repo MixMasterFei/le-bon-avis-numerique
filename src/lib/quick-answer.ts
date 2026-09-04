@@ -47,7 +47,7 @@ export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
       ? `à partir de ${media.expertAgeRec} ans (à confirmer)`
       : "à un âge encore à confirmer"
     const pending =
-      "L'évaluation détaillée du contenu sera publiée après sa sortie, une fois le titre visionné."
+      "L'analyse détaillée sera publiée lorsque les informations disponibles permettront de l'établir."
     return {
       question,
       answer: `${media.title} est un ${typeLabel} dont l'âge est estimé ${age} par Totem Avisé. ${pending}`,

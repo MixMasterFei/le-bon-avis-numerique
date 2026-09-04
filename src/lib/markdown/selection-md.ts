@@ -56,6 +56,7 @@ function itemLine(item: TransformedMediaItem, mediaType: MediaType): string {
 export interface SelectionMarkdown {
   body: string
   htmlUrl: string
+  items: Array<{ id: string; title: string; type: MediaType; year: number | null; age: number | null; provisional: boolean; url: string }>
 }
 
 /**
@@ -67,7 +68,7 @@ export async function buildSelectionMarkdown(
   age: number,
   options: { limit?: number } = {},
 ): Promise<SelectionMarkdown | null> {
-  const config = SELECTION_TYPES[type]
+  const config = Object.hasOwn(SELECTION_TYPES, type) ? SELECTION_TYPES[type] : undefined
   if (!config || !Number.isInteger(age) || age < SELECTION_MIN_AGE || age > SELECTION_MAX_AGE) {
     return null
   }
@@ -80,7 +81,8 @@ export async function buildSelectionMarkdown(
     requirePoster: true,
     minQuality: 50,
   })
-  const items = result.items
+  // Keep the explicit promise true even if a browse-page exception changes.
+  const items = result.items.filter((item) => item.expertAgeRec != null && item.expertAgeRec > 0 && item.expertAgeRec <= age && !item.isProvisional)
 
   const htmlUrl = `${SITE_URL}${config.htmlPath}?maxAge=${age}`
 
@@ -88,7 +90,7 @@ export async function buildSelectionMarkdown(
   lines.push(`# ${config.label} conseillés pour un enfant de ${age} ans`, "")
   lines.push(`URL canonique: ${htmlUrl}`)
   lines.push(`Langue: français`)
-  lines.push(`Source: Totem Avisé — sélection issue du catalogue évalué (âge conseillé indépendant, dimensions de contenu vérifiées).`)
+  lines.push(`Source: Totem Avisé — repères issus d'une analyse automatisée du catalogue, susceptibles d'être corrigés par les retours des familles.`)
   lines.push("")
   lines.push(
     `Chaque ${config.childLabel} ci-dessous a un âge conseillé Totem Avisé inférieur ou égal à ${age} ans. ` +
@@ -120,5 +122,9 @@ export async function buildSelectionMarkdown(
   lines.push(`- [Index Markdown](${SITE_URL}/md)`)
   lines.push("")
 
-  return { body: lines.join("\n"), htmlUrl }
+  return { body: lines.join("\n"), htmlUrl, items: items.map((item) => {
+    const id = toMediaRouteId(config.mediaType, item.id)
+    return { id, title: item.title, type: config.mediaType, year: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) : null,
+      age: item.expertAgeRec, provisional: false, url: `${SITE_URL}/media/${id}` }
+  }) }
 }

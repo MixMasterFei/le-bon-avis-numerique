@@ -35,7 +35,7 @@ describe("reaction vocabulary sync", () => {
     const match = schema.match(/enum ReactionType \{([^}]+)\}/)
     expect(match).not.toBeNull()
     const enumValues = match![1]
-      .split("\n")
+      .split(/\r?\n/)
       .map((line) => line.replace(/\/\/.*$/, "").trim())
       .filter(Boolean)
     expect(new Set(enumValues)).toEqual(new Set(VALID_REACTIONS))

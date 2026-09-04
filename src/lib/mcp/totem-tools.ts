@@ -1,151 +1,108 @@
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { withPrismaRetry } from "@/lib/prisma-retry"
-import {
-  publicMediaWhere,
-  toMediaRouteId,
-  mediaTypeShortLabels,
-  type MediaType,
-} from "@/lib/media-route"
-import { renderMediaMarkdown } from "@/lib/markdown/media-md"
+import { NON_POSTER_URLS, PUBLIC_MEDIA_QUALITY_FLOOR, toMediaRouteId, mediaTypeShortLabels, type MediaType } from "@/lib/media-route"
+import { compactTitle, compactSql } from "@/lib/search-normalize"
+import { renderMediaMarkdown, mediaAssessment } from "@/lib/markdown/media-md"
 import { loadMediaMdInput } from "@/lib/markdown/media-md-data"
 import { buildSelectionMarkdown } from "@/lib/markdown/selection-md"
-import { pickBestTitleMatch } from "@/lib/mcp/title-match"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { toolError, type ToolResponse } from "./result"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
-
-// Tool implementations for the public Totem MCP server (/api/mcp).
-//
-// Design rule (funnel-safe freemium): anonymous tools describe the MEDIA —
-// verdict, dimensions, reasoning, same wording as the /md layer — and always
-// end on the honest per-child pointer. Anything that describes the FAMILY
-// (per-child fit scores) stays behind a Totem account; v1 links out to the
-// site, a future authenticated v2 may expose it in-chat.
-
-const SEARCH_TYPE_MAP: Record<string, MediaType> = {
-  film: "MOVIE",
-  serie: "TV",
-  jeu: "GAME",
-}
-
+const SEARCH_TYPE_MAP = { film: "MOVIE", serie: "TV", jeu: "GAME" } as const
+export type SearchType = keyof typeof SEARCH_TYPE_MAP
 interface SearchRow {
-  id: string
-  title: string
-  type: string
-  releaseDate: Date | null
-  expertAgeRec: number | null
-  isEnriched: boolean
-  dataQualityScore: number
+  id: string; title: string; originalTitle: string | null; type: MediaType; releaseDate: Date | null
+  expertAgeRec: number | null; isEnriched: boolean; releaseStatus: string | null
 }
 
-async function searchCatalog(query: string, type?: string, take = 5): Promise<SearchRow[]> {
-  const q = query.trim()
-  return withPrismaRetry(() =>
-    prisma.mediaItem.findMany({
-      where: {
-        ...publicMediaWhere,
-        ...(type && SEARCH_TYPE_MAP[type] ? { type: SEARCH_TYPE_MAP[type] } : {}),
-        OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { originalTitle: { contains: q, mode: "insensitive" } },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        type: true,
-        releaseDate: true,
-        expertAgeRec: true,
-        isEnriched: true,
-        dataQualityScore: true,
-      },
-      orderBy: { dataQualityScore: "desc" },
-      take,
-    }),
-  )
+export async function searchCatalog(query: string, type?: SearchType, take = 10, year?: number): Promise<SearchRow[]> {
+  const compact = compactTitle(query.trim())
+  if (compact.length < 2) return []
+  const ct = Prisma.raw(compactSql("title"))
+  const co = Prisma.raw(compactSql("coalesce(original_title, '')"))
+  // Apply visibility and type gates BEFORE LIMIT. The normalization mirrors
+  // the website; raw SQL fragments contain only fixed column expressions.
+  // Every user value is parameterized, including the optional year and type.
+  return withPrismaRetry(() => prisma.$queryRaw<SearchRow[]>(Prisma.sql`
+    SELECT id, title, original_title AS "originalTitle", type,
+      release_date AS "releaseDate", expert_age_rec AS "expertAgeRec",
+      is_enriched AS "isEnriched", release_status AS "releaseStatus"
+    FROM media_items
+    WHERE type::text IN ('MOVIE', 'TV', 'GAME')
+      AND poster_url IS NOT NULL AND poster_url NOT IN (${Prisma.join([...NON_POSTER_URLS])})
+      AND data_quality_score >= ${PUBLIC_MEDIA_QUALITY_FLOOR}
+      ${type ? Prisma.sql`AND type::text = ${SEARCH_TYPE_MAP[type]}` : Prisma.empty}
+      ${year ? Prisma.sql`AND release_date >= ${new Date(`${year}-01-01T00:00:00Z`)} AND release_date < ${new Date(`${year + 1}-01-01T00:00:00Z`)}` : Prisma.empty}
+      AND (${ct} LIKE '%' || ${compact} || '%' OR ${co} LIKE '%' || ${compact} || '%')
+    ORDER BY CASE WHEN ${ct} = ${compact} OR ${co} = ${compact} THEN 0
+                  WHEN ${ct} LIKE ${compact} || '%' OR ${co} LIKE ${compact} || '%' THEN 1 ELSE 2 END,
+      CASE WHEN release_date >= now() - interval '90 days' THEN 0 ELSE 1 END,
+      tmdb_vote_count DESC NULLS LAST, id
+    LIMIT ${Math.min(Math.max(take, 1), 10)}
+  `))
 }
 
-function searchRowLine(row: SearchRow): string {
-  const routeId = toMediaRouteId(row.type as MediaType, row.id)
-  const label = mediaTypeShortLabels[row.type as MediaType] ?? row.type
-  const year = row.releaseDate ? ` (${row.releaseDate.toISOString().slice(0, 4)})` : ""
-  const age =
-    row.expertAgeRec && row.expertAgeRec > 0
-      ? `dès ${row.expertAgeRec} ans${row.isEnriched ? "" : " (estimation à confirmer)"}`
-      : "âge à confirmer"
-  return `- \`${routeId}\` — **${row.title}**${year} · ${label} · ${age}`
+function publicMatch(row: SearchRow) {
+  const id = toMediaRouteId(row.type, row.id)
+  return { id, title: row.title, type: row.type, year: row.releaseDate?.getUTCFullYear() ?? null,
+    age: row.expertAgeRec && row.expertAgeRec > 0 ? row.expertAgeRec : null,
+    provisional: shouldHideContentAnalysis(row), url: `${SITE_URL}/media/${id}` }
 }
+function searchRowLine(row: SearchRow) {
+  const m = publicMatch(row)
+  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${m.age ? `dès ${m.age} ans${m.provisional ? " (estimation à confirmer)" : ""}` : "âge à confirmer"}`
+}
+function validQuery(query: string) { return query.trim().length <= 120 && compactTitle(query).length >= 2 }
 
-export async function searchMediaText(query: string, type?: string, limit = 5): Promise<string> {
-  const take = Math.min(Math.max(limit, 1), 10)
-  const rows = await searchCatalog(query, type, take)
-
-  if (rows.length === 0) {
-    return (
-      `Aucun titre du catalogue Totem Avisé ne correspond à « ${query.trim()} ».\n\n` +
-      `Le catalogue couvre plus de 11 000 films, séries et jeux vidéo, mais pas encore tout. ` +
-      `Recherche complète sur le site : ${SITE_URL}/recherche — les parents peuvent aussi y demander l'ajout d'un titre manquant.`
-    )
+export async function searchMedia(query: string, type?: SearchType, limit = 5): Promise<ToolResponse> {
+  if (!validQuery(query)) return toolError("invalid_input", "Précisez au moins deux lettres ou chiffres du titre recherché (120 caractères maximum).")
+  const rows = await searchCatalog(query, type, limit)
+  return {
+    text: rows.length ? [
+      `Titres correspondant à « ${query.trim()} » dans le catalogue Totem Avisé :`, "", ...rows.map(searchRowLine), "",
+      "Pour les repères d'un titre, appelez `get_age_verdict` avec son identifiant. En cas d'hésitation, demandez au parent de préciser le titre ou l'année.",
+    ].join("\n") : `Aucun titre ne correspond à « ${query.trim()} » dans le catalogue public. Essayez une autre formulation : ${SITE_URL}/recherche.`,
+    data: { schemaVersion: 1, status: rows.length ? "ok" : "not_found", result: { kind: "search", query: query.trim(), matches: rows.map(publicMatch) } },
   }
-
-  const lines = [
-    `Titres correspondant à « ${query.trim()} » dans le catalogue Totem Avisé :`,
-    "",
-    ...rows.map(searchRowLine),
-    "",
-    "Pour le verdict complet d'un titre (âge conseillé, 8 dimensions de contenu, « Pourquoi cet âge ? »), appelez `get_age_verdict` avec son identifiant.",
-  ]
-  return lines.join("\n")
 }
 
-export async function ageVerdictText(params: { id?: string; title?: string }): Promise<string> {
+export async function ageVerdict(params: { id?: string; title?: string; type?: SearchType; year?: number }): Promise<ToolResponse> {
   let resolvedId = params.id?.trim()
-  let alternates: SearchRow[] = []
-
+  if (!resolvedId && (!params.title || !validQuery(params.title))) {
+    return toolError("invalid_input", "Précisez l'identifiant renvoyé par `search_media`, ou un titre d'au moins deux lettres ou chiffres.")
+  }
   if (!resolvedId && params.title) {
-    const rows = await searchCatalog(params.title, undefined, 5)
-    if (rows.length === 0) {
-      return (
-        `Aucun titre du catalogue Totem Avisé ne correspond à « ${params.title.trim()} ». ` +
-        `Essayez \`search_media\` avec une autre orthographe, ou la recherche du site : ${SITE_URL}/recherche.`
-      )
+    const rows = await searchCatalog(params.title, params.type, 10, params.year)
+    const compact = compactTitle(params.title)
+    const exact = rows.filter((r) => compactTitle(r.title) === compact || (r.originalTitle && compactTitle(r.originalTitle) === compact))
+    const candidates = exact.length ? exact : rows
+    if (candidates.length !== 1) {
+      return {
+        text: candidates.length ? ["Plusieurs titres correspondent. Demandez au parent lequel il cherche avant de donner un âge conseillé :", "", ...candidates.map(searchRowLine), "", "Relancez `get_age_verdict` avec l'identifiant choisi, ou précisez `year` et `type`."].join("\n")
+          : `Aucun titre trouvé. Essayez la recherche avec une autre formulation : ${SITE_URL}/recherche.`,
+        data: { schemaVersion: 1, status: candidates.length ? "ambiguous" : "not_found", result: { kind: "verdict", media: null, candidates: candidates.map(publicMatch) } },
+      }
     }
-    // Exact-title collisions resolve to the most recent release, not the
-    // best-enriched fiche (see title-match.ts — the "L'Odyssée" 2016/2026 case).
-    const best = pickBestTitleMatch(rows, params.title)!
-    resolvedId = toMediaRouteId(best.type as MediaType, best.id)
-    alternates = rows.filter((r) => r.id !== best.id).slice(0, 2)
+    resolvedId = toMediaRouteId(candidates[0].type, candidates[0].id)
   }
-
-  if (!resolvedId) {
-    return "Précisez un identifiant (`id`, ex. `movie:abc123`) ou un titre (`title`)."
+  const input = await loadMediaMdInput(resolvedId!)
+  if (!input) return { text: "Identifiant introuvable ou invalide. Utilisez l'identifiant exact renvoyé par `search_media`. Les identifiants numériques nécessitent un préfixe `movie:`, `tv:` ou `game:`.",
+    data: { schemaVersion: 1, status: "not_found", result: { kind: "verdict", media: null, candidates: [] } } }
+  if ((params.type && input.type !== SEARCH_TYPE_MAP[params.type]) || (params.year && input.releaseDate?.slice(0, 4) !== String(params.year))) {
+    return toolError("invalid_input", "L'identifiant ne correspond pas au type ou à l'année indiqués. Vérifiez le titre avec `search_media`.")
   }
-
-  const input = await loadMediaMdInput(resolvedId)
-  if (!input) {
-    return (
-      `Identifiant « ${resolvedId} » introuvable dans le catalogue public Totem Avisé. ` +
-      `Utilisez \`search_media\` pour trouver l'identifiant exact.`
-    )
-  }
-
-  // Same render as /md/media/[id]: verdict, 8 dimensions, "Pourquoi cet âge ?",
-  // and the per-child account pointer.
-  let text = renderMediaMarkdown(input)
-
-  if (alternates.length > 0) {
-    text +=
-      `\n## Autres correspondances possibles\n\n` +
-      alternates.map(searchRowLine).join("\n") +
-      "\n"
-  }
-
-  return text
+  const id = toMediaRouteId(input.type, input.id)
+  return { text: renderMediaMarkdown(input), data: { schemaVersion: 1, status: "ok", result: { kind: "verdict", candidates: [], media: {
+    id, title: input.title, type: input.type, year: input.releaseDate ? Number(input.releaseDate.slice(0, 4)) : null,
+    age: input.expertAgeRec && input.expertAgeRec > 0 ? input.expertAgeRec : null, provisional: shouldHideContentAnalysis(input), url: `${SITE_URL}/media/${id}`,
+    updatedAt: input.updatedAt.toISOString(), classification: { value: input.officialRating, country: null, authority: null }, assessment: mediaAssessment(input),
+  } } } }
 }
 
-export async function recommendForAgeText(age: number, type = "films", limit = 10): Promise<string> {
+export async function recommendForAge(age: number, type = "films", limit = 10): Promise<ToolResponse> {
   const selection = await buildSelectionMarkdown(type, age, { limit })
-  if (!selection) {
-    return "Paramètres invalides : `type` doit être `films`, `series` ou `jeux`, et `age` un entier entre 3 et 16."
-  }
-  return selection.body
+  if (!selection) return toolError("invalid_input", "Indiquez films, series ou jeux, et un âge entier de 3 à 16 ans.")
+  return { text: selection.body, data: { schemaVersion: 1, status: "ok", result: { kind: "selection", age, type: type as "films" | "series" | "jeux", url: selection.htmlUrl, items: selection.items } } }
 }

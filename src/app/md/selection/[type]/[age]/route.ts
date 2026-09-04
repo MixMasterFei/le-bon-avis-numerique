@@ -1,4 +1,5 @@
 import { buildSelectionMarkdown } from "@/lib/markdown/selection-md"
+import { markdownUnavailable } from "@/lib/markdown/http"
 
 export const revalidate = 3600
 
@@ -34,7 +35,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     selection = await buildSelectionMarkdown(type, age)
   } catch (error) {
     console.error("[md/selection] query failed:", error instanceof Error ? error.message : error)
-    return notFoundResponse()
+    return markdownUnavailable()
   }
   if (!selection) return notFoundResponse()
 

@@ -11,13 +11,14 @@ const MD_HEADERS = {
 export async function GET() {
   const body = `# Couche Markdown — Totem Avisé
 
-Cette couche expose des versions Markdown propres des pages principales de Totem Avisé, lisibles par les agents et moteurs IA. Le contenu est généré à partir des mêmes sources que les pages HTML : pas d'édition parallèle, pas de dérive.
+Cette couche expose des versions Markdown des pages principales de Totem Avisé, lisibles par les agents et moteurs IA. Les données du catalogue, les calculs partagés et le contenu éditorial publié alimentent les exports.
 
 ## Routes disponibles
 
 - ${baseUrl}/md — cet index.
 - ${baseUrl}/md/notre-methode — méthode d'évaluation (comment lire nos repères).
-- ${baseUrl}/md/media/{routeId} — fiche média (films, séries, jeux vidéo, livres, applications) : âge conseillé, 8 dimensions de contenu, raisonnement de l'âge.
+- ${baseUrl}/md/blog — index des articles publiés ; /md/blog/{slug} fournit le texte, les sources et les dates de chaque article.
+- ${baseUrl}/md/media/{routeId} — fiche média : âge conseillé, sept scores de contenu, indicateur éducatif calculé, points de vigilance disponibles et dates d'analyse.
 - ${baseUrl}/md/selection/{type}/{âge} — sélection recommandée par âge. \`{type}\` ∈ \`films\`, \`series\`, \`jeux\` ; \`{âge}\` entier de 3 à 16. Ex. ${baseUrl}/md/selection/films/7 pour "un film pour un enfant de 7 ans".
 - ${baseUrl}/md/jeux/quel-age — les jeux vidéo les plus demandés par les enfants, avec âge conseillé et PEGI (Fortnite, Roblox, Minecraft…).
 
@@ -27,20 +28,20 @@ Le segment \`{routeId}\` suit le format \`<type>:<id>\` (deux-points URL-encodé
 
 - \`movie:603\` → ${baseUrl}/md/media/movie:603
 - \`tv:1399\` → ${baseUrl}/md/media/tv:1399
-- \`game:12345\` → ${baseUrl}/md/media/game:12345
-- \`book:abc-def\` → ${baseUrl}/md/media/book:abc-def
+- Les identifiants numériques de jeux utilisent \`game:{identifiant IGDB}\`.
+- Les fiches de livres et applications utilisent leur UUID exact, renvoyé par le catalogue.
 
-Types valides : \`movie\`, \`tv\`, \`game\`, \`book\`, \`app\`, \`manga\`.
+Types de fiches publiques : \`movie\`, \`tv\`, \`game\`, \`book\`, \`app\`. Un identifiant numérique exige son préfixe : les espaces TMDB films, TMDB séries et IGDB sont distincts. Les mangas ne sont pas exposés par cette couche.
 
 ## Découverte
 
-L'URL de la page HTML équivalente est toujours indiquée par l'en-tête HTTP \`Link: <…>; rel="canonical"\` et par le champ \`URL canonique\` au début de chaque fichier Markdown.
+Les fiches, articles, sélections et pages de méthode indiquent leur URL HTML canonique dans l'en-tête HTTP \`Link: <…>; rel="canonical"\` et au début du texte. Citez cette URL HTML.
 
 Les réponses sont marquées \`X-Robots-Tag: noindex, follow\`. Cette couche n'est pas indexée par les moteurs et n'apparaît pas dans le sitemap : utilisez-la comme source de citation, pas comme cible à crawler exhaustivement.
 
 ## Hors périmètre actuel
 
-Le blog (\`/blog/{slug}\`) et les guides parents (\`/guides\`) ne sont pas encore exposés en Markdown. La conversion fidèle du contenu éditorial est en cours d'évaluation.
+Les brouillons et articles dont la publication est future ne sont jamais exportés. Les guides parents (\`/guides\`) restent disponibles sur leurs pages HTML.
 `
 
   return new Response(body, { headers: MD_HEADERS })

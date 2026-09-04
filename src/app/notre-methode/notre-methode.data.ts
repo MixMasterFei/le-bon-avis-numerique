@@ -34,14 +34,14 @@ export const methodeSections: MethodeSection[] = [
     icon: "sparkles",
     title: "Comment on analyse — en toute honnêteté",
     content: [
-      "On préfère vous le dire clairement : nos recommandations d'âge, nos métriques de contenu, les points clés pour les parents et les thèmes détectés sont générés par une analyse automatisée du contenu. On croise les synopsis, les classifications officielles (CNC/CSA, PEGI), les genres et les données publiques pour produire une première estimation sur 8 dimensions, fondées sur le développement de l'enfant.",
-      "C'est aussi ce qui fait la force de la méthode : la grille est publiée, et elle est appliquée à l'identique à chacun des 11 000+ titres du catalogue — une cohérence qu'aucune équipe de critiques ne peut garantir. Le principe a fait ses preuves ailleurs en Europe : aux Pays-Bas, la classification Kijkwijzer — dérivée automatiquement d'un questionnaire structuré — guide les parents depuis plus de 25 ans.",
+      "On préfère vous le dire clairement : nos recommandations d'âge, nos scores de contenu et nos points de vigilance partent d'une analyse automatisée. Elle croise les synopsis, les classifications disponibles, les genres et les données publiques. Chaque fiche n'a donc pas nécessairement été visionnée par une personne de l'équipe.",
+      "Une grille commune nous aide à garder des repères cohérents. Elle comporte sept scores de contenu, auxquels s'ajoute un indicateur éducatif calculé. La qualité du résultat dépend aussi des informations disponibles : une fiche provisoire ne permet pas les mêmes conclusions qu'une analyse plus complète.",
       "Cette estimation n'est pas un verdict d'expert. C'est un point de départ, qui s'affine avec le temps grâce aux votes et réactions des foyers inscrits. Quand au moins 5 parents ont voté et que 70 % sont d'accord, un badge de consensus apparaît — vos retours remplacent progressivement l'analyse automatisée.",
       "On ne promet pas une recommandation magique. Une estimation reste une estimation : vous aidez à régler le cadran, pas à valider un résultat figé.",
     ],
     list: [
       { label: "Recommandation d'âge", desc: "Estimée automatiquement à partir du synopsis + classifications officielles. Ajustée par vos votes « j'approuve / je conteste »." },
-      { label: "Métriques de contenu", desc: "Les 8 dimensions (violence, sexe, langage, substances, consumérisme, messages positifs, modèles positifs, valeur éducative) sont estimées automatiquement. Les scores évaluables par les parents sont ensuite recalibrés par la communauté." },
+      { label: "Métriques de contenu", desc: "Sept scores sont estimés : violence, sexe et nudité, langage, substances, consumérisme, messages positifs et modèles positifs. L'indicateur éducatif est calculé à partir des thèmes et des scores positifs ; il ne constitue pas une huitième évaluation distincte." },
       { label: "Points clés pour les parents", desc: "Extraits automatiquement du contenu analysé. Indicatifs — à recouper avec la fiche complète et les avis." },
       { label: "Thèmes détectés", desc: "Les tags thématiques sont détectés automatiquement. Ils peuvent être affinés par les signalements de la communauté." },
     ],
@@ -53,7 +53,7 @@ export const methodeSections: MethodeSection[] = [
     title: "D'où viennent nos recommandations d'âge",
     content: [
       "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC/CSA). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
-      "Deux choses font la fiabilité de cette recommandation. D'abord la cohérence : la même grille de lecture est appliquée à tout le catalogue, là où un avis isolé varie d'une personne, et d'une humeur, à l'autre. Ensuite la sécurité : des garde-fous automatiques garantissent qu'un contenu aux signaux sensibles marqués (violence réaliste, scènes explicites, thèmes durs…) ne puisse jamais recevoir un âge trop bas — même quand sa classification officielle est indulgente. La recommandation peut donc être plus prudente que le visa légal, jamais l'inverse par accident.",
+      "Des garde-fous automatiques relèvent l'âge conseillé quand l'analyse détecte des signaux sensibles marqués. Ils réduisent les incohérences, sans garantir qu'aucune erreur ne puisse passer. Un signal mal identifié ou une information manquante peut encore fausser le repère : vos corrections comptent.",
       "La recommandation initiale est générée par l'analyse automatisée décrite ci-dessus, selon des critères publiés fondés sur le développement de l'enfant. Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
       "Quand les données du CNC sont disponibles, on les affiche en complément. Sur chaque fiche, vous voyez les deux côte à côte : la classification officielle et notre recommandation.",
     ],
@@ -64,7 +64,7 @@ export const methodeSections: MethodeSection[] = [
     icon: "book-open",
     title: "Les métriques de contenu (0–5)",
     content: [
-      "Chaque contenu est noté sur 8 dimensions, une échelle de 0 à 5. Violence, sexe et nudité, langage, substances, consumérisme pour les éléments sensibles ; messages positifs, modèles positifs et valeur éducative pour les apports positifs.",
+      "Les fiches présentent sept scores de 0 à 5 : violence, sexe et nudité, langage, substances, consumérisme, messages positifs et modèles positifs. Un indicateur de valeur éducative complète cette lecture. Il est calculé à partir des thèmes et des scores positifs ; il ne mesure pas à lui seul ce qu'un enfant va apprendre.",
       "Ces repères sont calibrés pour une sensibilité familiale : une scène d'action stylisée (dessin animé, fantastique) ne pèse pas comme une scène réaliste équivalente, et les niveaux restent cohérents avec l'âge conseillé — un contenu conseillé dès 6–8 ans n'affiche pas de niveau élevé sur un axe sensible. L'âge conseillé reste le signal principal ; les niveaux de contenu sont des repères de vigilance (« y a-t-il un point à surveiller ? »), pas une note de sévérité au point près. La fiche détaille le 0 à 5 ; les vues rapides n'en gardent que l'essentiel.",
       "Pour les jeux vidéo, on met en avant les deux repères qui comptent le plus pour les parents : la violence et les achats intégrés (microtransactions).",
       "Comme les recommandations d'âge, ces scores démarrent en analyse automatisée. Les dimensions évaluables par les parents sont ensuite recalibrées par les familles qui notent elles-mêmes le contenu. Vous pouvez proposer vos propres scores depuis la fiche via « Évaluer ce contenu » — quand assez de parents contribuent, les scores communautaires remplacent progressivement les estimations initiales.",
@@ -168,7 +168,7 @@ export const methodeSections: MethodeSection[] = [
     list: [
       { label: "Bases de données internationales", desc: "Informations générales (synopsis, genres, dates, équipes techniques) issues de bases collaboratives." },
       { label: "CNC / data.gouv.fr", desc: "Classifications officielles des films en France, importées depuis les données publiques du CNC." },
-      { label: "Analyse de contenu", desc: "Évaluation des 8 dimensions par notre système d'analyse, affinée par les retours de la communauté." },
+      { label: "Analyse de contenu", desc: "Sept scores estimés par analyse automatisée, un indicateur éducatif calculé et les retours disponibles de la communauté." },
       { label: "Communauté", desc: "Avis, votes d'âge et signalements des parents utilisateurs." },
     ],
     after: "Nos recommandations sont indépendantes. On n'est affilié à aucun studio, distributeur ou plateforme de streaming.",
@@ -179,7 +179,7 @@ export const methodeSections: MethodeSection[] = [
     title: "Qui est responsable ?",
     content: [
       "Totem Avisé est un projet indépendant, édité et maintenu par son fondateur, Xavier — parent lui-même, et premier utilisateur du site avec sa propre famille. Le projet est né d'une frustration simple : impossible de trouver, en français, une réponse fiable et rapide à « ce film est-il adapté à mes enfants ? ».",
-      "La grille d'analyse est automatisée — c'est ce qui garantit sa cohérence sur tout le catalogue — mais la responsabilité éditoriale, elle, est humaine : la méthode publiée sur cette page, les garde-fous qui empêchent qu'un contenu sensible reçoive un âge trop bas, les corrections et les choix éditoriaux sont assumés par l'éditeur du site.",
+      "La grille d'analyse est automatisée. La méthode publiée, les garde-fous, les corrections et les choix éditoriaux restent sous la responsabilité de l'éditeur du site. L'automatisation ne dispense pas de vérifier les erreurs et de tenir compte des retours des parents.",
       "Totem Avisé ne diffuse aucune publicité et n'a de lien commercial avec aucun studio, distributeur ou plateforme. Personne ne peut acheter une recommandation d'âge.",
     ],
   },

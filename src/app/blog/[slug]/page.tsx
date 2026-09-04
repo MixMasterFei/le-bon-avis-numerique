@@ -6,6 +6,7 @@ import { ArrowLeft, BookOpen, Calendar, Clock, History, MessagesSquare, User } f
 import { PortableText, type PortableTextBlock } from "@portabletext/react"
 import { Badge } from "@/components/ui/badge"
 import { sanityClient } from "@/sanity/client"
+import { PUBLIC_POST } from "@/lib/published-blog"
 import { urlFor } from "@/sanity/image"
 import { portableTextComponents } from "@/components/blog/PortableTextComponents"
 import { BlogCard } from "@/components/blog/BlogCard"
@@ -39,7 +40,7 @@ function getReadingMinutes(blocks: PortableTextBlock[]) {
   return Math.max(1, Math.ceil(words / 200))
 }
 
-const POST_QUERY = `*[_type == "post" && slug.current == $slug && defined(publishedAt) && publishedAt <= now()][0] {
+const POST_QUERY = `*[${PUBLIC_POST} && slug.current == $slug][0] {
   title,
   "slug": slug.current,
   author,
@@ -53,7 +54,7 @@ const POST_QUERY = `*[_type == "post" && slug.current == $slug && defined(publis
   seoDescription
 }`
 
-const RELATED_QUERY = `*[_type == "post" && category == $category && slug.current != $slug && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc) [0...3] {
+const RELATED_QUERY = `*[${PUBLIC_POST} && category == $category && slug.current != $slug] | order(publishedAt desc) [0...3] {
   "slug": slug.current,
   title,
   excerpt,
@@ -102,7 +103,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   return {
     title: `${title} — Blog Totem Avisé`,
     description,
-    alternates: { canonical: `/blog/${slug}` },
+    alternates: { canonical: `/blog/${slug}`, types: { "text/markdown": `/md/blog/${slug}` } },
     openGraph: {
       title,
       description,
@@ -116,7 +117,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
 export async function generateStaticParams() {
   const slugs = await sanityClient.fetch<{ slug: string }[]>(
-    `*[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]{ "slug": slug.current }`
+    `*[${PUBLIC_POST}]{ "slug": slug.current }`
   )
   return slugs.map((s) => ({ slug: s.slug }))
 }

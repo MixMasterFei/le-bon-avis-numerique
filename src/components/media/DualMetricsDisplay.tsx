@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { UserMetricsButton } from "./UserMetricsButton"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { MethodBadge } from "@/components/ui/MethodBadge"
+import { deriveEducationalValue } from "@/lib/educational-value"
 
 interface ContentMetrics {
   violence: number
@@ -74,22 +75,10 @@ const METRIC_LABELS: Record<
   },
   educationalValue: {
     label: "Éducatif",
-    description: "Estime le potentiel éducatif du contenu : connaissances, découverte, culture, réflexion ou apprentissage.",
+    description: "Indicateur calculé à partir des thèmes et des scores de messages et modèles positifs ; il ne constitue pas une évaluation éducative distincte.",
     example: "0 = Pas d'apport éducatif clair. 5 = Dimension éducative centrale.",
     isPositive: true,
   },
-}
-
-function deriveEducationalValue(metrics: ContentMetrics, topics: string[] = []): number {
-  const lowerTopics = topics.map((topic) => topic.toLowerCase())
-  if (lowerTopics.some((topic) => topic.includes("éducatif") || topic.includes("educatif") || topic.includes("documentaire"))) {
-    return 5
-  }
-  if (lowerTopics.some((topic) => topic.includes("science") || topic.includes("histoire") || topic.includes("culture"))) {
-    return 4
-  }
-
-  return Math.max(0, Math.min(5, Math.round((metrics.positiveMessages + metrics.roleModels) / 3)))
 }
 
 function withEducationalValue(metrics: ContentMetrics | null, topics: string[] = []): ContentMetrics | null {

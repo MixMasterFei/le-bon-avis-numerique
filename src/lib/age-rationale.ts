@@ -86,7 +86,7 @@ function levelWord(v: number): AgeRationaleDriver["level"] {
 }
 
 const TRUST_LINE =
-  "Recommandation indépendante de Totem Avisé, établie selon des critères publiés fondés sur le développement de l'enfant : elle peut être plus prudente qu'une classification officielle. Des garde-fous automatiques empêchent qu'un contenu sensible reçoive un âge trop bas, et chaque estimation est affinée par les votes des familles."
+  "Recommandation indépendante de Totem Avisé, issue d'une analyse automatisée selon des critères publiés. Des garde-fous limitent les incohérences ; les retours des familles permettent de corriger les estimations. Ce repère peut comporter des erreurs et ne remplace pas la classification applicable ni votre connaissance de votre enfant."
 
 export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
   const hasAge = typeof input.expertAgeRec === "number" && input.expertAgeRec > 0
@@ -111,7 +111,7 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
 
   // Provisional / pre-release: honest estimate, zero content claims.
   if (input.hideContentAnalysis) {
-    const lead = `L'âge indiqué (${ageLabel}, à confirmer) est une première estimation, basée sur le synopsis, les classifications officielles et les genres. L'analyse détaillée du contenu sera publiée après la sortie, une fois le titre visionné.`
+    const lead = `L'âge indiqué (${ageLabel}, à confirmer) est une première estimation, basée sur le synopsis, les classifications disponibles et les genres. L'analyse détaillée sera publiée lorsque les informations disponibles permettront de l'établir.`
     return {
       show: true,
       isProvisional: true,

@@ -39,7 +39,8 @@ describe("buildQuickAnswer", () => {
     })
     expect(qa.age).toContain("à confirmer")
     expect(qa.answer).toContain("à confirmer")
-    expect(qa.answer.toLowerCase()).toContain("après sa sortie")
+    expect(qa.answer.toLowerCase()).toContain("l'analyse détaillée sera publiée")
+    expect(qa.answer.toLowerCase()).not.toContain("visionné")
     // Must NOT imply an evaluation exists.
     expect(qa.answer).not.toContain("Aucun signal sensible")
     expect(qa.answer.toLowerCase()).not.toContain("points à vérifier")

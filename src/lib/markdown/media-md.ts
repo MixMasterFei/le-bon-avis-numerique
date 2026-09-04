@@ -8,6 +8,8 @@ import {
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { deriveEducationalValue } from "@/lib/educational-value"
+import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -22,6 +24,12 @@ export interface MediaMdInput {
   isEnriched?: boolean
   releaseStatus?: string | null
   updatedAt: Date
+  hasContentAnalysis?: boolean
+  assessmentSource?: string | null
+  assessedAt?: Date | null
+  assessmentConfidence?: number | null
+  sensitiveWarnings?: string[]
+  sensitiveWarningsAt?: Date | null
   topics: string[]
   genres?: string[]
   contentMetrics: {
@@ -36,6 +44,32 @@ export interface MediaMdInput {
   }
 }
 
+export function mediaAssessment(media: MediaMdInput) {
+  const provisional = shouldHideContentAnalysis(media) || media.isEnriched === false
+  const available = !provisional && media.hasContentAnalysis !== false
+  const warningsAvailable = available && (media.assessmentConfidence ?? 0) >= 0.6 && (!!media.sensitiveWarningsAt || !!media.sensitiveWarnings?.length)
+  return {
+    status: provisional ? "provisional" as const : available ? "available" as const : "unavailable" as const,
+    source: media.assessmentSource ?? null,
+    assessedAt: available ? media.assessedAt?.toISOString() ?? null : null,
+    confidence: available ? media.assessmentConfidence ?? null : null,
+    metrics: available ? {
+      violence: media.contentMetrics.violence,
+      sexNudity: media.contentMetrics.sexNudity,
+      language: media.contentMetrics.language,
+      substanceUse: media.contentMetrics.substanceUse,
+      consumerism: media.contentMetrics.consumerism,
+      positiveMessages: media.contentMetrics.positiveMessages,
+      roleModels: media.contentMetrics.roleModels,
+      educationalValue: deriveEducationalValue(media.contentMetrics, media.topics),
+    } : null,
+    educationalValueMethod: "derived_from_topics_and_positive_metrics" as const,
+    warningsStatus: warningsAvailable ? "automated_points_to_check" as const : "unavailable" as const,
+    warnings: warningsAvailable ? [...new Set(media.sensitiveWarnings ?? [])].filter((warning) => (VALID_SENSITIVE_WARNINGS as readonly string[]).includes(warning)) : [],
+    warningsAssessedAt: warningsAvailable ? media.sensitiveWarningsAt?.toISOString() ?? null : null,
+  }
+}
+
 function formatIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
@@ -46,7 +80,7 @@ function formatAge(expertAgeRec: number | null): string {
 }
 
 function formatOfficialRating(rating: string | null): string {
-  return rating || "Non classifiée"
+  return rating ? `${rating} (pays et organisme non renseignés dans cet export)` : "Non renseignée"
 }
 
 function formatLanguage(code: string | null | undefined): string {
@@ -82,7 +116,8 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   // Pre-release / provisional fiches must not present a content evaluation
   // we haven't actually made — keep the answer an honest age estimate and
   // skip the metric dump below. See @/lib/release-status.
-  const hideContentAnalysis = shouldHideContentAnalysis(media)
+  const assessment = mediaAssessment(media)
+  const hideContentAnalysis = assessment.status !== "available"
   const quick = buildQuickAnswer({ ...media, hideContentAnalysis })
   const sectionLabel = whatParentsSectionLabel(media.type)
 
@@ -90,12 +125,16 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   lines.push(`# ${media.title}`, "")
   lines.push(`URL canonique: ${canonical}`)
   lines.push(`Type: ${typeLabel}`)
-  lines.push(`Âge conseillé Totem: ${formatAge(media.expertAgeRec)}`)
-  lines.push(`Classification officielle: ${formatOfficialRating(media.officialRating)}`)
+  lines.push(`Âge conseillé Totem: ${formatAge(media.expertAgeRec)}${hideContentAnalysis ? " (à confirmer)" : ""}`)
+  lines.push(`Classification indiquée dans le catalogue: ${formatOfficialRating(media.officialRating)}`)
   lines.push(`Langue du site: français`)
   lines.push(`Langue d'origine du contenu: ${formatLanguage(media.originalLanguage)}`)
   if (media.releaseDate) lines.push(`Date de sortie: ${media.releaseDate}`)
-  lines.push(`Dernière mise à jour: ${formatIsoDate(media.updatedAt)}`)
+  lines.push(`Fiche mise à jour: ${formatIsoDate(media.updatedAt)}`)
+  lines.push(`Statut de l'analyse: ${assessment.status === "available" ? "disponible" : assessment.status === "provisional" ? "provisoire" : "indisponible"}`)
+  lines.push(`Dernière analyse datée: ${assessment.assessedAt ? assessment.assessedAt.slice(0, 10) : "date non renseignée"}`)
+  lines.push(`Source de l'analyse dans le catalogue: ${assessment.source ?? "non renseignée"}`)
+  lines.push("Les repères Totem s'appuient sur une analyse automatisée et peuvent être corrigés par les retours des familles. La date de mise à jour de la fiche ne prouve pas une nouvelle analyse ni un visionnage humain.")
   lines.push("")
 
   lines.push("## Réponse courte", "")
@@ -106,7 +145,7 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
     // rather than printing a misleading row of 0/5 scores.
     lines.push("## Repères pour les parents", "")
     lines.push(
-      "Évaluation détaillée du contenu à publier après la sortie. L'âge indiqué est une estimation à confirmer.",
+      "Analyse détaillée du contenu indisponible ou encore provisoire. L'âge indiqué reste une estimation à confirmer ; aucun score nul ne doit être interprété comme une absence de risque.",
       ""
     )
   } else {
@@ -118,7 +157,16 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
     lines.push(`- Consumérisme: ${media.contentMetrics.consumerism}/5`)
     lines.push(`- Messages positifs: ${media.contentMetrics.positiveMessages}/5`)
     lines.push(`- Modèles positifs: ${media.contentMetrics.roleModels}/5`)
+    lines.push(`- Valeur éducative: ${assessment.metrics!.educationalValue}/5 (indicateur calculé à partir des thèmes et des scores positifs, sans évaluation distincte)`)
     lines.push("")
+    lines.push("### Ce qui peut marquer", "")
+    if (assessment.warningsStatus === "automated_points_to_check") {
+      lines.push("Points identifiés par analyse automatisée, à vérifier selon la sensibilité de votre enfant ; il ne s'agit pas de scènes confirmées.", "")
+      if (assessment.warnings.length) lines.push(...assessment.warnings.map((warning) => `- ${warning}`), "")
+      else lines.push("Aucun point signalé par cette analyse ; cela ne garantit pas l'absence d'éléments sensibles.", "")
+    } else {
+      lines.push("Repères de vigilance détaillés non disponibles avec un niveau de confiance suffisant. Leur absence ne signifie pas que le contenu est sans risque.", "")
+    }
 
     const wpntk = media.contentMetrics.whatParentsNeedToKnow.filter((s) => s && s.trim().length > 0)
     if (wpntk.length > 0) {
@@ -165,7 +213,7 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   // Gives assistants an honest, useful next step to relay to parents.
   lines.push("## Adapter ce repère à votre enfant", "")
   lines.push(
-    `L'âge conseillé est une moyenne. Avec un compte famille gratuit, Totem Avisé calcule pour ce titre un score de compatibilité personnalisé selon l'âge, les sensibilités (peur, violence…) et les goûts de chaque enfant : ${SITE_URL}/inscription`,
+    `L'âge conseillé est un repère général. Avec un compte famille gratuit, Totem Avisé calcule pour ce titre un score de compatibilité selon l'âge, les sensibilités et les goûts de chaque enfant : ${SITE_URL}/inscription`,
     "",
   )
 

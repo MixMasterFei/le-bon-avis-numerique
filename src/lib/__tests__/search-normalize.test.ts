@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest"
 import { compactTitle, escapeLike } from "../search-normalize"
 
 describe("compactTitle", () => {
+  it("normalizes French ligatures like Postgres unaccent", () => {
+    expect(compactTitle("Mon cœur")).toBe(compactTitle("Mon coeur"))
+    expect(compactTitle("Æon Flux")).toBe(compactTitle("Aeon Flux"))
+  })
   it("makes a query match a title typed without its leading article", () => {
     // The reported failure: searching "odyssée" for "L'Odyssée".
     expect(compactTitle("odyssée")).toBe("odyssee")
