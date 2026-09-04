@@ -10,6 +10,9 @@
  */
 export const PRIVATE_PATHS = [
   "/admin/",
+  // Staff console (ADMIN or MODERATOR). Same reasoning as /admin: never
+  // indexed, and the middleware answers 403 to crawlers that ask anyway.
+  "/steph",
   "/api/",
   "/profil",
   "/chez-vous",

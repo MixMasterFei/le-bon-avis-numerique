@@ -22,6 +22,11 @@ const protectedRoutes = ["/profil", "/mes-avis", "/ma-liste", "/mes-favoris"]
 
 // Routes that require admin role (both UI and API)
 const adminRoutes = ["/admin", "/api/admin"]
+// Espace de pilotage en lecture seule (/steph). Ouvert à ADMIN *et* MODERATOR
+// pour qu'un compte sans droits d'écriture puisse le consulter : la page ne
+// déclenche aucune action, elle n'affiche que des chiffres. /admin, lui, reste
+// strictement ADMIN.
+const staffRoutes = ["/steph"]
 // Note: /studio is NOT protected here — Sanity Studio has its own auth (Sanity accounts)
 
 // API routes with their rate limit types.
@@ -269,6 +274,28 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
           }
         ))
       }
+    }
+  }
+
+  // Check staff routes (/steph) — ADMIN or MODERATOR, read-only surface
+  if (staffRoutes.some((route) => pathname.startsWith(route))) {
+    const { auth } = await import("@/lib/auth")
+    const session = await auth()
+
+    if (!session?.user) {
+      const url = new URL("/connexion", request.url)
+      url.searchParams.set("callbackUrl", pathname)
+      return NextResponse.redirect(url)
+    }
+
+    const role = session.user.role
+    if (role !== "ADMIN" && role !== "MODERATOR") {
+      return applySecurityHeaders(
+        new NextResponse(JSON.stringify({ error: "Acces non autorise" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
     }
   }
 
