@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getMovieWatchProviders, getTVWatchProviders } from "@/lib/tmdb"
 import { extractProviders } from "@/lib/streaming-providers"
 import { logCronRun } from "@/lib/cron-log"
+import { syncPlatforms, clearPlatforms, touchStreamingChecked } from "@/lib/streaming-sync"
 
 export const maxDuration = 60 // seconds
 
@@ -73,30 +74,21 @@ export async function POST(request: Request) {
         const providers = extractProviders(watchData)
 
         if (providers.length > 0) {
-          await prisma.mediaItem.update({
-            where: { id: item.id },
-            data: { platforms: providers, streamingCheckedAt: new Date() },
-          })
+          await syncPlatforms(item.id, providers)
           stats.updated++
           stats.details.push(`${item.title}: ${providers.join(", ")}`)
         } else if (!onlyEmpty && item.platforms.length > 0) {
           // Successful fetch, zero FR providers: the title left streaming.
           // Keeping the stale badge is the exact failure this pass exists to
           // catch. (A TMDB error never lands here — it throws into the catch.)
-          await prisma.mediaItem.update({
-            where: { id: item.id },
-            data: { platforms: [], streamingCheckedAt: new Date() },
-          })
+          await clearPlatforms(item.id)
           stats.updated++
           stats.details.push(`${item.title}: plus aucune plateforme (retiré)`)
         } else {
           stats.noProviders++
           // Stamp anyway so the rotation moves past provider-less rows instead
           // of jamming on the same head window forever.
-          await prisma.mediaItem.update({
-            where: { id: item.id },
-            data: { streamingCheckedAt: new Date() },
-          })
+          await touchStreamingChecked(item.id)
         }
 
         // Small delay to respect TMDB rate limits

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { StreamingType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
 import { extractProviders } from "@/lib/streaming-providers"
+import { syncPlatforms, clearPlatforms } from "@/lib/streaming-sync"
 
 const INTER_REQUEST_DELAY_MS = 200
 const TMDB_FETCH_TIMEOUT_MS = 8000
@@ -184,10 +185,7 @@ export async function POST(request: Request) {
           // No FR offer at all: the film must stop surfacing under any
           // platform filter. Cleared from a FRESH TMDB answer, never from the
           // (often months-old) streaming_availability table.
-          await prisma.mediaItem.update({
-            where: { id: item.id },
-            data: { platforms: [], streamingCheckedAt: new Date() },
-          })
+          await clearPlatforms(item.id)
           continue
         }
 
@@ -240,13 +238,12 @@ export async function POST(request: Request) {
         // kept their badge. Writing here fixes it at the source, on fresh TMDB
         // data, for the high-throughput path.
         //
-        // streamingCheckedAt is stamped so this route feeds the same rotation
-        // cursor as /api/admin/streaming/update — otherwise the Saturday cron
-        // keeps re-picking titles this route just refreshed.
-        await prisma.mediaItem.update({
-          where: { id: item.id },
-          data: { platforms: extractProviders(frProviders), streamingCheckedAt: new Date() },
-        })
+        // Goes through syncPlatforms (raw UPDATE) rather than the Prisma
+        // client: it stamps streamingCheckedAt so this route feeds the same
+        // rotation cursor as /api/admin/streaming/update, WITHOUT bumping
+        // updatedAt — which sitemap.ts publishes as each fiche's lastModified.
+        // See src/lib/streaming-sync.ts.
+        await syncPlatforms(item.id, extractProviders(frProviders))
       } catch {
         errors++
         statusBreakdown["exception"] = (statusBreakdown["exception"] ?? 0) + 1
