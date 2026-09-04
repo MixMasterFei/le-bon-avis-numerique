@@ -48,9 +48,19 @@ interface BrokenLink {
 interface CheckResponse {
   success: boolean
   duration: string
-  stats: { guides: number; linksChecked: number; linksBroken: number }
+  stats: {
+    guides: number
+    linksChecked: number
+    linksBroken: number
+    linksDead: number
+    linksUnverifiable: number
+  }
   guides: GuideRow[]
   broken: BrokenLink[]
+  /** Page removed (404/410) — the block behind it is worth re-reading. */
+  dead: BrokenLink[]
+  /** Probe refused or timed out — says nothing about the content. */
+  unverifiable: BrokenLink[]
 }
 
 const STATE_UI: Record<GuideState, { label: string; color: string; Icon: typeof CheckCircle2 }> = {
@@ -118,7 +128,9 @@ export function GameGuidesPanel() {
         <div className="space-y-4">
           <div className="text-xs" style={{ color: p.ink2 }}>
             {data.stats.guides} guides · {data.stats.linksChecked} liens vérifiés ·{" "}
-            {data.stats.linksBroken} cassé{data.stats.linksBroken > 1 ? "s" : ""} · {data.duration}
+            {data.stats.linksDead} mort{data.stats.linksDead > 1 ? "s" : ""} ·{" "}
+            {data.stats.linksUnverifiable} non vérifiable
+            {data.stats.linksUnverifiable > 1 ? "s" : ""} · {data.duration}
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
@@ -163,34 +175,72 @@ export function GameGuidesPanel() {
             })}
           </div>
 
-          {data.broken.length > 0 && (
-            <div
-              className="rounded-lg border p-3"
-              style={{ background: p.card, borderColor: "#C4785A55" }}
-            >
-              <p className="text-sm font-semibold mb-1" style={{ color: p.ink }}>
-                Liens officiels cassés
-              </p>
-              <p className="text-xs mb-2" style={{ color: p.ink2 }}>
-                Un lien mort signale souvent que l&apos;éditeur a réorganisé sa documentation —
-                donc que les faits du bloc ont pu bouger.
-              </p>
-              <ul className="space-y-1.5">
-                {data.broken.map((l) => (
-                  <li key={l.url} className="text-xs" style={{ color: p.ink2 }}>
-                    <span className="font-semibold" style={{ color: p.ink }}>
-                      [{l.guide}]
-                    </span>{" "}
-                    {l.label} — {l.error ? l.error : `HTTP ${l.status}`}
-                    <br />
-                    <span className="break-all opacity-70">{l.url}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Deliberately two blocks, not one list. A 404 means the publisher
+              removed the page and the facts may have moved with it; a 403 means
+              their edge refuses our probe and implies nothing at all. Merging
+              them is what made this report cry wolf on half its findings. */}
+          {(data.dead ?? []).length > 0 && (
+            <LinkIssueBlock
+              title="Liens officiels morts (404/410)"
+              explanation="La page a été retirée. L'éditeur a réorganisé sa documentation, donc les faits du bloc ont pu bouger avec elle : à relire."
+              borderColor="#C4785A55"
+              links={data.dead}
+            />
+          )}
+
+          {(data.unverifiable ?? []).length > 0 && (
+            <LinkIssueBlock
+              title="Liens non vérifiables"
+              explanation="Notre sonde a été refusée ou a expiré (403, 429, 5xx, délai dépassé). Cela ne dit rien du contenu — beaucoup d'éditeurs bloquent les robots. À ouvrir une fois dans un navigateur, sans relire le bloc pour autant."
+              borderColor={p.line2}
+              links={data.unverifiable}
+            />
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function LinkIssueBlock({
+  title,
+  explanation,
+  borderColor,
+  links,
+}: {
+  title: string
+  explanation: string
+  borderColor: string
+  links: BrokenLink[]
+}) {
+  const p = adminPalette
+  return (
+    <div className="rounded-lg border p-3" style={{ background: p.card, borderColor }}>
+      <p className="text-sm font-semibold mb-1" style={{ color: p.ink }}>
+        {title}
+      </p>
+      <p className="text-xs mb-2" style={{ color: p.ink2 }}>
+        {explanation}
+      </p>
+      <ul className="space-y-1.5">
+        {links.map((l) => (
+          <li key={l.url} className="text-xs" style={{ color: p.ink2 }}>
+            <span className="font-semibold" style={{ color: p.ink }}>
+              [{l.guide}]
+            </span>{" "}
+            {l.label} — {l.error ? l.error : `HTTP ${l.status}`}
+            <br />
+            <a
+              href={l.url}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all underline opacity-70 hover:opacity-100"
+            >
+              {l.url}
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

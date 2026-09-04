@@ -157,7 +157,7 @@ export const GAME_GUIDES: GameGuide[] = [
       officialLinks: [
         {
           label: "Contrôles parentaux et sécurité (documentation Roblox)",
-          url: "https://corp.roblox.com/fr/parents-safety",
+          url: "https://about.roblox.com/parental-controls",
           source: "Roblox",
         },
         {
@@ -228,12 +228,12 @@ export const GAME_GUIDES: GameGuide[] = [
       officialLinks: [
         {
           label: "Paramètres familiaux Microsoft",
-          url: "https://support.microsoft.com/fr-fr/account-billing/microsoft-family-safety",
+          url: "https://support.microsoft.com/fr-fr/family",
           source: "Microsoft",
         },
         {
-          label: "Minecraft — sécurité et confidentialité",
-          url: "https://help.minecraft.net/hc/fr",
+          label: "Minecraft — contrôle parental (page officielle)",
+          url: "https://www.minecraft.net/fr-fr/article/parental-controls",
           source: "Mojang / Microsoft",
         },
       ],
@@ -300,8 +300,8 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
       officialLinks: [
         {
-          label: "Contrôle parental Fortnite (aide Epic Games)",
-          url: "https://www.epicgames.com/help/fr",
+          label: "Contrôle parental Fortnite (page officielle)",
+          url: "https://www.fortnite.com/parental-controls?lang=fr",
           source: "Epic Games",
         },
       ],

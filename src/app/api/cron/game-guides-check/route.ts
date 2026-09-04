@@ -6,6 +6,8 @@ import { GAME_GUIDES } from "@/lib/game-guides";
 import {
   auditGuideFreshness,
   REVIEW_INTERVAL_DAYS,
+  classifyLink,
+  type LinkVerdict,
 } from "@/lib/game-guide-freshness";
 
 // Monthly review reminder for the Parents' Guide "état du jeu" blocks.
@@ -29,6 +31,7 @@ interface LinkCheck {
   url: string;
   status: number | null;
   ok: boolean;
+  verdict: LinkVerdict;
   error?: string;
 }
 
@@ -69,7 +72,14 @@ async function checkLink(
   try {
     let res = await attempt("HEAD");
     if (!res.ok) res = await attempt("GET");
-    return { guide, label, url, status: res.status, ok: res.ok };
+    return {
+      guide,
+      label,
+      url,
+      status: res.status,
+      ok: res.ok,
+      verdict: classifyLink(res.status, res.ok),
+    };
   } catch (e) {
     return {
       guide,
@@ -77,6 +87,7 @@ async function checkLink(
       url,
       status: null,
       ok: false,
+      verdict: "unverifiable",
       error: e instanceof Error ? e.message : "échec réseau",
     };
   }
@@ -84,7 +95,8 @@ async function checkLink(
 
 function buildReport(
   audit: ReturnType<typeof auditGuideFreshness>,
-  broken: LinkCheck[],
+  dead: LinkCheck[],
+  unverifiable: LinkCheck[],
   checkedLinks: number,
 ): string {
   const lines: string[] = [];
@@ -137,27 +149,48 @@ function buildReport(
   }
 
   lines.push(`── LIENS OFFICIELS (${checkedLinks} vérifiés) ──`);
-  if (broken.length === 0) {
+  if (dead.length === 0 && unverifiable.length === 0) {
     lines.push("  Tous les liens répondent.");
-  } else {
-    lines.push("  Un lien mort signale souvent que l'éditeur a réorganisé sa");
-    lines.push("  documentation — donc que les faits du bloc ont pu bouger.");
+  }
+
+  if (dead.length > 0) {
+    lines.push("  MORTS — la page a été retirée (404/410). L'éditeur a");
+    lines.push("  réorganisé sa documentation, donc les faits du bloc ont pu");
+    lines.push("  bouger avec elle : à relire.");
     lines.push("");
-    for (const l of broken) {
+    for (const l of dead) {
+      lines.push(`  • [${l.guide}] ${l.label}`);
+      lines.push(`    ${l.url} → HTTP ${l.status}`);
+    }
+    lines.push("");
+  }
+
+  if (unverifiable.length > 0) {
+    lines.push("  NON VÉRIFIABLES — notre sonde a été refusée ou a expiré");
+    lines.push("  (403, 429, 5xx, délai dépassé). Cela ne dit RIEN du contenu :");
+    lines.push("  beaucoup d'éditeurs bloquent les robots. À ouvrir une fois");
+    lines.push("  dans un navigateur, sans relire le bloc pour autant.");
+    lines.push("");
+    for (const l of unverifiable) {
       const why = l.error ? l.error : `HTTP ${l.status}`;
       lines.push(`  • [${l.guide}] ${l.label}`);
       lines.push(`    ${l.url} → ${why}`);
     }
+    lines.push("");
   }
-  lines.push("");
+
   lines.push("── QUOI FAIRE ──");
-  lines.push(
-    `  Relire chaque bloc listé ci-dessus, corriger ce qui a changé, puis`,
-  );
-  lines.push(
-    `  mettre à jour verifiedOn dans src/lib/game-guides.ts. Cadence visée :`,
-  );
-  lines.push(`  ${REVIEW_INTERVAL_DAYS} jours.`);
+  if (dead.length === 0 && audit.needsAttention === false) {
+    lines.push("  Rien. Aucun bloc n'arrive à échéance et aucun lien n'est mort.");
+  } else {
+    lines.push(
+      `  Relire chaque bloc en retard ou dont un lien est mort, corriger ce qui`,
+    );
+    lines.push(
+      `  a changé, puis mettre à jour verifiedOn dans src/lib/game-guides.ts.`,
+    );
+    lines.push(`  Cadence visée : ${REVIEW_INTERVAL_DAYS} jours.`);
+  }
 
   return lines.join("\n");
 }
@@ -186,15 +219,21 @@ export async function GET(req: NextRequest) {
     const checks = await Promise.all(
       links.map((l) => checkLink(l.guide, l.label, l.url)),
     );
-    const broken = checks.filter((c) => !c.ok);
+    const dead = checks.filter((c) => c.verdict === "dead");
+    const unverifiable = checks.filter((c) => c.verdict === "unverifiable");
+    // Kept for the admin panel and for continuity of the cron_logs shape.
+    const broken = [...dead, ...unverifiable];
 
-    const report = buildReport(audit, broken, checks.length);
-    const needsEmail = audit.needsAttention || broken.length > 0;
+    const report = buildReport(audit, dead, unverifiable, checks.length);
+    // An unverifiable link alone is not worth an email: Epic's edge will 403
+    // our probe every month for ever, and a monthly "action requise" that
+    // requires no action is how an alert channel dies.
+    const needsEmail = audit.needsAttention || dead.length > 0;
 
     let emailed = false;
     if (needsEmail && !dryRun) {
       const subject =
-        audit.invalid.length > 0 || broken.length > 0
+        audit.invalid.length > 0 || dead.length > 0
           ? "Guides parents — action requise"
           : "Guides parents — revue mensuelle";
       await sendDebtDigest({ subject, report });
@@ -210,14 +249,19 @@ export async function GET(req: NextRequest) {
       invalid: audit.invalid.length,
       linksChecked: checks.length,
       linksBroken: broken.length,
+      linksDead: dead.length,
+      linksUnverifiable: unverifiable.length,
       emailed,
     };
 
     // An unusable date or a dead official link is a real defect, not noise:
     // surface it as "partial" so the supervisor and /admin/operations show it
     // rather than a reassuring green.
+    // Only a DEAD link or an unusable date is a defect of ours. A probe the
+    // publisher refuses is not: leaving it "partial" for ever would make the
+    // task permanently amber and teach the supervisor's readers to ignore it.
     const status =
-      audit.invalid.length > 0 || broken.length > 0 ? "partial" : "success";
+      audit.invalid.length > 0 || dead.length > 0 ? "partial" : "success";
 
     // Only real runs are logged. An admin pressing the button is inspecting,
     // not performing the monthly review — logging it would refresh "last run"
@@ -229,8 +273,8 @@ export async function GET(req: NextRequest) {
         summary:
           `${audit.checked} guides — ${audit.fresh.length} à jour, ${audit.due.length} à relire, ` +
           `${audit.stale.length} en retard, ${audit.invalid.length} dates invalides ; ` +
-          `${broken.length}/${checks.length} liens cassés en ${duration}s`,
-        details: { stats, broken, report },
+          `${dead.length} lien(s) mort(s), ${unverifiable.length} non vérifiable(s) sur ${checks.length} en ${duration}s`,
+        details: { stats, dead, unverifiable, report },
         startTime,
       });
     }
@@ -244,6 +288,8 @@ export async function GET(req: NextRequest) {
       // than re-parsing the email text.
       guides: [...audit.invalid, ...audit.stale, ...audit.due, ...audit.fresh],
       broken,
+      dead,
+      unverifiable,
       report,
     });
   } catch (error) {

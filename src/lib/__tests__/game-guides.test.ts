@@ -109,7 +109,10 @@ describe("guides must not cannibalise the fiches", () => {
   })
 
   it("links only to official publisher/platform documentation", () => {
-    const official = /roblox\.com|epicgames\.com|minecraft\.net|microsoft\.com|xbox\.com|playstation\.com|nintendo\.|supercell\./i
+    // fortnite.com is Epic's own product domain — the French parental-controls
+    // page lives there, not under the generic epicgames.com/help root (which
+    // 403s our probe and isn't game-specific anyway).
+    const official = /roblox\.com|epicgames\.com|fortnite\.com|minecraft\.net|microsoft\.com|xbox\.com|playstation\.com|nintendo\.|supercell\./i
     for (const g of GAME_GUIDES) {
       for (const l of g.stateOfPlay.officialLinks) {
         expect(official.test(l.url), `${g.key}: non-official link ${l.url}`).toBe(true)

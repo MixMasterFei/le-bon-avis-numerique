@@ -124,3 +124,39 @@ export function auditGuideFreshness(
     needsAttention: due.length + stale.length + invalid.length > 0,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Official-link verdicts
+// ---------------------------------------------------------------------------
+
+/**
+ * What a failed link probe actually tells us.
+ *
+ * "dead" and "unverifiable" used to be one `broken` bucket, and the merge is
+ * what made the monthly report unusable: of the 4 failures on 2026-09-01, two
+ * were genuine 404s (Roblox and Microsoft had moved their documentation) and
+ * two were an Epic Games edge answering 403 to our probe and a Zendesk help
+ * centre timing out — neither of which says anything about the content. A
+ * report that cries wolf on half its findings stops being read, which costs
+ * more than the two real breaks it buries.
+ *
+ * The human action differs completely, hence two buckets:
+ *   dead         → the publisher removed the page, so the facts in the block
+ *                  may have moved with it. Re-read the block.
+ *   unverifiable → our probe was refused or timed out. Open it once in a
+ *                  browser; nothing else is implied.
+ */
+export type LinkVerdict = "ok" | "dead" | "unverifiable"
+
+/**
+ * Only 404/410 count as dead — the two statuses that mean "this resource is
+ * gone", as opposed to "you may not ask" (403), "not right now" (429/5xx) or
+ * "we gave up waiting" (null). Deliberately conservative: calling a live page
+ * dead sends a human to re-verify a block that never changed, and doing that
+ * every month is how the discipline gets abandoned.
+ */
+export function classifyLink(status: number | null, ok: boolean): LinkVerdict {
+  if (ok) return "ok"
+  if (status === 404 || status === 410) return "dead"
+  return "unverifiable"
+}
