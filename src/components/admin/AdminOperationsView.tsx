@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Loader2 } from "lucide-react"
+import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Gauge, Loader2 } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,
@@ -38,6 +38,17 @@ const ModerationPanel = dynamic(
 
 const GameGuidesPanel = dynamic(
   () => import("./panels/GameGuidesPanel").then((m) => m.GameGuidesPanel),
+  {
+    loading: () => (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: adminPalette.accent }} />
+      </div>
+    ),
+  },
+)
+
+const StaffAccessPanel = dynamic(
+  () => import("./panels/StaffAccessPanel").then((m) => m.StaffAccessPanel),
   {
     loading: () => (
       <div className="flex justify-center py-12">
@@ -149,6 +160,16 @@ export function AdminOperationsView({ initialEnrichType }: Props) {
           subtitle="Fraîcheur des blocs « L'état du jeu » et liens éditeurs"
         >
           <GameGuidesPanel />
+        </AdminSectionCard>
+      </div>
+
+      <div id="acces" className="scroll-mt-28">
+        <AdminSectionCard
+          icon={Gauge}
+          title="Accès Pilotage"
+          subtitle="Qui peut ouvrir /steph, la console de lecture"
+        >
+          <StaffAccessPanel />
         </AdminSectionCard>
       </div>
 
