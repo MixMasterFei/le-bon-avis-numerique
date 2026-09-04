@@ -46,13 +46,25 @@ const EXPERT_SCORE = 0.95
 // age proximity, or genre + shared topics). The SEO gain must never cost rail
 // quality on the target's own page.
 const MIN_NEIGHBOR_SCORE = 3.5
-// Hard cap on AI synopsis rewrites per run. Keeps cost bounded and the run under
-// the route's maxDuration (each gpt-5-mini call can take ~35s).
-const MAX_REWRITES = 3
+// Hard cap on AI synopsis rewrites per run. Raised 3 -> 12 once the deep query
+// pool (MAX_ACTIONABLE) started surfacing real work: the 03/09 run deferred 30
+// eligible synopses AND 30 titles at 3 apiece, so the cap — not the funnel —
+// had become the bottleneck, and the queue was growing faster than it drained.
+// The "~35s per call" figure the old comment budgeted for is the TIMEOUT, not
+// the observed latency: six calls (3 synopses + 3 titles) took 16s end to end
+// on 03/09 and 16s on 06/08, i.e. ~2-3s each. Twelve of each is ~60s of the
+// route's 300s. AI_DEADLINE_MS below makes that safe even if latency degrades.
+const MAX_REWRITES = 12
 const SYNOPSIS_MAX = 400
 const MIN_QUALITY = 50
 // Lever C — SEO meta <title> override. Same cost discipline as synopsis.
-const MAX_TITLE_REWRITES = 3
+const MAX_TITLE_REWRITES = 12
+// Wall-clock guard, and the reason the caps above can be raised safely: a run
+// stops issuing NEW AI calls past this point and defers the rest to next week,
+// so a slow OpenAI day degrades into less work rather than a 300s timeout that
+// loses the whole run — including the links and the email. Sized to leave ~90s
+// of the route's maxDuration for the remaining DB writes and the send.
+const AI_DEADLINE_MS = 210_000
 // The real page-specific budget is MAX_TITLE (52): the root layout appends
 // " | Totem Avisé" (14 chars) and Google shows ~60. The old local 65 ignored
 // the suffix, so 9 of the first 14 overrides clipped in the SERP.
@@ -200,12 +212,12 @@ export interface SeoActionTarget {
   position: number
   linksCreated: string[] // neighbour titles linked toward this page
   linksSkippedReason?: string
-  synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "not-enriched" | "ai-failed" | "no-keyword"
+  synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "no-keyword"
   synopsisBefore?: string
   synopsisAfter?: string
   titleNeedsKeyword: boolean // query term missing from the display title
   // Lever C — meta <title> override action (display title is never changed).
-  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "not-enriched" | "ai-failed" | "n/a"
+  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "n/a"
   seoTitleAfter?: string
 }
 
@@ -586,6 +598,7 @@ export async function runSeoAutofix(
   const targets: SeoActionTarget[] = []
   let rewritesUsed = 0
   let titleRewritesUsed = 0
+  const aiDeadline = Date.now() + AI_DEADLINE_MS
 
   // Best-opportunity fiches first (the striking list arrives sorted), capped so
   // a deep pool can't blow the route's time budget.
@@ -629,6 +642,8 @@ export async function runSeoAutofix(
       synopsis = "would-rewrite"
     } else if (rewritesUsed >= MAX_REWRITES) {
       synopsis = "deferred-cap"
+    } else if (Date.now() > aiDeadline) {
+      synopsis = "deferred-time"
     } else if (!openai) {
       synopsis = "ai-failed"
     } else {
@@ -670,6 +685,8 @@ export async function runSeoAutofix(
       seoTitle = "would-set"
     } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
       seoTitle = "deferred-cap"
+    } else if (Date.now() > aiDeadline) {
+      seoTitle = "deferred-time"
     } else if (!openai) {
       seoTitle = "ai-failed"
     } else {
@@ -706,7 +723,7 @@ export async function runSeoAutofix(
   const titlesSet = targets.filter((t) => t.seoTitle === "set").length
   // "Flagged" = couldn't be auto-handled and wants human eyes. Titles are no
   // longer auto-flagged just for missing a keyword — the agent sets seoTitle.
-  const blocked = new Set(["flagged-junk", "deferred-cap", "ai-failed"])
+  const blocked = new Set(["flagged-junk", "deferred-cap", "deferred-time", "ai-failed"])
   const flagged = targets.filter(
     (t) => blocked.has(t.synopsis) || blocked.has(t.seoTitle),
   ).length
@@ -753,6 +770,7 @@ const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
   "covered": "synopsis déjà pertinent",
   "flagged-junk": "requête navigationnelle — non touchée",
   "deferred-cap": "réécriture reportée (plafond atteint)",
+  "deferred-time": "réécriture reportée (budget temps du run atteint)",
   "not-enriched": "fiche non enrichie — ignorée",
   "ai-failed": "réécriture échouée/refusée",
   "no-keyword": "rien à ajouter",
@@ -764,6 +782,7 @@ const SEO_TITLE_LABEL: Record<SeoActionTarget["seoTitle"], string> = {
   "covered": "titre SEO déjà pertinent",
   "flagged-junk": "requête navigationnelle — titre non touché",
   "deferred-cap": "titre SEO reporté (plafond atteint)",
+  "deferred-time": "titre SEO reporté (budget temps du run atteint)",
   "not-enriched": "fiche non enrichie — titre ignoré",
   "ai-failed": "titre SEO échoué/refusé",
   "n/a": "",
