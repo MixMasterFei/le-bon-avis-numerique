@@ -4,6 +4,8 @@ import {
   isPublicMedia,
   parseMediaRouteId,
   toMediaRouteId,
+  NON_POSTER_URLS,
+  publicMediaWhere,
 } from "../media-route"
 
 describe("media route id encode/parse", () => {
@@ -34,7 +36,7 @@ describe("media route id encode/parse", () => {
   })
 })
 
-describe("isPublicMedia — all three gates must pass", () => {
+describe("isPublicMedia — all four gates must pass", () => {
   const ok = { posterUrl: "https://x/p.jpg", dataQualityScore: 50, type: "MOVIE" as const }
 
   it("accepts a poster + quality >= floor + non-manga title", () => {
@@ -48,6 +50,21 @@ describe("isPublicMedia — all three gates must pass", () => {
 
   it("rejects a missing poster", () => {
     expect(isPublicMedia({ ...ok, posterUrl: null })).toBe(false)
+  })
+
+  // A stored placeholder is NOT a poster. `not: null` alone let these through,
+  // which is how 101 fiches with the grey "Affiche à venir" card ended up in
+  // sitemap.xml and in the agent-facing markdown/MCP surfaces.
+  it("rejects the house placeholder and the empty string as posters", () => {
+    for (const fake of NON_POSTER_URLS) {
+      expect(isPublicMedia({ ...ok, posterUrl: fake })).toBe(false)
+    }
+  })
+
+  it("keeps the where-fragment and the predicate in step", () => {
+    // Same rule expressed twice (predicate + Prisma fragment) — the drift
+    // between them is exactly the bug this pins.
+    expect(publicMediaWhere.posterUrl.notIn).toEqual([...NON_POSTER_URLS])
   })
 
   it("rejects a missing quality score (defaults to 0)", () => {

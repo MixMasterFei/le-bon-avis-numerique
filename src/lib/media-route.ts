@@ -78,12 +78,20 @@ export function whatParentsSectionLabel(type: MediaType): string {
 // expose a low-quality fiche to LLMs that the sitemap excludes.
 export const PUBLIC_MEDIA_QUALITY_FLOOR = 30
 
+// posterUrl values that are stored but are NOT a real poster. `not: null` alone
+// let these through: the house placeholder is a string, so 101 fiches carrying
+// it sat in sitemap.xml (and in the MCP/markdown surfaces) as thin pages with a
+// grey "Affiche à venir" card — the worst thing to hand a crawler or an LLM.
+// Single source of truth: collections.ts filters on the same list.
+export const NON_POSTER_URLS = ["/placeholder-poster.jpg", ""] as const
+
 export function isPublicMedia(media: {
   posterUrl?: string | null
   dataQualityScore?: number | null
   type: MediaType
 }): boolean {
   if (!media.posterUrl) return false
+  if ((NON_POSTER_URLS as readonly string[]).includes(media.posterUrl)) return false
   if ((media.dataQualityScore ?? 0) < PUBLIC_MEDIA_QUALITY_FLOOR) return false
   if (media.type === "MANGA") return false
   return true
@@ -91,7 +99,7 @@ export function isPublicMedia(media: {
 
 // Equivalent as a Prisma `where` fragment, for the DB-query callsites.
 export const publicMediaWhere = {
-  posterUrl: { not: null },
+  posterUrl: { not: null, notIn: [...NON_POSTER_URLS] },
   dataQualityScore: { gte: PUBLIC_MEDIA_QUALITY_FLOOR },
   type: { not: "MANGA" as const },
 }

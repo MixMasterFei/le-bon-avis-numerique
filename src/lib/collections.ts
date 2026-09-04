@@ -1,6 +1,7 @@
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import { COLLECTIONS, getCollectionDef, type CollectionDef, type CollectionQuery } from "@/lib/collections-data"
+import { NON_POSTER_URLS } from "@/lib/media-route"
 
 // Server-side collection fetchers — shared by the /collections pages (server
 // components since July 2026: the lists must be in the crawled HTML) and the
@@ -123,7 +124,7 @@ function weightedRating(rating: number | null, votes: number | null): number {
 async function getDynamicItems(query: CollectionQuery, limit: number): Promise<CollectionItem[]> {
   const where = buildWhereClause(query)
   // Quality gates
-  where.posterUrl = { not: null, notIn: ["/placeholder-poster.jpg", ""] }
+  where.posterUrl = { not: null, notIn: [...NON_POSTER_URLS] }
   if (!("expertAgeRec" in where)) where.expertAgeRec = { not: null }
   where.releaseDate = { ...((where.releaseDate as object) || {}), lte: new Date() }
 
