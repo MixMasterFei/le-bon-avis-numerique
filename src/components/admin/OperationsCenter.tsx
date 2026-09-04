@@ -213,20 +213,29 @@ const OPERATIONS: Array<{
       key: "cacheStreaming",
       endpoint: "/api/admin/streaming/cache",
       method: "POST",
-      body: { limit: 10 },
+      // 10 per HTTP round-trip meant ~76 s of TMDB waiting to advance a ~9 500
+      // item backlog by 10 — 30 h of an open browser tab. The route now runs
+      // four fetches in flight under its own 240 s budget, so one call chews
+      // through a couple of hundred titles and returns before the timeout.
+      body: { limit: 200 },
       chunked: true,
       delayMs: 1000,
-      accumKeys: ["processed", "updated", "errors"],
+      accumKeys: ["processed", "updated", "errors", "drained"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
         total: data.remaining ? (data.processed || 0) + data.remaining : null,
         updated: data.updated || 0,
         errors: data.errors || 0,
+        drained: (data.drained as number) || 0,
       }),
       isDone: (data) => data.done === true,
       buildSummary: (stats) => {
         const errs = stats.errors || 0
-        return `${stats.processed || 0} traites, ${stats.updated || 0} mis a jour${errs ? `, ${errs} erreurs` : ""}`
+        // Surface "sortis de file" next to "traites": when the two diverge the
+        // job is spending slots on titles that never leave the queue, which is
+        // exactly what made this operation look frozen.
+        const drained = stats.drained || 0
+        return `${stats.processed || 0} traites, ${drained} sortis de file, ${stats.updated || 0} mis a jour${errs ? `, ${errs} erreurs` : ""}`
       },
     },
     label: "MAJ streaming",
