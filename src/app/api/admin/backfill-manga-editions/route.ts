@@ -5,10 +5,15 @@ import { searchBooks } from "@/lib/google-books"
 export const maxDuration = 60
 
 /**
+ * @deprecated RETIRED — manga pipeline decommissioned May 2026.
+ *
  * Retroactive Google Books lookup for MANGA rows that don't yet have
  * French-edition data. Fills publisher + latestVolumeDate +
  * googleBookId where possible. Non-fatal on miss — manga without a
  * French edition entry simply stay as-is.
+ *
+ * This route is kept for potential manual data maintenance but is NOT
+ * called by any automated workflow. Do NOT add it to cron.yml.
  */
 
 interface BackfillResult {

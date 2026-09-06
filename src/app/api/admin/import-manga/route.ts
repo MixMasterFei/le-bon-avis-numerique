@@ -15,6 +15,18 @@ import {
 import { searchBooks } from "@/lib/google-books"
 import { isAdultAniListManga } from "@/lib/adult-content-filter"
 
+/**
+ * @deprecated RETIRED — manga pipeline decommissioned May 2026.
+ *
+ * This admin route is no longer part of any automated workflow. Manga is NOT
+ * in the public catalog; the ~12 existing rows are kept internally. Do NOT
+ * add calls to this route from cron.yml or admin presets that run unattended.
+ *
+ * Manual admin-triggered imports are still possible for data maintenance, but
+ * imported manga will NOT be enriched (the enrich route now explicitly
+ * excludes MANGA when type="all").
+ */
+
 export const maxDuration = 300 // Vercel Pro; popular import over 100 rows
 
 type ImportSource = "popular" | "search" | "weekly"

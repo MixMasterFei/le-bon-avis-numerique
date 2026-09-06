@@ -18,6 +18,19 @@ import { isAdultAniListManga } from "@/lib/adult-content-filter"
 export const maxDuration = 60
 
 /**
+ * @deprecated RETIRED — manga pipeline decommissioned May 2026.
+ *
+ * This route is NO LONGER CALLED by any scheduled cron job. The ~12 manga
+ * titles in the database are kept internally for historical reasons but are
+ * NOT part of the public catalog. Do NOT add this route back to cron.yml or
+ * call it from any automated pipeline.
+ *
+ * Kept in the codebase so existing rows aren't orphaned — a future admin
+ * import-manga or manual trigger can still update metadata without breaking.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * Original docstring (historical reference):
+ *
  * Weekly manga refresh — runs Sundays 04:00 UTC via GitHub Actions.
  *
  * For each recently-updated AniList series:
