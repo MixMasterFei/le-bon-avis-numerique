@@ -6,15 +6,52 @@ const BUCKET = "media-images"
 
 let supabaseAdmin: SupabaseClient | null = null
 
+/**
+ * The project's API root, as supabase-js expects it: `https://<ref>.supabase.co`.
+ *
+ * Every image upload since the bucket was created (May 2026) failed with
+ * "Invalid path specified in request URL" — 0 objects ever landed. The
+ * Supabase edge logs showed why: NEXT_PUBLIC_SUPABASE_URL was set to the
+ * PostgREST endpoint, `https://<ref>.supabase.co/rest/v1`, so supabase-js
+ * built `…/rest/v1/storage/v1/object/…` and PostgREST answered 404 to a route
+ * it does not have. The Storage API was never reached at all.
+ *
+ * Fixing the env var is the right thing, but a dashboard value can be pasted
+ * wrong again in one click. Normalising here makes the code correct for any
+ * of the URLs the Supabase dashboard hands out (project root, REST, Storage),
+ * and logs once so the misconfiguration is still visible.
+ */
+export function normalizeSupabaseUrl(raw: string | undefined | null): string | null {
+  if (!raw) return null
+  let url = raw.trim()
+  try {
+    const parsed = new URL(url)
+    // Drop any service-specific suffix (/rest/v1, /storage/v1, /auth/v1, …)
+    // and a trailing slash: the client appends the service path itself.
+    const cleanedPath = parsed.pathname.replace(/\/(rest|storage|auth|realtime|functions)\/v1\/?$/i, "").replace(/\/+$/, "")
+    url = `${parsed.origin}${cleanedPath}`
+  } catch {
+    return null
+  }
+  return url
+}
+
+let warnedAboutUrl = false
+
 function getSupabaseAdmin(): SupabaseClient | null {
   if (supabaseAdmin) return supabaseAdmin
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const url = normalizeSupabaseUrl(rawUrl)
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!url || !key) {
     console.warn("[supabase-storage] Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — image storage disabled")
     return null
+  }
+  if (!warnedAboutUrl && rawUrl && rawUrl.trim().replace(/\/+$/, "") !== url) {
+    warnedAboutUrl = true
+    console.warn(`[supabase-storage] NEXT_PUBLIC_SUPABASE_URL carries a service path (${rawUrl.trim()}); using ${url}. Set the variable to the project root to silence this.`)
   }
 
   supabaseAdmin = createClient(url, key, {
