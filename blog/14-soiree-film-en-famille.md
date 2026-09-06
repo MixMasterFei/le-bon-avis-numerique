@@ -1,88 +1,86 @@
 ---
-title: "Soirée film en famille : choisir un contenu qui plaît à tout le monde"
+title: "Quel film regarder en famille ce soir ?"
 slug: "soiree-film-en-famille"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "films-series"
-excerpt: "Choisir un film familial peut devenir une négociation sans fin. Voici une méthode simple pour trouver un contenu qui rassemble vraiment."
-seoTitle: "Film famille ce soir : comment bien choisir"
-seoDescription: "Soirée film en famille : méthode simple pour choisir un film adapté aux âges, aux envies et aux sensibilités."
+excerpt: "Deux ou trois propositions suffisent pour décider. Voici une méthode courte et deux films à comparer selon le temps disponible et l'envie de votre famille."
+seoTitle: "Quel film regarder en famille ce soir ? Nos repères"
+seoDescription: "Évitez de passer la soirée à faire défiler les affiches : deux films à comparer, les points à vérifier et une façon simple de choisir ensemble."
 internalLinks:
+  - "/blog/bon-age-film-enfant"
+  - "/media/movie:882960e0-9501-4fbc-898c-2a95effdb8fd"
+  - "/media/movie:b7f0e9a5-5490-44b7-9954-d3ea6b11719c"
   - "/films"
   - "/collections"
-  - "/notre-methode"
-  - "/inscription"
 sourceLinks:
-  - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
-  - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age"
+  - "https://www.academie-cinema.org/films/ernest-et-celestine-35407/"
+  - "https://diaphana.fr/film/azur-et-asmar/"
 ---
 
-# Soirée film en famille : choisir un contenu qui plaît à tout le monde
+# Quel film regarder en famille ce soir ?
 
-« On regarde quoi ? » La question, lancée un vendredi soir, paraît innocente. L'intention est bonne : se poser ensemble, partager un moment, trouver quelque chose qui fasse rire le petit, intéresse l'ado et ne déclenche pas de cauchemars. Dix minutes plus tard, chacun a proposé un titre différent, personne n'est d'accord, et quelqu'un a déjà quitté le canapé. La soirée censée rassembler a viré au tribunal des goûts.
+Tout le monde est installé. Quelqu'un veut rire, quelqu'un veut de l'aventure, et le plus petit refuse le film dont l'affiche contient un loup. Vingt minutes plus tard, vous êtes toujours dans les menus.
 
-Le problème n'est pas le manque de films. Une plateforme en propose des milliers. Le problème, c'est qu'une vraie soirée familiale doit composer avec les âges, les humeurs, la fatigue du jour, les sensibilités de chacun et le temps disponible. Taper « film famille » dans une barre de recherche ne règle rien de tout ça. Un peu de méthode, en revanche, change presque tout, et l'essentiel se joue avant même d'allumer la télé.
+Pour ce soir, essayez de ramener le choix à deux ou trois films. Pas les trois meilleurs films de tous les temps. Trois possibilités compatibles avec votre famille, le moment et le temps dont vous disposez.
 
-## Viser une zone commune, pas la moyenne
+## Fixer les limites avant de chercher les titres
 
-Dans une fratrie, le plus jeune est souvent le facteur limitant. Si le film est trop intense pour lui, la soirée finit en stress. Mais choisir uniquement pour lui frustre les grands, qui décrochent au bout de vingt minutes.
+Commencez par trois décisions rapides.
 
-L'idée n'est donc pas de viser le film le plus enfantin, ni le plus mature, mais une zone que tout le monde peut habiter. Un contenu qui reste accessible au plus jeune tout en offrant quelque chose aux autres : de l'humour qui marche à deux niveaux, une aventure bien rythmée, des personnages auxquels on s'attache, parfois la nostalgie d'un classique que les parents ont envie de transmettre. Beaucoup de films d'animation, de comédies familiales ou d'aventures douces tiennent cette promesse. L'objectif n'est pas que chacun adore exactement le même film, mais que personne ne le subisse.
+**Combien de temps avons-nous vraiment ?** Comptez la durée du film et ce qu'il reste à faire avant le coucher. Si vous avez une heure, chercher un long métrage de deux heures vous prépare surtout une négociation.
 
-## Trois questions avant de lancer la recherche
+**Qui regarde jusqu'au bout ?** Un film choisi pour l'aîné ne devient pas adapté au petit parce que celui-ci « ne suivra sûrement pas ». Pour une séance commune, tenez compte de tous les enfants présents.
 
-Plutôt que de faire défiler les catalogues à l'infini, il aide de poser trois questions rapides. Elles évitent de comparer des films qui ne jouent pas le même rôle.
+**Qu'est-ce qu'on évite ce soir ?** Cela peut être une grande frayeur, une histoire de séparation ou simplement une intrigue trop compliquée après une journée fatigante.
 
-La première porte sur **l'âge et la sensibilité**. Le plus jeune peut-il le voir sans être dépassé ? L'ado sensible à la violence ou à la gêne sociale va-t-il bien le vivre ? Les parents savent-ils s'il y a des scènes fortes ? La deuxième concerne **l'énergie du soir** : un vendredi épuisé n'appelle pas le même film qu'un dimanche après-midi disponible. Parfois il faut du court, du doux, du familier ; parfois on peut tenter une grande aventure. La troisième est la plus simple, et souvent oubliée : **qu'est-ce que la famille a envie de vivre ce soir ?** Rire, frissonner un peu, voyager, se réconforter, revoir un classique. Nommer l'envie dominante recadre instantanément la sélection.
+Ensuite seulement, chacun peut proposer une envie positive : rire, découvrir un monde, retrouver un personnage. Vous avez alors de quoi choisir.
 
-## Préparer une courte liste à froid
+## Deux films à mettre dans votre liste
 
-Le choix à chaud est presque toujours mauvais. Tout le monde fait défiler les affiches, les bandes-annonces excitent, on hésite, et le film démarre trop tard pour un soir de semaine.
+Voici deux pistes avec des durées différentes. Pour décider si elles conviennent à votre enfant, prenez le temps de [lire les recommandations d'âge et les scènes sensibles](/blog/bon-age-film-enfant). Les disponibilités changent selon le pays et le service : cherchez le titre exact sur votre plateforme ou auprès de votre médiathèque.
 
-Mieux vaut préparer quelques options à l'avance, hors du feu de l'action. Cinq à dix titres suffisent, idéalement répartis selon les humeurs possibles : de quoi tenir un soir fatigué, une grande aventure pour un week-end, un film qui réunit petits et grands. Les [collections](/collections) Totem peuvent servir de point de départ pour constituer ces réserves. Le soir venu, on ne cherche plus dans tout internet : on choisit dans une sélection déjà validée, ce qui désamorce l'essentiel des disputes.
+### Ernest et Célestine pour une histoire d'amitié
 
-## Se méfier de la bande-annonce
+**Le film de 2012, 1 h 20.** Un ours et une souris deviennent amis alors que leurs deux mondes désapprouvent cette relation. La [fiche de l'Académie des César](https://www.academie-cinema.org/films/ernest-et-celestine-35407/) confirme cette histoire et la durée.
 
-La bande-annonce semble être un raccourci utile. Elle l'est rarement. Elle concentre souvent les scènes les plus fortes, accélère l'excitation, et donne parfois une image trompeuse du film. Pour un enfant sensible, deux minutes de montage nerveux peuvent être plus intenses que le long-métrage lui-même.
+Pourquoi le garder dans votre sélection ? Son point de départ permet de discuter d'une amitié que les autres ne comprennent pas. Sa durée peut aussi faire la différence quand vous avez moins d'une heure et demie.
 
-En cas de doute, une fiche parent renseigne mieux : l'âge conseillé, les points sensibles, la durée, le ton général. Sur les fiches [films](/films) de Totem Avisé, on vérifie ces éléments sans se fier à la seule affiche. La bande-annonce peut venir ensuite, comme départage si la famille hésite entre deux titres.
+Avant de choisir, lisez les détails de la [fiche Totem Avisé d'Ernest et Célestine](/media/movie:882960e0-9501-4fbc-898c-2a95effdb8fd), notamment les éléments de peur et de violence disponibles. Une histoire d'amitié peut contenir des passages tendus ; l'aspect du dessin ne suffit pas à les exclure.
 
-## Tenir compte de l'heure, pas seulement de l'âge
+Pour présenter le film à votre enfant : « Un ours et une souris deviennent amis, mais les autres ne trouvent pas cela normal. Tu as envie de voir comment ils vont s'en sortir ? »
 
-Un film de plus de deux heures peut être magnifique sans être un bon choix un mardi soir. La durée pèse sur l'attention, l'heure du coucher et l'humeur du lendemain. Pour les plus jeunes, un film long devient parfois une épreuve même quand le contenu est parfaitement adapté.
+### Azur et Asmar pour partir à l'aventure
 
-Il n'y a pas de barème à respecter. Le bon réflexe consiste simplement à garder les formats courts et doux pour les fins de journée chargées, et à réserver les grandes sagas ou les films intenses à un moment où l'on a vraiment le temps devant soi, un début de week-end plutôt qu'un soir de semaine chargé. La vraie question n'est pas seulement « est-ce adapté ? » mais « est-ce adapté maintenant ? ».
+**Le film de Michel Ocelot de 2006, 1 h 39.** Deux garçons élevés ensemble se retrouvent plus tard autour d'une quête de conte. Le [distributeur Diaphana](https://diaphana.fr/film/azur-et-asmar/) présente leur parcours, ses dangers et ses sortilèges.
 
-## Faire tourner le choix, avec un cadre
+Pourquoi le garder dans votre sélection ? Il offre un autre choix si votre famille a envie d'un récit de quête et dispose de davantage de temps.
 
-Pour éviter que le même enfant impose toujours son envie, on peut instaurer un tour. Celui qui choisit, ce soir, sélectionne dans la liste validée à l'avance, pas dans tout le catalogue. « Ce soir, c'est à toi de choisir, parmi ces quatre-là. » L'enfant gagne une vraie responsabilité sans porter le risque de tomber sur un contenu trop mature pour les autres.
+Vérifiez les détails de la [fiche Totem Avisé d'Azur et Asmar](/media/movie:b7f0e9a5-5490-44b7-9954-d3ea6b11719c) avant de le proposer à un enfant sensible aux menaces. Le mot « conte » ne garantit pas une aventure sans peur.
 
-Après le film, une question légère prolonge l'idée du groupe : « Est-ce que c'était un bon choix pour tout le monde ? » Au fil des soirées, ce réflexe apprend à penser un peu au-delà de ses propres envies.
+Pour lancer la discussion : « Deux anciens compagnons d'enfance cherchent la même fée. Est-ce qu'ils vont s'aider ou se faire concurrence ? »
 
-## Accepter qu'on ne regarde pas toujours ensemble
+Ces deux titres sont des points de départ. Vous pouvez appliquer le même tri à un film déjà vu que tout le monde réclame. Une bonne soirée n'exige pas une nouveauté.
 
-Parfois, le meilleur choix familial est de séparer les moments. Un film pour les petits plus tôt, un film plus mature avec l'ado un autre soir, un jeu coopératif d'un côté pendant qu'on lit de l'autre. Vouloir réunir tout le monde à chaque fois mène souvent à des compromis fades, où personne n'a vraiment son content.
+## Une famille, deux envies, un choix concret
 
-La soirée commune reste précieuse, mais elle n'a pas à être l'unique rituel. Ce qui compte, c'est que chaque enfant ait parfois un contenu pensé pour lui, et pas seulement le film moyen qui arrange tout le monde sans enthousiasmer personne.
+Prenons un exemple fictif. Deux enfants de 8 et 12 ans veulent regarder un film avec un parent. Ils ont 1 h 30 devant eux. Le plus grand voudrait une aventure, le plus jeune préfère une histoire d'amitié.
 
-## Le petit rituel qui change tout
+Azur et Asmar dépasse le temps disponible : il sort de la liste avant toute discussion sur son intérêt. Ernest et Célestine peut y rester, à condition que les informations sur son contenu conviennent aux deux enfants.
 
-Une soirée film devient mémorable avec quelques gestes simples : on choisit avant, on pose les téléphones, on coupe les notifications, on prépare quelque chose à boire, et on regarde vraiment. Rien de spectaculaire, mais l'écart avec une séance distraite est net.
+Le parent propose alors ce film et une autre option connue, de durée compatible. Les enfants choisissent entre les deux. Ils participent à la décision sans avoir à parcourir tout un catalogue.
 
-Après, inutile de disséquer le film. Une seule question relance la discussion : le moment préféré de chacun, le personnage le plus courageux, une scène jugée un peu trop forte, ou l'âge auquel on le recommanderait à des cousins. Ces échanges transforment le visionnage en conversation, sans l'abîmer.
+Si aucun ne convient, on peut reporter le long métrage et choisir un programme plus court. Le temps passé à chercher ne vous oblige pas à lancer quelque chose.
 
-## Totem comme arbitre tranquille
+## Quand personne n'est d'accord
 
-Le rôle de Totem Avisé n'est pas de choisir à votre place, mais de rendre le choix moins bruyant. Notre [méthode](/notre-methode) regarde l'âge conseillé, les contenus sensibles, les messages positifs et la compatibilité avec votre foyer. Avec un [profil famille](/inscription), vous voyez plus vite, pour chaque membre, si un film est « très adapté », « bon choix », « à vérifier » ou « trop tôt ».
+Évitez d'ajouter dix titres pour départager trois personnes. Demandez plutôt à chacun ce qui bloque : a-t-il déjà vu le film, peur d'une scène, ou simplement envie de décider cette fois-ci ?
 
-**La méthode Totem en 3 minutes :**
+Vous pouvez alterner le choix d'une séance à l'autre, parmi les options que l'adulte a jugées adaptées. Cela donne aussi une place au goût du plus jeune.
 
-- Indiquez les enfants présents ce soir.
-- Choisissez l'envie du moment : rire, aventure, douceur, frisson léger.
-- Comparez les films compatibles avec toute la famille, puis tranchez.
+En revanche, une limite liée à l'âge ou à une vraie inquiétude ne se règle pas au vote. Et si votre enfant demande d'arrêter pendant le film, le choix collectif ne lui retire pas ce droit.
 
-Et si vous hésitez sur la limite d'âge, gardez en tête une réalité simple : deux enfants du même âge ne vivent pas toujours la même histoire. Un film bien choisi, à la bonne heure, regardé ensemble : c'est déjà une bonne soirée.
+## Garder la prochaine idée avant d'éteindre
 
-## Pour aller plus loin
+Le titre écarté faute de temps peut devenir la proposition du week-end. Notez-le avec la raison du report : « trop long ce soir », « à regarder avec l'aîné », « à vérifier pour les scènes de peur ».
 
-- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
-- [Comment adapter l'usage des écrans à l'âge de l'enfant ou de l'adolescent ? (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
+Pour préparer cette petite liste, vous pouvez parcourir les [films](/films) et les [collections Totem Avisé](/collections). Gardez seulement les titres dont vous aurez envie de reparler à table. La prochaine séance commencera avec une proposition, pas avec un défilement d'affiches.

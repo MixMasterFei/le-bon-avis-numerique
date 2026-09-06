@@ -1,85 +1,85 @@
 ---
-title: "Réseaux sociaux avant 15 ans : ce que les parents peuvent préparer dès maintenant"
+title: "Réseaux sociaux avant 15 ans : par où commencer ?"
 slug: "reseaux-sociaux-avant-15-ans"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "parentalite-numerique"
-excerpt: "Majorité numérique, autorisation parentale, smartphone, pression des copains : comment préparer un ado aux réseaux sociaux sans attendre la crise."
-seoTitle: "Réseaux sociaux avant 15 ans : guide parents 2026"
-seoDescription: "Réseaux sociaux avant 15 ans : ce que les parents peuvent préparer avec leur ado pour un usage plus sûr et plus progressif."
+excerpt: "En France, l'interdiction générale envisagée en 2026 a été censurée. Pour votre famille, commencez par vérifier les comptes, les contacts et les recours."
+seoTitle: "Réseaux sociaux avant 15 ans — règles et loi en France"
+seoDescription: "Le point sur la loi en France en septembre 2026, puis des conseils concrets pour préparer un premier compte ou reprendre les réglages d'un ado."
 internalLinks:
-  - "/guides"
-  - "/notre-methode"
-  - "/objectif"
+  - "/films"
 sourceLinks:
-  - "https://www.parents.fr/actualites/etre-parent/le-gouvernement-veut-interdire-les-reseaux-sociaux-aux-moins-de-15-ans-et-le-portable-au-lycee-des-la-rentree-2026-1145316"
-  - "https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181"
+  - "https://www.info.gouv.fr/actualite/interdiction-des-telephones-portables-au-lycee-ce-que-dit-la-loi"
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
+  - "https://e-enfance.org/besoin-daide/"
+  - "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054743009"
 ---
 
-# Réseaux sociaux avant 15 ans : ce que les parents peuvent préparer dès maintenant
+# Réseaux sociaux avant 15 ans : par où commencer ?
 
-Il y a les textes de loi, les annonces, les débats à l'Assemblée. Et puis il y a la vraie vie. Un enfant de 12 ans qui réclame Snapchat « parce que tout le monde l'a ». Une classe dont les informations circulent sur un groupe que les adultes ne voient pas. Un ado qui regarde TikTok sans compte officiel. Un parent qui ne sait plus très bien ce qui est interdit, toléré ou simplement impossible à contrôler.
+« Tout le monde a un compte. » Votre enfant parle de ses amis. Vous pensez aux vidéos qu'il risque de voir, aux inconnus qui pourraient lui écrire et aux messages qui arrivent après le coucher. La conversation commence souvent avec deux sujets différents.
 
-Le débat public a remis ce sujet au centre de la table familiale, et c'est tant mieux. Mais quel que soit le sort des textes en discussion, une question reste entière pour les familles : comment accompagner un enfant vers les réseaux sociaux sans lui confier les clés trop tôt ? La réponse ne tient pas dans un âge. Elle tient dans une progression.
+Avant de répondre, demandez-lui ce qu'il veut y faire. Retrouver deux camarades, suivre un créateur et publier des vidéos n'exposent pas aux mêmes situations. Cela ne règle pas la question de l'âge, mais permet de discuter d'un usage précis.
 
-## Où en est la loi, vraiment
+## Ce que dit la loi en France en septembre 2026
 
-*Cadre juridique : état au 7 juillet 2026. C'est un sujet mouvant, où les annonces vont vite et où tout n'est pas encore appliqué. Fiez-vous à la date de mise à jour de cet article et vérifiez l'actualité avant d'en tirer une règle ferme.*
+**Situation vérifiée le 4 septembre 2026.** Le texte adopté par le Parlement le 21 juillet prévoyait une interdiction générale d'accès aux réseaux sociaux pour les moins de 15 ans. Cette mesure a été censurée par le Conseil constitutionnel le 14 août. La loi du 24 août 2026 a été promulguée sans cette interdiction générale.
 
-Le cadre juridique mérite d'être regardé de près, parce qu'on lit beaucoup de raccourcis. Deux choses différentes sont en jeu.
+Elle étend en revanche aux lycées l'interdiction d'utiliser un téléphone mobile déjà prévue à l'école et au collège. Les modalités et exceptions passent par le règlement intérieur de l'établissement. Le [point publié par le Gouvernement](https://www.info.gouv.fr/actualite/interdiction-des-telephones-portables-au-lycee-ce-que-dit-la-loi) détaille ces changements et renvoie aux textes.
 
-D'abord, ce qui est déjà voté. La loi du 7 juillet 2023 a instauré une « majorité numérique » fixée à 15 ans : en dessous de cet âge, l'inscription sur un réseau social doit recevoir l'accord d'un titulaire de l'autorité parentale. Le détail compte : faute de décrets d'application publiés, ce texte n'est pas réellement entré en vigueur. La Commission européenne a relevé des points de friction avec le droit de l'Union, et le dispositif est resté largement théorique. Autrement dit, la règle des 15 ans existe sur le papier, mais elle ne s'applique pas concrètement à ce jour.
+L'absence de cette interdiction générale ne signifie pas qu'un enfant peut s'inscrire à n'importe quel service. Vérifiez les conditions d'âge de l'application et les règles de consentement applicables. Un âge annoncé par une plateforme, une règle juridique et un conseil éducatif ne répondent pas à la même question.
 
-Ensuite, ce qui est en cours de discussion. Une proposition de loi va plus loin, jusqu'à une interdiction d'accès aux réseaux sociaux pour les moins de 15 ans, avec une vérification de l'âge contrôlée par l'Arcom. Elle a été adoptée en première lecture par l'Assemblée nationale le 26 janvier 2026. Le Sénat a ensuite adopté, le 31 mars 2026, sa propre version du texte : plutôt qu'une interdiction générale, qu'il jugeait fragile sur le plan constitutionnel, il a retenu une liste de réseaux interdits aux moins de 15 ans, établie par arrêté sur avis de l'Arcom, les autres services restant accessibles sous réserve d'un accord parental. La proposition est donc repartie à l'Assemblée pour une deuxième lecture. Le gouvernement affiche l'objectif d'une entrée en vigueur à la rentrée de septembre 2026, mais à la date de mise à jour de cet article, rien n'est définitivement voté ni applicable, et les deux chambres ne s'accordent pas encore sur la forme à donner au dispositif. Le même texte aborde aussi l'extension au lycée de l'interdiction du téléphone portable : aujourd'hui, cette interdiction concerne l'école et le collège, où la « pause numérique » a été généralisée, tandis que pour le lycée la question reste à l'étude, établissement par établissement.
+Les [repères de l'Éducation nationale](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121) recommandent notamment un accès à internet supervisé et sans réseaux sociaux entre 12 et 15 ans. Il s'agit ici d'une recommandation d'accompagnement. Les règles françaises ne s'appliquent pas automatiquement en Belgique, en Suisse ou au Québec.
 
-Pour une famille, la leçon n'est pas de suivre chaque amendement. C'est de noter la direction. Les pouvoirs publics considèrent qu'un accès précoce, solitaire et massif aux réseaux pose un problème réel de sommeil, d'attention, d'exposition aux contenus et de harcèlement. Et un adolescent ne devient pas prêt par magie le jour de ses 15 ans. Avant cet âge, l'autonomie complète reste, pour beaucoup d'enfants, une exigence trop lourde.
+## Comprendre ce que l'enfant demande
 
-## Le réflexe à éviter : un simple interrupteur
+Essayez de remplacer le nom de l'application par l'activité : « Tu veux parler à qui ? Regarder quoi ? Publier quelque chose ? »
 
-Beaucoup de familles vivent la question comme un bouton. Avant : interdit. Après : autorisé. Le souci, c'est qu'un réseau social n'est pas une application parmi d'autres. C'est en même temps un espace social, un moteur de recommandation, une messagerie, une vitrine de soi, un flux publicitaire, un lieu de comparaison permanente et, parfois, un terrain de conflit. On ne confie pas tout cela d'un coup, comme on donne une nouvelle paire de baskets.
+S'il cherche à recevoir les informations d'une activité ou d'une classe, vérifiez auprès des adultes comment elles peuvent lui parvenir sans inscription sur un réseau. L'accès à une information utile ne devrait pas dépendre d'un compte ouvert trop tôt.
 
-La préparation peut commencer bien avant la première inscription, et elle passe surtout par des conversations ordinaires. Ce qu'on publie et ce qu'on garde pour soi. Pourquoi une vidéo nous retient même quand elle a cessé de nous intéresser. Comment réagir quand un camarade se fait moquer dans un groupe. Pourquoi un compte inconnu qui écrit en privé n'est pas un ami. Ce qu'on fait si une image gênante se met à circuler. Ces échanges, glissés au fil des semaines, pèsent souvent plus lourd qu'un contrôle parental installé dans la panique.
+S'il veut surtout voir les vidéos dont ses amis parlent, vous pouvez en discuter ou en regarder une ensemble depuis un accès adulte approprié, sans lui créer un compte. Si le contenu ou les conditions d'accès ne conviennent pas, proposez une autre façon de partager ce centre d'intérêt.
 
-## Apprendre les codes sans y être exposé
+Évitez de demander à l'enfant de mentir sur sa date de naissance. Cela fausse aussi les protections que le service peut prévoir selon l'âge.
 
-Un enfant peut comprendre les réseaux avant d'y avoir un compte, et c'est même préférable. On peut regarder ensemble une interface, décortiquer un fil, parler d'un influenceur, repérer une publicité déguisée, lire les commentaires sous une vidéo. Le but n'est pas de faire un cours magistral, mais de rendre visible ce qui est invisible.
+## Avant un premier compte autorisé
 
-Quand une vidéo enchaîne sur une autre, on peut demander pourquoi l'application propose celle-là, maintenant. Quand un créateur vante un produit, on peut se demander à voix haute s'il est payé pour ça. Quand un commentaire est violent, on peut s'interroger sur l'effet qu'il produit chez celui qui le lit. Ces petites questions construisent l'esprit critique mine de rien. Elles rappellent que les réseaux ne sont pas neutres : ils sont conçus pour retenir l'attention, faire réagir, collecter des signaux et proposer toujours autre chose.
+Quand l'âge et les conditions du service permettent l'inscription et que vous l'envisagez, prenez un moment pour faire les réglages ensemble :
 
-## Poser un cadre avant l'inscription
+- Vérifiez qui voit le profil et les publications.
+- Limitez les messages et demandes de contact des personnes inconnues.
+- Regardez si la localisation est partagée, avec qui et pendant combien de temps.
+- Choisissez les notifications utiles et coupez celles de la nuit.
+- Repérez comment bloquer un compte, signaler un contenu et récupérer l'accès au compte.
 
-Si votre enfant approche du premier compte, mieux vaut écrire les règles avant, pas après le premier accroc. Un cadre familial n'a pas besoin d'être solennel ni de tenir sur trois pages. Quelques points clairs suffisent.
+Les menus et les possibilités varient selon le service. Consultez son aide officielle au moment du réglage. Un profil privé réduit certaines expositions, mais une personne autorisée peut toujours faire une capture ou transmettre un message.
 
-Sur les horaires, on reprend simplement les repères déjà valables pour les écrans : pas de réseaux le matin avant l'école, pas pendant les repas, pas dans la chambre la nuit, pas juste avant de dormir. Le compte reste privé par défaut : un jeune ado n'a pas besoin d'une audience d'inconnus, et même si un profil privé ne supprime pas tous les risques, il réduit nettement l'exposition. Les messages privés d'inconnus sont hors jeu, sans négociation possible au début.
+Convenez aussi de ce qui nécessite votre accord : montrer son visage, publier une photo d'un camarade, accepter un nouveau contact. Ce sont des décisions distinctes de la simple ouverture du compte.
 
-Deux points sont plus importants encore que les interdits. D'abord un droit d'appel : si quelque chose le met mal à l'aise, l'enfant doit pouvoir vous prévenir sans être puni « d'avoir été sur l'appli », sinon il apprendra surtout à cacher les problèmes. Ensuite un point régulier, une fois par mois plutôt que chaque soir, pour regarder ensemble ce qui va, ce qui fatigue, ce qui a dérapé et ce qu'on ajuste. Présenté ainsi, le cadre n'est pas une marque de défiance. C'est un filet, posé parce que l'espace comporte des risques, pas parce qu'on doute de l'enfant.
+## Si le compte existe déjà
 
-## Regarder autre chose que le temps passé
+Commencez par écouter. « Montre-moi ce que tu aimes sur cette application » permet souvent de comprendre davantage qu'une demande immédiate de lire tous les messages.
 
-La durée compte, bien sûr. Mais sur les réseaux, d'autres signaux en disent souvent plus long. Un enfant qui devient irritable après chaque session, qui dort moins bien, qui referme brutalement son écran à votre approche, qui se compare sans arrêt, qui veut supprimer des photos de lui, qui s'angoisse dès qu'il n'a pas son téléphone, ou qui parle d'un groupe avec une gêne inhabituelle : tout cela appelle une conversation.
+Faites ensuite le tour des comptes ensemble. Certains peuvent avoir été oubliés ; d'autres sont publics sans que l'enfant l'ait remarqué. Vérifiez les paramètres, les contacts et les conditions d'âge. Si le compte ne respecte pas celles-ci, cherchez avec lui les démarches officielles pour le fermer et une solution adaptée pour garder les liens utiles.
 
-Et la conversation gagne à éviter le « qu'est-ce que tu as encore fait ? ». On avance mieux avec des ouvertures simples. Est-ce qu'il y a quelque chose qui t'a mis mal à l'aise ? Est-ce que tu te sens obligé de répondre tout de suite ? Est-ce que quelqu'un est pris pour cible dans le groupe ? Est-ce qu'on regarde les paramètres ensemble ? Un parent n'a pas besoin de tout savoir pour être utile. Il a surtout besoin de rester accessible.
+Expliquez les changements avant de les appliquer lorsque la situation le permet. « On coupe les notifications la nuit parce que tu as besoin de dormir » donne une raison compréhensible. Les échanges privés restent un sujet sensible : annoncez ce que vous souhaitez vérifier et pourquoi, en tenant compte de l'âge et du problème rencontré.
 
-## Et si l'enfant a déjà un compte
+## Le message qu'on aurait préféré ne pas recevoir
 
-Beaucoup de parents lisent ce genre d'article un peu tard, avec un enfant déjà inscrit, parfois depuis longtemps. Ce n'est pas grave, et surtout ce n'est pas une raison pour tout durcir d'un coup. On peut reprendre le cadre sans dramatiser.
+Préparez cette situation avant qu'elle arrive. L'enfant doit savoir à qui parler si quelqu'un insiste pour obtenir une photo, l'humilie dans un groupe ou lui demande de garder un échange secret.
 
-Commencez par un état des lieux calme, fait à deux : quels comptes existent, lesquels sont publics ou privés, qui peut envoyer des messages, quelles notifications sont actives, combien de temps l'application tourne chaque jour, et quels contenus reviennent souvent en perturbant. Puis ne changez qu'une chose à la fois. Tout bouleverser en une soirée déclenche presque toujours un conflit. Passer le compte en privé, couper les notifications nocturnes ou sortir le téléphone de la chambre : chacune de ces mesures, prise seule, suffit déjà à changer beaucoup.
+Vous pouvez lui dire : « Même si tu as répondu, même si tu as fait une bêtise, viens me voir. On cherchera quoi faire. » Ce droit de demander de l'aide ne supprime pas les règles. Il évite que la peur d'une sanction empêche de signaler un problème.
 
-## Ce n'est pas un monde à part
+En cas de violences numériques, le [3018](https://e-enfance.org/besoin-daide/) accompagne aussi les parents. Conservez les éléments utiles sans les faire circuler dans d'autres groupes.
 
-Les réseaux ne forment pas une bulle séparée. Ils se mêlent aux séries, aux jeux, aux vidéos, aux devoirs, aux discussions entre amis. Un enfant découvre une bande-annonce sur TikTok, veut voir une série « parce qu'elle circule partout », entend parler d'un jeu par un créateur qu'il suit. C'est aussi par là que passe l'aide aux devoirs, avec ses propres questions.
+## Revoir le cadre avec l'enfant
 
-C'est pour cette raison que Totem Avisé regarde l'ensemble des contenus : films, séries, jeux, actualités famille et guides. Notre [méthode](/notre-methode) ne remplace pas votre jugement, mais elle aide à lire les bons indices, de l'âge conseillé à la sensibilité, en passant par la violence, les messages positifs ou la valeur éducative. Vous pouvez aussi parcourir nos [guides parents](/guides) pour ouvrir des discussions plus larges, et découvrir [ce que nous cherchons à faire](/objectif) avec les familles.
+Fixez un moment pour reparler de l'usage. Inutile de passer chaque échange en revue. Demandez plutôt si quelque chose l'a mis mal à l'aise, s'il se sent obligé de répondre vite, ou s'il aimerait modifier un réglage.
 
-## Retarder, accompagner, puis responsabiliser
+Vous pourrez aussi parler de ce qu'il découvre par ces réseaux : un jeu, une série, un film demandé parce qu'il apparaît partout. Pour ces choix, les [fiches Totem Avisé](/films) donnent des repères à examiner avant de lancer. La popularité d'un titre ne dit pas à quel enfant il convient.
 
-« Pas avant 15 ans » peut servir de repère. Mais dans une famille, l'enjeu n'est pas seulement de tenir une date, c'est de construire un trajet. Avant 12 ans, on reste sur peu ou pas d'autonomie, beaucoup d'accompagnement, jamais internet seul. Entre 12 et 15 ans, place à l'observation et à l'apprentissage des codes, avec un contrôle parental et aucun compte ouvert sans cadre. Après 15 ans, l'autonomie grandit, mais quelques règles demeurent sur le sommeil, les données personnelles, les messages privés et les contenus.
+## Sources
 
-Le numérique n'est pas qu'un risque à contenir. C'est aussi un espace culturel, relationnel et créatif où nos enfants vont grandir. Le travail des parents n'est pas de les en tenir éloignés, mais de les y faire entrer pas à pas, avec quelqu'un à côté au début. Si vous deviez retenir une seule chose ce soir : choisissez la prochaine conversation à avoir, et fixez la date de votre premier point mensuel.
-
-## Pour aller plus loin
-
-- [Le gouvernement veut interdire les réseaux sociaux aux moins de 15 ans et le portable au lycée dès la rentrée 2026 (Parents.fr / AFP)](https://www.parents.fr/actualites/etre-parent/le-gouvernement-veut-interdire-les-reseaux-sociaux-aux-moins-de-15-ans-et-le-portable-au-lycee-des-la-rentree-2026-1145316)
-- [Interdiction du téléphone portable dans les écoles et les collèges et pause numérique (Éducation nationale)](https://www.education.gouv.fr/interdiction-du-telephone-portable-dans-les-ecoles-et-les-colleges-et-pause-numerique-455181)
-- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Gouvernement — Loi du 24 août 2026 et téléphones au lycée](https://www.info.gouv.fr/actualite/interdiction-des-telephones-portables-au-lycee-ce-que-dit-la-loi)
+- [Conseil constitutionnel — Décision du 14 août 2026](https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054743009)
+- [Éducation nationale — Repères numériques par âge](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [3018 — Aide face aux violences numériques](https://e-enfance.org/besoin-daide/)

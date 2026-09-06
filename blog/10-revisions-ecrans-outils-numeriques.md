@@ -1,94 +1,101 @@
 ---
-title: "Révisions et écrans : les bons outils numériques sans tomber dans la distraction"
+title: "Réviser avec un écran : a-t-on vraiment appris ?"
 slug: "revisions-ecrans-outils-numeriques"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "guides-pratiques"
-excerpt: "Applications, IA, vidéos, fiches, minuteurs : comment utiliser le numérique pour réviser sans se perdre dans les distractions."
-seoTitle: "Révisions et écrans : outils numériques utiles"
-seoDescription: "Révisions et écrans : comment aider un enfant ou un ado à utiliser les outils numériques sans tomber dans la distraction."
+excerpt: "Choisissez une notion, une ressource et un exercice à refaire sans écran. Lumni, Les fondamentaux et quelques cartes mémoire peuvent suffire."
+seoTitle: "Révisions sur écran — outils et séance pratique"
+seoDescription: "Une séance de révision à adapter, des ressources Lumni et Canopé, et une méthode pour vérifier ce qui a été retenu sans multiplier les applications."
 internalLinks:
-  - "/guides"
-  - "/objectif"
+  - "/blog/chatgpt-devoirs-parents"
 sourceLinks:
-  - "https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education"
-  - "https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899"
+  - "https://www.reseau-canope.fr/notice/les-fondamentaux"
+  - "https://www.lumni.fr/dossier/les-fondamentaux-nombres-et-calcul"
+  - "https://www.lumni.fr/primaire"
+  - "https://help.openai.com/en/articles/8313401"
+  - "https://www.education.gouv.fr/sites/default/files/2025-06/l-ia-en-ducation-cadre-d-usage-440685.pdf"
   - "https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites"
 ---
 
-# Révisions et écrans : les bons outils numériques sans tomber dans la distraction
+# Réviser avec un écran : a-t-on vraiment appris ?
 
-À l'approche d'un contrôle, le même ordinateur ouvert « pour réviser » peut produire deux soirées radicalement différentes. Parfois, trois quarts d'heure plus tard, on ne sait plus très bien ce qui a été appris : une vidéo en a appelé une autre, une notification a coupé l'élan, une recherche de définition a fini sur tout autre chose. Personne n'a triché, le travail a juste fondu sans laisser de trace.
+« J'ai révisé pendant une heure. » Très bien. Mais quelle notion est devenue plus claire ?
 
-Pourtant, le même écran peut sauver une session. Une vidéo explique enfin une notion qui résistait depuis deux semaines. Une application fait mémoriser du vocabulaire mieux qu'une liste recopiée. Un minuteur transforme une montagne floue en vingt minutes concrètes. Une IA reformule une consigne incompréhensible. Le numérique n'est ni le héros ni le coupable de l'histoire. Tout dépend du cadre qu'on lui donne.
+Une vidéo peut débloquer une explication, un quiz faire apparaître une erreur, un document partagé aider à préparer un oral. Le problème arrive quand l'enfant passe de l'un à l'autre sans savoir ce qu'il cherche à apprendre.
 
-Pour réviser, un écran doit rester un outil, pas un couloir avec dix portes ouvertes en même temps.
+Avant d'ouvrir un outil, faites nommer une tâche assez précise pour pouvoir la terminer : comparer deux fractions, retenir huit mots, expliquer les causes d'un événement. Vous pourrez ensuite choisir la ressource qui lui correspond.
 
-## Commencer par nommer la tâche
+## Trois ressources selon le travail à faire
 
-Avant d'allumer quoi que ce soit, l'enfant devrait pouvoir dire en une phrase ce qu'il va faire. « Je révise » ne veut presque rien dire. « Je fais dix questions sur le chapitre », « je refais ma carte mentale », « je regarde cinq minutes d'explication sur le théorème », « je m'entraîne sur vingt mots d'anglais » : là, on sait où l'on va, et surtout on saura quand s'arrêter.
+### Une explication courte avec Les fondamentaux
 
-Une question suffit souvent à lancer la machine dans le bon sens : « Qu'est-ce que tu veux avoir terminé dans vingt minutes ? » Si la réponse ne vient pas, l'écran choisira à la place de l'enfant, et il choisit rarement les exercices.
+Les vidéos **Les fondamentaux**, conçues par Réseau Canopé, abordent des notions scolaires et disposent de documents d'accompagnement. La [présentation de Canopé](https://www.reseau-canope.fr/notice/les-fondamentaux) indique à quels publics elles s'adressent et comment les utiliser.
 
-## Les outils qui aident vraiment
+Pour une difficulté précise, cherchez le nom de la notion plutôt que de lancer toute une série. Le dossier [Nombres et calcul sur Lumni](https://www.lumni.fr/dossier/les-fondamentaux-nombres-et-calcul) peut servir de point de départ.
 
-Tous les outils numériques ne rendent pas le même service, et c'est utile de le rappeler à un ado qui croit qu'« être sur l'ordi » équivaut à travailler. Certains servent à comprendre quand on bloque : vidéos pédagogiques, cours en ligne, IA sollicitée pour reformuler une notion. D'autres servent à s'entraîner, et ce sont souvent les plus efficaces parce qu'ils obligent à produire une réponse : quiz, exercices interactifs, cartes mémoire, applications de langues.
+**À faire après :** fermer la vidéo et refaire un exemple sur papier. Si l'enfant a besoin de revoir un passage, revenez à celui-là. Il n'est pas nécessaire de tout recommencer ni d'enchaîner trois nouvelles vidéos.
 
-Viennent ensuite les outils d'organisation, plus discrets mais précieux : un agenda, un minuteur, une liste de tâches suffisent à dégonfler l'impression de montagne. Et puis il y a les outils de production, ceux qui servent à construire un rendu (traitement de texte, présentation, tableur), et les outils de collaboration, qui aident parfois mais dispersent vite.
+### Un dossier Lumni pour préparer un exposé
 
-La règle est la même pour toutes ces familles : un outil est bon s'il sert la tâche du jour, et il devient un problème dès qu'il ouvre plus de distractions qu'il n'en résout.
+[Lumni](https://www.lumni.fr/primaire) rassemble des ressources classées par niveau et matière. Choisissez une page adaptée au niveau de l'élève et au sujet demandé.
 
-## Des sessions courtes plutôt que des heures floues
+**À faire après :** relever deux informations utiles, le titre de la ressource et son auteur ou éditeur. L'enfant doit pouvoir retrouver d'où vient ce qu'il a noté. Pour une recherche, une vidéo vue sans conserver sa référence sera difficile à citer ensuite.
 
-Pour beaucoup d'enfants et d'ados, mieux vaut une session courte et ciblée qu'une longue plage molle avec trois onglets ouverts et le téléphone à côté. C'est un conseil de bon sens, pas une règle gravée dans le marbre : à vous d'ajuster selon l'âge et la matière. Mais l'idée tient bien : vingt minutes de travail vraiment concentré valent souvent mieux qu'une heure entamée puis grignotée par les notifications.
+Ce premier document peut orienter la recherche, mais un exposé demande parfois de croiser plusieurs sources et de respecter les consignes de l'enseignant.
 
-Un rythme simple fonctionne dans beaucoup de familles. On prend deux minutes pour poser la tâche, on travaille une vingtaine de minutes, on s'accorde une vraie pause sans réseaux sociaux, puis on termine par une phrase de bilan : « Qu'est-ce qui est plus clair maintenant ? »
+### Des cartes pour retrouver la réponse de mémoire
 
-Ce dernier point compte plus qu'il n'en a l'air. Un enfant peut rester assis longtemps devant un écran sans rien apprendre. Le bilan, même bref, oblige à vérifier que quelque chose a bougé.
+Pour le vocabulaire, une question d'un côté et une réponse de l'autre suffisent. Vous pouvez utiliser du papier ou un outil déjà connu de l'enfant. Le choix d'une nouvelle application n'est pas toujours nécessaire.
 
-## L'IA peut réviser avec l'enfant, pas à sa place
+**À faire après :** répondre avant de retourner la carte. Séparez les éléments retrouvés facilement de ceux à reprendre. Vérifiez les réponses avec le cours avant de mémoriser les cartes.
 
-L'intelligence artificielle est entrée à l'école, et plutôt par la grande porte. Expérimentés depuis la rentrée 2025 puis ouverts à tous les élèves volontaires début 2026, les parcours Pix consacrés à l'IA deviennent obligatoires à la rentrée 2026 pour les élèves de 4e, de 2nde et de première année de CAP, leur mise en œuvre s'étalant progressivement sur les années scolaires 2025-2026 et 2026-2027. Autrement dit, vos enfants vont apprendre à utiliser ces outils dans un cadre scolaire. Autant que la maison parle le même langage.
+Une carte qui contient tout un paragraphe peut être difficile à utiliser. Découpez plutôt en questions précises, sans réduire une notion complexe à une formule trompeuse.
 
-Pour réviser, l'IA peut beaucoup : expliquer une notion autrement, proposer un quiz, corriger une phrase en montrant l'erreur, faire répéter un oral. Elle peut aussi rédiger le devoir entier, et c'est là que tout se joue. La différence tient à la consigne qu'on lui donne.
+## Une séance concrète autour des fractions
 
-Quelques demandes qui gardent l'enfant aux commandes : « Explique-moi cette notion avec un exemple simple », « pose-moi cinq questions sans me donner les réponses tout de suite », « corrige mon texte et explique mes erreurs », « aide-moi à faire un plan mais ne rédige pas à ma place ». À l'inverse, « fais mon devoir », « rédige toute ma dissertation » ou « donne-moi seulement la réponse » court-circuitent l'apprentissage. L'idée tient en une ligne : l'IA soutient l'effort, elle ne le remplace pas.
+Voici un exemple d'organisation à adapter, pas une durée recommandée pour tous les âges.
 
-## Le téléphone, mauvais bureau de révision
+L'objectif est de savoir comparer **1/2 et 1/4**, puis **2/3 et 3/4**.
 
-Le téléphone est pratique, mais il concentre trop de tentations au même endroit : messages, réseaux sociaux, photos, jeux, notifications. Pour réviser, un ordinateur ou une tablette configurée reste souvent plus calme. Et quand le téléphone est indispensable, le mode concentration, les notifications coupées et l'éloignement des applications sociales font une vraie différence.
+Commencez avec deux dessins de la même taille. Partagez l'un en deux, l'autre en quatre. Une moitié est plus grande qu'un quart. Si cette étape reste floue, choisissez une explication sur le partage en parts égales dans les ressources de Canopé ou reprenez le manuel.
 
-Une idée qui aide quand elle est possible : que l'appareil de révision ne soit pas l'appareil de discussion. Ce n'est pas toujours réaliste, mais séparer les deux usages enlève beaucoup de friction.
+Pour le second calcul, le passage aux douzièmes donne 2/3 = 8/12 et 3/4 = 9/12. Donc 2/3 est plus petit que 3/4. Le cours peut proposer une autre méthode adaptée à ce qui a déjà été appris en classe.
 
-À défaut, on peut bricoler un « mode révision » assez simple : notifications coupées, une seule application ouverte, téléphone posé hors de portée pendant les exercices sur papier, réseaux sociaux bloqués jusqu'à la pause, minuteur bien visible. Le but n'est pas de miser sur la volonté pure. Même les adultes perdent face aux notifications, alors autant ne pas demander l'impossible à un ado.
+Fermez la ressource et faites expliquer **pourquoi on ne peut pas conclure que la fraction ayant le plus grand dénominateur est toujours la plus grande**. Si l'enfant hésite, utilisez de nouveau les dessins. C'est le point à travailler ; nul besoin d'ajouter immédiatement une autre application.
 
-## Les vidéos : choisir avant, pas pendant
+La séance peut se terminer par une note : « Je sais comparer des parts d'une même unité ; je dois encore travailler le dénominateur commun. » Elle sera utile la prochaine fois.
 
-Les vidéos pédagogiques peuvent être excellentes. Le problème, c'est que les plateformes qui les hébergent sont aussi des machines à recommander. L'enfant part chercher une explication sur les fractions et se retrouve happé par tout autre chose.
+## Préparer l'appareil pour cette seule tâche
 
-La parade tient en peu de mots : choisir la vidéo avant la session, en mettre le lien dans le planning, regarder une vidéo pour une notion, puis fermer. Si elle dure vingt-cinq minutes, rien n'empêche de la couper en deux.
+Ouvrez la ressource choisie et fermez les onglets sans rapport. Coupez les notifications qui peuvent attendre. Gardez le cahier, une feuille et de quoi écrire à côté.
 
-Et comme pour le reste, mieux vaut laisser une trace : trois idées retenues, un exemple refait soi-même, une question qui reste en suspens, un petit schéma. Sans cela, la vidéo donne l'agréable impression d'avoir compris, sans le moindre entraînement réel derrière.
+Si le téléphone sert à consulter le cours, il n'a pas besoin de rester ouvert sur la messagerie en même temps. Vous pouvez convenir d'un moment où les messages seront regardés après le travail prévu.
 
-## Réviser à plusieurs sans tomber dans le faux collectif
+Une pause peut se faire debout, avec un verre d'eau ou quelques pas. Si elle commence par un fil de vidéos, le retour au travail risque de demander une nouvelle négociation.
 
-Travailler en groupe peut motiver. Mais un groupe de révision sur une messagerie se transforme vite en groupe de bavardage, de stress ou de comparaison. Pour que ça tienne, il faut un minimum de cadre : une durée limitée, une question précise à traiter, un document commun, pas de flux de notifications permanent, et un adulte joignable si le ton dérape. Un bon groupe aide chacun à comprendre ; un mauvais groupe ne fait qu'ajouter du bruit.
+Pour une aide centrée sur les devoirs, notre guide [ChatGPT et devoirs](/blog/chatgpt-devoirs-parents) propose des consignes concrètes à adapter.
 
-## Le sommeil fait partie des révisions
+## Quelle place pour une IA
 
-On l'oublie souvent, mais réviser tard sur écran peut repousser le coucher et réduire la qualité de l'attention le lendemain. Ameli rappelle que le sommeil de l'adolescent est particulièrement fragile, et qu'il pèse sur la mémoire, la régulation des émotions et la santé mentale. Avant un contrôle ou un examen, le meilleur outil numérique est parfois celui qu'on referme à temps.
+Une IA peut proposer un exercice ou reformuler une explication. Il faut encore pouvoir vérifier ce qu'elle produit. Elle n'est donc pas le meilleur point de départ quand personne ne maîtrise suffisamment la notion.
 
-Une habitude de maison aide bien : pas de révision sur écran dans le lit. Si une dernière relecture s'impose, une fiche papier et une lecture courte font le travail, puis on dort.
+Respectez les conditions d'âge du service et les consignes du professeur. Pour ChatGPT, les [règles d'accès](https://help.openai.com/en/articles/8313401) excluent l'usage direct par les moins de 13 ans et exigent l'autorisation parentale pour les mineurs concernés. Le [cadre scolaire français](https://www.education.gouv.fr/sites/default/files/2025-06/l-ia-en-ducation-cadre-d-usage-440685.pdf) prévoit ses propres limites d'utilisation.
 
-## Accompagner sans surveiller chaque clic
+Une demande comme « Pose-moi une question puis attends ma réponse » peut garder l'élève actif. Une correction fausse reste possible : comparez avec le cours avant de la retenir.
 
-Suivre les révisions numériques ne veut pas dire rester planté derrière l'enfant. Trois points de contrôle suffisent. Au départ : « Qu'est-ce que tu vas travailler ? » En cours de route : « Tu en es où ? » À la fin, la question qui compte vraiment : « Qu'est-ce que tu sais mieux qu'avant ? »
+## Terminer avant de s'épuiser
 
-Cette dernière déplace l'attention du temps passé vers le progrès réel. Un enfant peut avoir consacré quarante minutes à une vidéo sans rien retenir, et un autre avoir fait quinze minutes d'exercices en avançant beaucoup. Le bon indicateur n'est donc pas la durée, mais la clarté : l'enfant sait-il expliquer ce qu'il vient de réviser ?
+Quand les mêmes erreurs reviennent et que l'enfant ne comprend plus les explications, ajouter une vidéo n'est pas forcément utile. Notez le point qui bloque pour le reprendre ou le montrer au professeur.
 
-Chez Totem Avisé, nous ne sommes pas anti-écrans. Nous défendons un usage qui garde l'enfant acteur, exactement comme pour les films, les séries ou les jeux, où la qualité du contenu, le contexte et l'accompagnement comptent plus que le chronomètre. Pour aller plus loin, nos [guides parents](/guides) et notre [objectif](/objectif) précisent cette approche. Le numérique peut être un très bon compagnon de révision : une intention claire, un outil choisi, une sortie prévue, et il reste à sa place.
+Gardez le coucher à l'heure prévue. Les [repères d'Ameli](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites) rappellent la place du sommeil chez l'adolescent. Une révision sur écran dans le lit peut retarder la fin de la journée sans rendre le travail plus clair.
 
-## Pour aller plus loin
+Au prochain contrôle, vous pourrez repartir de la note laissée après la séance. Elle dira mieux ce qu'il faut revoir qu'un compteur de temps passé devant l'ordinateur.
 
-- [Les intelligences artificielles et leurs usages en éducation (Éduscol)](https://eduscol.education.fr/6702/les-intelligences-artificielles-et-leurs-usages-en-education)
-- [Création du comité d'anticipation en éducation et déploiement du parcours Pix IA (Éducation nationale)](https://www.education.gouv.fr/creation-du-comite-d-anticipation-en-education-et-deploiement-du-parcours-pix-ia-l-ecole-se-prepare-468899)
-- [Sommeil de l'adolescent : quelles particularités ? (Ameli)](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites)
+## Sources
+
+- [Réseau Canopé — Les fondamentaux](https://www.reseau-canope.fr/notice/les-fondamentaux)
+- [Lumni — Nombres et calcul](https://www.lumni.fr/dossier/les-fondamentaux-nombres-et-calcul)
+- [Lumni — Ressources du primaire](https://www.lumni.fr/primaire)
+- [Éducation nationale — Cadre d'usage de l'IA](https://www.education.gouv.fr/sites/default/files/2025-06/l-ia-en-ducation-cadre-d-usage-440685.pdf)
+- [OpenAI — Âge et accompagnement](https://help.openai.com/en/articles/8313401)
+- [Ameli — Sommeil de l'adolescent](https://www.ameli.fr/assure/sante/themes/adolescents-sommeil/sommeil-de-l-adolescent-quelles-particularites)

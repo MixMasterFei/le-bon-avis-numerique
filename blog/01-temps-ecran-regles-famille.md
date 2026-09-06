@@ -1,86 +1,85 @@
 ---
-title: "Temps d'écran : comment fixer des règles sans transformer la maison en tribunal"
+title: "Temps d'écran : des règles qui tiennent un mardi soir"
 slug: "temps-ecran-regles-famille"
-author: "L'équipe Totem Avisé"
+author: "Totem Avisé"
 category: "temps-ecran"
-excerpt: "Comment poser un cadre d'écrans clair, réaliste et tenable, sans culpabiliser les enfants ni épuiser les parents."
-seoTitle: "Temps d'écran enfant : 5 règles familiales simples"
-seoDescription: "Temps d'écran enfant : comment fixer des règles simples, réalistes et non culpabilisantes pour toute la famille."
+excerpt: "Commencez par protéger les repas et le sommeil, puis convenez du contenu et du moment où l'on arrête. Voici un cadre familial à adapter."
+seoTitle: "Temps d'écran enfant et règles de famille"
+seoDescription: "Des règles d'écran concrètes, un exemple de semaine et des phrases pour arrêter sans négocier chaque soir. Repères de santé et conseils aux parents."
 internalLinks:
-  - "/guides"
-  - "/notre-methode"
   - "/films"
   - "/jeux"
 sourceLinks:
   - "https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121"
-  - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres"
-  - "https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique"
+  - "https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age"
 ---
 
-# Temps d'écran : comment fixer des règles sans transformer la maison en tribunal
+# Temps d'écran : des règles qui tiennent un mardi soir
 
-Le scénario est familier dans beaucoup de foyers. Il est 19 h, la journée a été longue. Il reste un repas à préparer, une douche à caser, mille petites choses à ranger, et quelqu'un réclame « juste un épisode ». La discussion sur les écrans ne commence presque jamais au calme. Elle commence fatiguée, pressée, au pire moment de la journée.
+À 19 heures, personne n'a très envie de tenir un débat sur le numérique. Il reste le repas à préparer, un cahier à signer, une douche à prendre. Et l'épisode qui devait être le dernier vient de se terminer.
 
-C'est pour cette raison que les conseils parfaits (pas d'écran avant tel âge, une heure maximum, toujours accompagné) aident moins qu'on ne l'espère. La difficulté n'est pas de connaître la bonne règle. C'est de tenir une règle un soir où plus personne n'a l'énergie de négocier.
+C'est à ce moment-là qu'une règle décidée auparavant rend service. L'enfant sait ce qui était prévu. Le parent n'a pas à inventer une réponse en regardant l'heure. Il peut y avoir une protestation, bien sûr. Un cadre clair ne promet pas une maison silencieuse.
 
-Un cadre familial n'a pourtant pas besoin d'être parfait pour fonctionner. Il a besoin d'être clair, stable et compris par tout le monde. Et il gagne à poser une question que le minuteur ignore : pas seulement « combien de temps ? », mais **quel contenu, pour quel enfant, à quel moment**.
+Pour commencer, choisissez les moments que vous voulez préserver et une façon compréhensible de terminer. Vous pourrez ajuster la durée ensuite, selon l'âge et l'organisation de la famille.
 
-## Ce que le minuteur ne dit pas
+## Protéger les repas et le sommeil
 
-Le temps compte, évidemment. Un enfant qui enchaîne des vidéos tard le soir ne vit pas la même chose qu'un enfant qui regarde un film le dimanche après-midi avec ses parents. Mais « deux heures d'écran » peut recouvrir des réalités très différentes : un film choisi en famille, une partie de jeu coopératif, une recherche pour un exposé, ou une heure de vidéos courtes qui défilent toutes seules.
+Les [repères de l'Éducation nationale](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121) recommandent des matinées avant l'école, des repas, une chambre et un coucher sans écran. Ces limites ont l'avantage d'être faciles à reconnaître : on sait quand le repas commence, même quand on a perdu le compte des minutes.
 
-C'est pourquoi les repères officiels insistent moins sur le chronomètre que sur le contexte. L'Éducation nationale rappelle quelques principes simples, valables à tout âge : pas d'écran le matin avant l'école, pas pendant les repas, pas dans la chambre, pas avant de dormir. Leur intérêt : ils ne demandent pas de compter chaque minute, ils protègent les moments les plus sensibles de la journée.
+Pour le soir, gardez une vraie marge. [Ameli conseille aux enfants de plus de 6 ans et aux adolescents](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age) d'arrêter les écrans idéalement une à deux heures avant le coucher. Un programme doux ne dispense pas de cette coupure.
 
-Avant de regarder la durée, il vaut donc la peine de regarder ce que l'écran remplace. S'il prend la place du sommeil, du jeu libre, du sport ou des discussions, le nombre de minutes devient secondaire.
+Une station de charge dans une pièce commune peut aider. Elle évite d'avoir à vérifier si le téléphone est vraiment éteint sous l'oreiller. Les adultes peuvent y laisser le leur aussi, en expliquant les exceptions liées au travail ou à une urgence.
 
-## Trois moments à protéger avant de compter les minutes
+## Décider de la fin avant de commencer
 
-Beaucoup de familles gagnent en tranquillité en posant d'abord trois limites de bon sens, plus faciles à tenir qu'un grand contrat familial que personne ne relit.
+« Un peu de tablette » ne dit pas quand on s'arrête. « Cet épisode, puis on ferme l'application » est plus précis. Pour un jeu, regardez s'il est possible de sauvegarder ou de quitter une partie sans abandonner les autres joueurs. L'heure de fin reste la limite ; on évite simplement de lancer une nouvelle manche juste avant.
 
-Le premier, ce sont **les repas**. Pour les enfants comme pour les adultes, autant que possible. C'est souvent l'un des rares moments où tout le monde se croise vraiment ; même court, même imparfait, il vaut qu'on le préserve.
+Le choix du contenu mérite la même attention. Un film, une vidéo trouvée par recherche et un fil de recommandations demandent des règles différentes. Si vous autorisez un épisode choisi, précisez que cela n'inclut pas les vidéos proposées après.
 
-Le deuxième, c'est **la chambre, la nuit**. Le sommeil est presque toujours le premier à trinquer. La solution la plus simple n'est pas une surveillance de tous les instants, mais une station de charge commune dans le salon ou l'entrée, où les appareils passent la nuit.
+Vous pouvez vérifier ensemble la durée et les points sensibles sur une [fiche film](/films) ou [jeu](/jeux). Lorsqu'une information manque, prenez le temps de la chercher avant de lancer.
 
-Le troisième, c'est **le dernier quart d'heure avant le coucher**. Pour certains enfants, vingt minutes de dessin animé calme ne changent rien. Pour d'autres, une vidéo rapide suffit à relancer la machine. Dans le doute, on garde la fin de soirée pour quelque chose de plus doux : une lecture, un peu de musique, la préparation du sac.
+## Un exemple de semaine à adapter
 
-Ces trois repères ont un autre mérite : ils coupent court à la négociation permanente. On ne rediscute pas chaque soir de savoir si « aujourd'hui, ça compte ou pas ». La règle existe parce qu'elle protège le sommeil, l'attention et les moments communs, pas parce que l'écran serait mauvais en soi.
+Imaginons une famille avec un enfant de 8 ans et un autre de 12 ans. Le plus jeune veut regarder une série ; l'aîné joue parfois avec ses amis. Voici une organisation possible, sans en faire un barème valable pour tous :
 
-## Cinq règles qui tiennent un mardi soir
+- Les matins d'école et les repas restent sans écran de loisir.
+- Les jours où une séance est prévue, chacun choisit son contenu à l'avance, dans le temps disponible.
+- Les appareils sont rangés assez tôt pour préserver la pause avant le coucher.
+- Le week-end, un film commun se décide avant la séance, en tenant compte du plus jeune.
+- Un devoir sur ordinateur a son propre objectif et sa propre fin. Il ne donne pas automatiquement accès au jeu une fois terminé.
 
-Une règle familiale efficace tient en une phrase. Si elle a besoin d'un mode d'emploi, elle ne survivra pas à la semaine.
+Les loisirs sur écran peuvent avoir une place prévue dans la journée. Évitez d'en faire la récompense systématique pour une bonne note, une assiette terminée ou un moment de calme : Ameli déconseille cet usage. Les règles de la maison doivent aussi laisser du temps au jeu libre, aux sorties et à l'ennui.
 
-**1. L'écran vient après l'essentiel.** Devoirs raisonnablement avancés, repas, douche, un peu de mouvement, un vrai temps sans écran : l'écran reprend sa place d'activité parmi d'autres, au lieu d'être celle qui avale tout le reste.
+## Le petit accord à remplir ensemble
 
-**2. On valide le contenu avant la durée.** Un enfant peut ne regarder « qu'une seule vidéo » et tomber sur quelque chose de trop violent ou trop anxiogène. À l'inverse, un film bien choisi peut devenir un beau moment. Avant de parler de minutes, on se demande : est-ce de son âge ? Est-ce que je sais de quoi ça parle ? Est-ce que ça risque de lui faire peur ? Sur les pages [Films](/films), [Séries](/series) et [Jeux vidéo](/jeux), l'âge conseillé et les points sensibles sont indiqués avant de dire oui.
+Sur une feuille, quatre lignes suffisent :
 
-**3. Une vidéo courte n'est pas un film.** Beaucoup d'enfants acceptent mieux une limite quand on nomme les choses. Une heure de film en famille et une heure de vidéos courtes qui s'enchaînent automatiquement n'ont pas le même effet : les formats courts sont conçus pour retenir l'attention sans pause naturelle. Les contenus choisis se discutent ; les flux qui défilent demandent plus de cadre.
+- **Les moments sans écran chez nous :** …
+- **Les contenus et applications à demander avant :** …
+- **Ce qui annonce la fin de la séance :** …
+- **Le jour où l'on revoit cet accord :** …
 
-**4. La règle vaut aussi pour les adultes.** C'est la partie la plus inconfortable. Difficile de demander à un enfant de poser sa tablette pendant qu'un parent répond à ses messages à table. On ne sera pas toujours exemplaire, surtout quand le travail passe par le téléphone, mais on peut au moins nommer l'exception : « Je réponds à un message important, puis je le pose. » Cette phrase suffit déjà à rendre l'écran visible plutôt qu'automatique.
+Ajoutez une règle pour les problèmes rencontrés : « Si une image, une personne ou un message te met mal à l'aise, viens nous voir. » L'enfant doit pouvoir demander de l'aide, même s'il n'a pas respecté l'accord.
 
-**5. On rediscute les règles une fois par mois, pas tous les soirs.** Si l'enfant peut renégocier chaque jour, les parents s'épuisent. Mieux vaut un rendez-vous fixe : « On teste cette règle deux semaines, et on en reparle dimanche. » Cela laisse une porte de sortie sans ouvrir une brèche permanente.
+Gardez cette feuille à un endroit visible pendant la période d'essai. Si les horaires rendent la règle impossible à tenir, changez-la ensemble au moment prévu.
 
-## S'adapter à l'âge, sans copier-coller
+## Quand l'enfant réclame encore
 
-Les repères par âge sont utiles, mais ils ne remplacent pas votre connaissance de votre enfant. Avant 3 ans, les écrans sont désormais proscrits par les recommandations officielles, y compris en simple bruit de fond : à cet âge, l'enfant construit son attention par des interactions directes, pas devant un écran. Entre 3 et 6 ans, ils restent déconseillés, à réserver à des moments exceptionnels, accompagnés, avec des contenus très choisis. Entre 6 et 9 ans, l'enfant comprend des règles simples mais ne gère pas seul internet. Entre 9 et 12 ans, le dialogue prend le dessus : ce qu'il regarde, ce qu'il aime, ce qui le met mal à l'aise. À l'adolescence, l'enjeu glisse peu à peu vers l'autonomie et l'esprit critique.
+Une réponse courte suffit souvent à rappeler ce qui était convenu : « Tu avais choisi cet épisode. Il est fini, on arrête. » Inutile de refaire toute l'argumentation sur le sommeil pendant que l'enfant est déçu.
 
-Surtout, deux enfants du même âge peuvent réagir très différemment au même film. L'un sera marqué par une scène de séparation, l'autre par le bruit ou l'injustice. C'est précisément ce que notre [méthode](/notre-methode) essaie de prendre en compte : au-delà d'une classification officielle, elle regarde plusieurs dimensions : violence, langage, peur, mais aussi messages positifs, modèles et valeur éducative.
+S'il y a régulièrement conflit, cherchez ce qui se répète. La lecture automatique enchaîne-t-elle trop vite ? La séance finit-elle au milieu d'une partie ? Est-ce toujours au moment où l'enfant a faim ou est épuisé ? Vous pouvez modifier ces conditions sans abandonner la limite.
 
-Le bon cadre ressemble donc moins à « à 10 ans, X minutes » qu'à une habitude de maison : on choisit les contenus, on protège le sommeil, on évite les écrans seuls trop tard, et on parle de ce qu'on regarde.
+Un soir raté n'oblige pas à durcir toutes les règles le lendemain. Reprenez l'accord, regardez ce qui n'a pas fonctionné et choisissez un ajustement précis.
 
-## Quand ça dérape (et ça dérapera)
+## Les mêmes règles ne conviennent pas à tous les âges
 
-Il y aura des soirs ratés. Un épisode lancé sans demander, une partie qui s'étire, un « encore cinq minutes » qui en fait trente. Ce n'est pas un échec éducatif, c'est la vie d'une famille.
+Le ministère recommande l'absence d'écran avant 3 ans ; entre 3 et 6 ans, l'usage est décrit comme déconseillé et exceptionnel, avec un adulte et un contenu choisi. Ces repères ne doivent pas se perdre derrière un planning familial.
 
-Ce qui compte, c'est ce qui suit. Une phrase courte suffit : « La règle n'a pas été tenue, on coupe maintenant ; demain, on reprend normalement. » Pas besoin d'un discours de vingt minutes ni d'une sanction démesurée : plus la conséquence est simple, plus elle est applicable. Et si une règle dérape sans arrêt, c'est souvent qu'elle est trop floue ou trop ambitieuse pour votre organisation du moment. Une bonne règle doit survivre à un mardi soir fatigué.
+Chez les plus grands, l'autonomie se construit progressivement. Le fait qu'un enfant gère bien un épisode connu ne signifie pas qu'il peut déjà choisir seul ses vidéos, ses interlocuteurs ou ses achats.
 
-## Un cadre, pas une bataille
+Vous pouvez commencer cette semaine par une seule décision : à quelle heure les appareils seront-ils rangés, et où ? Une règle tenue vous apprendra davantage sur votre organisation qu'un règlement ambitieux oublié dans un tiroir.
 
-Les écrans ne vont pas disparaître : ils sont à l'école, dans les loisirs, dans les films, les jeux, parfois dans les liens familiaux à distance. L'objectif n'est pas d'élever des enfants à l'écart du numérique, mais de les aider à y entrer avec des repères.
+## Sources
 
-On peut commencer petit : un repas sans téléphone, une chambre sans écran la nuit, un film choisi ensemble le week-end, une discussion après une partie. C'est déjà beaucoup. Pour choisir avec un peu plus de confiance, nos [guides parents](/guides) et les fiches Totem par âge sont là pour ça. Le temps d'écran compte, mais le contenu, le contexte et l'accompagnement comptent tout autant.
-
-## Pour aller plus loin
-
-- [Bien grandir avec les écrans : des repères pour chaque âge (Éducation nationale)](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
-- [Écrans : définition et chiffres clés (Ameli)](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/ecran-definition-chiffres)
-- [Les défis de la parentalité numérique (Ministère des Solidarités)](https://solidarites.gouv.fr/les-defis-de-la-parentalite-numerique)
+- [Éducation nationale — Repères pour chaque âge](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121)
+- [Ameli — Adapter l'usage des écrans à l'âge](https://www.ameli.fr/assure/sante/themes/ecrans-enfance-adolescence/usage-ecran-age)
