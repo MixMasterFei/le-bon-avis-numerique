@@ -84,6 +84,11 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "gta",
     name: "Grand Theft Auto (GTA)",
     aliases: ["grand theft auto", "gta"],
+    // The catalogue holds TWO "Grand Theft Auto V" rows (IGDB 1020, the 2013
+    // original, and IGDB 239064, the 2015 PC release). Exact matching treats a
+    // duplicate as ambiguous and drops the card, so pin the canonical one
+    // until the pair is merged in /admin/dedupe.
+    forcedId: "ced84a43-f4b1-4d7a-ae0c-489aee0a11e1",
     catalogueTitles: ["grand theft auto v", "grand theft auto iv", "grand theft auto: san andreas"],
     parentNote:
       "Série d'action pour adultes que les plus jeunes réclament : la question de l'âge revient sans cesse.",
@@ -207,7 +212,8 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "pokemon",
     name: "Pokémon",
     aliases: ["pokémon", "pokemon"],
-    catalogueTitles: ["pokémon scarlet", "pokemon scarlet", "pokémon violet", "pokemon violet"],
+    // Scarlet/Violet are not in the catalogue; these four are, newest mainline first.
+    catalogueTitles: ["pokémon legends: z-a", "pokémon legends: arceus", "pokémon sword", "pokémon shield"],
     parentNote:
       "Licence de créatures à collectionner adorée des enfants, déclinée en de nombreux jeux.",
   },
@@ -396,7 +402,10 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "just-dance",
     name: "Just Dance",
     aliases: ["just dance"],
-    catalogueTitles: ["just dance 2026 edition", "just dance 2025 edition", "just dance 2024 edition", "just dance"],
+    // Only the 2014 edition is in the catalogue today: kept as the last resort so
+    // the card still exists (the PEGI 3 verdict is stable across editions).
+    // Importing "Just Dance 2026 Edition" would make it lead automatically.
+    catalogueTitles: ["just dance 2026 edition", "just dance 2025 edition", "just dance 2024 edition", "just dance", "just dance 2014"],
     parentNote:
       "Jeu de danse familial, l'un des rares titres joués physiquement à plusieurs.",
     familyIssues: [
