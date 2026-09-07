@@ -2,17 +2,24 @@ name: Scheduled Maintenance
 
 on:
   schedule:
-    # Daily 3:00 AM UTC — Import new content (was weekly Monday). The
+    # All daily/weekly slots sit OFF the :00 minute since 2026-09-07. GitHub
+    # queues scheduled runs at contended minutes and may delay them by hours
+    # or drop them outright: on 2026-09-06/07 the 03:00 import fired at 04:40,
+    # then not at all for 2h+, while the 00:17 news slot fired at 04:43. The
+    # exact-:00 crons were the ones suffering; the :13/:17/:23 ones already
+    # avoided it. Every `if: github.event.schedule == …` below matches the
+    # new strings — change both together or the job silently never runs.
+    # Daily 3:07 AM UTC — Import new content (was weekly Monday). The
     # homepage "Fraîchement ajoutés" rail looked stuck at "il y a 1
     # semaine" between Monday runs; daily imports keep it visibly
     # dynamic. TMDB dedup handles the daily cadence natively (most
     # popular titles are already in the catalog after a few days),
     # so actual new items per run drop to ~10-20 vs the original 80
     # weekly batch — same volume spread evenly. Enrichment cron at
-    # 0 4 * * * picks up the new isEnriched=false rows the same day.
-    - cron: "0 3 * * *"
-    # Daily 4:00 AM UTC — Enrichment + deep enrichment + quality scores
-    - cron: "0 4 * * *"
+    # 11 4 * * * picks up the new isEnriched=false rows the same day.
+    - cron: "7 3 * * *"
+    # Daily 4:11 AM UTC — Enrichment + deep enrichment + quality scores
+    - cron: "11 4 * * *"
     # Four times daily — News discovery, OFF the top of the hour
     # (00:17 / 06:17 / 12:17 / 18:17 UTC). The exact-:00 schedule was
     # hitting GitHub's free-runner peak congestion ("job was not
@@ -21,19 +28,19 @@ on:
     # the same instant. Shifting +17min puts us in a low-contention
     # window. Dedup pipeline (URL + title fingerprint) handles drift.
     - cron: "17 0,6,12,18 * * *"
-    # Saturday 5:00 AM UTC — Ratings backfill + streaming + similarity
-    - cron: "0 5 * * 6"
-    # Tuesday + Friday 5:00 AM UTC — Twice-weekly dossier ("Dossier de
+    # Saturday 5:19 AM UTC — Ratings backfill + streaming + similarity
+    - cron: "19 5 * * 6"
+    # Tuesday + Friday 5:27 AM UTC — Twice-weekly dossier ("Dossier de
     # la semaine") synthesizes a deeper long-read from the past 7 days
     # of briefs. Tuesday catches weekend + Monday news for early-week
     # reading; Friday gathers the week's themes for weekend reading.
-    - cron: "0 5 * * 2,5"
-    # Monday 6:00 AM UTC — editorial agent email with family-content
+    - cron: "27 5 * * 2,5"
+    # Monday 6:37 AM UTC — editorial agent email with family-content
     # priorities (manual validation before publication).
-    - cron: "0 6 * * 1"
-    # Daily 7:00 AM UTC — supervisor checks cron health and tries
+    - cron: "37 6 * * 1"
+    # Daily 7:47 AM UTC — supervisor checks cron health and tries
     # limited safe remediations before sending one digest if needed.
-    - cron: "0 7 * * *"
+    - cron: "47 7 * * *"
     # Wednesday 6:13 AM UTC — weekly tech/data-debt digest. Off-the-hour
     # (:13) to dodge GitHub's top-of-hour runner congestion, same as
     # news-discover. Mid-week so it's not competing with the Mon/Sat
@@ -117,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     if: >-
-      github.event.schedule == '0 3 * * *' ||
+      github.event.schedule == '7 3 * * *' ||
       github.event.inputs.task == 'import' ||
       github.event.inputs.task == 'all'
     steps:
@@ -303,7 +310,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     if: >-
-      github.event.schedule == '0 4 * * *' ||
+      github.event.schedule == '11 4 * * *' ||
       github.event.inputs.task == 'enrich' ||
       github.event.inputs.task == 'enrich-deep' ||
       github.event.inputs.task == 'recalibrate-ratings' ||
@@ -545,7 +552,7 @@ jobs:
     # a wedged runner can't sit in the queue all day.
     timeout-minutes: 150
     if: >-
-      github.event.schedule == '0 5 * * 6' ||
+      github.event.schedule == '19 5 * * 6' ||
       github.event.inputs.task == 'backfill-ratings' ||
       github.event.inputs.task == 'streaming' ||
       github.event.inputs.task == 'similarity' ||
@@ -682,7 +689,7 @@ jobs:
         # deep-enrich). The floor only ever RAISES, so a stray un-floored horror
         # game can never sit in a family band for more than a week.
         if: >-
-          github.event.schedule == '0 5 * * 6' ||
+          github.event.schedule == '19 5 * * 6' ||
           github.event.inputs.task == 'all'
         run: |
           set +e
@@ -820,7 +827,7 @@ jobs:
     environment: Production
     timeout-minutes: 5
     if: >-
-      github.event.schedule == '0 6 * * 1' ||
+      github.event.schedule == '37 6 * * 1' ||
       github.event.inputs.task == 'family-content-agent' ||
       github.event.inputs.task == 'all'
     steps:
@@ -846,7 +853,7 @@ jobs:
     environment: Production
     timeout-minutes: 6
     if: >-
-      github.event.schedule == '0 7 * * *' ||
+      github.event.schedule == '47 7 * * *' ||
       github.event.inputs.task == 'supervisor' ||
       github.event.inputs.task == 'all'
     steps:
@@ -871,7 +878,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     if: >-
-      github.event.schedule == '0 5 * * 2,5' ||
+      github.event.schedule == '27 5 * * 2,5' ||
       github.event.inputs.task == 'weekly-dossier' ||
       github.event.inputs.task == 'all'
     steps:
