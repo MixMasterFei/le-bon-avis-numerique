@@ -284,6 +284,14 @@ const MIN_RATING_COUNT = 100
 const CONSOLE_FILTER = `(${CONSOLE_PLATFORM_IDS.join(",")})`
 // All platforms for search (includes PC/Mac)
 const ALL_PLATFORM_FILTER = `(${ALL_PLATFORM_IDS.join(",")})`
+// Mobile, search only and opt-in: the curated seeds on /jeux/quel-age include
+// phone-only titles parents ask about by name (Brawl Stars, Clash Royale,
+// Toca Life…), which the console/PC filter above can never return.
+const MOBILE_PLATFORM_IDS = [
+  39, // iOS
+  34, // Android
+]
+const SEARCH_WITH_MOBILE_FILTER = `(${[...ALL_PLATFORM_IDS, ...MOBILE_PLATFORM_IDS].join(",")})`
 
 // ============================================
 // API FUNCTIONS
@@ -294,7 +302,16 @@ const ALL_PLATFORM_FILTER = `(${ALL_PLATFORM_IDS.join(",")})`
  * Query is escaped to prevent IGDB query injection
  * No rating filter to allow finding new/recent games (FIFA 25, etc.)
  */
-export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]> {
+export interface SearchGamesOptions {
+  /** Also return iOS / Android titles (default: consoles + PC/Mac only). */
+  includeMobile?: boolean
+}
+
+export async function searchGames(
+  query: string,
+  limit = 50,
+  options: SearchGamesOptions = {},
+): Promise<IGDBGame[]> {
   // Sanitize and escape user input
   const safeQuery = escapeIGDBQuery(query)
   const safeLimit = sanitizeNumber(limit, 1, 500) || 50
@@ -311,7 +328,7 @@ export async function searchGames(query: string, limit = 50): Promise<IGDBGame[]
            ${IGDB_AGE_RATING_FIELDS},
            involved_companies.company.name, involved_companies.developer,
            total_rating, total_rating_count;
-    where platforms = ${ALL_PLATFORM_FILTER};
+    where platforms = ${options.includeMobile ? SEARCH_WITH_MOBILE_FILTER : ALL_PLATFORM_FILTER};
     limit ${safeLimit};
   `
 
@@ -879,12 +896,26 @@ const PRIORITY_PLATFORMS = new Set([
 /**
  * Normalize and filter platforms to only modern ones
  */
+// Kept only when a title has no modern console/PC platform at all: a
+// phone-only game (Brawl Stars, Clash Royale, Toca Life…) would otherwise
+// land with an empty list, which reads as "unknown" on the fiche. Console
+// games keep their list exactly as before — their mobile ports stay unlisted.
+const MOBILE_PLATFORM_NAMES: Record<string, string> = {
+  "iOS": "iOS",
+  "Android": "Android",
+}
+
 export function normalizePlatforms(platforms: { name: string }[] | undefined): string[] {
   if (!platforms) return []
 
-  return platforms
+  const modern = platforms
     .filter(p => PRIORITY_PLATFORMS.has(p.name))
     .map(p => PLATFORM_NAMES[p.name] || p.name)
+  if (modern.length > 0) return modern
+
+  return platforms
+    .filter(p => p.name in MOBILE_PLATFORM_NAMES)
+    .map(p => MOBILE_PLATFORM_NAMES[p.name])
 }
 
 /**

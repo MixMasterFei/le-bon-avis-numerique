@@ -5,6 +5,7 @@ import { checkAuthRateLimit } from "@/lib/auth-rate-limit"
 import type { NextFetchEvent, NextRequest } from "next/server"
 import { detectAiBot, detectAiReferrer, classifyAiSurface } from "@/lib/ai-bots"
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
+import { resolveMergedMediaPath } from "@/lib/merged-media"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -124,6 +125,16 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         return NextResponse.redirect(url, { status: 301 })
       }
     }
+  }
+
+  // ===== SEO: merged fiches → 301 to the survivor =====
+  // A duplicate fiche that was folded into another (src/lib/merged-media.ts)
+  // keeps its indexed URL alive instead of 404-ing.
+  const mergedPath = resolveMergedMediaPath(pathname)
+  if (mergedPath) {
+    const url = request.nextUrl.clone()
+    url.pathname = mergedPath
+    return NextResponse.redirect(url, { status: 301 })
   }
 
   // ===== SEO: Media route prefix normalization =====
