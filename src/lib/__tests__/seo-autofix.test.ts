@@ -84,6 +84,23 @@ describe("keywordPresent", () => {
   it("still requires the AGE itself even when modifiers are relaxed", () => {
     expect(keywordPresent("obsession film age minimum", "Obsession", "Un vœu exaucé au prix fort.")).toBe(false)
   })
+
+  it("matches a work name typed fused (« spiderman » for « Spider-Man »)", () => {
+    // The #1 striking query of Sept. 2026. Unmatched, the fiche could never be
+    // "covered" and the agent burned its budget on it every week.
+    const title = "Spider-Man: Brand New Day — Quel âge ? Dès 12 ans"
+    expect(keywordPresent("spiderman brand new day age", title)).toBe(true)
+    expect(keywordPresent("spiderman quel age", title)).toBe(true)
+    // The split spelling already matched — keep it that way.
+    expect(keywordPresent("spider man age minimum", "Spiderman — dès 12 ans")).toBe(true)
+  })
+
+  it("does not fuse short tokens across unrelated words", () => {
+    // "sonic" would appear in "...son icône..." once spaces are dropped.
+    expect(keywordPresent("sonic age", "Son icône du jeu vidéo, dès 7 ans.")).toBe(false)
+    // A fused name still needs the rest of the query.
+    expect(keywordPresent("spiderman brand new day age", "Spider-Man: Brand New Day")).toBe(false)
+  })
 })
 
 describe("rewritePasses", () => {

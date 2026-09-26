@@ -28,14 +28,16 @@ export const NEWS_SOURCES: NewsSource[] = [
   // PARENTHOOD — news-driven + institutional voices that cluster reliably
   { name: "Le Monde Darons Daronnes",        url: "https://www.lemonde.fr/darons-daronnes/rss_full.xml",                    category: "PARENTHOOD", trustTier: 1 },
   { name: "La Croix Enfants & ados",         url: "https://www.la-croix.com/feeds/rss/Famille/Enfants-et-adolescents.xml",  category: "PARENTHOOD", trustTier: 1 },
-  { name: "20 Minutes Famille",              url: "https://www.20minutes.fr/feeds/rss-famille.xml",                         category: "PARENTHOOD", trustTier: 2 },
   { name: "Franceinfo Jeunes",               url: "https://www.franceinfo.fr/l-actu-pour-les-jeunes.rss",                   category: "PARENTHOOD", trustTier: 1 },
   { name: "Fondation pour l'Enfance",        url: "https://www.fondation-enfance.org/feed/",                                category: "PARENTHOOD", trustTier: 1, official: true },
   { name: "France Culture — Être et savoir", url: "https://radiofrance-podcast.net/podcast09/rss_11192.xml",                category: "PARENTHOOD", trustTier: 1 },
   { name: "Sortiraparis Enfant & famille",   url: "https://www.sortiraparis.com/rss/enfant-famille",                        category: "PARENTHOOD", trustTier: 3 },
   // Family magazines — high volume, lifestyle-leaning but mass-market
-  { name: "Magicmaman",                      url: "https://www.magicmaman.com/rss/index.xml",                               category: "PARENTHOOD", trustTier: 2 },
-  { name: "Parents.fr",                      url: "https://www.parents.fr/rss",                                             category: "PARENTHOOD", trustTier: 2 },
+  { name: "Parents.fr",                      url: "https://www.parents.fr/feeds/rss",                                       category: "PARENTHOOD", trustTier: 2 },
+  // (Magicmaman dropped Sept 2026 — the site no longer publishes any feed:
+  // /rss/index.xml, /feed, /rss and /rss.xml all 404 and the homepage
+  // advertises none. 20 Minutes Famille dropped the same week — its feed
+  // answers 403 to every client; the section feed is gone.)
   // Education professional press — strong institutional signal for
   // school news, ministerial decisions, parent-school tensions
   { name: "Café Pédagogique",                url: "https://www.cafepedagogique.net/feed/",                                  category: "PARENTHOOD", trustTier: 1 },
@@ -74,12 +76,13 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "AlloCiné Cinéma",                 url: "https://www.allocine.fr/rss/news-cine.xml",                              category: "FILM_TV",    trustTier: 1 },
   { name: "AlloCiné Séries",                 url: "https://www.allocine.fr/rss/news-series.xml",                            category: "FILM_TV",    trustTier: 1 },
   { name: "Télérama Enfants",                url: "https://www.telerama.fr/rss/enfants.xml",                                category: "FILM_TV",    trustTier: 1 },
-  { name: "Première",                        url: "https://www.premiere.fr/rss/news.xml",                                   category: "FILM_TV",    trustTier: 2 },
+  // (Première dropped Sept 2026 — /rss/news.xml is 404 and the only feed
+  // still served, /rss.xml, stopped updating in December 2018.)
 
   // GAMES
   { name: "PédaGoJeux",                      url: "https://www.pedagojeux.fr/feed/",                                        category: "GAMES",      trustTier: 1, official: true },
   { name: "Geek Junior",                     url: "https://www.geekjunior.fr/feed/",                                        category: "GAMES",      trustTier: 2 },
-  { name: "Nintendo-Master",                 url: "https://www.nintendo-master.com/feed/",                                  category: "GAMES",      trustTier: 2 },
+  { name: "Nintendo-Master",                 url: "https://www.nintendo-master.com/rss/news",                               category: "GAMES",      trustTier: 2 },
   { name: "Numerama Pop",                    url: "https://www.numerama.com/pop-culture/feed/",                             category: "GAMES",      trustTier: 1 },
   { name: "20 Minutes Gaming",               url: "https://www.20minutes.fr/feeds/rss-gaming.xml",                          category: "GAMES",      trustTier: 2 },
   { name: "Jeuxvideo.com",                   url: "https://www.jeuxvideo.com/rss/rss-news.xml",                             category: "GAMES",      trustTier: 2 },
@@ -103,8 +106,8 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "L'école des loisirs",             url: "https://www.ecoledesloisirs.fr/rss.xml",                                 category: "READING",    trustTier: 1 },
   { name: "IDBOOX Livres enfants",           url: "https://www.idboox.com/livres-enfants/feed/",                            category: "READING",    trustTier: 3 },
   { name: "Ricochet — Littérature jeunesse", url: "https://www.ricochet-jeunes.org/rss.xml",                                category: "READING",    trustTier: 1 },
-  { name: "Babelio Jeunesse",                url: "https://www.babelio.com/rss/genre/15.xml",                               category: "READING",    trustTier: 2 },
-  { name: "Lire Magazine",                   url: "https://www.lire.fr/rss",                                                category: "READING",    trustTier: 2 },
+  // (Babelio Jeunesse dropped Sept 2026 — its genre feed never answers
+  // within the timeout. Lire Magazine dropped — no feed left on lire.fr.)
 
   // ── INTERNATIONAL (Vu d'ailleurs) ───────────────────────────────
   // Family/parenting/screen-time press from outside France. Synthesized
@@ -112,10 +115,13 @@ export const NEWS_SOURCES: NewsSource[] = [
   // skip the gossip/lifestyle press and stick to substantive sources.
 
   // PARENTHOOD international — US/UK anchors + EU diversity
-  { name: "NYT Well Family",                  url: "https://rss.nytimes.com/services/xml/rss/nyt/FamilyandRelationships.xml", category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
+  // NYT retired its Family & Relationships feed (404, Sept 2026); Well is
+  // broader (health, fitness) — the synthesis filter keeps the family items.
+  { name: "NYT Well",                         url: "https://rss.nytimes.com/services/xml/rss/nyt/Well.xml",                   category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
   { name: "BBC Family & Education",           url: "https://feeds.bbci.co.uk/news/education/rss.xml",                         category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "UK" },
   { name: "Guardian Family",                  url: "https://www.theguardian.com/lifeandstyle/family/rss",                     category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "UK" },
-  { name: "Common Sense Media — News",        url: "https://www.commonsensemedia.org/rss.xml",                                category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
+  // (Common Sense Media dropped Sept 2026 — the site no longer publishes
+  // any feed; every candidate path 404s.)
   { name: "Pew Research — Internet & Tech",   url: "https://www.pewresearch.org/internet/feed/",                              category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "US" },
   // Germany
   { name: "Spiegel Familie",                  url: "https://www.spiegel.de/familie/index.rss",                                category: "PARENTHOOD", trustTier: 1, region: "INTL", country: "DE" },
@@ -151,8 +157,9 @@ export const NEWS_SOURCES: NewsSource[] = [
   { name: "Eurogamer",                        url: "https://www.eurogamer.net/?format=rss",                                   category: "GAMES",      trustTier: 1, region: "INTL", country: "UK" },
 
   // READING international
-  { name: "Publishers Weekly Children's",     url: "https://www.publishersweekly.com/pw/feeds/recent/childrens.xml",          category: "READING",    trustTier: 1, region: "INTL", country: "US" },
-  { name: "School Library Journal",           url: "https://www.slj.com/?feed=rss2",                                          category: "READING",    trustTier: 1, region: "INTL", country: "US" },
+  { name: "Publishers Weekly Children's",     url: "https://www.publishersweekly.com/pw/feeds/section/childrens/index.xml",  category: "READING",    trustTier: 1, region: "INTL", country: "US" },
+  // (School Library Journal dropped Sept 2026 — every feed URL now returns
+  // an HTML page, not XML.)
   // UK children's books
   { name: "Books for Keeps",                  url: "https://booksforkeeps.co.uk/feed/",                                       category: "READING",    trustTier: 1, region: "INTL", country: "UK" },
 ]

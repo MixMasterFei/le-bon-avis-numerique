@@ -136,9 +136,26 @@ const INTENT_TOKENS = new Set([
 // of these equivalents. Matched on whole words to avoid "dans"/"sans" → "ans".
 const AGE_EQUIV = new Set(["age", "ages", "ans"])
 
-function tokenCovered(token: string, haystack: string, haystackWords: Set<string>): boolean {
+// Below this length a token could straddle two unrelated words by accident
+// once spaces are dropped ("sans"+"on" …); the fused spellings that actually
+// occur in queries are work names, which are long ("spiderman", "fortnite").
+const FUSED_MIN_LENGTH = 6
+
+function tokenCovered(
+  token: string,
+  haystack: string,
+  haystackWords: Set<string>,
+  fusedHaystack: string,
+): boolean {
   if (AGE_EQUIV.has(token)) return [...AGE_EQUIV].some((w) => haystackWords.has(w))
-  return haystack.includes(token)
+  if (haystack.includes(token)) return true
+  // Families type work names fused: « spiderman » for « Spider-Man »,
+  // normalized to "spider man". Without this, « spiderman brand new day age »
+  // — the #1 striking query of September 2026 — could never be covered: the
+  // agent re-attempted that fiche every week, rejected every draft (no draft
+  // can contain both spellings of the name), and spent a synopsis and a title
+  // slot of the per-run budget on it each time.
+  return token.length >= FUSED_MIN_LENGTH && fusedHaystack.includes(token)
 }
 
 /**
@@ -156,7 +173,8 @@ export function keywordPresent(query: string, ...texts: (string | null | undefin
   if (tokens.length === 0) return true // nothing meaningful to add
   const haystack = normalize(texts.filter(Boolean).join(" "))
   const haystackWords = new Set(haystack.split(" ").filter(Boolean))
-  return tokens.every((t) => tokenCovered(t, haystack, haystackWords))
+  const fusedHaystack = haystack.replace(/ /g, "")
+  return tokens.every((t) => tokenCovered(t, haystack, haystackWords, fusedHaystack))
 }
 
 // Navigational / piracy / streaming-intent queries: never the right trigger for a

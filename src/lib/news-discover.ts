@@ -1,4 +1,5 @@
 import Parser from "rss-parser"
+import { parseFeed } from "@/lib/news-feed-fetch"
 import { prisma } from "@/lib/prisma"
 import { getAnthropic } from "@/lib/anthropic"
 
@@ -192,6 +193,8 @@ const INTL_BUDGET = 8
 const OFFICIAL_BUDGET = 14
 const OFFICIAL_MAX_TOKENS = 6000
 
+const FEED_USER_AGENT = "Mozilla/5.0 (compatible; TotemAviseBot/1.0)"
+
 function makeParser(): RssParser {
   return new Parser({
     timeout: 6000,
@@ -202,13 +205,13 @@ function makeParser(): RssParser {
         ["content:encoded", "content:encoded"],
       ],
     },
-    headers: { "user-agent": "Mozilla/5.0 (compatible; TotemAviseBot/1.0)" },
+    headers: { "user-agent": FEED_USER_AGENT },
   }) as RssParser
 }
 
 async function fetchOne(parser: RssParser, source: NewsSource, since: Date) {
   try {
-    const feed = await parser.parseURL(source.url)
+    const feed = await parseFeed(parser, source.url, FEED_USER_AGENT)
     const items = (feed.items ?? [])
       .filter((it) => {
         const t = it.isoDate ? new Date(it.isoDate) : it.pubDate ? new Date(it.pubDate) : null
