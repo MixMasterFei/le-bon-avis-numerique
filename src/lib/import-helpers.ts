@@ -77,26 +77,51 @@ function ageFromGenreNames(names: string[]): number {
 }
 
 /**
+ * Anything the genre heuristic places at this age or above is, by definition,
+ * outside the all-ages bucket — so a "Tous publics" certification must not be
+ * allowed to pull it down to 0. 10 is the top of the 8-10 band: below it the
+ * title is genuinely family-leaning and keeps its 0.
+ */
+const ALL_AGES_CEILING = 10
+
+/**
  * "Tous publics" is the most lenient French rating there is, and the CNC hands
  * it to plenty of films no family guide would put in front of a child — a
  * science-fiction / mystery / THRILLER can ship as TP and land in our catalogue
  * at `expertAgeRec: 0`, i.e. below every age filter on the site and unbadged on
  * the cards ("La fin d'Oak Street" on the family rail).
  *
- * So when the only signal is a TP/U certification AND the film carries a mature
- * genre, we prefer the genre heuristic. Deliberately narrow:
+ * The rule: **a TP certification can never produce an age lower than the genres
+ * alone would have produced.** Anything else is incoherent — it would mean that
+ * holding a lenient certification makes our recommendation *more* permissive
+ * than holding no certification at all, since an uncertified title falls
+ * straight through to `ageFromGenreNames` (which floors at 10).
+ *
+ * That incoherence was live: « Seppuku : l'honneur d'un samouraï » (Drame /
+ * Histoire — a film about ritual suicide) and « Klara et le Soleil »
+ * (Science-Fiction / Drame) both sat at **"Dès 0 ans"** on the site, because the
+ * previous version of this guard only fired on an explicit mature-genre list
+ * (thriller/crime/mystère/guerre/horreur) and neither title carries one. The
+ * genre heuristic put both at 12.
+ *
+ * Still deliberately narrow in the two ways that matter:
  *   - only the age-0 bucket (a TP 12 or TP 10 already carries information),
- *   - only mature genres — a TP animation or family comedy keeps its 0, so
- *     genuinely all-ages titles stay visible to the youngest filters.
+ *   - a genuinely family-leaning title keeps its 0, so all-ages animation stays
+ *     visible to the 2-4 filters — the band we are actively trying to grow.
+ *     `ageFromGenreNames` already applies the family discount, so we test its
+ *     result rather than the raw genre list.
+ *
+ * The old mature-genre list is subsumed: every one of those genres scores 13+,
+ * so it clears the ceiling on its own.
  *
  * Same doctrine as `age-floor.ts`: our recommendation may be stricter than a
  * lenient CSA/CNC rating, never more permissive.
  */
 export function floorTousPublicsByGenre(csaAge: number, genreNames: string[]): number | null {
   if (csaAge !== 0) return null
-  const keys = genreNames.map(norm)
-  if (!keys.some((k) => MATURE_GENRES.has(k))) return null
-  return ageFromGenreNames(genreNames)
+  const fromGenres = ageFromGenreNames(genreNames)
+  if (fromGenres < ALL_AGES_CEILING) return null
+  return fromGenres
 }
 
 // TMDB numeric genre id → name (movie genres), for callers that only have ids

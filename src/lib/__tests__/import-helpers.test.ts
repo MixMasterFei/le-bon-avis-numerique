@@ -94,6 +94,60 @@ describe("false \"Tous publics\" floor", () => {
     expect(estimateProvisionalAge(d).source).toBe("csa")
   })
 
+  it("floors a TP drama the mature-genre list used to miss", () => {
+    // « Seppuku : l'honneur d'un samouraï » (Drame / Histoire) was live at
+    // "Dès 0 ans" — a film about ritual suicide. Neither genre is on the old
+    // mature list, so the guard never fired, even though the genre heuristic
+    // puts the title at 12. A lenient certification must never end up more
+    // permissive than no certification at all.
+    const d = details({
+      release_dates: frRelease("TP"),
+      genres: [{ id: 18, name: "Drama" }, { id: 36, name: "History" }],
+    })
+    const r = estimateProvisionalAge(d)
+    expect(r.age).toBe(12)
+    expect(r.source).toBe("genre")
+    expect(r.internalRating).toBe("TOUS_PUBLICS")
+  })
+
+  it("floors a TP science-fiction drama", () => {
+    // « Klara et le Soleil » — same shape, also shipped at 0.
+    const d = details({
+      release_dates: frRelease("TP"),
+      genres: [
+        { id: 878, name: "Science Fiction" },
+        { id: 18, name: "Drama" },
+        { id: 35, name: "Comedy" },
+      ],
+    })
+    expect(estimateProvisionalAge(d).age).toBe(12)
+  })
+
+  it("keeps the 2-4 band intact: a TP animated adventure stays at 0", () => {
+    // « L'Île des Souvenirs » — Aventure/Animation/Comédie/Familial/Fantastique.
+    // The family discount in ageFromGenreNames puts it at 6, under the ceiling,
+    // so the TP stays. This band is the one we are actively trying to grow;
+    // flooring it would be a regression, not a fix.
+    const d = details({
+      release_dates: frRelease("TP"),
+      genres: [
+        { id: 12, name: "Adventure" },
+        { id: 16, name: "Animation" },
+        { id: 35, name: "Comedy" },
+        { id: 10751, name: "Family" },
+        { id: 14, name: "Fantasy" },
+      ],
+    })
+    expect(estimateProvisionalAge(d)).toEqual({ age: 0, source: "csa", internalRating: "TOUS_PUBLICS" })
+  })
+
+  it("does not let a TP title with no genre data sit at 0", () => {
+    // No genres means no information, and no information is not the same as
+    // "safe from birth". Matches the uncertified path, which already floors at 10.
+    const d = details({ release_dates: frRelease("TP"), genres: [] })
+    expect(estimateProvisionalAge(d).age).toBe(10)
+  })
+
   it("applies the same floor to the stored-data backfill", () => {
     expect(
       estimateProvisionalAgeFromStored({ officialRating: "TOUS_PUBLICS", genres: ["Science-Fiction", "Mystère", "Thriller"] }),
@@ -101,6 +155,13 @@ describe("false \"Tous publics\" floor", () => {
     expect(
       estimateProvisionalAgeFromStored({ officialRating: "TOUS_PUBLICS", genres: ["Animation", "Familial"] }),
     ).toEqual({ age: 0, source: "csa" })
+    // Les deux fiches qui étaient publiées à « Dès 0 ans » en septembre 2026.
+    expect(
+      estimateProvisionalAgeFromStored({ officialRating: "TOUS_PUBLICS", genres: ["Drame", "Histoire"] }),
+    ).toEqual({ age: 12, source: "genre" })
+    expect(
+      estimateProvisionalAgeFromStored({ officialRating: "TOUS_PUBLICS", genres: ["Science-Fiction", "Drame", "Comédie"] }),
+    ).toEqual({ age: 12, source: "genre" })
   })
 })
 

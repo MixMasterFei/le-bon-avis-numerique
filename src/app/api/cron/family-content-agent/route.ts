@@ -14,21 +14,33 @@ export async function GET(req: NextRequest) {
   try {
     const result = await runFamilyContentAgent()
 
+    // `partial` quand le rapport a été coupé au plafond de tokens ou qu'on est
+    // retombé sur la sélection déterministe : dans les deux cas l'e-mail est
+    // parti, mais amputé. C'était journalisé en `success` — donc invisible du
+    // superviseur, six semaines durant.
+    const summary = result.truncated
+      ? `${result.candidatesSelected} fiches envoyées (${result.candidatesMatching} en file) — rapport tronqué`
+      : `${result.candidatesSelected} fiches envoyées (${result.candidatesMatching} en file)`
+
     await logCronRun({
       task: "family-content-agent",
-      status: "success",
-      summary: `${result.candidatesFound} fiches analysées, rapport envoyé`,
+      status: result.status,
+      summary,
       details: {
-        candidatesFound: result.candidatesFound,
-        candidatesSent: result.candidatesSent,
+        candidatesSelected: result.candidatesSelected,
+        candidatesMatching: result.candidatesMatching,
+        capped: result.capped,
+        truncated: result.truncated,
       },
       startTime,
     })
 
     return NextResponse.json({
       success: true,
-      candidatesFound: result.candidatesFound,
-      candidatesSent: result.candidatesSent,
+      candidatesSelected: result.candidatesSelected,
+      candidatesMatching: result.candidatesMatching,
+      capped: result.capped,
+      truncated: result.truncated,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Family content agent failed"
