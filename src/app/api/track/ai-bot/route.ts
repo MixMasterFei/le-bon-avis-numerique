@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
     if (!bot || !kind || !surface) {
       return NextResponse.json({ error: "bot, kind, surface required" }, { status: 400 })
     }
-    if (kind !== "crawler" && kind !== "referral") {
+    // "sample" = agent non reconnu, échantillonné 1/AGENT_SAMPLE_RATE par le
+    // middleware. Son `count` est donc un échantillon, pas un total.
+    if (kind !== "crawler" && kind !== "referral" && kind !== "sample") {
       return NextResponse.json({ error: "Invalid kind" }, { status: 400 })
     }
 

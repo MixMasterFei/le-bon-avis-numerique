@@ -3,7 +3,13 @@ import { getClientIpFromHeaders } from "@/lib/client-ip"
 import { parseCataloguePage } from "@/lib/pagination"
 import { checkAuthRateLimit } from "@/lib/auth-rate-limit"
 import type { NextFetchEvent, NextRequest } from "next/server"
-import { detectAiBot, detectAiReferrer, classifyAiSurface } from "@/lib/ai-bots"
+import {
+  detectAiBot,
+  detectAiReferrer,
+  classifyAiSurface,
+  summarizeUserAgent,
+  AGENT_SAMPLE_RATE,
+} from "@/lib/ai-bots"
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 
 // Security headers applied to all responses
@@ -155,9 +161,21 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   // blind to them. Fire-and-forget: adds zero latency, can never block.
   if (request.method === "GET" && !pathname.startsWith("/api/")) {
     try {
+      const userAgent = request.headers.get("user-agent")
+      const known =
+        detectAiBot(userAgent) ?? detectAiReferrer(request.headers.get("referer"))
+
+      // Agent non reconnu : on en échantillonne un sur AGENT_SAMPLE_RATE, sous
+      // le jeton résumé, avec kind "sample". Les listes fermées ne voyaient que
+      // 0,5 % du trafic ; ces lignes-là nomment les 99,5 % restants. Le `count`
+      // stocké est un échantillon : multiplier par AGENT_SAMPLE_RATE pour
+      // estimer le volume réel.
       const hit =
-        detectAiBot(request.headers.get("user-agent")) ??
-        detectAiReferrer(request.headers.get("referer"))
+        known ??
+        (Math.random() < 1 / AGENT_SAMPLE_RATE
+          ? { kind: "sample" as const, bot: summarizeUserAgent(userAgent) }
+          : null)
+
       if (hit && process.env.CRON_SECRET) {
         event.waitUntil(
           fetch(new URL("/api/track/ai-bot", request.url), {
@@ -443,9 +461,26 @@ function checkInMemoryRateLimit(
 }
 
 export const config = {
+  // Node, not Edge — `auth()` pulls the full NextAuth config (PrismaAdapter +
+  // bcryptjs) and `checkAuthRateLimit` uses node:crypto. Consequence to keep in
+  // mind when editing the matcher below: since 4 sept 2026 EVERY path that
+  // matches bills a function invocation, including ones whose response is
+  // otherwise cached. Getting back to Edge needs the NextAuth split-config
+  // (edge-safe `auth.config` for the middleware, full config for the routes).
   runtime: "nodejs",
   matcher: [
-    // Match all routes except static files and Next.js internals
-    "/((?!_next/static|_next/image|favicon.ico|icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)",
+    // Match all routes except static files, Next.js internals, and the purely
+    // informational pages listed below.
+    //
+    // Those pages need nothing this middleware does: no auth gate, no rate
+    // limit, no pagination normalisation, no private-path bot block. They were
+    // only passing through for the www→apex redirect (moved to
+    // next.config.ts `redirects()`, which the routing layer serves for free)
+    // and for AI-bot telemetry — which is not worth a billed invocation on
+    // ~38 000 crawler hits a day. Measured 25 sept 2026: /confidentialite
+    // 17 897, /mentions-legales 7 500, /notre-methode 4 463, /cookies 2 841,
+    // /objectif 2 752, /nos-valeurs 2 666 — all in a single 24 h window, on a
+    // site taking roughly 63 human visits a day from search.
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|confidentialite|mentions-legales|cookies|nos-valeurs|objectif|notre-methode|a-propos|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)",
   ],
 }

@@ -107,3 +107,55 @@ export function classifyAiSurface(pathname: string): string {
   if (pathname === "/") return "home"
   return "other"
 }
+
+// ── Échantillonnage des agents non reconnus ───────────────────────────
+//
+// `detectAiBot` ne voit que les robots d'une liste fermée. Au 25 septembre
+// 2026 cette liste couvrait ~1 500 requêtes par jour sur les ~267 000 servies
+// — soit 0,5 %. Le reste, l'essentiel de la facture Vercel, était totalement
+// anonyme : ni les journaux d'exécution ni l'API d'observabilité du plan
+// n'exposent l'en-tête User-Agent.
+//
+// D'où ce compteur : on réduit l'agent à un jeton à faible cardinalité et on
+// n'en enregistre qu'un sur SAMPLE_RATE, pour nommer le trafic dominant sans
+// transformer 267 000 requêtes en 267 000 écritures en base.
+
+/** Un enregistrement sur N. 200 → ~1 300 écritures/jour au volume actuel. */
+export const AGENT_SAMPLE_RATE = 200
+
+/** Jetons de produit sans valeur discriminante dans un User-Agent. */
+const UA_NOISE = new Set([
+  "mozilla", "applewebkit", "khtml", "gecko", "safari", "version",
+  "like", "mobile", "chrome", "crios", "edg", "edge", "opr", "firefox",
+])
+
+/**
+ * Réduit un User-Agent à un jeton stable et peu nombreux : « python-requests »,
+ * « curl », « Go-http-client », « SomeBot »… Un navigateur ordinaire retombe
+ * sur « navigateur », ce qui suffit à distinguer « quelqu'un scrape avec un
+ * outil » de « quelqu'un se fait passer pour un navigateur ».
+ */
+export function summarizeUserAgent(userAgent: string | null | undefined): string {
+  if (!userAgent || !userAgent.trim()) return "(absent)"
+
+  // Les robots polis s'annoncent dans le commentaire : « (compatible; X/1.0; +url) ».
+  const declared = userAgent.match(/\(\s*compatible;\s*([A-Za-z0-9._-]+)/i)
+  if (declared) return clampToken(declared[1])
+
+  // Sinon : premier jeton « Nom/Version » qui ne soit pas du bruit de navigateur.
+  const products = Array.from(userAgent.matchAll(/([A-Za-z0-9._-]+)\/[0-9]/g)).map((m) => m[1])
+  for (const product of products) {
+    if (!UA_NOISE.has(product.toLowerCase())) return clampToken(product)
+  }
+
+  // Que du bruit de navigateur → c'est (ou ça imite) un navigateur.
+  if (products.length > 0) return "navigateur"
+
+  // Aucun jeton exploitable : on garde le début, borné.
+  return clampToken(userAgent.split(/[\s/;(]/)[0] || "(inconnu)")
+}
+
+function clampToken(raw: string): string {
+  const cleaned = raw.replace(/[^A-Za-z0-9._-]/g, "").slice(0, 60)
+  return cleaned || "(inconnu)"
+}
