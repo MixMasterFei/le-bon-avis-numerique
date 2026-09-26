@@ -484,11 +484,12 @@ export const config = {
     // informational pages listed below.
     //
     // Those pages need nothing this middleware does: no auth gate, no rate
-    // limit, no pagination normalisation, no private-path bot block. They were
-    // only passing through for the www→apex redirect (moved to
-    // next.config.ts `redirects()`, which the routing layer serves for free)
-    // and for AI-bot telemetry — which is not worth a billed invocation on
-    // ~38 000 crawler hits a day. Measured 25 sept 2026: /confidentialite
+    // limit, no pagination normalisation, no private-path bot block. The only
+    // thing they lose is AI-bot telemetry — not worth a billed invocation on
+    // ~38 000 crawler hits a day. Their canonical www→apex redirect is NOT
+    // affected: www.totemavise.com is a Vercel domain-level 308 to the apex,
+    // so it resolves before any code runs (which also makes the www branch at
+    // the top of this file unreachable in production). Measured 25 sept 2026: /confidentialite
     // 17 897, /mentions-legales 7 500, /notre-methode 4 463, /cookies 2 841,
     // /objectif 2 752, /nos-valeurs 2 666 — all in a single 24 h window, on a
     // site taking roughly 63 human visits a day from search.

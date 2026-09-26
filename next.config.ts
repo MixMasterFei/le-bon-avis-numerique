@@ -24,17 +24,6 @@ const nextConfig: NextConfig = {
       { source: "/apps", destination: "/", permanent: true },
       { source: "/apps/:path*", destination: "/", permanent: true },
       { source: "/notre-histoire", destination: "/a-propos", permanent: true },
-      // www → apex. Handled here rather than in the middleware so it costs a
-      // routing-layer redirect instead of a function invocation: since the
-      // middleware moved to the Node runtime (4 sept 2026) every pass through
-      // it bills, and the informational pages below are being taken OUT of the
-      // matcher — without this, they would lose their canonical redirect.
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.totemavise.com" }],
-        destination: "https://totemavise.com/:path*",
-        permanent: true,
-      },
     ]
   },
   images: {
