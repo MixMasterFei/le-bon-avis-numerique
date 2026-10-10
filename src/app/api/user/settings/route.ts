@@ -11,19 +11,19 @@ export async function GET() {
       return NextResponse.json({ settings: { blur18Plus: true } })
     }
 
-    let settings = await prisma.familySettings.findUnique({
+    // Read-or-create in ONE statement. The old findUnique → create raced:
+    // two concurrent first-visit GETs (SettingsContext + /profil, or this
+    // route + /api/user/family-settings) both saw no row and both inserted,
+    // and the loser hit P2002 on the user_id unique. `update: {}` leaves an
+    // existing row untouched, so this is a pure "get, creating defaults once".
+    const settings = await prisma.familySettings.upsert({
       where: { userId: session.user.id },
+      update: {},
+      create: {
+        userId: session.user.id,
+        blur18Plus: true, // Default to blur enabled
+      },
     })
-
-    // Create default settings if none exist
-    if (!settings) {
-      settings = await prisma.familySettings.create({
-        data: {
-          userId: session.user.id,
-          blur18Plus: true, // Default to blur enabled
-        },
-      })
-    }
 
     return NextResponse.json({ settings })
   } catch (error) {
