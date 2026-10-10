@@ -11,31 +11,30 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }
 
-    let familySettings = await prisma.familySettings.findUnique({
+    // Read-or-create in ONE statement (same race as /api/user/settings, on the
+    // same user_id unique: a find-then-create lets two concurrent first-visit
+    // requests both insert, and the loser fails with P2002). `update: {}`
+    // leaves an existing row untouched.
+    const familySettings = await prisma.familySettings.upsert({
       where: { userId: session.user.id },
+      update: {},
+      create: {
+        userId: session.user.id,
+        // Default sensitivity levels (moderate)
+        defaultSensitivityViolence: 2,
+        defaultSensitivityScary: 2,
+        defaultSensitivitySexual: 3,
+        defaultSensitivityLanguage: 2,
+        defaultSensitivitySubstances: 2,
+        // Default positive preferences
+        defaultPreferPositiveMessages: 1,
+        defaultPreferRoleModels: 1,
+        defaultPreferEducational: 1,
+        // Empty arrays
+        blockedTopics: [],
+        availablePlatforms: [],
+      },
     })
-
-    // If no settings exist, create default ones
-    if (!familySettings) {
-      familySettings = await prisma.familySettings.create({
-        data: {
-          userId: session.user.id,
-          // Default sensitivity levels (moderate)
-          defaultSensitivityViolence: 2,
-          defaultSensitivityScary: 2,
-          defaultSensitivitySexual: 3,
-          defaultSensitivityLanguage: 2,
-          defaultSensitivitySubstances: 2,
-          // Default positive preferences
-          defaultPreferPositiveMessages: 1,
-          defaultPreferRoleModels: 1,
-          defaultPreferEducational: 1,
-          // Empty arrays
-          blockedTopics: [],
-          availablePlatforms: [],
-        },
-      })
-    }
 
     return NextResponse.json({ familySettings })
   } catch (error) {

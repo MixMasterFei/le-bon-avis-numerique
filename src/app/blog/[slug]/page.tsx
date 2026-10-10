@@ -11,6 +11,8 @@ import { urlFor } from "@/sanity/image"
 import { portableTextComponents } from "@/components/blog/PortableTextComponents"
 import { BlogCard } from "@/components/blog/BlogCard"
 
+// Inert while the root layout reads the session (see the note above
+// BlogPostPage); kept so the route caches for 5 min the day it no longer does.
 export const revalidate = 300
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -115,12 +117,16 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 }
 
-export async function generateStaticParams() {
-  const slugs = await sanityClient.fetch<{ slug: string }[]>(
-    `*[${PUBLIC_POST}]{ "slug": slug.current }`
-  )
-  return slugs.map((s) => ({ slug: s.slug }))
-}
+// No generateStaticParams, on purpose. The root layout reads the session
+// (auth() → headers()), so no page of this route can ever be prerendered.
+// With generateStaticParams the build's verdict depended on Sanity's content:
+// with ≥1 post the prerender bailed and the route became dynamic (fine); with
+// 0 published posts nothing was prerendered, the route stayed "●" (SSG,
+// blocking fallback), and EVERY slug — unknown ones, /blog/feed.xml probes,
+// and the first post published after the deploy — was rendered as a static
+// ISR page at runtime, hit the layout's headers() and answered 500
+// DYNAMIC_SERVER_USAGE instead of rendering (or 404-ing via notFound()).
+// Without it the route is plainly dynamic, like /media/[id].
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const { slug } = await params
