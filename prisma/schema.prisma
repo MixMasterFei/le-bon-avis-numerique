@@ -1433,3 +1433,79 @@ model DecouverteBoardVote {
   @@index([boardId])
   @@map("decouverte_board_votes")
 }
+
+// ---------------------------------------------------------------------------
+// Agent ledger — approval queue, run/cost ledger, autonomy policy.
+// Migration: prisma/migrations/manual/015_agent_ledger.sql. Code: src/lib/agent-ledger/.
+// The partial unique index "one pending proposal per (action_type, target_id)"
+// lives in the SQL only (Prisma can't express a WHERE clause on @@unique).
+// ---------------------------------------------------------------------------
+
+model AgentRun {
+  id                String    @id @default(uuid())
+  agent             String
+  /// running | success | partial | error
+  status            String    @default("running")
+  summary           String?
+  llmCalls          Int       @default(0) @map("llm_calls")
+  inputTokens       Int       @default(0) @map("input_tokens")
+  outputTokens      Int       @default(0) @map("output_tokens")
+  cachedInputTokens Int       @default(0) @map("cached_input_tokens")
+  /// Estimated USD at list prices. NULL = a call used an unpriced model.
+  costUsd           Float?    @map("cost_usd")
+  usageByModel      Json?     @map("usage_by_model")
+  actionsProposed   Int       @default(0) @map("actions_proposed")
+  actionsApplied    Int       @default(0) @map("actions_applied")
+  startedAt         DateTime  @default(now()) @map("started_at")
+  finishedAt        DateTime? @map("finished_at")
+
+  actions AgentAction[]
+
+  @@index([agent, startedAt])
+  @@index([startedAt])
+  @@map("agent_runs")
+}
+
+model AgentAction {
+  id          String    @id @default(uuid())
+  runId       String?   @map("run_id")
+  agent       String
+  actionType  String    @map("action_type")
+  /// shadow | pending | applied | rejected | reverted | failed | expired
+  status      String
+  /// Autonomy level in force when proposed (snapshot).
+  autonomy    String
+  needsReview Boolean   @default(false) @map("needs_review")
+  confidence  Float?
+  targetType  String?   @map("target_type")
+  targetId    String?   @map("target_id")
+  targetLabel String?   @map("target_label")
+  rationale   String?
+  payload     Json
+  previous    Json?
+  error       String?
+  /// Last human verdict: approved | rejected | acknowledged | reverted.
+  decision    String?
+  decidedBy   String?   @map("decided_by")
+  decidedAt   DateTime? @map("decided_at")
+  appliedAt   DateTime? @map("applied_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  run AgentRun? @relation(fields: [runId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([actionType, targetId])
+  @@index([runId])
+  @@map("agent_actions")
+}
+
+model AgentAutonomy {
+  actionType    String   @id @map("action_type")
+  /// shadow | suggest | act_report | autonomous
+  level         String
+  minConfidence Float?   @map("min_confidence")
+  updatedBy     String?  @map("updated_by")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("agent_autonomy")
+}

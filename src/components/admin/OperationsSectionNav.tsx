@@ -3,6 +3,7 @@
 import { adminPalette } from "./shared/admin-ui"
 
 const SECTIONS = [
+  { id: "agents", label: "Agents" },
   { id: "import", label: "Import" },
   { id: "enrich", label: "Enrichissement" },
   { id: "moderation", label: "Modération" },

@@ -4,6 +4,7 @@ import { sendDebtDigest } from "@/lib/email"
 import { withVerdict } from "@/lib/agent-verdict"
 import { runExpectationChecks } from "@/lib/expectations"
 import { checkStorageHealth } from "@/lib/supabase-storage"
+import { getLedgerCounts } from "@/lib/agent-ledger/overview"
 
 /**
  * Weekly "technical & data debt" digest.
@@ -256,6 +257,10 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   // quotidien ne voit pas.
   const storage = await checkStorageHealth()
 
+  // Agent ledger: decisions waiting on a human. null = migration 015 not
+  // applied yet → the lines are simply omitted.
+  const agentQueue = await getLedgerCounts()
+
   // ── Build the report ────────────────────────────────────────────
   const L: string[] = []
   L.push("# Dette technique & données — Totem Avisé", "", `Date : ${new Date().toISOString()}`, "")
@@ -269,6 +274,9 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   L.push(`- Fiches sans affiche : ${missingPoster} · sans âge conseillé (films/séries) : ${missingAgeRecVideo}`)
   L.push(`- Fiches qualité < 30 : ${lowQuality} · non revérifiées > 90j : ${staleVerified}`)
   L.push(`- File éditoriale en attente : ${actionQueueTotal}`)
+  if (agentQueue) {
+    L.push(`- Agents : ${agentQueue.pending} proposition(s) à valider · ${agentQueue.toReview} écriture(s) à relire`)
+  }
   L.push(`- Contenu adulte détecté (doit rester 0) : ${adultFlaggedCount}${adultFlaggedCount > 0 ? " ⚠️" : ""}`)
   L.push("")
 
@@ -380,6 +388,11 @@ export async function runDebtDigest(opts: { email?: boolean } = {}): Promise<Deb
   }
   if (actionQueueTotal > 0) {
     todo.push(`${actionQueueTotal} éléments dans la file éditoriale à traiter dans /admin.`)
+  }
+  if (agentQueue && agentQueue.pending + agentQueue.toReview > 0) {
+    todo.push(
+      `Agents : ${agentQueue.pending} proposition(s) à valider et ${agentQueue.toReview} écriture(s) à relire — /admin/operations#agents (une proposition non tranchée expire au bout de 30 jours).`,
+    )
   }
   if (invariantFailures.length > 0) {
     todo.push(`${invariantFailures.length} attente(s) du site rompue(s) — voir "Conformité aux attentes" ci-dessus (régression, CI a peut-être été contournée).`)

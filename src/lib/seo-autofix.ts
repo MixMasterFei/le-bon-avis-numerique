@@ -26,6 +26,13 @@ import { prisma } from "./prisma"
 import { parseMediaRouteId } from "./media-route"
 import { seoTitleMatchesAge, MAX_TITLE } from "./fiche-title"
 import type { StrikingQuery } from "./seo-striking-distance"
+import { fromOpenAiUsage } from "./llm-pricing"
+import {
+  hasPendingProposal,
+  proposeAgentAction,
+  type AgentRunTracker,
+  type ProposalOutcome,
+} from "./agent-ledger"
 
 // How many inbound similarity edges a target should have before we stop adding
 // maillage. Below this it appears in too few rails to get internal-link juice.
@@ -230,12 +237,14 @@ export interface SeoActionTarget {
   position: number
   linksCreated: string[] // neighbour titles linked toward this page
   linksSkippedReason?: string
-  synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "no-keyword"
+  // "queued" = proposal waiting in the admin « À valider » queue (autonomy
+  // « Proposer »); "shadowed" = recorded in observation mode, not written.
+  synopsis: "rewritten" | "queued" | "shadowed" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "no-keyword"
   synopsisBefore?: string
   synopsisAfter?: string
   titleNeedsKeyword: boolean // query term missing from the display title
   // Lever C — meta <title> override action (display title is never changed).
-  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "n/a"
+  seoTitle: "set" | "queued" | "shadowed" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "n/a"
   seoTitleAfter?: string
 }
 
@@ -419,12 +428,19 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
 /** Single gpt-5-mini call that returns one string field from a JSON reply.
  *  Shared by the synopsis (field "synopsis") and meta-title (field "title")
  *  rewriters. */
-async function callJsonField(openai: OpenAI, prompt: string, field: string): Promise<string | null> {
+const REWRITE_MODEL = "gpt-5-mini"
+
+async function callJsonField(
+  openai: OpenAI,
+  prompt: string,
+  field: string,
+  run: AgentRunTracker | null,
+): Promise<string | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 35_000)
   try {
     const params = {
-      model: "gpt-5-mini",
+      model: REWRITE_MODEL,
       messages: [
         { role: "system" as const, content: "Tu es un rédacteur SEO francophone spécialisé dans les contenus médias familiaux. Réponds toujours en JSON valide, concis, sans texte superflu." },
         { role: "user" as const, content: prompt },
@@ -436,6 +452,8 @@ async function callJsonField(openai: OpenAI, prompt: string, field: string): Pro
       params as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
       { signal: controller.signal },
     )
+    // Cost ledger: tokens are spent whether or not the draft is usable.
+    run?.recordUsage(REWRITE_MODEL, fromOpenAiUsage(response.usage))
     const content = response.choices[0]?.message?.content
     if (!content) return null
     const match = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim().match(/\{[\s\S]*\}/)
@@ -588,11 +606,31 @@ function pageRouteId(pageUrl: string): string | null {
   return m ? m[1] : null
 }
 
+/**
+ * Ledger outcome → this agent's own report vocabulary. `failed` (the fiche
+ * changed under us) and `dropped` (queue unavailable — never applied) both
+ * read as "not done" in the email.
+ */
+function synopsisOutcome(o: ProposalOutcome): SeoActionTarget["synopsis"] {
+  if (o === "applied") return "rewritten"
+  if (o === "queued" || o === "already_pending") return "queued"
+  if (o === "shadowed") return "shadowed"
+  return "ai-failed"
+}
+
+function seoTitleOutcome(o: ProposalOutcome): SeoActionTarget["seoTitle"] {
+  if (o === "applied") return "set"
+  if (o === "queued" || o === "already_pending") return "queued"
+  if (o === "shadowed") return "shadowed"
+  return "ai-failed"
+}
+
 export async function runSeoAutofix(
   striking: StrikingQuery[],
-  opts: { dryRun: boolean },
+  opts: { dryRun: boolean; run?: AgentRunTracker | null },
 ): Promise<SeoAutofixResult> {
   const { dryRun } = opts
+  const run = opts.run ?? null
 
   // 1. Resolve + dedup by target media id; keep the highest-opportunity query per page.
   let skippedNonMedia = 0
@@ -658,6 +696,9 @@ export async function runSeoAutofix(
       synopsis = "covered"
     } else if (dryRun) {
       synopsis = "would-rewrite"
+    } else if (await hasPendingProposal("seo.synopsis_rewrite", item.id)) {
+      // A proposal already waits for a human: don't pay for a second draft.
+      synopsis = "queued"
     } else if (rewritesUsed >= MAX_REWRITES) {
       synopsis = "deferred-cap"
     } else if (Date.now() > aiDeadline) {
@@ -666,15 +707,22 @@ export async function runSeoAutofix(
       synopsis = "ai-failed"
     } else {
       rewritesUsed++
-      const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
+      const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis", run)
       if (draft && rewritePasses(t.query, item.title, item.synopsisFr, draft)) {
-        // Un-mark the grammar/tone check too — this rewrite is fresh text the
-        // synopsis-audit sweep hasn't seen yet.
-        await prisma.mediaItem.update({
-          where: { id: item.id },
-          data: { synopsisFr: draft, synopsisFrCheckedAt: null },
+        // Through the ledger: the autonomy level decides whether this is
+        // written now (and listed « À relire », with undo) or queued for a
+        // human. The handler also re-queues the text for the synopsis audit.
+        const { outcome } = await proposeAgentAction({
+          run,
+          actionType: "seo.synopsis_rewrite",
+          targetType: "media",
+          targetId: item.id,
+          targetLabel: item.title,
+          rationale: `Requête Google « ${t.query} » (position ${t.position.toFixed(0)}) : le mot-clé manque dans le synopsis.`,
+          payload: { synopsisFr: draft, query: t.query },
+          previous: { synopsisFr: item.synopsisFr },
         })
-        synopsis = "rewritten"
+        synopsis = synopsisOutcome(outcome)
         synopsisBefore = item.synopsisFr ?? ""
         synopsisAfter = draft
       } else {
@@ -701,6 +749,8 @@ export async function runSeoAutofix(
       seoTitle = "covered"
     } else if (dryRun) {
       seoTitle = "would-set"
+    } else if (await hasPendingProposal("seo.seo_title", item.id)) {
+      seoTitle = "queued"
     } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
       seoTitle = "deferred-cap"
     } else if (Date.now() > aiDeadline) {
@@ -709,10 +759,19 @@ export async function runSeoAutofix(
       seoTitle = "ai-failed"
     } else {
       titleRewritesUsed++
-      const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title")
+      const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title", run)
       if (draft && seoTitlePasses(t.query, item.title, draft, item.expertAgeRec)) {
-        await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: draft } })
-        seoTitle = "set"
+        const { outcome } = await proposeAgentAction({
+          run,
+          actionType: "seo.seo_title",
+          targetType: "media",
+          targetId: item.id,
+          targetLabel: item.title,
+          rationale: `Requête Google « ${t.query} » (position ${t.position.toFixed(0)}) : le mot-clé manque dans le titre affiché.`,
+          payload: { seoTitle: draft, query: t.query },
+          previous: { seoTitle: item.seoTitle },
+        })
+        seoTitle = seoTitleOutcome(outcome)
         seoTitleAfter = draft
       } else {
         seoTitle = "ai-failed"
@@ -784,6 +843,8 @@ export async function runSeoAutofix(
 
 const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
   "rewritten": "synopsis réécrit (chapô + meta)",
+  "queued": "réécriture proposée — en attente de validation (/admin/operations#agents)",
+  "shadowed": "réécriture notée en mode observation — rien d'écrit",
   "would-rewrite": "synopsis à réécrire (mot-clé absent)",
   "covered": "synopsis déjà pertinent",
   "flagged-junk": "requête navigationnelle — non touchée",
@@ -796,6 +857,8 @@ const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
 
 const SEO_TITLE_LABEL: Record<SeoActionTarget["seoTitle"], string> = {
   "set": "titre SEO (balise <title>) réécrit",
+  "queued": "titre SEO proposé — en attente de validation (/admin/operations#agents)",
+  "shadowed": "titre SEO noté en mode observation — rien d'écrit",
   "would-set": "titre SEO à réécrire (mot-clé absent du titre)",
   "covered": "titre SEO déjà pertinent",
   "flagged-junk": "requête navigationnelle — titre non touché",
@@ -823,12 +886,15 @@ function buildActionsSection(input: {
     "",
     dryRun
       ? "_Mode simulation (`dryRun`) : aucune écriture en base._"
-      : "_Écritures appliquées automatiquement. Le titre SEO modifie UNIQUEMENT la balise <title> (résultat Google) — jamais le nom affiché (H1/cartes)._",
+      : "_Écritures appliquées selon le niveau d'autonomie réglé dans /admin/operations#agents — chacune est annulable en un clic depuis « À relire ». Le titre SEO modifie UNIQUEMENT la balise <title> (résultat Google) — jamais le nom affiché (H1/cartes)._",
     "",
     `- Fiches examinées : **${targets.length}**`,
     `- Liens internes ${verb} : **${linksCreated}**`,
     `- Synopsis ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.synopsis === "would-rewrite").length : synopsesRewritten}**`,
     `- Titres SEO ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.seoTitle === "would-set").length : titlesSet}**`,
+    ...(dryRun
+      ? []
+      : [`- Propositions en attente de validation : **${targets.filter((t) => t.synopsis === "queued").length + targets.filter((t) => t.seoTitle === "queued").length}**`]),
     `- Fiches déjà entièrement optimisées : ${saturated}`,
     `- URLs hors fiche ignorées : ${skippedNonMedia}`,
     "",
@@ -865,13 +931,13 @@ function buildActionsSection(input: {
       lines.push(`- Maillage : aucun (${t.linksSkippedReason})`)
     }
     lines.push(`- Copie : ${SYNOPSIS_LABEL[t.synopsis]}`)
-    if (t.synopsis === "rewritten" && t.synopsisAfter) {
+    if ((t.synopsis === "rewritten" || t.synopsis === "queued" || t.synopsis === "shadowed") && t.synopsisAfter) {
       lines.push(`  - Avant : ${t.synopsisBefore || "(vide)"}`)
       lines.push(`  - Après : ${t.synopsisAfter}`)
     }
     if (t.seoTitle !== "n/a") {
       lines.push(`- Titre SEO : ${SEO_TITLE_LABEL[t.seoTitle]}`)
-      if ((t.seoTitle === "set") && t.seoTitleAfter) {
+      if ((t.seoTitle === "set" || t.seoTitle === "queued" || t.seoTitle === "shadowed") && t.seoTitleAfter) {
         lines.push(`  - Balise <title> : ${t.seoTitleAfter}`)
       }
     }

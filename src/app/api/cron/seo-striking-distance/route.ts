@@ -4,6 +4,7 @@ import { logCronRun } from "@/lib/cron-log"
 import { runSeoStrikingDistance } from "@/lib/seo-striking-distance"
 import { runSeoAutofix } from "@/lib/seo-autofix"
 import { sendSeoReport } from "@/lib/email"
+import { startAgentRun, type AgentRunTracker } from "@/lib/agent-ledger"
 
 // Write-side: the agent runs maillage + up to 3 sequential ~35s gpt-5-mini
 // synopsis rewrites on top of the GSC pull, so the old 60s ceiling would time out.
@@ -35,6 +36,11 @@ export async function GET(req: NextRequest) {
   const forceDryRun = req.nextUrl.searchParams.get("dryRun") === "1"
   const dryRun = !writesEnabled || forceDryRun
 
+  // Agent ledger: token cost + every write/proposal, reviewable and
+  // reversible at /admin/operations#agents. A simulation writes nothing, so
+  // it opens no run.
+  let run: AgentRunTracker | null = null
+
   try {
     const result = await runSeoStrikingDistance()
 
@@ -61,7 +67,16 @@ export async function GET(req: NextRequest) {
     // exactly what was done in the same email.
     // The email shows the top 25; the agent works from the deeper pool so it
     // keeps finding fresh fiches once the head of the list is saturated.
-    const autofix = await runSeoAutofix(result.actionableQueries, { dryRun })
+    if (!dryRun) run = await startAgentRun("seo-striking-distance")
+    const autofix = await runSeoAutofix(result.actionableQueries, { dryRun, run })
+    const queued =
+      autofix.targets.filter((t) => t.synopsis === "queued").length +
+      autofix.targets.filter((t) => t.seoTitle === "queued").length
+    const ledger = run?.totals()
+    await run?.finish(
+      "success",
+      `${autofix.targetsExamined} fiches · ${autofix.linksCreated} liens · ${autofix.synopsesRewritten} synopsis · ${autofix.titlesSet} titres · ${queued} en attente`,
+    )
 
     let emailed = false
     if (result.strikingQueries.length > 0 || forceEmail) {
@@ -102,6 +117,10 @@ export async function GET(req: NextRequest) {
         missingItems: autofix.missingItems,
         targetsExamined: autofix.targetsExamined,
         saturated: autofix.saturated,
+        queuedForApproval: queued,
+        ledgerRunId: run?.id ?? null,
+        llmCalls: ledger?.llmCalls ?? 0,
+        estimatedCostUsd: ledger?.costUsd ?? null,
         // Per-lever tallies — tells "nothing left to do" apart from "every
         // write rejected" without re-reading the email.
         outcomes: autofix.outcomes,
@@ -146,6 +165,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "SEO striking-distance failed"
     console.error("[seo-striking-distance] failed:", error)
+    await run?.finish("error", message)
 
     await logCronRun({
       task: "seo-striking-distance",

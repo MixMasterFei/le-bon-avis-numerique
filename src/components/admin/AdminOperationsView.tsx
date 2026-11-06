@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Gauge, Loader2 } from "lucide-react"
+import { Bot, RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Gauge, Loader2 } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,
@@ -38,6 +38,17 @@ const ModerationPanel = dynamic(
 
 const GameGuidesPanel = dynamic(
   () => import("./panels/GameGuidesPanel").then((m) => m.GameGuidesPanel),
+  {
+    loading: () => (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: adminPalette.accent }} />
+      </div>
+    ),
+  },
+)
+
+const AgentLedgerPanel = dynamic(
+  () => import("./panels/AgentLedgerPanel").then((m) => m.AgentLedgerPanel),
   {
     loading: () => (
       <div className="flex justify-center py-12">
@@ -111,6 +122,16 @@ export function AdminOperationsView({ initialEnrichType }: Props) {
       }
     >
       <OperationsSectionNav />
+
+      <div id="agents" className="scroll-mt-28">
+        <AdminSectionCard
+          icon={Bot}
+          title="Agents — à valider"
+          subtitle="Propositions en attente, écritures à relire, niveaux d'autonomie et coûts"
+        >
+          <AgentLedgerPanel key={`agents-${importKey}`} />
+        </AdminSectionCard>
+      </div>
 
       <div id="import" className="scroll-mt-28">
         <AdminSectionCard

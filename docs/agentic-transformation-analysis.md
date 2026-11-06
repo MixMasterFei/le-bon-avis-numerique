@@ -246,6 +246,8 @@ Phased so each phase ships value and de-risks the next. Gate everything outward-
 > **Prerequisite (do alongside Phase 0, not after):** finish launch **Phase B/C** — JSON-LD + OG metadata and **Plausible + Google Search Console**. This is cheap (~$9/mo, a few hours) and is the *feedback signal* the marketing/blog agents optimize against. Also ship the **AI-transparency labels** before agents author more public content. An agent system without measurement just generates faster; it doesn't get better.
 
 ### Phase 0 — Foundations (1–2 weeks)
+
+> **Status (2026-11-06):** approval queue + run/cost ledger + per-action autonomy levels shipped (`src/lib/agent-ledger/`, `/admin/operations#agents`, migration 015). The SEO agent is the first producer. Not yet: the Agent SDK orchestrator, Skills, and ledgering the other agents (news, enrichment, family-content).
 - Stand up the **Agent SDK** in a GH Actions job (hello-world orchestrator). You already have `@ai-sdk/anthropic` + Vercel `ai` installed, so the streaming/tool-call plumbing is partly in place.
 - Build the **tool/MCP layer**: wrap existing endpoints (import, enrich, search-catalog, GSC, send-email) as typed tools.
 - Add `agent_runs` table + cost ledger (extend `logCronRun`) and an **approval queue** table + `/admin/operations` "À valider" panel.

@@ -1,3 +1,5 @@
+import { LLM_PRICING } from "@/lib/llm-pricing"
+
 /**
  * Totem Assistant cost model — one module for both the generation cap and
  * the admin dashboard's cost estimate, so they can never drift apart.
@@ -22,10 +24,12 @@ export interface TotemModelPricing {
   cachedInputPerMTok: number
 }
 
+// Prices come from the shared table so the Totem estimate and the agent
+// ledger can never disagree about what a token costs.
 export const TOTEM_MODEL_PRICING: Record<string, TotemModelPricing> = {
-  "claude-haiku-4-5-20251001": { inputPerMTok: 1, outputPerMTok: 5, cachedInputPerMTok: 0.1 },
-  "claude-haiku-4-5": { inputPerMTok: 1, outputPerMTok: 5, cachedInputPerMTok: 0.1 },
-  "claude-sonnet-4-6": { inputPerMTok: 3, outputPerMTok: 15, cachedInputPerMTok: 0.3 },
+  "claude-haiku-4-5-20251001": LLM_PRICING["claude-haiku-4-5-20251001"],
+  "claude-haiku-4-5": LLM_PRICING["claude-haiku-4-5"],
+  "claude-sonnet-4-6": LLM_PRICING["claude-sonnet-4-6"],
 }
 
 export interface TotemUsageLike {
