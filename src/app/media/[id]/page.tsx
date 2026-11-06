@@ -7,7 +7,6 @@ import { buildFicheTitle, seoTitleMatchesAge } from "@/lib/fiche-title"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
-import Image from "next/image"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,7 +41,6 @@ import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
-import { mockMediaItems } from "@/lib/mock-data"
 import { mediaTypeLabels, formatDateFr, officialRatingLabel } from "@/lib/utils"
 import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
@@ -60,7 +58,6 @@ import {
   mapCertificationToInternal,
 } from "@/lib/tmdb"
 import { getGameDetails, transformGame } from "@/lib/igdb"
-import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
 import type { MediaItem as MockMediaItem, MediaType } from "@/lib/types"
 
@@ -651,7 +648,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const { type, id: rawId } = parseMediaRouteId(id)
 
   let media: DatabaseMediaItem | null = null
-  let source: "mock" | "external" | "database" = "mock"
+  let source: "external" | "database" | null = null
   let dbId: string | null = null // Track actual database UUID for reactions
 
   // First, try to fetch from database (works with UUID or external IDs)
@@ -676,13 +673,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
     }
   }
 
-  // If not in database and no type prefix, check mock data
-  if (!media && !type) {
-    media = mockMediaItems.find((m) => m.id === rawId) || null
-  }
-
-  // If still not found and has type prefix, try external APIs
-  // Only attempt if rawId is a pure integer (not a truncated UUID or hex string)
+  // Not in the database: with a type prefix, try the external APIs — only for
+  // a pure-integer rawId (not a truncated UUID or hex string). Anything else
+  // is a 404 below, never a demo fiche.
   if (!media && type && isPureInteger(rawId)) {
     source = "external"
     try {
@@ -786,48 +779,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
           },
           reviews: [],
         }
-      } else if (type === "BOOK") {
-        const volume = await getBookDetails(rawId)
-        const b = transformBook(volume)
-        media = {
-          id: b.id,
-          title: b.title,
-          originalTitle: b.originalTitle,
-          type: "BOOK",
-          releaseDate: b.releaseDate,
-          posterUrl: b.posterUrl,
-          synopsisFr: b.synopsisFr,
-          officialRating: b.officialRating,
-          expertAgeRec: b.expertAgeRec,
-          communityAgeRec: null,
-          director: b.author || undefined,
-          genres: b.genres,
-          platforms: [],
-          topics: [],
-          contentMetrics: {
-            violence: 0,
-            sexNudity: 0,
-            language: 0,
-            consumerism: 0,
-            substanceUse: 0,
-            positiveMessages: 0,
-            roleModels: 0,
-            whatParentsNeedToKnow: [],
-          },
-          reviews: [],
-        }
       } else {
-        // APP not supported yet
+        // Books and apps aren't part of the catalogue: no live lookup, which
+        // would spend third-party API quota on an anonymous request.
         media = null
       }
     } catch {
       media = null
-    }
-
-    // If external fetch fails (e.g., missing API keys), fall back to mock item if present
-    if (!media) {
-      media = mockMediaItems.find((m) => m.id === rawId && m.type === type) || null
-      if (media) source = "mock"
     }
   }
 
@@ -1365,43 +1323,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
           )}
 
-          {/* Suggestions (éléments de démonstration uniquement) */}
-          {source === "mock" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockMediaItems
-                  .filter((m) => m.id !== media.id && m.type === media.type)
-                  .slice(0, 3)
-                  .map((related) => (
-                    <Link
-                      key={related.id}
-                      href={`/media/${toMediaRouteId(related.type, related.id)}`}
-                      className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                        <Image
-                          src={related.posterUrl}
-                          alt={related.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">{related.title}</p>
-                        <p className="text-xs text-gray-500">
-                          {related.expertAgeRec === null || related.expertAgeRec === undefined
-                            ? "Âge non renseigné"
-                            : `${related.expertAgeRec}+ ans`}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 
