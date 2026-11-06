@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Search, Plus, Check, Film, Tv, Gamepad2, BookOpen, Loader2, AlertCircle, ExternalLink, User, ChevronLeft } from "lucide-react"
+import { Search, Plus, Check, Film, Tv, Gamepad2, Loader2, AlertCircle, ExternalLink, User, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,9 +17,8 @@ interface MediaResult {
   posterUrl: string
   releaseDate: string | null
   rating: number | null
-  type: "MOVIE" | "TV" | "GAME" | "BOOK"
+  type: "MOVIE" | "TV" | "GAME"
   officialRating?: string | null
-  author?: string | null
   developer?: string | null
   role?: string
 }
@@ -39,7 +38,8 @@ interface CompanyResult {
   description: string
 }
 
-type MediaType = "movie" | "tv" | "game" | "book"
+// Books aren't part of the catalogue (films / séries / jeux): no books tab.
+type MediaType = "movie" | "tv" | "game"
 
 const mediaTypeConfig = {
   movie: {
@@ -68,15 +68,6 @@ const mediaTypeConfig = {
     familyEndpoint: "/api/games/family",
     resultKey: "games",
     color: "bg-green-500",
-  },
-  book: {
-    icon: BookOpen,
-    label: "Livres",
-    searchEndpoint: "/api/books/search",
-    popularEndpoint: null,
-    familyEndpoint: "/api/books/children",
-    resultKey: "books",
-    color: "bg-amber-500",
   },
 }
 
@@ -297,8 +288,6 @@ export default function ImportPage() {
         return "TMDB_API_KEY"
       case "game":
         return "IGDB_CLIENT_ID & IGDB_CLIENT_SECRET"
-      case "book":
-        return "GOOGLE_BOOKS_API_KEY"
     }
   }
 
@@ -309,8 +298,6 @@ export default function ImportPage() {
         return "https://www.themoviedb.org/settings/api"
       case "game":
         return "https://dev.twitch.tv/console"
-      case "book":
-        return "https://console.cloud.google.com/"
     }
   }
 
@@ -325,7 +312,7 @@ export default function ImportPage() {
             Importer du contenu
           </h1>
           <p className="text-gray-600">
-            Recherchez et importez des films, séries, jeux et livres depuis les bases de données externes.
+            Recherchez et importez des films, séries et jeux depuis les bases de données externes.
           </p>
         </div>
 
@@ -341,10 +328,6 @@ export default function ImportPage() {
               <div className="flex items-center gap-2">
                 <Gamepad2 className="h-4 w-4" />
                 <span>Jeux → IGDB (Twitch)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span>Livres → Google Books</span>
               </div>
             </div>
           </CardContent>
@@ -428,7 +411,7 @@ export default function ImportPage() {
               )}
               {config.familyEndpoint && (
                 <Button variant="outline" size="sm" onClick={loadFamily} disabled={loading}>
-                  {searchType === "book" ? "Jeunesse" : "Famille"}
+                  Famille
                 </Button>
               )}
             </div>
@@ -642,9 +625,6 @@ export default function ImportPage() {
                           <p className="text-sm text-gray-500">
                             {item.originalTitle}
                           </p>
-                        )}
-                        {item.author && (
-                          <p className="text-sm text-gray-500">par {item.author}</p>
                         )}
                         {item.developer && (
                           <p className="text-sm text-gray-500">par {item.developer}</p>

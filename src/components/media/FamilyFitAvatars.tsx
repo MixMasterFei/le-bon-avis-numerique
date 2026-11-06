@@ -31,9 +31,9 @@ interface FamilyFitAvatarsProps {
 }
 
 // Zelda-style HP gauge: 3 hearts under each member, filled by fit band.
-// Picked over the colored-ring approach (chosen via /test/avatar-variants)
-// because the verdict is now visible at a glance instead of hidden in a
-// hover tooltip.
+// Picked over the colored-ring approach (compared in a since-removed
+// prototype page) because the verdict is now visible at a glance instead
+// of hidden in a hover tooltip.
 const BAND_TO_HEARTS: Record<FamilyFitBand, number> = {
   veryAdapted: 3,
   goodChoice: 2,
