@@ -1,7 +1,7 @@
 # Technical Audit — Totem Avisé
 
 **Date:** 2026-05-31 (this supersedes the 2026-02 audit, archived at the bottom)
-**Codebase:** Next.js 16.2 / React 19 / Tailwind v4 / Prisma / Supabase / Vercel
+**Codebase:** Next.js 16.4 / React 19 / Tailwind v4 / Prisma / Supabase / Vercel
 
 ---
 
@@ -11,7 +11,7 @@
 |---|---|---|
 | Security | 14 / 15 | Strong for a consumer app; CSP + distributed rate-limit are the gaps before scale |
 | Ops / CI | 15 / 15 | Mature: CI, GH-Actions crons + Vercel heartbeat, supervisor, debt digest, prod smoke, weekly dep audit |
-| Performance | 3 / 5 | Deliberate trade-offs penalise Lighthouse (unoptimized images, temp source maps) |
+| Performance | 3 / 5 | Deliberate trade-offs penalise Lighthouse (unoptimized images) |
 | Code quality | 16 / 20 | Clear architecture; some god-objects (600–1100 lines) and duplicated rate-limit/auth |
 | Tests | 6 / 10 | ~16 Vitest + ~20 Playwright; thin on API routes + news pipeline |
 | SEO / product | 9 / 10 | Sitemap, JSON-LD, age-intent metadata, /age, /md, llms.txt |
@@ -21,6 +21,16 @@
 > 68/80 is exactly 85% (a May external "Composer" audit rounded it to 86).
 
 ---
+
+## Recent hardening (Nov 2026)
+
+P0 items from the 6 Nov 2026 security & compliance assessment:
+
+- **Dependencies**: `next` + `eslint-config-next` 16.4.0 → 16.4.5 (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr critical; GHSA-p3m5-59mp-jv5r high), plus the non-breaking audit fixes. `npm audit`: 0 critical / 0 high (was 2 / 5).
+- **Structured data**: the fiche JSON-LD no longer publishes TMDB's audience score as `AggregateRating`. The rating now comes only from first-party reviews, from 5 reviews up, computed over all of them (not the 10 loaded for display) — [aggregate-rating.ts](../src/lib/aggregate-rating.ts).
+- **Demo fiches**: `/media/1`–`/media/8` no longer fall back to invented demo data (and fake reviews); unknown ids are a 404. `mock-data.ts` deleted.
+- **Attack surface**: removed `/api/books/*` (spent the Google Books key, books are out of scope — so is the fiche's live `book:` lookup), `/api/search` (no caller, 4-way fan-out), `/api/admin/seed-admin` (duplicate of `scripts/create-admin.ts`) and the `/test/avatar-variants` page.
+- **Debug leftovers**: no public browser source maps (`productionBrowserSourceMaps` removed — Sentry now uploads the maps when `SENTRY_AUTH_TOKEN` is set and deletes them from the build), and the May hydration debug wrappers (`HydrationCatcher`, `HydrationDebugBoundary`) are gone.
 
 ## Recent hardening (May 2026)
 
@@ -33,7 +43,7 @@
 ## Known issues by priority
 
 ### P0 — quick, low-risk
-- **`productionBrowserSourceMaps: true`** ([next.config.ts](../next.config.ts)) — only on to debug an unresolved **React #418 hydration crash on `/apercudecouverte-v3`**. Fix the hydration crash first, then remove the maps. (v3 is admin-only, so low urgency.) Likely cause is a relative-time / `Date.now()` render path in `src/components/home-v2/` — needs a focused pass, not a blind change.
+- **React #418 hydration crash on the Aperçu news feeds** (shared `ApercuDecouverteV3`, auth-gated) — the public source maps and red-banner debug wrappers added in May to chase it are removed (Nov 2026); if it is still live, debug it from Sentry's stack traces instead (symbolicated only when `SENTRY_AUTH_TOKEN` is set at build time). Likely cause is a relative-time / `Date.now()` render path in `src/components/home-v2/` — needs a focused pass, not a blind change.
 - **Images `unoptimized: true`** ([next.config.ts](../next.config.ts)) — **do NOT blind-flip to `false`.** On Vercel this meters per-image Image-Optimization billing across ~10k catalog items; and the app already does responsive sizing via TMDB CDN sizes (w92/w342/w500). Real LCP gain is the AVIF/WebP + srcset delta only. **Measure first**, then decide; if flipped, watch the Vercel image meter.
 
 ### P1 — before scaling / before the Totem AI assistant goes public
@@ -43,7 +53,6 @@
 
 ### P2 — quality / debt
 - God-objects to split: `media/[id]/page.tsx`, `SiteHeader.tsx`, `MemberCorner.tsx`, `components/home-v2/renderApercuDecouvertePage.tsx` (the shared news-feed renderer extracted from the former v3 route; ~900–1100 lines each).
-- `mock-data.ts` still imported in `media/[id]/page.tsx`.
 - Error boundaries: only a root `error.tsx`; no per-section boundaries.
 - API tests for ~10–15 critical routes (auth, family-fit, recommendations).
 
@@ -100,6 +109,6 @@ Usability review of the search/filter surfaces. Each claim was verified against 
 <details>
 <summary>Archived: 2026-02 audit (historical — most items since resolved)</summary>
 
-The Feb audit rated the project 82/100 and flagged, among others: no external error tracking (now: Sentry), weak testing 2/10 (now: ~16 Vitest + ~20 Playwright + CI), minimal CI/CD (now: full GitHub Actions CI + cron pipeline), no Vercel Analytics (now: Analytics + Speed Insights). Those gaps are closed; see the current scores above. Remaining Feb items still open: `topics` schema conflict (P3), broader Zod validation (P1), `mock-data.ts` cleanup (P2), OpenAPI docs (P3).
+The Feb audit rated the project 82/100 and flagged, among others: no external error tracking (now: Sentry), weak testing 2/10 (now: ~16 Vitest + ~20 Playwright + CI), minimal CI/CD (now: full GitHub Actions CI + cron pipeline), no Vercel Analytics (now: Analytics + Speed Insights). Those gaps are closed; see the current scores above. Remaining Feb items still open: `topics` schema conflict (P3), broader Zod validation (P1), OpenAPI docs (P3). (`mock-data.ts` cleanup: done, Nov 2026.)
 
 </details>

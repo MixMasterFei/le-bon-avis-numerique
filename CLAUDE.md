@@ -279,7 +279,7 @@ When creating new homepage sections with "Voir tout", always ensure the target p
 ## Quality & Featured Content
 
 - **`dataQualityScore`** — Measures data completeness (poster, synopsis, genres, age rating, content metrics). Used for filtering, NOT for ranking.
-- **`tmdbRating` / `tmdbVoteCount`** — TMDB audience ratings stored internally. Used for quality sorting and featured selection. Never displayed to users (not the site's purpose).
+- **`tmdbRating` / `tmdbVoteCount`** — TMDB audience ratings stored internally. Used for quality sorting and featured selection. Never displayed to users (not the site's purpose) — and never published as structured data either: the fiche JSON-LD `AggregateRating` comes only from first-party reviews, from 5 reviews up (`src/lib/aggregate-rating.ts`), because Google's review-snippet guidelines forbid ratings aggregated from other sites.
 - **Featured criteria:** `tmdbRating >= 6.5`, `tmdbVoteCount >= 200`, has poster, has age rating, French/English language, `dataQualityScore >= 50`
 - **Tag thresholds:** Educatif requires `positiveMessages >= 5`, Modeles+ requires `roleModels >= 5` (raised from 4 to avoid false positives)
 

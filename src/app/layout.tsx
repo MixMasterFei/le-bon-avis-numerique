@@ -9,7 +9,6 @@ import { TotemDockClient } from "@/components/totem/TotemDockClient"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
-import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
 import { ConsentedAnalytics } from "@/components/providers/ConsentedAnalytics"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { v2FontVars } from "@/components/home-redesign/fonts"
@@ -46,8 +45,6 @@ const edunline = localFont({
   display: "swap",
   preload: false,
 })
-
-const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://totemavise.com"),
@@ -181,7 +178,6 @@ export default async function RootLayout({
         <V2TypeProvider value={v2TypeOn}>
         <SessionProvider>
           <SettingsProvider>
-            {hydrationDebugEnabled ? <HydrationCatcher /> : null}
             <ScrollRestoration />
             <SiteHeader showCoinFamille={showCoinFamille} />
             <main className="flex-1">{children}</main>

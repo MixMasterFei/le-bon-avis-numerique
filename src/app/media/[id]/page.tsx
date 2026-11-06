@@ -7,7 +7,6 @@ import { buildFicheTitle, seoTitleMatchesAge } from "@/lib/fiche-title"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
-import Image from "next/image"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,7 +41,7 @@ import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
-import { mockMediaItems } from "@/lib/mock-data"
+import { buildAggregateRating } from "@/lib/aggregate-rating"
 import { mediaTypeLabels, formatDateFr, officialRatingLabel } from "@/lib/utils"
 import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
@@ -60,7 +59,6 @@ import {
   mapCertificationToInternal,
 } from "@/lib/tmdb"
 import { getGameDetails, transformGame } from "@/lib/igdb"
-import { getBookDetails, transformBook } from "@/lib/google-books"
 import { prisma } from "@/lib/prisma"
 import type { MediaItem as MockMediaItem, MediaType } from "@/lib/types"
 
@@ -126,6 +124,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
         orderBy: { createdAt: "desc" as const },
         take: 10,
       },
+      // The true review total — `reviews` above is capped for display.
+      _count: { select: { reviews: true } },
     }
 
     let dbMedia = null
@@ -226,6 +226,19 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
       return null
     }
 
+    // First-party star ratings over ALL of the fiche's reviews, not just the
+    // 10 loaded for display — they feed the JSON-LD AggregateRating, which
+    // must neither under-count nor sample. A failed average only drops the
+    // rating markup; it never takes the fiche down with it.
+    const reviewCount = dbMedia._count.reviews
+    const reviewAvgRating =
+      reviewCount > 0
+        ? await prisma.review
+            .aggregate({ where: { mediaId: dbMedia.id }, _avg: { rating: true } })
+            .then((agg) => agg._avg.rating)
+            .catch(() => null)
+        : null
+
     return {
       id: dbMedia.id,
       title: dbMedia.title,
@@ -243,8 +256,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
       // Imported with an estimated age but not yet AI-enriched → "âge provisoire".
       isProvisional: !dbMedia.isEnriched && dbMedia.expertAgeRec != null,
       communityAgeRec: dbMedia.communityAgeRec,
-      tmdbRating: dbMedia.tmdbRating,
-      tmdbVoteCount: dbMedia.tmdbVoteCount,
+      reviewCount,
+      reviewAvgRating,
       duration: dbMedia.duration || undefined,
       director: dbMedia.director || undefined,
       genres: dbMedia.genres || [],
@@ -449,8 +462,8 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
 
 // Build JSON-LD structured data for a media item.
 // `hideContentAnalysis` = pre-release/provisional: we suppress the
-// AggregateRating (a TMDB score on an unwatched title reads like a full
-// "avis") and keep the FAQ answer an honest estimate.
+// AggregateRating (a rating on an unwatched title reads like a full "avis")
+// and keep the FAQ answer an honest estimate.
 function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnalysis: boolean) {
   const baseUrl = "https://totemavise.com"
   const pageUrl = `${baseUrl}/media/${routeId}`
@@ -467,32 +480,14 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
     ],
   }
 
-  // AggregateRating: prefer internal user reviews when present, fall back to TMDB
-  const internalRatings = media.reviews?.map((r) => r.rating).filter((n) => typeof n === "number") || []
-  const internalCount = internalRatings.length
-  const internalAvg = internalCount > 0
-    ? Math.round((internalRatings.reduce((a, b) => a + b, 0) / internalCount) * 10) / 10
-    : 0
-
-  const aggregateRating = hideContentAnalysis
-    ? undefined
-    : internalCount > 0
-    ? {
-        "@type": "AggregateRating",
-        ratingValue: internalAvg,
-        bestRating: 5,
-        worstRating: 1,
-        ratingCount: internalCount,
-      }
-    : media.tmdbRating && media.tmdbVoteCount && media.tmdbVoteCount > 0
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: media.tmdbRating,
-          bestRating: 10,
-          worstRating: 0,
-          ratingCount: media.tmdbVoteCount,
-        }
-      : undefined
+  // AggregateRating: our families' own star ratings only, and only once there
+  // are enough of them — never a third-party (TMDB/IGDB) score, which Google's
+  // review-snippet guidelines forbid. Omitted otherwise. See @/lib/aggregate-rating.
+  const aggregateRating = buildAggregateRating({
+    reviewCount: media.reviewCount ?? 0,
+    averageRating: media.reviewAvgRating ?? null,
+    hideContentAnalysis,
+  })
 
   // Totem's recommended age as a schema.org age range ("10-" = 10 and up).
   // Omitted for hidden/provisional analyses — we don't assert unconfirmed ages
@@ -651,7 +646,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
   const { type, id: rawId } = parseMediaRouteId(id)
 
   let media: DatabaseMediaItem | null = null
-  let source: "mock" | "external" | "database" = "mock"
+  let source: "external" | "database" | null = null
   let dbId: string | null = null // Track actual database UUID for reactions
 
   // First, try to fetch from database (works with UUID or external IDs)
@@ -676,13 +671,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
     }
   }
 
-  // If not in database and no type prefix, check mock data
-  if (!media && !type) {
-    media = mockMediaItems.find((m) => m.id === rawId) || null
-  }
-
-  // If still not found and has type prefix, try external APIs
-  // Only attempt if rawId is a pure integer (not a truncated UUID or hex string)
+  // Not in the database: with a type prefix, try the external APIs — only for
+  // a pure-integer rawId (not a truncated UUID or hex string). Anything else
+  // is a 404 below, never a demo fiche.
   if (!media && type && isPureInteger(rawId)) {
     source = "external"
     try {
@@ -786,48 +777,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
           },
           reviews: [],
         }
-      } else if (type === "BOOK") {
-        const volume = await getBookDetails(rawId)
-        const b = transformBook(volume)
-        media = {
-          id: b.id,
-          title: b.title,
-          originalTitle: b.originalTitle,
-          type: "BOOK",
-          releaseDate: b.releaseDate,
-          posterUrl: b.posterUrl,
-          synopsisFr: b.synopsisFr,
-          officialRating: b.officialRating,
-          expertAgeRec: b.expertAgeRec,
-          communityAgeRec: null,
-          director: b.author || undefined,
-          genres: b.genres,
-          platforms: [],
-          topics: [],
-          contentMetrics: {
-            violence: 0,
-            sexNudity: 0,
-            language: 0,
-            consumerism: 0,
-            substanceUse: 0,
-            positiveMessages: 0,
-            roleModels: 0,
-            whatParentsNeedToKnow: [],
-          },
-          reviews: [],
-        }
       } else {
-        // APP not supported yet
+        // Books and apps aren't part of the catalogue: no live lookup, which
+        // would spend third-party API quota on an anonymous request.
         media = null
       }
     } catch {
       media = null
-    }
-
-    // If external fetch fails (e.g., missing API keys), fall back to mock item if present
-    if (!media) {
-      media = mockMediaItems.find((m) => m.id === rawId && m.type === type) || null
-      if (media) source = "mock"
     }
   }
 
@@ -920,6 +876,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
       : media.type === "BOOK" || media.type === "MANGA"
         ? "Vous l'avez lu ?"
         : "Vous l'avez vu ?"
+
+  // Every review on the fiche, not just the 10 loaded for display — the same
+  // total the JSON-LD AggregateRating declares.
+  const familyReviewCount = media.reviewCount ?? media.reviews.length
 
   return (
     <div className="min-h-screen" style={{ background: "var(--color-warm-bg)" }}>
@@ -1201,7 +1161,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               className="font-serif text-xl sm:text-2xl font-medium mb-4"
               style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
             >
-              Avis des familles{media.reviews.length > 0 ? ` (${media.reviews.length})` : ""}
+              Avis des familles{familyReviewCount > 0 ? ` (${familyReviewCount})` : ""}
             </h2>
             <ReviewsSection
               reviews={media.reviews}
@@ -1365,43 +1325,6 @@ export default async function MediaPage({ params }: MediaPageProps) {
             </div>
           )}
 
-          {/* Suggestions (éléments de démonstration uniquement) */}
-          {source === "mock" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Vous pourriez aussi aimer</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {mockMediaItems
-                  .filter((m) => m.id !== media.id && m.type === media.type)
-                  .slice(0, 3)
-                  .map((related) => (
-                    <Link
-                      key={related.id}
-                      href={`/media/${toMediaRouteId(related.type, related.id)}`}
-                      className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="relative w-12 h-16 rounded overflow-hidden shrink-0">
-                        <Image
-                          src={related.posterUrl}
-                          alt={related.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm line-clamp-1">{related.title}</p>
-                        <p className="text-xs text-gray-500">
-                          {related.expertAgeRec === null || related.expertAgeRec === undefined
-                            ? "Âge non renseigné"
-                            : `${related.expertAgeRec}+ ans`}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
 

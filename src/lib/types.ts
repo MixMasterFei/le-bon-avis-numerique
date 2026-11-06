@@ -26,7 +26,8 @@ export interface MediaItem {
     roleModels: number
     whatParentsNeedToKnow: string[]
     // Hedged "Ce qui peut marquer" category flags (closed list in
-    // src/lib/sensitive-warnings.ts). Optional so mock-data stays valid.
+    // src/lib/sensitive-warnings.ts). Optional: off-catalogue fiches built
+    // from a live TMDB/IGDB lookup have none.
     sensitiveWarnings?: string[]
     // AI confidence (0-1) — used to gate the sensitive-warnings card (>= 0.6).
     enrichmentConfidence?: number | null

@@ -2,7 +2,6 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ApercuDecouverteV3, type DecouverteV3Data } from "@/components/home-v2/ApercuDecouverteV3"
-import { HydrationDebugBoundary } from "@/components/providers/HydrationDebugBoundary"
 import { getNextHoliday, getHolidayCalendar, holidayToSerializable, type CalendarHoliday } from "@/lib/school-holidays"
 import { getCatalogAnniversary } from "@/lib/catalog-anniversary"
 import { getWeatherForCity, DEFAULT_CITY, type WeatherCity } from "@/lib/weather"
@@ -34,8 +33,6 @@ import {
 // files declare `dynamic = "force-dynamic"` themselves; every render is
 // per-request (cron writes news to the DB, the page reads it on each
 // visit — auth-gated, low traffic).
-
-const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
 
 interface SearchParams {
   font?: string
@@ -927,13 +924,7 @@ export async function renderApercuDecouvertePage(props: {
 
   return (
     <div className={useFraunces ? fraunces.variable : undefined}>
-      {hydrationDebugEnabled ? (
-        <HydrationDebugBoundary>
-          <ApercuDecouverteV3 data={data} serifClass={serifClass} />
-        </HydrationDebugBoundary>
-      ) : (
-        <ApercuDecouverteV3 data={data} serifClass={serifClass} />
-      )}
+      <ApercuDecouverteV3 data={data} serifClass={serifClass} />
     </div>
   )
 }
