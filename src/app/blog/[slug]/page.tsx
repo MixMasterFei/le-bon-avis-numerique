@@ -6,8 +6,9 @@ import { ArrowLeft, BookOpen, Calendar, Clock, History, MessagesSquare, User } f
 import { PortableText, type PortableTextBlock } from "@portabletext/react"
 import { Badge } from "@/components/ui/badge"
 import { sanityClient } from "@/sanity/client"
-import { PUBLIC_POST } from "@/lib/published-blog"
-import { urlFor } from "@/sanity/image"
+import { formatBlogDate, PUBLIC_POST } from "@/lib/published-blog"
+import { BLOG_CARD_HEIGHT, BLOG_CARD_WIDTH, blogHeroImage } from "@/lib/blog-card"
+import { blogCategoryLabel } from "@/sanity/categories"
 import { portableTextComponents } from "@/components/blog/PortableTextComponents"
 import { BlogCard } from "@/components/blog/BlogCard"
 
@@ -15,14 +16,8 @@ import { BlogCard } from "@/components/blog/BlogCard"
 // BlogPostPage); kept so the route caches for 5 min the day it no longer does.
 export const revalidate = 300
 
-const CATEGORY_LABELS: Record<string, string> = {
-  "temps-ecran": "Temps d'écran",
-  "films-series": "Films & séries",
-  "jeux-video": "Jeux vidéo",
-  "parentalite-numerique": "Parentalité numérique",
-  "guides-pratiques": "Guides pratiques",
-  "actualites": "Actualités",
-}
+const SITE_URL = "https://totemavise.com"
+const absolute = (url: string) => (url.startsWith("/") ? `${SITE_URL}${url}` : url)
 
 function getPlainText(blocks: PortableTextBlock[]) {
   return blocks
@@ -73,7 +68,7 @@ interface Post {
   _updatedAt?: string
   category: string
   excerpt: string
-  mainImage?: { asset?: { _ref?: string }; alt?: string }
+  mainImage?: { asset?: { _ref?: string }; alt?: string; credit?: string }
   body: PortableTextBlock[]
   seoTitle?: string
   seoDescription?: string
@@ -100,7 +95,8 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 
   const title = post.seoTitle || post.title
   const description = post.seoDescription || post.excerpt
-  const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
+  // Photo when there is one, otherwise the branded card — never a share without image.
+  const image = blogHeroImage(post, { width: BLOG_CARD_WIDTH, height: BLOG_CARD_HEIGHT })
 
   return {
     title: `${title} — Blog Totem Avisé`,
@@ -112,7 +108,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       type: "article",
       publishedTime: post.publishedAt,
       authors: [post.author],
-      images: imageUrl ? [{ url: imageUrl, width: 1200, height: 630, alt: post.title }] : undefined,
+      images: [{ url: image.url, width: BLOG_CARD_WIDTH, height: BLOG_CARD_HEIGHT, alt: post.mainImage?.alt || post.title }],
     },
   }
 }
@@ -139,25 +135,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     slug: post.slug,
   })
 
-  const date = new Date(post.publishedAt).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
+  const date = formatBlogDate(post.publishedAt)
 
   // Show an "updated on" date only when the post was meaningfully edited after publishing.
   const updatedAt = post._updatedAt ? new Date(post._updatedAt) : null
   const showUpdated =
     !!updatedAt && updatedAt.getTime() - new Date(post.publishedAt).getTime() > 24 * 60 * 60 * 1000
-  const updatedDate = updatedAt
-    ? updatedAt.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-    : null
+  const updatedDate = post._updatedAt ? formatBlogDate(post._updatedAt) : null
 
-  const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
+  // A real photo gets the full-bleed hero; without one, the branded card (a
+  // placeholder until an illustration is added) sits in the article column —
+  // a text card would be cropped in half by the wide hero band.
+  const hero = blogHeroImage(post, { width: BLOG_CARD_WIDTH, height: BLOG_CARD_HEIGHT })
   const readingMinutes = getReadingMinutes(post.body || [])
 
-  const articleSection = CATEGORY_LABELS[post.category] || post.category
-  const postUrl = `https://totemavise.com/blog/${post.slug}`
+  const articleSection = blogCategoryLabel(post.category)
+  const postUrl = `${SITE_URL}/blog/${post.slug}`
 
   // JSON-LD Article structured data
   const jsonLd = {
@@ -178,7 +171,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       name: "Totem Avisé",
       logo: { "@type": "ImageObject", url: "https://totemavise.com/icon.png" },
     },
-    ...(imageUrl ? { image: imageUrl } : {}),
+    image: absolute(hero.url),
     mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
     url: postUrl,
   }
@@ -206,18 +199,28 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       />
 
       {/* Hero image */}
-      {imageUrl && (
-        <div className="relative w-full h-64 sm:h-80 md:h-96 bg-gray-100">
-          <Image
-            src={imageUrl}
-            alt={post.mainImage?.alt || post.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        </div>
+      {!hero.isFallbackCard && (
+        <figure className="m-0">
+          <div className="relative w-full h-64 sm:h-80 md:h-96 bg-gray-100">
+            <Image
+              src={hero.url}
+              alt={post.mainImage?.alt || post.title}
+              fill
+              className="object-cover"
+              priority
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          </div>
+          {post.mainImage?.credit && (
+            <figcaption
+              className="container mx-auto max-w-3xl px-4 pt-2 text-right text-xs"
+              style={{ color: "var(--color-ink2)" }}
+            >
+              {post.mainImage.credit}
+            </figcaption>
+          )}
+        </figure>
       )}
 
       <div className="container mx-auto max-w-3xl px-4 py-8 md:py-12">
@@ -237,7 +240,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             className="mb-4 border-0 text-xs font-semibold uppercase tracking-wider"
             style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
           >
-            {CATEGORY_LABELS[post.category] || post.category}
+            {articleSection}
           </Badge>
           <h1
             className="font-serif mb-5 text-3xl font-medium leading-[1.05] md:text-5xl"
@@ -269,6 +272,16 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             )}
           </div>
         </header>
+
+        {hero.isFallbackCard && (
+          <div
+            className="relative mb-9 aspect-[1200/630] overflow-hidden rounded-2xl"
+            style={{ background: "var(--color-bg2)", border: "1px solid var(--color-line)" }}
+          >
+            {/* Our own generated card, repeating the H1: decorative, not optimized (like the news cards). */}
+            <Image src={hero.url} alt="" fill unoptimized priority className="object-cover" sizes="(max-width: 768px) 100vw, 768px" />
+          </div>
+        )}
 
         <aside
           className="mb-9 rounded-2xl p-5 md:p-6"

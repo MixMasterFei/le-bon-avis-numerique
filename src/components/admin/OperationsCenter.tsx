@@ -194,14 +194,22 @@ const OPERATIONS: Array<{
       body: { limit: 200, offset: 0 },
       chunked: true,
       delayMs: 500,
-      accumKeys: ["processed"],
+      accumKeys: ["processed", "updated"],
       extractProgress: (data) => ({
         processed: data.processed || 0,
         total: data.total || null,
+        updated: data.updated || 0,
       }),
       isDone: (data) => data.done === true,
+      // The body always says offset 0, so without this the button re-scored
+      // the first 200 rows forever. The route reads ?offset= first.
+      getNextParams: (data, params) => {
+        if (!data.nextOffset) return null
+        params.set("offset", String(data.nextOffset))
+        return params
+      },
       buildSummary: (stats) =>
-        `${stats.processed || 0} scores recalcules`,
+        `${stats.processed || 0} scores recalcules, ${stats.updated || 0} modifies`,
     },
     label: "Recalculer qualite",
     description: "Recalculer les scores de qualite des fiches",
@@ -258,12 +266,10 @@ const OPERATIONS: Array<{
         total: data.total || null,
         updated: (data.created || 0) + (data.updated || 0),
       }),
-      isDone: (data) => data.done === true,
-      getNextParams: (data, params) => {
-        if (!data.nextOffset) return null
-        params.set("offset", String(data.nextOffset))
-        return params
-      },
+      // No cursor to pass: the route takes the least recently computed titles
+      // and stamps them, so the same call simply advances until the queue is
+      // empty. Stop on a batch that computed nothing rather than spin.
+      isDone: (data) => data.done === true || data.items === 0,
       buildSummary: (stats) =>
         `${stats.processed || 0} paires, ${stats.updated || 0} similarites`,
     },

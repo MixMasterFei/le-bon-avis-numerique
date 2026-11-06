@@ -56,11 +56,9 @@ const rateLimitedRoutes: Record<string, string> = {
   "/api/movies/search": "search",
   "/api/tv/search": "search",
   "/api/games/search": "search",
-  "/api/books/search": "search",
   "/api/movies": "api",
   "/api/tv": "api",
   "/api/games": "api",
-  "/api/books": "api",
   "/api/media": "api",
   // Totem chat is the only endpoint here that fans out to a paid LLM call —
   // give it a tight per-IP bucket instead of the generic 100/min fallback.

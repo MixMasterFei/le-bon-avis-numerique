@@ -9,7 +9,6 @@ import { TotemDockClient } from "@/components/totem/TotemDockClient"
 import { SessionProvider } from "@/components/providers/SessionProvider"
 import { SettingsProvider } from "@/contexts/SettingsContext"
 import { ScrollRestoration } from "@/components/providers/ScrollRestoration"
-import { HydrationCatcher } from "@/components/providers/HydrationCatcher"
 import { ConsentedAnalytics } from "@/components/providers/ConsentedAnalytics"
 import { fraunces } from "@/components/home-v2/apercuFont"
 import { v2FontVars } from "@/components/home-redesign/fonts"
@@ -46,8 +45,6 @@ const edunline = localFont({
   display: "swap",
   preload: false,
 })
-
-const hydrationDebugEnabled = process.env.NEXT_PUBLIC_HYDRATION_DEBUG === "true"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://totemavise.com"),
@@ -100,7 +97,11 @@ export default async function RootLayout({
   const { auth } = await import("@/lib/auth")
   const { canUseTotem } = await import("@/lib/totem/access")
   const { coinFamilleEnabled } = await import("@/lib/coin-famille-flag")
-  const session = await auth()
+  const { getLiveBlogSlugs } = await import("@/lib/published-blog")
+  // « Conseils » (/blog) joins the header + footer once a post is live — no
+  // link to an empty blog. Cached 5 min, bounded, never throws (published-blog).
+  const [session, liveBlogSlugs] = await Promise.all([auth(), getLiveBlogSlugs()])
+  const showBlog = liveBlogSlugs.length > 0
   const totemEnabled = canUseTotem({
     isAuthenticated: !!session?.user,
     role: session?.user?.role ?? null,
@@ -181,11 +182,10 @@ export default async function RootLayout({
         <V2TypeProvider value={v2TypeOn}>
         <SessionProvider>
           <SettingsProvider>
-            {hydrationDebugEnabled ? <HydrationCatcher /> : null}
             <ScrollRestoration />
-            <SiteHeader showCoinFamille={showCoinFamille} />
+            <SiteHeader showCoinFamille={showCoinFamille} showBlog={showBlog} />
             <main className="flex-1">{children}</main>
-            <SiteFooter />
+            <SiteFooter showBlog={showBlog} />
             <CookieConsent />
             {totemEnabled && <TotemDockClient />}
           </SettingsProvider>

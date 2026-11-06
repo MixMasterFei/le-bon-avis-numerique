@@ -111,8 +111,13 @@ export function OfficialRatingBadge({
 
   const { label, color } = getRatingDisplay()
 
-  const tooltipText = (type === "MOVIE" || type === "TV")
-    ? "Classification officielle du CSA"
+  // Not « du CSA »: the CSA became the Arcom in 2022, and cinema classification
+  // is the CNC's. A stored film rating may come from either source (cinema visa
+  // or TV signalétique — e.g. -10 only exists on TV), so the film wording names both.
+  const tooltipText = type === "MOVIE"
+    ? "Classification officielle française (CNC au cinéma, Arcom à la télévision)"
+    : type === "TV"
+    ? "Signalétique jeunesse officielle (télévision, encadrée par l'Arcom)"
     : (type === "GAME" || type === "APP")
     ? "Classification officielle PEGI"
     : "Classification officielle"

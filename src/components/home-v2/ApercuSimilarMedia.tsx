@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageBadgeLabel } from "@/lib/age-label"
 import type { MediaType } from "@/lib/types"
 import { getSimilarMedia } from "@/lib/similar-media"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -38,6 +39,10 @@ export async function ApercuSimilarMedia({
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
       {similarMedia.map((item) => {
         const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null
+        // 0 = « Tous publics » → « TP », never a missing badge (that reads as
+        // « pas encore noté », see @/lib/age-label). On a TP fiche every
+        // suggestion is TP (same age or younger), so `> 0` blanked the whole rail.
+        const ageLabel = ageBadgeLabel(item.expertAgeRec)
         return (
           <Link
             key={item.id}
@@ -63,12 +68,12 @@ export async function ApercuSimilarMedia({
                   fallbackClassName="absolute inset-0"
                 />
               )}
-              {item.expertAgeRec != null && item.expertAgeRec > 0 && (
+              {ageLabel && (
                 <div
                   className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-[10px] font-semibold"
                   style={{ background: "#B8D89A", color: "#2D3E1E" }}
                 >
-                  {item.expertAgeRec}+
+                  {ageLabel}
                 </div>
               )}
             </div>

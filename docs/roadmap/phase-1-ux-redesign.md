@@ -129,7 +129,7 @@
 ### User Features
 - [x] Favorites & watchlist UX (standardized grid layouts: `grid-cols-2 sm:3 md:4 lg:5 xl:6`)
 - [x] Review experience — consolidated review button in hero, inline edit/delete, router.refresh
-- [x] Login redirects preserve context via `callbackUrl` parameter (MediaActions, FamilyReactions, ReviewCard)
+- [x] Login redirects preserve context via `callbackUrl` parameter (MediaActions, FamilyReactions, ReviewCardWithReport)
 - [x] Fixed typo "Ma Liste a Voir" → "Ma Liste à Voir"
 - [x] Deleted unused `UserInteractionBar.tsx`
 - [x] **Family personalization system** — Member Corner (`/profil/membres/[id]`), Preference Quiz (`/profil/quiz/[id]`), watch history affinity scoring, profile completion meter, interests editor, media search favorites

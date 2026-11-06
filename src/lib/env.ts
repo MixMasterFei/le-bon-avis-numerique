@@ -18,7 +18,6 @@ const optionalVars = [
   "GOOGLE_BOOKS_API_KEY",
   "RESEND_API_KEY",
   "OPENAI_API_KEY",
-  "ADMIN_SEED_SECRET",
   "FROM_EMAIL",
   "TMDB_API_KEY",
   "NEXT_PUBLIC_APP_URL",

@@ -98,6 +98,7 @@ const KNOWN_CRON_TASKS = [
   "import-games",   // Daily — IGDB recent + popular, popularity-floored
   "import-preschool", // Daily — TMDB Kids-genre TV, grows the 2-4 band
   "release-alerts", // Daily — "Prévenez-moi" → bell notifications on release
+  "release-status", // Daily — re-read TMDB status of titles imported pre-release
   "enrich",
   "enrich-deep",
   "quality",
