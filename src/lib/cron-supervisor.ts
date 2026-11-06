@@ -81,6 +81,20 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
   { task: "import-games", staleAfterHours: 36, outputMetric: { key: "fetched", label: "Jeux récupérés" } },
   { task: "release-alerts", staleAfterHours: 36, outputMetric: { key: "notified", label: "Alertes de sortie envoyées" } },
   {
+    // Daily re-read of TMDB pre-release statuses whose date has passed
+    // (src/lib/tmdb-refresh.ts). Deliberately NO outputMetric: the queue is
+    // self-draining — once TMDB has caught up, "examined" sits near 0, which
+    // is the healthy state, not a collapse. Errors still surface as partial.
+    task: "release-status",
+    staleAfterHours: 36,
+    activatedAt: "2026-11-06",
+    remediation: {
+      label: "Relance rafraîchissement des statuts de sortie",
+      method: "POST",
+      path: "/api/admin/refresh-release-status",
+    },
+  },
+  {
     // Deliberately NO outputMetric, same reasoning as synopsis-audit below:
     // `processed` is assigned `items.length` — the size of the QUEUE, not a
     // measure of the task's health. So "processed collapsed to 0" says the
@@ -290,7 +304,8 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
       label: "Relance similarité batch réduit",
       method: "POST",
       path: "/api/admin/similarity/compute",
-      body: { mode: "full", limit: 10, offset: 0 },
+      // No offset: the route rotates on similarityComputedAt by itself.
+      body: { mode: "full", limit: 10 },
     },
   },
   {

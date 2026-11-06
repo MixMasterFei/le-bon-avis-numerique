@@ -97,7 +97,7 @@ export async function ageVerdict(params: { id?: string; title?: string; type?: S
   return { text: renderMediaMarkdown(input), data: { schemaVersion: 1, status: "ok", result: { kind: "verdict", candidates: [], media: {
     id, title: input.title, type: input.type, year: input.releaseDate ? Number(input.releaseDate.slice(0, 4)) : null,
     age: input.expertAgeRec && input.expertAgeRec > 0 ? input.expertAgeRec : null, provisional: shouldHideContentAnalysis(input), url: `${SITE_URL}/media/${id}`,
-    updatedAt: input.updatedAt.toISOString(), classification: { value: input.officialRating, country: null, authority: null }, assessment: mediaAssessment(input),
+    updatedAt: input.contentUpdatedAt.toISOString(), classification: { value: input.officialRating, country: null, authority: null }, assessment: mediaAssessment(input),
   } } } }
 }
 

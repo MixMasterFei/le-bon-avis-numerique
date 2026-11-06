@@ -1,27 +1,47 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
+import { computeQuality, qualityUpdateFor } from "@/lib/quality-score"
 
 // Extend Vercel serverless timeout
 export const maxDuration = 60 // seconds
 
+const DEFAULT_LIMIT = 200
+const MAX_LIMIT = 500
+
+function nonNegativeInt(value: unknown): number | null {
+  const n = typeof value === "string" ? Number(value) : value
+  return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : null
+}
+
 /**
- * Compute data quality scores for media items
- * Processes in small chunks to avoid timeout
+ * Compute data quality scores for media items.
+ * Processes in small chunks to avoid timeout; callers loop on `nextOffset`.
+ *
+ * Writes ONLY the rows whose score or isEnriched flag actually changes. It
+ * used to rewrite every row (and stamp lastVerifiedAt) on every run, which —
+ * through Prisma's @updatedAt — marked all ~12 000 fiches as "updated today"
+ * every night. See src/lib/quality-score.ts.
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   try {
     const body = await request.json().catch(() => ({}))
-    const limit = body.limit || 200 // Small batch to fit in timeout
-    const offset = body.offset || 0
+    // The admin UI pages with ?offset= (useOperation getNextParams); the cron
+    // loop sends it in the body. The query string wins when both are present.
+    const url = new URL(request.url)
+    const offset = nonNegativeInt(url.searchParams.get("offset")) ?? nonNegativeInt(body.offset) ?? 0
+    const limit = Math.min(nonNegativeInt(body.limit) || DEFAULT_LIMIT, MAX_LIMIT)
+    // Running total carried across batches by the cron loop, so the final log
+    // can say how many rows the whole run really rewrote.
+    const updatedSoFar = nonNegativeInt(body.updatedSoFar) ?? 0
 
     console.log(`Quality compute: offset=${offset}, limit=${limit}`)
 
     // Get total count first
     const totalCount = await prisma.mediaItem.count()
 
-    // Get batch of items - select all fields needed for scoring
+    // Get batch of items - select all fields needed for scoring + the stored values
     const mediaItems = await prisma.mediaItem.findMany({
       skip: offset,
       take: limit,
@@ -38,6 +58,8 @@ export async function POST(request: NextRequest) {
         expertAgeRec: true,
         director: true,
         originalLanguage: true,
+        dataQualityScore: true,
+        isEnriched: true,
         contentMetrics: { select: { id: true } },
         screenshots: { select: { id: true }, take: 1 },
         streamingAvailability: { select: { id: true }, take: 1 },
@@ -49,52 +71,46 @@ export async function POST(request: NextRequest) {
         success: true,
         done: true,
         processed: 0,
+        updated: 0,
+        updatedTotal: updatedSoFar,
         total: totalCount,
       })
     }
 
     const scoreDistribution: Record<number, number> = {}
-    const now = new Date()
+    const updates = []
 
-    // Quality score formula — max 100 points
-    // Essential fields (60 pts): title, poster, synopsis, rating, age rec, genres
-    // Enrichment fields (25 pts): content metrics, screenshots, streaming
-    // Bonus fields (15 pts): backdrop, director, language, release date
-    const updates = mediaItems.map((item) => {
-      let score = 0
-
-      // Essential (60 pts)
-      if (item.title && item.title.trim()) score += 5
-      if (item.posterUrl) score += 10
-      if (item.synopsisFr && item.synopsisFr.length > 50) score += 15
-      else if (item.synopsisFr && item.synopsisFr.length > 0) score += 7
-      if (item.officialRating) score += 10
-      if (item.expertAgeRec !== null) score += 10
-      if (item.genres && item.genres.length > 0) score += 10
-
-      // Enrichment (25 pts)
-      if (item.contentMetrics) score += 10
-      if (item.screenshots.length > 0) score += 10
-      if (item.streamingAvailability.length > 0) score += 5
-
-      // Bonus (15 pts)
-      if (item.backdropUrl) score += 5
-      if (item.director) score += 3
-      if (item.originalLanguage) score += 3
-      if (item.releaseDate) score += 4
-
-      scoreDistribution[score] = (scoreDistribution[score] || 0) + 1
-      const isEnriched = item.expertAgeRec !== null && item.contentMetrics !== null
-
-      return prisma.mediaItem.update({
-        where: { id: item.id },
-        data: { dataQualityScore: score, isEnriched, lastVerifiedAt: now },
+    for (const item of mediaItems) {
+      const computed = computeQuality({
+        title: item.title,
+        posterUrl: item.posterUrl,
+        backdropUrl: item.backdropUrl,
+        synopsisFr: item.synopsisFr,
+        releaseDate: item.releaseDate,
+        genres: item.genres,
+        officialRating: item.officialRating,
+        expertAgeRec: item.expertAgeRec,
+        director: item.director,
+        originalLanguage: item.originalLanguage,
+        hasContentMetrics: item.contentMetrics !== null,
+        hasScreenshots: item.screenshots.length > 0,
+        hasStreaming: item.streamingAvailability.length > 0,
       })
-    })
+      scoreDistribution[computed.dataQualityScore] = (scoreDistribution[computed.dataQualityScore] || 0) + 1
 
-    // Execute all updates in a single transaction
-    await prisma.$transaction(updates)
+      const patch = qualityUpdateFor(item, computed)
+      if (patch) {
+        updates.push(prisma.mediaItem.update({ where: { id: item.id }, data: patch }))
+      }
+    }
 
+    // Only the rows that changed, in a single transaction.
+    if (updates.length > 0) {
+      await prisma.$transaction(updates)
+    }
+
+    const updated = updates.length
+    const updatedTotal = updatedSoFar + updated
     const hasMore = offset + mediaItems.length < totalCount
 
     // Log only on the last batch (when done)
@@ -102,8 +118,8 @@ export async function POST(request: NextRequest) {
       await logCronRun({
         task: "quality",
         status: "success",
-        summary: `Scores recalcules pour ${offset + mediaItems.length} items`,
-        details: { total: totalCount, scoreDistribution },
+        summary: `Scores recalcules pour ${offset + mediaItems.length} items (${updatedTotal} modifies)`,
+        details: { total: totalCount, updatedTotal, scoreDistribution },
         startTime,
       })
     }
@@ -112,7 +128,10 @@ export async function POST(request: NextRequest) {
       success: true,
       done: !hasMore,
       processed: mediaItems.length,
-      nextOffset: hasMore ? offset + limit : null,
+      updated,
+      unchanged: mediaItems.length - updated,
+      updatedTotal,
+      nextOffset: hasMore ? offset + mediaItems.length : null,
       total: totalCount,
       progress: `${offset + mediaItems.length}/${totalCount}`,
       scoreDistribution,

@@ -24,6 +24,18 @@ const nextConfig: NextConfig = {
       { source: "/notre-histoire", destination: "/a-propos", permanent: true },
     ]
   },
+  // The sitemap is split (app/sitemap.ts → /sitemap/<section>.xml), and its
+  // index is a route at /sitemap-index.xml. Serve that index at /sitemap.xml —
+  // the URL robots.txt advertises and Search Console has — via a rewrite, not
+  // a redirect. A route AT /sitemap.xml would be prerendered and exported as a
+  // static file that never regenerates; see src/lib/sitemap.ts.
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: "/sitemap.xml", destination: "/sitemap-index.xml" }],
+      afterFiles: [],
+      fallback: [],
+    }
+  },
   images: {
     // Optimization ON (AVIF/WebP + responsive resizing). Every remote host that
     // reaches next/image must be listed below, OR the render passes

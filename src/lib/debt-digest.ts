@@ -26,6 +26,7 @@ import { checkStorageHealth } from "@/lib/supabase-storage"
 const CRON_STALE_HOURS: Record<string, number> = {
   import: 40,
   "import-games": 40,
+  "release-status": 40,
   enrich: 40,
   "enrich-deep": 40,
   quality: 40,

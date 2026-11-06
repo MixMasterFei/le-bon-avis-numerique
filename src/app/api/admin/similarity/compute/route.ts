@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { SimilaritySource, MediaType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
+import { similarityDueWhere, SIMILARITY_ROTATION_ORDER } from "@/lib/similarity-rotation"
 
 // Was 60s — at that ceiling a full-mode batch of even 10 items got
 // killed mid-run, so the Saturday loop only ever cleared the first
@@ -17,20 +18,22 @@ export const maxDuration = 300
  * - Similar age recommendation
  * - Shared topics
  *
- * Chunked: processes a batch of items, compares all pairs within the batch.
- * Frontend loops with increasing offset until done.
+ * Chunked rotation: each call takes the `limit` titles whose similarities are
+ * the LEAST recently computed (never computed first) and stamps them
+ * (similarityComputedAt), so consecutive calls — and consecutive Saturdays —
+ * advance through the whole catalogue by themselves. Callers just loop until
+ * `done`; no offset. See src/lib/similarity-rotation.ts.
  */
 export async function POST(request: Request) {
   const startTime = Date.now()
   try {
     const body = await request.json().catch(() => ({}))
-    // Read offset from URL params (set by getNextParams in hook) or body
     const url = new URL(request.url)
     const mode = url.searchParams.get("mode") || body.mode || "full"
     // Full mode needs smaller batches (each item compared against many candidates)
     const defaultLimit = mode === "full" ? 30 : 20
     const limit = Math.min(body.limit || defaultLimit, mode === "full" ? 50 : 50)
-    const offset = parseInt(url.searchParams.get("offset") || "0") || body.offset || 0
+    // `offset` (URL or body) is accepted and ignored: the cursor is the stamp.
     const minScore = body.minScore || 0.2
 
     // Count total enriched items for progress
@@ -39,10 +42,7 @@ export async function POST(request: Request) {
     })
 
     const mediaItems = await prisma.mediaItem.findMany({
-      where: {
-        type: { in: ["MOVIE", "TV"] },
-        isEnriched: true,
-      },
+      where: similarityDueWhere(),
       select: {
         id: true,
         title: true,
@@ -58,9 +58,8 @@ export async function POST(request: Request) {
           },
         },
       },
-      skip: offset,
       take: limit,
-      orderBy: { updatedAt: "desc" },
+      orderBy: SIMILARITY_ROTATION_ORDER,
     })
 
     let processed = 0
@@ -73,10 +72,11 @@ export async function POST(request: Request) {
     // killed the function mid-run, curl saw an empty response, and the whole
     // Saturday similarity step silently gave up after 3 tries (nothing logged;
     // the supervisor then flagged "similarity stale" a week later). Bailing at
-    // 260s returns real progress + a forward nextOffset so the workflow loop
-    // keeps draining. Mirrors the enrich route's TIME_BUDGET_MS pattern.
+    // 260s returns real progress; only the items actually computed are stamped,
+    // so the next call resumes with the rest. Mirrors the enrich route's
+    // TIME_BUDGET_MS pattern.
     const TIME_BUDGET_MS = 260_000
-    let itemsDone = 0
+    const computedIds: string[] = []
     let bailedOnTime = false
 
     // Helper: save a similarity pair using upsert (avoids separate findFirst + create/update)
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
         for (const match of matches.slice(0, 10)) {
           await savePair(itemA.id, match.item.id, match.score, match.reasons)
         }
-        itemsDone++
+        computedIds.push(itemA.id)
       }
     } else {
       // Batch mode: compare pairs within the batch only
@@ -180,29 +180,38 @@ export async function POST(request: Request) {
           }
         }
       }
+      computedIds.push(...mediaItems.map((m) => m.id))
     }
 
-    // On a time bail, only advance past the items actually processed so the
-    // caller's next call resumes exactly where this one stopped. (itemsDone=0
-    // ⇒ nextOffset === offset, which the workflow loop treats as "no forward
-    // progress" and stops safely instead of spinning.)
-    const consumed = mode === "full" && bailedOnTime ? itemsDone : mediaItems.length
-    const nextOffset = offset + consumed
-    const done = !bailedOnTime && (nextOffset >= totalItems || mediaItems.length < limit)
+    // Advance the rotation cursor for exactly the items computed. Raw UPDATE so
+    // Prisma's @updatedAt doesn't record bookkeeping as an edit of the fiche
+    // (same convention as src/lib/streaming-sync.ts).
+    if (computedIds.length > 0) {
+      await prisma.$executeRaw`
+        UPDATE media_items SET similarity_computed_at = now()
+        WHERE id = ANY(${computedIds}::text[])
+      `
+    }
+
+    // Done once nothing is left due (or a call found fewer due items than it
+    // asked for). A time bail is never "done": the uncomputed rest is still
+    // due and goes first next call.
+    const remaining = await prisma.mediaItem.count({ where: similarityDueWhere() })
+    const done = !bailedOnTime && (remaining === 0 || mediaItems.length < limit)
 
     await logCronRun({
       task: "similarity",
       status: done ? "success" : "partial",
       summary: done
-        ? `${created} nouvelles similarites, ${updated} MAJ (${processed} paires)`
-        : `Batch similarity offset=${offset} next=${nextOffset}/${totalItems} (${processed} paires)${bailedOnTime ? " — bailed on time" : ""}`,
+        ? `${created} nouvelles similarites, ${updated} MAJ (${processed} paires) — file a jour`
+        : `Batch similarity: ${computedIds.length} titres recalcules (${processed} paires), ${remaining}/${totalItems} en attente${bailedOnTime ? " — bailed on time" : ""}`,
       details: {
         processed,
         created,
         updated,
-        offset,
+        items: computedIds.length,
         limit,
-        nextOffset: done ? null : nextOffset,
+        remaining,
         total: totalItems,
         done,
         bailedOnTime,
@@ -216,8 +225,10 @@ export async function POST(request: Request) {
       processed,
       created,
       updated,
+      items: computedIds.length,
+      remaining,
       total: totalItems,
-      nextOffset: done ? null : nextOffset,
+      bailedOnTime,
     })
   } catch (error) {
     console.error("Similarity compute error:", error)

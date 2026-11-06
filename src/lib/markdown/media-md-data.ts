@@ -42,7 +42,7 @@ export async function loadMediaMdInput(routeIdOrRaw: string): Promise<MediaMdInp
     releaseDate: dbMedia.releaseDate?.toISOString().split("T")[0] || null,
     isEnriched: dbMedia.isEnriched,
     releaseStatus: (dbMedia as unknown as { releaseStatus?: string | null }).releaseStatus ?? null,
-    updatedAt: dbMedia.updatedAt,
+    contentUpdatedAt: dbMedia.contentUpdatedAt,
     hasContentAnalysis: metrics !== null,
     assessmentSource: metrics?.enrichmentSource ?? null,
     assessedAt: metrics?.pass2At ?? metrics?.pass1At ?? null,
