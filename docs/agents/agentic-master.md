@@ -24,10 +24,19 @@ how sure it must be, what it costs, and how a human keeps control.
   care banners with results, never instead.
 - Never expose model or vendor names in rendered text.
 
-## Open work (2026-11-06)
-- **Agent ledger** on `claude/blissful-cori-knkti4` (25 files, no PR yet): « À valider »
-  queue, run/cost ledger, autonomy levels. Migration 015 is **already applied in
-  production** (tables `agent_runs`, `agent_actions`, `agent_autonomy` exist, unused by the
-  live code). **Not released** — waiting for Xavier's review. Before review: rebase on
-  `main`, re-run checks, and write a plain-language brief: which existing agents change
-  behaviour on merge, the default autonomy level of each action type, and how to roll back.
+## Open work (2026-11-06, evening)
+- **Agent ledger** on `claude/blissful-cori-knkti4`, no PR yet: « À valider » queue,
+  run/cost ledger, autonomy levels. **Up to date with `main`** (release #107 merged in, no
+  conflict); type-check, 1 299 tests and lint pass on the merged branch. Migration 015 is
+  applied in production; the three tables are **empty** and unused by the live code.
+  **Review brief for Xavier: [`review-agent-ledger.md`](review-agent-ledger.md).**
+  Waiting for his review — nothing ships before.
+- After merge: run `seo-striking-distance` by hand once and check `/admin/operations#agents`
+  against the real database (the panel has only been tested on mocked data).
+- Next agents to route through the ledger, one at a time: news publish decisions, then the
+  blog drafts agent. Pre-existing lint warnings in owned files (Totem conversations route,
+  `decouverte/blocks/EditorialSources.tsx` + `HeroMatch.tsx`, `tableau/[id]/BoardView.tsx`)
+  are left for a separate cleanup.
+- CLAUDE.md says the SEO agent writes « max 3 synopses + 3 titles/run »; the code allows
+  12 + 12 (`MAX_REWRITES`, `MAX_TITLE_REWRITES` in `src/lib/seo-autofix.ts`). Fix the doc
+  (or the caps) with the Growth Scout.
