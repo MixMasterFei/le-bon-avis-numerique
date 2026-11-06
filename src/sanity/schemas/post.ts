@@ -66,7 +66,7 @@ export const post = defineType({
         defineField({
           name: "credit",
           title: "Crédit (optionnel)",
-          description: "Affiché sous l'image, ex. « Illustration générée par IA » ou « Photo : … ».",
+          description: "Affiché sous l'image, ex. « Image générée par IA » ou « Photo : … ».",
           type: "string",
           validation: (rule) => rule.max(120),
         }),

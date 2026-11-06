@@ -28,7 +28,7 @@
  * post already visible keeps its date when re-published.
  *
  * Images — `heroImage: "blog/images/xx.png"` + `heroAlt: "…"` (+ optional
- * `heroCredit: "Illustration générée par IA"`) in the frontmatter uploads the
+ * `heroCredit: "Image générée par IA"`) in the frontmatter uploads the
  * file as mainImage; see blog/images/README.md. Works on a post already live
  * (its date is kept). Without it, an image added in Studio is kept; with
  * neither, the site shows the branded placeholder card /api/blog/card/<slug>.

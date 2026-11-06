@@ -196,19 +196,19 @@ describe("validateFrontmatter", () => {
 
   it("accepts a short credit, only alongside a hero image", () => {
     const hero = { heroImage: "blog/images/a.png", heroAlt: "Une famille au salon" }
-    expect(validateFrontmatter({ ...ok, ...hero, heroCredit: "Illustration générée par IA" })).toEqual([])
-    expect(validateFrontmatter({ ...ok, heroCredit: "Illustration générée par IA" })).toEqual(["heroCredit sans heroImage"])
+    expect(validateFrontmatter({ ...ok, ...hero, heroCredit: "Image générée par IA" })).toEqual([])
+    expect(validateFrontmatter({ ...ok, heroCredit: "Image générée par IA" })).toEqual(["heroCredit sans heroImage"])
     expect(validateFrontmatter({ ...ok, ...hero, heroCredit: "x".repeat(121) })[0]).toMatch(/heroCredit : 121/)
   })
 })
 
 describe("heroImageValue", () => {
   it("references the uploaded asset with its alt text and optional credit", () => {
-    expect(heroImageValue("image-abc-1536x1024-png", { heroAlt: "Une famille au salon", heroCredit: "Illustration générée par IA" })).toEqual({
+    expect(heroImageValue("image-abc-1536x1024-png", { heroAlt: "Une famille au salon", heroCredit: "Image générée par IA" })).toEqual({
       _type: "image",
       asset: { _type: "reference", _ref: "image-abc-1536x1024-png" },
       alt: "Une famille au salon",
-      credit: "Illustration générée par IA",
+      credit: "Image générée par IA",
     })
     expect(heroImageValue("image-abc-1536x1024-png", { heroAlt: "Une famille au salon" })).not.toHaveProperty("credit")
   })
