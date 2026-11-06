@@ -23,7 +23,9 @@ export interface MediaMdInput {
   releaseDate: string | null
   isEnriched?: boolean
   releaseStatus?: string | null
-  updatedAt: Date
+  /** Last change to the public content (age, synopsis, analysis) — the
+   *  same date as the fiche's « Fiche mise à jour le » and JSON-LD dateModified. */
+  contentUpdatedAt: Date
   hasContentAnalysis?: boolean
   assessmentSource?: string | null
   assessedAt?: Date | null
@@ -130,7 +132,7 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   lines.push(`Langue du site: français`)
   lines.push(`Langue d'origine du contenu: ${formatLanguage(media.originalLanguage)}`)
   if (media.releaseDate) lines.push(`Date de sortie: ${media.releaseDate}`)
-  lines.push(`Fiche mise à jour: ${formatIsoDate(media.updatedAt)}`)
+  lines.push(`Fiche mise à jour: ${formatIsoDate(media.contentUpdatedAt)}`)
   lines.push(`Statut de l'analyse: ${assessment.status === "available" ? "disponible" : assessment.status === "provisional" ? "provisoire" : "indisponible"}`)
   lines.push(`Dernière analyse datée: ${assessment.assessedAt ? assessment.assessedAt.slice(0, 10) : "date non renseignée"}`)
   lines.push(`Source de l'analyse dans le catalogue: ${assessment.source ?? "non renseignée"}`)

@@ -6,19 +6,12 @@ import { PortableText, type PortableTextBlock } from "@portabletext/react"
 import { auth } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { sanityPreviewClient } from "@/sanity/preview-client"
-import { urlFor } from "@/sanity/image"
+import { blogHeroImage } from "@/lib/blog-card"
+import { formatBlogDate } from "@/lib/published-blog"
+import { blogCategoryLabel } from "@/sanity/categories"
 import { portableTextComponents } from "@/components/blog/PortableTextComponents"
 
 export const dynamic = "force-dynamic"
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "temps-ecran": "Temps d'écran",
-  "films-series": "Films & séries",
-  "jeux-video": "Jeux vidéo",
-  "parentalite-numerique": "Parentalité numérique",
-  "guides-pratiques": "Guides pratiques",
-  "actualites": "Actualités",
-}
 
 // Returns both draft + published rows for the slug; the page picks the draft.
 const POST_QUERY = `*[_type == "post" && slug.current == $slug] {
@@ -88,10 +81,8 @@ export default async function AdminBlogPreviewDetail({ params }: PageProps) {
   if (!post) notFound()
 
   const isDraft = rows.some((r) => r._id.startsWith("drafts."))
-  const date = post.publishedAt
-    ? new Date(post.publishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
-    : "Sans date"
-  const imageUrl = urlFor(post.mainImage)?.width(1200).height(630).auto("format").url()
+  const date = post.publishedAt ? formatBlogDate(post.publishedAt) : "Sans date"
+  const hero = blogHeroImage(post, { width: 1200, height: 630 })
   const readingMinutes = getReadingMinutes(post.body || [])
 
   return (
@@ -104,9 +95,9 @@ export default async function AdminBlogPreviewDetail({ params }: PageProps) {
         Aperçu admin {isDraft ? "· Brouillon (non publié)" : "· Publié"} — invisible pour le public
       </div>
 
-      {imageUrl && (
+      {!hero.isFallbackCard && (
         <div className="relative h-64 w-full bg-gray-100 sm:h-80 md:h-96">
-          <Image src={imageUrl} alt={post.mainImage?.alt || post.title} fill className="object-cover" priority sizes="100vw" />
+          <Image src={hero.url} alt={post.mainImage?.alt || post.title} fill className="object-cover" priority sizes="100vw" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
       )}
@@ -126,7 +117,7 @@ export default async function AdminBlogPreviewDetail({ params }: PageProps) {
             className="mb-4 border-0 text-xs font-semibold uppercase tracking-wider"
             style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
           >
-            {CATEGORY_LABELS[post.category] || post.category}
+            {blogCategoryLabel(post.category)}
           </Badge>
           <h1 className="mb-5 font-serif text-3xl font-medium leading-[1.05] md:text-5xl" style={{ color: "var(--color-ink)" }}>
             {post.title}
@@ -149,6 +140,21 @@ export default async function AdminBlogPreviewDetail({ params }: PageProps) {
             </span>
           </div>
         </header>
+
+        {hero.isFallbackCard && (
+          <div className="mb-9">
+            <div
+              className="relative aspect-[1200/630] overflow-hidden rounded-2xl"
+              style={{ background: "var(--color-bg2)", border: "1px solid var(--color-line)" }}
+            >
+              <Image src={hero.url} alt="" fill unoptimized className="object-cover" sizes="(max-width: 768px) 100vw, 768px" />
+            </div>
+            <p className="mt-2 text-xs" style={{ color: "var(--color-ink2)" }}>
+              Carte provisoire (pas encore d&apos;illustration) — une fois publié, elle reprend le titre de l&apos;article.
+              Pour une vraie image : blog/images/README.md.
+            </p>
+          </div>
+        )}
 
         <aside
           className="mb-9 rounded-2xl p-5 md:p-6"

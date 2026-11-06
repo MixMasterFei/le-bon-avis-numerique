@@ -9,7 +9,7 @@
 
 Totem Avisé est **le guide indépendant des familles pour des choix médias éclairés**.
 
-Pourquoi le site existe : combler le vide entre la signalétique CSA française (jeunesse / -10 / -12 / -16 / -18) et les guides anglo-saxons type Common Sense Media — en français, et avec la nuance qu'un parent attend.
+Pourquoi le site existe : combler le vide entre les classifications officielles françaises (cinéma : tous publics / -12 / -16 / -18, par le CNC ; télévision : signalétique tous publics / -10 / -12 / -16 / -18, encadrée par l'Arcom, l'ancien CSA) et les guides anglo-saxons type Common Sense Media — en français, et avec la nuance qu'un parent attend.
 
 Pour qui : les **foyers de toutes formes** — couples, parents solos, familles recomposées, grands-parents qui gardent les petits-enfants. Pas seulement "les familles avec enfants".
 
@@ -30,7 +30,7 @@ Promesse : **informer, jamais juger.**
 
 - Environ **9 000 titres** : films, séries TV, jeux vidéo, livres.
 - Sources : TMDB (films/séries), IGDB (jeux), Google Books (livres).
-- Enrichissement éditorial via les classifications **CSA** (France) et **CNC** (Centre national du cinéma) quand disponibles.
+- Enrichissement éditorial via les classifications officielles quand disponibles : **CNC** (Centre national du cinéma) pour les films en salle, signalétique jeunesse de l'**Arcom** (qui a remplacé le CSA en 2022) à la télévision.
 - Le catalogue grossit chaque jour via une importation automatique.
 
 ---

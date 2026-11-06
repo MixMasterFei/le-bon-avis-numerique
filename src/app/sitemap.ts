@@ -1,105 +1,18 @@
 import type { MetadataRoute } from "next"
-import { prisma } from "@/lib/prisma"
-import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
-import { sanityClient } from "@/sanity/client"
-import { COLLECTIONS } from "@/lib/collections-data"
+import { SITEMAP_IDS, buildSitemap } from "@/lib/sitemap"
 
-// Revalidate sitemap every 6 hours (ISR) — picks up new cron imports
+// ISR: each section is regenerated in the background at most every 6 h —
+// picks up new cron imports. This only works BECAUSE the sitemap is split:
+// a single prerendered /sitemap.xml is shipped as a static file that never
+// regenerates (see src/lib/sitemap.ts). The index lives at
+// app/sitemap-index.xml and is served at /sitemap.xml by a rewrite.
 export const revalidate = 21600
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
+// → /sitemap/pages.xml, /sitemap/films.xml, /sitemap/series.xml, /sitemap/jeux.xml
+export async function generateSitemaps() {
+  return SITEMAP_IDS.map((id) => ({ id }))
+}
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date()
-
-  // Static pages
-  const staticPages: MetadataRoute.Sitemap = [
-    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/films`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/series`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/jeux`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: `${baseUrl}/jeux/quel-age`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    // /mangas intentionally omitted — admin-only during soft launch.
-    // /livres removed — books aren't part of the offering (route redirects to home).
-    { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    // /recommandations omitted — client-side filtering page that SSR-renders
-    // with "0 résultats" (thin content); noindex set via layout.tsx.
-    { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${baseUrl}/notre-methode`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${baseUrl}/a-propos`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/objectif`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/nos-valeurs`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${baseUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${baseUrl}/mentions-legales`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${baseUrl}/confidentialite`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${baseUrl}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.2 },
-    // Age range pages
-    { url: `${baseUrl}/age/2-4`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/5-7`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/8-10`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/11-12`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/13-15`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${baseUrl}/age/16-plus`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
-  ]
-
-  // Individual collection pages ("Top 10 des films Pixar"…) — these are
-  // primary SEO landing pages; before July 2026 only the hub was listed and
-  // the pages themselves were client-rendered, so Google never found them.
-  const collectionPages: MetadataRoute.Sitemap = COLLECTIONS.map((c) => ({
-    url: `${baseUrl}/collections/${c.id}`,
-    lastModified: new Date(`${c.lastUpdated}-01`),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
-  }))
-
-  // Media pages from database
-  let mediaPages: MetadataRoute.Sitemap = []
-  try {
-    const mediaItems = await prisma.mediaItem.findMany({
-      where: publicMediaWhere,
-      select: { id: true, type: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-    })
-
-    mediaPages = mediaItems.map((item) => ({
-      url: `${baseUrl}/media/${toMediaRouteId(item.type, item.id)}`,
-      lastModified: item.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }))
-  } catch (error) {
-    console.error("[sitemap] DB query failed:", error instanceof Error ? error.message : error)
-  }
-
-  // Blog posts from Sanity
-  let blogPages: MetadataRoute.Sitemap = []
-  try {
-    const posts = await sanityClient.fetch<{ slug: string; publishedAt: string }[]>(
-      `*[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()]{ "slug": slug.current, publishedAt }`
-    )
-    blogPages = posts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.publishedAt),
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    }))
-    // Add the blog listing page only when there is published content.
-    // An empty editorial hub is a weak landing page for both visitors and SEO.
-    if (posts.length > 0) {
-      const latestPostDate = new Date(
-        posts.reduce((max, p) => (p.publishedAt > max ? p.publishedAt : max), posts[0].publishedAt)
-      )
-      blogPages.unshift({
-        url: `${baseUrl}/blog`,
-        lastModified: latestPostDate,
-        changeFrequency: "weekly" as const,
-        priority: 0.8,
-      })
-    }
-  } catch (error) {
-    console.error("[sitemap] Sanity query failed:", error instanceof Error ? error.message : error)
-  }
-
-  return [...staticPages, ...collectionPages, ...mediaPages, ...blogPages]
+export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
+  return buildSitemap(await props.id)
 }

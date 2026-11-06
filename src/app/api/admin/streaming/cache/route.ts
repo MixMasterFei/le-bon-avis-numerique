@@ -299,7 +299,7 @@ export async function POST(request: Request) {
         // Goes through syncPlatforms (raw UPDATE) rather than the Prisma
         // client: it stamps streamingCheckedAt so this route feeds the same
         // rotation cursor as /api/admin/streaming/update, WITHOUT bumping
-        // updatedAt — which sitemap.ts publishes as each fiche's lastModified.
+        // updatedAt — a platform badge is not an edit of the fiche.
         // See src/lib/streaming-sync.ts.
         await syncPlatforms(item.id, extractProviders(frProviders))
         drained++

@@ -52,7 +52,7 @@ export const methodeSections: MethodeSection[] = [
     icon: "award",
     title: "D'où viennent nos recommandations d'âge",
     content: [
-      "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC/CSA). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
+      "Chaque contenu sur Totem Avisé porte une recommandation d'âge indépendante de la classification officielle (CNC au cinéma, signalétique de l'Arcom à la télévision). La classification légale donne un âge minimum d'accès en salle. Nous, on regarde l'expérience dans son ensemble : est-ce que ce film risque de faire peur ? Est-ce que les thèmes abordés sont compréhensibles à cet âge ?",
       "Des garde-fous automatiques relèvent l'âge conseillé quand l'analyse détecte des signaux sensibles marqués. Ils réduisent les incohérences, sans garantir qu'aucune erreur ne puisse passer. Un signal mal identifié ou une information manquante peut encore fausser le repère : vos corrections comptent.",
       "La recommandation initiale est générée par l'analyse automatisée décrite ci-dessus, selon des critères publiés fondés sur le développement de l'enfant. Elle est ensuite calibrée par les votes des foyers inscrits. Sur chaque fiche vous trouverez les pouces en haut / en bas : c'est le levier pour contester ou confirmer.",
       "Quand les données du CNC sont disponibles, on les affiche en complément. Sur chaque fiche, vous voyez les deux côte à côte : la classification officielle et notre recommandation.",
@@ -110,7 +110,7 @@ export const methodeSections: MethodeSection[] = [
       { label: "Éducatif", desc: "Le contenu a un fort potentiel éducatif (score de 5/5 en valeur éducative)." },
       { label: "Modèles+", desc: "Le contenu met en avant des modèles positifs (score de 5/5)." },
       { label: "Âge (ex : 8+)", desc: "Âge minimum recommandé par l'analyse Totem Avisé, puis calibré par les retours des parents." },
-      { label: "Classif. officielle", desc: "La classification CNC/CSA quand elle est disponible." },
+      { label: "Classif. officielle", desc: "La classification officielle quand elle est disponible : CNC pour les films en salle, signalétique de l'Arcom à la télévision, PEGI pour les jeux." },
     ],
   },
   {

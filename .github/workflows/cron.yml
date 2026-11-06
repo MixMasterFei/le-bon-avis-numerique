@@ -86,6 +86,7 @@ on:
         options:
           - all
           - import
+          - release-status
           - backfill-ratings
           - backfill-game-styles
           - games-top-names
@@ -220,6 +221,38 @@ jobs:
               if [ "$done" = "true" ] || [ -z "$after" ] || [ "$after" = "null" ]; then break; fi
             done
           done
+          echo "::endgroup::"
+
+  # ── Daily: re-read the TMDB status of titles imported before release ──
+  # release_status was written once at import and never refreshed, while the
+  # enrichment gate excludes pre-release statuses — so a film imported in
+  # "Post Production" stayed « âge provisoire » after its release, forever
+  # (56 such films on 2026-11-06). Runs alongside the import, an hour before
+  # the 04:11 enrichment that then picks the newly released titles up. Its own
+  # job (not a step of the import) so it can be dispatched alone.
+  release-status:
+    name: Release Status Refresh
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '7 3 * * *' ||
+      github.event.inputs.task == 'release-status' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Re-read TMDB status of titles whose release date has passed
+        run: |
+          echo "::group::Release status refresh"
+          response=$(curl -sSL --max-time 150 -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/admin/refresh-release-status?limit=80")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{examined, updated, unchanged, notFound, errors, remaining, nowReleased: [.nowReleased[]?.title]}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Release status refresh failed with HTTP $http_code"
+            exit 1
+          fi
           echo "::endgroup::"
 
   # ── Dispatch-only: re-enrich all games with Steam-style tags ─────
@@ -467,16 +500,21 @@ jobs:
           echo "::endgroup::"
 
       - name: Recompute quality scores (all items)
+        # Scores every row but only WRITES the rows whose score/isEnriched
+        # changed (it used to rewrite all ~12k and bump updated_at nightly).
+        # updatedSoFar carries the running count so the final cron log says
+        # how many rows the whole run actually rewrote.
         run: |
           set +e
           echo "::group::Quality scores"
           offset=0
           failures=0
+          updated_total=0
           for batch in $(seq 1 100); do
             response=$(curl -sSL --max-time 55 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d "{\"limit\":200,\"offset\":$offset}" \
+              -d "{\"limit\":200,\"offset\":$offset,\"updatedSoFar\":$updated_total}" \
               "$SITE_URL/api/admin/quality/compute" 2>/dev/null)
             if [ -z "$response" ]; then
               failures=$((failures + 1))
@@ -488,7 +526,9 @@ jobs:
               continue
             fi
             failures=0
-            echo "$response" | jq -r '.progress // empty' 2>/dev/null || true
+            echo "$response" | jq -r '"\(.progress // "?") — \(.updated // 0) modifies"' 2>/dev/null || true
+            next_total=$(echo "$response" | jq -r '.updatedTotal // empty' 2>/dev/null)
+            if [ -n "$next_total" ]; then updated_total=$next_total; fi
             done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo "false")
             if [ "$done_flag" = "true" ]; then
               echo "Quality score computation complete"
@@ -644,15 +684,18 @@ jobs:
           # 290 lets curl actually wait for the function instead of
           # bailing at 55s (which previously made every batch after the
           # first "fail" and the catalog never drained past ~10 items).
-          # 20 iterations = up to ~1000 freshest items/run; older rows
-          # get refreshed when they're next touched (orderBy updatedAt).
-          offset=0
+          # 20 iterations = up to ~1000 items/run. No offset: the route
+          # picks the least recently computed titles (never computed
+          # first) and stamps them, so each call — and each Saturday —
+          # resumes where the last stopped. The old offset loop restarted
+          # at 0 every week over ORDER BY updatedAt and recomputed the
+          # same ~1000 of ~9700 titles forever.
           failures=0
           for batch in $(seq 1 20); do
             response=$(curl -sSL --max-time 290 -X POST \
               -H "Authorization: Bearer $CRON_SECRET" \
               -H "Content-Type: application/json" \
-              -d "{\"mode\":\"full\",\"limit\":50,\"offset\":$offset}" \
+              -d '{"mode":"full","limit":50}' \
               "$SITE_URL/api/admin/similarity/compute" 2>/dev/null)
             if [ -z "$response" ]; then
               failures=$((failures + 1))
@@ -666,15 +709,16 @@ jobs:
             echo "$response" | jq . 2>/dev/null || echo "$response"
             done_flag=$(echo "$response" | jq -r '.done // false' 2>/dev/null || echo "false")
             if [ "$done_flag" = "true" ]; then
-              echo "Similarity computation complete"
+              echo "Similarity computation complete — rotation queue empty"
               break
             fi
-            next_offset=$(echo "$response" | jq -r '.nextOffset // empty' 2>/dev/null || echo "")
-            if [ -z "$next_offset" ] || [ "$next_offset" = "null" ] || [ "$next_offset" -le "$offset" ]; then
-              echo "Similarity stopped: no forward nextOffset"
+            # A batch that computed nothing (e.g. bailed on its first item)
+            # would only repeat itself — stop instead of spinning.
+            items=$(echo "$response" | jq -r '.items // 0' 2>/dev/null || echo "0")
+            if [ "$items" = "0" ]; then
+              echo "Similarity stopped: batch computed no item"
               break
             fi
-            offset=$next_offset
             sleep 1
           done
           echo "::endgroup::"

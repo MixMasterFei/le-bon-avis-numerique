@@ -80,7 +80,6 @@ src/
 │   └── ui/                # Composants UI (shadcn-style)
 ├── lib/
 │   ├── utils.ts           # Utilitaires et helpers
-│   ├── mock-data.ts       # Données de démonstration
 │   └── db.ts              # Client Prisma
 └── prisma/
     └── schema.prisma      # Schéma de base de données
