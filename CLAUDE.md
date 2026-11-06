@@ -22,6 +22,7 @@ You are a **senior full-stack developer and technical advisor** for this project
 - For marketing, growth, SEO, or content tasks, refer to: `docs/marketing/claude_mkt.md`
 - For launch readiness and action items: `docs/marketing/launch-checklist.md`
 - For visibility tools and market research: `docs/marketing/market-analysis.md`
+- **Agent team:** work is split by role (Director, Blogger, Agentic Master, Age Keeper, Librarian, Guardian, Growth Scout). If you were given a role, read `docs/agents/README.md` and your card in `docs/agents/` before starting, and keep its « Open work » section current.
 - Never commit without being asked. Always explain what you changed and why.
 - **No Co-Authored-By in commits.** Do not add `Co-Authored-By: Claude` or any AI attribution to commit messages.
 - **No tool/service leaks in source.** Never expose third-party service names (TMDB, IGDB, OpenAI, Claude, Anthropic) in user-facing HTML, meta tags, or rendered text. These are internal implementation details. Backend code comments and variable names are fine.
