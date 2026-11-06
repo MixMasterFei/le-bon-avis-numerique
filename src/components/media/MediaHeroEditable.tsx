@@ -14,10 +14,12 @@ import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ProvisionalBadge } from "@/components/media/ProvisionalBadge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { mediaTypeLabels } from "@/lib/utils"
+import { ageBadgeLabel, ageSentenceLabel } from "@/lib/age-label"
 import type { AgeRationale } from "@/lib/age-rationale"
 
 interface Review {
   role: string
+  /** Suggested minimum age. 0 = none given (page.tsx maps null to 0) — NOT « Tous publics ». */
   ageSuggestion: number
 }
 
@@ -412,6 +414,31 @@ function AgeRationaleTooltip({ rationale }: { rationale: AgeRationale }) {
   )
 }
 
+/**
+ * One community bubble (« Parents » / « Enfants »): the rounded average of the
+ * ages that role's reviews suggest, and how many reviews fed it — null when
+ * none suggests one, so the role gets no bubble.
+ *
+ * A review's age is optional (ReviewModal starts at none and can be toggled
+ * back, the API then stores null, page.tsx maps it to 0). Here 0 is « no
+ * suggestion », NOT « Tous publics » as on expertAgeRec: it must neither drag
+ * the average down nor turn into a « 0+ » — or « TP » — that nobody gave.
+ * Same `> 0` test ReviewCardWithReport uses to hide a missing age.
+ */
+function communityAge(
+  reviews: Review[],
+  role: "PARENT" | "KID"
+): { age: number; count: number } | null {
+  const ages = reviews
+    .filter((r) => r.role === role && r.ageSuggestion > 0)
+    .map((r) => r.ageSuggestion)
+  if (ages.length === 0) return null
+  return {
+    age: Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length),
+    count: ages.length,
+  }
+}
+
 function AgeRecommendationsRow({
   expertAge,
   reviews,
@@ -427,19 +454,17 @@ function AgeRecommendationsRow({
   ageRationale?: AgeRationale
   ageGuideHref?: string | null
 }) {
-  const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
+  // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), not a gap: it gets
+  // the strip like any other age, badged « TP » (see @/lib/age-label). Testing
+  // `> 0` here hid the whole verdict on TP fiches. Only an unknown age has none.
+  const ageBadge = ageBadgeLabel(expertAge)
+  const ageSentence = ageSentenceLabel(expertAge)
+  const isRated = ageBadge !== null
 
-  const parentReviews = reviews.filter((r) => r.role === "PARENT")
-  const kidReviews = reviews.filter((r) => r.role === "KID")
-  const parentAvg = parentReviews.length > 0
-    ? Math.round(parentReviews.reduce((acc, r) => acc + r.ageSuggestion, 0) / parentReviews.length)
-    : null
-  const kidAvg = kidReviews.length > 0
-    ? Math.round(kidReviews.reduce((acc, r) => acc + r.ageSuggestion, 0) / kidReviews.length)
-    : null
-  const totalReviews = reviews.length
+  const parents = communityAge(reviews, "PARENT")
+  const kids = communityAge(reviews, "KID")
 
-  if (!isRated && parentAvg === null && kidAvg === null) return null
+  if (!isRated && !parents && !kids) return null
 
   const WARM_INK = "var(--color-warm-ink)"
   const WARM_INK2 = "var(--color-warm-ink2)"
@@ -475,7 +500,7 @@ function AgeRecommendationsRow({
                       boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
                     }}
                   >
-                    {expertAge}+
+                    {ageBadge}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start" className="p-3">
@@ -494,7 +519,7 @@ function AgeRecommendationsRow({
                 boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
               }}
             >
-              {expertAge}+
+              {ageBadge}
             </div>
           )}
           <div className="min-w-0">
@@ -505,7 +530,7 @@ function AgeRecommendationsRow({
               className="font-serif font-bold leading-none my-0.5"
               style={{ fontSize: 22, color: WARM_INK }}
             >
-              Dès {expertAge} ans
+              {ageSentence}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <MethodBadge size="xs" />
@@ -527,10 +552,10 @@ function AgeRecommendationsRow({
         </div>
       )}
 
-      {/* Community averages — only when families have voted */}
-      {(parentAvg !== null || kidAvg !== null) && (
+      {/* Community averages — only from reviews that actually suggest an age */}
+      {(parents || kids) && (
         <div className="flex flex-wrap gap-3">
-          {parentAvg !== null && (
+          {parents && (
             <div
               className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
               style={{ background: WARM_CARD, border: `1px solid ${WARM_LINE}` }}
@@ -539,15 +564,15 @@ function AgeRecommendationsRow({
                 className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
                 style={{ background: "#A79BC7" }}
               >
-                {parentAvg}+
+                {parents.age}+
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: WARM_INK }}>Parents</p>
-                <p className="text-xs" style={{ color: WARM_INK2 }}>{totalReviews} avis</p>
+                <p className="text-xs" style={{ color: WARM_INK2 }}>{parents.count} avis</p>
               </div>
             </div>
           )}
-          {kidAvg !== null && (
+          {kids && (
             <div
               className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
               style={{ background: WARM_CARD, border: `1px solid ${WARM_LINE}` }}
@@ -556,11 +581,11 @@ function AgeRecommendationsRow({
                 className="flex items-center justify-center h-10 w-10 rounded-full text-white font-bold text-base"
                 style={{ background: "#D89AB0" }}
               >
-                {kidAvg}+
+                {kids.age}+
               </div>
               <div>
                 <p className="text-sm font-medium" style={{ color: WARM_INK }}>Enfants</p>
-                <p className="text-xs" style={{ color: WARM_INK2 }}>{kidReviews.length} avis</p>
+                <p className="text-xs" style={{ color: WARM_INK2 }}>{kids.count} avis</p>
               </div>
             </div>
           )}
