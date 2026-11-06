@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { Minus, Plus } from "lucide-react"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { Em } from "@/components/home-redesign/parts"
 import type { BallotCandidate, BallotTally } from "@/lib/nl-search/board-votes"
 
@@ -212,7 +213,8 @@ export function BoardBallot({
                   {item.title}
                 </p>
                 <p className="truncate text-[12px]" style={{ color: "var(--ink-3)" }}>
-                  {item.expertAgeRec !== null ? `Dès ${item.expertAgeRec} ans` : "Âge à confirmer"}
+                  {/* 0 = « Tous publics », never « Dès 0 ans » (see @/lib/age-label). */}
+                  {ageSentenceLabel(item.expertAgeRec) ?? "Âge à confirmer"}
                   {tally && tally.voters.length > 0 ? ` · ${tally.voters.slice(0, 4).join(", ")}${tally.voters.length > 4 ? "…" : ""}` : ""}
                 </p>
               </div>

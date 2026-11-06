@@ -4,6 +4,7 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { cn } from "@/lib/utils"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { TotemSeenButton } from "./TotemSeenButton"
 
 export interface TotemCitedMedia {
@@ -34,7 +35,8 @@ export function TotemMediaCard({
   /** Show the "Déjà vu" action (logged-in family users only; self-hides otherwise). */
   enableSeenAction?: boolean
 }) {
-  const ageLabel = media.recommendedAge != null ? `${media.recommendedAge}+` : null
+  // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+  const ageLabel = ageBadgeLabel(media.recommendedAge)
   // Canonical route form (/media/<type>:<id>) so Totem links match the rest
   // of the site for SEO/analytics, instead of the raw-id shortcut.
   const href = media.type
