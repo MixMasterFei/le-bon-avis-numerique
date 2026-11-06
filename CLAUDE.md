@@ -187,6 +187,13 @@ The blog lives at `totemavise.com/blog` and covers family digital wellness topic
 
 Alternative: write directly in Sanity Studio at `totemavise.com/studio`
 
+### Importing / publishing the `blog/NN-*.md` drafts
+- **One importer: `scripts/publish-blog.ts`** (pure logic + tests in `src/lib/blog-import.ts`). Ids: `drafts.post-<slug>` (default) / `post-<slug>` (`--publish`, which also deletes the draft like Studio's « Publier »). The old `import-blog-drafts.mjs` (`drafts.blog-<slug>`, `SANITY_API_TOKEN`) is gone; its leftovers are reported, `--delete-legacy` removes them.
+- **Dates are explicit, never computed, never in the past by default**: frontmatter `publishedAt: "2026-11-17"` (= 08:00 Paris) or `--date`; a past day is refused unless `--allow-past`; a post already live keeps its date on re-publish. `--publish` requires `--only` (never the whole folder), and refuses a post linking to a `/blog/<slug>` that isn't live or published in the same run (12 ↔ 09). Always `--dry-run` first.
+- **Scheduling works**: every public query gates on `publishedAt <= now()` (`PUBLIC_POST`), so a live doc dated in the future stays invisible until then.
+- **Images**: `heroImage` + `heroAlt` (+ `heroCredit`) in the frontmatter → uploaded as `mainImage` (see `blog/images/README.md`; the image request for the generator, no faces / no text, is `blog/images/demande-images-gpt.md`). Without one, every surface (cards, article cover, OG, JSON-LD) uses the branded placeholder `/api/blog/card/<slug>` (`next/og`, title read from the PUBLISHED post only — never from the URL, never a draft's title).
+- **Launch gates (no deploy needed)**: `/blog` is indexable from `BLOG_INDEX_MIN_POSTS` (2) visible posts and noindex on a Sanity outage (reported to Sentry, « momentanément indisponibles » state, never the empty state); « Conseils » appears in header/footer once ≥ 1 post is live (`getLiveBlogSlugs`, cached 5 min, 2.5 s timeout, never throws); film fiches link « Comment lire cet âge ? » to `AGE_GUIDE_POST_SLUG` once it is live.
+
 ### Blog post schema (Sanity)
 - `title`, `slug`, `author`, `publishedAt`, `category`, `excerpt`, `mainImage`, `body` (Portable Text), `seoTitle`, `seoDescription`
 - Categories: "Temps d'écran", "Films & séries", "Jeux vidéo", "Parentalité numérique", "Guides pratiques", "Actualités"

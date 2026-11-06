@@ -19,11 +19,16 @@ const BY_AGE = [
   { name: "16+ ans", href: "/age/16-plus" },
 ]
 
-const DISCOVER = [
+const GUIDES = { name: "Guides parents", href: "/guides" }
+// The blog, listed only once a post is live (the root layout passes showBlog).
+const BLOG = { name: "Conseils", href: "/blog" }
+
+const discover = (showBlog: boolean) => [
   { name: "Jeux : quel âge ?", href: "/jeux/quel-age" },
   { name: "Collections thématiques", href: "/collections" },
   { name: "Recommandations", href: "/recommandations" },
-  { name: "Guides parents", href: "/guides" },
+  GUIDES,
+  ...(showBlog ? [BLOG] : []),
   { name: "Mon espace", href: "/profil" },
 ]
 
@@ -34,14 +39,14 @@ const ABOUT = [
   { name: "Contact", href: "/contact" },
 ]
 
-const COLUMNS = [
+const columns = (showBlog: boolean) => [
   { title: "Parcourir", items: BROWSE },
   { title: "Par âge", items: BY_AGE },
-  { title: "Découvrir", items: DISCOVER },
+  { title: "Découvrir", items: discover(showBlog) },
   { title: "À propos", items: ABOUT },
 ]
 
-export function SiteFooter() {
+export function SiteFooter({ showBlog = false }: { showBlog?: boolean }) {
   // Footer uses hardcoded brand colors (dark band regardless of theme)
   // instead of palette tokens, so the dark-mode palette doesn't invert
   // it. Keep the dim rgba here for the secondary link colors.
@@ -97,7 +102,7 @@ export function SiteFooter() {
             </a>
           </div>
 
-          {COLUMNS.map((col) => (
+          {columns(showBlog).map((col) => (
             <div key={col.title}>
               <h3
                 className="text-sm font-semibold mb-3"

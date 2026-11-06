@@ -1,4 +1,5 @@
 import { defineField, defineType } from "sanity"
+import { BLOG_CATEGORIES } from "../categories"
 
 export const post = defineType({
   name: "post",
@@ -27,6 +28,8 @@ export const post = defineType({
     defineField({
       name: "publishedAt",
       title: "Date de publication",
+      description:
+        "Date affichée sur l'article. Un article publié avec une date future reste invisible sur le site jusqu'à cette date. Ne mettez pas une date passée pour un nouvel article.",
       type: "datetime",
       validation: (rule) => rule.required(),
     }),
@@ -35,14 +38,7 @@ export const post = defineType({
       title: "Catégorie",
       type: "string",
       options: {
-        list: [
-          { title: "Temps d'écran", value: "temps-ecran" },
-          { title: "Films & séries", value: "films-series" },
-          { title: "Jeux vidéo", value: "jeux-video" },
-          { title: "Parentalité numérique", value: "parentalite-numerique" },
-          { title: "Guides pratiques", value: "guides-pratiques" },
-          { title: "Actualités", value: "actualites" },
-        ],
+        list: BLOG_CATEGORIES.map(({ title, value }) => ({ title, value })),
       },
       validation: (rule) => rule.required(),
     }),
@@ -56,6 +52,8 @@ export const post = defineType({
     defineField({
       name: "mainImage",
       title: "Image principale",
+      description:
+        "Optionnelle. Sans image, le site affiche une carte Totem aux couleurs de la catégorie. N'utilisez qu'une image dont les droits sont établis.",
       type: "image",
       options: { hotspot: true },
       fields: [
@@ -64,6 +62,13 @@ export const post = defineType({
           title: "Texte alternatif",
           type: "string",
           validation: (rule) => rule.required(),
+        }),
+        defineField({
+          name: "credit",
+          title: "Crédit (optionnel)",
+          description: "Affiché sous l'image, ex. « Image générée par IA » ou « Photo : … ».",
+          type: "string",
+          validation: (rule) => rule.max(120),
         }),
       ],
     }),

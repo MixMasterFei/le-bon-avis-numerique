@@ -973,7 +973,7 @@ export default function BulkImportPage() {
               Limite de 200 films par lot (contrainte serveur). Le mode auto enchaîne plusieurs lots.
             </li>
             <li>
-              Les certifications (CSA, PEGI) sont automatiquement importées quand disponibles.
+              Les classifications officielles (CNC/Arcom, PEGI) sont automatiquement importées quand disponibles.
             </li>
             <li>
               <strong>Objectif recommandé</strong> : 1000-2000 films pour une bonne base de départ.

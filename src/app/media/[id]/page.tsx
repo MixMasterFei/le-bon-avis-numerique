@@ -47,6 +47,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
+import { AGE_GUIDE_POST_SLUG, isBlogPostLive } from "@/lib/published-blog"
 import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
   getMovieDetails,
@@ -819,6 +820,13 @@ export default async function MediaPage({ params }: MediaPageProps) {
       ? guideKeyForTitle(media.title)
       : null
 
+  // Film fiches: « Comment lire cet âge ? » from the age block to the blog
+  // article (draft 12) — only once that post is live, never a dead link.
+  const ageGuideHref =
+    media.type === "MOVIE" && (await isBlogPostLive(AGE_GUIDE_POST_SLUG))
+      ? `/blog/${AGE_GUIDE_POST_SLUG}`
+      : null
+
   // JSON-LD structured data
   const jsonLd = buildJsonLd(media, toMediaRouteId(media.type, media.id), hideContentAnalysis)
   const quickAnswer = buildQuickAnswer({ ...media, hideContentAnalysis })
@@ -853,6 +861,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
               breadcrumb={<DashboardBreadcrumb type={dash.type} title={dash.title} />}
               guideKey={guideKey}
+              ageGuideHref={ageGuideHref}
             />
           </FicheDataProvider>
         </>
@@ -966,6 +975,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   reviews={media.reviews}
                   isProvisional={media.isProvisional}
                   ageRationale={ageRationale}
+                  ageGuideHref={ageGuideHref}
                 />
 
                 {/* Platforms for games */}
@@ -1108,6 +1118,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     platforms={media.platforms}
                     genres={media.genres}
                     gameModes={"gameModes" in media ? (media as DatabaseMediaItem).gameModes : undefined}
+                    topics={media.topics}
                     consumerism={media.contentMetrics.consumerism}
                     officialRating={media.officialRating}
                     pegiDescriptors={"pegiDescriptors" in media ? (media as DatabaseMediaItem).pegiDescriptors : []}

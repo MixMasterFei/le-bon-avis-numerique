@@ -83,7 +83,8 @@ export const FAMILY_FACTS: FamilyFact[] = [
     sourceUrl: "https://www.fondation-enfance.org/",
   },
   {
-    stat: "TP, -10, -12, -16, -18",
+    // No « -10 » here: that category only exists in the TV signalétique (Arcom).
+    stat: "TP, -12, -16, -18",
     label: "les visas du CNC qui régissent l'accès aux salles de cinéma françaises selon l'âge.",
     source: "Centre national du cinéma",
     sourceUrl: "https://www.cnc.fr",

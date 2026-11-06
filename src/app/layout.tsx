@@ -97,7 +97,11 @@ export default async function RootLayout({
   const { auth } = await import("@/lib/auth")
   const { canUseTotem } = await import("@/lib/totem/access")
   const { coinFamilleEnabled } = await import("@/lib/coin-famille-flag")
-  const session = await auth()
+  const { getLiveBlogSlugs } = await import("@/lib/published-blog")
+  // « Conseils » (/blog) joins the header + footer once a post is live — no
+  // link to an empty blog. Cached 5 min, bounded, never throws (published-blog).
+  const [session, liveBlogSlugs] = await Promise.all([auth(), getLiveBlogSlugs()])
+  const showBlog = liveBlogSlugs.length > 0
   const totemEnabled = canUseTotem({
     isAuthenticated: !!session?.user,
     role: session?.user?.role ?? null,
@@ -179,9 +183,9 @@ export default async function RootLayout({
         <SessionProvider>
           <SettingsProvider>
             <ScrollRestoration />
-            <SiteHeader showCoinFamille={showCoinFamille} />
+            <SiteHeader showCoinFamille={showCoinFamille} showBlog={showBlog} />
             <main className="flex-1">{children}</main>
-            <SiteFooter />
+            <SiteFooter showBlog={showBlog} />
             <CookieConsent />
             {totemEnabled && <TotemDockClient />}
           </SettingsProvider>

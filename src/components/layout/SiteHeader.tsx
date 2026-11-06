@@ -39,6 +39,7 @@ import { NotificationBell } from "@/components/layout/NotificationBell"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { useRecentSearches } from "@/hooks/useRecentSearches"
 import { ageBadgeLabel } from "@/lib/age-label"
+import { cn } from "@/lib/utils"
 
 interface NavItem {
   name: string
@@ -48,6 +49,8 @@ interface NavItem {
   // instead of a clickable link. Used for verticals being built but
   // not yet ready to ship publicly.
   comingSoon?: boolean
+  /** Extra classes on the desktop link — responsive visibility (e.g. "hidden 2xl:flex"). */
+  className?: string
 }
 
 // Mangas intentionally omitted from the top nav during soft launch —
@@ -66,6 +69,11 @@ const navigation: NavItem[] = [
   { name: "Jeux Vidéo", href: "/jeux", icon: Gamepad2 },
 ]
 
+// The blog (/blog), labelled « Conseils ». A real link once at least one post
+// is live — `showBlog`, resolved by the root layout from Sanity (placement per
+// breakpoint: see SiteHeader); until then a « Bientôt » entry in Plus.
+const BLOG_NAV: NavItem = { name: "Conseils", href: "/blog", icon: Newspaper }
+
 const ageRanges = [
   { name: "2-4 ans", href: "/age/2-4", description: "Tout-petits" },
   { name: "5-7 ans", href: "/age/5-7", description: "Maternelle / CP" },
@@ -75,20 +83,31 @@ const ageRanges = [
   { name: "16+ ans", href: "/age/16-plus", description: "Grands ados" },
 ]
 
-const moreNavigation = [
+const moreNavigation: NavItem[] = [
   { name: "Collections", href: "/collections", icon: Bookmark },
   { name: "Notre histoire", href: "/a-propos", icon: Info },
   { name: "Notre objectif", href: "/objectif", icon: Target },
   { name: "Nos valeurs & notations", href: "/nos-valeurs", icon: Heart },
   { name: "Notre méthode", href: "/notre-methode", icon: Microscope },
   { name: "Nos guides", href: "/guides", icon: BookText },
-  // Blog marked WIP until the editorial team publishes the first
-  // posts — currently /blog renders an empty list which feels broken
-  // to a visitor. Drop comingSoon once 3+ posts are published.
-  { name: "Notre blog", href: "/blog", icon: Newspaper, comingSoon: true },
 ]
 
-export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boolean }) {
+export function SiteHeader({
+  showCoinFamille = true,
+  showBlog = false,
+}: {
+  showCoinFamille?: boolean
+  /** At least one blog post is live: « Conseils » becomes a real nav link. */
+  showBlog?: boolean
+}) {
+  // Desktop: measured on the logged-out header, one more primary item collides
+  // with the search / « Connexion » from 1024 to 1440 px — so « Conseils » is a
+  // primary link from 2xl (1536 px) and sits in « Plus » below that. Mobile:
+  // the chip row scrolls and the drawer has room, so it is primary there.
+  const desktopPrimary = showBlog ? [...navigation, { ...BLOG_NAV, className: "hidden 2xl:flex" }] : navigation
+  const desktopMore = [...moreNavigation, showBlog ? { ...BLOG_NAV, className: "2xl:hidden" } : { ...BLOG_NAV, comingSoon: true }]
+  const mobilePrimary = showBlog ? [...navigation, BLOG_NAV] : navigation
+  const mobileMore = showBlog ? moreNavigation : [...moreNavigation, { ...BLOG_NAV, comingSoon: true }]
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -355,7 +374,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
 
           <div className="hidden lg:flex flex-1 items-center min-w-0 pl-6">
             <nav className="flex items-center space-x-0.5 xl:space-x-1">
-              {navigation.map((item) =>
+              {desktopPrimary.map((item) =>
                 item.comingSoon ? (
                   <div
                     key={item.name}
@@ -376,7 +395,10 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap"
+                    className={cn(
+                      "flex items-center gap-1.5 px-2.5 xl:px-3 py-2 text-sm font-medium rounded-full transition-colors hover:opacity-70 whitespace-nowrap",
+                      item.className,
+                    )}
                     style={navLinkStyle}
                   >
                     <item.icon className="h-4 w-4 flex-shrink-0" />
@@ -417,7 +439,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                     className="absolute right-0 mt-2 w-60 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
                     style={dropdownPanelStyle}
                   >
-                    {moreNavigation.map((item) =>
+                    {desktopMore.map((item) =>
                       item.comingSoon ? (
                         <div
                           key={item.name}
@@ -439,7 +461,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
                         <Link
                           key={item.name}
                           href={item.href}
-                          className="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:opacity-70"
+                          className={cn("flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:opacity-70", item.className)}
                           style={{ color: p.ink }}
                           onClick={() => setIsMoreMenuOpen(false)}
                         >
@@ -945,7 +967,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
               Coin Famille
             </Link>
           )}
-          {navigation.map((item) => (
+          {mobilePrimary.map((item) => (
             <Link
               key={item.name}
               href={item.href}
@@ -981,7 +1003,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
           style={{ background: p.bg, borderColor: p.line }}
         >
           <nav className="container mx-auto px-4 py-4 space-y-1">
-            {navigation.map((item) =>
+            {mobilePrimary.map((item) =>
               item.comingSoon ? (
                 <div
                   key={item.name}
@@ -1020,7 +1042,7 @@ export function SiteHeader({ showCoinFamille = true }: { showCoinFamille?: boole
               >
                 Plus
               </p>
-              {moreNavigation.map((item) =>
+              {mobileMore.map((item) =>
                 item.comingSoon ? (
                   <div
                     key={item.name}
