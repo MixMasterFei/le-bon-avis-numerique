@@ -5,6 +5,7 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { genreLabelFr } from "@/components/home-v2/apercuTheme"
 import { Band, Wrap, Em } from "./parts"
 import { totemLevel, totemAxesFor, hasTotemData, TOTEM_COLORS, TOTEM_WORDS, type TotemMetrics } from "./totem"
@@ -92,6 +93,9 @@ function Decoder({ item }: { item: DecoderItem | null }) {
   const href = `/media/${toMediaRouteId(item.type, item.id)}`
   const genres = item.genres.slice(0, 2).map(genreLabelFr).join(", ")
   const metrics = item.contentMetrics ?? {}
+  // 0 = « Tous publics » → « TP ». A `> 0` test left a TP title with no badge,
+  // which reads as « pas encore noté » (see @/lib/age-label).
+  const ageLabel = ageBadgeLabel(item.expertAgeRec)
   return (
     <div className="rounded-[18px] p-[22px]" style={shell}>
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -108,9 +112,9 @@ function Decoder({ item }: { item: DecoderItem | null }) {
             </div>
           </div>
         </Link>
-        {typeof item.expertAgeRec === "number" && item.expertAgeRec > 0 && (
+        {ageLabel && (
           <span className="rounded-[8px] px-[9px] py-[3px] text-[15px] font-extrabold" style={{ background: "var(--gold)", color: "#23201C", fontFamily: "var(--font-bricolage)" }}>
-            {item.expertAgeRec}+
+            {ageLabel}
           </span>
         )}
       </div>

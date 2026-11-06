@@ -99,7 +99,7 @@ export function HomepageWeeklyForFamilies({ serifClass }: { serifClass: string }
             text={game ? "Une nouveauté console à regarder avant achat, installation ou demande d'enfant." : "Fallback vers les jeux récents si le rail nouveautés est temporairement vide."}
             href={game ? `/media/${toMediaRouteId(game.type, game.id)}` : "/jeux?sort=releaseDate"}
             imageUrl={game?.posterUrl ?? null}
-            badge={game?.expertAgeRec !== null && game?.expertAgeRec !== undefined ? `${game.expertAgeRec}+` : "Jeux"}
+            badge={ageBadgeLabel(game?.expertAgeRec) ?? "Jeux"}
             serifClass={serifClass}
           />
           <WeeklyCard

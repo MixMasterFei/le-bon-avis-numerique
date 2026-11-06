@@ -4,6 +4,7 @@ import { ArrowLeft, ThumbsDown, ThumbsUp } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -191,6 +192,9 @@ export default async function DisagreedItemsPage() {
 function DisagreedItemRow({ item }: { item: DisagreedItem }) {
   const p = APERCU_PALETTE
   const topSuggested = item.suggestedAges[0]
+  // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label). The
+  // suggested ages below can't be 0: the vote API stores a falsy one as null.
+  const currentAge = ageBadgeLabel(item.expertAgeRec)
 
   return (
     <Link
@@ -226,12 +230,12 @@ function DisagreedItemRow({ item }: { item: DisagreedItem }) {
           >
             {item.type}
           </span>
-          {item.expertAgeRec !== null && (
+          {currentAge && (
             <span
               className="text-[11px] px-1.5 py-0.5 rounded-full"
               style={{ background: p.bg2, color: p.ink }}
             >
-              actuelle : {item.expertAgeRec}+
+              actuelle : {currentAge}
             </span>
           )}
         </div>

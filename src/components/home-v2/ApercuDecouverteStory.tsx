@@ -12,6 +12,7 @@ import { ApercuPhotoCredit } from "./ApercuPhotoCredit"
 import { NewsStoryActions } from "./NewsStoryActions"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { NEWS_CATEGORY_LABEL, type NewsCategoryKey } from "./apercuNewsLabels"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 export interface StoryResearch {
   studyTitle: string
@@ -401,52 +402,56 @@ export function ApercuDecouverteStory({
                   : "À découvrir sur Totem Avisé"}
               </div>
               <div className="flex flex-col gap-3">
-                {story.relatedMediaList.map((m) => (
-                  <Link
-                    key={m.id}
-                    href={`/media/${m.id}`}
-                    className="flex gap-4 rounded-2xl p-4 transition-opacity hover:opacity-80"
-                    style={{ background: p.bg2, border: `1px solid ${p.line}` }}
-                  >
-                    {m.posterUrl && (
-                      <div
-                        className="relative shrink-0 rounded overflow-hidden"
-                        style={{ width: 64, height: 96, background: p.placeholder }}
-                      >
-                        <SafeImage
-                          src={m.posterUrl}
-                          alt={m.title}
-                          fill
-                          sizes="64px"
-                          className="object-cover"
-                        />
+                {story.relatedMediaList.map((m) => {
+                  // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+                  const ageLabel = ageBadgeLabel(m.expertAgeRec)
+                  return (
+                    <Link
+                      key={m.id}
+                      href={`/media/${m.id}`}
+                      className="flex gap-4 rounded-2xl p-4 transition-opacity hover:opacity-80"
+                      style={{ background: p.bg2, border: `1px solid ${p.line}` }}
+                    >
+                      {m.posterUrl && (
+                        <div
+                          className="relative shrink-0 rounded overflow-hidden"
+                          style={{ width: 64, height: 96, background: p.placeholder }}
+                        >
+                          <SafeImage
+                            src={m.posterUrl}
+                            alt={m.title}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                        <div
+                          className={`${serifClass} text-lg font-medium leading-snug`}
+                          style={{ color: p.ink }}
+                        >
+                          {m.title}
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-[11px]" style={{ color: p.ink2 }}>
+                          {m.releaseYear && <span>{m.releaseYear}</span>}
+                          {ageLabel && (
+                            <span
+                              className="inline-block px-1.5 py-0.5 rounded font-bold text-[10px]"
+                              style={{ background: p.accent, color: "#FFFFFF" }}
+                            >
+                              {ageLabel}
+                            </span>
+                          )}
+                          {m.genres.length > 0 && (
+                            <span>{m.genres.slice(0, 2).join(" · ")}</span>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                      <div
-                        className={`${serifClass} text-lg font-medium leading-snug`}
-                        style={{ color: p.ink }}
-                      >
-                        {m.title}
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap text-[11px]" style={{ color: p.ink2 }}>
-                        {m.releaseYear && <span>{m.releaseYear}</span>}
-                        {m.expertAgeRec !== null && (
-                          <span
-                            className="inline-block px-1.5 py-0.5 rounded font-bold text-[10px]"
-                            style={{ background: p.accent, color: "#FFFFFF" }}
-                          >
-                            {m.expertAgeRec}+
-                          </span>
-                        )}
-                        {m.genres.length > 0 && (
-                          <span>{m.genres.slice(0, 2).join(" · ")}</span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 shrink-0 self-center" style={{ color: p.ink2 }} />
-                  </Link>
-                ))}
+                      <ChevronRight className="w-5 h-5 shrink-0 self-center" style={{ color: p.ink2 }} />
+                    </Link>
+                  )
+                })}
               </div>
             </div>
           )}

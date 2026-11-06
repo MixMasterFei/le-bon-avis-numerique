@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface EnrichmentStats {
   stats: Record<string, number>
@@ -681,6 +682,9 @@ export function EnrichmentPanel({ initialType }: { initialType?: string }) {
             <div className="space-y-2">
               {stats.recentlyEnriched.map((item, i) => {
                 const Icon = typeIcons[item.type as keyof typeof typeIcons] || Film
+                // `{item.expertAgeRec && …}` printed a bare « 0 » for a « Tous
+                // publics » title; it is « TP » (see @/lib/age-label).
+                const ageLabel = ageBadgeLabel(item.expertAgeRec)
                 return (
                   <div
                     key={i}
@@ -691,9 +695,9 @@ export function EnrichmentPanel({ initialType }: { initialType?: string }) {
                       <span className="font-medium">{item.title}</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      {item.expertAgeRec && (
+                      {ageLabel && (
                         <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                          {item.expertAgeRec}+
+                          {ageLabel}
                         </span>
                       )}
                       <span>

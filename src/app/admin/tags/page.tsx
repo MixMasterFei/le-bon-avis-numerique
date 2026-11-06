@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import Link from "next/link"
 import Image from "next/image"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface TagInfo {
   tag: string
@@ -496,9 +497,11 @@ function TagsAdminContent() {
                   onCheckedChange={() => toggleItemSelection(item.id)}
                 />
               </div>
-              {item.expertAgeRec && (
+              {/* `{item.expertAgeRec && …}` printed a bare « 0 » for a « Tous
+                  publics » title; it is « TP » (see @/lib/age-label). */}
+              {ageBadgeLabel(item.expertAgeRec) && (
                 <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                  {item.expertAgeRec}+
+                  {ageBadgeLabel(item.expertAgeRec)}
                 </div>
               )}
             </div>
