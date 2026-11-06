@@ -138,7 +138,11 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Media route helper | `src/lib/media-route.ts` |
 | SQL migrations | `sql/*.sql` |
 | SEO robots | `src/app/robots.ts` |
-| SEO sitemap (dynamic) | `src/app/sitemap.ts` |
+| SEO sitemap (split, ISR) | `src/app/sitemap.ts` (`generateSitemaps` → `/sitemap/{pages,films,series,jeux}.xml`) + index `src/app/sitemap-index.xml/route.ts`, served at `/sitemap.xml` by a rewrite in `next.config.ts` — content in `src/lib/sitemap.ts`. **Never serve a prerendered route AT `/sitemap.xml`**: Next 16 exports it as a static file and drops `revalidate` (prod sat on the 10 Oct 2026 build for four weeks). |
+| Data freshness (`content_updated_at`) | `sql/add_data_freshness_columns.sql` — DB triggers move it only when `expertAgeRec`, `synopsisFr` or the content analysis changes. Sitemap `<lastmod>`, JSON-LD `dateModified`, « Fiche mise à jour le » and the md/MCP layer read it — **never `updatedAt`**, which any write moves. |
+| Quality score (pure) | `src/lib/quality-score.ts` — the nightly job writes only rows whose score/`isEnriched` changed, never `lastVerifiedAt` |
+| TMDB post-import refresh | `src/lib/tmdb-refresh.ts` — re-reads `releaseStatus` + vote counters (`tmdbCheckedAt` cursor) |
+| Similarity rotation | `src/lib/similarity-rotation.ts` — least recently computed first (`similarityComputedAt` cursor) |
 | AI discovery (llms.txt) | `src/app/llms.txt/route.ts` |
 | Markdown layer for AI agents | `src/app/md/` + `src/lib/markdown/` (media-md, media-md-data, selection-md — single-source builders shared with fiche JSON-LD and MCP) |
 | MCP server (public, read-only) | `src/app/api/mcp/[transport]/route.ts` + `src/lib/mcp/totem-tools.ts` — streamable HTTP at `/api/mcp/mcp`; anonymous tools describe media only, per-child fit stays behind accounts |
@@ -213,10 +217,10 @@ Automated maintenance, all jobs use `CRON_SECRET` Bearer auth.
 
 | When (UTC) | Tasks |
 |---|---|
-| Daily 3:07 AM | Import new movies/TV from TMDB (`weekly-import`) + new games from IGDB (`weekly-games-import`, popularity-floored) + CNC ratings import. TMDB dedup keeps actual new items per run to ~10-20. |
-| Daily 4:11 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute (all items) |
+| Daily 3:07 AM | Import new movies/TV from TMDB (`weekly-import`) + new games from IGDB (`weekly-games-import`, popularity-floored) + CNC ratings import. TMDB dedup keeps actual new items per run to ~10-20. **Release-status refresh** (`release-status`, own job): re-reads on TMDB the pre-release status (« Post Production »…) of titles whose date has passed (daily) or that have no date (weekly) — the enrichment gate excludes those statuses, and imports wrote them once, so released films stayed provisional forever. |
+| Daily 4:11 AM | Enrichment (10 movies + 10 TV + 10 games) + Deep enrichment (3 items) + Quality score recompute (scores all items, **writes only the rows that changed** — it used to rewrite all ~12k and bump `updated_at` nightly) |
 | 4×/day (:17 past 00/06/12/18) | News discovery (`news-discover`) — synthesized news briefs |
-| Saturday 5:19 AM | TMDB ratings backfill (loops until drained) + Streaming platform updates + Similarity scores (full mode, 50/batch ×20) + **Age-floor sweep** (`age-floor`) — deterministic, idempotent, re-floors any title whose age drifted below its content-justified minimum since last write (zero LLM cost). Manual dry-run review via the standalone `age-floor` dispatch task. |
+| Saturday 5:19 AM | TMDB ratings backfill (loops until drained; also re-reads films still at **0 votes 7–60 days after release**, plus a one-time catch-up of zero-vote rows never re-read) + Streaming platform updates + Similarity scores (full mode, 50/batch ×20, **rotation**: least recently computed first, never-computed first — no offset) + **Age-floor sweep** (`age-floor`) — deterministic, idempotent, re-floors any title whose age drifted below its content-justified minimum since last write (zero LLM cost). Manual dry-run review via the standalone `age-floor` dispatch task. |
 | Tue + Fri 5:27 AM | Weekly dossier (`weekly-dossier`) — long-read synthesis |
 | Monday 6:37 AM | Family content editorial agent (`family-content-agent`) — priorities email |
 | Monday 6:53 AM | **Games top names (`games-top-names`)** — makes sure every seed of the `/jeux/quel-age` pillar (`topGames.data.ts`) exists in the catalogue. Searches IGDB on each seed's **aliases** (never the display name), mobile platforms included, and picks strictly (`src/lib/game-seed-match.ts`: the alias itself or alias + subtitle/edition, most-rated first) — a seed with no real match is reported « introuvable », never replaced by IGDB's first fuzzy hit. Pinned seeds (`forcedId`) are only checked for existence. New fiches then wait for the daily enrichment before the pillar shows them. |
@@ -423,6 +427,7 @@ Located at `/admin`. Key sections:
 - **SimilaritySource enum**: Must be PascalCase `"SimilaritySource"` in PostgreSQL (Prisma expects this). Fix: `sql/fix_similarity_source_type.sql`
 - **media_items uniqueness is `(tmdb_id, type)`**, never bare `tmdb_id` — TMDB film/série id namespaces overlap. The legacy single-column unique index was dropped 2026-08-28 (`sql/drop_legacy_tmdb_id_unique.sql`) after it silently blocked colliding TV imports for weeks (P2002 swallowed by a bare catch). Never re-add a bare-tmdb_id unique; numeric-id fallback lookups must stay `findFirst` + prefer a type filter.
 - **Similarity timeout**: Full mode limited to batch=5 items to stay under Vercel 60s serverless limit
+- **Bookkeeping writes stay out of `updated_at`**: cursors (`streaming_checked_at`, `tmdb_checked_at`, `similarity_computed_at`) are stamped with raw `$executeRaw` UPDATEs (see `src/lib/streaming-sync.ts`), because Prisma's `@updatedAt` is applied client-side. Public freshness dates come from the trigger-kept `content_updated_at`.
 - **Dashboard safeQuery**: `MediaCorrection`, `ReviewReport`, `ContentRequest`, `AdminActivity` tables may not exist — all wrapped in `safeQuery` fallbacks
 
 ---

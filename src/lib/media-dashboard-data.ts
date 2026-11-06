@@ -31,9 +31,11 @@ export interface DashboardMedia {
   type: MediaType
   releaseDate: string | null
   releaseStatus: string | null
-  /** Last data update (ISO) — shown as « Fiche mise à jour le … » and
-   *  emitted as JSON-LD dateModified (trust + AI-citability signal). */
-  updatedAt: string | null
+  /** Last change to the fiche's public content — age, synopsis or content
+   *  analysis (ISO). Shown as « Fiche mise à jour le … » and emitted as
+   *  JSON-LD dateModified (trust + AI-citability signal). Deliberately NOT
+   *  `updatedAt`, which any bookkeeping write moves. */
+  contentUpdatedAt: string | null
   posterUrl: string | null
   synopsisFr: string | null
   officialRating: string | null
@@ -102,7 +104,7 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
       type: row.type as MediaType,
       releaseDate: row.releaseDate?.toISOString().split("T")[0] ?? null,
       releaseStatus: row.releaseStatus,
-      updatedAt: row.updatedAt?.toISOString() ?? null,
+      contentUpdatedAt: row.contentUpdatedAt?.toISOString() ?? null,
       posterUrl: row.posterUrl,
       synopsisFr: row.synopsisFr,
       officialRating: row.officialRating,

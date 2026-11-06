@@ -15,7 +15,10 @@ const metrics = { violence: 4, sexNudity: 1, language: 2, substanceUse: 0, consu
 const movie = {
   id: uuid, title: "Matrix", originalTitle: "The Matrix", type: "MOVIE", tmdbId: 603, igdbId: null,
   posterUrl: "https://example.com/poster.jpg", dataQualityScore: 80, expertAgeRec: 14, officialRating: "16",
-  isEnriched: true, releaseStatus: "Released", releaseDate: new Date("1999-03-31"), updatedAt: new Date("2026-09-04"),
+  isEnriched: true, releaseStatus: "Released", releaseDate: new Date("1999-03-31"),
+  // updatedAt is churned by bookkeeping writes; the freshness surfaces must
+  // report contentUpdatedAt (last change to age / synopsis / analysis).
+  updatedAt: new Date("2026-11-06"), contentUpdatedAt: new Date("2026-09-04"),
   topics: ["science-fiction"], genres: ["Science-Fiction"], contentMetrics: {
     ...metrics, enrichmentSource: "AI", enrichmentConfidence: 0.8, pass1At: new Date("2026-07-01"), pass2At: null,
     sensitiveWarnings: ["Scènes effrayantes ou angoissantes"], sensitiveWarningsAt: new Date("2026-07-01"),
@@ -44,7 +47,14 @@ describe("typed media identifiers", () => {
   it("preserves raw UUID lookup and assessment dates separately", async () => {
     const result = await loadMediaMdInput(uuid)
     expect(result?.assessedAt).toEqual(new Date("2026-07-01"))
-    expect(result?.updatedAt).toEqual(new Date("2026-09-04"))
+    expect(result?.contentUpdatedAt).toEqual(new Date("2026-09-04"))
+  })
+  it("dates the fiche by its last CONTENT change, never by the churned updatedAt", async () => {
+    const markdown = renderMediaMarkdown((await loadMediaMdInput(uuid))!)
+    expect(markdown).toContain("Fiche mise à jour: 2026-09-04")
+    expect(markdown).not.toContain("2026-11-06")
+    const verdict = await ageVerdict({ id: `movie:${uuid}` })
+    expect(verdict.data.result.kind === "verdict" && verdict.data.result.media?.updatedAt).toBe("2026-09-04T00:00:00.000Z")
   })
 })
 

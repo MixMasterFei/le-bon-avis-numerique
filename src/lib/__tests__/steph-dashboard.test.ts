@@ -153,6 +153,7 @@ describe("glossaire des tuyaux", () => {
       "import-games",
       "import-preschool",
       "release-alerts",
+      "release-status",
       "enrich",
       "enrich-deep",
       "quality",

@@ -266,10 +266,10 @@ export function MediaDashboard({
             {/* Freshness signal — trust for parents, citability for answer
                 engines (mirrors the JSON-LD dateModified). Server-rendered,
                 so the fr-FR formatting can't cause hydration mismatches. */}
-            {media.updatedAt && (
+            {media.contentUpdatedAt && (
               <p className="mt-2 text-[11px]" style={{ color: C.faint }}>
                 Fiche mise à jour le{" "}
-                {new Date(media.updatedAt).toLocaleDateString("fr-FR", {
+                {new Date(media.contentUpdatedAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
