@@ -26,6 +26,7 @@ import { ApercuDecouverteStory, type ApercuStoryDetail, type RelatedMediaCard } 
 import { ApercuHomepageHeroV2 } from "../ApercuHomepageHeroV2"
 import { HomepageWeeklyForFamilies } from "../HomepageWeeklyForFamilies"
 import { ApercuFilm } from "../ApercuFilm"
+import { CinemaTendancesCard } from "../CinemaTendancesCard"
 
 // expertAgeRec 0 is a REAL rating (« Tous publics »), not a gap: badges read
 // « TP », never « 0+ » (@/lib/age-label). Only null may stay badge-less.
@@ -179,5 +180,31 @@ describe("ApercuFilm — the hero's age card", () => {
 
     render(<ApercuFilm media={film(null)} serifClass="font-serif" />)
     expect(screen.queryByText("Recommandation")).toBeNull()
+  })
+})
+
+describe("CinemaTendancesCard — « Au cinéma cette semaine »", () => {
+  const tendance = (id: string, title: string, expertAgeRec: number | null) => ({
+    id,
+    tmdbId: 1,
+    title,
+    posterUrl: `/posters/${id}.jpg`,
+    expertAgeRec,
+    inDatabase: true,
+  })
+
+  it("badges 0 « TP » and writes the poster alt « — pour tous publics », never « — dès 0 ans »", () => {
+    render(
+      <CinemaTendancesCard
+        serifClass="font-serif"
+        tendances={[tendance("a", "Film tous publics", 0), tendance("b", "Film dix ans", 10), tendance("c", "Film sans âge", null)]}
+      />,
+    )
+
+    expect(screen.getByAltText("Film tous publics — pour tous publics")).toBeInTheDocument()
+    expect(screen.getByAltText("Film dix ans — dès 10 ans")).toBeInTheDocument()
+    expect(screen.getByAltText("Film sans âge")).toBeInTheDocument()
+    expect(screen.queryByAltText(/dès 0 ans/)).toBeNull()
+    expect(within(screen.getByRole("link", { name: /Film tous publics/ })).getByText("TP")).toBeInTheDocument()
   })
 })

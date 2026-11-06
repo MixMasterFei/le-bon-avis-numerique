@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { ageBadgeLabel, ageMetaLabel, ageSentenceLabel } from "../age-label"
+import { ageBadgeLabel, ageInlineLabel, ageMetaLabel, ageSentenceLabel } from "../age-label"
 
 describe("age labels", () => {
   it("renders 0 as tous publics, not as nothing", () => {
@@ -8,12 +8,14 @@ describe("age labels", () => {
     expect(ageBadgeLabel(0)).toBe("TP")
     expect(ageMetaLabel(0)).toBe("Tous publics")
     expect(ageSentenceLabel(0)).toBe("Tous publics")
+    expect(ageInlineLabel(0)).toBe("pour tous publics")
   })
 
   it("renders a positive age", () => {
     expect(ageBadgeLabel(10)).toBe("10+")
     expect(ageMetaLabel(10)).toBe("conseillé 10+")
     expect(ageSentenceLabel(10)).toBe("Dès 10 ans")
+    expect(ageInlineLabel(10)).toBe("dès 10 ans")
   })
 
   it("returns null when the age is genuinely unknown", () => {
@@ -21,6 +23,7 @@ describe("age labels", () => {
       expect(ageBadgeLabel(v as number | null)).toBeNull()
       expect(ageMetaLabel(v as number | null)).toBeNull()
       expect(ageSentenceLabel(v as number | null)).toBeNull()
+      expect(ageInlineLabel(v as number | null)).toBeNull()
     }
   })
 })

@@ -8,6 +8,7 @@ import {
   FamilyFitSignIn,
 } from "@/components/media/FamilyFitConversionFlow"
 import { FAMILY_FIT_LABELS, familyFitBandFromLevel, type FamilyFitBand } from "@/lib/family-fit-display"
+import { ageInlineLabel } from "@/lib/age-label"
 
 /**
  * Compact "Pour ma famille" panel for the V3 dashboard: one chip per member
@@ -128,6 +129,9 @@ export function DashboardFamilyPanel({
         b.m.age < recommendedAge,
     )
     .map((b) => b.m.name)
+  // 0 = « Tous publics »: « recommandé pour tous publics », never
+  // « recommandé dès 0 ans » (see @/lib/age-label).
+  const recommendedInline = ageInlineLabel(recommendedAge)
 
   return (
     <Shell>
@@ -181,7 +185,7 @@ export function DashboardFamilyPanel({
         <b>
           {adapted} de vos {total} membre{total > 1 ? "s" : ""}
         </b>
-        {recommendedAge != null ? ` — recommandé dès ${recommendedAge} ans` : ""}
+        {recommendedInline ? ` — recommandé ${recommendedInline}` : ""}
         {tooYoung.length > 0 ? `, encore un peu tôt pour ${tooYoung.join(", ")}` : ""}.
       </p>
 

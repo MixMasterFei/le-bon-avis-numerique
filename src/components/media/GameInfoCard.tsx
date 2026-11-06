@@ -14,6 +14,7 @@ import {
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { pegiAgeFromOfficialRating, sortPegiDescriptors } from "@/lib/pegi-descriptors"
+import { ageInlineLabel } from "@/lib/age-label"
 import { describePlayModes } from "@/lib/game-play-modes"
 
 interface GameInfoCardProps {
@@ -138,7 +139,8 @@ function GamePegiPanel({
         {totemDiffers && (
           <p className="text-center text-xs" style={{ color: p.ink2 }}>
             Totem recommande{" "}
-            <strong style={{ color: p.ink }}>dès {expertAgeRec} ans</strong>
+            {/* 0 = « Tous publics »: « pour tous publics », never « dès 0 ans » (see @/lib/age-label). */}
+            <strong style={{ color: p.ink }}>{ageInlineLabel(expertAgeRec)}</strong>
           </p>
         )}
       </div>

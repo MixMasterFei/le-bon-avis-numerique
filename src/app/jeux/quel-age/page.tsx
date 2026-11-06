@@ -4,6 +4,7 @@ import { ArrowLeft, Gamepad2 } from "lucide-react"
 import { toMediaRouteId } from "@/lib/media-route"
 import { getOfficialRatingDisplay } from "@/lib/utils"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { fetchTopGameRows } from "./gamesAgeData"
@@ -61,7 +62,8 @@ export default async function GamesAgePillarPage() {
       qa = { ...qa, answer: r.customFaqAnswer }
     }
     const pegi = getOfficialRatingDisplay(r.officialRating, "GAME")
-    return { ...r, qa, pegiLabel: pegi?.label ?? null }
+    // 0 = « Tous publics », never « Dès 0 ans » (see @/lib/age-label).
+    return { ...r, qa, pegiLabel: pegi?.label ?? null, ageLabel: ageSentenceLabel(r.expertAgeRec) }
   })
 
   const breadcrumbLd = {
@@ -238,12 +240,12 @@ export default async function GamesAgePillarPage() {
                         >
                           {r.seed.name}
                         </h3>
-                        {r.expertAgeRec != null && (
+                        {r.ageLabel && (
                           <span
                             className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
                             style={{ background: p.accent, color: p.bg }}
                           >
-                            Dès {r.expertAgeRec} ans
+                            {r.ageLabel}
                           </span>
                         )}
                         {r.pegiLabel && (
