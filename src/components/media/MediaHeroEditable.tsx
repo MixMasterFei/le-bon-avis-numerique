@@ -39,6 +39,8 @@ interface MediaHeroEditableProps {
   isProvisional?: boolean
   /** Server-computed "Pourquoi cet âge ?" rationale, shown on hover of the badge. */
   ageRationale?: AgeRationale
+  /** « Comment lire cet âge ? » article (film fiches, once it is published). */
+  ageGuideHref?: string | null
 }
 
 // Human label for an official CSA / PEGI rating (mirrors OfficialRatingBadge).
@@ -82,6 +84,7 @@ export function MediaHeroEditable({
   reviews = [],
   isProvisional = false,
   ageRationale,
+  ageGuideHref = null,
 }: MediaHeroEditableProps) {
   const router = useRouter()
   // Admin status is resolved client-side so the fiche page can stay
@@ -312,6 +315,7 @@ export function MediaHeroEditable({
           mediaId={mediaId}
           isProvisional={isProvisional}
           ageRationale={ageRationale}
+          ageGuideHref={ageGuideHref}
         />
       )}
 
@@ -414,12 +418,14 @@ function AgeRecommendationsRow({
   mediaId,
   isProvisional = false,
   ageRationale,
+  ageGuideHref = null,
 }: {
   expertAge: number | null
   reviews: Review[]
   mediaId: string
   isProvisional?: boolean
   ageRationale?: AgeRationale
+  ageGuideHref?: string | null
 }) {
   const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
 
@@ -505,6 +511,15 @@ function AgeRecommendationsRow({
               <MethodBadge size="xs" />
               {isProvisional && <ProvisionalBadge size="sm" withTooltip />}
             </div>
+            {ageGuideHref && (
+              <Link
+                href={ageGuideHref}
+                className="mt-1.5 inline-block text-[12.5px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-75"
+                style={{ color: "var(--color-warm-accent)" }}
+              >
+                Comment lire cet âge ?
+              </Link>
+            )}
           </div>
           <div className="ml-auto self-start">
             <AgeVoteButton mediaId={mediaId} />

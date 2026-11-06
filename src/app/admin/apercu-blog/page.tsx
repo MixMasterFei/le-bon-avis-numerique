@@ -5,18 +5,11 @@ import { Calendar, FileText, Newspaper } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { Badge } from "@/components/ui/badge"
 import { sanityPreviewClient } from "@/sanity/preview-client"
-import { urlFor } from "@/sanity/image"
+import { formatBlogDate } from "@/lib/published-blog"
+import { blogHeroImage } from "@/lib/blog-card"
+import { blogCategoryLabel } from "@/sanity/categories"
 
 export const dynamic = "force-dynamic"
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "temps-ecran": "Temps d'écran",
-  "films-series": "Films & séries",
-  "jeux-video": "Jeux vidéo",
-  "parentalite-numerique": "Parentalité numérique",
-  "guides-pratiques": "Guides pratiques",
-  "actualites": "Actualités",
-}
 
 // All posts (drafts + published). No publishedAt<=now() gate so future-dated
 // drafts also show. We dedupe by slug in JS, preferring the draft version.
@@ -42,7 +35,7 @@ interface PreviewPost {
 
 function formatDate(iso?: string) {
   if (!iso) return "Sans date"
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+  return formatBlogDate(iso)
 }
 
 export default async function AdminBlogPreviewPage() {
@@ -110,7 +103,8 @@ export default async function AdminBlogPreviewPage() {
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => {
               const isDraft = all.some((a) => a.slug === post.slug && a._id.startsWith("drafts."))
-              const imageUrl = urlFor(post.mainImage)?.width(600).height(340).auto("format").url()
+              // No photo → the placeholder card (category only: a draft's title is never public).
+              const hero = blogHeroImage(post, { width: 600, height: 340 })
               return (
                 <Link key={post.slug} href={`/admin/apercu-blog/${post.slug}`} className="group">
                   <article
@@ -118,21 +112,14 @@ export default async function AdminBlogPreviewPage() {
                     style={{ background: "var(--color-card)", borderColor: "var(--color-line)" }}
                   >
                     <div className="relative aspect-[16/9]" style={{ background: "var(--color-bg2)" }}>
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt={post.mainImage?.alt || post.title}
-                          fill
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--color-ink2)" }}>
-                          <svg className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                          </svg>
-                        </div>
-                      )}
+                      <Image
+                        src={hero.url}
+                        alt={hero.isFallbackCard ? "" : post.mainImage?.alt || post.title}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        unoptimized={hero.isFallbackCard}
+                      />
                       {isDraft && (
                         <span
                           className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold"
@@ -141,12 +128,13 @@ export default async function AdminBlogPreviewPage() {
                           Brouillon
                         </span>
                       )}
-                      {!imageUrl && (
+                      {hero.isFallbackCard && (
                         <span
                           className="absolute bottom-3 right-3 rounded-full px-2.5 py-1 text-xs font-medium"
                           style={{ background: "var(--color-card)", color: "var(--color-ink2)" }}
+                          title="Pas encore d'illustration : la carte Totem s'affiche en attendant"
                         >
-                          Sans image
+                          Carte provisoire
                         </span>
                       )}
                     </div>
@@ -157,7 +145,7 @@ export default async function AdminBlogPreviewPage() {
                           className="border-0 text-xs"
                           style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
                         >
-                          {CATEGORY_LABELS[post.category] || post.category}
+                          {blogCategoryLabel(post.category)}
                         </Badge>
                         <span className="flex items-center gap-1 text-xs" style={{ color: "var(--color-ink2)" }}>
                           <Calendar className="h-3 w-3" />

@@ -70,6 +70,7 @@ export function MediaDashboard({
   quickAnswer,
   breadcrumb,
   guideKey,
+  ageGuideHref,
 }: {
   media: DashboardMedia
   dbId: string
@@ -80,6 +81,8 @@ export function MediaDashboard({
   breadcrumb?: React.ReactNode
   /** Parents' Guide slug when one exists for this game. Resolved server-side. */
   guideKey?: string | null
+  /** « Comment lire cet âge ? » article (film fiches, once it is published). Resolved server-side. */
+  ageGuideHref?: string | null
 }) {
   // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), never « Non
   // évalué » (that reading is the Oak-Street bug, see @/lib/age-label).
@@ -218,6 +221,15 @@ export function MediaDashboard({
                 <div className="text-[10.5px]" style={{ color: C.faint }}>
                   {verdictNote}
                 </div>
+                {ageGuideHref && (
+                  <Link
+                    href={ageGuideHref}
+                    className="mt-1 inline-block text-[11.5px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-75"
+                    style={{ color: C.accent }}
+                  >
+                    Comment lire cet âge ?
+                  </Link>
+                )}
                 {/* Community trust signal — parents agree / disagree with the
                     recommended age (was only on the classic hero; restored on
                     the V3 public fiche). */}

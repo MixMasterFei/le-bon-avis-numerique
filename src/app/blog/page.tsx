@@ -1,47 +1,40 @@
 import type { Metadata } from "next"
-import { Newspaper } from "lucide-react"
-import { sanityClient } from "@/sanity/client"
+import Link from "next/link"
+import { CloudOff, Newspaper } from "lucide-react"
 import { BlogCard } from "@/components/blog/BlogCard"
+import { BLOG_INDEX_MIN_POSTS, loadBlogListing } from "@/lib/published-blog"
 
-export const revalidate = 300 // 5-min ISR
+export const revalidate = 300 // 5-min ISR (inert while the root layout reads the session)
 
-const PUBLISHED_POSTS_QUERY = `*[_type == "post" && defined(slug.current) && defined(publishedAt) && publishedAt <= now()] | order(publishedAt desc) {
-  "slug": slug.current,
-  title,
-  excerpt,
-  category,
-  publishedAt,
-  mainImage
-}`
+const TITLE = "Blog — Conseils et actualités pour les familles"
+const DESCRIPTION =
+  "Articles sur le temps d'écran, les films, les jeux vidéo et la parentalité numérique. Conseils pratiques pour accompagner vos enfants dans le monde des médias."
 
-export const metadata: Metadata = {
-  title: "Blog — Conseils et actualités pour les familles",
-  description: "Articles sur le temps d'écran, les films, les jeux vidéo et la parentalité numérique. Conseils pratiques pour accompagner vos enfants dans le monde des médias.",
-  alternates: { canonical: "/blog" },
-  robots: { index: false, follow: true },
-  openGraph: {
-    title: "Blog | Totem Avisé",
-    description: "Articles et conseils pour les familles sur les médias et le numérique.",
-    images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
-  },
-}
-
-interface Post {
-  slug: string
-  title: string
-  excerpt: string
-  category: string
-  publishedAt: string
-  mainImage?: { asset?: { _ref?: string }; alt?: string }
+/**
+ * Indexable only once the hub has real content (≥ BLOG_INDEX_MIN_POSTS visible
+ * posts) — an empty or one-post listing is a thin page. When Sanity can't be
+ * read the count is unknown, so the page stays noindex (fail closed); the
+ * outage itself is reported by loadBlogListing.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const listing = await loadBlogListing()
+  const indexable = listing.ok && listing.posts.length >= BLOG_INDEX_MIN_POSTS
+  return {
+    title: TITLE,
+    description: DESCRIPTION,
+    alternates: { canonical: "/blog" },
+    robots: { index: indexable, follow: true },
+    openGraph: {
+      title: "Blog | Totem Avisé",
+      description: "Articles et conseils pour les familles sur les médias et le numérique.",
+      images: [{ url: "/icon.png", width: 620, height: 606, alt: "Totem Avisé" }],
+    },
+  }
 }
 
 export default async function BlogPage() {
-  let posts: Post[] = []
-  try {
-    posts = await sanityClient.fetch<Post[]>(PUBLISHED_POSTS_QUERY)
-  } catch (error) {
-    console.error("Failed to fetch blog posts:", error)
-  }
+  const listing = await loadBlogListing()
+  const posts = listing.posts
 
   const baseUrl = "https://totemavise.com"
   const breadcrumbLd = {
@@ -91,7 +84,20 @@ export default async function BlogPage() {
         </p>
       </div>
 
-      {posts.length > 0 ? (
+      {!listing.ok ? (
+        // Sanity unreachable: say so — « aucun article » would be false.
+        <div className="text-center py-16" style={{ color: "var(--color-ink2)" }} role="status">
+          <CloudOff className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p className="text-lg font-medium">Les articles sont momentanément indisponibles</p>
+          <p className="text-sm">
+            Nous n&apos;arrivons pas à les charger pour l&apos;instant. Réessayez dans quelques minutes, ou consultez{" "}
+            <Link href="/guides" className="underline" style={{ color: "var(--color-accent)" }}>
+              nos guides
+            </Link>
+            .
+          </p>
+        </div>
+      ) : posts.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {posts.map((post) => (
             <BlogCard key={post.slug} post={post} />
