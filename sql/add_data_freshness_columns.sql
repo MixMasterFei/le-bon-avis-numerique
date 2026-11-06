@@ -16,6 +16,10 @@
 --
 -- Idempotent — safe to re-run. The one-time backfill below only runs when the
 -- column is created, so a re-run never overwrites trigger-maintained values.
+--
+-- APPLIED to production 2026-11-06 (Supabase migration
+-- add_data_freshness_columns, version 20261106203251). Backfill: 12 265 rows,
+-- 0 NULL; trigger behaviour re-checked on production in a rolled-back block.
 
 -- ── 1. content_updated_at ───────────────────────────────────────────────────
 -- Feeds the sitemap <lastmod>, the JSON-LD dateModified, the visible « Fiche
