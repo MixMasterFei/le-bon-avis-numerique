@@ -398,6 +398,7 @@ export function MediaDashboard({
             <GameInfoCard
               platforms={media.platforms}
               genres={media.genres}
+              topics={media.topics}
               consumerism={media.metrics?.consumerism}
               officialRating={media.officialRating}
               pegiDescriptors={media.pegiDescriptors}

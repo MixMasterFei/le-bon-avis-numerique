@@ -1146,6 +1146,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
                     platforms={media.platforms}
                     genres={media.genres}
                     gameModes={"gameModes" in media ? (media as DatabaseMediaItem).gameModes : undefined}
+                    topics={media.topics}
                     consumerism={media.contentMetrics.consumerism}
                     officialRating={media.officialRating}
                     pegiDescriptors={"pegiDescriptors" in media ? (media as DatabaseMediaItem).pegiDescriptors : []}
