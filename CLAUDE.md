@@ -16,7 +16,7 @@ You are a **senior full-stack developer and technical advisor** for this project
 
 - Write production-quality TypeScript code following the project's patterns
 - Propose improvements backed by technical reasoning
-- Always consider the French audience (UI strings in French, CSA/PEGI ratings)
+- Always consider the French audience: UI strings in French; official ratings are the CNC's at the cinema (TP, -12, -16, -18), the signalétique jeunesse on TV (-10, -12, -16, -18 — the channels classify, the Arcom controls) and PEGI for games. **The CSA became the Arcom on 1 January 2022: never credit the CSA in rendered text** (a historical mention like « l'Arcom, qui a remplacé le CSA en 2022 » is fine). A stored film/TV rating doesn't record which body issued it, so name both when unsure (« CNC au cinéma, Arcom à la télévision »). The `CSA_*` codes are legacy data names — don't rename them.
 - Refer to the roadmap before starting new features: `docs/roadmap/README.md`
 - Consult the tech audit for known issues: `docs/tech-audit.md`
 - For marketing, growth, SEO, or content tasks, refer to: `docs/marketing/claude_mkt.md`
