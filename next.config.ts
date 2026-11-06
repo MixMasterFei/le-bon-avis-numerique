@@ -2,13 +2,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  // Enable production source maps temporarily — needed to debug the
-  // React #418 hydration crash on the Aperçu news feeds (shared
-  // ApercuDecouverteV3 component, now used by v4/v5) (the minified
-  // stack trace just shows React internals like rK/io/sc with no
-  // component name). Revert this once the culprit is fixed; adds
-  // ~50KB to the bundle but no runtime perf cost.
-  productionBrowserSourceMaps: true,
+  // No `productionBrowserSourceMaps` here, on purpose: setting it (even to
+  // true) makes withSentryConfig skip its own handling, and the .map files
+  // ship publicly with the bundle. Left unset, Sentry generates the browser
+  // maps, uploads them when SENTRY_AUTH_TOKEN is present, then deletes them
+  // from .next/static before deploy.
   experimental: {
     scrollRestoration: true,
   },
