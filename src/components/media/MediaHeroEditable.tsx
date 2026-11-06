@@ -14,6 +14,7 @@ import { MethodBadge } from "@/components/ui/MethodBadge"
 import { ProvisionalBadge } from "@/components/media/ProvisionalBadge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { mediaTypeLabels } from "@/lib/utils"
+import { ageBadgeLabel, ageSentenceLabel } from "@/lib/age-label"
 import type { AgeRationale } from "@/lib/age-rationale"
 
 interface Review {
@@ -427,7 +428,12 @@ function AgeRecommendationsRow({
   ageRationale?: AgeRationale
   ageGuideHref?: string | null
 }) {
-  const isRated = expertAge !== null && expertAge !== undefined && expertAge > 0
+  // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), not a gap: it gets
+  // the strip like any other age, badged « TP » (see @/lib/age-label). Testing
+  // `> 0` here hid the whole verdict on TP fiches. Only an unknown age has none.
+  const ageBadge = ageBadgeLabel(expertAge)
+  const ageSentence = ageSentenceLabel(expertAge)
+  const isRated = ageBadge !== null
 
   const parentReviews = reviews.filter((r) => r.role === "PARENT")
   const kidReviews = reviews.filter((r) => r.role === "KID")
@@ -475,7 +481,7 @@ function AgeRecommendationsRow({
                       boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
                     }}
                   >
-                    {expertAge}+
+                    {ageBadge}
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" align="start" className="p-3">
@@ -494,7 +500,7 @@ function AgeRecommendationsRow({
                 boxShadow: "0 6px 14px -4px rgba(239,140,42,.6)",
               }}
             >
-              {expertAge}+
+              {ageBadge}
             </div>
           )}
           <div className="min-w-0">
@@ -505,7 +511,7 @@ function AgeRecommendationsRow({
               className="font-serif font-bold leading-none my-0.5"
               style={{ fontSize: 22, color: WARM_INK }}
             >
-              Dès {expertAge} ans
+              {ageSentence}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <MethodBadge size="xs" />
