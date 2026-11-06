@@ -5,12 +5,12 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 export const metadata = {
   title: "Nos guides — Accompagner vos enfants face aux écrans",
   description:
-    "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
+    "Guides pratiques pour accompagner vos enfants face aux écrans : repères de temps d'écran par âge, classifications CNC, Arcom et PEGI, jeux vidéo.",
   alternates: { canonical: "/guides" },
   openGraph: {
     title: "Nos guides — Accompagner vos enfants face aux écrans",
     description:
-      "Guides pratiques pour accompagner vos enfants dans leur consommation médiatique : temps d'écran, classifications, jeux vidéo et plus.",
+      "Guides pratiques pour accompagner vos enfants face aux écrans : repères de temps d'écran par âge, classifications CNC, Arcom et PEGI, jeux vidéo.",
     type: "website",
     locale: "fr_FR",
     siteName: "Totem Avisé",
@@ -18,31 +18,34 @@ export const metadata = {
 }
 
 const guides = [
+  // Repères alignés sur les articles du blog 01 et 11 : ceux de l'Éducation
+  // nationale et de l'Assurance Maladie, sans quota de minutes par jour — ni
+  // l'une ni l'autre n'en fixent, et un barème unique contredirait les articles.
   {
     title: "Temps d'écran par âge : repères et conseils",
     description:
-      "Combien de temps devant un écran selon l'âge ? Les recommandations de l'OMS et du CSA, et nos conseils pratiques pour chaque tranche d'âge.",
+      "Quels repères selon l'âge ? Ceux de l'Éducation nationale et de l'Assurance Maladie, et nos conseils pour les appliquer en famille. Pas de barème unique en minutes : des moments à protéger et une fin prévue.",
     icon: Monitor,
     available: true,
     slug: "temps-ecran",
     content: [
-      { age: "Moins de 3 ans", rec: "Pas d'écran (ou exceptionnel, accompagné)", detail: "L'OMS et les pédiatres recommandent d'éviter les écrans avant 3 ans. Les interactions réelles sont essentielles au développement." },
-      { age: "3-6 ans", rec: "Maximum 30 min/jour, accompagné", detail: "Privilégiez des contenus courts, adaptés, et regardez-les ensemble. Pas d'écran pendant les repas ni avant le coucher." },
-      { age: "6-10 ans", rec: "Maximum 1h/jour", detail: "Diversifiez les activités. Encouragez la lecture, le jeu libre et les activités physiques. Restez présent pour discuter de ce qu'ils voient." },
-      { age: "10-14 ans", rec: "1 à 2h/jour", detail: "C'est l'âge où les réseaux sociaux deviennent un sujet. Établissez des règles claires et maintenez le dialogue." },
-      { age: "14+ ans", rec: "Cadre négocié en famille", detail: "Accompagnez vers l'autonomie. L'important est de maintenir des temps sans écran (repas, nuit) et un dialogue ouvert." },
+      { age: "Moins de 3 ans", rec: "Pas d'écran", detail: "Les repères de l'Éducation nationale recommandent l'absence d'écran avant 3 ans, y compris un programme présenté comme éducatif. Les interactions réelles sont essentielles au développement." },
+      { age: "3 à 6 ans", rec: "Déconseillé, exceptionnel, avec un adulte", detail: "Si un écran a sa place, c'est de façon exceptionnelle : un contenu choisi à l'avance (un épisode précis plutôt qu'un fil de vidéos), regardé ensemble, avec une fin prévue. Pas d'écran pendant les repas ni au moment du coucher." },
+      { age: "À partir de 6 ans", rec: "Des moments sans écran, une fin décidée avant", detail: "Pas d'écran de loisir le matin avant l'école, pendant les repas, dans la chambre ni au coucher ; l'Assurance Maladie conseille d'arrêter idéalement une à deux heures avant de dormir. Décidez du contenu et de la fin avant de commencer, et évitez d'en faire une récompense systématique." },
+      { age: "Préados et ados", rec: "Une autonomie progressive", detail: "Gérer un épisode ne veut pas dire choisir seul ses vidéos, ses contacts ou ses achats. Préparez ensemble les comptes, les réglages et le premier téléphone, gardez les repas et le sommeil sans écran, et revoyez les règles au fil de l'âge." },
     ],
   },
   {
     title: "Comprendre les classifications d'âge",
     description:
-      "PEGI, CSA, CNC... Que signifient ces classifications ? Leurs limites et comment notre système les complète.",
+      "CNC, Arcom, PEGI : qui classe quoi ? Ce que ces repères disent, leurs limites et comment notre système les complète.",
     icon: Shield,
     available: true,
     slug: "classifications",
     content: [
-      { age: "CSA (Films & TV)", rec: "Tous publics, -10, -12, -16, -18", detail: "Le Conseil Supérieur de l'Audiovisuel attribue ces classifications basées sur le contenu violent, sexuel ou choquant. Mais elles ne détaillent pas les raisons." },
-      { age: "PEGI (Jeux vidéo)", rec: "PEGI 3, 7, 12, 16, 18", detail: "Le système européen de classification des jeux. Les pictogrammes (violence, peur, langage...) complètent l'âge mais restent généraux." },
+      { age: "Cinéma (CNC)", rec: "Tous publics, -12, -16, -18", detail: "La classification des films en salle relève du CNC : sa commission de classification examine chaque film, et un avertissement peut compléter sa décision. Une interdiction aux moins de 12, 16 ou 18 ans s'applique à l'entrée de la salle, même accompagné. « Tous publics » n'est pas une recommandation pour chaque âge." },
+      { age: "Télévision (Arcom)", rec: "Tous publics, -10, -12, -16, -18", detail: "À la télévision, la signalétique jeunesse est encadrée par l'Arcom, qui a remplacé le CSA en 2022 : les chaînes classent leurs programmes selon ses règles, et l'Arcom en contrôle l'application. Un même film peut porter une catégorie différente à la télévision et au cinéma. Sur les plateformes, vérifiez quel système de classement est affiché." },
+      { age: "PEGI (Jeux vidéo)", rec: "PEGI 3, 7, 12, 16, 18", detail: "Le système européen de classification des jeux. Les pictogrammes (violence, peur, langage...) complètent l'âge mais restent généraux, et PEGI ne dit rien de la difficulté, de la lecture nécessaire ou du rythme du jeu." },
       { age: "Notre approche", rec: "8 dimensions détaillées", detail: "Nous allons plus loin : violence, sexe/nudité, langage, consommérisme, substances, mais aussi messages positifs, modèles et valeur éducative. Chaque famille peut évaluer selon ses propres valeurs." },
     ],
   },
@@ -54,7 +57,7 @@ const guides = [
     available: true,
     slug: "jeux-video",
     content: [
-      { age: "Vérifiez au-delà du PEGI", rec: "PEGI ne couvre pas tout", detail: "Le PEGI ne prend pas en compte les achats intégrés, le chat en ligne non modéré, ou les mécaniques addictives (loot boxes, battle pass)." },
+      { age: "Vérifiez au-delà du PEGI", rec: "PEGI ne couvre pas tout", detail: "Un pictogramme PEGI signale les achats intégrés, mais l'âge indiqué ne tient compte ni des dépenses, ni des échanges en ligne avec d'autres joueurs, ni des mécaniques qui poussent à rejouer (coffres aléatoires, passe de combat)." },
       { age: "Achats intégrés", rec: "Attention aux microtransactions", detail: "De nombreux jeux 'gratuits' reposent sur des achats. Désactivez les achats in-app et discutez de la valeur de l'argent avec vos enfants." },
       { age: "Jeu en ligne", rec: "Supervisez les interactions", detail: "Les jeux multijoueurs exposent les enfants à des inconnus. Vérifiez les paramètres de confidentialité et les options de chat." },
       { age: "Temps de jeu", rec: "Fixez des limites claires", detail: "Utilisez les contrôles parentaux intégrés aux consoles et PC. Définissez des plages horaires de jeu en famille." },
