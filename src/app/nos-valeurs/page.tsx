@@ -406,7 +406,7 @@ export default function NosValeursPage() {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-2">
-              Quelle est la différence avec PEGI ou les classifications CSA ?
+              Quelle est la différence avec les classifications officielles (CNC, Arcom, PEGI) ?
             </h3>
             <p className="text-gray-600 text-sm">
               Les classifications officielles donnent un âge minimum, point final.

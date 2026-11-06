@@ -14,11 +14,15 @@ import {
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { OfficialRatingBadge } from "@/components/media/AgeBadge"
 import { pegiAgeFromOfficialRating, sortPegiDescriptors } from "@/lib/pegi-descriptors"
+import { describePlayModes } from "@/lib/game-play-modes"
 
 interface GameInfoCardProps {
   platforms?: string[]
   genres?: string[]
+  /** IGDB game modes (English) — off-catalogue fiches. */
   gameModes?: string[]
+  /** Stored topics: catalogue games keep their modes here, in French (Multijoueur, Coopératif…). */
+  topics?: string[]
   consumerism?: number
   officialRating?: string | null
   pegiDescriptors?: string[]
@@ -26,20 +30,6 @@ interface GameInfoCardProps {
   hasOnlineFeatures?: boolean
   hasInGamePurchases?: boolean
   className?: string
-}
-
-function detectOnlineFeatures(genres?: string[], gameModes?: string[]): boolean {
-  const onlineGenres = ["mmo", "multiplayer", "battle royale", "moba", "online"]
-  const onlineModes = ["multiplayer", "online", "co-op", "pvp", "battle royale"]
-
-  const genreMatch = genres?.some((g) =>
-    onlineGenres.some((og) => g.toLowerCase().includes(og)),
-  )
-  const modeMatch = gameModes?.some((m) =>
-    onlineModes.some((om) => m.toLowerCase().includes(om)),
-  )
-
-  return genreMatch || modeMatch || false
 }
 
 function getGameType(genres?: string[]): string {
@@ -189,26 +179,21 @@ export function GameInfoCard({
   platforms,
   genres,
   gameModes,
+  topics,
   consumerism,
   officialRating,
   pegiDescriptors,
   expertAgeRec,
-  hasOnlineFeatures: providedOnline,
+  hasOnlineFeatures,
   hasInGamePurchases: providedPurchases,
   className,
 }: GameInfoCardProps) {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
 
-  const hasOnline = providedOnline ?? detectOnlineFeatures(genres, gameModes)
   const hasPurchases = providedPurchases ?? (consumerism !== undefined && consumerism >= 3)
   const gameType = getGameType(genres)
-
-  const isMultiplayer =
-    gameModes?.some(
-      (m) =>
-        m.toLowerCase().includes("multiplayer") || m.toLowerCase().includes("co-op"),
-    ) || hasOnline
+  const playModes = describePlayModes({ gameModes, topics, genres, pegiDescriptors, hasOnlineFeatures })
 
   const platformStr =
     platforms && platforms.length > 0 ? platforms.slice(0, 4).join(", ") : null
@@ -250,16 +235,10 @@ export function GameInfoCard({
           )}
 
           <StatusItem
-            icon={isMultiplayer ? Users : Globe}
-            label={isMultiplayer ? "Multijoueur" : "Solo uniquement"}
-            status={hasOnline ? "warning" : isMultiplayer ? "yes" : "no"}
-            description={
-              hasOnline
-                ? "Interactions en ligne avec d'autres joueurs"
-                : isMultiplayer
-                  ? "Peut se jouer à plusieurs localement"
-                  : "Se joue seul"
-            }
+            icon={playModes.isMultiplayer ? Users : Globe}
+            label={playModes.label}
+            status={playModes.status}
+            description={playModes.description}
           />
 
           <StatusItem

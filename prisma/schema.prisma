@@ -215,6 +215,17 @@ model MediaItem {
   isEnriched       Boolean    @default(false) @map("is_enriched") // Has expert content
   lastVerifiedAt   DateTime?  @map("last_verified_at")
   streamingCheckedAt DateTime? @map("streaming_checked_at") @db.Timestamptz(6)
+  // When the PUBLIC content of the fiche last changed: expertAgeRec, synopsisFr
+  // or its ContentMetrics analysis. The sitemap <lastmod>, the JSON-LD
+  // dateModified and « Fiche mise à jour le … » read THIS — never updatedAt,
+  // which @updatedAt moves on any write (bookkeeping included). Maintained by
+  // DB triggers (sql/add_data_freshness_columns.sql): don't set it from code.
+  contentUpdatedAt     DateTime  @default(now()) @map("content_updated_at") @db.Timestamptz(6)
+  // Last re-read of the TMDB lifecycle (releaseStatus) and vote counters after
+  // import — the release-status and zero-vote refreshes (src/lib/tmdb-refresh.ts).
+  tmdbCheckedAt        DateTime? @map("tmdb_checked_at") @db.Timestamptz(6)
+  // Rotation cursor of the weekly similarity recompute: least recent first.
+  similarityComputedAt DateTime? @map("similarity_computed_at") @db.Timestamptz(6)
   enrichedBy       String?    @map("enriched_by") // User ID who enriched
 
   createdAt DateTime @default(now()) @map("created_at")

@@ -133,11 +133,11 @@ Les autres liens dirigent vers le catalogue, les collections, la méthode, les g
 ## Points concrets avant mise en ligne
 
 - Importer les textes en **brouillons**, puis relire l'aperçu dans Studio. Les copies Markdown et Word sont synchronisées dans cette branche ; le CMS n'a pas été modifié.
-- Utiliser un seul importeur, après comparaison avec les identifiants existants dans Studio : `publish-blog.ts` produit `drafts.post-…`, tandis que `import-blog-drafts.mjs` produit `drafts.blog-…`. Les lancer tous les deux peut créer deux brouillons pour le même slug.
-- Vérifier une date de première publication réelle dans Studio. Les scripts existants proposent des dates calculées : l'un échelonne dans le passé, l'autre part du 11 mai 2026. Ne pas les prendre pour l'historique réel du blog.
-- Choisir une image dont les droits d'utilisation sont établis et un texte alternatif descriptif. Un poster trouvé en ligne n'est pas automatiquement réutilisable.
+- Un seul importeur : `scripts/publish-blog.ts` (`drafts.post-…` en brouillon, `post-…` une fois publié). L'ancien `import-blog-drafts.mjs` (`drafts.blog-…`) a été supprimé ; s'il avait déjà été lancé, le script signale ses doublons et `--delete-legacy` les retire.
+- La date de publication est explicite : `publishedAt` dans le frontmatter (12 et 09 : 17 novembre 2026) ou `--date`. Le script refuse une date passée sauf `--allow-past`, et `--publish` exige `--only` : on ne publie jamais les quinze d'un coup. Publier 12 et 09 : `npx tsx scripts/publish-blog.ts --publish --only 12,09` (vérifier d'abord avec `--dry-run`).
+- Sans image, une carte Totem provisoire s'affiche (titre + catégorie). Les images définitives sont générées à partir de `blog/images/demande-images-gpt.md` (aucun visage, aucun texte, aucun logo) puis branchées selon `blog/images/README.md` : texte alternatif descriptif, mention « Image générée par IA ». Un poster trouvé en ligne n'est pas automatiquement réutilisable.
 - Recontrôler la loi et les règles scolaires pour 03 et 06, les conditions d'âge et réglages IA pour 02 et 15, les menus des plateformes pour 07 et 13.
-- **Avant de publier 08, corriger la fiche Overcooked 2** : elle affiche « Solo uniquement / Se joue seul » malgré ses étiquettes multijoueur et coopération. Dans `src/components/media/GameInfoCard.tsx`, la détection repose sur des termes anglais et ne reconnaît pas tous les libellés français. L'article s'appuie sur Team17 ; cette incohérence de la fiche reste à traiter séparément du texte.
+- Fiche Overcooked 2 : la carte « Infos pour les parents » lit désormais les modes stockés en français (Multijoueur, Coopératif, Écran partagé) et affiche « Multijoueur » au lieu de « Se joue seul » (`src/lib/game-play-modes.ts`). Vérifier la fiche en ligne après déploiement, avant de publier 08.
 - Vérifier les images, les liens, les accents et l'affichage sur téléphone dans l'aperçu de publication.
 
 ## Observer les résultats

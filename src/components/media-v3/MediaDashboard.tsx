@@ -70,6 +70,7 @@ export function MediaDashboard({
   quickAnswer,
   breadcrumb,
   guideKey,
+  ageGuideHref,
 }: {
   media: DashboardMedia
   dbId: string
@@ -80,6 +81,8 @@ export function MediaDashboard({
   breadcrumb?: React.ReactNode
   /** Parents' Guide slug when one exists for this game. Resolved server-side. */
   guideKey?: string | null
+  /** « Comment lire cet âge ? » article (film fiches, once it is published). Resolved server-side. */
+  ageGuideHref?: string | null
 }) {
   // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), never « Non
   // évalué » (that reading is the Oak-Street bug, see @/lib/age-label).
@@ -218,6 +221,15 @@ export function MediaDashboard({
                 <div className="text-[10.5px]" style={{ color: C.faint }}>
                   {verdictNote}
                 </div>
+                {ageGuideHref && (
+                  <Link
+                    href={ageGuideHref}
+                    className="mt-1 inline-block text-[11.5px] font-semibold underline underline-offset-2 transition-opacity hover:opacity-75"
+                    style={{ color: C.accent }}
+                  >
+                    Comment lire cet âge ?
+                  </Link>
+                )}
                 {/* Community trust signal — parents agree / disagree with the
                     recommended age (was only on the classic hero; restored on
                     the V3 public fiche). */}
@@ -266,10 +278,10 @@ export function MediaDashboard({
             {/* Freshness signal — trust for parents, citability for answer
                 engines (mirrors the JSON-LD dateModified). Server-rendered,
                 so the fr-FR formatting can't cause hydration mismatches. */}
-            {media.updatedAt && (
+            {media.contentUpdatedAt && (
               <p className="mt-2 text-[11px]" style={{ color: C.faint }}>
                 Fiche mise à jour le{" "}
-                {new Date(media.updatedAt).toLocaleDateString("fr-FR", {
+                {new Date(media.contentUpdatedAt).toLocaleDateString("fr-FR", {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
@@ -398,6 +410,7 @@ export function MediaDashboard({
             <GameInfoCard
               platforms={media.platforms}
               genres={media.genres}
+              topics={media.topics}
               consumerism={media.metrics?.consumerism}
               officialRating={media.officialRating}
               pegiDescriptors={media.pegiDescriptors}

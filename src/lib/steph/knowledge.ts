@@ -270,7 +270,7 @@ export const DECK: DeckChapter[] = [
         items: [
           {
             title: "1. On lit ce qui est public",
-            desc: "Synopsis, classifications officielles (CNC/CSA pour les films et séries, PEGI pour les jeux), genres, thèmes, données publiques. Aucune œuvre n'est visionnée : ce n'est pas une rédaction de critiques.",
+            desc: "Synopsis, classifications officielles (CNC pour les films en salle, signalétique de l'Arcom à la télévision, PEGI pour les jeux), genres, thèmes, données publiques. Aucune œuvre n'est visionnée : ce n'est pas une rédaction de critiques.",
           },
           {
             title: "2. On applique la même grille à tout le monde",
@@ -686,7 +686,7 @@ export const DECK: DeckChapter[] = [
           { term: "Maillage interne", desc: "Les liens entre nos propres pages. Plus une fiche est reliée aux autres, mieux Google la comprend et la classe." },
           { term: "Striking distance", desc: "Les recherches où l'on est entre la 8ᵉ et la 20ᵉ place — juste hors de la première page. Le levier de trafic le moins cher, traité chaque jeudi." },
           { term: "AI Overviews", desc: "Les réponses automatiques que Google affiche au-dessus des résultats. Elles répondent à la place du site et font chuter les clics." },
-          { term: "PEGI / CNC-CSA", desc: "Les classifications officielles : PEGI pour les jeux vidéo, CNC/CSA pour les films et séries en France. Nous les affichons à côté de notre propre conseil, jamais à sa place." },
+          { term: "PEGI / CNC / Arcom", desc: "Les classifications officielles : PEGI pour les jeux vidéo ; en France, le CNC pour les films en salle et la signalétique jeunesse encadrée par l'Arcom (l'ancien CSA) à la télévision. Nous les affichons à côté de notre propre conseil, jamais à sa place." },
           { term: "Coin Famille", desc: "L'espace personnalisé d'un foyer inscrit : recommandations par enfant, soirée cinéma, listes." },
           { term: "Vercel / Supabase / Sanity", desc: "Les trois prestataires techniques : Vercel héberge le site, Supabase héberge la base de données, Sanity sert à écrire les articles de blog." },
         ],
