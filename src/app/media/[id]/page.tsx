@@ -41,6 +41,7 @@ import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
+import { buildAggregateRating } from "@/lib/aggregate-rating"
 import { mediaTypeLabels, formatDateFr, officialRatingLabel } from "@/lib/utils"
 import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
@@ -123,6 +124,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
         orderBy: { createdAt: "desc" as const },
         take: 10,
       },
+      // The true review total — `reviews` above is capped for display.
+      _count: { select: { reviews: true } },
     }
 
     let dbMedia = null
@@ -223,6 +226,19 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
       return null
     }
 
+    // First-party star ratings over ALL of the fiche's reviews, not just the
+    // 10 loaded for display — they feed the JSON-LD AggregateRating, which
+    // must neither under-count nor sample. A failed average only drops the
+    // rating markup; it never takes the fiche down with it.
+    const reviewCount = dbMedia._count.reviews
+    const reviewAvgRating =
+      reviewCount > 0
+        ? await prisma.review
+            .aggregate({ where: { mediaId: dbMedia.id }, _avg: { rating: true } })
+            .then((agg) => agg._avg.rating)
+            .catch(() => null)
+        : null
+
     return {
       id: dbMedia.id,
       title: dbMedia.title,
@@ -240,8 +256,8 @@ const fetchFromDatabase = cache(async function fetchFromDatabase(
       // Imported with an estimated age but not yet AI-enriched → "âge provisoire".
       isProvisional: !dbMedia.isEnriched && dbMedia.expertAgeRec != null,
       communityAgeRec: dbMedia.communityAgeRec,
-      tmdbRating: dbMedia.tmdbRating,
-      tmdbVoteCount: dbMedia.tmdbVoteCount,
+      reviewCount,
+      reviewAvgRating,
       duration: dbMedia.duration || undefined,
       director: dbMedia.director || undefined,
       genres: dbMedia.genres || [],
@@ -446,8 +462,8 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
 
 // Build JSON-LD structured data for a media item.
 // `hideContentAnalysis` = pre-release/provisional: we suppress the
-// AggregateRating (a TMDB score on an unwatched title reads like a full
-// "avis") and keep the FAQ answer an honest estimate.
+// AggregateRating (a rating on an unwatched title reads like a full "avis")
+// and keep the FAQ answer an honest estimate.
 function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnalysis: boolean) {
   const baseUrl = "https://totemavise.com"
   const pageUrl = `${baseUrl}/media/${routeId}`
@@ -464,32 +480,14 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
     ],
   }
 
-  // AggregateRating: prefer internal user reviews when present, fall back to TMDB
-  const internalRatings = media.reviews?.map((r) => r.rating).filter((n) => typeof n === "number") || []
-  const internalCount = internalRatings.length
-  const internalAvg = internalCount > 0
-    ? Math.round((internalRatings.reduce((a, b) => a + b, 0) / internalCount) * 10) / 10
-    : 0
-
-  const aggregateRating = hideContentAnalysis
-    ? undefined
-    : internalCount > 0
-    ? {
-        "@type": "AggregateRating",
-        ratingValue: internalAvg,
-        bestRating: 5,
-        worstRating: 1,
-        ratingCount: internalCount,
-      }
-    : media.tmdbRating && media.tmdbVoteCount && media.tmdbVoteCount > 0
-      ? {
-          "@type": "AggregateRating",
-          ratingValue: media.tmdbRating,
-          bestRating: 10,
-          worstRating: 0,
-          ratingCount: media.tmdbVoteCount,
-        }
-      : undefined
+  // AggregateRating: our families' own star ratings only, and only once there
+  // are enough of them — never a third-party (TMDB/IGDB) score, which Google's
+  // review-snippet guidelines forbid. Omitted otherwise. See @/lib/aggregate-rating.
+  const aggregateRating = buildAggregateRating({
+    reviewCount: media.reviewCount ?? 0,
+    averageRating: media.reviewAvgRating ?? null,
+    hideContentAnalysis,
+  })
 
   // Totem's recommended age as a schema.org age range ("10-" = 10 and up).
   // Omitted for hidden/provisional analyses — we don't assert unconfirmed ages
@@ -879,6 +877,10 @@ export default async function MediaPage({ params }: MediaPageProps) {
         ? "Vous l'avez lu ?"
         : "Vous l'avez vu ?"
 
+  // Every review on the fiche, not just the 10 loaded for display — the same
+  // total the JSON-LD AggregateRating declares.
+  const familyReviewCount = media.reviewCount ?? media.reviews.length
+
   return (
     <div className="min-h-screen" style={{ background: "var(--color-warm-bg)" }}>
       {/* JSON-LD Structured Data */}
@@ -1159,7 +1161,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
               className="font-serif text-xl sm:text-2xl font-medium mb-4"
               style={{ color: "var(--color-warm-ink)", letterSpacing: "-0.01em" }}
             >
-              Avis des familles{media.reviews.length > 0 ? ` (${media.reviews.length})` : ""}
+              Avis des familles{familyReviewCount > 0 ? ` (${familyReviewCount})` : ""}
             </h2>
             <ReviewsSection
               reviews={media.reviews}
