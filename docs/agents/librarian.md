@@ -14,7 +14,8 @@ enriched, and the scheduled jobs that keep it all running.
   production only with Xavier's OK**
 
 ## Rules
-- New cron: register it in `cron.yml`, `EXPECTED_TASKS` (with `activatedAt`),
+- New cron: register it in `cron.yml`, `CRON_JOB_ROUTES` (`src/lib/cron-credential.ts`),
+  `EXPECTED_TASKS` (with `activatedAt`),
   `KNOWN_CRON_TASKS`, `CRON_STALE_HOURS` if weekly+, and `PIPELINE_TASKS`.
 - Manual SQL migrations only (`prisma db execute`), never `prisma db push`.
 - `media_items` is unique on `(tmdb_id, type)` — never on bare `tmdb_id`.
