@@ -1,6 +1,7 @@
 import { fetchTopGameRows } from "@/app/jeux/quel-age/gamesAgeData"
 import { toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
+import { ageInlineLabel } from "@/lib/age-label"
 import { getOfficialRatingDisplay } from "@/lib/utils"
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
@@ -54,7 +55,9 @@ export async function GET() {
       : null
 
     lines.push(`## ${r.seed.name}`, "")
-    if (r.expertAgeRec != null) lines.push(`Âge conseillé Totem: dès ${r.expertAgeRec} ans`)
+    // 0 = « pour tous publics », never « dès 0 ans » (see @/lib/age-label).
+    const ageLine = ageInlineLabel(r.expertAgeRec)
+    if (ageLine) lines.push(`Âge conseillé Totem: ${ageLine}`)
     if (pegi?.label) lines.push(`Classification officielle: ${pegi.label}`)
     lines.push(`Fiche complète: ${canonical}`)
     lines.push("")

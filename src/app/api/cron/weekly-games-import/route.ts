@@ -13,6 +13,7 @@ import {
 import { normalizeGameGenres } from "@/lib/igdb-genres"
 import { isAdultIgdbGame } from "@/lib/adult-content-filter"
 import { deriveGameStyleTags } from "@/lib/game-style-tags"
+import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
 export const maxDuration = 60
 
@@ -43,16 +44,11 @@ const MAX_IMPORT_PER_RUN = 25 // Vercel 60s ceiling — each Prisma create
                               // is fast but the IGDB fetches dominate;
                               // 25 fits with comfortable headroom.
 
+// The automation credential only (constant-time, fail-closed, scoped to the
+// scheduled job routes); development bypass behind an explicit opt-in — see
+// weekly-dossier for the rationale (tunnel-exposed `next dev`).
 function isAuthorized(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization")
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
-  ) {
-    return true
-  }
-  return false
+  return isCronJobRequest(req) || allowsInsecureLocalCron()
 }
 
 interface ImportStats {

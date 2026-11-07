@@ -64,6 +64,7 @@ model User {
   releaseAlerts         ReleaseAlert[]
   nlSearchQueries       NlSearchQuery[]
   decouverteBoards      DecouverteBoard[]
+  recoClicks            RecoClick[]
 
   @@map("users")
 }
@@ -222,7 +223,8 @@ model MediaItem {
   // DB triggers (sql/add_data_freshness_columns.sql): don't set it from code.
   contentUpdatedAt     DateTime  @default(now()) @map("content_updated_at") @db.Timestamptz(6)
   // Last re-read of the TMDB lifecycle (releaseStatus) and vote counters after
-  // import — the release-status and zero-vote refreshes (src/lib/tmdb-refresh.ts).
+  // import — the release-status and recent-release vote refreshes
+  // (src/lib/tmdb-refresh.ts).
   tmdbCheckedAt        DateTime? @map("tmdb_checked_at") @db.Timestamptz(6)
   // Rotation cursor of the weekly similarity recompute: least recent first.
   similarityComputedAt DateTime? @map("similarity_computed_at") @db.Timestamptz(6)
@@ -325,7 +327,11 @@ model Review {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
-  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Cascade, not SetNull: a deleted account's comment must not stay online
+  // signed « Anonyme ». The app deletes reviews itself first, to recompute
+  // community ages (src/lib/account-deletion.ts); this is the database's
+  // backstop (sql/account_deletion_cascades.sql).
+  user         User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   media        MediaItem     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   familyMember FamilyMember? @relation(fields: [familyMemberId], references: [id], onDelete: SetNull)
 
@@ -938,8 +944,12 @@ model RecoClick {
   createdAt DateTime @default(now()) @map("created_at")
 
   media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  // A click is the person's browsing trace: it leaves with the account. The
+  // column had no foreign key until sql/account_deletion_cascades.sql.
+  user  User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([mediaId])
+  @@index([userId])
   @@index([source])
   @@index([createdAt])
   @@map("reco_clicks")
@@ -1380,9 +1390,12 @@ model NlSearchQuery {
   latencyMs    Int?     @map("latency_ms")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  // SetNull, not Cascade: the cost history is aggregate telemetry that should
-  // survive an account deletion (detached), unlike Totem conversations.
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Cascade: the query text and its interpretation can name a child. Account
+  // deletion keeps only anonymous cost counters — it strips the "llm" rows of
+  // user id, text, hash and intent BEFORE deleting the account
+  // (src/lib/account-deletion.ts); any other deletion path loses them, which
+  // is the safe default (sql/account_deletion_cascades.sql).
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([queryHash, createdAt])
   @@index([status, createdAt])

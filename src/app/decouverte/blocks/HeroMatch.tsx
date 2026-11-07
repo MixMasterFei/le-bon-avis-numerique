@@ -61,10 +61,9 @@ export function HeroMatch({
   const age = card.expertAgeRec
   // 0 = « Tous publics », a real verdict, never « Dès 0 ans » (see @/lib/age-label).
   const ageSentence = ageSentenceLabel(age)
-  // The pill reuses the quick answer's phrase (« à partir de 10 ans »), except
-  // for 0: buildQuickAnswer still words a TP title « avec un âge à confirmer »,
-  // which reads as « pas encore noté ». No pill without an age, as before.
-  const agePill = age === 0 ? ageSentence : ageSentence && (quickAnswer?.age ?? ageSentence)
+  // The pill reuses the quick answer's phrase (« à partir de 10 ans », « pour
+  // tous publics », flagged « (à confirmer) » when estimated). No pill without an age.
+  const agePill = ageSentence && (quickAnswer?.age ?? ageSentence)
 
   const kickerColor = dark ? "var(--gold)" : "var(--pine-2)"
   const inkMain = dark ? "#FFFDF8" : "var(--ink)"

@@ -22,7 +22,8 @@ export const maxDuration = 300
 //   3. Merge-only: never removes existing labels (parents may have voted them);
 //      the community "Pas dans ce film" vote remains the corrective layer.
 //
-// Auth: /api/admin/* middleware (admin session or Bearer CRON_SECRET).
+// Auth: /api/admin/* middleware — ADMIN session. Not a scheduled job, so the
+// cron credential does not open it (CRON_JOB_ROUTES in cron-credential.ts).
 // Usage: POST /api/admin/tw-backfill?limit=15&dryRun=1[&cursor=<id>]
 
 const MIN_CONFIDENCE = 0.75

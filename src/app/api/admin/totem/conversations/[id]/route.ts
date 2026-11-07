@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { fetchTotemConversationDetail } from "@/lib/totem-admin-kpis"
+import { requireAdminSession } from "@/lib/admin-session"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -9,6 +10,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    // A full transcript: family snapshot + every message. ADMIN session only,
+    // checked here as well as in the middleware (never the cron credential).
+    const denied = await requireAdminSession()
+    if (denied) return denied
+
     const { id } = await params
     const detail = await fetchTotemConversationDetail(id)
     if (!detail) {

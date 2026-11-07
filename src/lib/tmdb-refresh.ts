@@ -15,6 +15,8 @@ import { UNRELEASED_TMDB_STATUSES, isUnreleasedStatus } from "@/lib/release-stat
  *  - `tmdbRating` / `tmdbVoteCount` — 0/0 before release, so every vote-gated
  *    list (featured ≥ 200 votes, « meilleurs films 2026 » ≥ 20) silently
  *    excluded the year's new films: 156 of the 274 released in six months.
+ *    And a count read once stays frozen: imports skip titles already in the
+ *    catalogue, so nothing else ever re-reads it (see recentReleaseVotesWhere).
  *  - `releaseDate` when TMDB had none at import (filled in, never overwritten).
  *
  * One TMDB details call answers all of them, so both refreshes share
@@ -32,11 +34,33 @@ export const RELEASE_STATUS_RECHECK_HOURS = 20
 /** Announced titles with no date at all are re-read weekly. */
 export const UNDATED_RELEASE_STATUS_RECHECK_DAYS = 7
 
-/** Zero-vote refresh window, in days after release. */
-export const ZERO_VOTE_MIN_DAYS = 7
-export const ZERO_VOTE_MAX_DAYS = 60
-/** Inside the window, re-read at most this often (the backfill runs weekly). */
-export const ZERO_VOTE_RECHECK_DAYS = 6
+/**
+ * Vote follow-up of recent releases (Saturday ratings backfill) — see
+ * recentReleaseVotesWhere. The numbers:
+ *
+ *  - 500 votes: the highest gate any film/series list applies (expert picks,
+ *    the homepage hero's quality pools). Past it, every gate is open — the
+ *    lower ones are 20 (« meilleurs films 2026 »), 50 (quality sort), 80 (new
+ *    releases rails), 100 (family recommendations, editorial suggestions),
+ *    200 (featured), 300 (family series) — and the count stops mattering.
+ *  - weekly for 90 days: the theatrical run and, abroad, the first digital
+ *    release — when TMDB votes move fastest.
+ *  - every four weeks until 365 days: the « année » lists, the new-release
+ *    rails and the editorial freshness rule (family-content-agent.ts: one-year
+ *    window, ≥ 100 votes) all care about a title for its first year.
+ *  - then retired: an older title's count barely moves, and re-reading the
+ *    whole back catalogue every month would cost thousands of calls a week.
+ *
+ * Load: ~550 films a year (274 released in six months, measured 2026-11-06)
+ * plus series ⇒ a few hundred TMDB reads per Saturday in steady state, well
+ * inside the backfill loop's 35 × 50 budget.
+ */
+export const RECENT_VOTES_CEILING = 500
+export const RECENT_VOTES_WEEKLY_DAYS = 90
+export const RECENT_VOTES_MAX_DAYS = 365
+/** Re-read cadences, one day short of a week / four weeks (the backfill runs weekly). */
+export const RECENT_VOTES_WEEKLY_RECHECK_DAYS = 6
+export const RECENT_VOTES_MONTHLY_RECHECK_DAYS = 27
 
 const daysBefore = (now: Date, days: number) => new Date(now.getTime() - days * DAY_MS)
 
@@ -73,24 +97,44 @@ export const STALE_RELEASE_STATUS_ORDER: Prisma.MediaItemOrderByWithRelationInpu
 ]
 
 /**
- * Released titles whose stored vote count is 0 and that are due for a re-read:
- *  - inside the 7–60-day window after release: weekly, while votes accumulate;
- *  - outside it: once, if the row was never re-read since import. That one-time
- *    catch-up drains the backlog this refresh did not exist for — 63 of the 73
- *    zero-vote films released 60–183 days ago were imported BEFORE release —
- *    and then never matches the same row again.
+ * Released titles whose vote counters are due for a re-read, WHATEVER their
+ * count. It used to take only titles still at exactly 0 votes: a film that
+ * went from 0 to 5 left the queue for good and never reached the 20, 100 or
+ * 200 votes the lists ask for — nothing else re-reads a title once imported.
+ *
+ *  - Ageing: weekly during the first 90 days after release, then every four
+ *    weeks until day 365 (numbers justified above RECENT_VOTES_CEILING).
+ *  - Retirement: 500 votes or more (every gate open), or older than 365 days.
+ *  - Never-rated rows (tmdbRating null) are left to the backfill's other
+ *    queue, so a row is never read twice in one batch.
+ *  - Plus a one-time catch-up, outside the window: a zero-vote title never
+ *    re-read since import — 63 of the 73 zero-vote films released 60–183 days
+ *    ago were imported BEFORE release — is read once, then never again.
+ *
+ * A row TMDB failed to answer is not stamped (refreshFromTmdb), so it stays
+ * due and the next run retries it.
  */
-export function zeroVoteRefreshWhere(now: Date = new Date()): Prisma.MediaItemWhereInput {
+export function recentReleaseVotesWhere(now: Date = new Date()): Prisma.MediaItemWhereInput {
+  const weeklyFrom = daysBefore(now, RECENT_VOTES_WEEKLY_DAYS)
+  const checkedBefore = (days: number) => ({
+    OR: [{ tmdbCheckedAt: null }, { tmdbCheckedAt: { lt: daysBefore(now, days) } }],
+  })
   return {
     type: { in: ["MOVIE", "TV"] },
     tmdbId: { not: null },
-    tmdbVoteCount: 0,
-    releaseDate: { lte: daysBefore(now, ZERO_VOTE_MIN_DAYS) },
-    OR: [
-      { tmdbCheckedAt: null },
+    tmdbRating: { not: null },
+    releaseDate: { lte: now },
+    AND: [
+      { OR: [{ tmdbVoteCount: null }, { tmdbVoteCount: { lt: RECENT_VOTES_CEILING } }] },
       {
-        releaseDate: { gte: daysBefore(now, ZERO_VOTE_MAX_DAYS) },
-        tmdbCheckedAt: { lt: daysBefore(now, ZERO_VOTE_RECHECK_DAYS) },
+        OR: [
+          { releaseDate: { gte: weeklyFrom }, ...checkedBefore(RECENT_VOTES_WEEKLY_RECHECK_DAYS) },
+          {
+            releaseDate: { gte: daysBefore(now, RECENT_VOTES_MAX_DAYS), lt: weeklyFrom },
+            ...checkedBefore(RECENT_VOTES_MONTHLY_RECHECK_DAYS),
+          },
+          { tmdbVoteCount: 0, tmdbCheckedAt: null },
+        ],
       },
     ],
   }

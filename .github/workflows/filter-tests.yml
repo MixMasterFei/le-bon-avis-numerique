@@ -1,5 +1,16 @@
 name: Daily Filter Tests
 
+# The catalogue filter suites (API + Films / Séries / Jeux pages), run against
+# production with read-only requests.
+#
+# Truthful by construction (Nov 2026): until then every test step ran with
+# continue-on-error, so the jobs were green and the summary said « Pass » over
+# 16 failed tests. Now a failing test fails its job and the workflow, each E2E
+# suite runs in its own job (one suite can no longer skip or hide another, and
+# each keeps its own report), and the summary is computed from the Playwright
+# JSON reports: passed / failed / flaky / retries, infrastructure failures
+# called out separately. Do not add continue-on-error to a test step.
+
 on:
   schedule:
     # Every day at 5:00 AM Paris time (4:00 AM UTC in winter, 3:00 AM UTC in summer)
@@ -15,6 +26,9 @@ on:
           - api-only
           - e2e-only
 
+permissions:
+  contents: read
+
 env:
   PLAYWRIGHT_BASE_URL: https://totemavise.com
 
@@ -22,6 +36,7 @@ jobs:
   api-tests:
     name: API Filter Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: >-
       github.event.schedule ||
       github.event.inputs.test_scope == 'all' ||
@@ -31,7 +46,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -39,29 +54,44 @@ jobs:
 
       - name: Run API filter tests
         run: npx playwright test e2e/filters/api-filters.spec.ts --project=chromium
-        continue-on-error: true
 
-      - name: Upload API test report
-        if: always()
+      - name: Upload results (read by the summary)
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: api-filter-report
-          path: playwright-report/
+          name: filter-results-api
+          path: playwright-results/results.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload API test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: filter-report-api
+          path: |
+            playwright-report/
+            e2e/test-results/
           retention-days: 14
 
   e2e-tests:
-    name: E2E Filter Tests
+    name: E2E Filter Tests (${{ matrix.suite }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: >-
       github.event.schedule ||
       github.event.inputs.test_scope == 'all' ||
       github.event.inputs.test_scope == 'e2e-only'
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [films, series, jeux]
     steps:
       - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -72,58 +102,55 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/microsoft* /etc/apt/sources.list.d/azure* || true
           npx playwright install --with-deps chromium || npx playwright install chromium
 
-      - name: Run E2E filter tests (Films)
-        run: npx playwright test e2e/filters/films-filters.spec.ts --project=chromium
-        continue-on-error: true
+      # One worker: every filter change is a server navigation on production,
+      # and bursts from a single runner get refused by Vercel's edge
+      # (« This request was blocked », 7 Nov 2026).
+      - name: Run E2E filter tests (${{ matrix.suite }})
+        run: npx playwright test e2e/filters/${{ matrix.suite }}-filters.spec.ts --project=chromium --workers=1
 
-      - name: Run E2E filter tests (Series)
-        run: npx playwright test e2e/filters/series-filters.spec.ts --project=chromium
-        continue-on-error: true
-
-      - name: Run E2E filter tests (Jeux)
-        run: npx playwright test e2e/filters/jeux-filters.spec.ts --project=chromium
-        continue-on-error: true
-
-      - name: Upload E2E test report
-        if: always()
+      - name: Upload results (read by the summary)
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: e2e-filter-report
-          path: playwright-report/
+          name: filter-results-${{ matrix.suite }}
+          path: playwright-results/results.json
+          if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload screenshots
-        if: always()
+      - name: Upload report, traces and screenshots
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
-          name: filter-screenshots
-          path: e2e/screenshots/
+          name: filter-report-${{ matrix.suite }}
+          path: |
+            playwright-report/
+            e2e/test-results/
+            e2e/screenshots/
           retention-days: 14
-
-      - name: Upload test results (traces)
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: test-results
-          path: e2e/test-results/
-          retention-days: 7
 
   summary:
     name: Test Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: [api-tests, e2e-tests]
-    if: always()
+    if: ${{ !cancelled() }}
     steps:
-      - name: Generate summary
-        run: |
-          echo "## Daily Filter Test Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Date:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
-          echo "**Target:** $PLAYWRIGHT_BASE_URL" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Suite | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| API Filters | ${{ needs.api-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| E2E Filters | ${{ needs.e2e-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Download the HTML report and screenshots from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download suite results
+        uses: actions/download-artifact@v5
+        with:
+          pattern: filter-results-*
+          path: filter-results
+
+      # Fails when any suite failed, errored outside its tests or left no
+      # report; flaky tests are reported as warnings.
+      - name: Summarize
+        env:
+          API_JOB: ${{ needs.api-tests.result }}
+          E2E_JOB: ${{ needs.e2e-tests.result }}
+        run: node scripts/ci/filter-test-summary.mjs filter-results

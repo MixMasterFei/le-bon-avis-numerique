@@ -13,6 +13,7 @@
 # testing
 /coverage
 /playwright-report/
+/playwright-results/
 /test-results/
 /blob-report/
 /e2e/test-results/

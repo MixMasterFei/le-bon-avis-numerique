@@ -200,7 +200,7 @@ export const PIPELINE_TASKS: PipelineTaskInfo[] = [
     label: "Notes du public",
     family: "comprehension",
     cadence: "Le samedi, 5 h",
-    what: "Récupère les notes du public TMDB, conservées en interne et jamais affichées aux visiteurs — et les relit pendant les deux mois qui suivent une sortie, le temps que les votes arrivent.",
+    what: "Récupère les notes du public TMDB, conservées en interne et jamais affichées aux visiteurs — et les relit après chaque sortie (chaque semaine pendant trois mois, puis chaque mois jusqu'à un an), le temps que les votes arrivent.",
     why: "Elles servent uniquement à trier : mettre en avant les bons titres plutôt que des obscurités.",
     staleAfterHours: 240,
     partialIsNormal: true,

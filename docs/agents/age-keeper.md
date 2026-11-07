@@ -22,20 +22,26 @@ how well it fits each child in the family.
 - A TP certification may never be more permissive than no certification (see `CLAUDE.md`).
 - Curated surfaces stay expert-only; provisional titles never lead a family rail.
 
-## Open work (2026-11-06)
-- Released (#107): TP verdict on the classic fiche, Parents / Enfants bubbles ignore reviews
-  without an age, « TP » badge on similar titles, dead `ReviewCard.tsx` removed.
-- Ready, no PR yet (branch `claude/peaceful-edison-wkebcc`, `main` merged in): every card,
-  rail, chip and admin view that wrote an age by hand now goes through `src/lib/age-label.ts`
-  — homepage V2 / redesign, profile recommendations, hero search, Découverte articles, the
-  Recherche magique board and ballot, the Totem chat card, collections, `/jeux/quel-age`,
-  game guides, the V3 family panel, the game PEGI panel, admin. New `ageInlineLabel` for
-  mid-sentence use (« pour tous publics » / « dès 10 ans »).
-- Waiting for Xavier's wording: the shared text builders still treat 0 as « âge à confirmer »
-  — `buildQuickAnswer` (fiche FAQ JSON-LD, `/jeux/quel-age`, `/md`), `media-md`,
-  `selection-md`, `mcp/totem-tools`, the `/md/jeux/quel-age` route, `fiche-title`, the OG
-  image, the fiche meta description, `seo-autofix`. Crosses Agentic Master (md / MCP) and
-  Growth Scout (titles, OG); `seo-autofix` is a cron file. Once fixed, drop the 0 special
-  case in `HeroMatch`'s pill.
-- Dead code: `src/components/home/FamilyRecommendations.tsx` has no importer (fixed anyway,
-  can be deleted).
+## Open work (2026-11-07)
+- Released: #107 (TP verdict on the classic fiche, Parents / Enfants bubbles, « TP » on similar
+  titles) and #108 (every badge, chip and admin view goes through `src/lib/age-label.ts`).
+- Ready, no PR yet — branch `claude/age-keeper-f04-f02`:
+  - **F04, one known-age contract** (`isKnownAge`): 0 = « Tous publics » in the quick answer,
+    « Pourquoi tous publics ? », `/md`, MCP (`age: 0`, never null), age selections (TP
+    eligible again), SERP title, meta description, OG card, `typicalAgeRange` and the Totem
+    page context. Unknown age → no content claim; estimate → « à confirmer ». End-to-end
+    test: `src/lib/__tests__/age-contract.test.ts`.
+  - **F02, « Ce qui peut marquer »**: three states (`aiWarningsState`) — « Pas encore de
+    données », « Rien de relevé par l'analyse automatique · ce n'est pas une garantie »,
+    flags. Root cause and reference set: `docs/reports/eval/warning-recall-baseline.md`.
+- Waiting for Xavier: apply `sql/correct_amelie_metaphysique_des_tubes_warnings.sql` (prepared,
+  tested on PGlite, NOT applied; re-read the BBFC page verbatim first). Amélie's 8+ is
+  unchanged — his call.
+- Hand-offs: **Librarian** — the basic enrichment pass stores a confident empty warnings list
+  for titles the model can't know (Amélie, 2025, synopsis only); see the recommendations in
+  the baseline report. **Agentic Master** — expected one-line conflict in
+  `src/lib/mcp/totem-tools.ts` (`searchRowLine`): keep their « · fiche : … », use
+  `${ageText(m)}`; one sentence added to `src/lib/totem/site-brief.md` (0 = tous publics).
+- Not touched: `seo-autofix` (cron) still skips TP when it writes « Âge conseillé ».
+- Dead code: `src/components/home/FamilyRecommendations.tsx` and
+  `src/components/media/SimilarMedia.tsx` (no importer).

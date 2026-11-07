@@ -14,6 +14,7 @@ import {
 } from "@/lib/anilist"
 import { searchBooks } from "@/lib/google-books"
 import { isAdultAniListManga } from "@/lib/adult-content-filter"
+import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
 export const maxDuration = 60
 
@@ -41,18 +42,15 @@ export const maxDuration = 60
  * rail by keeping `latestVolumeDate` fresh.
  */
 
+// The automation credential only (constant-time, fail-closed, scoped to the
+// scheduled job routes); development bypass behind an explicit opt-in — see
+// weekly-dossier for the rationale (tunnel-exposed `next dev`).
+//
+// This job is retired: nothing schedules it, so it is not in CRON_JOB_ROUTES
+// and the credential no longer opens it. To revive it, schedule it in
+// cron.yml and add (GET, /api/cron/weekly-manga) to CRON_JOB_ROUTES.
 function isAuthorized(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization")
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  // Development bypass requires an explicit opt-in flag — see
-  // weekly-dossier for the rationale (tunnel-exposed `next dev`).
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
-  ) {
-    return true
-  }
-  return false
+  return isCronJobRequest(req) || allowsInsecureLocalCron()
 }
 
 interface RefreshStats {

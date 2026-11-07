@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { matchesCronSecret } from "@/lib/cron-credential"
 
 // POST — internal endpoint: the middleware fires one call per detected AI
 // crawler hit / AI-assistant referral (fire-and-forget via event.waitUntil).
@@ -7,11 +8,11 @@ import { prisma } from "@/lib/prisma"
 // (day, bot, kind, surface), count incremented.
 //
 // Protected by CRON_SECRET (the middleware attaches it) so the endpoint can't
-// be spammed into fake stats from outside.
+// be spammed into fake stats from outside. Same constant-time, fail-closed
+// comparison as every other check of that secret (src/lib/cron-credential.ts).
 export async function POST(request: NextRequest) {
   try {
-    const secret = request.headers.get("x-track-secret")
-    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    if (!matchesCronSecret(request.headers.get("x-track-secret"))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

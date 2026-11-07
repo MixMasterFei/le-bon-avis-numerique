@@ -7,9 +7,10 @@ import {
 } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
+import { ageInlineLabel, isKnownAge } from "@/lib/age-label"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
 import { deriveEducationalValue } from "@/lib/educational-value"
-import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { VALID_SENSITIVE_WARNINGS, aiWarningsState } from "@/lib/sensitive-warnings"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -49,7 +50,12 @@ export interface MediaMdInput {
 export function mediaAssessment(media: MediaMdInput) {
   const provisional = shouldHideContentAnalysis(media) || media.isEnriched === false
   const available = !provisional && media.hasContentAnalysis !== false
-  const warningsAvailable = available && (media.assessmentConfidence ?? 0) >= 0.6 && (!!media.sensitiveWarningsAt || !!media.sensitiveWarnings?.length)
+  // Same rule as the fiche's « Ce qui peut marquer » (single source).
+  const warningsAvailable = available && aiWarningsState({
+    warnings: media.sensitiveWarnings,
+    assessedAt: media.sensitiveWarningsAt,
+    confidence: media.assessmentConfidence,
+  }).state !== "no_data"
   return {
     status: provisional ? "provisional" as const : available ? "available" as const : "unavailable" as const,
     source: media.assessmentSource ?? null,
@@ -76,9 +82,9 @@ function formatIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10)
 }
 
+/** « dès 10 ans » / « pour tous publics » (0 is a real rating) / « âge à confirmer ». */
 function formatAge(expertAgeRec: number | null): string {
-  if (expertAgeRec && expertAgeRec > 0) return `dès ${expertAgeRec} ans`
-  return "âge à confirmer"
+  return ageInlineLabel(expertAgeRec) ?? "âge à confirmer"
 }
 
 function formatOfficialRating(rating: string | null): string {
@@ -127,7 +133,8 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   lines.push(`# ${media.title}`, "")
   lines.push(`URL canonique: ${canonical}`)
   lines.push(`Type: ${typeLabel}`)
-  lines.push(`Âge conseillé Totem: ${formatAge(media.expertAgeRec)}${hideContentAnalysis ? " (à confirmer)" : ""}`)
+  // « (à confirmer) » flags an ESTIMATED age; an unknown one already says so.
+  lines.push(`Âge conseillé Totem: ${formatAge(media.expertAgeRec)}${hideContentAnalysis && isKnownAge(media.expertAgeRec) ? " (à confirmer)" : ""}`)
   lines.push(`Classification indiquée dans le catalogue: ${formatOfficialRating(media.officialRating)}`)
   lines.push(`Langue du site: français`)
   lines.push(`Langue d'origine du contenu: ${formatLanguage(media.originalLanguage)}`)
