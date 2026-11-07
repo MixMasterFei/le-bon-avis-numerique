@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest"
-import type { LanguageModelUsage, UIMessage } from "ai"
-import {
-  truncateHistory,
-  TOTEM_HISTORY_MAX_MESSAGES,
-  TOTEM_HISTORY_MAX_CHARS,
-} from "../totem/history"
+import type { LanguageModelUsage } from "ai"
 import { extractUsage } from "../totem/usage"
-import { estimateCostUsd, TOTEM_MAX_OUTPUT_TOKENS } from "../totem/cost"
+import { estimateCostUsd, splitInputTokens, TOTEM_MAX_OUTPUT_TOKENS } from "../totem/cost"
 import {
   startOfUtcDay,
   secondsUntilNextUtcDay,
@@ -15,67 +10,29 @@ import {
   TOTEM_GLOBAL_DAILY_CAP_DEFAULT,
 } from "../totem/daily-cap"
 
-function msg(role: "user" | "assistant", text: string, id = Math.random().toString(36).slice(2)): UIMessage {
-  return { id, role, parts: [{ type: "text", text }] } as UIMessage
-}
+// The history bounds moved to the trusted server-side history (F07): see
+// totem-history.test.ts and totem-chat-request.test.ts.
 
-describe("truncateHistory (server-side history bound)", () => {
-  it("passes short conversations through untouched", () => {
-    const messages = [msg("user", "bonjour"), msg("assistant", "bonjour !"), msg("user", "un film ?")]
-    expect(truncateHistory(messages)).toEqual(messages)
-  })
-
-  it("keeps only the trailing MAX_MESSAGES", () => {
-    const messages: UIMessage[] = []
-    for (let i = 0; i < 30; i++) {
-      messages.push(msg(i % 2 === 0 ? "user" : "assistant", `m${i}`))
-    }
-    const out = truncateHistory(messages)
-    expect(out.length).toBeLessThanOrEqual(TOTEM_HISTORY_MAX_MESSAGES)
-    expect(out[out.length - 1]).toBe(messages[messages.length - 1])
-  })
-
-  it("drops older messages once the char budget is spent", () => {
-    const big = "x".repeat(TOTEM_HISTORY_MAX_CHARS) // alone eats the whole budget
-    const messages = [msg("user", big), msg("assistant", "ok"), msg("user", "et pour un ado ?")]
-    const out = truncateHistory(messages)
-    // The oversized head must be gone; the final user message survives.
-    expect(out.some((m) => messageText(m) === big)).toBe(false)
-    expect(messageText(out[out.length - 1])).toBe("et pour un ado ?")
-  })
-
-  it("always keeps the final user message even when it alone exceeds the budget", () => {
-    const huge = "y".repeat(TOTEM_HISTORY_MAX_CHARS * 2)
-    const out = truncateHistory([msg("user", huge)])
-    expect(out).toHaveLength(1)
-  })
-
-  it("never leaves a leading assistant message after trimming", () => {
-    const messages: UIMessage[] = [msg("assistant", "orphan")]
-    for (let i = 0; i < 20; i++) {
-      messages.push(msg(i % 2 === 0 ? "user" : "assistant", `m${i}`))
-    }
-    const out = truncateHistory(messages)
-    expect(out[0].role).toBe("user")
-  })
-})
-
-function messageText(m: UIMessage): string {
-  return (m.parts ?? [])
-    .map((p) => ("text" in p && typeof p.text === "string" ? p.text : ""))
-    .join("")
+/** AI SDK 6 usage: inputTokens is the TOTAL (uncached + reads + writes). */
+function sdkUsage(noCache: number, read: number, write: number, out: number): LanguageModelUsage {
+  return {
+    inputTokens: noCache + read + write,
+    inputTokenDetails: { noCacheTokens: noCache, cacheReadTokens: read, cacheWriteTokens: write },
+    outputTokens: out,
+    outputTokenDetails: { textTokens: out, reasoningTokens: undefined },
+    totalTokens: noCache + read + write + out,
+  } as LanguageModelUsage
 }
 
 describe("extractUsage (token telemetry mapper)", () => {
-  it("maps a normal usage object", () => {
-    expect(
-      extractUsage({
-        inputTokens: 1200,
-        outputTokens: 340,
-        cachedInputTokens: 8000,
-        totalTokens: 9540,
-      } as LanguageModelUsage),
-    ).toEqual({ inputTokens: 1200, outputTokens: 340, cachedInputTokens: 8000 })
+  it("stores the total and the three billed input buckets", () => {
+    expect(extractUsage(sdkUsage(200, 900, 100, 40))).toEqual({
+      inputTokens: 1200,
+      outputTokens: 40,
+      cachedInputTokens: 900,
+      uncachedInputTokens: 200,
+      cacheWriteInputTokens: 100,
+    })
   })
 
   it("turns undefined usage into all-null (unmeasured, not zero)", () => {
@@ -83,36 +40,50 @@ describe("extractUsage (token telemetry mapper)", () => {
       inputTokens: null,
       outputTokens: null,
       cachedInputTokens: null,
+      uncachedInputTokens: null,
+      cacheWriteInputTokens: null,
     })
   })
 
   it("turns NaN / negative / missing fields into null", () => {
     expect(
       extractUsage({ inputTokens: NaN, outputTokens: -5, totalTokens: NaN } as never),
-    ).toEqual({ inputTokens: null, outputTokens: null, cachedInputTokens: null })
+    ).toEqual({
+      inputTokens: null,
+      outputTokens: null,
+      cachedInputTokens: null,
+      uncachedInputTokens: null,
+      cacheWriteInputTokens: null,
+    })
   })
 })
 
 describe("estimateCostUsd", () => {
-  it("prices a Haiku turn (input + cached discount + output)", () => {
-    // 1M in @$1 + 1M cached @$0.1 + 1M out @$5 = $6.10
+  it("prices uncached, cache reads and cache writes at 1×, 0.1× and 1.25× (review #7)", () => {
+    // Haiku 4.5: 0.2M × $1 + 0.9M × $0.1 + 0.1M × $1.25 + 1M out × $5
     expect(
-      estimateCostUsd("claude-haiku-4-5-20251001", {
-        inputTokens: 1_000_000,
-        outputTokens: 1_000_000,
-        cachedInputTokens: 1_000_000,
-      }),
-    ).toBeCloseTo(6.1, 5)
+      estimateCostUsd("claude-haiku-4-5-20251001", extractUsage(sdkUsage(200_000, 900_000, 100_000, 1_000_000))),
+    ).toBeCloseTo(0.2 + 0.09 + 0.125 + 5, 6)
   })
 
-  it("prices a Sonnet turn at the higher tier", () => {
-    expect(
-      estimateCostUsd("claude-sonnet-4-6", {
-        inputTokens: 1_000_000,
-        outputTokens: 0,
-        cachedInputTokens: 0,
-      }),
-    ).toBeCloseTo(3, 5)
+  it("no longer bills cache reads twice on rows stored before the split", () => {
+    // A legacy row: input_tokens is the SDK total, cached_input_tokens the
+    // reads. Old formula: 1M × $1 + 0.6M × $0.1 = $1.06 (reads counted twice).
+    const legacy = { inputTokens: 1_000_000, outputTokens: 0, cachedInputTokens: 600_000 }
+    expect(splitInputTokens(legacy)).toEqual({ uncached: 400_000, cacheRead: 600_000, cacheWrite: 0 })
+    expect(estimateCostUsd("claude-haiku-4-5-20251001", legacy)).toBeCloseTo(0.4 + 0.06, 6)
+  })
+
+  it("matches the Director's measured profile: ~44k input (55 % reads) + 440 out ≈ 2.5 ¢ on Haiku 4.5", () => {
+    const cost = estimateCostUsd("claude-haiku-4-5-20251001", extractUsage(sdkUsage(19_800, 24_200, 0, 440)))
+    expect(cost).toBeCloseTo(0.0244, 4)
+  })
+
+  it("knows the current-generation models", () => {
+    const usage = extractUsage(sdkUsage(1_000_000, 0, 0, 1_000_000))
+    expect(estimateCostUsd("claude-haiku-5-5", usage)).toBeCloseTo(0.6, 6)
+    expect(estimateCostUsd("claude-sonnet-5-5", usage)).toBeCloseTo(12, 6)
+    expect(estimateCostUsd("claude-sonnet-4-6", usage)).toBeCloseTo(18, 6)
   })
 
   it("returns null for unknown models and unmeasured usage", () => {
