@@ -226,6 +226,10 @@ model MediaItem {
   // import — the release-status and recent-release vote refreshes
   // (src/lib/tmdb-refresh.ts).
   tmdbCheckedAt        DateTime? @map("tmdb_checked_at") @db.Timestamptz(6)
+  // Consecutive 404s from TMDB on those re-reads; any answer resets it. At
+  // TMDB_NOT_FOUND_GIVE_UP the title (deleted/merged on TMDB) leaves the
+  // refresh queues for good. sql/add_tmdb_not_found_count.sql.
+  tmdbNotFoundCount    Int       @default(0) @map("tmdb_not_found_count")
   // Rotation cursor of the weekly similarity recompute: least recent first.
   similarityComputedAt DateTime? @map("similarity_computed_at") @db.Timestamptz(6)
   enrichedBy       String?    @map("enriched_by") // User ID who enriched

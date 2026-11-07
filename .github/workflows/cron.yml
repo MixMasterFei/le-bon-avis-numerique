@@ -264,7 +264,7 @@ jobs:
             "$SITE_URL/api/admin/refresh-release-status?limit=80")
           http_code=$(echo "$response" | tail -1)
           body=$(echo "$response" | sed '$d')
-          echo "$body" | jq '{examined, updated, unchanged, notFound, errors, remaining, nowReleased: [.nowReleased[]?.title]}' 2>/dev/null || echo "$body"
+          echo "$body" | jq '{examined, updated, unchanged, notFound, errors, remaining, nowReleased: [.nowReleased[]?.title], gaveUp: [.gaveUp[]?.title]}' 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Release status refresh failed with HTTP $http_code"
             exit 1

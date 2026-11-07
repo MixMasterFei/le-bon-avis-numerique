@@ -19,6 +19,7 @@ vi.mock("@/lib/tmdb-refresh", async (importOriginal) => {
 })
 
 import { POST } from "@/app/api/admin/backfill-ratings/route"
+import { POST as refreshReleaseStatus } from "@/app/api/admin/refresh-release-status/route"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { prisma } from "@/lib/prisma"
@@ -27,10 +28,12 @@ import { recentReleaseVotesWhere } from "@/lib/tmdb-refresh"
 import { matchesWhere } from "@/test/prisma-where"
 
 /**
- * Simulates the Saturday « Backfill TMDB ratings » step over several weeks:
- * an in-memory media_items table answers the route's real Prisma predicates,
- * TMDB answers from a per-title script, and each Saturday runs the same loop as
- * .github/workflows/cron.yml (call until remaining = 0 or no progress, max 35).
+ * Simulates the two TMDB refresh jobs over several runs: the Saturday
+ * « Backfill TMDB ratings » step and the daily release-status refresh. An
+ * in-memory media_items table answers the routes' real Prisma predicates
+ * (and their raw cursor UPDATEs), TMDB answers from a per-title script, and
+ * each run calls the route the way .github/workflows/cron.yml does (Saturday:
+ * until remaining = 0 or no progress, max 35 calls; daily: one call).
  */
 
 const db = vi.mocked(prisma, true)
@@ -45,9 +48,10 @@ interface Row {
   tmdbRating: number | null
   tmdbVoteCount: number | null
   tmdbCheckedAt: Date | null
+  tmdbNotFoundCount: number
 }
 
-type Answer = { votes: number; rating: number } | Error
+type Answer = { votes: number; rating: number; status?: string } | Error
 
 let table: Row[]
 let script: Map<number, Answer[]>
@@ -63,6 +67,7 @@ function addRow(over: Partial<Row> & Pick<Row, "id" | "tmdbId" | "releaseDate">)
     tmdbRating: 6,
     tmdbVoteCount: 5,
     tmdbCheckedAt: null,
+    tmdbNotFoundCount: 0,
     ...over,
   }
   table.push(row)
@@ -79,12 +84,13 @@ async function tmdbDetails(tmdbId: number) {
   const answers = script.get(tmdbId) ?? [{ votes: 0, rating: 0 }]
   const answer = answers.length > 1 ? answers.shift()! : answers[0]
   if (answer instanceof Error) throw answer
-  return { status: "Released", vote_count: answer.votes, vote_average: answer.rating }
+  return { status: answer.status ?? "Released", vote_count: answer.votes, vote_average: answer.rating }
 }
 
 const readsOf = (tmdbId: number) => reads.filter((id) => id === tmdbId).length
 
-const at = (iso: string) => new Date(`${iso}T05:19:00Z`)
+const at = (iso: string, time = "05:19") => new Date(`${iso}T${time}:00Z`)
+const gone = () => new Error("TMDB API error: 404 Not Found")
 
 /** One Saturday 05:19 run, looped like the workflow step. */
 async function saturday(iso: string) {
@@ -94,6 +100,13 @@ async function saturday(iso: string) {
     if (json.remaining === 0) break
     if (json.updated === 0 && json.unratable === 0) break
   }
+}
+
+/** One daily 03:07 release-status run (a single call, like the workflow job). */
+async function daily(iso: string) {
+  vi.setSystemTime(at(iso, "03:07"))
+  const res = await refreshReleaseStatus(new NextRequest("http://localhost/api/admin/refresh-release-status?limit=80", { method: "POST" }))
+  return res.json()
 }
 
 // The vote gates the lists apply (media-queries.ts, collections-data.ts,
@@ -118,11 +131,23 @@ beforeEach(() => {
     table.filter((r) => matchesWhere({ ...r }, args.where)).slice(0, args.take).map((r) => ({ ...r }))) as never)
   db.mediaItem.count.mockImplementation((async (args: { where: Record<string, unknown> }) =>
     table.filter((r) => matchesWhere({ ...r }, args.where)).length) as never)
-  db.mediaItem.update.mockImplementation((async (args: { where: { id: string }; data: Partial<Row> }) =>
-    Object.assign(byId(args.where.id), args.data)) as never)
+  db.mediaItem.update.mockImplementation((async (args: { where: { id: string }; data: Record<string, unknown> }) => {
+    const row = byId(args.where.id) as unknown as Record<string, unknown>
+    for (const [field, value] of Object.entries(args.data)) {
+      const increment = (value as { increment?: number } | null)?.increment
+      row[field] = typeof increment === "number" ? (row[field] as number) + increment : value
+    }
+    return row
+  }) as never)
+  // The two raw cursor UPDATEs of tmdb-refresh.ts: an answer (streak reset) or a 404 (streak + 1).
   db.$executeRaw.mockImplementation((async (sql: TemplateStringsArray, id: string) => {
-    expect(sql.join("?")).toContain("SET tmdb_checked_at = now()")
-    byId(id).tmdbCheckedAt = new Date()
+    const text = sql.join("?")
+    const row = byId(id)
+    expect(text).toContain("SET tmdb_checked_at = now()")
+    if (text.includes("tmdb_not_found_count = tmdb_not_found_count + 1")) row.tmdbNotFoundCount++
+    else if (text.includes("tmdb_not_found_count = 0")) row.tmdbNotFoundCount = 0
+    else throw new Error(`unexpected cursor UPDATE: ${text}`)
+    row.tmdbCheckedAt = new Date()
     return 1
   }) as never)
 })
@@ -229,5 +254,52 @@ describe("Saturday ratings backfill — recent releases, run after run", () => {
     expect(readsOf(9011)).toBe(0)
     expect(readsOf(9012)).toBe(1)
     expect(readsOf(9013)).toBe(0)
+  })
+})
+
+describe("Daily release-status refresh — a title TMDB no longer knows", () => {
+  it("is re-read on three days in a row, then given up and reported, and leaves every queue", async () => {
+    // Imported as "Post Production", date passed — and since deleted on TMDB.
+    const film = addRow({
+      id: "rumeur", tmdbId: 9020, releaseStatus: "Post Production", releaseDate: new Date("2026-10-01"),
+      tmdbRating: 0, tmdbVoteCount: 0,
+    })
+    tmdbSays(9020, gone())
+
+    expect(await daily("2026-11-07")).toMatchObject({ notFound: 1, gaveUp: [], remaining: 0 })
+    await daily("2026-11-08")
+    expect(film.tmdbNotFoundCount).toBe(2)
+    const third = await daily("2026-11-09")
+
+    expect(third).toMatchObject({ notFound: 1, gaveUp: [{ id: "rumeur", title: "rumeur" }], remaining: 0, done: true })
+    expect(vi.mocked(logCronRun)).toHaveBeenLastCalledWith(expect.objectContaining({
+      task: "release-status",
+      status: "success",
+      summary: expect.stringContaining("1 abandonné (introuvable sur TMDB"),
+      details: expect.objectContaining({ gaveUp: [{ id: "rumeur", title: "rumeur" }] }),
+    }))
+    expect(readsOf(9020)).toBe(3)
+
+    // The end state: no more daily reads, and not picked up by the Saturday queue either.
+    for (const day of ["2026-11-10", "2026-11-11", "2026-11-12"]) await daily(day)
+    await saturday("2026-11-21")
+    expect(readsOf(9020)).toBe(3)
+    // Its pre-release status stays: still kept out of enrichment, as nobody can confirm it is out.
+    expect(film).toMatchObject({ releaseStatus: "Post Production", tmdbNotFoundCount: 3 })
+  })
+
+  it("forgets a one-off 404 as soon as TMDB answers again", async () => {
+    const film = addRow({
+      id: "glitch", tmdbId: 9021, releaseStatus: "Post Production", releaseDate: new Date("2026-10-15"),
+      tmdbRating: 0, tmdbVoteCount: 0,
+    })
+    tmdbSays(9021, gone(), { votes: 48, rating: 6.6, status: "Released" })
+
+    await daily("2026-11-07")
+    expect(film.tmdbNotFoundCount).toBe(1)
+    const next = await daily("2026-11-08")
+
+    expect(next.nowReleased).toEqual([{ id: "glitch", title: "glitch", from: "Post Production", to: "Released" }])
+    expect(film).toMatchObject({ releaseStatus: "Released", tmdbVoteCount: 48, tmdbNotFoundCount: 0 })
   })
 })

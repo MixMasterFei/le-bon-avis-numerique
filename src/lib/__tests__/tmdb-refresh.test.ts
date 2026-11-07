@@ -74,6 +74,7 @@ describe("selection windows", () => {
     expect(where).toMatchObject({
       type: { in: ["MOVIE", "TV"] },
       tmdbId: { not: null },
+      tmdbNotFoundCount: { lt: 3 },
       releaseStatus: { in: ["Planned", "In Production", "Post Production", "Rumored"] },
     })
     expect(where.OR).toEqual([
@@ -89,6 +90,7 @@ describe("selection windows", () => {
     expect(recentReleaseVotesWhere(NOW)).toEqual({
       type: { in: ["MOVIE", "TV"] },
       tmdbId: { not: null },
+      tmdbNotFoundCount: { lt: 3 },
       tmdbRating: { not: null },
       releaseDate: { lte: NOW },
       AND: [
@@ -115,6 +117,7 @@ describe("recentReleaseVotesWhere — which rows are due", () => {
     tmdbRating: 6.1,
     tmdbVoteCount: 5,
     tmdbCheckedAt: null as Date | null,
+    tmdbNotFoundCount: 0,
     ...over,
   })
   const due = (over: Parameters<typeof row>[0]) => matchesWhere(row(over), recentReleaseVotesWhere(NOW) as Record<string, unknown>)
@@ -149,6 +152,15 @@ describe("recentReleaseVotesWhere — which rows are due", () => {
     expect(due({ releaseDate: daysAgo(500), tmdbVoteCount: 0, tmdbCheckedAt: daysAgo(30) })).toBe(false)
   })
 
+  it("drops a title after three 404s in a row", () => {
+    expect(due({ releaseDate: daysAgo(20), tmdbCheckedAt: daysAgo(7), tmdbNotFoundCount: 2 })).toBe(true)
+    expect(due({ releaseDate: daysAgo(20), tmdbCheckedAt: daysAgo(7), tmdbNotFoundCount: 3 })).toBe(false)
+    const stuck = { ...ensorceleuses, tmdbCheckedAt: daysAgo(2), tmdbNotFoundCount: 2 }
+    const releaseQueue = staleReleaseStatusWhere(NOW) as Record<string, unknown>
+    expect(matchesWhere(stuck, releaseQueue)).toBe(true)
+    expect(matchesWhere({ ...stuck, tmdbNotFoundCount: 3 }, releaseQueue)).toBe(false)
+  })
+
   it("leaves never-rated rows, unreleased titles, games and rows without a TMDB id to others", () => {
     expect(due({ releaseDate: daysAgo(20), tmdbRating: null, tmdbVoteCount: null })).toBe(false)
     expect(due({ releaseDate: new Date(NOW.getTime() + 3 * DAY) })).toBe(false)
@@ -173,7 +185,7 @@ describe("refreshFromTmdb", () => {
     expect(movieDetails).toHaveBeenCalledWith(1100099)
     expect(db.mediaItem.update).toHaveBeenCalledWith({
       where: { id: "m-ens2" },
-      data: { releaseStatus: "Released", tmdbRating: 6.8, tmdbVoteCount: 412, tmdbCheckedAt: expect.any(Date) },
+      data: { releaseStatus: "Released", tmdbRating: 6.8, tmdbVoteCount: 412, tmdbCheckedAt: expect.any(Date), tmdbNotFoundCount: 0 },
     })
     expect(result).toMatchObject({
       examined: 1,
@@ -191,7 +203,7 @@ describe("refreshFromTmdb", () => {
     expect(db.mediaItem.update).not.toHaveBeenCalled()
     expect(db.$executeRaw).toHaveBeenCalledTimes(1)
     const [sql, id] = db.$executeRaw.mock.calls[0] as unknown as [TemplateStringsArray, string]
-    expect(sql.join("?")).toContain("SET tmdb_checked_at = now()")
+    expect(sql.join("?")).toContain("SET tmdb_checked_at = now(), tmdb_not_found_count = 0") // an answer ends any 404 streak
     expect(id).toBe("m-ens2")
     expect(result).toMatchObject({ examined: 1, unchanged: 1, updated: 0 })
   })
@@ -203,18 +215,29 @@ describe("refreshFromTmdb", () => {
     expect(movieDetails).not.toHaveBeenCalled()
   })
 
-  it("drains a title deleted from TMDB: 0/0 for a never-rated row, cursor either way", async () => {
+  it("on a TMDB 404, moves the cursor and lengthens the streak (0/0 for a never-rated row)", async () => {
     movieDetails.mockRejectedValue(new Error("TMDB API error: 404 Not Found"))
-    const unrated = { ...ensorceleuses, id: "gone", tmdbRating: null, tmdbVoteCount: null }
+    const unrated = { ...ensorceleuses, id: "gone", tmdbRating: null, tmdbVoteCount: null, tmdbNotFoundCount: 0 }
 
-    const result = await refreshFromTmdb([unrated, ensorceleuses], { delayMs: 0 })
+    const result = await refreshFromTmdb([unrated, { ...ensorceleuses, tmdbNotFoundCount: 0 }], { delayMs: 0 })
 
     expect(db.mediaItem.update).toHaveBeenCalledWith({
       where: { id: "gone" },
-      data: { tmdbRating: 0, tmdbVoteCount: 0, tmdbCheckedAt: expect.any(Date) },
+      data: { tmdbRating: 0, tmdbVoteCount: 0, tmdbCheckedAt: expect.any(Date), tmdbNotFoundCount: { increment: 1 } },
     })
-    expect(db.$executeRaw).toHaveBeenCalledTimes(1) // the already-rated one: cursor only
-    expect(result).toMatchObject({ notFound: 2, errors: 0 })
+    expect(db.$executeRaw).toHaveBeenCalledTimes(1) // the already-rated one: raw, no updatedAt bump
+    const [sql, id] = db.$executeRaw.mock.calls[0] as unknown as [TemplateStringsArray, string]
+    expect(sql.join("?")).toContain("SET tmdb_checked_at = now(), tmdb_not_found_count = tmdb_not_found_count + 1")
+    expect(id).toBe("m-ens2")
+    expect(result).toMatchObject({ notFound: 2, errors: 0, gaveUp: [] })
+  })
+
+  it("gives a title up on its third 404 in a row and reports it", async () => {
+    movieDetails.mockRejectedValue(new Error("TMDB API error: 404 Not Found"))
+
+    const result = await refreshFromTmdb([{ ...ensorceleuses, tmdbNotFoundCount: 2 }], { delayMs: 0 })
+
+    expect(result.gaveUp).toEqual([{ id: "m-ens2", title: "Les Ensorceleuses 2" }])
   })
 
   it("leaves a transient failure unstamped so the next run retries it", async () => {
