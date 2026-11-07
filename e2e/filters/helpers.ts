@@ -92,7 +92,7 @@ export async function waitForFilters(page: Page, expected: Record<string, ParamE
           return typeof want === "function" ? want(got) : got === want
         })
       },
-      { message: `the catalogue URL should carry ${describe} (now ${page.url()})`, timeout: 20_000 },
+      { message: `the catalogue URL should carry ${describe}`, timeout: 20_000 },
     )
     .toBe(true)
   await waitForListing(page)
