@@ -152,7 +152,12 @@ export async function lastAssistantMentionedNudge(conversationId: string): Promi
     select: { content: true },
   })
   if (!last) return false
-  const c = last.content.toLowerCase()
+  return mentionsPersonalizationNudge(last.content)
+}
+
+/** Does an assistant answer contain the « create an account » nudge? (shared with the bench) */
+export function mentionsPersonalizationNudge(content: string): boolean {
+  const c = content.toLowerCase()
   return (
     c.includes("créez un compte") ||
     c.includes("créer un profil") ||

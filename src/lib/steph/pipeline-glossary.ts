@@ -329,6 +329,16 @@ export const PIPELINE_TASKS: PipelineTaskInfo[] = [
     partialIsNormal: true,
   },
   {
+    task: "totem-eval",
+    label: "Banc d'essai de l'assistant Totem",
+    family: "surveillance",
+    cadence: "Le dimanche, 5 h 51",
+    what: "Pose des dizaines de questions types à l'assistant Totem, au nom d'une famille fictive, et vérifie chaque réponse : âges conformes aux fiches, liens, vouvoiement, réponses aux situations de détresse.",
+    why: "C'est ce qui dit, chiffres à l'appui, si l'assistant est prêt à être ouvert aux familles — et ce qui détecte qu'une modification l'a fait régresser.",
+    staleAfterHours: 192,
+    partialIsNormal: true,
+  },
+  {
     task: "debt-digest",
     label: "Bilan hebdomadaire",
     family: "surveillance",

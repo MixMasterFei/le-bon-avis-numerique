@@ -77,6 +77,11 @@ on:
     # resolve, then emails one short re-read list. Monthly because the
     # "état du jeu" blocks are the perishable half of those pages.
     - cron: "33 6 1 * *"
+    # Sunday 5:51 AM UTC — Totem evaluation bench (~50 scripted conversations
+    # through the real chat pipeline, checked against the catalogue). Paid
+    # model calls (~$1–2 on the live router): weekly, never part of "all", and
+    # the endpoint refuses more than 3 runs a day. Off-the-hour (:51).
+    - cron: "51 5 * * 0"
   workflow_dispatch:
     inputs:
       task:
@@ -108,11 +113,22 @@ on:
           - seo-striking-distance
           - revert-unreleased
           - game-guides-check
+          - totem-eval
       dry_run:
-        description: "Dry run (age-floor, revert-unreleased, game-guides-check): report without writing/emailing"
+        description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
         required: false
         type: boolean
         default: false
+      eval_model:
+        description: "totem-eval only: model to test (live = the production router)"
+        required: false
+        type: choice
+        default: live
+        options:
+          - live
+          - claude-haiku-4-5-20251001
+          - claude-haiku-5-5
+          - claude-sonnet-5-5
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -1048,6 +1064,39 @@ jobs:
           echo "$body" | jq . 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::SEO striking-distance failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Sunday 05:51 UTC: Totem evaluation bench ─────────────────────
+  # Not part of "all": every real run calls the model (~$1–2 on the live
+  # router). dry_run lists the scenarios and the cost estimate for free.
+  totem-eval:
+    name: Totem Evaluation Bench
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 8
+    if: >-
+      github.event.schedule == '51 5 * * 0' ||
+      github.event.inputs.task == 'totem-eval'
+    steps:
+      - name: Run the Totem bench against the live chat pipeline
+        run: |
+          echo "::group::Totem eval"
+          model="${{ github.event.inputs.eval_model }}"
+          if [ -z "$model" ]; then model="live"; fi
+          qs="model=$model"
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then qs="$qs&dryRun=1"; fi
+          # 310s — the route runs up to ~270s (maxDuration 300).
+          response=$(curl -sSL --max-time 310 -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/totem-eval?$qs")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{status, summary, estimate, totals, categories}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Totem eval failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"
