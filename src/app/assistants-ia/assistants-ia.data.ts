@@ -8,8 +8,8 @@
  *
  * Two rules for this text:
  *  - It names the assistants (Claude, Le Chat, ChatGPT) because that is where
- *    families use Totem — allowed only through Xavier's explicit exception to
- *    the CLAUDE.md naming rule, which is why the page sits behind
+ *    families use Totem — the one exception to the CLAUDE.md naming rule,
+ *    approved by Xavier on 7 Nov 2026. Go-live is still gated by
  *    AI_CONNECTORS_PAGE_PUBLIC (src/lib/ai-connectors-flag.ts).
  *  - It NEVER says which AI Totem uses internally. A test enforces it.
  */

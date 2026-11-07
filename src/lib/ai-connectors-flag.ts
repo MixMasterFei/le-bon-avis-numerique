@@ -5,11 +5,11 @@
  * Admin-only until `AI_CONNECTORS_PAGE_PUBLIC=true`, mirroring
  * `GAME_GUIDES_PUBLIC`: one env switch, instant rollback, default OFF.
  *
- * Why the default is closed: to tell families where they can use Totem, the
- * page has to name the assistants (Claude, Le Chat, ChatGPT). CLAUDE.md
- * forbids those names in rendered text unless Xavier grants an exception.
- * Flipping this flag IS that exception — so the page can be merged early and
- * still never render publicly by accident. Admins always see it (preview).
+ * The page names the assistants (Claude, Le Chat, ChatGPT) — the one
+ * exception to the CLAUDE.md naming rule, approved by Xavier on 7 Nov 2026.
+ * The default stays closed so the page goes live when Xavier decides (just
+ * before the directory submission), not whenever the branch happens to be
+ * merged. Admins always see it (preview).
  */
 export function isAiConnectorsPagePublic(): boolean {
   return process.env.AI_CONNECTORS_PAGE_PUBLIC === "true"

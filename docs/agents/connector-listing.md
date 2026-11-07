@@ -145,11 +145,11 @@ Rien ne pose problème, mais c'est à toi de les cocher.
 
 ## 4. Ce que tu dois faire toi-même
 
-1. **Accorder (ou non) l'exception à la règle de CLAUDE.md** pour `/assistants-ia` : la page cite
-   Claude, Le Chat et ChatGPT comme endroits où utiliser Totem. Elle ne dit jamais quelle IA
-   Totem utilise en interne, et un test le vérifie. Si c'est oui : fusionner, mettre
-   `AI_CONNECTORS_PAGE_PUBLIC=true` dans Vercel, puis redéployer. Avant cela, la page est
-   invisible (404) sauf pour les admins, et absente du sitemap.
+1. ✅ **Exception accordée le 7 novembre 2026**, inscrite dans CLAUDE.md : `/assistants-ia` peut
+   citer Claude, Le Chat et ChatGPT, sans jamais dire quelle IA Totem utilise en interne (un test le
+   vérifie). Reste à la mettre en ligne : fusionner, mettre `AI_CONNECTORS_PAGE_PUBLIC=true` dans
+   Vercel, puis redéployer. Avant cela, la page est invisible (404) sauf pour les admins, et absente
+   du sitemap.
 2. **Relire la section 3.6 de la politique de confidentialité**, et décider du rafraîchissement
    du reste de la page (date, prestataires).
 3. **Tester toi-même** dans Claude (§ 3) et dans Le Chat, une fois la branche en ligne.
