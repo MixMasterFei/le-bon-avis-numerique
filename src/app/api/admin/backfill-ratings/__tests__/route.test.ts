@@ -48,23 +48,25 @@ describe("POST /api/admin/backfill-ratings", () => {
     expect(db.mediaItem.findMany).not.toHaveBeenCalled()
   })
 
-  it("tops the batch up with zero-vote releases once the never-rated queue is short", async () => {
+  it("tops the batch up with recent releases once the never-rated queue is short", async () => {
     const unrated = film("unrated", { tmdbRating: null, tmdbVoteCount: null })
-    const zero = film("zero")
-    db.mediaItem.findMany.mockResolvedValueOnce([unrated] as never).mockResolvedValueOnce([zero] as never)
+    const recent = film("recent", { tmdbRating: 6.2, tmdbVoteCount: 5 })
+    db.mediaItem.findMany.mockResolvedValueOnce([unrated] as never).mockResolvedValueOnce([recent] as never)
     refresh.mockResolvedValue(result({ examined: 2, updated: 2, votesGained: 1 }))
 
     const json = await (await POST(post())).json()
 
-    const [unratedQuery, zeroQuery] = db.mediaItem.findMany.mock.calls.map((c) => c[0] as { where: Record<string, unknown>; take: number })
+    const [unratedQuery, recentQuery] = db.mediaItem.findMany.mock.calls.map((c) => c[0] as { where: Record<string, unknown>; take: number })
     expect(unratedQuery.where).toMatchObject({ tmdbRating: null })
-    expect(zeroQuery.where).toMatchObject({ tmdbVoteCount: 0, releaseDate: { lte: expect.any(Date) } })
-    expect(zeroQuery.take).toBe(49)
-    expect(refresh).toHaveBeenCalledWith([unrated, zero], expect.objectContaining({ delayMs: 150, deadline: expect.any(Number) }))
+    // Any vote count below the 500 ceiling, not only 0 (see recentReleaseVotesWhere).
+    expect(recentQuery.where).toMatchObject({ tmdbRating: { not: null }, releaseDate: { lte: expect.any(Date) } })
+    expect(recentQuery.where).not.toHaveProperty("tmdbVoteCount")
+    expect(recentQuery.take).toBe(49)
+    expect(refresh).toHaveBeenCalledWith([unrated, recent], expect.objectContaining({ delayMs: 150, deadline: expect.any(Number) }))
     expect(json).toMatchObject({ updated: 2, changed: 2, votesGained: 1 })
   })
 
-  it("leaves the zero-vote queue alone while the never-rated queue fills a whole batch", async () => {
+  it("leaves the recent-release queue alone while the never-rated queue fills a whole batch", async () => {
     db.mediaItem.findMany.mockResolvedValueOnce(
       Array.from({ length: 50 }, (_, i) => film(`u${i}`, { tmdbRating: null, tmdbVoteCount: null })) as never,
     )
@@ -73,7 +75,7 @@ describe("POST /api/admin/backfill-ratings", () => {
   })
 
   it("counts a re-read that found no new votes as progress, so the Saturday loop drains instead of stopping", async () => {
-    db.mediaItem.findMany.mockResolvedValueOnce([] as never).mockResolvedValueOnce([film("zero")] as never)
+    db.mediaItem.findMany.mockResolvedValueOnce([] as never).mockResolvedValueOnce([film("recent")] as never)
     refresh.mockResolvedValue(result({ examined: 1, unchanged: 1 }))
 
     const json = await (await POST(post())).json()
@@ -84,13 +86,13 @@ describe("POST /api/admin/backfill-ratings", () => {
   })
 
   it("reports both queues in `remaining`", async () => {
-    db.mediaItem.findMany.mockResolvedValueOnce([] as never).mockResolvedValueOnce([film("zero")] as never)
+    db.mediaItem.findMany.mockResolvedValueOnce([] as never).mockResolvedValueOnce([film("recent")] as never)
     db.mediaItem.count.mockResolvedValueOnce(3 as never).mockResolvedValueOnce(40 as never)
     refresh.mockResolvedValue(result({ examined: 1, updated: 1, votesGained: 1 }))
 
     const json = await (await POST(post())).json()
 
-    expect(json).toMatchObject({ remaining: 43, remainingUnrated: 3, remainingZeroVotes: 40 })
+    expect(json).toMatchObject({ remaining: 43, remainingUnrated: 3, remainingRecent: 40 })
     expect(logCronRun).toHaveBeenCalledWith(expect.objectContaining({
       task: "backfill-ratings",
       status: "success",

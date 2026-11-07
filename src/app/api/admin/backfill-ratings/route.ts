@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
-import { refreshFromTmdb, TMDB_REFRESH_SELECT, zeroVoteRefreshWhere } from "@/lib/tmdb-refresh"
+import { recentReleaseVotesWhere, refreshFromTmdb, TMDB_REFRESH_SELECT } from "@/lib/tmdb-refresh"
 
 export const maxDuration = 60
 
@@ -22,13 +22,16 @@ const UNRATED_WHERE: Prisma.MediaItemWhereInput = {
  * POST /api/admin/backfill-ratings
  * Two queues, up to 50 items per call to stay within timeout:
  *  1. items that never got tmdbRating/tmdbVoteCount;
- *  2. released items whose stored vote count is still 0 — a pre-release
- *     import stores 0/0 and was never re-read, which kept new films out of
- *     every vote-gated list. See zeroVoteRefreshWhere (src/lib/tmdb-refresh.ts).
+ *  2. recent releases, whatever their vote count: weekly for 90 days after
+ *     release, every four weeks until a year, retired at 500 votes. A count is
+ *     written once at import and nothing else re-reads it, so a film stuck at
+ *     its first few votes stayed out of every vote-gated list. See
+ *     recentReleaseVotesWhere (src/lib/tmdb-refresh.ts).
  *
- * Every row read is stamped (tmdbCheckedAt), so a row whose votes are still 0
- * leaves the queue until its next weekly re-read instead of being re-selected
- * by the next batch: `remaining` really drains and the Saturday loop ends.
+ * Every row read is stamped (tmdbCheckedAt), so a row whose votes did not move
+ * leaves the queue until its next re-read instead of being re-selected by the
+ * next batch: `remaining` really drains and the Saturday loop ends. A row TMDB
+ * failed to answer is NOT stamped: it is retried by the next call or run.
  * The `vote_average` 0 is persisted too (see tmdbRefreshPatch) — otherwise
  * tmdbRating stays NULL and the backfill loops forever on the same top-N items.
  */
@@ -45,10 +48,10 @@ export async function POST(req: NextRequest) {
     take: BATCH,
     orderBy: { dataQualityScore: "desc" },
   })
-  const zeroVotes =
+  const recent =
     unrated.length < BATCH
       ? await prisma.mediaItem.findMany({
-          where: zeroVoteRefreshWhere(new Date()),
+          where: recentReleaseVotesWhere(new Date()),
           select: TMDB_REFRESH_SELECT,
           take: BATCH - unrated.length,
           // Most recent releases first: they gain votes fastest and are the ones
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
         })
       : []
 
-  if (unrated.length === 0 && zeroVotes.length === 0) {
+  if (unrated.length === 0 && recent.length === 0) {
     await logCronRun({
       task: "backfill-ratings",
       status: "success",
@@ -67,16 +70,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "All items already have ratings", updated: 0, remaining: 0 })
   }
 
-  const result = await refreshFromTmdb([...unrated, ...zeroVotes], {
+  const result = await refreshFromTmdb([...unrated, ...recent], {
     deadline: startTime + TIME_BUDGET_MS,
     delayMs: 150,
   })
 
-  const [remainingUnrated, remainingZeroVotes] = await Promise.all([
+  const [remainingUnrated, remainingRecent] = await Promise.all([
     prisma.mediaItem.count({ where: UNRATED_WHERE }),
-    prisma.mediaItem.count({ where: zeroVoteRefreshWhere(new Date()) }),
+    prisma.mediaItem.count({ where: recentReleaseVotesWhere(new Date()) }),
   ])
-  const remaining = remainingUnrated + remainingZeroVotes
+  const remaining = remainingUnrated + remainingRecent
   // "updated" = rows re-read and written (data and/or cursor). The Saturday
   // loop stops when a batch makes no progress at all (updated = unratable = 0).
   const updated = result.updated + result.unchanged
@@ -85,8 +88,9 @@ export async function POST(req: NextRequest) {
     task: "backfill-ratings",
     status: result.errors > 0 ? "partial" : "success",
     summary:
-      `${updated} notes TMDB relues (${result.votesGained} titres sortis du zero vote)` +
-      `${result.notFound > 0 ? `, ${result.notFound} sans fiche TMDB (ignores)` : ""}, ${remaining} restants`,
+      `${updated} notes TMDB relues dont ${recent.length} sorties recentes (${result.votesGained} titres sortis du zero vote)` +
+      `${result.notFound > 0 ? `, ${result.notFound} sans fiche TMDB (ignores)` : ""}` +
+      `${result.errors > 0 ? `, ${result.errors} erreurs TMDB (reessayees au prochain passage)` : ""}, ${remaining} restants`,
     details: {
       updated,
       changed: result.updated,
@@ -94,10 +98,10 @@ export async function POST(req: NextRequest) {
       unratable: result.notFound,
       errors: result.errors,
       unratedBatch: unrated.length,
-      zeroVoteBatch: zeroVotes.length,
+      recentBatch: recent.length,
       remaining,
       remainingUnrated,
-      remainingZeroVotes,
+      remainingRecent,
     },
     startTime,
   })
@@ -110,7 +114,7 @@ export async function POST(req: NextRequest) {
     errors: result.errors,
     remaining,
     remainingUnrated,
-    remainingZeroVotes,
+    remainingRecent,
     message: remaining > 0
       ? `Updated ${updated} items. ${remaining} remaining - call again to continue.`
       : `Done! Updated ${updated} items. All items now have ratings.`,

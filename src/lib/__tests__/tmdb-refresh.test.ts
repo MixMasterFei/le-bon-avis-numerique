@@ -6,14 +6,15 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/tmdb", () => ({ getMovieDetails: vi.fn(), getTVDetails: vi.fn() }))
 
 import {
+  recentReleaseVotesWhere,
   refreshFromTmdb,
   staleReleaseStatusWhere,
   tmdbRefreshPatch,
-  zeroVoteRefreshWhere,
   type TmdbRefreshRow,
 } from "@/lib/tmdb-refresh"
 import { prisma } from "@/lib/prisma"
 import { getMovieDetails, getTVDetails } from "@/lib/tmdb"
+import { matchesWhere } from "@/test/prisma-where"
 
 const db = vi.mocked(prisma, true)
 const movieDetails = vi.mocked(getMovieDetails)
@@ -84,18 +85,76 @@ describe("selection windows", () => {
     ])
   })
 
-  it("zero votes: weekly inside 7–60 days after release, plus a one-time catch-up of rows never re-read", () => {
-    const where = zeroVoteRefreshWhere(NOW)
-    expect(where).toMatchObject({
+  it("recent releases: weekly for 90 days, every four weeks until 365, retired at 500 votes, plus the zero-vote catch-up", () => {
+    expect(recentReleaseVotesWhere(NOW)).toEqual({
       type: { in: ["MOVIE", "TV"] },
       tmdbId: { not: null },
-      tmdbVoteCount: 0,
-      releaseDate: { lte: daysAgo(7) },
+      tmdbRating: { not: null },
+      releaseDate: { lte: NOW },
+      AND: [
+        { OR: [{ tmdbVoteCount: null }, { tmdbVoteCount: { lt: 500 } }] },
+        {
+          OR: [
+            { releaseDate: { gte: daysAgo(90) }, OR: [{ tmdbCheckedAt: null }, { tmdbCheckedAt: { lt: daysAgo(6) } }] },
+            {
+              releaseDate: { gte: daysAgo(365), lt: daysAgo(90) },
+              OR: [{ tmdbCheckedAt: null }, { tmdbCheckedAt: { lt: daysAgo(27) } }],
+            },
+            { tmdbVoteCount: 0, tmdbCheckedAt: null },
+          ],
+        },
+      ],
     })
-    expect(where.OR).toEqual([
-      { tmdbCheckedAt: null },
-      { releaseDate: { gte: daysAgo(60) }, tmdbCheckedAt: { lt: daysAgo(6) } },
-    ])
+  })
+})
+
+describe("recentReleaseVotesWhere — which rows are due", () => {
+  const row = (over: Partial<TmdbRefreshRow & { tmdbCheckedAt: Date | null }>) => ({
+    ...ensorceleuses,
+    releaseStatus: "Released",
+    tmdbRating: 6.1,
+    tmdbVoteCount: 5,
+    tmdbCheckedAt: null as Date | null,
+    ...over,
+  })
+  const due = (over: Parameters<typeof row>[0]) => matchesWhere(row(over), recentReleaseVotesWhere(NOW) as Record<string, unknown>)
+
+  it("keeps a released title with a few votes in the queue — it used to leave for good at its first vote", () => {
+    expect(due({ releaseDate: daysAgo(20), tmdbVoteCount: 5, tmdbCheckedAt: daysAgo(7) })).toBe(true)
+    expect(due({ releaseDate: daysAgo(20), tmdbVoteCount: 180, tmdbCheckedAt: daysAgo(7) })).toBe(true)
+    expect(due({ releaseDate: daysAgo(20), tmdbVoteCount: 0, tmdbCheckedAt: daysAgo(7) })).toBe(true)
+  })
+
+  it("weekly in the first 90 days: not before six days, whatever the count", () => {
+    expect(due({ releaseDate: daysAgo(20), tmdbCheckedAt: daysAgo(5) })).toBe(false)
+    expect(due({ releaseDate: daysAgo(20), tmdbCheckedAt: daysAgo(6.5) })).toBe(true)
+    expect(due({ releaseDate: daysAgo(2), tmdbCheckedAt: null })).toBe(true)
+  })
+
+  it("every four weeks from day 90 to day 365", () => {
+    expect(due({ releaseDate: daysAgo(120), tmdbCheckedAt: daysAgo(7) })).toBe(false)
+    expect(due({ releaseDate: daysAgo(120), tmdbCheckedAt: daysAgo(26) })).toBe(false)
+    expect(due({ releaseDate: daysAgo(120), tmdbCheckedAt: daysAgo(28) })).toBe(true)
+    expect(due({ releaseDate: daysAgo(364), tmdbCheckedAt: null })).toBe(true)
+  })
+
+  it("retires a title past 500 votes or past one year", () => {
+    expect(due({ releaseDate: daysAgo(20), tmdbVoteCount: 499, tmdbCheckedAt: daysAgo(7) })).toBe(true)
+    expect(due({ releaseDate: daysAgo(20), tmdbVoteCount: 500, tmdbCheckedAt: daysAgo(7) })).toBe(false)
+    expect(due({ releaseDate: daysAgo(366), tmdbVoteCount: 40, tmdbCheckedAt: null })).toBe(false)
+  })
+
+  it("reads a zero-vote title never re-read since import once, whatever its age, then never again", () => {
+    expect(due({ releaseDate: daysAgo(500), tmdbVoteCount: 0, tmdbCheckedAt: null })).toBe(true)
+    expect(due({ releaseDate: daysAgo(500), tmdbVoteCount: 0, tmdbCheckedAt: daysAgo(30) })).toBe(false)
+  })
+
+  it("leaves never-rated rows, unreleased titles, games and rows without a TMDB id to others", () => {
+    expect(due({ releaseDate: daysAgo(20), tmdbRating: null, tmdbVoteCount: null })).toBe(false)
+    expect(due({ releaseDate: new Date(NOW.getTime() + 3 * DAY) })).toBe(false)
+    expect(due({ releaseDate: null })).toBe(false)
+    expect(due({ releaseDate: daysAgo(20), type: "GAME" })).toBe(false)
+    expect(due({ releaseDate: daysAgo(20), tmdbId: null })).toBe(false)
   })
 })
 
