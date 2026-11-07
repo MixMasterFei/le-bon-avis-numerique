@@ -26,7 +26,8 @@ Serveur : `https://totemavise.com/api/mcp/mcp` (streamable HTTP), trois outils, 
 | Réponse réussie pour tout paramètre valide | ❌ une recherche sans résultat était renvoyée comme une **erreur** | ✅ « aucun titre » est une réponse normale. Un identifiant qui ne correspond à rien reste une erreur, comme prévu. Testé. |
 | Messages d'erreur précis et actionnables | ⚠️ précis, mais techniques et en anglais pour les arguments invalides (« Too small: expected number to be >=3 ») | ✅ messages en français : « L'âge doit être compris entre 3 et 16 ans. » Testé. |
 | Réponses de taille raisonnable | ✅ 10 résultats maximum par recherche, 20 par sélection | ✅ |
-| Pas de collecte de la conversation | ✅ journaux limités à l'outil, au résultat et à la durée | ✅ |
+| Pas de collecte de la conversation | ✅ journaux limités à l'outil, au résultat et à la durée | ✅ inchangé ; le nouveau compteur d'usage (§ 6) ne garde ni le texte de la question, ni l'IP |
+| Chaque réponse crédite Totem Avisé et renvoie au site | ⚠️ la sélection oui ; le verdict avait le lien de la fiche mais pas de mention claire de la source ; la recherche ne donnait aucun lien | ✅ ligne « Source : Totem Avisé — lien » sur toute réponse utile (fiche, sélection ou site), lien de fiche sur chaque résultat de recherche. Testé. |
 | API propre, même domaine que le service | ✅ totemavise.com | ✅ |
 | Politique de confidentialité | ⚠️ existe, mais ne parle pas du connecteur | ✅ section 3.6 ajoutée (à relire, voir plus bas) |
 | Documentation publique d'installation | ❌ aucune page | ✅ `/assistants-ia`, construite mais **fermée** tant que tu n'as pas donné ton accord (voir § 4) |
@@ -74,7 +75,7 @@ Serveur : `https://totemavise.com/api/mcp/mcp` (streamable HTTP), trois outils, 
 | Icône | `https://totemavise.com/icon.png` (PNG 256×256, source `src/app/icon.png`) |
 | Identifiant d'URL (définitif) | `totem-avise` |
 
-**Description EN (2 000 car. max, 998 utilisés)**
+**Description EN (2 000 car. max, 1 080 utilisés)**
 
 > Totem Avisé is an independent French family media guide. For every film, TV series and video game in its catalogue, it gives a recommended age with the reasoning behind it, content scores (violence, sex and nudity, language, alcohol and drugs, consumerism, positive messages, role models), points of attention for parents and a link to the full review page.
 >
@@ -83,9 +84,9 @@ Serveur : `https://totemavise.com/api/mcp/mcp` (streamable HTTP), trois outils, 
 > - give the full age verdict for a film, series or game (get_age_verdict);
 > - suggest films, series or games suited to a child aged 3 to 16 (recommend_for_age).
 >
-> The connector is public and read-only: no account, no sign-in, no personal data. It receives only the parameters of the question (a title, an age, a media type) and does not store them. Content is in French; your assistant can answer in your language. Provisional age estimates are flagged as such, and missing data is never presented as an absence of risk.
+> The connector is public and read-only: no account, no sign-in, no personal data. It receives only the parameters of the question (a title, an age, a media type) and does not store them; usage is counted per day (calls and titles consulted), never the question itself. Content is in French; your assistant can answer in your language. Provisional age estimates are flagged as such, and missing data is never presented as an absence of risk.
 
-**Description FR (1 112 utilisés)**
+**Description FR (1 202 utilisés)**
 
 > Totem Avisé est le guide familial français indépendant des films, séries et jeux vidéo. Pour chaque titre de son catalogue, il donne un âge conseillé et son raisonnement, des indicateurs de contenu (violence, sexualité et nudité, langage, alcool et drogues, consumérisme, messages positifs, modèles), des points de vigilance pour les parents et le lien vers la fiche complète.
 >
@@ -94,7 +95,7 @@ Serveur : `https://totemavise.com/api/mcp/mcp` (streamable HTTP), trois outils, 
 > - donner le verdict d'âge complet d'un film, d'une série ou d'un jeu (get_age_verdict) ;
 > - proposer des films, séries ou jeux adaptés à un enfant de 3 à 16 ans (recommend_for_age).
 >
-> Le connecteur est public et en lecture seule : aucun compte, aucune connexion, aucune donnée personnelle. Il ne reçoit que les paramètres de la question (un titre, un âge, un type de média) et ne les conserve pas. Les fiches sont en français ; votre assistant peut vous répondre dans votre langue. Les âges encore estimés sont signalés comme tels, et une donnée absente n'est jamais présentée comme une absence de risque.
+> Le connecteur est public et en lecture seule : aucun compte, aucune connexion, aucune donnée personnelle. Il ne reçoit que les paramètres de la question (un titre, un âge, un type de média) et ne les conserve pas ; l'usage est compté par jour (appels et fiches consultées), jamais la question elle-même. Les fiches sont en français ; votre assistant peut vous répondre dans votre langue. Les âges encore estimés sont signalés comme tels, et une donnée absente n'est jamais présentée comme une absence de risque.
 
 **Cas d'usage**
 1. Un parent vérifie qu'un film, une série ou un jeu convient à l'âge de son enfant avant de le lancer.
@@ -185,3 +186,23 @@ comme connecteur personnalisé. Pouvoir montrer qu'il est utilisé ainsi renforc
 
 *Avant l'envoi :* vérifier soi-même que l'ajout dans Le Chat fonctionne, puisque le courriel
 l'affirme, et que la page de documentation est publique.
+
+---
+
+## 6. Mesurer si le référencement rapporte
+
+Chaque appel d'outil est compté, sans migration, dans la table existante `ai_bot_hits`
+(une ligne par jour, assistant, type et « surface », avec un compteur) :
+
+- `kind = "mcp"` : séparé des visites de robots ;
+- `bot` : l'assistant appelant, réduit à un jeton court (« Claude-User », « ChatGPT-User »,
+  « MistralAI-User »…), jamais l'en-tête brut ;
+- `surface = "mcp-<outil>"` : appels par outil et par jour (suffixe `:erreur` si l'appel échoue) ;
+- `surface = "mcp-fiche:<identifiant>"` : pour un verdict, la fiche consultée.
+
+Jamais conservés : le texte de la question, l'adresse IP, quoi que ce soit de la conversation.
+L'écriture se fait après la réponse et ne peut pas faire échouer un appel (`src/lib/mcp/usage.ts`).
+
+Pour lire : `npx tsx scripts/check-ai-bots.ts 30` (bloc « AI connector (MCP) » : appels par
+outil, par assistant, fiches les plus consultées). Comparer avant et après chaque référencement :
+la ligne de l'assistant concerné doit monter.

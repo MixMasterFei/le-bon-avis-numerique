@@ -1,4 +1,7 @@
 import { z } from "zod"
+import { scheduleMcpUsage, type McpToolName } from "./usage"
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
 const score = z.number().int().min(0).max(5)
 export const mediaMatchSchema = z.object({
@@ -47,24 +50,48 @@ export function toolError(status: "invalid_input" | "unavailable", message: stri
   return { text: message, data: { schemaVersion: 1, status, result: { kind: "error", message } } }
 }
 
+const ATTRIBUTION = /Source ?: Totem Avisé/
+
+/**
+ * Every answer an assistant can quote credits Totem Avisé and links back:
+ * the fiche for a verdict, the selection page for a selection, the site
+ * otherwise. Errors carry no attribution (there is nothing to quote). Text
+ * that already credits the source (the selection Markdown) is left as is.
+ */
+export function withAttribution(response: ToolResponse): ToolResponse {
+  if (response.data.status === "invalid_input" || response.data.status === "unavailable") return response
+  if (ATTRIBUTION.test(response.text)) return response
+  const result = response.data.result
+  const url = result.kind === "verdict" && result.media ? result.media.url : result.kind === "selection" ? result.url : SITE_URL
+  return { ...response, text: `${response.text}\n\nSource : Totem Avisé — ${url}` }
+}
+
 // Bounded operational fields only: no title queries, family information,
 // IPs or client-supplied labels. Aggregate logs by tool and outcome.
-export async function executeTool(name: "search_media" | "get_age_verdict" | "recommend_for_age", run: () => Promise<ToolResponse>) {
+export async function executeTool(
+  name: McpToolName,
+  run: () => Promise<ToolResponse>,
+  context: { userAgent?: string | null } = {},
+) {
   const started = Date.now()
   let response: ToolResponse
   try {
-    response = await run()
+    response = withAttribution(await run())
     toolOutputSchema.parse(response.data)
   } catch {
     response = toolError("unavailable", "Le catalogue est temporairement indisponible. Réessayez dans un instant ; cette erreur ne signifie pas que le titre est absent.")
   }
+  const isError = response.isError ?? (response.data.status === "invalid_input" || response.data.status === "unavailable")
   console.info(JSON.stringify({ event: "mcp_tool_call", tool: name, status: response.data.status, durationMs: Date.now() - started }))
+  // Per-day counters (tool, and which fiche a verdict resolved to). Never the
+  // query text or the caller's IP — see ./usage.ts.
+  scheduleMcpUsage(name, response.data, isError, context.userAgent)
   return {
     content: [
       { type: "text" as const, text: response.text },
       { type: "text" as const, text: JSON.stringify(response.data) },
     ],
     structuredContent: response.data,
-    isError: response.isError ?? (response.data.status === "invalid_input" || response.data.status === "unavailable"),
+    isError,
   }
 }

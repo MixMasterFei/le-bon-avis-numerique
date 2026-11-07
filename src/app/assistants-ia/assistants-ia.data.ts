@@ -74,8 +74,9 @@ export const PRIVACY_POINTS = [
     label: "Rien de gardé sur vous",
     desc:
       "nous ne conservons pas ces recherches : nos journaux notent seulement l'outil appelé, " +
-      "le résultat (trouvé, introuvable, erreur) et la durée. Comme pour toute visite du site, " +
-      "notre hébergeur garde des journaux techniques de connexion.",
+      "le résultat (trouvé, introuvable, erreur) et la durée, et nos statistiques comptent par jour " +
+      "les appels et les fiches consultées, jamais le texte de la question. Comme pour toute visite " +
+      "du site, notre hébergeur garde des journaux techniques de connexion.",
   },
   {
     label: "Lecture seule",
@@ -153,6 +154,8 @@ export const REVIEWER_SECTION = {
       "source page on totemavise.com.",
     "Try it in two minutes: add the URL as a custom connector, then ask “Is The Wild Robot okay for a " +
       "5-year-old?”, “From what age can kids play Minecraft?” or “Suggest family films for a 7-year-old.”",
-    `Logs keep only the tool name, outcome and duration — never the query. Support: ${SUPPORT_EMAIL}.`,
+    "Logs keep only the tool name, outcome and duration. Usage statistics count calls per day, per tool and " +
+      "per title consulted, by assistant — never the query text, IP addresses or anything personal. " +
+      `Support: ${SUPPORT_EMAIL}.`,
   ],
 }

@@ -49,6 +49,13 @@ const YEAR = z
   .min(1800, "L'année doit être comprise entre 1800 et 2100.")
   .max(2100, "L'année doit être comprise entre 1800 et 2100.")
 
+// Only the User-Agent is read, and only to name the calling assistant in the
+// usage counter (src/lib/mcp/usage.ts) — reduced to a short token there.
+function userAgentOf(extra: { requestInfo?: { headers?: Record<string, string | string[] | undefined> } }): string | null {
+  const ua = extra.requestInfo?.headers?.["user-agent"]
+  return Array.isArray(ua) ? (ua[0] ?? null) : (ua ?? null)
+}
+
 const READ_ONLY = {
   readOnlyHint: true,
   idempotentHint: true,
@@ -83,7 +90,8 @@ const handler = createMcpHandler(
         outputSchema: toolOutputSchema.shape,
         annotations: { ...READ_ONLY, title: "Rechercher dans le catalogue Totem Avisé" },
       },
-      async ({ query, type, limit }) => executeTool("search_media", () => searchMedia(query, type, limit ?? 5)),
+      async ({ query, type, limit }, extra) =>
+        executeTool("search_media", () => searchMedia(query, type, limit ?? 5), { userAgent: userAgentOf(extra) }),
     )
 
     server.registerTool(
@@ -113,7 +121,8 @@ const handler = createMcpHandler(
         outputSchema: toolOutputSchema.shape,
         annotations: { ...READ_ONLY, title: "Verdict d'âge Totem Avisé pour un titre" },
       },
-      async ({ id, title, type, year }) => executeTool("get_age_verdict", () => ageVerdict({ id, title, type, year })),
+      async ({ id, title, type, year }, extra) =>
+        executeTool("get_age_verdict", () => ageVerdict({ id, title, type, year }), { userAgent: userAgentOf(extra) }),
     )
 
     server.registerTool(
@@ -147,7 +156,10 @@ const handler = createMcpHandler(
         outputSchema: toolOutputSchema.shape,
         annotations: { ...READ_ONLY, title: "Sélection Totem Avisé par âge" },
       },
-      async ({ age, type, limit }) => executeTool("recommend_for_age", () => recommendForAge(age, type ?? "films", limit ?? 10)),
+      async ({ age, type, limit }, extra) =>
+        executeTool("recommend_for_age", () => recommendForAge(age, type ?? "films", limit ?? 10), {
+          userAgent: userAgentOf(extra),
+        }),
     )
   },
   {

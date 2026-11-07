@@ -131,7 +131,9 @@ export default function ConfidentialitePage() {
             <p>
               Nous ne conservons pas ces recherches : nos journaux techniques enregistrent seulement le nom de
               l&apos;outil appelé, le résultat (trouvé, introuvable, erreur) et la durée de traitement, ainsi que
-              le nom de l&apos;assistant à l&apos;origine de la requête. Comme pour toute visite du site, notre
+              le nom de l&apos;assistant à l&apos;origine de la requête. Nos statistiques d&apos;usage comptent, par
+              jour et par assistant, les appels de chaque outil et les fiches consultées, sans jamais le texte de
+              la question. Comme pour toute visite du site, notre
               hébergeur conserve des journaux de connexion (adresse IP, date). Votre conversation avec
               l&apos;assistant relève de la politique de confidentialité de son éditeur : Totem Avisé n&apos;y a
               pas accès.

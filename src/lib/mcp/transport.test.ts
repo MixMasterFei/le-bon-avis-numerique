@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest"
-vi.mock("@/lib/prisma", () => ({ prisma: { mediaItem: { findFirst: vi.fn().mockResolvedValue(null) }, $queryRaw: vi.fn().mockResolvedValue([]) } }))
+vi.mock("@/lib/prisma", () => ({ prisma: { mediaItem: { findFirst: vi.fn().mockResolvedValue(null) }, $queryRaw: vi.fn().mockResolvedValue([]), aiBotHit: { upsert: vi.fn().mockResolvedValue({}) } } }))
 import { POST } from "@/app/api/mcp/[transport]/route"
+import { prisma } from "@/lib/prisma"
 
-async function rpc(id: number, method: string, params: Record<string, unknown>) {
+async function rpc(id: number, method: string, params: Record<string, unknown>, userAgent = "vitest") {
   const response = await POST(new Request("http://localhost/api/mcp/mcp", {
-    method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", "MCP-Protocol-Version": "2025-11-25" },
+    method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream", "MCP-Protocol-Version": "2025-11-25", "User-Agent": userAgent },
     body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
   }))
   const body = await response.text()
@@ -48,6 +49,20 @@ describe("MCP Streamable HTTP contract", () => {
     const byTitle = await rpc(8, "tools/call", { name: "get_age_verdict", arguments: { title: "Titre inexistant" } })
     expect(byTitle.result.isError).toBe(false)
     expect(byTitle.result.structuredContent.status).toBe("not_found")
+  })
+  it("credits Totem Avisé in every answer, even an empty one", async () => {
+    const search = await rpc(10, "tools/call", { name: "search_media", arguments: { query: "zzzzzz" } })
+    expect(search.result.content[0].text).toContain("Source : Totem Avisé — ")
+  })
+  it("counts the call under the calling assistant, without the query", async () => {
+    const upsert = vi.mocked(prisma.aiBotHit.upsert)
+    upsert.mockClear()
+    await rpc(11, "tools/call", { name: "search_media", arguments: { query: "Léa a peur" } }, "Claude-User/1.0")
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(upsert).toHaveBeenCalledTimes(1)
+    const where = upsert.mock.calls[0][0].where.day_bot_kind_surface
+    expect(where).toMatchObject({ bot: "Claude-User", kind: "mcp", surface: "mcp-search_media" })
+    expect(JSON.stringify(upsert.mock.calls)).not.toContain("Léa")
   })
   it("explains invalid arguments in French", async () => {
     const tooYoung = await rpc(9, "tools/call", { name: "recommend_for_age", arguments: { age: 2 } })

@@ -86,6 +86,8 @@ describe("catalogue search and disambiguation", () => {
     expect(db.findFirst).not.toHaveBeenCalled()
     expect(result.text).toContain("2016")
     expect(result.text).toContain("2026")
+    // Each candidate links its fiche, so the assistant can send the parent there.
+    expect(result.text).toContain("fiche : https://totemavise.com/media/")
     expect(toolOutputSchema.safeParse(result.data).success).toBe(true)
   })
   it("resolves an exact original-language title", async () => {

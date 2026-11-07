@@ -52,7 +52,7 @@ function publicMatch(row: SearchRow) {
 }
 function searchRowLine(row: SearchRow) {
   const m = publicMatch(row)
-  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${m.age ? `dès ${m.age} ans${m.provisional ? " (estimation à confirmer)" : ""}` : "âge à confirmer"}`
+  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${m.age ? `dès ${m.age} ans${m.provisional ? " (estimation à confirmer)" : ""}` : "âge à confirmer"} · fiche : ${m.url}`
 }
 function validQuery(query: string) { return query.trim().length <= 120 && compactTitle(query).length >= 2 }
 

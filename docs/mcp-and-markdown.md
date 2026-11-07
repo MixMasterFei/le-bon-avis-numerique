@@ -2,7 +2,7 @@
 
 The public catalogue is available at `/api/mcp/mcp` through Streamable HTTP.
 The three tools are anonymous and read-only. They never load family profiles.
-Server version: 1.2.0 (display title « Totem Avisé », icon `/icon.png`; tool descriptions and server instructions carry no promotion and no answer-language instruction, per connector-directory review rules; a search with no match is a successful answer, `isError: false`). Structured result schema version: 1.
+Server version: 1.2.0 (display title « Totem Avisé », icon `/icon.png`; tool descriptions and server instructions carry no promotion and no answer-language instruction, per connector-directory review rules; a search with no match is a successful answer, `isError: false`; every useful answer ends with « Source : Totem Avisé — <lien> »; per-day usage counted in `ai_bot_hits` with `kind: "mcp"`, never the query text — see `src/lib/mcp/usage.ts`). Structured result schema version: 1.
 
 ## Tool contract
 
