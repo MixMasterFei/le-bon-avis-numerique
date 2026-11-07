@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og"
 import { parseMediaRouteId } from "@/lib/media-route"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
+import { ficheOgVerdict } from "@/lib/fiche-title"
+import { shouldHideContentAnalysis } from "@/lib/release-status"
 
 // Branded 1200×630 social card — replaces the raw 2:3 portrait poster that
 // letterboxed on summary_large_image. Warm site palette, poster inset on the
@@ -35,8 +37,12 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
 
   const title = media?.title ?? "Totem Avisé"
   const typeLabel = media ? (TYPE_LABEL[media.type] ?? "") : ""
-  const hasAge = !!media && media.expertAgeRec != null && media.expertAgeRec > 0
-  const verdict = hasAge ? `Dès ${media!.expertAgeRec} ans` : "Repères famille"
+  // « Dès 12 ans » / « Tous publics » (0 is a real verdict), « (à confirmer) »
+  // while only estimated — the same contract as the fiche (@/lib/fiche-title).
+  const verdict = ficheOgVerdict({
+    age: media?.expertAgeRec,
+    provisional: !!media && shouldHideContentAnalysis(media),
+  })
   const poster =
     media?.posterUrl && media.posterUrl !== "/placeholder-poster.jpg" ? media.posterUrl : null
   const titleSize = title.length > 40 ? 52 : title.length > 24 ? 64 : 76

@@ -8,6 +8,16 @@
  * are different answers and must look different.
  */
 
+/**
+ * The one known-age test: 0 (« Tous publics ») is a known age, null/undefined
+ * (or anything that isn't a non-negative number) is unknown. Use this instead
+ * of `age > 0` / `age ? … : …`, which silently turn a TP verdict into
+ * « âge à confirmer ».
+ */
+export function isKnownAge(age: number | null | undefined): age is number {
+  return typeof age === "number" && Number.isFinite(age) && age >= 0
+}
+
 /** Short badge form: "TP" for tous publics, "10+" otherwise, null when unknown. */
 export function ageBadgeLabel(age: number | null | undefined): string | null {
   if (typeof age !== "number" || !Number.isFinite(age) || age < 0) return null

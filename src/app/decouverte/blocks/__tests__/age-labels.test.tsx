@@ -55,8 +55,8 @@ describe("HeroMatch — la une", () => {
   const meta: BlockMeta = { eyebrow: null, title: null, em: null, lead: null, variant: "grid" }
   const zero = { violence: 0, sexNudity: 0, language: 0, consumerism: 0, substanceUse: 0, positiveMessages: 0, roleModels: 0 }
 
-  // Built with the real quick answer: its phrase is what the pill shows, and it
-  // still words a 0 « avec un âge à confirmer ».
+  // Built with the real quick answer: its phrase is what the pill shows
+  // (« à partir de 10 ans », « pour tous publics » for 0).
   function heroFor(c: AssembledCard): HeroData {
     return {
       card: c,
@@ -83,8 +83,8 @@ describe("HeroMatch — la une", () => {
     render(<HeroMatch meta={meta} hero={heroFor(tp)} />)
 
     expect(verdict().getByText("Tous publics")).toBeInTheDocument()
-    // The pill on the cover + the verdict card.
-    expect(screen.getAllByText("Tous publics")).toHaveLength(2)
+    // The pill on the cover carries the quick answer's phrase.
+    expect(screen.getByText("pour tous publics")).toBeInTheDocument()
     expect(screen.queryByText(/Dès 0 ans/)).toBeNull()
     expect(screen.queryByText(/à confirmer/)).toBeNull()
   })

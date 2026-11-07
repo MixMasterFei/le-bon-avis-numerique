@@ -7,6 +7,7 @@ import { renderMediaMarkdown, mediaAssessment } from "@/lib/markdown/media-md"
 import { loadMediaMdInput } from "@/lib/markdown/media-md-data"
 import { buildSelectionMarkdown } from "@/lib/markdown/selection-md"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { ageInlineLabel, isKnownAge } from "@/lib/age-label"
 import { toolError, type ToolResponse } from "./result"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
@@ -47,12 +48,18 @@ export async function searchCatalog(query: string, type?: SearchType, take = 10,
 function publicMatch(row: SearchRow) {
   const id = toMediaRouteId(row.type, row.id)
   return { id, title: row.title, type: row.type, year: row.releaseDate?.getUTCFullYear() ?? null,
-    age: row.expertAgeRec && row.expertAgeRec > 0 ? row.expertAgeRec : null,
+    // 0 = « Tous publics », a known age — exported as 0, never as null (unknown).
+    age: isKnownAge(row.expertAgeRec) ? row.expertAgeRec : null,
     provisional: shouldHideContentAnalysis(row), url: `${SITE_URL}/media/${id}` }
+}
+/** « dès 10 ans » / « pour tous publics », flagged when only estimated. */
+function ageText(m: { age: number | null; provisional: boolean }) {
+  const label = ageInlineLabel(m.age)
+  return label ? `${label}${m.provisional ? " (estimation à confirmer)" : ""}` : "âge à confirmer"
 }
 function searchRowLine(row: SearchRow) {
   const m = publicMatch(row)
-  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${m.age ? `dès ${m.age} ans${m.provisional ? " (estimation à confirmer)" : ""}` : "âge à confirmer"}`
+  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${ageText(m)}`
 }
 function validQuery(query: string) { return query.trim().length <= 120 && compactTitle(query).length >= 2 }
 
@@ -96,7 +103,7 @@ export async function ageVerdict(params: { id?: string; title?: string; type?: S
   const id = toMediaRouteId(input.type, input.id)
   return { text: renderMediaMarkdown(input), data: { schemaVersion: 1, status: "ok", result: { kind: "verdict", candidates: [], media: {
     id, title: input.title, type: input.type, year: input.releaseDate ? Number(input.releaseDate.slice(0, 4)) : null,
-    age: input.expertAgeRec && input.expertAgeRec > 0 ? input.expertAgeRec : null, provisional: shouldHideContentAnalysis(input), url: `${SITE_URL}/media/${id}`,
+    age: isKnownAge(input.expertAgeRec) ? input.expertAgeRec : null, provisional: shouldHideContentAnalysis(input), url: `${SITE_URL}/media/${id}`,
     updatedAt: input.contentUpdatedAt.toISOString(), classification: { value: input.officialRating, country: null, authority: null }, assessment: mediaAssessment(input),
   } } } }
 }

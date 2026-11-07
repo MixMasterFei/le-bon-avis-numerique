@@ -1,5 +1,6 @@
 import type { MediaType } from "@/lib/media-route"
 import { isAnimationStyle } from "@/lib/age-floor"
+import { isKnownAge } from "@/lib/age-label"
 
 /**
  * Builds the public "Pourquoi cet âge ?" rationale shown on a fiche.
@@ -89,8 +90,15 @@ const TRUST_LINE =
   "Recommandation indépendante de Totem Avisé, issue d'une analyse automatisée selon des critères publiés. Des garde-fous limitent les incohérences ; les retours des familles permettent de corriger les estimations. Ce repère peut comporter des erreurs et ne remplace pas la classification applicable ni votre connaissance de votre enfant."
 
 export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
-  const hasAge = typeof input.expertAgeRec === "number" && input.expertAgeRec > 0
-  const ageLabel = hasAge ? `dès ${input.expertAgeRec} ans` : "à un âge à confirmer"
+  // 0 = « Tous publics »: a real verdict, explained like any other age — it
+  // used to be treated as « no age » (show:false, « à un âge à confirmer »).
+  // Only an unknown age (null) has nothing to explain. See @/lib/age-label.
+  const hasAge = isKnownAge(input.expertAgeRec)
+  const allAges = input.expertAgeRec === 0
+  // Bare form for headings and parentheses: « dès 10 ans » / « tous publics ».
+  const ageLabel = !hasAge ? "à un âge à confirmer" : allAges ? "tous publics" : `dès ${input.expertAgeRec} ans`
+  // After « conseillé »: « dès 10 ans » / « pour tous publics ».
+  const recommended = allAges ? "pour tous publics" : ageLabel
 
   // No age at all → nothing to explain.
   if (!hasAge) {
@@ -166,9 +174,13 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
     const driverPhrase = drivers
       .map((d) => `${d.label.toLowerCase()} (${d.level.toLowerCase()})`)
       .join(", ")
-    lead = `${input.title} est conseillé ${ageLabel}, principalement en raison de : ${driverPhrase}.`
+    // A TP verdict has no minimum age to justify: the elevated axes are points
+    // to watch, never « reasons » for « tous publics ».
+    lead = allAges
+      ? `${input.title} est conseillé ${recommended}. À surveiller malgré tout : ${driverPhrase}.`
+      : `${input.title} est conseillé ${recommended}, principalement en raison de : ${driverPhrase}.`
   } else {
-    lead = `${input.title} est conseillé ${ageLabel}.`
+    lead = `${input.title} est conseillé ${recommended}.`
     noDriverNote =
       "Aucun élément sensible ne ressort nettement : la recommandation reflète surtout le public visé et les thèmes abordés."
   }
@@ -198,6 +210,6 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
     contextNotes,
     trustLine: TRUST_LINE,
     plainText,
-    faqQuestion: `${input.title} : pourquoi est-ce conseillé ${ageLabel} ?`,
+    faqQuestion: `${input.title} : pourquoi est-ce conseillé ${recommended} ?`,
   }
 }
