@@ -14,8 +14,8 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "029f6700fdae8e41",
-          "length": 35344,
+          "contentSha": "c744ed7dc18968d8",
+          "length": 35500,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -190,8 +190,8 @@ exports[`POST /api/totem/chat — characterization > news article page context 1
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "029f6700fdae8e41",
-          "length": 35344,
+          "contentSha": "c744ed7dc18968d8",
+          "length": 35500,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -368,8 +368,8 @@ exports[`POST /api/totem/chat — characterization > signed-in family on a media
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "029f6700fdae8e41",
-          "length": 35344,
+          "contentSha": "c744ed7dc18968d8",
+          "length": 35500,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -388,7 +388,7 @@ exports[`POST /api/totem/chat — characterization > signed-in family on a media
 - Utilisateur connecté : OUI
 - Invitation à se connecter autorisée ce tour : non
 
-Page actuelle : fiche du movie **"Vice-versa"** (2015) — id catalogue : \`m-123\`, âge conseillé 6 ans.
+Page actuelle : fiche du movie **"Vice-versa"** (2015) — id catalogue : \`m-123\`, âge conseillé dès 6 ans.
 Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans préciser, il fait référence à ce titre. Utilise directement \`getMediaDetails\` ou \`getFamilyFit\` avec l'id ci-dessus — pas besoin d'appeler \`searchMedia\` d'abord.
 
 Composition du foyer connecté :
@@ -646,8 +646,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "029f6700fdae8e41",
-          "length": 35344,
+          "contentSha": "c744ed7dc18968d8",
+          "length": 35500,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -748,8 +748,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "029f6700fdae8e41",
-          "length": 35344,
+          "contentSha": "c744ed7dc18968d8",
+          "length": 35500,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
