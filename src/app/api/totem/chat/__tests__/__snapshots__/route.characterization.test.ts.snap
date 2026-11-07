@@ -1,0 +1,899 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`POST /api/totem/chat — characterization > anonymous first turn on the home page 1`] = `
+{
+  "headers": {
+    "conversation": "conv-1",
+    "remaining": "29",
+    "setCookie": "totem_sid=tt_test-session; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000",
+  },
+  "modelCalls": [
+    {
+      "hasAbortSignal": true,
+      "maxOutputTokens": 1500,
+      "modelId": "claude-haiku-4-5-20251001",
+      "prompt": [
+        {
+          "contentSha": "029f6700fdae8e41",
+          "length": 35344,
+          "providerOptions": {
+            "anthropic": {
+              "cacheControl": {
+                "type": "ephemeral",
+              },
+            },
+          },
+          "role": "system",
+        },
+        {
+          "content": "# Contexte dynamique
+
+- Date du jour : 2026-11-07
+- Page d'arrivée de l'utilisateur : /
+- Nombre de tours échangés : 1
+- Utilisateur connecté : NON (anonyme)
+- Invitation à se connecter autorisée ce tour : non
+",
+          "providerOptions": undefined,
+          "role": "system",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Un film pour ce soir ?",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+      ],
+      "toolChoice": {
+        "type": "auto",
+      },
+      "tools": [
+        {
+          "descriptionSha": "d850533eacd7a6d5",
+          "name": "searchMedia",
+          "schemaSha": "771a07540c7ae6ba",
+        },
+        {
+          "descriptionSha": "a7b3646c83a47dfd",
+          "name": "getMediaDetails",
+          "schemaSha": "85b88362634e5029",
+        },
+        {
+          "descriptionSha": "1f4047aa84baafda",
+          "name": "getCommunityConsensus",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d179d6082a5670e1",
+          "name": "getFamilyFit",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d72560a309a3e7d5",
+          "name": "getDiscoveryRail",
+          "schemaSha": "cf937eab19d740c0",
+        },
+        {
+          "descriptionSha": "30eba988b44058d0",
+          "name": "searchBlog",
+          "schemaSha": "eeb03de6862f4c46",
+        },
+        {
+          "descriptionSha": "a5b2b268d50b5307",
+          "name": "searchNews",
+          "schemaSha": "4dfea8864b74793d",
+        },
+        {
+          "descriptionSha": "b2ad31e1707dc487",
+          "name": "getUserFamilyContext",
+          "schemaSha": "8194b4560dd4fe03",
+        },
+        {
+          "descriptionSha": "b24a0c4f21a03632",
+          "name": "proposeAddToWatchlist",
+          "schemaSha": "887ce1c33833d0e2",
+        },
+        {
+          "descriptionSha": "ed6e1b75b156dbac",
+          "name": "proposeReaction",
+          "schemaSha": "219dd5f40392d092",
+        },
+        {
+          "descriptionSha": "66e8da2ff7cdd171",
+          "name": "proposeNavigation",
+          "schemaSha": "a0b8d1f56e5f9ff0",
+        },
+      ],
+    },
+  ],
+  "persisted": {
+    "assistant": [
+      {
+        "cachedInputTokens": 900,
+        "citedMediaIds": [],
+        "content": "Bonsoir ! Pour quel âge ?",
+        "conversationId": "conv-1",
+        "inputTokens": 1200,
+        "latencyMs": "number",
+        "modelUsed": "claude-haiku-4-5-20251001",
+        "outputTokens": 40,
+        "toolCalls": undefined,
+        "toolResults": undefined,
+      },
+    ],
+    "conversation": [
+      {
+        "conversationId": undefined,
+        "familyMemberContext": undefined,
+        "sessionId": "tt_test-session",
+        "sourcePage": "/",
+        "userId": null,
+      },
+    ],
+    "user": [
+      {
+        "content": "Un film pour ce soir ?",
+        "conversationId": "conv-1",
+      },
+    ],
+  },
+  "sse": [
+    "{"type":"start"}",
+    "{"type":"start-step"}",
+    "{"type":"text-start","id":"t1"}",
+    "{"type":"text-delta","id":"t1","delta":"Bonsoir ! Pour quel âge ?"}",
+    "{"type":"text-end","id":"t1"}",
+    "{"type":"finish-step"}",
+    "{"type":"finish","finishReason":"stop"}",
+    "[DONE]",
+  ],
+  "status": 200,
+}
+`;
+
+exports[`POST /api/totem/chat — characterization > escalates a grave message to the escalation model 1`] = `"claude-sonnet-4-6"`;
+
+exports[`POST /api/totem/chat — characterization > news article page context 1`] = `
+{
+  "headers": {
+    "conversation": "conv-1",
+    "remaining": "29",
+    "setCookie": null,
+  },
+  "modelCalls": [
+    {
+      "hasAbortSignal": true,
+      "maxOutputTokens": 1500,
+      "modelId": "claude-haiku-4-5-20251001",
+      "prompt": [
+        {
+          "contentSha": "029f6700fdae8e41",
+          "length": 35344,
+          "providerOptions": {
+            "anthropic": {
+              "cacheControl": {
+                "type": "ephemeral",
+              },
+            },
+          },
+          "role": "system",
+        },
+        {
+          "content": "# Contexte dynamique
+
+- Date du jour : 2026-11-07
+- Page d'arrivée de l'utilisateur : /apercudecouverte/ecrans-ados
+- Nombre de tours échangés : 1
+- Utilisateur connecté : NON (anonyme)
+- Invitation à se connecter autorisée ce tour : non
+
+Page actuelle : article actualité **"Les écrans et les ados"** (catégorie : SOCIETE), publié le 2026-11-01.
+Résumé interne (à reformuler en tes propres mots, jamais à recopier verbatim) : Une étude sur le temps d'écran.
+Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait référence à cet article. Tu peux répondre directement sans appeler \`searchNews\`. URL canonique : \`/apercudecouverte/ecrans-ados\`.
+",
+          "providerOptions": undefined,
+          "role": "system",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Résume l'article",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+      ],
+      "toolChoice": {
+        "type": "auto",
+      },
+      "tools": [
+        {
+          "descriptionSha": "d850533eacd7a6d5",
+          "name": "searchMedia",
+          "schemaSha": "771a07540c7ae6ba",
+        },
+        {
+          "descriptionSha": "a7b3646c83a47dfd",
+          "name": "getMediaDetails",
+          "schemaSha": "85b88362634e5029",
+        },
+        {
+          "descriptionSha": "1f4047aa84baafda",
+          "name": "getCommunityConsensus",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d179d6082a5670e1",
+          "name": "getFamilyFit",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d72560a309a3e7d5",
+          "name": "getDiscoveryRail",
+          "schemaSha": "cf937eab19d740c0",
+        },
+        {
+          "descriptionSha": "30eba988b44058d0",
+          "name": "searchBlog",
+          "schemaSha": "eeb03de6862f4c46",
+        },
+        {
+          "descriptionSha": "a5b2b268d50b5307",
+          "name": "searchNews",
+          "schemaSha": "4dfea8864b74793d",
+        },
+        {
+          "descriptionSha": "b2ad31e1707dc487",
+          "name": "getUserFamilyContext",
+          "schemaSha": "8194b4560dd4fe03",
+        },
+        {
+          "descriptionSha": "b24a0c4f21a03632",
+          "name": "proposeAddToWatchlist",
+          "schemaSha": "887ce1c33833d0e2",
+        },
+        {
+          "descriptionSha": "ed6e1b75b156dbac",
+          "name": "proposeReaction",
+          "schemaSha": "219dd5f40392d092",
+        },
+        {
+          "descriptionSha": "66e8da2ff7cdd171",
+          "name": "proposeNavigation",
+          "schemaSha": "a0b8d1f56e5f9ff0",
+        },
+      ],
+    },
+  ],
+  "persisted": {
+    "assistant": [
+      {
+        "cachedInputTokens": 900,
+        "citedMediaIds": [],
+        "content": "En bref : …",
+        "conversationId": "conv-1",
+        "inputTokens": 1200,
+        "latencyMs": "number",
+        "modelUsed": "claude-haiku-4-5-20251001",
+        "outputTokens": 40,
+        "toolCalls": undefined,
+        "toolResults": undefined,
+      },
+    ],
+    "conversation": [
+      {
+        "conversationId": undefined,
+        "familyMemberContext": undefined,
+        "sessionId": "tt_existing",
+        "sourcePage": "/apercudecouverte/ecrans-ados",
+        "userId": null,
+      },
+    ],
+    "user": [
+      {
+        "content": "Résume l'article",
+        "conversationId": "conv-1",
+      },
+    ],
+  },
+  "sse": [
+    "{"type":"start"}",
+    "{"type":"start-step"}",
+    "{"type":"text-start","id":"t1"}",
+    "{"type":"text-delta","id":"t1","delta":"En bref : …"}",
+    "{"type":"text-end","id":"t1"}",
+    "{"type":"finish-step"}",
+    "{"type":"finish","finishReason":"stop"}",
+    "[DONE]",
+  ],
+  "status": 200,
+}
+`;
+
+exports[`POST /api/totem/chat — characterization > signed-in family on a media page, with prior turns 1`] = `
+{
+  "headers": {
+    "conversation": "conv-1",
+    "remaining": "29",
+    "setCookie": "totem_sid=tt_test-session; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000",
+  },
+  "modelCalls": [
+    {
+      "hasAbortSignal": true,
+      "maxOutputTokens": 1500,
+      "modelId": "claude-haiku-4-5-20251001",
+      "prompt": [
+        {
+          "contentSha": "029f6700fdae8e41",
+          "length": 35344,
+          "providerOptions": {
+            "anthropic": {
+              "cacheControl": {
+                "type": "ephemeral",
+              },
+            },
+          },
+          "role": "system",
+        },
+        {
+          "content": "# Contexte dynamique
+
+- Date du jour : 2026-11-07
+- Page d'arrivée de l'utilisateur : /media/movie:m-123
+- Nombre de tours échangés : 3
+- Utilisateur connecté : OUI
+- Invitation à se connecter autorisée ce tour : non
+
+Page actuelle : fiche du movie **"Vice-versa"** (2015) — id catalogue : \`m-123\`, âge conseillé 6 ans.
+Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans préciser, il fait référence à ce titre. Utilise directement \`getMediaDetails\` ou \`getFamilyFit\` avec l'id ci-dessus — pas besoin d'appeler \`searchMedia\` d'abord.
+
+Composition du foyer connecté :
+- Léa (6 ans) — sensibilités : violence 3, peur 3, sexualité 3, langage 2, substances 3 — aime : Animation, Familial — éviter : mort d'un parent
+- Hugo (10 ans) — sensibilités : violence 2, peur 2, sexualité 3, langage 1, substances 2 — aime : Aventure, Science-Fiction",
+          "providerOptions": undefined,
+          "role": "system",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Bonjour",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+        {
+          "content": [
+            {
+              "input": {
+                "limit": 5,
+                "q": "vice versa",
+              },
+              "providerExecuted": undefined,
+              "providerOptions": undefined,
+              "toolCallId": "call-0",
+              "toolName": "searchMedia",
+              "type": "tool-call",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "assistant",
+        },
+        {
+          "content": [
+            {
+              "output": {
+                "type": "json",
+                "value": {
+                  "results": [
+                    {
+                      "id": "m-123",
+                      "recommendedAge": 6,
+                      "title": "Vice-versa",
+                    },
+                  ],
+                },
+              },
+              "providerOptions": undefined,
+              "toolCallId": "call-0",
+              "toolName": "searchMedia",
+              "type": "tool-result",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "tool",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Bonjour, que cherchez-vous ?",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "assistant",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Ce film convient à Léa ?",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+      ],
+      "toolChoice": {
+        "type": "auto",
+      },
+      "tools": [
+        {
+          "descriptionSha": "d850533eacd7a6d5",
+          "name": "searchMedia",
+          "schemaSha": "771a07540c7ae6ba",
+        },
+        {
+          "descriptionSha": "a7b3646c83a47dfd",
+          "name": "getMediaDetails",
+          "schemaSha": "85b88362634e5029",
+        },
+        {
+          "descriptionSha": "1f4047aa84baafda",
+          "name": "getCommunityConsensus",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d179d6082a5670e1",
+          "name": "getFamilyFit",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d72560a309a3e7d5",
+          "name": "getDiscoveryRail",
+          "schemaSha": "cf937eab19d740c0",
+        },
+        {
+          "descriptionSha": "30eba988b44058d0",
+          "name": "searchBlog",
+          "schemaSha": "eeb03de6862f4c46",
+        },
+        {
+          "descriptionSha": "a5b2b268d50b5307",
+          "name": "searchNews",
+          "schemaSha": "4dfea8864b74793d",
+        },
+        {
+          "descriptionSha": "b2ad31e1707dc487",
+          "name": "getUserFamilyContext",
+          "schemaSha": "8194b4560dd4fe03",
+        },
+        {
+          "descriptionSha": "b24a0c4f21a03632",
+          "name": "proposeAddToWatchlist",
+          "schemaSha": "887ce1c33833d0e2",
+        },
+        {
+          "descriptionSha": "ed6e1b75b156dbac",
+          "name": "proposeReaction",
+          "schemaSha": "219dd5f40392d092",
+        },
+        {
+          "descriptionSha": "66e8da2ff7cdd171",
+          "name": "proposeNavigation",
+          "schemaSha": "a0b8d1f56e5f9ff0",
+        },
+      ],
+    },
+  ],
+  "persisted": {
+    "assistant": [
+      {
+        "cachedInputTokens": 900,
+        "citedMediaIds": [],
+        "content": "Oui, dès 6 ans. Je creuse ?",
+        "conversationId": "conv-1",
+        "inputTokens": 1200,
+        "latencyMs": "number",
+        "modelUsed": "claude-haiku-4-5-20251001",
+        "outputTokens": 40,
+        "toolCalls": undefined,
+        "toolResults": undefined,
+      },
+    ],
+    "conversation": [
+      {
+        "conversationId": "conv-1",
+        "familyMemberContext": [
+          {
+            "age": 6,
+            "avoidTopics": [
+              "mort d'un parent",
+            ],
+            "favoriteGenres": [
+              "Animation",
+              "Familial",
+            ],
+            "name": "Léa",
+            "sensitivities": {
+              "language": 2,
+              "scary": 3,
+              "sexual": 3,
+              "substances": 3,
+              "violence": 3,
+            },
+          },
+          {
+            "age": 10,
+            "avoidTopics": [],
+            "favoriteGenres": [
+              "Aventure",
+              "Science-Fiction",
+            ],
+            "name": "Hugo",
+            "sensitivities": {
+              "language": 1,
+              "scary": 2,
+              "sexual": 3,
+              "substances": 2,
+              "violence": 2,
+            },
+          },
+        ],
+        "sessionId": "tt_test-session",
+        "sourcePage": "/media/movie:m-123",
+        "userId": "user-1",
+      },
+    ],
+    "user": [
+      {
+        "content": "Ce film convient à Léa ?",
+        "conversationId": "conv-1",
+      },
+    ],
+  },
+  "sse": [
+    "{"type":"start"}",
+    "{"type":"start-step"}",
+    "{"type":"text-start","id":"t1"}",
+    "{"type":"text-delta","id":"t1","delta":"Oui, dès 6 ans. Je creuse ?"}",
+    "{"type":"text-end","id":"t1"}",
+    "{"type":"finish-step"}",
+    "{"type":"finish","finishReason":"stop"}",
+    "[DONE]",
+  ],
+  "status": 200,
+}
+`;
+
+exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then answer 1`] = `
+{
+  "headers": {
+    "conversation": "conv-1",
+    "remaining": "29",
+    "setCookie": "totem_sid=tt_test-session; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000",
+  },
+  "modelCalls": [
+    {
+      "hasAbortSignal": true,
+      "maxOutputTokens": 1500,
+      "modelId": "claude-haiku-4-5-20251001",
+      "prompt": [
+        {
+          "contentSha": "029f6700fdae8e41",
+          "length": 35344,
+          "providerOptions": {
+            "anthropic": {
+              "cacheControl": {
+                "type": "ephemeral",
+              },
+            },
+          },
+          "role": "system",
+        },
+        {
+          "content": "# Contexte dynamique
+
+- Date du jour : 2026-11-07
+- Page d'arrivée de l'utilisateur : /films
+- Nombre de tours échangés : 1
+- Utilisateur connecté : OUI
+- Invitation à se connecter autorisée ce tour : non
+",
+          "providerOptions": undefined,
+          "role": "system",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Interstellar, c'est pour quel âge ?",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+      ],
+      "toolChoice": {
+        "type": "auto",
+      },
+      "tools": [
+        {
+          "descriptionSha": "d850533eacd7a6d5",
+          "name": "searchMedia",
+          "schemaSha": "771a07540c7ae6ba",
+        },
+        {
+          "descriptionSha": "a7b3646c83a47dfd",
+          "name": "getMediaDetails",
+          "schemaSha": "85b88362634e5029",
+        },
+        {
+          "descriptionSha": "1f4047aa84baafda",
+          "name": "getCommunityConsensus",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d179d6082a5670e1",
+          "name": "getFamilyFit",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d72560a309a3e7d5",
+          "name": "getDiscoveryRail",
+          "schemaSha": "cf937eab19d740c0",
+        },
+        {
+          "descriptionSha": "30eba988b44058d0",
+          "name": "searchBlog",
+          "schemaSha": "eeb03de6862f4c46",
+        },
+        {
+          "descriptionSha": "a5b2b268d50b5307",
+          "name": "searchNews",
+          "schemaSha": "4dfea8864b74793d",
+        },
+        {
+          "descriptionSha": "b2ad31e1707dc487",
+          "name": "getUserFamilyContext",
+          "schemaSha": "8194b4560dd4fe03",
+        },
+        {
+          "descriptionSha": "b24a0c4f21a03632",
+          "name": "proposeAddToWatchlist",
+          "schemaSha": "887ce1c33833d0e2",
+        },
+        {
+          "descriptionSha": "ed6e1b75b156dbac",
+          "name": "proposeReaction",
+          "schemaSha": "219dd5f40392d092",
+        },
+        {
+          "descriptionSha": "66e8da2ff7cdd171",
+          "name": "proposeNavigation",
+          "schemaSha": "a0b8d1f56e5f9ff0",
+        },
+      ],
+    },
+    {
+      "hasAbortSignal": true,
+      "maxOutputTokens": 1500,
+      "modelId": "claude-haiku-4-5-20251001",
+      "prompt": [
+        {
+          "contentSha": "029f6700fdae8e41",
+          "length": 35344,
+          "providerOptions": {
+            "anthropic": {
+              "cacheControl": {
+                "type": "ephemeral",
+              },
+            },
+          },
+          "role": "system",
+        },
+        {
+          "content": "# Contexte dynamique
+
+- Date du jour : 2026-11-07
+- Page d'arrivée de l'utilisateur : /films
+- Nombre de tours échangés : 1
+- Utilisateur connecté : OUI
+- Invitation à se connecter autorisée ce tour : non
+",
+          "providerOptions": undefined,
+          "role": "system",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Interstellar, c'est pour quel âge ?",
+              "type": "text",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "user",
+        },
+        {
+          "content": [
+            {
+              "providerOptions": undefined,
+              "text": "Je regarde.",
+              "type": "text",
+            },
+            {
+              "input": {
+                "limit": 5,
+                "q": "Interstellar",
+              },
+              "providerExecuted": undefined,
+              "providerOptions": undefined,
+              "toolCallId": "call-1",
+              "toolName": "searchMedia",
+              "type": "tool-call",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "assistant",
+        },
+        {
+          "content": [
+            {
+              "output": {
+                "type": "json",
+                "value": {
+                  "results": [
+                    {
+                      "communityAge": null,
+                      "genres": [
+                        "Science-Fiction",
+                        "Drame",
+                      ],
+                      "id": "m-9",
+                      "posterUrl": null,
+                      "recommendedAge": 12,
+                      "shortPitch": "Des astronautes traversent un trou de ver.",
+                      "title": "Interstellar",
+                      "type": "MOVIE",
+                      "year": 2014,
+                    },
+                  ],
+                },
+              },
+              "providerOptions": undefined,
+              "toolCallId": "call-1",
+              "toolName": "searchMedia",
+              "type": "tool-result",
+            },
+          ],
+          "providerOptions": undefined,
+          "role": "tool",
+        },
+      ],
+      "toolChoice": {
+        "type": "auto",
+      },
+      "tools": [
+        {
+          "descriptionSha": "d850533eacd7a6d5",
+          "name": "searchMedia",
+          "schemaSha": "771a07540c7ae6ba",
+        },
+        {
+          "descriptionSha": "a7b3646c83a47dfd",
+          "name": "getMediaDetails",
+          "schemaSha": "85b88362634e5029",
+        },
+        {
+          "descriptionSha": "1f4047aa84baafda",
+          "name": "getCommunityConsensus",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d179d6082a5670e1",
+          "name": "getFamilyFit",
+          "schemaSha": "e3ee011297a9b346",
+        },
+        {
+          "descriptionSha": "d72560a309a3e7d5",
+          "name": "getDiscoveryRail",
+          "schemaSha": "cf937eab19d740c0",
+        },
+        {
+          "descriptionSha": "30eba988b44058d0",
+          "name": "searchBlog",
+          "schemaSha": "eeb03de6862f4c46",
+        },
+        {
+          "descriptionSha": "a5b2b268d50b5307",
+          "name": "searchNews",
+          "schemaSha": "4dfea8864b74793d",
+        },
+        {
+          "descriptionSha": "b2ad31e1707dc487",
+          "name": "getUserFamilyContext",
+          "schemaSha": "8194b4560dd4fe03",
+        },
+        {
+          "descriptionSha": "b24a0c4f21a03632",
+          "name": "proposeAddToWatchlist",
+          "schemaSha": "887ce1c33833d0e2",
+        },
+        {
+          "descriptionSha": "ed6e1b75b156dbac",
+          "name": "proposeReaction",
+          "schemaSha": "219dd5f40392d092",
+        },
+        {
+          "descriptionSha": "66e8da2ff7cdd171",
+          "name": "proposeNavigation",
+          "schemaSha": "a0b8d1f56e5f9ff0",
+        },
+      ],
+    },
+  ],
+  "persisted": {
+    "assistant": [
+      {
+        "cachedInputTokens": 1800,
+        "citedMediaIds": [],
+        "content": "Interstellar est conseillé dès 12 ans.",
+        "conversationId": "conv-1",
+        "inputTokens": 2400,
+        "latencyMs": "number",
+        "modelUsed": "claude-haiku-4-5-20251001",
+        "outputTokens": 80,
+        "toolCalls": undefined,
+        "toolResults": undefined,
+      },
+    ],
+    "conversation": [
+      {
+        "conversationId": undefined,
+        "familyMemberContext": [],
+        "sessionId": "tt_test-session",
+        "sourcePage": "/films",
+        "userId": "user-1",
+      },
+    ],
+    "user": [
+      {
+        "content": "Interstellar, c'est pour quel âge ?",
+        "conversationId": "conv-1",
+      },
+    ],
+  },
+  "sse": [
+    "{"type":"start"}",
+    "{"type":"start-step"}",
+    "{"type":"text-start","id":"lead"}",
+    "{"type":"text-delta","id":"lead","delta":"Je regarde."}",
+    "{"type":"text-end","id":"lead"}",
+    "{"type":"tool-input-available","toolCallId":"call-1","toolName":"searchMedia","input":{"q":"Interstellar","limit":5}}",
+    "{"type":"tool-output-available","toolCallId":"call-1","output":{"results":[{"id":"m-9","title":"Interstellar","type":"MOVIE","year":2014,"posterUrl":null,"recommendedAge":12,"communityAge":null,"genres":["Science-Fiction","Drame"],"shortPitch":"Des astronautes traversent un trou de ver."}]}}",
+    "{"type":"finish-step"}",
+    "{"type":"start-step"}",
+    "{"type":"text-start","id":"t1"}",
+    "{"type":"text-delta","id":"t1","delta":"Interstellar est conseillé dès 12 ans."}",
+    "{"type":"text-end","id":"t1"}",
+    "{"type":"finish-step"}",
+    "{"type":"finish","finishReason":"stop"}",
+    "[DONE]",
+  ],
+  "status": 200,
+}
+`;
