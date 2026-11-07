@@ -7,6 +7,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { RedesignCard, type RedesignCardMedia } from "@/components/home-redesign/RedesignCard"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { Em } from "@/components/home-redesign/parts"
 import type { NlBlockKey, NlBlockVariant } from "@/lib/nl-search/blocks"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
@@ -107,7 +108,8 @@ function NumberedItem({ media, rank, accent }: { media: RedesignCardMedia; rank:
           {media.title}
         </p>
         <p className="mt-0.5 truncate text-[12.5px]" style={{ color: "var(--ink-3)" }}>
-          {media.expertAgeRec !== null ? `Dès ${media.expertAgeRec} ans` : "Âge à confirmer"}
+          {/* 0 = « Tous publics », never « Dès 0 ans » (see @/lib/age-label). */}
+          {ageSentenceLabel(media.expertAgeRec) ?? "Âge à confirmer"}
           {media.genres?.[0] ? ` · ${media.genres[0]}` : ""}
         </p>
       </div>

@@ -4,6 +4,7 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { ArrowLeft, Film, ArrowRight, ChevronRight } from "lucide-react"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { getCollectionWithItems } from "@/lib/collections"
 import { COLLECTIONS } from "@/lib/collections-data"
@@ -154,6 +155,8 @@ export default async function CollectionPage({
           {items.map((item, index) => {
             const mediaUrl = `/media/${toMediaRouteId(item.type as "MOVIE" | "TV" | "GAME", item.id)}`
             const year = item.releaseDate ? new Date(item.releaseDate).getFullYear() : null
+            // 0 = « Tous publics », never « Dès 0 ans » (see @/lib/age-label).
+            const ageLabel = ageSentenceLabel(item.expertAgeRec)
 
             return (
               <article key={item.id} className="group">
@@ -197,12 +200,12 @@ export default async function CollectionPage({
                       </h2>
 
                       <div className="flex flex-wrap items-center gap-2 mb-3 text-sm">
-                        {item.expertAgeRec !== null && (
+                        {ageLabel && (
                           <span
                             className="inline-flex items-center px-2.5 py-0.5 rounded-full font-semibold text-xs"
                             style={{ background: p.bg2, color: p.accent2 }}
                           >
-                            Dès {item.expertAgeRec} ans
+                            {ageLabel}
                           </span>
                         )}
                         {year && <span style={{ color: p.ink2 }}>{year}</span>}

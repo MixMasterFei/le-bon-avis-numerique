@@ -7,6 +7,7 @@ import { ArrowRight, ShieldCheck, Sparkles, Users } from "lucide-react"
 import { HeroSearch } from "@/components/home/HeroSearch"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { APERCU_PALETTE } from "./apercuTheme"
 
 interface HeroPick {
@@ -218,7 +219,8 @@ function HeroPosterCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
-  const ageLabel = pick.expertAgeRec !== null ? `${pick.expertAgeRec}+` : null
+  // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+  const ageLabel = ageBadgeLabel(pick.expertAgeRec)
 
   return (
     <Link

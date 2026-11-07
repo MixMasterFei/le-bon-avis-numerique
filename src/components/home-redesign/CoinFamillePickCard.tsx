@@ -7,6 +7,7 @@ import { SafeImage } from "@/components/ui/SafeImage"
 import { PosterActionBar } from "@/components/media/PosterActionBar"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 
 const TYPE_LABELS: Record<PickMedia["type"], string> = {
@@ -44,8 +45,9 @@ export function CoinFamillePickCard({
   const p = APERCU_PALETTE
   const [open, setOpen] = useState(false)
 
-  const ageLabel =
-    typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
+  // 0 = « Tous publics » → « TP ». A `> 0` test left a TP title with no badge,
+  // which reads as « pas encore noté » (see @/lib/age-label).
+  const ageLabel = ageBadgeLabel(media.expertAgeRec)
 
   return (
     <div className="flex flex-col">

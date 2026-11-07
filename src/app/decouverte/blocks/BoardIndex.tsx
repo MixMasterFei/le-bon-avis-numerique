@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { Em } from "@/components/home-redesign/parts"
 import type { AssembledCard } from "@/lib/nl-search/assemble"
 
@@ -72,7 +73,8 @@ export function BoardIndex({ items, folio }: { items: AssembledCard[]; folio: st
                     className="whitespace-nowrap rounded-[8px] px-2 py-[3px] text-[12px] font-bold"
                     style={{ background: "var(--pine-soft)", color: "var(--pine)" }}
                   >
-                    {item.expertAgeRec !== null ? `${item.expertAgeRec}+` : "à confirmer"}
+                    {/* 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label). */}
+                    {ageBadgeLabel(item.expertAgeRec) ?? "à confirmer"}
                   </span>
                 </Link>
               ))}

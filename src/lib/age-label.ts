@@ -25,3 +25,13 @@ export function ageSentenceLabel(age: number | null | undefined): string | null 
   if (typeof age !== "number" || !Number.isFinite(age) || age < 0) return null
   return age === 0 ? "Tous publics" : `Dès ${age} ans`
 }
+
+/**
+ * Mid-sentence form: "pour tous publics" / "dès 10 ans". Reads after
+ * « recommandé », « Totem recommande » or a dash (« Titre — dès 10 ans »),
+ * where « dès 0 ans » used to be.
+ */
+export function ageInlineLabel(age: number | null | undefined): string | null {
+  if (typeof age !== "number" || !Number.isFinite(age) || age < 0) return null
+  return age === 0 ? "pour tous publics" : `dès ${age} ans`
+}

@@ -23,6 +23,7 @@ import { ReportCorrectionButton } from "@/components/media/ReportCorrectionButto
 import { DualMetricsDisplay } from "@/components/media/DualMetricsDisplay"
 import { FamilyFitProvider } from "@/components/home/FamilyFitProvider"
 import { mediaTypeLabels, formatDateFr } from "@/lib/utils"
+import { ageBadgeLabel, ageSentenceLabel } from "@/lib/age-label"
 import { ApercuPreviewBanner } from "./ApercuPreviewBanner"
 import { ApercuNav } from "./ApercuNav"
 import { ApercuFooter } from "./ApercuFooter"
@@ -370,6 +371,12 @@ function FilmHero({
     ? new Date(media.releaseDate).getFullYear()
     : null
   const rating = media.tmdbRating ? media.tmdbRating.toFixed(1) : null
+  // 0 = « Tous publics », a real verdict (see @/lib/age-label): « TP » in the
+  // circle and « Tous publics » under it, never « 0+ » / « dès 0 ans ». Other
+  // ages keep this card's lowercase « dès 10 ans ».
+  const ageBadge = ageBadgeLabel(media.expertAgeRec)
+  const ageLine =
+    media.expertAgeRec === 0 ? ageSentenceLabel(media.expertAgeRec) : `dès ${media.expertAgeRec} ans`
 
   return (
     <section className="relative" style={{ background: p.bg }}>
@@ -485,7 +492,7 @@ function FilmHero({
 
             {/* Age recommendation card with thumbs-up/down vote — same
                AgeVoteButton as the live page, sitting in a warm panel. */}
-            {media.expertAgeRec !== null && (
+            {ageBadge && (
               <div
                 className="mt-5 inline-flex items-center gap-4 p-3 pr-4 rounded-xl"
                 style={{
@@ -497,7 +504,7 @@ function FilmHero({
                   className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
                   style={{ background: "#5C8A5C", color: "#fff" }}
                 >
-                  {media.expertAgeRec}+
+                  {ageBadge}
                 </div>
                 <div>
                   <div
@@ -510,7 +517,7 @@ function FilmHero({
                     className={`${serifClass} text-base font-medium`}
                     style={{ color: p.ink, letterSpacing: "-0.01em" }}
                   >
-                    dès {media.expertAgeRec} ans
+                    {ageLine}
                   </div>
                 </div>
                 <div className="ml-2">

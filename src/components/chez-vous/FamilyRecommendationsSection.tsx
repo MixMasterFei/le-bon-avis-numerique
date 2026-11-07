@@ -8,6 +8,7 @@ import { Users, Sparkles, ChevronRight, Loader2, Film, Plus } from "lucide-react
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface FamilyMember {
   id: string
@@ -208,39 +209,43 @@ export function FamilyRecommendationsSection() {
 
             {/* Media Grid */}
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {recommendations.recommendations.slice(0, 8).map((media) => (
-                <Link
-                  key={media.id}
-                  href={`/media/${media.id}`}
-                  className="group"
-                >
-                  <div className="overflow-hidden rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                    <div className="relative aspect-[2/3] bg-gray-100 dark:bg-white/10">
-                      {media.posterUrl ? (
-                        <Image
-                          src={media.posterUrl}
-                          alt={media.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          sizes="120px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Film className="h-6 w-6 text-gray-300 dark:text-neutral-600" />
-                        </div>
-                      )}
-                      {media.expertAgeRec !== null && (
-                        <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                          {media.expertAgeRec}+
-                        </div>
-                      )}
+              {recommendations.recommendations.slice(0, 8).map((media) => {
+                // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+                const ageLabel = ageBadgeLabel(media.expertAgeRec)
+                return (
+                  <Link
+                    key={media.id}
+                    href={`/media/${media.id}`}
+                    className="group"
+                  >
+                    <div className="overflow-hidden rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                      <div className="relative aspect-[2/3] bg-gray-100 dark:bg-white/10">
+                        {media.posterUrl ? (
+                          <Image
+                            src={media.posterUrl}
+                            alt={media.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="120px"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Film className="h-6 w-6 text-gray-300 dark:text-neutral-600" />
+                          </div>
+                        )}
+                        {ageLabel && (
+                          <div className="absolute top-1.5 right-1.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                            {ageLabel}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <h3 className="mt-1.5 text-xs font-medium line-clamp-1 text-gray-700 dark:text-neutral-300 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
-                    {media.title}
-                  </h3>
-                </Link>
-              ))}
+                    <h3 className="mt-1.5 text-xs font-medium line-clamp-1 text-gray-700 dark:text-neutral-300 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors">
+                      {media.title}
+                    </h3>
+                  </Link>
+                )
+              })}
             </div>
           </>
         ) : (

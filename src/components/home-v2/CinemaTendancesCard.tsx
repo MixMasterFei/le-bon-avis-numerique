@@ -6,7 +6,7 @@ import { Film } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
 import { ageBadgeColor } from "./apercuTheme"
 import type { CinemaTendance } from "@/lib/news-cinema-tendances"
-import { ageBadgeLabel } from "@/lib/age-label"
+import { ageBadgeLabel, ageInlineLabel } from "@/lib/age-label"
 
 /**
  * Sidebar widget: family-friendly films currently in cinemas. Replaces
@@ -45,6 +45,8 @@ export function CinemaTendancesCard({
       <ul className="flex flex-col gap-3">
         {tendances.map((t) => {
           const ageColor = ageBadgeColor(t.expertAgeRec)
+          // Alt text: « Titre — pour tous publics » for 0, never « — dès 0 ans ».
+          const ageInline = ageInlineLabel(t.expertAgeRec)
           const row = (
             <div className="flex items-center gap-3">
               <div
@@ -54,7 +56,7 @@ export function CinemaTendancesCard({
                 {t.posterUrl && (
                   <Image
                     src={t.posterUrl}
-                    alt={t.expertAgeRec !== null ? `${t.title} — dès ${t.expertAgeRec} ans` : t.title}
+                    alt={ageInline ? `${t.title} — ${ageInline}` : t.title}
                     fill
                     sizes="48px"
                     className="object-cover"

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { toMediaRouteId } from "@/lib/media-route"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
+import { ageBadgeLabel } from "@/lib/age-label"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import type { RedesignCardMedia } from "./RedesignCard"
 
@@ -30,8 +31,9 @@ export function CoinFamilleClassicCard({
   serifClass: string
 }) {
   const p = APERCU_PALETTE
-  const ageLabel =
-    typeof media.expertAgeRec === "number" && media.expertAgeRec > 0 ? `${media.expertAgeRec}+` : null
+  // 0 = « Tous publics » → « TP ». A `> 0` test left a TP title with no badge,
+  // which reads as « pas encore noté » (see @/lib/age-label).
+  const ageLabel = ageBadgeLabel(media.expertAgeRec)
 
   return (
     <Link

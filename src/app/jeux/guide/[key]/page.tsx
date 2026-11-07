@@ -10,6 +10,7 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { SafeImage } from "@/components/ui/SafeImage"
 import { DashboardScreenshots } from "@/components/media-v3/DashboardScreenshots"
 import { getGuideGameMedia } from "@/lib/game-guide-media"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { PlatformIcons } from "@/components/media/PlatformIcons"
 
 // The editorial copy is hand-written and ages slowly, but the page also pulls
@@ -74,6 +75,9 @@ export default async function GameGuidePage({
       : (game?.screenshots ?? [])
 
   const p = APERCU_PALETTE
+  // 0 = « Tous publics » — a real verdict, so the strip shows it like any
+  // other age. A `> 0` test hid it, as if the game had none (see @/lib/age-label).
+  const gameAge = ageSentenceLabel(game?.expertAgeRec)
 
   return (
     <div className="min-h-screen" style={{ background: p.bg }}>
@@ -170,13 +174,13 @@ export default async function GameGuidePage({
             className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-10 pb-6"
             style={{ borderBottom: `1px solid ${p.line}` }}
           >
-            {game.expertAgeRec != null && game.expertAgeRec > 0 && (
+            {gameAge && (
               <Link
                 href={`/media/${game.id}`}
                 className="rounded-full px-3 py-1.5 text-sm font-bold hover:opacity-90"
                 style={{ background: p.accent, color: "#fff" }}
               >
-                Dès {game.expertAgeRec} ans — voir la fiche
+                {gameAge} — voir la fiche
               </Link>
             )}
             {game.platforms.length > 0 && (

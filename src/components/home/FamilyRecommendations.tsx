@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MemberAvatar } from "@/components/ui/MemberAvatar"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface FamilyMember {
   id: string
@@ -216,40 +217,44 @@ export function FamilyRecommendations() {
 
             {/* Media Grid */}
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-              {recommendations.recommendations.map((media) => (
-                <Link
-                  key={media.id}
-                  href={`/media/${media.id}`}
-                  className="group"
-                >
-                  <Card className="overflow-hidden hover:shadow-md transition-all">
-                    <div className="relative aspect-[2/3]">
-                      {media.posterUrl ? (
-                        <Image
-                          src={media.posterUrl}
-                          alt={media.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <Film className="h-6 w-6 text-gray-400" />
-                        </div>
-                      )}
-                      {media.expertAgeRec !== null && (
-                        <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                          {media.expertAgeRec}+
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-2">
-                      <h3 className="font-medium text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">
-                        {media.title}
-                      </h3>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+              {recommendations.recommendations.map((media) => {
+                // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+                const ageLabel = ageBadgeLabel(media.expertAgeRec)
+                return (
+                  <Link
+                    key={media.id}
+                    href={`/media/${media.id}`}
+                    className="group"
+                  >
+                    <Card className="overflow-hidden hover:shadow-md transition-all">
+                      <div className="relative aspect-[2/3]">
+                        {media.posterUrl ? (
+                          <Image
+                            src={media.posterUrl}
+                            alt={media.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                            <Film className="h-6 w-6 text-gray-400" />
+                          </div>
+                        )}
+                        {ageLabel && (
+                          <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                            {ageLabel}
+                          </div>
+                        )}
+                      </div>
+                      <CardContent className="p-2">
+                        <h3 className="font-medium text-sm line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                          {media.title}
+                        </h3>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
             </div>
 
             {/* See more */}

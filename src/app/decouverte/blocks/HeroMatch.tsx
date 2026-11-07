@@ -7,6 +7,7 @@ import { useSettings } from "@/contexts/SettingsContext"
 import { shouldBlurMedia } from "@/lib/should-blur-media"
 import { tmdbPosterAtSize } from "@/lib/tmdb-image"
 import { toMediaRouteId } from "@/lib/media-route"
+import { ageSentenceLabel } from "@/lib/age-label"
 import { Em } from "@/components/home-redesign/parts"
 import { totemAxesFor, totemLevel, TOTEM_COLORS, TOTEM_WORDS } from "@/components/home-redesign/totem"
 import type { TotemMetrics } from "@/components/home-redesign/totem"
@@ -58,6 +59,12 @@ export function HeroMatch({
   const wide = backdropUrl ?? screenshots[0] ?? null
   const dark = !!wide
   const age = card.expertAgeRec
+  // 0 = « Tous publics », a real verdict, never « Dès 0 ans » (see @/lib/age-label).
+  const ageSentence = ageSentenceLabel(age)
+  // The pill reuses the quick answer's phrase (« à partir de 10 ans »), except
+  // for 0: buildQuickAnswer still words a TP title « avec un âge à confirmer »,
+  // which reads as « pas encore noté ». No pill without an age, as before.
+  const agePill = age === 0 ? ageSentence : ageSentence && (quickAnswer?.age ?? ageSentence)
 
   const kickerColor = dark ? "var(--gold)" : "var(--pine-2)"
   const inkMain = dark ? "#FFFDF8" : "var(--ink)"
@@ -118,12 +125,12 @@ export function HeroMatch({
             </h2>
 
             <div className="mt-4 flex flex-wrap items-center gap-2.5">
-              {age !== null && (
+              {agePill && (
                 <span
                   className="rounded-full px-4 py-1.5 text-[14px] font-bold"
                   style={dark ? { background: "var(--pine-soft)", color: "var(--pine)" } : { background: "var(--pine)", color: CREAM }}
                 >
-                  {quickAnswer?.age ?? `Dès ${age} ans`}
+                  {agePill}
                 </span>
               )}
               {card.genres.slice(0, 3).map((genre) => (
@@ -271,7 +278,7 @@ export function HeroMatch({
             Le verdict
           </p>
           <p className="mt-1.5 text-[clamp(34px,3vw,44px)] font-bold leading-none" style={{ fontFamily: "var(--font-bricolage)", letterSpacing: "-0.02em", color: "var(--pine)" }}>
-            {age !== null ? `Dès ${age} ans` : "Âge à confirmer"}
+            {ageSentence ?? "Âge à confirmer"}
           </p>
           <p className="mt-2 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
             {hero.hideContentAnalysis

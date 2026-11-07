@@ -8,6 +8,7 @@ import { Search, Film, Tv, Gamepad2, BookOpen, Smartphone, Loader2, X, TrendingU
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRecentSearches } from "@/hooks/useRecentSearches"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 // Popular search suggestions shown below the search bar
 const popularSearches = [
@@ -347,6 +348,8 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
           <ul className="py-1 max-h-96 overflow-y-auto">
             {suggestions.map((suggestion, index) => {
               const Icon = typeIcons[suggestion.type] || Film
+              // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
+              const ageLabel = ageBadgeLabel(suggestion.ageRec)
               return (
                 <li key={`${suggestion.type}:${suggestion.id}`}>
                   <button
@@ -385,9 +388,9 @@ export function HeroSearch({ submitClassName }: HeroSearchProps = {}) {
                         )}
                       </div>
                     </div>
-                    {suggestion.ageRec !== null && (
+                    {ageLabel && (
                       <span className="text-xs font-bold text-gray-700 bg-amber-100 px-2 py-1 rounded-md flex-shrink-0">
-                        {suggestion.ageRec}+
+                        {ageLabel}
                       </span>
                     )}
                   </button>

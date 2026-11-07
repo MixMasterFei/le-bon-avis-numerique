@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ageBadgeLabel } from "@/lib/age-label"
 
 interface GeneratedData {
   id: string
@@ -17,7 +18,8 @@ interface GeneratedData {
   posterUrl: string
   synopsisFr: string
   genres: string[]
-  expertAgeRec: number
+  /** null/0 come back from the already-in-catalogue path (the stored row). */
+  expertAgeRec: number | null
   contentMetrics: {
     violence: number
     sexNudity: number
@@ -262,7 +264,8 @@ export default function GenerateReviewPage() {
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-500">Age recommande: {result.expertAgeRec}+</Badge>
+                    {/* 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label). */}
+                    <Badge className="bg-emerald-500">Age recommande: {ageBadgeLabel(result.expertAgeRec) ?? "non défini"}</Badge>
                   </div>
                   <p className="text-sm text-gray-500">
                     Sortie: {result.releaseDate}
