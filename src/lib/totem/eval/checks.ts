@@ -416,6 +416,11 @@ export function checkTurn(ctx: CheckContext): CheckResult[] {
       }
     }
     for (const l of links) if (l.path.includes("tmdb-")) failures.push(`lien vers ${l.path}`)
+    // The panel's card for an off-catalogue film links to /media/movie:tmdb-…,
+    // a 404 (review #4).
+    for (const card of trace.steps.flatMap(cardsFromResults)) {
+      if (card.id?.startsWith("tmdb-")) failures.push(`carte hors catalogue (lien 404) : ${card.title}`)
+    }
     checks.push(result("hedges_provisional", failures))
   }
 

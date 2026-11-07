@@ -179,6 +179,8 @@ describe("links, tone, provisional, PEGI", () => {
       facts: new Map([[provisional.id, provisional]]),
     })
     expect(r.hedges_provisional.pass).toBe(false)
+    expect(r.hedges_provisional.detail).toContain("âge ferme pour Nouveau film")
+    expect(r.hedges_provisional.detail).toContain("carte hors catalogue")
   })
 
   it("compares a stated PEGI with the catalogue", () => {

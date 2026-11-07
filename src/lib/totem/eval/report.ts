@@ -162,11 +162,15 @@ export function buildEvalReport(run: EvalRunResult, meta: { suite: string; judge
   }
 
   const pct = totals.passRate == null ? "—" : `${Math.round(totals.passRate * 100)} %`
+  const perCategory = Object.entries(categories)
+    .map(([cat, c]) => `${cat} ${c.passed}/${c.scenarios}`)
+    .join(" · ")
   const summary =
     `Totem (${run.model}) : ${passed.length}/${ran.length} scénarios réussis (${pct}), ` +
     `${failedChecks} vérification(s) en échec ; coût ${costUsd.toFixed(2)} $ ; ` +
     `latence moy. ${totals.avgLatencyMs == null ? "—" : `${(totals.avgLatencyMs / 1000).toFixed(1)} s`}` +
-    (totals.skipped ? ` ; ${totals.skipped} ignoré(s)` : "")
+    (totals.skipped ? ` ; ${totals.skipped} ignoré(s)` : "") +
+    (perCategory ? ` — ${perCategory}` : "")
 
   return {
     status: failedChecks > 0 || incomplete.length > 0 ? "partial" : "success",
