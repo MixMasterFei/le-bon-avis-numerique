@@ -6,8 +6,6 @@ how sure it must be, what it costs, and how a human keeps control.
 ## Owns
 - Agent ledger, approval queue and autonomy levels: `src/lib/agent-ledger/`,
   `src/app/api/admin/agents/` (once merged)
-- Totem Assistant: `src/lib/totem/`, `src/app/api/totem/`, `src/components/totem/`,
-  `src/app/admin/totem/` (gate `TOTEM_PUBLIC`, caps `TOTEM_*`)
 - Recherche magique: `src/lib/nl-search/`, `src/app/decouverte/`, boards (`NL_SEARCH_*`)
 - AI-facing surfaces: MCP server (`src/app/api/mcp/`, `src/lib/mcp/`), `llms.txt`, the
   markdown layer (`src/app/md/`, `src/lib/markdown/`), AI bot telemetry (`src/lib/ai-bots.ts`)
@@ -15,6 +13,8 @@ how sure it must be, what it costs, and how a human keeps control.
   (`src/lib/seo-autofix.ts`) together with the Growth Scout
 
 ## Not yours
+- The Totem chat assistant (`src/lib/totem/`, `src/app/api/totem/`, `src/components/totem/`,
+  `src/app/admin/totem/`) and its evaluation bench → Totem Trainer (since 2026-11-07)
 - The enrichment *pipeline* and crons → Librarian (prompt quality is shared)
 - What the SEO agent should target → Growth Scout
 

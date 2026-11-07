@@ -14,7 +14,8 @@ nobody owned the merge order.
 |---|---|---|
 | 🎬 Director | [director.md](director.md) | Xavier's single point of contact: routing, briefs, tracking, integration, releases, cleanup |
 | ✍️ Blogger | [blogger.md](blogger.md) | Blog and Sanity, editorial copy, French terminology (CNC / Arcom / PEGI), guides text |
-| 🤖 Agentic Master | [agentic-master.md](agentic-master.md) | Everything AI: agent ledger, Totem Assistant, Recherche magique, MCP / llms.txt, LLM costs |
+| 🤖 Agentic Master | [agentic-master.md](agentic-master.md) | Everything AI except Totem: agent ledger, Recherche magique, MCP / llms.txt, LLM costs |
+| 💬 Totem Trainer | [totem-trainer.md](totem-trainer.md) | The chat assistant « Totem »: answers, memory, tone, safety, model choice, cost — and its evaluation bench |
 | 🧒 Age Keeper | [age-keeper.md](age-keeper.md) | What a parent reads about a title: ages, badges, blur, family fit, profiles, fiches |
 | 📚 Librarian | [librarian.md](librarian.md) | The catalogue and its pipes: imports, enrichment, crons, freshness, sitemap, migrations |
 | 🛡️ Guardian | [guardian.md](guardian.md) | Security and platform: dependencies, auth, rate limits, Vercel, CI, performance |
