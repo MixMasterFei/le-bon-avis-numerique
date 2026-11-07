@@ -59,6 +59,9 @@ export interface DashboardMedia {
     roleModels: number
     whatParentsNeedToKnow: string[]
     sensitiveWarnings: string[]
+    /** When the AI flags were last computed (ISO); null = never computed.
+     *  Separates « rien relevé » from « pas encore de données » (aiWarningsState). */
+    sensitiveWarningsAt: string | null
     enrichmentConfidence: number | null
   } | null
   screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[]
@@ -130,6 +133,7 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
             roleModels: cm.roleModels,
             whatParentsNeedToKnow: cm.whatParentsNeedToKnow ?? [],
             sensitiveWarnings: cm.sensitiveWarnings ?? [],
+            sensitiveWarningsAt: cm.sensitiveWarningsAt?.toISOString() ?? null,
             enrichmentConfidence: cm.enrichmentConfidence,
           }
         : null,

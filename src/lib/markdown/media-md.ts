@@ -10,7 +10,7 @@ import { buildAgeRationale } from "@/lib/age-rationale"
 import { ageInlineLabel, isKnownAge } from "@/lib/age-label"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
 import { deriveEducationalValue } from "@/lib/educational-value"
-import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { VALID_SENSITIVE_WARNINGS, aiWarningsState } from "@/lib/sensitive-warnings"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -50,7 +50,12 @@ export interface MediaMdInput {
 export function mediaAssessment(media: MediaMdInput) {
   const provisional = shouldHideContentAnalysis(media) || media.isEnriched === false
   const available = !provisional && media.hasContentAnalysis !== false
-  const warningsAvailable = available && (media.assessmentConfidence ?? 0) >= 0.6 && (!!media.sensitiveWarningsAt || !!media.sensitiveWarnings?.length)
+  // Same rule as the fiche's « Ce qui peut marquer » (single source).
+  const warningsAvailable = available && aiWarningsState({
+    warnings: media.sensitiveWarnings,
+    assessedAt: media.sensitiveWarningsAt,
+    confidence: media.assessmentConfidence,
+  }).state !== "no_data"
   return {
     status: provisional ? "provisional" as const : available ? "available" as const : "unavailable" as const,
     source: media.assessmentSource ?? null,
