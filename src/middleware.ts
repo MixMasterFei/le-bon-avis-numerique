@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai-bots"
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 import { resolveMergedMediaPath } from "@/lib/merged-media"
+import { isCronJobRequest } from "@/lib/cron-credential"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -276,9 +277,11 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
 
   // Check admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
-    // Allow cron/automation requests with valid CRON_SECRET
-    const authHeader = request.headers.get("authorization")
-    const isCronAuth = process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`
+    // The automation credential (Bearer CRON_SECRET) opens only the job
+    // endpoints the schedulers call — CRON_JOB_ROUTES in cron-credential.ts.
+    // Every other admin page or API (Totem transcripts, accounts, dashboard…)
+    // needs an ADMIN session, whatever the request's Authorization header.
+    const isCronAuth = isCronJobRequest(request)
 
     // Development-only bypass - NEVER works in production
     const isDev = process.env.NODE_ENV === "development"

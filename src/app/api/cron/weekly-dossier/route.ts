@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { runWeeklyDossier } from "@/lib/news-dossier"
 import { logCronRun } from "@/lib/cron-log"
 import { withCronLock } from "@/lib/cron-lock"
+import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
 // Long-read agent does one big LLM call (8K output tokens) plus
 // moderation + image mirror. 60s is borderline; 300s gives headroom.
@@ -19,21 +20,15 @@ const LOCK_LEASE_SECONDS = 600
  * the cron schedule should never trigger this twice.
  */
 
+// The automation credential only — constant-time, refused when CRON_SECRET is
+// unset (an interpolated `Bearer ${process.env.CRON_SECRET}` used to accept
+// `Bearer undefined`), scoped to the scheduled job routes. The development
+// bypass still needs the explicit opt-in, so a `next dev` accidentally exposed
+// over a tunnel / LAN can't be used to trigger expensive LLM + DB jobs
+// anonymously: set ALLOW_INSECURE_CRON_LOCAL=true in `.env.local` if you
+// actually need to hit this endpoint without the Bearer token while iterating.
 function isAuthorized(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization")
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  // Development bypass requires an explicit opt-in flag. Without it,
-  // a `next dev` accidentally exposed over a tunnel / LAN can't be
-  // used to trigger expensive LLM + DB jobs anonymously. Set
-  // ALLOW_INSECURE_CRON_LOCAL=true in `.env.local` if you actually
-  // need to hit this endpoint without the Bearer token while iterating.
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
-  ) {
-    return true
-  }
-  return false
+  return isCronJobRequest(req) || allowsInsecureLocalCron()
 }
 
 export async function GET(req: NextRequest) {

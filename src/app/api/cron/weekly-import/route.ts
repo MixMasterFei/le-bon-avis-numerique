@@ -31,6 +31,7 @@ import { certificationToAge, createMovieFromTmdb } from "@/lib/import-helpers"
 import { isAdultTmdbTv } from "@/lib/adult-content-filter"
 import { extractProviders } from "@/lib/streaming-providers"
 import { refreshTrending } from "@/lib/trending"
+import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
 export const maxDuration = 60
 
@@ -47,19 +48,11 @@ function rotatingYoungPage(): number {
   return (getWeekSeed() % YOUNG_PAGE_DEPTH) + 1
 }
 
-// Verify Vercel Cron Secret
+// The automation credential only (constant-time, fail-closed, scoped to the
+// scheduled job routes); development bypass behind an explicit opt-in — see
+// weekly-dossier for the rationale (tunnel-exposed `next dev`).
 function isAuthorized(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization")
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  // Development bypass requires an explicit opt-in flag — see
-  // weekly-dossier for the rationale (tunnel-exposed `next dev`).
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
-  ) {
-    return true
-  }
-  return false
+  return isCronJobRequest(req) || allowsInsecureLocalCron()
 }
 
 interface ImportStats {

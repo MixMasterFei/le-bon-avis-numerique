@@ -5,6 +5,7 @@ import { searchGames, type IGDBGame } from "@/lib/igdb"
 import { createGameFromIgdb } from "@/lib/game-import"
 import { pickIgdbCandidate } from "@/lib/game-seed-match"
 import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
+import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
 // Targeted backfill for the /jeux/quel-age pillar: guarantees the high-search
 // titles kids ask for by name (Fortnite, Roblox, Minecraft, Brawl Stars…)
@@ -22,16 +23,11 @@ import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
 
 export const maxDuration = 60
 
+// The automation credential only (constant-time, fail-closed, scoped to the
+// scheduled job routes); development bypass behind an explicit opt-in — see
+// weekly-dossier for the rationale (tunnel-exposed `next dev`).
 function isAuthorized(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization")
-  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  if (
-    process.env.NODE_ENV === "development" &&
-    process.env.ALLOW_INSECURE_CRON_LOCAL === "true"
-  ) {
-    return true
-  }
-  return false
+  return isCronJobRequest(req) || allowsInsecureLocalCron()
 }
 
 const PACE_MS = 150

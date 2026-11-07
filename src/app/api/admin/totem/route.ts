@@ -3,6 +3,7 @@ import {
   fetchTotemAdminOverview,
   fetchTotemConversationList,
 } from "@/lib/totem-admin-kpis"
+import { requireAdminSession } from "@/lib/admin-session"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -16,6 +17,11 @@ function parseDays(raw: string | null): number {
 
 export async function GET(req: NextRequest) {
   try {
+    // Overview + CSV export of conversations (account e-mails, previews):
+    // ADMIN session only, checked here as well as in the middleware.
+    const denied = await requireAdminSession()
+    if (denied) return denied
+
     const sp = req.nextUrl.searchParams
     const days = parseDays(sp.get("days"))
 

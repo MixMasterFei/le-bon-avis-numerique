@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { fetchTotemConversationList } from "@/lib/totem-admin-kpis"
+import { requireAdminSession } from "@/lib/admin-session"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -13,6 +14,11 @@ function parseDays(raw: string | null): number | undefined {
 
 export async function GET(req: NextRequest) {
   try {
+    // Transcripts carry account e-mails and message text: ADMIN session only,
+    // checked here as well as in the middleware (never the cron credential).
+    const denied = await requireAdminSession()
+    if (denied) return denied
+
     const sp = req.nextUrl.searchParams
     const page = Math.max(1, Number(sp.get("page") ?? 1) || 1)
     const pageSize = Math.min(50, Math.max(10, Number(sp.get("pageSize") ?? 20) || 20))
