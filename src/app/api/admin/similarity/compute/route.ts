@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { Prisma, SimilaritySource, MediaType } from "@prisma/client"
 import { logCronRun } from "@/lib/cron-log"
 import { similarityDueWhere, SIMILARITY_ROTATION_ORDER } from "@/lib/similarity-rotation"
+import { computeSimilarity } from "@/lib/similarity-score"
 
 /** The database step that failed for a title (see `failures` in the cron log). */
 type FailedStep = "candidates" | "lookup" | "upsert"
@@ -350,118 +351,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
-
-interface MediaForComparison {
-  id: string
-  title: string
-  type: string
-  genres: string[]
-  topics: string[]
-  director: string | null
-  expertAgeRec: number | null
-  contentMetrics?: {
-    toneTags: string[]
-    emotionalThemes: string[]
-  } | null
-}
-
-function computeSimilarity(
-  itemA: MediaForComparison,
-  itemB: MediaForComparison
-): { score: number; reasons: string[] } {
-  const reasons: string[] = []
-  let totalWeight = 0
-  let weightedScore = 0
-
-  // Same type bonus (weight: 1)
-  if (itemA.type === itemB.type) {
-    weightedScore += 0.1
-    totalWeight += 1
-    reasons.push("same_type")
-  }
-
-  // Same director (weight: 3)
-  if (
-    itemA.director &&
-    itemB.director &&
-    itemA.director.toLowerCase() === itemB.director.toLowerCase()
-  ) {
-    weightedScore += 0.6 // 0.2 * 3
-    totalWeight += 3
-    reasons.push("same_director")
-  }
-
-  // Genre similarity (weight: 4)
-  const genreOverlap = computeArrayOverlap(itemA.genres, itemB.genres)
-  if (genreOverlap > 0) {
-    weightedScore += genreOverlap * 4
-    totalWeight += 4
-    reasons.push("similar_genres")
-  }
-
-  // Topic similarity (weight: 3)
-  const topicOverlap = computeArrayOverlap(itemA.topics, itemB.topics)
-  if (topicOverlap > 0) {
-    weightedScore += topicOverlap * 3
-    totalWeight += 3
-    reasons.push("similar_topics")
-  }
-
-  // Tone similarity (weight: 2) — from enrichment v2
-  const toneA = itemA.contentMetrics?.toneTags ?? []
-  const toneB = itemB.contentMetrics?.toneTags ?? []
-  if (toneA.length > 0 && toneB.length > 0) {
-    const toneOverlap = computeArrayOverlap(toneA, toneB)
-    if (toneOverlap > 0) {
-      weightedScore += toneOverlap * 2
-      totalWeight += 2
-      reasons.push("similar_tone")
-    }
-  }
-
-  // Emotional theme similarity (weight: 2) — from enrichment v2
-  const emotionA = itemA.contentMetrics?.emotionalThemes ?? []
-  const emotionB = itemB.contentMetrics?.emotionalThemes ?? []
-  if (emotionA.length > 0 && emotionB.length > 0) {
-    const emotionOverlap = computeArrayOverlap(emotionA, emotionB)
-    if (emotionOverlap > 0) {
-      weightedScore += emotionOverlap * 2
-      totalWeight += 2
-      reasons.push("similar_emotions")
-    }
-  }
-
-  // Age recommendation similarity (weight: 2)
-  if (itemA.expertAgeRec !== null && itemB.expertAgeRec !== null) {
-    const ageDiff = Math.abs(itemA.expertAgeRec - itemB.expertAgeRec)
-    // Same age = 1.0, +/- 2 years = 0.5, +/- 4 years = 0.25
-    const ageScore = ageDiff <= 2 ? 1 - ageDiff * 0.25 : Math.max(0, 1 - ageDiff * 0.1)
-    weightedScore += ageScore * 2
-    totalWeight += 2
-    if (ageDiff <= 2) {
-      reasons.push("similar_age_rec")
-    }
-  }
-
-  // Normalize score
-  const score = totalWeight > 0 ? weightedScore / totalWeight : 0
-
-  return { score: Math.min(1, Math.max(0, score)), reasons }
-}
-
-function computeArrayOverlap(arr1: string[], arr2: string[]): number {
-  if (!arr1?.length || !arr2?.length) return 0
-
-  const set1 = new Set(arr1.map((s) => s.toLowerCase()))
-  const set2 = new Set(arr2.map((s) => s.toLowerCase()))
-
-  let overlap = 0
-  for (const item of set1) {
-    if (set2.has(item)) overlap++
-  }
-
-  // Jaccard similarity: intersection / union
-  const union = new Set([...set1, ...set2])
-  return overlap / union.size
 }
