@@ -59,7 +59,7 @@ function ageText(m: { age: number | null; provisional: boolean }) {
 }
 function searchRowLine(row: SearchRow) {
   const m = publicMatch(row)
-  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${ageText(m)}`
+  return `- \`${m.id}\` — **${m.title}**${m.year ? ` (${m.year})` : ""} · ${mediaTypeShortLabels[m.type]} · ${ageText(m)} · fiche : ${m.url}`
 }
 function validQuery(query: string) { return query.trim().length <= 120 && compactTitle(query).length >= 2 }
 
@@ -95,8 +95,10 @@ export async function ageVerdict(params: { id?: string; title?: string; type?: S
     resolvedId = toMediaRouteId(candidates[0].type, candidates[0].id)
   }
   const input = await loadMediaMdInput(resolvedId!)
+  // An identifier that resolves to nothing is a caller error (stale or
+  // malformed id) — unlike a title with no match, which is a valid answer.
   if (!input) return { text: "Identifiant introuvable ou invalide. Utilisez l'identifiant exact renvoyé par `search_media`. Les identifiants numériques nécessitent un préfixe `movie:`, `tv:` ou `game:`.",
-    data: { schemaVersion: 1, status: "not_found", result: { kind: "verdict", media: null, candidates: [] } } }
+    data: { schemaVersion: 1, status: "not_found", result: { kind: "verdict", media: null, candidates: [] } }, isError: true }
   if ((params.type && input.type !== SEARCH_TYPE_MAP[params.type]) || (params.year && input.releaseDate?.slice(0, 4) !== String(params.year))) {
     return toolError("invalid_input", "L'identifiant ne correspond pas au type ou à l'année indiqués. Vérifiez le titre avec `search_media`.")
   }

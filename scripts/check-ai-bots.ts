@@ -49,6 +49,33 @@ async function main() {
     console.log(`  ${String(count).padStart(6)}  ${surface}`)
   }
 
+  // Connector usage (kind "mcp", written by src/lib/mcp/usage.ts): is a
+  // directory listing paying off? Calls per tool and per assistant, and the
+  // fiches most consulted through a verdict. No query text is ever stored.
+  const mcpRows = rows.filter((r) => r.kind === "mcp")
+  if (mcpRows.length > 0) {
+    const sum = (key: (r: (typeof mcpRows)[number]) => string | null) => {
+      const totals = new Map<string, number>()
+      for (const r of mcpRows) {
+        const k = key(r)
+        if (k) totals.set(k, (totals.get(k) ?? 0) + r.count)
+      }
+      return [...totals.entries()].sort((a, b) => b[1] - a[1])
+    }
+    console.log("\nAI connector (MCP) — calls per tool:")
+    for (const [tool, n] of sum((r) => (r.surface.startsWith("mcp-fiche:") ? null : r.surface))) {
+      console.log(`  ${String(n).padStart(6)}  ${tool}`)
+    }
+    console.log("AI connector (MCP) — calls per assistant:")
+    for (const [bot, n] of sum((r) => (r.surface.startsWith("mcp-fiche:") ? null : r.bot))) {
+      console.log(`  ${String(n).padStart(6)}  ${bot}`)
+    }
+    console.log("AI connector (MCP) — most consulted fiches:")
+    for (const [fiche, n] of sum((r) => (r.surface.startsWith("mcp-fiche:") ? r.surface.slice(10) : null)).slice(0, 10)) {
+      console.log(`  ${String(n).padStart(6)}  ${fiche}`)
+    }
+  }
+
   console.log("\nDaily detail (most recent first):")
   let lastDay = ""
   for (const r of rows) {
