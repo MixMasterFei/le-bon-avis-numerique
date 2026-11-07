@@ -4,6 +4,7 @@ import { withPrismaRetry } from "@/lib/prisma-retry"
 import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
 import { sanityClient } from "@/sanity/client"
 import { COLLECTIONS } from "@/lib/collections-data"
+import { isAiConnectorsPagePublic } from "@/lib/ai-connectors-flag"
 
 /**
  * Sitemap content, split per section and served by app/sitemap.ts
@@ -88,6 +89,11 @@ export function staticPageEntries(now: Date): MetadataRoute.Sitemap {
     { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${baseUrl}/guides`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: `${baseUrl}/notre-methode`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    // /assistants-ia (connector documentation) only once it is public — it
+    // stays admin-only until AI_CONNECTORS_PAGE_PUBLIC=true.
+    ...(isAiConnectorsPagePublic()
+      ? [{ url: `${baseUrl}/assistants-ia`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.5 }]
+      : []),
     { url: `${baseUrl}/a-propos`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/objectif`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/nos-valeurs`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },

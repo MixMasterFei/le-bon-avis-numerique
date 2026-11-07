@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Mail, FileText, ExternalLink } from "lucide-react"
+import { isAiConnectorsPagePublic } from "@/lib/ai-connectors-flag"
 
 export const metadata = {
   title: "Politique de confidentialité — Totem Avisé",
@@ -113,6 +114,27 @@ export default function ConfidentialitePage() {
             <p>
               Si vous utilisez la connexion via Google, nous recevons : votre nom,
               adresse email et photo de profil associes a votre compte Google.
+            </p>
+
+            <h4 className="font-semibold mt-4">3.6 Connecteur pour assistants IA</h4>
+            <p>
+              Si vous consultez Totem Avisé depuis un assistant IA (connecteur MCP
+              {isAiConnectorsPagePublic() && (
+                <>
+                  , voir <Link href="/assistants-ia" className="underline">Totem Avisé dans votre assistant</Link>
+                </>
+              )}
+              ), l&apos;assistant transmet à notre serveur uniquement les paramètres de la question : le titre
+              recherché, un âge, un type de média ou une année. Le connecteur ne demande ni compte, ni
+              identification, ni cookie, et il fonctionne en lecture seule.
+            </p>
+            <p>
+              Nous ne conservons pas ces recherches : nos journaux techniques enregistrent seulement le nom de
+              l&apos;outil appelé, le résultat (trouvé, introuvable, erreur) et la durée de traitement, ainsi que
+              le nom de l&apos;assistant à l&apos;origine de la requête. Comme pour toute visite du site, notre
+              hébergeur conserve des journaux de connexion (adresse IP, date). Votre conversation avec
+              l&apos;assistant relève de la politique de confidentialité de son éditeur : Totem Avisé n&apos;y a
+              pas accès.
             </p>
           </CardContent>
         </Card>

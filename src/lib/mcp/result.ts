@@ -31,7 +31,17 @@ export const toolOutputSchema = z.object({
   ]),
 })
 export type ToolOutput = z.infer<typeof toolOutputSchema>
-export interface ToolResponse { text: string; data: ToolOutput }
+export interface ToolResponse {
+  text: string
+  data: ToolOutput
+  /**
+   * Overrides the default, which flags only invalid input and outages as
+   * errors. An empty search is a successful answer (« aucun titre »), not a
+   * failed call — directory review requires every tool to succeed on valid
+   * parameters. An identifier that resolves to nothing sets this to true.
+   */
+  isError?: boolean
+}
 
 export function toolError(status: "invalid_input" | "unavailable", message: string): ToolResponse {
   return { text: message, data: { schemaVersion: 1, status, result: { kind: "error", message } } }
@@ -55,6 +65,6 @@ export async function executeTool(name: "search_media" | "get_age_verdict" | "re
       { type: "text" as const, text: JSON.stringify(response.data) },
     ],
     structuredContent: response.data,
-    isError: response.data.status === "invalid_input" || response.data.status === "unavailable" || response.data.status === "not_found",
+    isError: response.isError ?? (response.data.status === "invalid_input" || response.data.status === "unavailable"),
   }
 }

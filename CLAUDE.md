@@ -146,7 +146,8 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Similarity rotation | `src/lib/similarity-rotation.ts` — least recently computed first (`similarityComputedAt` cursor) |
 | AI discovery (llms.txt) | `src/app/llms.txt/route.ts` |
 | Markdown layer for AI agents | `src/app/md/` + `src/lib/markdown/` (media-md, media-md-data, selection-md — single-source builders shared with fiche JSON-LD and MCP) |
-| MCP server (public, read-only) | `src/app/api/mcp/[transport]/route.ts` + `src/lib/mcp/totem-tools.ts` — streamable HTTP at `/api/mcp/mcp`; anonymous tools describe media only, per-child fit stays behind accounts |
+| MCP server (public, read-only) | `src/app/api/mcp/[transport]/route.ts` + `src/lib/mcp/totem-tools.ts` — streamable HTTP at `/api/mcp/mcp`; anonymous tools describe media only, per-child fit stays behind accounts. **Connector-directory rules (pinned by `transport.test.ts`):** tool descriptions and server instructions never promote a product (the free family account lives in tool OUTPUTS) nor set the answer language; a search with no match is a successful answer (`isError: false`), an unknown identifier is an error. Listing packet: `docs/agents/connector-listing.md`. |
+| AI-assistant connector page | `src/app/assistants-ia/` (content in `assistants-ia.data.ts`, pinned against the live server contract by tests). Names Claude / Le Chat / ChatGPT as places to use Totem — an explicit exception to the naming rule below, so it is **admin-only (404) until `AI_CONNECTORS_PAGE_PUBLIC=true`** (`src/lib/ai-connectors-flag.ts`); out of the sitemap until then. Never says which AI Totem uses internally. |
 | AI bot/referrer telemetry | `src/lib/ai-bots.ts` + `src/app/api/track/ai-bot/route.ts` (fed by middleware; `scripts/check-ai-bots.ts` to inspect) |
 | Parents' Guide data + pages | `src/lib/game-guides.ts` + `src/app/jeux/guide/[key]/page.tsx` (admin-gated via `src/lib/game-guide-flag.ts`) |
 | Guide freshness audit | `src/lib/game-guide-freshness.ts` |
@@ -482,6 +483,9 @@ NL_SEARCH_GLOBAL_DAILY_CAP        # Recherche magique: max interpreted queries/d
                                   # keyword fallbacks are free and never consume cap; hitting the cap DEGRADES to
                                   # keyword search rather than erroring. Hourly limits (10/h anon by IP, 30/h auth)
                                   # are separate and in-memory. Fails CLOSED if the count query errors.
+AI_CONNECTORS_PAGE_PUBLIC         # "true" = /assistants-ia (connector documentation) is public + in the sitemap. Unset = admin-only
+                                  # (404 for others). Flipping it IS Xavier's exception to the "no Claude/OpenAI names in rendered
+                                  # text" rule for that page. Gate: src/lib/ai-connectors-flag.ts.
 SEO_AGENT_AUTOFIX                 # KILL-SWITCH (inverted since 2026-07-10): the weekly seo-striking-distance cron WRITES by default IN PRODUCTION ONLY (maillage + synopsis rewrites + seoTitle overrides; fail-closed on previews/local via VERCEL_ENV guard). Set to "false" to fall back to report-only. ?dryRun=1 forces report-only for one run. See Automation notes.
 PEXELS_API_KEY                    # DEPRECATED (May 2026). Stock-photo fallback removed from news-image.ts in the news-pipeline simplification. Safe to remove from Vercel env. Stock-image cache table left in place for now.
 UNSPLASH_ACCESS_KEY               # DEPRECATED (May 2026). Same as PEXELS_API_KEY — stock-photo tier removed.
