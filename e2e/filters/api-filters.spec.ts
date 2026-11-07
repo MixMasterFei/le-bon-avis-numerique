@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test"
+import { FAMILY_VIP_BRAND_TOPICS } from "../../src/lib/family-vip-brands"
+import { INFRA } from "./helpers"
 
 /**
  * API-level filter tests — faster and less fragile than E2E.
@@ -7,6 +9,14 @@ import { test, expect } from "@playwright/test"
  */
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000"
+
+const VIP_TOPICS: readonly string[] = FAMILY_VIP_BRAND_TOPICS
+
+// The catalogue routes answer with `s-maxage=3600`: pages compared to each
+// other must come from the origin at the same moment, not from CDN entries
+// cached at different times (and catalogue states). The routes ignore
+// unknown params, so one token per run keeps those reads fresh.
+const FRESH = `_ci=${Date.now().toString(36)}`
 
 interface MovieItem {
   id: string
@@ -32,6 +42,11 @@ interface ApiResponse<T> {
 
 async function fetchApi<T>(path: string): Promise<ApiResponse<T>> {
   const res = await fetch(`${BASE}${path}`)
+  if (res.status === 403 || res.status === 429) {
+    // Vercel's edge (403) or the per-IP limiter (429) refused the runner: the
+    // check could not run, which is not the same as the filter being wrong.
+    throw new Error(`${INFRA} API ${path} answered ${res.status}: the runner was refused, not a product defect.`)
+  }
   expect(res.ok, `API ${path} returned ${res.status}`).toBe(true)
   return res.json()
 }
@@ -63,12 +78,22 @@ test.describe("API: /api/db/movies filters", () => {
     }
   })
 
-  test("minAge=6&maxAge=10: ages in range", async () => {
+  test("minAge=6&maxAge=10: ages in range, family-VIP titles excepted below", async () => {
     const data = await fetchApi<MovieItem>("/api/db/movies?minAge=6&maxAge=10&limit=24&requirePoster=true&language=fr,en")
     expect(data.movies!.length).toBeGreaterThan(0)
     for (const movie of data.movies!) {
-      expect(movie.expertAgeRec!).toBeGreaterThanOrEqual(6)
+      expect(movie.expertAgeRec).not.toBeNull()
+      // The ceiling is a safety promise: never above maxAge, VIP or not.
       expect(movie.expertAgeRec!).toBeLessThanOrEqual(10)
+      if (movie.expertAgeRec! < 6) {
+        // Intended (applyAgeFilter, src/lib/media-queries.ts): a family-VIP
+        // brand (Ghibli, Pixar…) may sit under the band's floor — the old
+        // « >= 6 » contradicted that rule. Anything else under 6 is a defect.
+        expect(
+          movie.topics.some((topic) => VIP_TOPICS.includes(topic)),
+          `${movie.title} (${movie.expertAgeRec}) is under the 6–10 band without a family-VIP tag (topics: ${movie.topics.join(", ") || "none"})`,
+        ).toBe(true)
+      }
     }
   })
 
@@ -128,19 +153,48 @@ test.describe("API: /api/db/movies filters", () => {
       }
     }
   })
+})
 
-  test("pagination: page 2 has different results than page 1", async () => {
-    const p1 = await fetchApi<MovieItem>("/api/db/movies?page=1&limit=10&requirePoster=true&language=fr,en")
-    const p2 = await fetchApi<MovieItem>("/api/db/movies?page=2&limit=10&requirePoster=true&language=fr,en")
-    if (p1.pagination.totalPages > 1) {
-      const p1Ids = new Set(p1.movies!.map(m => m.id))
-      const p2Ids = new Set(p2.movies!.map(m => m.id))
-      // No overlap
-      for (const id of p2Ids) {
-        expect(p1Ids.has(id)).toBe(false)
+// ── Pagination ─────────────────────────────────────────────────────
+
+// Offset pagination is only correct over a total order. Each listing is read
+// as page 1 + page 2 (limit 10) and as one page of 20: the pages must be
+// disjoint AND, concatenated, equal the larger page — same order, no repeat,
+// no skip. Covers the default sort of each route plus the title sort, the
+// tie-prone keys (release days, remakes, vote counts).
+const PAGINATED_LISTINGS = [
+  { name: "movies, default sort (newest)", route: "/api/db/movies", key: "movies", params: { requirePoster: "true", language: "fr,en" } },
+  { name: "movies, sortBy=title", route: "/api/db/movies", key: "movies", params: { sortBy: "title", requirePoster: "true", language: "fr,en" } },
+  { name: "series, default sort (newest)", route: "/api/db/series", key: "series", params: { requirePoster: "true", language: "fr,en" } },
+  { name: "games, default sort (popularity)", route: "/api/db/games", key: "games", params: {} },
+] as const
+
+test.describe("API: pagination is deterministic", () => {
+  for (const listing of PAGINATED_LISTINGS) {
+    test(`${listing.name}: pages are disjoint and match one larger page`, async () => {
+      const read = async (page: number, limit: number) => {
+        const query = new URLSearchParams({ ...listing.params, page: String(page), limit: String(limit) })
+        const data = await fetchApi<MovieItem>(`${listing.route}?${query}&${FRESH}`)
+        return { items: data[listing.key] ?? [], totalPages: data.pagination.totalPages }
       }
-    }
-  })
+      // Concurrent, so the three reads see the same catalogue state.
+      const [page1, page2, firstTwenty] = await Promise.all([read(1, 10), read(2, 10), read(1, 20)])
+
+      expect(page1.totalPages, "the listing needs two pages to test pagination").toBeGreaterThan(1)
+      expect(page1.items).toHaveLength(10)
+      expect(page2.items).toHaveLength(10)
+
+      const label = (m: MovieItem) => `${m.title} [${m.id}] (${m.releaseDate ?? "no date"})`
+      const onPage1 = new Set(page1.items.map((m) => m.id))
+      const repeated = page2.items.filter((m) => onPage1.has(m.id)).map(label)
+      expect(repeated, "titles served again on page 2").toEqual([])
+
+      expect(
+        [...page1.items, ...page2.items].map(label),
+        "page 1 + page 2 must equal the first 20 in the same order",
+      ).toEqual(firstTwenty.items.map(label))
+    })
+  }
 })
 
 // ── Series API ─────────────────────────────────────────────────────
