@@ -1,16 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { streamText, stepCountIs, convertToModelMessages, type UIMessage } from "ai"
-import { anthropic } from "@ai-sdk/anthropic"
+import { convertToModelMessages, type UIMessage } from "ai"
 import { auth } from "@/lib/auth"
-import { prisma } from "@/lib/prisma"
-import { getMemberAge } from "@/lib/age-utils"
-import { buildSystemPrompt, type FamilyMemberSnapshot } from "@/lib/totem/system-prompt"
-import { buildTotemTools } from "@/lib/totem/tools"
+import type { FamilyMemberSnapshot } from "@/lib/totem/system-prompt"
+import { loadFamilyContext, resolvePageContext, startTotemTurn } from "@/lib/totem/pipeline"
 import { checkTotemRateLimit, getClientIpFromHeaders } from "@/lib/totem/rate-limit"
 import { canUseTotem } from "@/lib/totem/access"
-import { pickModel } from "@/lib/totem/model-router"
-import { parseMediaRouteId } from "@/lib/media-route"
-import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 import { extractUsage } from "@/lib/totem/usage"
 import { truncateHistory, TOTEM_BODY_MAX_MESSAGES } from "@/lib/totem/history"
 import { checkDailyCaps, secondsUntilNextUtcDay } from "@/lib/totem/daily-cap"
@@ -147,132 +141,12 @@ export async function POST(req: NextRequest) {
     setSessionCookie = true
   }
 
-  // Page context — when the user is on a media detail page or a news
-  // article page, resolve the title/topic so Totem understands "cet
-  // article" / "ce film" / "celui-là" without having to ask. Cheap:
-  // one Prisma call, only when the path matches.
-  let pageContext:
-    | {
-        type: "media"
-        id: string
-        title: string
-        mediaType: string
-        expertAgeRec: number | null
-        year: number | null
-      }
-    | {
-        type: "news"
-        slug: string
-        title: string
-        category: string | null
-        summary: string
-        publishedAt: string | null
-      }
-    | null = null
-
-  // News article page: /apercudecouverte/[slug]
-  // Special-case the index/list views (/apercudecouverte and
-  // /apercudecouverte/actualites) where there's no specific article in
-  // view — we don't try to resolve a single story for those.
-  if (
-    typeof body.sourcePage === "string" &&
-    body.sourcePage.startsWith("/apercudecouverte/") &&
-    !body.sourcePage.startsWith("/apercudecouverte/actualites")
-  ) {
-    const rawSlug = body.sourcePage.replace(/^\/apercudecouverte\//, "").split(/[?#]/)[0]
-    if (rawSlug.length > 0 && rawSlug.length < 200) {
-      try {
-        const n = await prisma.newsStory.findUnique({
-          where: { slug: rawSlug },
-          select: {
-            slug: true,
-            title: true,
-            category: true,
-            summary: true,
-            publishedAt: true,
-            status: true,
-          },
-        })
-        if (n && n.status === "PUBLISHED") {
-          pageContext = {
-            type: "news",
-            slug: n.slug,
-            title: n.title,
-            category: n.category,
-            summary: n.summary,
-            publishedAt: n.publishedAt ? n.publishedAt.toISOString() : null,
-          }
-        }
-      } catch {
-        /* ignore — page context is enrichment, not required */
-      }
-    }
-  }
-
-  if (
-    pageContext == null &&
-    typeof body.sourcePage === "string" &&
-    body.sourcePage.startsWith("/media/")
-  ) {
-    const rawSegment = body.sourcePage.replace(/^\/media\//, "").split(/[?#]/)[0]
-    if (rawSegment.length > 0 && rawSegment.length < 200) {
-      // Route format is `<type>:<id>` (e.g. movie:abc-123). Fall back to
-      // the raw segment if the colon is missing.
-      const { id: parsedId } = parseMediaRouteId(rawSegment)
-      const candidates = [parsedId, rawSegment].filter(
-        (s, i, arr) => s && s.length > 0 && arr.indexOf(s) === i,
-      )
-      try {
-        for (const candidate of candidates) {
-          const m = await prisma.mediaItem.findUnique({
-            where: { id: candidate },
-            select: {
-              id: true,
-              title: true,
-              type: true,
-              expertAgeRec: true,
-              releaseDate: true,
-            },
-          })
-          if (m) {
-            pageContext = {
-              type: "media",
-              id: m.id,
-              title: m.title,
-              mediaType: m.type,
-              expertAgeRec: m.expertAgeRec,
-              year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
-            }
-            break
-          }
-        }
-      } catch {
-        /* ignore — page context is enrichment, not required */
-      }
-    }
-  }
-
-  // Family snapshot for logged-in users (for richer system prompt context)
-  let familyContext: FamilyMemberSnapshot[] | undefined
-  if (userId) {
-    const members = await prisma.familyMember.findMany({
-      where: { userId },
-      take: 10,
-    })
-    familyContext = members.map((m) => ({
-      name: m.name,
-      age: getMemberAge(m.birthYear, m.birthMonth),
-      sensitivities: {
-        violence: m.sensitivityViolence,
-        scary: m.sensitivityScary,
-        sexual: m.sensitivitySexual,
-        language: m.sensitivityLanguage,
-        substances: m.sensitivitySubstances,
-      },
-      favoriteGenres: m.favoriteGenres,
-      avoidTopics: m.avoidTopics,
-    }))
-  }
+  // Page context (media fiche / news article) and the signed-in household,
+  // both resolved by the shared pipeline so the bench sees the same prompt.
+  const pageContext = await resolvePageContext(body.sourcePage)
+  const familyContext: FamilyMemberSnapshot[] | undefined = userId
+    ? await loadFamilyContext(userId)
+    : undefined
 
   // Get or create conversation
   const conversation = await getOrCreateConversation({
@@ -298,63 +172,33 @@ export async function POST(req: NextRequest) {
   const personalizationNudgeAllowed =
     !userId && turnsSoFar >= 1 && !nudgeRecentlyShown
 
-  // System prompt (static head + dynamic tail)
-  const { staticHead, dynamicTail } = buildSystemPrompt({
-    userIsAnonymous: !userId,
-    familyContext,
-    currentDate: new Date().toISOString().slice(0, 10),
-    sourcePage: body.sourcePage ?? null,
-    pageContext,
-    conversationTurnCount: turnsSoFar + 1,
-    personalizationNudgeAllowed,
-  })
-
-  // Tools — server tools have execute(), proposeNavigation is client-resolved
-  const origin = req.nextUrl.origin
-  const cookieHeader = req.headers.get("cookie")
-  const tools = buildTotemTools({ origin, cookieHeader, userId })
-
-  // Decide whether to escalate to Sonnet for this turn.
-  // Count tool parts in the most recent assistant message in the
-  // incoming UIMessage list (cheap; no extra DB call).
+  // Previous assistant turn's tool count (router input): tool parts in the
+  // most recent assistant message of the incoming list.
   const lastAssistant = [...body.messages].reverse().find((m) => m.role === "assistant")
   const lastTurnToolCount = lastAssistant
     ? (lastAssistant.parts ?? []).filter((p) => typeof p.type === "string" && p.type.startsWith("tool-")).length
     : 0
-  const decision = pickModel({
-    turnCount: turnsSoFar + 1,
-    lastTurnToolCount,
-    userText,
-  })
-  const modelUsed = decision.model
 
   const startedAt = Date.now()
 
-  const result = streamText({
-    model: anthropic(modelUsed),
-    // Cache the static head; the dynamic tail is sent fresh each turn.
-    system: [
-      {
-        role: "system" as const,
-        content: staticHead,
-        providerOptions: {
-          anthropic: { cacheControl: { type: "ephemeral" } },
-        },
-      },
-      { role: "system" as const, content: dynamicTail },
-    ],
+  const { result, model: modelUsed } = startTotemTurn({
     // Server-side history bound: the client array is truncated to the last
     // ~6 exchanges / 16K chars — the server, not the client, decides how
     // much history reaches the model (input-token cost control).
     messages: await convertToModelMessages(truncateHistory(body.messages)),
-    tools,
-    stopWhen: stepCountIs(6),
-    // Cost bounds: per-step output cap (worst case = 6 steps × cap), a
-    // single retry instead of the SDK default of two, and a hard stream
-    // timeout under the function's maxDuration.
-    maxOutputTokens: TOTEM_MAX_OUTPUT_TOKENS,
-    maxRetries: 1,
-    abortSignal: AbortSignal.timeout(55_000),
+    userText,
+    userId,
+    familyContext,
+    sourcePage: body.sourcePage ?? null,
+    pageContext,
+    turnsSoFar,
+    personalizationNudgeAllowed,
+    lastTurnToolCount,
+    toolContext: {
+      origin: req.nextUrl.origin,
+      cookieHeader: req.headers.get("cookie"),
+      userId,
+    },
     onFinish: async ({ text, toolCalls, toolResults, totalUsage }) => {
       try {
         const citedMediaIds = extractCitedMediaIds(toolResults)
