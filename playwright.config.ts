@@ -7,7 +7,15 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI
-    ? [["github"], ["html", { outputFolder: "playwright-report", open: "never" }]]
+    ? [
+        ["github"],
+        ["html", { outputFolder: "playwright-report", open: "never" }],
+        // Machine-readable results for workflow summaries: passed / failed /
+        // flaky / retries are read from here, never inferred from a job's
+        // conclusion. Kept out of playwright-report/, which the HTML reporter
+        // empties when it writes.
+        ["json", { outputFile: "playwright-results/results.json" }],
+      ]
     : "html",
   timeout: 60_000,
   expect: {

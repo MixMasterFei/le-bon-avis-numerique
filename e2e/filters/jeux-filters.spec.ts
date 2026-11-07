@@ -1,27 +1,31 @@
 import { test, expect } from "@playwright/test"
 import {
-  waitForResults,
+  openCatalogue,
   getMediaCards,
   getTotalCount,
   getCardAgeBadges,
+  getCardTitles,
   setAgeSliderMax,
   selectTopic,
   selectPlatform,
-  selectSort,
+  sortByTitle,
   isEmptyState,
+  eventually,
+  expectAlphabetical,
   screenshotWithLabel,
 } from "./helpers"
 
 test.describe("Jeux — Filter tests", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/jeux")
-    await waitForResults(page)
+    await openCatalogue(page, "/jeux")
   })
 
   // ── Default state ──────────────────────────────────────────────────
 
   test("default load shows game results", async ({ page }) => {
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Jeux")
+    // The H1 reads « Tous les jeux vidéo » (lowercase): the old case-sensitive
+    // "Jeux" predates the catalogue redesign.
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/jeux/i)
     const count = await getTotalCount(page)
     expect(count).toBeGreaterThan(0)
     await expect(getMediaCards(page).first()).toBeVisible()
@@ -32,35 +36,34 @@ test.describe("Jeux — Filter tests", () => {
 
   test("age max=7: all displayed ages are <= 7", async ({ page }) => {
     await setAgeSliderMax(page, 7)
-    await waitForResults(page)
 
-    const ages = await getCardAgeBadges(page)
-    expect(ages.length).toBeGreaterThan(0)
-    for (const age of ages) {
-      expect(age).toBeLessThanOrEqual(7)
-    }
+    await eventually(async () => {
+      const ages = await getCardAgeBadges(page)
+      expect(ages.length).toBeGreaterThan(0)
+      for (const age of ages) {
+        expect(age).toBeLessThanOrEqual(7)
+      }
+    })
     await screenshotWithLabel(page, "jeux-age-max-7")
   })
 
   test("age max=3: very young children games", async ({ page }) => {
     await setAgeSliderMax(page, 3)
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(3)
-      }
+    if (!(await isEmptyState(page))) {
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(3)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age-max-3")
   })
 
-  test("age max=10: result count < default count", async ({ page }) => {
+  test("age max=10: result count <= default count", async ({ page }) => {
     const defaultCount = await getTotalCount(page)
 
     await setAgeSliderMax(page, 10)
-    await waitForResults(page)
     const filteredCount = await getTotalCount(page)
 
     expect(filteredCount).toBeLessThanOrEqual(defaultCount)
@@ -71,10 +74,8 @@ test.describe("Jeux — Filter tests", () => {
 
   test("Switch platform: results exist", async ({ page }) => {
     await selectPlatform(page, "Switch")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
+    if (!(await isEmptyState(page))) {
       const count = await getTotalCount(page)
       expect(count).toBeGreaterThan(0)
     }
@@ -83,10 +84,8 @@ test.describe("Jeux — Filter tests", () => {
 
   test("PS5 platform: results exist", async ({ page }) => {
     await selectPlatform(page, "PS5")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
+    if (!(await isEmptyState(page))) {
       const count = await getTotalCount(page)
       expect(count).toBeGreaterThan(0)
     }
@@ -98,14 +97,13 @@ test.describe("Jeux — Filter tests", () => {
   test("age max=7 + Switch: family-friendly Nintendo games", async ({ page }) => {
     await setAgeSliderMax(page, 7)
     await selectPlatform(page, "Switch")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(7)
-      }
+    if (!(await isEmptyState(page))) {
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(7)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age7-switch")
   })
@@ -113,14 +111,13 @@ test.describe("Jeux — Filter tests", () => {
   test("age max=12 + PS5: teen-appropriate PS5 games", async ({ page }) => {
     await setAgeSliderMax(page, 12)
     await selectPlatform(page, "PS5")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(12)
-      }
+    if (!(await isEmptyState(page))) {
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(12)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age12-ps5")
   })
@@ -130,16 +127,15 @@ test.describe("Jeux — Filter tests", () => {
   test("age max=10 + Aventure: adventure games for kids", async ({ page }) => {
     await setAgeSliderMax(page, 10)
     await selectTopic(page, "Aventure")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
+    if (!(await isEmptyState(page))) {
       const count = await getTotalCount(page)
       expect(count).toBeGreaterThan(0)
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(10)
-      }
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(10)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age10-aventure")
   })
@@ -147,28 +143,29 @@ test.describe("Jeux — Filter tests", () => {
   test("age max=7 + Plateforme: platformers for young kids", async ({ page }) => {
     await setAgeSliderMax(page, 7)
     await selectTopic(page, "Plateforme")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(7)
-      }
+    if (!(await isEmptyState(page))) {
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(7)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age7-plateforme")
   })
 
-  test("Famille topic: family games", async ({ page }) => {
-    await selectTopic(page, "Famille")
-    await waitForResults(page)
+  test("Course topic: racing games", async ({ page }) => {
+    // Was « Famille topic »: the games sidebar has no « Famille » theme by
+    // design — its themes are the IGDB genres, and family fit is the PEGI age
+    // filter's job (GAME_GENRE_TOPICS, src/lib/igdb-genres.ts). Same check on
+    // a theme the sidebar does offer.
+    await selectTopic(page, "Course")
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
+    if (!(await isEmptyState(page))) {
       const count = await getTotalCount(page)
       expect(count).toBeGreaterThan(0)
     }
-    await screenshotWithLabel(page, "jeux-famille")
+    await screenshotWithLabel(page, "jeux-course")
   })
 
   // ── Age + Platform + Topic (triple combo) ──────────────────────────
@@ -177,35 +174,23 @@ test.describe("Jeux — Filter tests", () => {
     await setAgeSliderMax(page, 10)
     await selectPlatform(page, "Switch")
     await selectTopic(page, "Aventure")
-    await waitForResults(page)
 
-    const empty = await isEmptyState(page)
-    if (!empty) {
-      const ages = await getCardAgeBadges(page)
-      for (const age of ages) {
-        expect(age).toBeLessThanOrEqual(10)
-      }
+    if (!(await isEmptyState(page))) {
+      await eventually(async () => {
+        for (const age of await getCardAgeBadges(page)) {
+          expect(age).toBeLessThanOrEqual(10)
+        }
+      })
     }
     await screenshotWithLabel(page, "jeux-age10-switch-aventure")
   })
 
   // ── Sort ───────────────────────────────────────────────────────────
 
-  test("sort by Titre A-Z: alphabetically ordered", async ({ page }) => {
-    await selectSort(page, "Titre A-Z")
-    await waitForResults(page)
+  test("sort A → Z: alphabetically ordered", async ({ page }) => {
+    await sortByTitle(page)
 
-    const cards = getMediaCards(page)
-    const titles: string[] = []
-    const count = await cards.count()
-    for (let i = 0; i < Math.min(count, 10); i++) {
-      const t = await cards.nth(i).locator("h3").textContent()
-      if (t) titles.push(t.trim())
-    }
-
-    expect(titles.length).toBeGreaterThan(1)
-    const sorted = [...titles].sort((a, b) => a.localeCompare(b, "fr"))
-    expect(titles).toEqual(sorted)
+    await eventually(async () => expectAlphabetical(await getCardTitles(page)))
     await screenshotWithLabel(page, "jeux-sort-alpha")
   })
 
@@ -215,17 +200,16 @@ test.describe("Jeux — Filter tests", () => {
     const defaultCount = await getTotalCount(page)
 
     await setAgeSliderMax(page, 8)
-    await waitForResults(page)
     const age8Count = await getTotalCount(page)
     expect(age8Count).toBeLessThanOrEqual(defaultCount)
 
     await selectPlatform(page, "Switch")
-    await waitForResults(page)
     const age8SwitchCount = await getTotalCount(page)
     expect(age8SwitchCount).toBeLessThanOrEqual(age8Count)
 
     await selectTopic(page, "Aventure")
-    await waitForResults(page)
+    const age8SwitchAdventureCount = await getTotalCount(page)
+    expect(age8SwitchAdventureCount).toBeLessThanOrEqual(age8SwitchCount)
 
     await screenshotWithLabel(page, "jeux-progressive-final")
   })
