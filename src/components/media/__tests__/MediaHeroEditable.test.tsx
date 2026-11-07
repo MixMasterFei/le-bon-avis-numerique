@@ -75,12 +75,13 @@ describe("MediaHeroEditable — « Tous publics » (expertAgeRec: 0)", () => {
     expect(screen.getByRole("link", { name: "Comment lire cet âge ?" })).toHaveAttribute("href", "/blog/bon-age-film-enfant")
   })
 
-  it("has no « Pourquoi cet âge ? » rationale to show, so the TP badge stays a plain bubble", () => {
+  // A TP verdict is explained like any other age (it used to be treated as
+  // « no age » by buildAgeRationale, so the badge had nothing to open).
+  it("explains a TP verdict too: the « TP » badge opens « Pourquoi tous publics ? »", () => {
     const ageRationale = buildAgeRationale({ ...tp, contentMetrics: calmMetrics })
-    expect(ageRationale.show).toBe(false)
+    expect(ageRationale.show).toBe(true)
     render(<MediaHeroEditable {...tp} ageRationale={ageRationale} />)
-    expect(screen.getByText("TP")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: /voir le détail/ })).toBeNull()
+    expect(screen.getByRole("button", { name: /Pourquoi tous publics \? — voir le détail/ })).toHaveTextContent("TP")
   })
 
   it("still shows no verdict when the age is unknown — null is not 0", () => {

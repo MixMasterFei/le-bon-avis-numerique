@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react"
 import { AlertTriangle, ChevronDown, ChevronUp, Plus } from "lucide-react"
 import { TriggerChip } from "@/components/media/TriggerChip"
 import { useTriggerVotes } from "@/components/media/FicheDataContext"
-import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { VALID_SENSITIVE_WARNINGS, type AiWarningsState } from "@/lib/sensitive-warnings"
 
 /**
  * "Ce qui peut marquer" for the V3 dashboard — the community trigger-warning
@@ -24,9 +24,12 @@ import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 export function DashboardSensitiveWarnings({
   mediaId,
   aiItems,
+  aiState = "no_data",
 }: {
   mediaId: string
   aiItems: string[]
+  /** What an EMPTY list means — see aiWarningsState. Defaults to « no data ». */
+  aiState?: AiWarningsState
 }) {
   const { data: session } = useSession()
   const pathname = usePathname()
@@ -97,9 +100,13 @@ export function DashboardSensitiveWarnings({
               Ce qui peut marquer
             </span>
             <span className="block text-[11.5px]" style={{ color: "var(--f-muted)" }}>
+              {/* An empty list never reads as « no concern » (« Aucun point
+                  signalé » sat over two near-drownings on Amélie). */}
               {items.length > 0
                 ? `${items.length} point${items.length > 1 ? "s" : ""} de vigilance · afficher (peut divulgâcher)`
-                : "Aucun point signalé pour l'instant"}
+                : aiState === "nothing_flagged"
+                  ? "Rien de relevé par l'analyse automatique · ce n'est pas une garantie"
+                  : "Pas encore de données sur les moments sensibles"}
             </span>
           </span>
         </span>
@@ -112,6 +119,14 @@ export function DashboardSensitiveWarnings({
             Repères signalés par l&apos;analyse et confirmés par les parents — des points à
             vérifier selon la sensibilité de votre enfant, pas des scènes garanties.
           </p>
+
+          {items.length === 0 && (
+            <p className="mb-3 text-[12px] leading-relaxed" style={{ color: "var(--f-body)" }}>
+              {aiState === "nothing_flagged"
+                ? "L'analyse automatique n'a rien relevé, mais elle ne voit pas chaque scène : si vous avez vu ce titre, signalez ce qui peut marquer."
+                : "Nous n'avons pas encore de données fiables sur les moments sensibles de ce titre. Leur absence ne veut pas dire qu'il n'y en a pas."}
+            </p>
+          )}
 
           {items.length > 0 && (
             <div className="mb-3 flex flex-wrap items-start gap-2">

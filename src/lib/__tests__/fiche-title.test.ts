@@ -43,6 +43,11 @@ describe("buildFicheTitle", () => {
 
   it("falls back to the bare name with no age", () => {
     expect(buildFicheTitle({ title: "Roblox", age: null })).toBe("Roblox")
-    expect(buildFicheTitle({ title: "Roblox", age: 0 })).toBe("Roblox")
+  })
+
+  // 0 = « Tous publics », a real verdict — it used to be dropped as if unknown.
+  it("puts « Tous publics » in the title for a TP fiche", () => {
+    expect(buildFicheTitle({ title: "Roblox", age: 0 })).toBe("Roblox — À partir de quel âge ? Tous publics")
+    expect(buildFicheTitle({ title: "Roblox", age: 0, provisional: true })).toBe("Roblox — Tous publics (à confirmer)")
   })
 })

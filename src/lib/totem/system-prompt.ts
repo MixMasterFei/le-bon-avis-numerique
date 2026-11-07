@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { ageInlineLabel } from "@/lib/age-label"
 
 let cachedSoul: string | null = null
 let cachedSiteBrief: string | null = null
@@ -136,7 +137,7 @@ Règles strictes sur les requêtes "famille" :
   let pageBlock = ""
   if (params.pageContext?.type === "media") {
     const mc = params.pageContext
-    pageBlock = `Page actuelle : fiche du ${mc.mediaType.toLowerCase()} **"${mc.title}"**${mc.year ? ` (${mc.year})` : ""} — id catalogue : \`${mc.id}\`${mc.expertAgeRec != null ? `, âge conseillé ${mc.expertAgeRec} ans` : ""}.
+    pageBlock = `Page actuelle : fiche du ${mc.mediaType.toLowerCase()} **"${mc.title}"**${mc.year ? ` (${mc.year})` : ""} — id catalogue : \`${mc.id}\`${ageInlineLabel(mc.expertAgeRec) ? `, âge conseillé ${ageInlineLabel(mc.expertAgeRec)}` : ""}.
 Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans préciser, il fait référence à ce titre. Utilise directement \`getMediaDetails\` ou \`getFamilyFit\` avec l'id ci-dessus — pas besoin d'appeler \`searchMedia\` d'abord.`
   } else if (params.pageContext?.type === "news") {
     const nc = params.pageContext

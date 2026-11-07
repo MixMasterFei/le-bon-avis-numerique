@@ -21,6 +21,8 @@
  * sensible rather than truncating mid-phrase.
  */
 
+import { ageSentenceLabel, isKnownAge } from "@/lib/age-label"
+
 /** Page-specific budget, leaving room for the " | Totem Avisé" suffix. */
 export const MAX_TITLE = 52
 
@@ -35,9 +37,11 @@ export interface FicheTitleInput {
 
 export function buildFicheTitle({ title, age, provisional }: FicheTitleInput): string {
   const name = title.trim()
-  if (!age || age <= 0) return name
+  // « Dès 12 ans », or « Tous publics » for 0 — a real verdict that belongs in
+  // the SERP like any other age (a `> 0` test used to drop it, as if unknown).
+  const ans = ageSentenceLabel(age)
+  if (!ans) return name
 
-  const ans = `Dès ${age} ans`
   // Longest first. Each keeps the work's name intact and puts the query
   // wording as early as the name allows.
   const variants = provisional
@@ -67,7 +71,49 @@ export function seoTitleMatchesAge(
   age: number | null | undefined,
 ): boolean {
   const m = seoTitle.match(/d[èe]s (\d{1,2}) ans/i)
-  if (!m) return true
-  if (typeof age !== "number" || age <= 0) return false
-  return Number(m[1]) === age
+  if (m) {
+    // « dès N ans » can only match a positive age — never TP, never unknown.
+    if (typeof age !== "number" || age <= 0) return false
+    return Number(m[1]) === age
+  }
+  // « Tous publics » is an age claim too: only a TP fiche may carry it.
+  if (/tous publics/i.test(seoTitle)) return age === 0
+  return true
+}
+
+interface FicheAgeInput {
+  age?: number | null
+  /** Pre-release / provisional: the age is an estimate (shouldHideContentAnalysis). */
+  provisional?: boolean
+}
+
+/**
+ * Meta-description lead — the verdict first, so the SERP answers « [titre] à
+ * partir de quel âge ». « Dès 12 ans · Notre avis famille » / « Tous publics ·
+ * Notre avis famille »; an estimate says so; no age, no claim (null).
+ */
+export function ficheAgeLead({ age, provisional }: FicheAgeInput): string | null {
+  if (!isKnownAge(age)) return null
+  if (provisional) return age === 0 ? "Estimé tous publics (à confirmer)" : `Âge conseillé dès ${age} ans (à confirmer)`
+  return `${ageSentenceLabel(age)} · Notre avis famille`
+}
+
+/**
+ * The social card's verdict pill: « Dès 12 ans » / « Tous publics », marked
+ * « (à confirmer) » while it is only an estimate, « Repères famille » without
+ * an age.
+ */
+export function ficheOgVerdict({ age, provisional }: FicheAgeInput): string {
+  const label = ageSentenceLabel(age)
+  if (!label) return "Repères famille"
+  return provisional ? `${label} (à confirmer)` : label
+}
+
+/**
+ * schema.org `typicalAgeRange` ("12-" = 12 and up; "0-" = « Tous publics »).
+ * Omitted for an unknown age and for an estimate — we don't assert unconfirmed
+ * ages to machines any more than to humans.
+ */
+export function ficheTypicalAgeRange({ age, provisional }: FicheAgeInput): string | null {
+  return !provisional && isKnownAge(age) ? `${age}-` : null
 }

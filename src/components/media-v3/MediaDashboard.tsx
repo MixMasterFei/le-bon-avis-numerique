@@ -18,6 +18,7 @@ import { DashboardWhereToWatch } from "./DashboardWhereToWatch"
 import { DashboardFamilyFeedback } from "./DashboardFamilyFeedback"
 import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
+import { aiWarningsState } from "@/lib/sensitive-warnings"
 import { officialRatingLabel } from "@/lib/utils"
 
 // Handoff palette (already matches the site's warm art direction).
@@ -95,6 +96,13 @@ export function MediaDashboard({
       : "Analyse automatisée · critères publiés"
 
   const isFilmOrTv = media.type === "MOVIE" || media.type === "TV"
+  // Confidence-gated AI flags + whether an empty list means « rien relevé »
+  // or « pas encore de données » (@/lib/sensitive-warnings).
+  const aiWarnings = aiWarningsState({
+    warnings: media.metrics?.sensitiveWarnings,
+    assessedAt: media.metrics?.sensitiveWarningsAt,
+    confidence: media.metrics?.enrichmentConfidence,
+  })
   const listing = TYPE_LISTING[media.type] ?? "/recherche"
   // Public, indexable catalog filter — `topics` matches both genres[] and
   // topics[] server-side (media-queries.ts), unlike the admin-only
@@ -384,14 +392,7 @@ export function MediaDashboard({
         {/* ===== Ce qui peut marquer — community trigger warnings (film/TV;
             trigger votes are gated off for games in FicheDataContext) ===== */}
         {!hideAnalysis && isFilmOrTv && (
-          <DashboardSensitiveWarnings
-            mediaId={dbId}
-            aiItems={
-              (media.metrics?.enrichmentConfidence ?? 0) >= 0.6
-                ? (media.metrics?.sensitiveWarnings ?? [])
-                : []
-            }
-          />
+          <DashboardSensitiveWarnings mediaId={dbId} aiItems={aiWarnings.items} aiState={aiWarnings.state} />
         )}
 
         {/* ===== screenshots (dedup by URL + admin delete) ===== */}

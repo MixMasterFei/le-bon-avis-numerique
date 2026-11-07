@@ -3,7 +3,10 @@ import { z } from "zod"
 const score = z.number().int().min(0).max(5)
 export const mediaMatchSchema = z.object({
   id: z.string(), title: z.string(), type: z.enum(["MOVIE", "TV", "GAME", "BOOK", "APP", "MANGA"]),
-  year: z.number().int().nullable(), age: z.number().int().nullable(), provisional: z.boolean(), url: z.string().url(),
+  year: z.number().int().nullable(),
+  age: z.number().int().nullable()
+    .describe("Âge conseillé Totem Avisé en années. 0 = « Tous publics » (une vraie recommandation, pas une absence d'âge) ; null = âge inconnu ; une valeur provisoire est signalée par `provisional`."),
+  provisional: z.boolean(), url: z.string().url(),
 })
 const assessmentSchema = z.object({
   status: z.enum(["available", "provisional", "unavailable"]), source: z.string().nullable(),

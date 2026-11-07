@@ -1,6 +1,7 @@
 import { fetchMovies, fetchSeries, fetchGames, type TransformedMediaItem } from "@/lib/media-queries"
 import { toMediaRouteId, type MediaType } from "@/lib/media-route"
 import { shouldHideContentAnalysis } from "@/lib/release-status"
+import { ageInlineLabel, isKnownAge } from "@/lib/age-label"
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://totemavise.com"
 
@@ -47,7 +48,7 @@ export const SELECTION_TYPES: Record<
 
 function itemLine(item: TransformedMediaItem, mediaType: MediaType): string {
   const canonical = `${SITE_URL}/media/${toMediaRouteId(mediaType, item.id)}`
-  const age = item.expertAgeRec ? `dès ${item.expertAgeRec} ans` : "âge à confirmer"
+  const age = ageInlineLabel(item.expertAgeRec) ?? "âge à confirmer"
   const year = item.releaseDate ? ` (${item.releaseDate.slice(0, 4)})` : ""
   const themes = item.topics.slice(0, 3).join(", ")
   const themesPart = themes ? ` — thèmes : ${themes}` : ""
@@ -83,7 +84,10 @@ export async function buildSelectionMarkdown(
     minQuality: 50,
   })
   // Keep the explicit promise true even if a browse-page exception changes.
-  const items = result.items.filter((item) => item.expertAgeRec != null && item.expertAgeRec > 0 && item.expertAgeRec <= age && item.contentMetrics != null && !shouldHideContentAnalysis(item))
+  // « Tous publics » (0) is the most eligible age there is — a `> 0` test
+  // dropped every TP title from « conseillés pour un enfant de N ans ».
+  // Provisional / unanalysed titles stay out: the list promises evaluated ones.
+  const items = result.items.filter((item) => isKnownAge(item.expertAgeRec) && item.expertAgeRec <= age && item.contentMetrics != null && !shouldHideContentAnalysis(item))
 
   const htmlUrl = `${SITE_URL}${config.htmlPath}?maxAge=${age}`
 

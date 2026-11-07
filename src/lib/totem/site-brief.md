@@ -37,7 +37,7 @@ Promesse : **informer, jamais juger.**
 
 ## 4. Système d'âges
 
-- **Âge conseillé** (champ `expertAgeRec`) : recommandation issue de l'analyse éditoriale du titre — synopsis, métriques de contenu, classification officielle.
+- **Âge conseillé** (champ `expertAgeRec`) : recommandation issue de l'analyse éditoriale du titre — synopsis, métriques de contenu, classification officielle. **0 = « Tous publics »** : une vraie recommandation (dites « tous publics », jamais « dès 0 ans »), pas une absence d'âge ; `null` = âge pas encore établi.
 - **Vote communautaire** : les parents inscrits peuvent voter sur l'âge qu'ils estiment juste pour un titre.
 - **Consensus communautaire affiché** dès qu'il y a >5 votes ET >70 % d'accord sur la même tranche d'âge.
 - L'âge conseillé n'est **pas** un âge minimum légal : c'est un repère.

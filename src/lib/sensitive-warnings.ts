@@ -73,3 +73,31 @@ export const COMMUNITY_CONSENSUS = { minVotes: 5, minPercent: 70 } as const
 /** @deprecated Use {@link COMMUNITY_CONSENSUS}. Kept as an alias for trigger-vote call sites. */
 export const TRIGGER_CONSENSUS = COMMUNITY_CONSENSUS
 
+
+/** Below this enrichment confidence the AI flags are not shown (fiche and /md layer alike). */
+export const WARNINGS_MIN_CONFIDENCE = 0.6
+
+/**
+ * What « Ce qui peut marquer » may honestly say about the AI flags:
+ *  - "flagged": at least one category to show;
+ *  - "nothing_flagged": a confident automated pass ran and flagged nothing —
+ *    still NOT « rien à signaler »: it reads a synopsis, not every scene;
+ *  - "no_data": never computed (no analysis / legacy row), or computed below
+ *    the confidence gate — we know nothing yet.
+ * An empty list must never read as an affirmative « no concern » (« Amélie et
+ * la métaphysique des tubes » showed « Aucun point signalé » over two
+ * near-drownings, a wartime bereavement and a grandmother's death).
+ * A confident legacy row whose flags predate `sensitiveWarningsAt` still counts.
+ */
+export type AiWarningsState = "flagged" | "nothing_flagged" | "no_data"
+
+export function aiWarningsState(input: {
+  warnings: readonly string[] | null | undefined
+  assessedAt: Date | string | null | undefined
+  confidence: number | null | undefined
+}): { state: AiWarningsState; items: string[] } {
+  const warnings = [...(input.warnings ?? [])]
+  const confident = (input.confidence ?? 0) >= WARNINGS_MIN_CONFIDENCE
+  if (!confident || (!input.assessedAt && warnings.length === 0)) return { state: "no_data", items: [] }
+  return warnings.length > 0 ? { state: "flagged", items: warnings } : { state: "nothing_flagged", items: [] }
+}

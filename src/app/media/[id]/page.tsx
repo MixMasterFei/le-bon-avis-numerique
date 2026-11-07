@@ -3,7 +3,7 @@ export const revalidate = 3600
 
 import { cache, Suspense } from "react"
 import type { Metadata } from "next"
-import { buildFicheTitle, seoTitleMatchesAge } from "@/lib/fiche-title"
+import { buildFicheTitle, ficheAgeLead, ficheTypicalAgeRange, seoTitleMatchesAge } from "@/lib/fiche-title"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { gameGuideEnabled } from "@/lib/game-guide-flag"
@@ -375,8 +375,6 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
     releaseStatus: media.releaseStatus,
   })
 
-  const hasAge = media.expertAgeRec && media.expertAgeRec > 0
-
   // The striking-distance agent can set a `seoTitle` override that puts a
   // ranking keyword in the SERP <title> WITHOUT renaming the work (the H1,
   // cards and structured-data name all stay `media.title`). See seo-autofix.
@@ -402,11 +400,8 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
   // Lead the meta description with the age verdict + family angle. This both
   // answers the "[titre] à partir de quel âge" query directly in the SERP and
   // differentiates us from generic plot-summary results (AlloCiné, Wikipédia).
-  const agePrefix = hasAge
-    ? hide
-      ? `Âge conseillé dès ${media.expertAgeRec} ans (à confirmer)`
-      : `Dès ${media.expertAgeRec} ans · Notre avis famille`
-    : null
+  // « Tous publics » leads like any other age (see @/lib/fiche-title).
+  const agePrefix = ficheAgeLead({ age: media.expertAgeRec, provisional: hide })
   const synopsis = media.synopsisFr?.trim() || ""
   const truncate = (text: string, max: number) =>
     text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text
@@ -492,13 +487,10 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
     hideContentAnalysis,
   })
 
-  // Totem's recommended age as a schema.org age range ("10-" = 10 and up).
-  // Omitted for hidden/provisional analyses — we don't assert unconfirmed ages
-  // to machines any more than to humans.
-  const typicalAgeRange =
-    !hideContentAnalysis && typeof media.expertAgeRec === "number" && media.expertAgeRec > 0
-      ? `${media.expertAgeRec}-`
-      : null
+  // Totem's recommended age as a schema.org age range ("10-" = 10 and up,
+  // "0-" = « Tous publics »). Omitted for hidden/provisional analyses — we
+  // don't assert unconfirmed ages to machines any more than to humans.
+  const typicalAgeRange = ficheTypicalAgeRange({ age: media.expertAgeRec, provisional: hideContentAnalysis })
 
   // Main entity based on type
   let mainEntity: Record<string, unknown>
