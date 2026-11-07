@@ -223,7 +223,8 @@ model MediaItem {
   // DB triggers (sql/add_data_freshness_columns.sql): don't set it from code.
   contentUpdatedAt     DateTime  @default(now()) @map("content_updated_at") @db.Timestamptz(6)
   // Last re-read of the TMDB lifecycle (releaseStatus) and vote counters after
-  // import — the release-status and zero-vote refreshes (src/lib/tmdb-refresh.ts).
+  // import — the release-status and recent-release vote refreshes
+  // (src/lib/tmdb-refresh.ts).
   tmdbCheckedAt        DateTime? @map("tmdb_checked_at") @db.Timestamptz(6)
   // Rotation cursor of the weekly similarity recompute: least recent first.
   similarityComputedAt DateTime? @map("similarity_computed_at") @db.Timestamptz(6)
