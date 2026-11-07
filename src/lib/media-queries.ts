@@ -119,6 +119,25 @@ const DEFAULT_GAME_MIN_QUALITY = 60
 const GAME_FRESH_MIN_VOTES = 3
 const GAME_FRESH_WINDOW_DAYS = 90
 
+// ── Deterministic ordering ───────────────────────────────────────────
+
+type MediaOrderBy = Prisma.MediaItemOrderByWithRelationInput
+
+/**
+ * OFFSET pagination is only correct over a TOTAL order. Every catalogue sort
+ * key ties — French releases cluster on Wednesdays, remakes share a title,
+ * most games share a vote count — and PostgreSQL returns tied rows in whatever
+ * order the chosen plan produces, which differs between `LIMIT 10` and
+ * `LIMIT 10 OFFSET 10` (the top-N sort keeps a different bound). Page 2 then
+ * repeated titles from page 1 and silently skipped others (Daily Filter Tests,
+ * 7 Nov 2026). The unique `id` as the last key makes every listing a total
+ * order, so pages are disjoint and stable. Every paginated catalogue query in
+ * this file must go through it.
+ */
+export function withStableOrder(orderBy: MediaOrderBy | MediaOrderBy[]): MediaOrderBy[] {
+  return [...(Array.isArray(orderBy) ? orderBy : [orderBy]), { id: "asc" }]
+}
+
 // ── Shared where-clause builders ─────────────────────────────────────
 
 function appendAnd(where: Prisma.MediaItemWhereInput, ...conditions: Prisma.MediaItemWhereInput[]) {
@@ -420,7 +439,7 @@ export async function fetchMovies(filters: MediaQueryFilters = {}): Promise<Medi
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
-        orderBy,
+        orderBy: withStableOrder(orderBy),
         skip,
         take: fetchLimit,
         include: {
@@ -513,7 +532,7 @@ export async function fetchSeries(filters: MediaQueryFilters = {}): Promise<Medi
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
-        orderBy,
+        orderBy: withStableOrder(orderBy),
         skip,
         take: limit,
         include: {
@@ -643,7 +662,7 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
-        orderBy,
+        orderBy: withStableOrder(orderBy),
         skip,
         take: limit,
         include: {
@@ -728,7 +747,7 @@ export async function fetchMangas(filters: MediaQueryFilters = {}): Promise<Medi
     withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where,
-        orderBy,
+        orderBy: withStableOrder(orderBy),
         skip,
         take: limit,
         include: {
