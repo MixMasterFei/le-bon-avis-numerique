@@ -40,6 +40,8 @@ const CRON_STALE_HOURS: Record<string, number> = {
   "revert-unreleased": 200,
   // Monthly job — 800h ≈ 33 days, one cadence plus margin.
   "game-guides-check": 800,
+  // Weekly (Sunday) Totem evaluation bench.
+  "totem-eval": 200,
   "backfill-ratings": 220,
   streaming: 220,
   similarity: 220,

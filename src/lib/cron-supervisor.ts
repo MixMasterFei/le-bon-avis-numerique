@@ -282,6 +282,17 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
     allowRepeatedPartial: true,
   },
   {
+    // Weekly (Sun 05:51) Totem evaluation bench. allowRepeatedPartial:
+    // "partial" means some scenario checks failed — a measurement of the
+    // assistant, the job itself ran fine. No remediation: a re-run spends
+    // model money and is capped at 3 a day; humans decide. 192h ≈ 8 days.
+    task: "totem-eval",
+    staleAfterHours: 192,
+    // Registered 2026-11-07; first scheduled fire Sunday 2026-11-08.
+    activatedAt: "2026-11-07",
+    allowRepeatedPartial: true,
+  },
+  {
     task: "streaming",
     staleAfterHours: 192,
     // `updated`, not `total`: total is the scan-window size (a constant ~50,

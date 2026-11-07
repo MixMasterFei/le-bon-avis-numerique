@@ -226,6 +226,10 @@ model MediaItem {
   // import — the release-status and recent-release vote refreshes
   // (src/lib/tmdb-refresh.ts).
   tmdbCheckedAt        DateTime? @map("tmdb_checked_at") @db.Timestamptz(6)
+  // Consecutive 404s from TMDB on those re-reads; any answer resets it. At
+  // TMDB_NOT_FOUND_GIVE_UP the title (deleted/merged on TMDB) leaves the
+  // refresh queues for good. sql/add_tmdb_not_found_count.sql.
+  tmdbNotFoundCount    Int       @default(0) @map("tmdb_not_found_count")
   // Rotation cursor of the weekly similarity recompute: least recent first.
   similarityComputedAt DateTime? @map("similarity_computed_at") @db.Timestamptz(6)
   enrichedBy       String?    @map("enriched_by") // User ID who enriched
@@ -1349,6 +1353,20 @@ model TotemMessage {
   inputTokens       Int? @map("input_tokens")
   outputTokens      Int? @map("output_tokens")
   cachedInputTokens Int? @map("cached_input_tokens")
+  // Split of input_tokens (which is the AI SDK 6 TOTAL: uncached + cache
+  // reads + cache writes), billed at 1× / 0.1× / 1.25×. Null on rows written
+  // before sql/add_totem_message_telemetry.sql.
+  uncachedInputTokens   Int?    @map("uncached_input_tokens")
+  cacheWriteInputTokens Int?    @map("cache_write_input_tokens")
+  // Why this turn ran on modelUsed (model-router reason, or "override" for
+  // the evaluation bench) and how it ended ("stop", "tool-calls", "length",
+  // "aborted", "client_disconnected", "error"…). On a user row,
+  // finishReason "regenerate" marks a « Réessayer » re-send.
+  routingReason         String? @map("routing_reason")
+  finishReason          String? @map("finish_reason")
+  // The turn's response messages (assistant + tool, every step), replayed as
+  // the trusted history of the next turns instead of the client's copy.
+  modelMessages         Json?   @map("model_messages")
   createdAt      DateTime @default(now()) @map("created_at")
 
   conversation TotemConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

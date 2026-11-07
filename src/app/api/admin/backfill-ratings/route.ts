@@ -89,13 +89,15 @@ export async function POST(req: NextRequest) {
     status: result.errors > 0 ? "partial" : "success",
     summary:
       `${updated} notes TMDB relues dont ${recent.length} sorties recentes (${result.votesGained} titres sortis du zero vote)` +
-      `${result.notFound > 0 ? `, ${result.notFound} sans fiche TMDB (ignores)` : ""}` +
+      `${result.notFound > 0 ? `, ${result.notFound} sans fiche TMDB` : ""}` +
+      `${result.gaveUp.length > 0 ? ` (${result.gaveUp.length} abandonnes apres 3 essais)` : ""}` +
       `${result.errors > 0 ? `, ${result.errors} erreurs TMDB (reessayees au prochain passage)` : ""}, ${remaining} restants`,
     details: {
       updated,
       changed: result.updated,
       votesGained: result.votesGained,
       unratable: result.notFound,
+      gaveUp: result.gaveUp.slice(0, 25),
       errors: result.errors,
       unratedBatch: unrated.length,
       recentBatch: recent.length,

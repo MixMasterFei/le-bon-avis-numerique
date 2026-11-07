@@ -122,6 +122,9 @@ export interface TotemMessageDetail {
   cachedInputTokens: number | null
   /** Per-message cost ESTIMATE (USD); null = unmeasured or unknown model. */
   estimatedCostUsd: number | null
+  /** Model-router reason, and how the turn ended (null on older rows). */
+  routingReason: string | null
+  finishReason: string | null
   citedMediaIds: string[]
   toolCalls: unknown
   toolResults: unknown
@@ -274,12 +277,27 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
       _count: true,
     }),
     // Token sums per model — folded through the per-model pricing map for
-    // the « Coût estimé » tile.
-    prisma.totemMessage.groupBy({
-      by: ["modelUsed"],
-      where: { role: "assistant", createdAt: { gte: since } },
-      _sum: { inputTokens: true, outputTokens: true, cachedInputTokens: true },
-    }),
+    // the « Coût estimé » tile. Rows with the uncached / cache-write split
+    // (since 2026-11) and older rows (total + cache reads only) are summed
+    // separately: their input buckets are priced differently.
+    Promise.all([
+      prisma.totemMessage.groupBy({
+        by: ["modelUsed"],
+        where: { role: "assistant", createdAt: { gte: since }, uncachedInputTokens: { not: null } },
+        _sum: {
+          inputTokens: true,
+          outputTokens: true,
+          cachedInputTokens: true,
+          uncachedInputTokens: true,
+          cacheWriteInputTokens: true,
+        },
+      }),
+      prisma.totemMessage.groupBy({
+        by: ["modelUsed"],
+        where: { role: "assistant", createdAt: { gte: since }, uncachedInputTokens: null },
+        _sum: { inputTokens: true, outputTokens: true, cachedInputTokens: true },
+      }),
+    ]),
     prisma.totemConversation.groupBy({
       by: ["sourcePage"],
       where: { startedAt: { gte: since }, sourcePage: { not: null } },
@@ -350,12 +368,29 @@ export async function fetchTotemAdminOverview(periodDays = 30): Promise<TotemAdm
   let outputTokens = 0
   let cachedInputTokens = 0
   let estimatedCostUsd: number | null = null
-  for (const g of tokenGroups) {
-    const usage = {
-      inputTokens: g._sum.inputTokens,
-      outputTokens: g._sum.outputTokens,
-      cachedInputTokens: g._sum.cachedInputTokens,
-    }
+  const [splitTokenGroups, legacyTokenGroups] = tokenGroups
+  const usageRows = [
+    ...splitTokenGroups.map((g) => ({
+      modelUsed: g.modelUsed,
+      usage: {
+        inputTokens: g._sum.inputTokens,
+        outputTokens: g._sum.outputTokens,
+        cachedInputTokens: g._sum.cachedInputTokens,
+        uncachedInputTokens: g._sum.uncachedInputTokens ?? 0,
+        cacheWriteInputTokens: g._sum.cacheWriteInputTokens ?? 0,
+      },
+    })),
+    ...legacyTokenGroups.map((g) => ({
+      modelUsed: g.modelUsed,
+      usage: {
+        inputTokens: g._sum.inputTokens,
+        outputTokens: g._sum.outputTokens,
+        cachedInputTokens: g._sum.cachedInputTokens,
+      },
+    })),
+  ]
+  for (const g of usageRows) {
+    const usage = g.usage
     inputTokens += usage.inputTokens ?? 0
     outputTokens += usage.outputTokens ?? 0
     cachedInputTokens += usage.cachedInputTokens ?? 0
@@ -638,7 +673,11 @@ export async function fetchTotemConversationDetail(
         inputTokens: m.inputTokens,
         outputTokens: m.outputTokens,
         cachedInputTokens: m.cachedInputTokens,
+        uncachedInputTokens: m.uncachedInputTokens,
+        cacheWriteInputTokens: m.cacheWriteInputTokens,
       }),
+      routingReason: m.routingReason,
+      finishReason: m.finishReason,
       citedMediaIds: m.citedMediaIds,
       toolCalls: m.toolCalls,
       toolResults: m.toolResults,

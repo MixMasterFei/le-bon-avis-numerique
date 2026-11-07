@@ -24,6 +24,50 @@ function persistedToUIMessages(messages: PersistedMessage[]): UIMessage[] {
 
 const CONVERSATION_KEY = "totem.conversationId.v1"
 
+const CARD_TOOLS = new Set(["proposeNavigation", "proposeAddToWatchlist", "proposeReaction"])
+
+/**
+ * What the chat request carries since 2026-11: the new user message and the
+ * outcome of the action cards the parent answered — nothing else. The server
+ * rebuilds the conversation from what it stored (it no longer trusts a
+ * client-supplied history), which also keeps the body a few hundred bytes.
+ */
+export function buildChatRequestBody(
+  messages: UIMessage[],
+  extra: Record<string, unknown> | undefined,
+  trigger: "submit-message" | "regenerate-message",
+) {
+  const lastUser = [...messages].reverse().find((m) => m.role === "user")
+  const toolOutcomes: Array<{ toolCallId: string; toolName: string; output: unknown }> = []
+  for (const m of messages) {
+    if (m.role !== "assistant") continue
+    for (const part of m.parts ?? []) {
+      if (typeof part.type !== "string" || !part.type.startsWith("tool-")) continue
+      const toolName = part.type.slice("tool-".length)
+      const p = part as { toolCallId?: string; state?: string; output?: unknown }
+      if (CARD_TOOLS.has(toolName) && p.state === "output-available" && p.toolCallId) {
+        toolOutcomes.push({ toolCallId: p.toolCallId, toolName, output: p.output })
+      }
+    }
+  }
+  return {
+    ...extra,
+    trigger,
+    messages: lastUser
+      ? [
+          {
+            id: lastUser.id,
+            role: "user" as const,
+            parts: (lastUser.parts ?? [])
+              .filter((p): p is { type: "text"; text: string } => p.type === "text")
+              .map((p) => ({ type: "text" as const, text: p.text })),
+          },
+        ]
+      : [],
+    toolOutcomes: toolOutcomes.slice(-20),
+  }
+}
+
 function readStoredConversationId(): string | undefined {
   if (typeof window === "undefined") return undefined
   try {
@@ -85,6 +129,9 @@ export function useTotemChat(opts: UseTotemChatOptions = {}) {
           sourcePage:
             sourcePageRef.current ??
             (typeof window !== "undefined" ? window.location.pathname : null),
+        }),
+        prepareSendMessagesRequest: ({ messages, body, trigger }) => ({
+          body: buildChatRequestBody(messages, body, trigger),
         }),
         fetch: async (input, init) => {
           const res = await fetch(input, init)

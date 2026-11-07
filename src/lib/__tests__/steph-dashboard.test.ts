@@ -170,6 +170,7 @@ describe("glossaire des tuyaux", () => {
       "seo-striking-distance",
       "revert-unreleased",
       "game-guides-check",
+      "totem-eval",
       "cron-supervisor",
       "heartbeat",
     ]

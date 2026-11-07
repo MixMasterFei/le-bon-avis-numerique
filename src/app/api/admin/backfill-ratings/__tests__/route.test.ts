@@ -30,7 +30,7 @@ const film = (id: string, over: Record<string, unknown> = {}) => ({
 
 const result = (over: Partial<TmdbRefreshResult> = {}): TmdbRefreshResult => ({
   examined: 0, updated: 0, unchanged: 0, notFound: 0, errors: 0,
-  nowReleased: [], votesGained: 0, bailedOnTime: false, ...over,
+  nowReleased: [], votesGained: 0, gaveUp: [], bailedOnTime: false, ...over,
 })
 
 beforeEach(() => {

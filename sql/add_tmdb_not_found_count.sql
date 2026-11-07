@@ -1,0 +1,22 @@
+-- 2026-11-07 · Consecutive TMDB 404s per title (assessment of 7 Nov 2026,
+-- release-status follow-up).
+--
+-- The release-status and recent-release vote refreshes (src/lib/tmdb-refresh.ts)
+-- re-read titles on TMDB. A title deleted or merged on TMDB answers 404 for
+-- ever: the refresh only moved tmdb_checked_at, the pre-release status stayed,
+-- and the title came back into the daily queue the next day, indefinitely.
+--
+-- tmdb_not_found_count counts CONSECUTIVE 404s; any answer resets it to 0.
+-- At 3 (TMDB_NOT_FOUND_GIVE_UP) the title leaves both refresh queues for good
+-- and is listed once in the run's cron log (`gaveUp`) for a human to delete or
+-- re-link the fiche. To give such a title another chance after fixing its
+-- tmdb_id: UPDATE media_items SET tmdb_not_found_count = 0 WHERE id = '…';
+--
+-- APPLY BEFORE DEPLOYING the code that reads it. Prisma selects every scalar
+-- column on a plain findUnique/findMany, so a missing column 500s every fiche:
+--
+--   npx prisma db execute --file sql/add_tmdb_not_found_count.sql --schema prisma/schema.prisma
+--
+-- Idempotent — safe to re-run. A constant default adds the column without
+-- rewriting the table (PostgreSQL 11+).
+ALTER TABLE media_items ADD COLUMN IF NOT EXISTS tmdb_not_found_count INTEGER NOT NULL DEFAULT 0;

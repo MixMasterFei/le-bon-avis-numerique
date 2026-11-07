@@ -35,6 +35,18 @@ export const RELEASE_STATUS_RECHECK_HOURS = 20
 export const UNDATED_RELEASE_STATUS_RECHECK_DAYS = 7
 
 /**
+ * End state of a title TMDB no longer knows. A 404 is nearly always final (the
+ * entry was deleted or merged into another id, which TMDB never reuses), but
+ * one could be a glitch, so the title leaves the refresh queues only after
+ * this many CONSECUTIVE 404s — three days on the daily release-status queue,
+ * three weeks on the vote queue. Any answer resets the streak. A title given
+ * up keeps its last status, so a pre-release one stays out of enrichment (we
+ * cannot confirm it is out); it is listed in the run's cron log (`gaveUp`) so
+ * a human can delete or re-link the fiche.
+ */
+export const TMDB_NOT_FOUND_GIVE_UP = 3
+
+/**
  * Vote follow-up of recent releases (Saturday ratings backfill) — see
  * recentReleaseVotesWhere. The numbers:
  *
@@ -68,6 +80,8 @@ const daysBefore = (now: Date, days: number) => new Date(now.getTime() - days * 
  * Titles still carrying a TMDB pre-release status that are due for a re-read:
  * their release date has passed (daily), or they have no date yet (weekly —
  * an announced sequel gets a date and a status the day TMDB publishes them).
+ * The queue drains as TMDB catches up; a title TMDB no longer knows leaves it
+ * after TMDB_NOT_FOUND_GIVE_UP consecutive 404s.
  */
 export function staleReleaseStatusWhere(now: Date = new Date()): Prisma.MediaItemWhereInput {
   const datedCheckedBefore = new Date(now.getTime() - RELEASE_STATUS_RECHECK_HOURS * HOUR_MS)
@@ -75,6 +89,7 @@ export function staleReleaseStatusWhere(now: Date = new Date()): Prisma.MediaIte
   return {
     type: { in: ["MOVIE", "TV"] },
     tmdbId: { not: null },
+    tmdbNotFoundCount: { lt: TMDB_NOT_FOUND_GIVE_UP },
     releaseStatus: { in: [...UNRELEASED_TMDB_STATUSES] },
     OR: [
       {
@@ -104,7 +119,8 @@ export const STALE_RELEASE_STATUS_ORDER: Prisma.MediaItemOrderByWithRelationInpu
  *
  *  - Ageing: weekly during the first 90 days after release, then every four
  *    weeks until day 365 (numbers justified above RECENT_VOTES_CEILING).
- *  - Retirement: 500 votes or more (every gate open), or older than 365 days.
+ *  - Retirement: 500 votes or more (every gate open), or older than 365 days,
+ *    or TMDB_NOT_FOUND_GIVE_UP consecutive 404s.
  *  - Never-rated rows (tmdbRating null) are left to the backfill's other
  *    queue, so a row is never read twice in one batch.
  *  - Plus a one-time catch-up, outside the window: a zero-vote title never
@@ -122,6 +138,7 @@ export function recentReleaseVotesWhere(now: Date = new Date()): Prisma.MediaIte
   return {
     type: { in: ["MOVIE", "TV"] },
     tmdbId: { not: null },
+    tmdbNotFoundCount: { lt: TMDB_NOT_FOUND_GIVE_UP },
     tmdbRating: { not: null },
     releaseDate: { lte: now },
     AND: [
@@ -149,6 +166,7 @@ export const TMDB_REFRESH_SELECT = {
   releaseDate: true,
   tmdbRating: true,
   tmdbVoteCount: true,
+  tmdbNotFoundCount: true,
 } satisfies Prisma.MediaItemSelect
 
 export interface TmdbRefreshRow {
@@ -160,6 +178,8 @@ export interface TmdbRefreshRow {
   releaseDate: Date | null
   tmdbRating: number | null
   tmdbVoteCount: number | null
+  /** Consecutive 404s so far (TMDB_REFRESH_SELECT reads it; absent = 0). */
+  tmdbNotFoundCount?: number
 }
 
 /** The subset of a TMDB movie/TV details payload this refresh reads. */
@@ -211,7 +231,11 @@ export interface TmdbRefreshResult {
   updated: number
   /** Re-read, nothing new — only the cursor moved. */
   unchanged: number
-  /** Gone from TMDB (404): drained, never retried. */
+  /**
+   * TMDB answered 404: the cursor moved and the 404 streak grew. NOT drained
+   * at once — the title comes back at its next cadence until the streak
+   * reaches TMDB_NOT_FOUND_GIVE_UP (see `gaveUp`).
+   */
   notFound: number
   /** Transient failures: left unstamped, retried next run. */
   errors: number
@@ -219,6 +243,8 @@ export interface TmdbRefreshResult {
   nowReleased: { id: string; title: string; from: string | null; to: string }[]
   /** Vote count went from 0/unknown to > 0 → visible to vote-gated lists. */
   votesGained: number
+  /** Reached TMDB_NOT_FOUND_GIVE_UP 404s in a row this run: out of the queues for good. */
+  gaveUp: { id: string; title: string }[]
   /** Stopped early to stay inside the function's time budget. */
   bailedOnTime: boolean
 }
@@ -228,12 +254,17 @@ function isTmdbNotFound(error: unknown): boolean {
 }
 
 /**
- * Moves the cursor only. Raw UPDATE on purpose: Prisma's @updatedAt would
- * otherwise record "the fiche changed" for a re-read that changed nothing
- * (same convention as src/lib/streaming-sync.ts).
+ * Moves the cursor (and ends any 404 streak: TMDB answered). Raw UPDATE on
+ * purpose: Prisma's @updatedAt would otherwise record "the fiche changed" for
+ * a re-read that changed nothing (same convention as src/lib/streaming-sync.ts).
  */
 async function stampTmdbChecked(id: string): Promise<void> {
-  await prisma.$executeRaw`UPDATE media_items SET tmdb_checked_at = now() WHERE id = ${id}`
+  await prisma.$executeRaw`UPDATE media_items SET tmdb_checked_at = now(), tmdb_not_found_count = 0 WHERE id = ${id}`
+}
+
+/** Moves the cursor and lengthens the 404 streak (raw, same reason as above). */
+async function stampTmdbNotFound(id: string): Promise<void> {
+  await prisma.$executeRaw`UPDATE media_items SET tmdb_checked_at = now(), tmdb_not_found_count = tmdb_not_found_count + 1 WHERE id = ${id}`
 }
 
 export async function refreshFromTmdb(
@@ -249,6 +280,7 @@ export async function refreshFromTmdb(
     errors: 0,
     nowReleased: [],
     votesGained: 0,
+    gaveUp: [],
     bailedOnTime: false,
   }
 
@@ -266,7 +298,10 @@ export async function refreshFromTmdb(
       const patch = tmdbRefreshPatch(row, details)
 
       if (Object.keys(patch).length > 0) {
-        await prisma.mediaItem.update({ where: { id: row.id }, data: { ...patch, tmdbCheckedAt: new Date() } })
+        await prisma.mediaItem.update({
+          where: { id: row.id },
+          data: { ...patch, tmdbCheckedAt: new Date(), tmdbNotFoundCount: 0 },
+        })
         result.updated++
         if (patch.releaseStatus && isUnreleasedStatus(row.releaseStatus) && !isUnreleasedStatus(patch.releaseStatus)) {
           result.nowReleased.push({ id: row.id, title: row.title, from: row.releaseStatus, to: patch.releaseStatus })
@@ -282,20 +317,31 @@ export async function refreshFromTmdb(
       if (!isTmdbNotFound(error)) {
         result.errors++
       } else {
-        // Deleted/merged on TMDB — it will never answer. Drain it: a never-
-        // rated row gets 0/0 (as the ratings backfill always did, or it is
-        // re-selected forever), and the cursor moves either way.
+        // TMDB no longer knows this id (deleted, or merged into another one).
+        // The cursor moves and the 404 streak grows; the queues drop the title
+        // once the streak reaches TMDB_NOT_FOUND_GIVE_UP — moving the cursor
+        // alone only postponed it to the next day, for ever. A never-rated row
+        // also gets 0/0 (as the ratings backfill always did), or the
+        // never-rated queue re-selects it on every call.
         result.examined++
         try {
           if (row.tmdbRating === null || row.tmdbVoteCount === null) {
             await prisma.mediaItem.update({
               where: { id: row.id },
-              data: { tmdbRating: row.tmdbRating ?? 0, tmdbVoteCount: row.tmdbVoteCount ?? 0, tmdbCheckedAt: new Date() },
+              data: {
+                tmdbRating: row.tmdbRating ?? 0,
+                tmdbVoteCount: row.tmdbVoteCount ?? 0,
+                tmdbCheckedAt: new Date(),
+                tmdbNotFoundCount: { increment: 1 },
+              },
             })
           } else {
-            await stampTmdbChecked(row.id)
+            await stampTmdbNotFound(row.id)
           }
           result.notFound++
+          if ((row.tmdbNotFoundCount ?? 0) + 1 >= TMDB_NOT_FOUND_GIVE_UP) {
+            result.gaveUp.push({ id: row.id, title: row.title })
+          }
         } catch {
           result.errors++
         }

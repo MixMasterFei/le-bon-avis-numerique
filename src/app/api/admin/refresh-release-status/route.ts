@@ -24,7 +24,8 @@ const TIME_BUDGET_MS = 100_000
  * plus undated announced titles weekly. `release_status` used to be written
  * once at import, and the enrichment gate excludes pre-release statuses, so
  * those titles were never enriched. The same call refreshes their vote
- * counters. See src/lib/tmdb-refresh.ts.
+ * counters. A title TMDB no longer knows leaves the queue after three 404s in
+ * a row and is listed in `gaveUp`. See src/lib/tmdb-refresh.ts.
  */
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
@@ -50,14 +51,17 @@ export async function POST(req: NextRequest) {
     const remaining = await prisma.mediaItem.count({ where: staleReleaseStatusWhere(new Date()) })
 
     const released = result.nowReleased.length
+    const gaveUp = result.gaveUp.length
     await logCronRun({
       task: "release-status",
       status: result.errors > 0 ? "partial" : "success",
       summary:
         `${released} titre${released > 1 ? "s" : ""} désormais sorti${released > 1 ? "s" : ""} ` +
         `(${result.examined} statuts relus, ${result.updated} fiches modifiées)` +
-        `${result.errors > 0 ? `, ${result.errors} erreurs` : ""}, ${remaining} en attente`,
-      details: { ...result, nowReleased: result.nowReleased.slice(0, 25), remaining },
+        `${result.errors > 0 ? `, ${result.errors} erreurs` : ""}` +
+        `${gaveUp > 0 ? `, ${gaveUp} abandonné${gaveUp > 1 ? "s" : ""} (introuvable${gaveUp > 1 ? "s" : ""} sur TMDB, à supprimer ou relier)` : ""}` +
+        `, ${remaining} en attente`,
+      details: { ...result, nowReleased: result.nowReleased.slice(0, 25), gaveUp: result.gaveUp.slice(0, 25), remaining },
       startTime,
     })
 
