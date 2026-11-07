@@ -15,6 +15,24 @@
 - No secret in a client component; no debug setting left on in production.
 - Never skip or weaken a check to get CI green.
 
+## Open work (2026-11-07)
+- Branch `guardian/f03-f11` (local, not pushed, no PR yet):
+  - **Daily Filter Tests are truthful**: no `continue-on-error`, one job per E2E suite, summary
+    computed from Playwright's JSON (passed / failed / flaky / retries / infra). The suites were
+    rewritten for the current catalogue (URL-as-truth waits, fr-FR thousands, « A → Z », VIP
+    age-band rule). Validated once against production on 7 Nov: 68 passed, 1 failed — the
+    pagination defect below, until it is deployed.
+  - **Pagination fix** in `src/lib/media-queries.ts` (`withStableOrder`: unique `id` as last
+    sort key). Same flaw, not fixed, in `src/app/api/db/media/route.ts` and the admin batch
+    routes that page with `skip` (Librarian's call).
+  - All workflows on Node 24 via `.nvmrc`; `package.json` engines still says `>=22` (tightening
+    it changes Vercel's build — Xavier's call).
+  - F11: `FamilyRecommendationsSection.test.tsx` no longer leaks requests.
+- **Waiting on Xavier**: the `main` ruleset in [release-rules.md](release-rules.md).
+- Vercel's edge refused the CI runner during the 7 Nov filter run (« This request was
+  blocked »). The suites now name it `[infra]`; if it recurs with one worker, the fix is on the
+  Vercel side, not in the tests.
+
 ## Open work (2026-11-06)
 - Released today (#103): Next 16.4.5, AggregateRating only from our own reviews, demo fiches
   and unused routes removed, no public source maps.
