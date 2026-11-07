@@ -114,21 +114,38 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
   "persisted": {
     "assistant": [
       {
+        "cacheWriteInputTokens": 100,
         "cachedInputTokens": 900,
         "citedMediaIds": [],
         "content": "Bonsoir ! Pour quel âge ?",
         "conversationId": "conv-1",
+        "finishReason": "stop",
+        "id": "assistant-msg-1",
         "inputTokens": 1200,
         "latencyMs": "number",
+        "modelMessages": [
+          {
+            "content": [
+              {
+                "providerOptions": undefined,
+                "text": "Bonsoir ! Pour quel âge ?",
+                "type": "text",
+              },
+            ],
+            "role": "assistant",
+          },
+        ],
         "modelUsed": "claude-haiku-4-5-20251001",
         "outputTokens": 40,
+        "routingReason": "default",
         "toolCalls": undefined,
         "toolResults": undefined,
+        "uncachedInputTokens": 200,
       },
     ],
     "conversation": [
       {
-        "conversationId": undefined,
+        "conversationId": null,
         "familyMemberContext": undefined,
         "sessionId": "tt_test-session",
         "sourcePage": "/",
@@ -139,11 +156,12 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       {
         "content": "Un film pour ce soir ?",
         "conversationId": "conv-1",
+        "regenerate": false,
       },
     ],
   },
   "sse": [
-    "{"type":"start"}",
+    "{"type":"start","messageId":"assistant-msg-1"}",
     "{"type":"start-step"}",
     "{"type":"text-start","id":"t1"}",
     "{"type":"text-delta","id":"t1","delta":"Bonsoir ! Pour quel âge ?"}",
@@ -276,21 +294,38 @@ Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait r
   "persisted": {
     "assistant": [
       {
+        "cacheWriteInputTokens": 100,
         "cachedInputTokens": 900,
         "citedMediaIds": [],
         "content": "En bref : …",
         "conversationId": "conv-1",
+        "finishReason": "stop",
+        "id": "assistant-msg-1",
         "inputTokens": 1200,
         "latencyMs": "number",
+        "modelMessages": [
+          {
+            "content": [
+              {
+                "providerOptions": undefined,
+                "text": "En bref : …",
+                "type": "text",
+              },
+            ],
+            "role": "assistant",
+          },
+        ],
         "modelUsed": "claude-haiku-4-5-20251001",
         "outputTokens": 40,
+        "routingReason": "default",
         "toolCalls": undefined,
         "toolResults": undefined,
+        "uncachedInputTokens": 200,
       },
     ],
     "conversation": [
       {
-        "conversationId": undefined,
+        "conversationId": null,
         "familyMemberContext": undefined,
         "sessionId": "tt_existing",
         "sourcePage": "/apercudecouverte/ecrans-ados",
@@ -301,11 +336,12 @@ Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait r
       {
         "content": "Résume l'article",
         "conversationId": "conv-1",
+        "regenerate": false,
       },
     ],
   },
   "sse": [
-    "{"type":"start"}",
+    "{"type":"start","messageId":"assistant-msg-1"}",
     "{"type":"start-step"}",
     "{"type":"text-start","id":"t1"}",
     "{"type":"text-delta","id":"t1","delta":"En bref : …"}",
@@ -501,16 +537,33 @@ Composition du foyer connecté :
   "persisted": {
     "assistant": [
       {
+        "cacheWriteInputTokens": 100,
         "cachedInputTokens": 900,
         "citedMediaIds": [],
         "content": "Oui, dès 6 ans. Je creuse ?",
         "conversationId": "conv-1",
+        "finishReason": "stop",
+        "id": "assistant-msg-1",
         "inputTokens": 1200,
         "latencyMs": "number",
+        "modelMessages": [
+          {
+            "content": [
+              {
+                "providerOptions": undefined,
+                "text": "Oui, dès 6 ans. Je creuse ?",
+                "type": "text",
+              },
+            ],
+            "role": "assistant",
+          },
+        ],
         "modelUsed": "claude-haiku-4-5-20251001",
         "outputTokens": 40,
+        "routingReason": "default",
         "toolCalls": undefined,
         "toolResults": undefined,
+        "uncachedInputTokens": 200,
       },
     ],
     "conversation": [
@@ -561,11 +614,12 @@ Composition du foyer connecté :
       {
         "content": "Ce film convient à Léa ?",
         "conversationId": "conv-1",
+        "regenerate": false,
       },
     ],
   },
   "sse": [
-    "{"type":"start"}",
+    "{"type":"start","messageId":"assistant-msg-1"}",
     "{"type":"start-step"}",
     "{"type":"text-start","id":"t1"}",
     "{"type":"text-delta","id":"t1","delta":"Oui, dès 6 ans. Je creuse ?"}",
@@ -849,21 +903,130 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
   "persisted": {
     "assistant": [
       {
+        "cacheWriteInputTokens": 200,
         "cachedInputTokens": 1800,
-        "citedMediaIds": [],
-        "content": "Interstellar est conseillé dès 12 ans.",
+        "citedMediaIds": [
+          "m-9",
+        ],
+        "content": "Je regarde.
+
+Interstellar est conseillé dès 12 ans.",
         "conversationId": "conv-1",
+        "finishReason": "stop",
+        "id": "assistant-msg-1",
         "inputTokens": 2400,
         "latencyMs": "number",
+        "modelMessages": [
+          {
+            "content": [
+              {
+                "providerOptions": undefined,
+                "text": "Je regarde.",
+                "type": "text",
+              },
+              {
+                "input": {
+                  "limit": 5,
+                  "q": "Interstellar",
+                },
+                "providerExecuted": undefined,
+                "providerOptions": undefined,
+                "toolCallId": "call-1",
+                "toolName": "searchMedia",
+                "type": "tool-call",
+              },
+            ],
+            "role": "assistant",
+          },
+          {
+            "content": [
+              {
+                "output": {
+                  "type": "json",
+                  "value": {
+                    "results": [
+                      {
+                        "communityAge": null,
+                        "genres": [
+                          "Science-Fiction",
+                          "Drame",
+                        ],
+                        "id": "m-9",
+                        "posterUrl": null,
+                        "recommendedAge": 12,
+                        "shortPitch": "Des astronautes traversent un trou de ver.",
+                        "title": "Interstellar",
+                        "type": "MOVIE",
+                        "year": 2014,
+                      },
+                    ],
+                  },
+                },
+                "toolCallId": "call-1",
+                "toolName": "searchMedia",
+                "type": "tool-result",
+              },
+            ],
+            "role": "tool",
+          },
+          {
+            "content": [
+              {
+                "providerOptions": undefined,
+                "text": "Interstellar est conseillé dès 12 ans.",
+                "type": "text",
+              },
+            ],
+            "role": "assistant",
+          },
+        ],
         "modelUsed": "claude-haiku-4-5-20251001",
         "outputTokens": 80,
-        "toolCalls": undefined,
-        "toolResults": undefined,
+        "routingReason": "default",
+        "toolCalls": [
+          {
+            "input": {
+              "limit": 5,
+              "q": "Interstellar",
+            },
+            "step": 0,
+            "toolCallId": "call-1",
+            "toolName": "searchMedia",
+            "type": "tool-call",
+          },
+        ],
+        "toolResults": [
+          {
+            "output": {
+              "results": [
+                {
+                  "communityAge": null,
+                  "genres": [
+                    "Science-Fiction",
+                    "Drame",
+                  ],
+                  "id": "m-9",
+                  "posterUrl": null,
+                  "recommendedAge": 12,
+                  "shortPitch": "Des astronautes traversent un trou de ver.",
+                  "title": "Interstellar",
+                  "type": "MOVIE",
+                  "year": 2014,
+                },
+              ],
+            },
+            "step": 0,
+            "toolCallId": "call-1",
+            "toolName": "searchMedia",
+            "type": "tool-result",
+          },
+        ],
+        "uncachedInputTokens": 400,
       },
     ],
     "conversation": [
       {
-        "conversationId": undefined,
+        "conversationId": null,
         "familyMemberContext": [],
         "sessionId": "tt_test-session",
         "sourcePage": "/films",
@@ -874,11 +1037,12 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       {
         "content": "Interstellar, c'est pour quel âge ?",
         "conversationId": "conv-1",
+        "regenerate": false,
       },
     ],
   },
   "sse": [
-    "{"type":"start"}",
+    "{"type":"start","messageId":"assistant-msg-1"}",
     "{"type":"start-step"}",
     "{"type":"text-start","id":"lead"}",
     "{"type":"text-delta","id":"lead","delta":"Je regarde."}",

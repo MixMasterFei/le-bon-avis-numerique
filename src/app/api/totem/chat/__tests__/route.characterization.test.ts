@@ -30,6 +30,7 @@ const h = vi.hoisted(() => ({
     getOrCreateConversation: vi.fn(),
     countTurnsInConversation: vi.fn(),
     lastAssistantMentionedNudge: vi.fn(),
+    loadConversationRows: vi.fn(),
     recordUserMessage: vi.fn(),
     recordAssistantMessage: vi.fn(),
   },
@@ -46,6 +47,10 @@ vi.mock("@ai-sdk/anthropic", () => ({
         return { stream: convertArrayToReadableStream(chunks) }
       },
     }),
+}))
+vi.mock("node:crypto", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("node:crypto")>()),
+  randomUUID: () => "assistant-msg-1",
 }))
 vi.mock("@/lib/auth", () => ({ auth: h.auth }))
 vi.mock("@/lib/prisma", () => ({ prisma: h.prisma }))
@@ -222,6 +227,7 @@ beforeEach(() => {
   h.persistence.getOrCreateConversation.mockResolvedValue({ id: "conv-1" })
   h.persistence.countTurnsInConversation.mockResolvedValue(0)
   h.persistence.lastAssistantMentionedNudge.mockResolvedValue(false)
+  h.persistence.loadConversationRows.mockResolvedValue([])
   h.persistence.recordUserMessage.mockResolvedValue({})
   h.persistence.recordAssistantMessage.mockResolvedValue(undefined)
   h.matchByTitle.mockResolvedValue([])
@@ -247,32 +253,67 @@ describe("POST /api/totem/chat — characterization", () => {
         : null,
     )
     h.persistence.countTurnsInConversation.mockResolvedValue(2)
+    // The earlier turn as the route stored it (trusted history). Until
+    // 2026-11 the browser re-sent it, tool outputs included.
+    h.persistence.loadConversationRows.mockResolvedValue([
+      { role: "user", content: "Bonjour", modelMessages: null, toolCalls: null },
+      {
+        role: "assistant",
+        content: "Bonjour, que cherchez-vous ?",
+        toolCalls: [{ type: "tool-call", step: 0, toolCallId: "call-0", toolName: "searchMedia", input: { q: "vice versa", limit: 5 } }],
+        modelMessages: [
+          {
+            role: "assistant",
+            content: [{ type: "tool-call", toolCallId: "call-0", toolName: "searchMedia", input: { q: "vice versa", limit: 5 } }],
+          },
+          {
+            role: "tool",
+            content: [
+              {
+                type: "tool-result",
+                toolCallId: "call-0",
+                toolName: "searchMedia",
+                output: { type: "json", value: { results: [{ id: "m-123", title: "Vice-versa", recommendedAge: 6 }] } },
+              },
+            ],
+          },
+          { role: "assistant", content: [{ type: "text", text: "Bonjour, que cherchez-vous ?" }] },
+        ],
+      },
+    ])
     h.script.push(textTurn("Oui, dès 6 ans. Je creuse ?"))
     const out = await run({
       conversationId: "conv-1",
       sourcePage: "/media/movie:m-123",
-      messages: [
-        userMsg("u1", "Bonjour"),
-        {
-          id: "a1",
-          role: "assistant",
-          parts: [
-            { type: "step-start" },
-            {
-              type: "tool-searchMedia",
-              toolCallId: "call-0",
-              state: "output-available",
-              input: { q: "vice versa", limit: 5 },
-              output: { results: [{ id: "m-123", title: "Vice-versa", recommendedAge: 6 }] },
-            },
-            { type: "step-start" },
-            { type: "text", text: "Bonjour, que cherchez-vous ?", state: "done" },
-          ],
-        },
-        userMsg("u2", "Ce film convient à Léa ?"),
-      ],
+      messages: [userMsg("u2", "Ce film convient à Léa ?")],
     })
     expect(out).toMatchSnapshot()
+
+    // Legit multi-turn chats keep working: the model sees the same history
+    // the browser-built version produced before the change (snapshot of
+    // commit 9e346f1), now rebuilt from the stored turn.
+    const strip = (v: unknown): unknown => JSON.parse(JSON.stringify(v))
+    const history = (out.modelCalls[0].prompt as Array<{ role: string }>).filter((m) => m.role !== "system")
+    expect(strip(history)).toEqual([
+      { role: "user", content: [{ type: "text", text: "Bonjour" }] },
+      {
+        role: "assistant",
+        content: [{ type: "tool-call", toolCallId: "call-0", toolName: "searchMedia", input: { q: "vice versa", limit: 5 } }],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "call-0",
+            toolName: "searchMedia",
+            output: { type: "json", value: { results: [{ id: "m-123", title: "Vice-versa", recommendedAge: 6 }] } },
+          },
+        ],
+      },
+      { role: "assistant", content: [{ type: "text", text: "Bonjour, que cherchez-vous ?" }] },
+      { role: "user", content: [{ type: "text", text: "Ce film convient à Léa ?" }] },
+    ])
   })
 
   it("tool loop: searchMedia then answer", async () => {

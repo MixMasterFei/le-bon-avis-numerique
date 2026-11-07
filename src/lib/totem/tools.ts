@@ -7,10 +7,27 @@ import { searchPublishedBlogPosts } from "@/lib/totem/sanity-search"
 import { matchMediaIdsByTitle, matchMediaIdsByTheme } from "@/lib/search-normalize"
 import { getMemberAge } from "@/lib/age-utils"
 
+/**
+ * Where the three household-dependent tools read their data. Live chat uses
+ * the defaults below (the signed-in user's rows, the family-fit API with the
+ * user's cookie). The evaluation bench passes a fictional household instead,
+ * so it never needs — nor touches — a real account.
+ */
+export interface TotemFamilyDataAccess {
+  /** Media ids the household has already seen (auto-hidden from proposals). */
+  getSeenMediaIds(): Promise<Set<string>>
+  /** getUserFamilyContext's output. */
+  getUserFamilyContext(): Promise<unknown>
+  /** getFamilyFit's output for one title. */
+  getFamilyFit(mediaId: string): Promise<unknown>
+}
+
 export interface TotemToolContext {
   origin: string
   cookieHeader: string | null
   userId: string | null
+  /** Evaluation bench only. Absent in live chat. */
+  familyData?: TotemFamilyDataAccess
 }
 
 const MEDIA_TYPES = ["MOVIE", "TV", "GAME", "BOOK", "APP"] as const
@@ -59,7 +76,123 @@ function trimText(s: string | null, max: number): string | null {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s
 }
 
+/** Per-member fit 0-100 with reason, through the family-fit API (auth only). */
+async function liveFamilyFit(ctx: TotemToolContext, mediaId: string): Promise<unknown> {
+  if (!ctx.userId) {
+    return {
+      status: "not_logged_in",
+      hint: "L'utilisateur n'est pas connecté — propose-lui de créer un compte si pertinent.",
+    }
+  }
+
+  try {
+    const headers: HeadersInit = {}
+    if (ctx.cookieHeader) headers.cookie = ctx.cookieHeader
+    const res = await fetch(`${ctx.origin}/api/media/${encodeURIComponent(mediaId)}/family-fit`, {
+      headers,
+      cache: "no-store",
+    })
+    if (!res.ok) return { status: "error", code: res.status }
+    const data = (await res.json()) as {
+      status: string
+      members?: Array<{
+        name: string
+        age: number | null
+        score: number
+        level: string
+        reason: string
+        hasPreferences: boolean
+        affinity?: { hasConnection: boolean; affinityReason?: string }
+      }>
+    }
+    if (data.status !== "ok" && data.status !== "family_warning") {
+      return { status: data.status }
+    }
+    return {
+      status: data.status,
+      members: (data.members ?? []).map((m) => ({
+        name: m.name,
+        age: m.age,
+        score: m.score,
+        level: m.level,
+        reason: m.reason,
+        hasPreferences: m.hasPreferences,
+        affinityReason: m.affinity?.affinityReason ?? null,
+      })),
+    }
+  } catch (err) {
+    console.error("[totem] getFamilyFit fetch failed", err)
+    return { status: "error" }
+  }
+}
+
+/** The connected household's members, tastes and last reactions (auth only). */
+async function liveUserFamilyContext(ctx: TotemToolContext): Promise<unknown> {
+  if (!ctx.userId) {
+    return {
+      status: "not_logged_in",
+      hint: "Pas de compte connecté — propose-lui d'en créer un si pertinent.",
+    }
+  }
+
+  const members = await prisma.familyMember.findMany({
+    where: { userId: ctx.userId },
+    take: 10,
+    include: {
+      reactions: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          media: { select: { title: true, type: true } },
+        },
+      },
+    },
+  })
+
+  if (members.length === 0) {
+    return { status: "no_family", hint: "Le compte est connecté mais aucun membre famille n'est créé." }
+  }
+
+  return {
+    status: "ok",
+    members: members.map((m) => ({
+      id: m.id,
+      name: m.name,
+      age: getMemberAge(m.birthYear, m.birthMonth),
+      avatarEmoji: m.avatarEmoji,
+      favoriteGenres: m.favoriteGenres.slice(0, 5),
+      dislikedGenres: m.dislikedGenres.slice(0, 3),
+      avoidTopics: m.avoidTopics.slice(0, 3),
+      interests: m.interests.slice(0, 5),
+      sensitivities: {
+        violence: m.sensitivityViolence,
+        scary: m.sensitivityScary,
+        sexual: m.sensitivitySexual,
+        language: m.sensitivityLanguage,
+        substances: m.sensitivitySubstances,
+      },
+      useCustomSettings: m.useCustomSettings,
+      recentReactions: m.reactions.map((r) => ({
+        mediaTitle: r.media.title,
+        mediaType: r.media.type,
+        reaction: r.reaction,
+        at: r.createdAt.toISOString(),
+      })),
+    })),
+  }
+}
+
+/** Live household data: the signed-in user's rows and the family-fit API. */
+function liveFamilyData(ctx: TotemToolContext): TotemFamilyDataAccess {
+  return {
+    getSeenMediaIds: () => getSeenMediaIds(ctx.userId),
+    getUserFamilyContext: () => liveUserFamilyContext(ctx),
+    getFamilyFit: (mediaId) => liveFamilyFit(ctx, mediaId),
+  }
+}
+
 export function buildTotemTools(ctx: TotemToolContext) {
+  const familyData = ctx.familyData ?? liveFamilyData(ctx)
   return {
     /**
      * Search the catalogue for titles matching a query / filters.
@@ -124,7 +257,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
         }
 
         // Auto-hide titles the family has already seen.
-        const seen = await getSeenMediaIds(ctx.userId)
+        const seen = await familyData.getSeenMediaIds()
 
         let filteredIds: string[] | null = null
         if (orderedIds) {
@@ -318,54 +451,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
       inputSchema: z.object({
         mediaId: z.string(),
       }),
-      execute: async ({ mediaId }) => {
-        if (!ctx.userId) {
-          return {
-            status: "not_logged_in",
-            hint: "L'utilisateur n'est pas connecté — propose-lui de créer un compte si pertinent.",
-          }
-        }
-
-        try {
-          const headers: HeadersInit = {}
-          if (ctx.cookieHeader) headers.cookie = ctx.cookieHeader
-          const res = await fetch(`${ctx.origin}/api/media/${encodeURIComponent(mediaId)}/family-fit`, {
-            headers,
-            cache: "no-store",
-          })
-          if (!res.ok) return { status: "error", code: res.status }
-          const data = (await res.json()) as {
-            status: string
-            members?: Array<{
-              name: string
-              age: number | null
-              score: number
-              level: string
-              reason: string
-              hasPreferences: boolean
-              affinity?: { hasConnection: boolean; affinityReason?: string }
-            }>
-          }
-          if (data.status !== "ok" && data.status !== "family_warning") {
-            return { status: data.status }
-          }
-          return {
-            status: data.status,
-            members: (data.members ?? []).map((m) => ({
-              name: m.name,
-              age: m.age,
-              score: m.score,
-              level: m.level,
-              reason: m.reason,
-              hasPreferences: m.hasPreferences,
-              affinityReason: m.affinity?.affinityReason ?? null,
-            })),
-          }
-        } catch (err) {
-          console.error("[totem] getFamilyFit fetch failed", err)
-          return { status: "error" }
-        }
-      },
+      execute: async ({ mediaId }) => familyData.getFamilyFit(mediaId),
     }),
 
     /**
@@ -407,7 +493,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
       execute: async ({ rail, age, platform, genre, limit }) => {
         const cap = limit ?? 6
         // Auto-hide titles the family has already seen from every rail.
-        const seen = await getSeenMediaIds(ctx.userId)
+        const seen = await familyData.getSeenMediaIds()
 
         // ---- cinema: live TMDB ----------------------------------
         if (rail === "cinema") {
@@ -686,60 +772,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
       description:
         "Détails complets sur les membres du foyer connecté : prénoms, âges, sensibilités, genres préférés, sujets à éviter, et 5 dernières réactions par membre (films/séries vus, aimés, etc.). Disponible UNIQUEMENT pour un utilisateur connecté.",
       inputSchema: z.object({}).describe("Pas de paramètre — renvoie le foyer du compte connecté."),
-      execute: async () => {
-        if (!ctx.userId) {
-          return {
-            status: "not_logged_in",
-            hint: "Pas de compte connecté — propose-lui d'en créer un si pertinent.",
-          }
-        }
-
-        const members = await prisma.familyMember.findMany({
-          where: { userId: ctx.userId },
-          take: 10,
-          include: {
-            reactions: {
-              orderBy: { createdAt: "desc" },
-              take: 5,
-              include: {
-                media: { select: { title: true, type: true } },
-              },
-            },
-          },
-        })
-
-        if (members.length === 0) {
-          return { status: "no_family", hint: "Le compte est connecté mais aucun membre famille n'est créé." }
-        }
-
-        return {
-          status: "ok",
-          members: members.map((m) => ({
-            id: m.id,
-            name: m.name,
-            age: getMemberAge(m.birthYear, m.birthMonth),
-            avatarEmoji: m.avatarEmoji,
-            favoriteGenres: m.favoriteGenres.slice(0, 5),
-            dislikedGenres: m.dislikedGenres.slice(0, 3),
-            avoidTopics: m.avoidTopics.slice(0, 3),
-            interests: m.interests.slice(0, 5),
-            sensitivities: {
-              violence: m.sensitivityViolence,
-              scary: m.sensitivityScary,
-              sexual: m.sensitivitySexual,
-              language: m.sensitivityLanguage,
-              substances: m.sensitivitySubstances,
-            },
-            useCustomSettings: m.useCustomSettings,
-            recentReactions: m.reactions.map((r) => ({
-              mediaTitle: r.media.title,
-              mediaType: r.media.type,
-              reaction: r.reaction,
-              at: r.createdAt.toISOString(),
-            })),
-          })),
-        }
-      },
+      execute: async () => familyData.getUserFamilyContext(),
     }),
 
     /**
