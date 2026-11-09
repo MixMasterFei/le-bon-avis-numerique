@@ -19,6 +19,7 @@ import {
 import { buildTotemTools, type TotemToolContext } from "@/lib/totem/tools"
 import { pickModel, type ModelRouterDecision } from "@/lib/totem/model-router"
 import { buildCareBlock, detectCrisis, type CrisisSignal } from "@/lib/totem/crisis"
+import { buildHintsNote, inferTurnHints, type TurnHints } from "@/lib/totem/turn-hints"
 import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 
 /**
@@ -217,6 +218,20 @@ export interface TotemTurnInput {
   onError?: StreamTextOnErrorCallback
 }
 
+/** Text of every user message before the last one (the current turn). */
+function priorUserTexts(messages: ModelMessage[]): string[] {
+  const texts = messages
+    .filter((m) => m.role === "user")
+    .map((m) =>
+      typeof m.content === "string"
+        ? m.content
+        : m.content
+            .map((p) => (p.type === "text" ? p.text : ""))
+            .join("\n"),
+    )
+  return texts.slice(0, -1)
+}
+
 export interface TotemTurn {
   result: ReturnType<typeof streamText<TotemTools>>
   model: string
@@ -224,6 +239,8 @@ export interface TotemTurn {
   tools: TotemTools
   /** Set when the crisis protocol ran this turn (crisis.ts). */
   crisis: CrisisSignal | null
+  /** Audience and requested type the tools enforced this turn (turn-hints.ts). */
+  hints: TurnHints
 }
 
 /**
@@ -233,9 +250,19 @@ export interface TotemTurn {
 export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   const now = input.now ?? new Date()
 
+  // Who the request is for and what type is asked for, from the parent's own
+  // messages — enforced by the recommendation tools (turn-hints.ts).
+  const hints = inferTurnHints({
+    userText: input.userText,
+    priorUserTexts: priorUserTexts(input.messages),
+    family: input.familyContext,
+  })
+
   // A person in distress: care block, stronger model, no tools (crisis.ts).
   const crisis = detectCrisis(input.userText)
   const turnNotes: string[] = []
+  const hintsNote = crisis ? null : buildHintsNote(hints)
+  if (hintsNote) turnNotes.push(hintsNote)
   if (crisis) turnNotes.push(buildCareBlock(crisis))
 
   // System prompt (static head, cached + dynamic tail, sent fresh each turn).
@@ -251,7 +278,7 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   })
 
   // Tools — server tools have execute(); propose* are client-resolved.
-  const tools = buildTotemTools(input.toolContext)
+  const tools = buildTotemTools({ ...input.toolContext, hints })
 
   // Escalate to the higher-capability model in a crisis, on long threads,
   // after a multi-tool turn, or on a grave keyword.
@@ -295,5 +322,5 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ...(input.onError ? { onError: input.onError } : {}),
   })
 
-  return { result, model, routing, tools, crisis }
+  return { result, model, routing, tools, crisis, hints }
 }
