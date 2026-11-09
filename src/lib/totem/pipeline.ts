@@ -21,6 +21,7 @@ import { pickModel, type ModelRouterDecision } from "@/lib/totem/model-router"
 import { buildCareBlock, detectCrisis, type CrisisSignal } from "@/lib/totem/crisis"
 import { buildHintsNote, inferTurnHints, type TurnHints } from "@/lib/totem/turn-hints"
 import { buildShownNote, collectShownMedia, saysAlreadySeen, type ShownMedia } from "@/lib/totem/shown"
+import { asksAboutAge, refersToPageTitle, supportsForcedToolChoice } from "@/lib/totem/grounding"
 import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 
 /**
@@ -247,6 +248,8 @@ export interface TotemTurn {
   crisis: CrisisSignal | null
   /** Audience and requested type the tools enforced this turn (turn-hints.ts). */
   hints: TurnHints
+  /** An age question: the first step had to call a tool (grounding.ts). */
+  forcedLookup: boolean
 }
 
 /**
@@ -312,6 +315,17 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   const model = input.modelOverride ?? decision.model
   const routing = input.modelOverride ? "override" : decision.reason
 
+  // An age question gets a catalogue lookup before any answer: the first
+  // step must call a tool (grounding.ts). Not in a crisis (no tools), not for
+  // « ce film » on its own fiche (the page context carries its age), and only
+  // on models that honour a forced tool call. toolChoice does not touch the
+  // cached system head.
+  const forcedLookup =
+    !crisis &&
+    asksAboutAge(input.userText) &&
+    !(input.pageContext?.type === "media" && refersToPageTitle(input.userText)) &&
+    supportsForcedToolChoice(model)
+
   const result = streamText({
     model: anthropic(model),
     // Cache the static head; the dynamic tail is sent fresh each turn.
@@ -332,6 +346,9 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     // inactive tool is refused by the SDK, never executed). Costs one cache
     // miss on a rare turn.
     ...(crisis ? { activeTools: [] as Array<keyof TotemTools> } : {}),
+    ...(forcedLookup
+      ? { prepareStep: ({ stepNumber }: { stepNumber: number }) => (stepNumber === 0 ? { toolChoice: "required" as const } : undefined) }
+      : {}),
     stopWhen: stepCountIs(TOTEM_MAX_STEPS),
     // Cost bounds: per-step output cap (worst case = steps × cap), a single
     // retry, and a hard stream timeout under the function's maxDuration.
@@ -344,5 +361,5 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ...(input.onError ? { onError: input.onError } : {}),
   })
 
-  return { result, model, routing, tools, crisis, hints }
+  return { result, model, routing, tools, crisis, hints, forcedLookup }
 }

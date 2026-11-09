@@ -7,6 +7,7 @@ import { searchPublishedBlogPosts } from "@/lib/totem/sanity-search"
 import { matchMediaIdsByTitle, matchMediaIdsByTheme } from "@/lib/search-normalize"
 import { getMemberAge } from "@/lib/age-utils"
 import { ageWindowFor, REQUESTED_TYPE_LABELS, type RequestedType, type TurnHints } from "@/lib/totem/turn-hints"
+import { ageStatusOf, titleQueryVariants } from "@/lib/totem/grounding"
 
 /**
  * Where the three household-dependent tools read their data. Live chat uses
@@ -219,6 +220,90 @@ async function liveUserFamilyContext(ctx: TotemToolContext): Promise<unknown> {
   }
 }
 
+const SEARCH_SELECT = {
+  id: true,
+  title: true,
+  originalTitle: true,
+  type: true,
+  releaseDate: true,
+  posterUrl: true,
+  expertAgeRec: true,
+  communityAgeRec: true,
+  genres: true,
+  synopsisFr: true,
+  isEnriched: true,
+} satisfies Prisma.MediaItemSelect
+
+type SearchRow = Prisma.MediaItemGetPayload<{ select: typeof SEARCH_SELECT }>
+
+/** One compact search result. A non-confirmed age says so (« provisoire »). */
+function toSearchResult(m: SearchRow) {
+  const ageStatus = ageStatusOf(m)
+  return {
+    id: m.id,
+    title: m.title,
+    type: m.type,
+    year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
+    posterUrl: m.posterUrl,
+    recommendedAge: m.expertAgeRec,
+    ...(ageStatus !== "confirmé" ? { ageStatus } : {}),
+    communityAge: m.communityAgeRec,
+    genres: m.genres.slice(0, 3),
+    shortPitch: trimText(m.synopsisFr, 220),
+  }
+}
+
+/**
+ * By-title lookup. The parent NAMED the title, so nothing hides it: not the
+ * family's « déjà vu » (Vice-versa 2, seen by Inès, came back « absent du
+ * catalogue » when asked for Hugo), not an age filter (Deadpool for a
+ * 10-year-old), not a wrongly guessed type (the model's type only ranks), not
+ * a missing analysis (a provisional title is flagged instead). A query that
+ * finds nothing is retried with its other spellings (grounding.ts).
+ */
+async function lookUpTitle(
+  q: string,
+  type: (typeof MEDIA_TYPES)[number] | undefined,
+  sort: "popular" | "newest" | undefined,
+  cap: number,
+) {
+  let ids = await matchMediaIdsByTitle(q, { limit: 40 })
+  let matchedQuery = q
+  if (ids.length === 0) {
+    for (const variant of titleQueryVariants(q)) {
+      ids = await matchMediaIdsByTitle(variant, { limit: 40 })
+      if (ids.length > 0) {
+        matchedQuery = variant
+        break
+      }
+    }
+  }
+  if (ids.length === 0) {
+    return {
+      results: [],
+      status: "not_found",
+      hint: "Aucun titre de ce nom dans le catalogue (orthographes voisines comprises). Dis-le franchement ; tu peux proposer le titre original ou une autre orthographe.",
+    }
+  }
+
+  const rows = await prisma.mediaItem.findMany({
+    where: { id: { in: ids }, type: { not: "MANGA" } },
+    select: SEARCH_SELECT,
+  })
+  const pos = new Map(ids.map((id, i) => [id, i]))
+  const time = (d: Date | null) => (d ? new Date(d).getTime() : -Infinity)
+  const ranked = [...rows].sort((a, b) => {
+    const typeRank = (m: SearchRow) => (type && m.type !== type ? 1 : 0)
+    if (typeRank(a) !== typeRank(b)) return typeRank(a) - typeRank(b)
+    if (sort === "newest" && time(a.releaseDate) !== time(b.releaseDate)) return time(b.releaseDate) - time(a.releaseDate)
+    return (pos.get(a.id) ?? 1e9) - (pos.get(b.id) ?? 1e9)
+  })
+  return {
+    results: ranked.slice(0, cap).map(toSearchResult),
+    ...(matchedQuery !== q ? { matchedQuery } : {}),
+  }
+}
+
 /** Live household data: the signed-in user's rows and the family-fit API. */
 function liveFamilyData(ctx: TotemToolContext): TotemFamilyDataAccess {
   return {
@@ -268,50 +353,44 @@ export function buildTotemTools(ctx: TotemToolContext) {
       }),
       execute: async ({ q, theme, type, minAge, maxAge, genre, sort, limit }) => {
         const cap = limit ?? 5
+        // The parent NAMED a title: look it up with nothing hiding it.
+        if (q && q.trim().length > 0) return lookUpTitle(q.trim(), type, sort, cap)
+
         // Data-layer safety floor (the system prompt is not the only guard):
         // isEnriched → only titles with real analysis, never provisional /
         // unanalyzed rows with no reliable age or metrics.
         const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" }, isEnriched: true }
-        const isTitleLookup = !!(q && q.trim().length > 0)
         // For a recommendation, the type the parent asked for (« un film »)
         // wins over the model's argument, and the audience's age window
         // (youngest viewer as ceiling, a floor for older groups) is enforced.
-        // A by-title lookup is exempt: the parent named the title.
-        const effectiveType = isTitleLookup ? type : resolveType(ctx.hints, type)
+        const effectiveType = resolveType(ctx.hints, type)
         if (effectiveType) where.type = typeFilter(effectiveType)
-        const window = isTitleLookup
-          ? { minAge, maxAge }
-          : ageWindowFor(ctx.hints?.audience ?? null, { minAge, maxAge })
+        const window = ageWindowFor(ctx.hints?.audience ?? null, { minAge, maxAge })
         if (window.minAge != null || window.maxAge != null) {
           where.expertAgeRec = {
             gte: window.minAge ?? 0,
             lte: window.maxAge ?? 99,
           }
-        } else if (!isTitleLookup) {
+        } else {
           // Browse / theme / genre with NO explicit age → default family
           // ceiling, so an open "recommande-moi un jeu" can never surface an
           // adult title (esp. once TOTEM_PUBLIC opens the assistant to all).
-          // A specific TITLE lookup (q) is deliberately exempt: a parent asking
-          // "est-ce que <titre 18+> convient à mon enfant ?" must still find it,
-          // so the assistant can explain that it's too old.
           where.expertAgeRec = { not: null, lte: TOTEM_DEFAULT_MAX_AGE }
         }
         if (genre) where.genres = { has: genre }
 
-        // Resolve a thematic or title query to an ordered id list — both
-        // accent-insensitive. 'theme' also matches genres/topics/synopsis and
-        // is ranked by relevance (not raw popularity), which is what stops
-        // "films historiques pour enfants" from returning Avengers first.
+        // Resolve a thematic query to an ordered id list (accent-insensitive;
+        // matches genres/topics/synopsis, ranked by relevance rather than raw
+        // popularity — what stops "films historiques pour enfants" from
+        // returning Avengers first).
         let orderedIds: string[] | null = null
         if (theme && theme.trim().length >= 2) {
           orderedIds = await matchMediaIdsByTheme(theme, { limit: 40 })
-        } else if (q && q.trim().length > 0) {
-          orderedIds = await matchMediaIdsByTitle(q, { limit: 40 })
         }
 
-        // Auto-hide titles the family has already seen — and, for a
-        // recommendation, titles already shown in this conversation.
-        const seen = isTitleLookup ? await familyData.getSeenMediaIds() : await notAgain()
+        // Auto-hide titles the family has already seen and titles already
+        // shown in this conversation.
+        const seen = await notAgain()
 
         let filteredIds: string[] | null = null
         if (orderedIds) {
@@ -321,9 +400,9 @@ export function buildTotemTools(ctx: TotemToolContext) {
           where.NOT = { id: { in: [...seen] } }
         }
 
-        // 'theme' owns the ranking; for a plain title/browse we let Postgres
-        // order. When we resolved ids we re-rank in JS to preserve their
-        // order — except for sort='newest', where date order must win.
+        // 'theme' owns the ranking; for a plain browse we let Postgres order.
+        // When we resolved ids we re-rank in JS to preserve their order —
+        // except for sort='newest', where date order must win.
         const useRelevanceOrder = !!orderedIds && sort !== "newest"
 
         let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
@@ -350,18 +429,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 where,
                 orderBy,
                 take: fetchTake,
-                select: {
-                  id: true,
-                  title: true,
-                  originalTitle: true,
-                  type: true,
-                  releaseDate: true,
-                  posterUrl: true,
-                  expertAgeRec: true,
-                  communityAgeRec: true,
-                  genres: true,
-                  synopsisFr: true,
-                },
+                select: SEARCH_SELECT,
               })
 
         let ranked = items
@@ -371,27 +439,13 @@ export function buildTotemTools(ctx: TotemToolContext) {
         }
 
         return {
-          results: ranked.slice(0, cap).map((m) => ({
-            id: m.id,
-            title: m.title,
-            type: m.type,
-            year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
-            posterUrl: m.posterUrl,
-            recommendedAge: m.expertAgeRec,
-            communityAge: m.communityAgeRec,
-            genres: m.genres.slice(0, 3),
-            shortPitch: trimText(m.synopsisFr, 220),
-          })),
-          ...(isTitleLookup
-            ? {}
-            : {
-                appliedFilters: {
-                  minAge: window.minAge ?? null,
-                  maxAge: window.maxAge ?? null,
-                  type: effectiveType ? (REQUESTED_TYPE_LABELS[effectiveType as RequestedType] ?? effectiveType) : null,
-                },
-                ...shownNote,
-              }),
+          results: ranked.slice(0, cap).map(toSearchResult),
+          appliedFilters: {
+            minAge: window.minAge ?? null,
+            maxAge: window.maxAge ?? null,
+            type: effectiveType ? (REQUESTED_TYPE_LABELS[effectiveType as RequestedType] ?? effectiveType) : null,
+          },
+          ...shownNote,
         }
       },
     }),
@@ -415,6 +469,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           return { found: false, reason: "Titre introuvable dans le catalogue." }
         }
 
+        const ageStatus = ageStatusOf(media)
         return {
           found: true,
           id: media.id,
@@ -423,6 +478,10 @@ export function buildTotemTools(ctx: TotemToolContext) {
           year: media.releaseDate ? new Date(media.releaseDate).getFullYear() : null,
           synopsis: trimText(media.synopsisFr, 600),
           recommendedAge: media.expertAgeRec,
+          ageStatus,
+          ...(ageStatus === "provisoire"
+            ? { ageNote: "Âge estimé avant analyse : dis « à confirmer » à chaque fois que tu le cites." }
+            : {}),
           communityAge: media.communityAgeRec,
           genres: media.genres,
           platforms: media.platforms,
@@ -460,18 +519,20 @@ export function buildTotemTools(ctx: TotemToolContext) {
         const [media, userMetrics] = await Promise.all([
           prisma.mediaItem.findUnique({
             where: { id: mediaId },
-            select: { expertAgeRec: true, communityAgeRec: true, title: true },
+            select: { expertAgeRec: true, communityAgeRec: true, title: true, isEnriched: true },
           }),
           prisma.userContentMetrics.findMany({ where: { mediaId } }),
         ])
 
         if (!media) return { found: false }
+        const ageStatus = ageStatusOf(media)
 
         if (userMetrics.length === 0) {
           return {
             found: true,
             title: media.title,
             recommendedAge: media.expertAgeRec,
+            ageStatus,
             communityAge: media.communityAgeRec,
             sampleSize: 0,
             averages: null,
@@ -496,6 +557,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           found: true,
           title: media.title,
           recommendedAge: media.expertAgeRec,
+          ageStatus,
           communityAge: media.communityAgeRec,
           sampleSize: n,
           averages: {
@@ -601,9 +663,13 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 communityAgeRec: number | null
                 genres: string[]
                 inDatabase: boolean
+                isProvisional?: boolean
               }>
             }
-            let movies = data.movies ?? []
+            // Only films with a catalogue fiche: a film not imported yet has
+            // no page (its card linked to a 404, review #4) and only a
+            // genre-guessed age.
+            let movies = (data.movies ?? []).filter((m) => m.inDatabase)
             // Age cap: the audience's window if known, else the asker's age,
             // else the default family ceiling. Require a non-null age — an
             // unrated theatrical film can't be vouched for.
@@ -628,9 +694,10 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
                 posterUrl: m.posterUrl,
                 recommendedAge: m.expertAgeRec,
+                // Imported but not analysed yet: the age is an estimate.
+                ...(m.isProvisional ? { ageStatus: "provisoire" as const } : {}),
                 communityAge: m.communityAgeRec,
                 genres: m.genres.slice(0, 3),
-                inCatalog: m.inDatabase,
               })),
               seeAllUrl,
               seeAllLabel:

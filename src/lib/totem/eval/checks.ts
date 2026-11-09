@@ -65,7 +65,7 @@ function itemToTitle(item: unknown): KnownTitle | null {
     title,
     type: str(r.type),
     toolAge: num(r.recommendedAge),
-    provisional: r.inCatalog === false || (id?.startsWith("tmdb-") ?? false),
+    provisional: r.ageStatus === "provisoire" || r.inCatalog === false || (id?.startsWith("tmdb-") ?? false),
   }
 }
 

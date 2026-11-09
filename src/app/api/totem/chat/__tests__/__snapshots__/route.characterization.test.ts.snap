@@ -14,8 +14,8 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "6fc94180b3875f5c",
-          "length": 36320,
+          "contentSha": "665b063fe7a06aa7",
+          "length": 38156,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -193,8 +193,8 @@ exports[`POST /api/totem/chat — characterization > news article page context 1
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "6fc94180b3875f5c",
-          "length": 36320,
+          "contentSha": "665b063fe7a06aa7",
+          "length": 38156,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -371,8 +371,8 @@ exports[`POST /api/totem/chat — characterization > signed-in family on a media
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "6fc94180b3875f5c",
-          "length": 36320,
+          "contentSha": "665b063fe7a06aa7",
+          "length": 38156,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -656,8 +656,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "6fc94180b3875f5c",
-          "length": 36320,
+          "contentSha": "665b063fe7a06aa7",
+          "length": 38156,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -692,7 +692,7 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
         },
       ],
       "toolChoice": {
-        "type": "auto",
+        "type": "required",
       },
       "tools": [
         {
@@ -758,8 +758,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "6fc94180b3875f5c",
-          "length": 36320,
+          "contentSha": "665b063fe7a06aa7",
+          "length": 38156,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
