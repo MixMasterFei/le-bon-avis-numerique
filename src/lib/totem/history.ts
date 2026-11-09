@@ -1,4 +1,5 @@
 import { modelMessageSchema, type ModelMessage, type ToolResultPart } from "ai"
+import { collectShownMedia, type ShownMedia } from "@/lib/totem/shown"
 
 /**
  * Trusted conversation history for /api/totem/chat (F07).
@@ -63,6 +64,11 @@ export interface TrustedHistory {
   exchangesDropped: number
   /** Action cards answered on the server because the parent never clicked. */
   unansweredCards: number
+  /**
+   * Titles the parent was shown in the WHOLE conversation (not only the
+   * exchanges kept for the model), minus answers replaced by « Réessayer ».
+   */
+  shownMedia: ShownMedia[]
 }
 
 /** What the model is told when a parent typed on without using a card. */
@@ -230,5 +236,6 @@ export function buildTrustedHistory(opts: {
     exchangesKept: kept.length,
     exchangesDropped: exchanges.length - kept.length,
     unansweredCards: stats.unansweredCards,
+    shownMedia: collectShownMedia(exchanges.flat()),
   }
 }

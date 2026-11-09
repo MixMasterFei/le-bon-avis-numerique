@@ -361,9 +361,11 @@ export function checkTurn(ctx: CheckContext): CheckResult[] {
     const viaTool = trace.steps.some((s) =>
       s.toolCalls.some((c) => c.toolName === "proposeReaction" && asRec(c.input)?.reaction === reaction),
     )
+    // Sending the parent off to press a « Déjà vu » button on each card is
+    // not an offer to record (quality pass 1): only Totem's own offer counts.
     const wording =
       reaction === "WATCHED"
-        ? /(je (le |les |l')?note|noter|enregistr|marquer|indiquer|signaler).{0,80}\b(vu|vus|deja vu)|bouton.{0,30}deja vu/
+        ? /(je (le |la |les |l')?(note|enregistre|marque|ajoute|indique)|je peux (le |la |les |l')?(noter|enregistrer|marquer|ajouter|indiquer)).{0,80}\b(vu|vus|vue|vues|deja vu)\b/
         : /(je (le |l')?note|noter|enregistr|marquer|indiquer).{0,80}(adore|aime|coup de coeur)/
     checks.push(result("offers_to_record", viaTool || wording.test(norm) ? [] : [`aucune proposition d'enregistrer ${reaction}`]))
   }

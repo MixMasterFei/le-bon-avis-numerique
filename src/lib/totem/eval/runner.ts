@@ -273,6 +273,7 @@ async function runScenario(
         turnsSoFar: i,
         personalizationNudgeAllowed,
         lastTurnToolCount: history.lastTurnToolCount,
+        shownMedia: history.shownMedia,
         toolContext: {
           origin: opts.origin,
           cookieHeader: null,

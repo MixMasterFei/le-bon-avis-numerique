@@ -35,6 +35,11 @@ export interface TotemToolContext {
    * a by-title lookup ignores them. Set by the pipeline on every turn.
    */
   hints?: TurnHints
+  /**
+   * Media already shown in this conversation (shown.ts): recommendation
+   * tools never return them again; a by-title lookup still finds them.
+   */
+  shownMediaIds?: ReadonlySet<string>
 }
 
 type MediaTypeFilter = Prisma.MediaItemWhereInput["type"]
@@ -225,13 +230,22 @@ function liveFamilyData(ctx: TotemToolContext): TotemFamilyDataAccess {
 
 export function buildTotemTools(ctx: TotemToolContext) {
   const familyData = ctx.familyData ?? liveFamilyData(ctx)
+  const shownIds = ctx.shownMediaIds ?? new Set<string>()
+  /** Ids a recommendation must not return: seen by the family, or already shown here. */
+  const notAgain = async (): Promise<Set<string>> => {
+    const seen = await familyData.getSeenMediaIds()
+    return shownIds.size ? new Set([...seen, ...shownIds]) : seen
+  }
+  const shownNote = shownIds.size
+    ? { alreadyShownExcluded: "Les titres déjà montrés dans cette conversation sont exclus." }
+    : {}
   return {
     /**
      * Search the catalogue for titles matching a query / filters.
      */
     searchMedia: tool({
       description:
-        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme déjà vus.",
+        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme vus et, hors recherche par titre, ceux déjà montrés dans la conversation.",
       inputSchema: z.object({
         q: z.string().optional().describe("Requête par TITRE (titre partiel, insensible aux accents et à la casse)."),
         theme: z
@@ -295,8 +309,9 @@ export function buildTotemTools(ctx: TotemToolContext) {
           orderedIds = await matchMediaIdsByTitle(q, { limit: 40 })
         }
 
-        // Auto-hide titles the family has already seen.
-        const seen = await familyData.getSeenMediaIds()
+        // Auto-hide titles the family has already seen — and, for a
+        // recommendation, titles already shown in this conversation.
+        const seen = isTitleLookup ? await familyData.getSeenMediaIds() : await notAgain()
 
         let filteredIds: string[] | null = null
         if (orderedIds) {
@@ -375,6 +390,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
                   maxAge: window.maxAge ?? null,
                   type: effectiveType ? (REQUESTED_TYPE_LABELS[effectiveType as RequestedType] ?? effectiveType) : null,
                 },
+                ...shownNote,
               }),
         }
       },
@@ -548,8 +564,9 @@ export function buildTotemTools(ctx: TotemToolContext) {
       }),
       execute: async ({ rail, age, platform, genre, type, limit }) => {
         const cap = limit ?? 6
-        // Auto-hide titles the family has already seen from every rail.
-        const seen = await familyData.getSeenMediaIds()
+        // Auto-hide from every rail the titles the family has already seen
+        // and the titles already shown in this conversation.
+        const seen = await notAgain()
 
         // The audience's age window (youngest viewer = ceiling, a floor for
         // older groups) and the type the parent asked for are enforced here,
@@ -619,6 +636,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
               seeAllLabel:
                 maxAge != null ? `En ce moment au cinéma (jusqu'à ${maxAge} ans)` : "En ce moment au cinéma",
               appliedFilters,
+              ...shownNote,
             }
           } catch (err) {
             console.error("[totem] getDiscoveryRail(cinema) failed", err)
@@ -732,6 +750,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           seeAllUrl,
           seeAllLabel,
           appliedFilters: { ...appliedFilters, type: REQUESTED_TYPE_LABELS[railType] },
+          ...shownNote,
         }
       },
     }),

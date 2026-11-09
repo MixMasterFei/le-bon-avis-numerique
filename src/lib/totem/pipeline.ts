@@ -20,6 +20,7 @@ import { buildTotemTools, type TotemToolContext } from "@/lib/totem/tools"
 import { pickModel, type ModelRouterDecision } from "@/lib/totem/model-router"
 import { buildCareBlock, detectCrisis, type CrisisSignal } from "@/lib/totem/crisis"
 import { buildHintsNote, inferTurnHints, type TurnHints } from "@/lib/totem/turn-hints"
+import { buildShownNote, collectShownMedia, saysAlreadySeen, type ShownMedia } from "@/lib/totem/shown"
 import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 
 /**
@@ -204,6 +205,11 @@ export interface TotemTurnInput {
   personalizationNudgeAllowed: boolean
   /** Tool calls made in the previous assistant turn (router input). */
   lastTurnToolCount: number
+  /**
+   * Titles already shown in the whole conversation (TrustedHistory.shownMedia).
+   * Absent → read from `messages`, which may be trimmed.
+   */
+  shownMedia?: ShownMedia[]
   toolContext: TotemToolContext
   /**
    * Evaluation bench only: run every turn on this model instead of the live
@@ -258,11 +264,23 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     family: input.familyContext,
   })
 
+  // Titles already shown: the recommendation tools exclude them, and the
+  // model is told not to bring them back from memory (shown.ts).
+  const shown = input.shownMedia ?? collectShownMedia(input.messages)
+
   // A person in distress: care block, stronger model, no tools (crisis.ts).
   const crisis = detectCrisis(input.userText)
   const turnNotes: string[] = []
-  const hintsNote = crisis ? null : buildHintsNote(hints)
-  if (hintsNote) turnNotes.push(hintsNote)
+  if (!crisis) {
+    const hintsNote = buildHintsNote(hints)
+    if (hintsNote) turnNotes.push(hintsNote)
+    const shownNote = buildShownNote({
+      shown,
+      alreadySeen: saysAlreadySeen(input.userText),
+      userIsAnonymous: !input.userId,
+    })
+    if (shownNote) turnNotes.push(shownNote)
+  }
   if (crisis) turnNotes.push(buildCareBlock(crisis))
 
   // System prompt (static head, cached + dynamic tail, sent fresh each turn).
@@ -278,7 +296,11 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   })
 
   // Tools — server tools have execute(); propose* are client-resolved.
-  const tools = buildTotemTools({ ...input.toolContext, hints })
+  const tools = buildTotemTools({
+    ...input.toolContext,
+    hints,
+    shownMediaIds: new Set(shown.map((s) => s.id)),
+  })
 
   // Escalate to the higher-capability model in a crisis, on long threads,
   // after a multi-tool turn, or on a grave keyword.

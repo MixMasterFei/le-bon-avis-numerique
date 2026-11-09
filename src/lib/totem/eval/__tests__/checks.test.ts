@@ -180,6 +180,17 @@ describe("crisis, caution, records", () => {
     }
     expect(run({ turns: [{ user: "?", expect: { offersToRecord: "WATCHED" } }] }, [trace([step])]).offers_to_record.pass).toBe(true)
   })
+
+  it("does not count « press the Déjà vu button » as an offer to record (baseline memory-deja-vu)", () => {
+    const record = (text: string) =>
+      run({ turns: [{ user: "?", expect: { offersToRecord: "WATCHED" } }] }, [trace([textStep(text)])]).offers_to_record.pass
+    expect(
+      record(
+        "Pensez à toucher le bouton « Déjà vu » sur leurs fiches pour que je ne les repropose plus. Il faut marquer les déjà vus directement sur leurs fiches.",
+      ),
+    ).toBe(false)
+    expect(record("Voulez-vous que je les enregistre comme déjà vus pour Léa ?")).toBe(true)
+  })
 })
 
 describe("links, tone, provisional, PEGI", () => {

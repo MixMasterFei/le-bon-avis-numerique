@@ -30,9 +30,9 @@ const FAMILY = [
 const opts = { toolCallId: "c", messages: [] }
 type Exec = (input: unknown, o: typeof opts) => Promise<Record<string, unknown>>
 
-function tools(userText: string, priorUserTexts: string[] = []) {
+function tools(userText: string, priorUserTexts: string[] = [], shownMediaIds?: Set<string>) {
   const hints = inferTurnHints({ userText, priorUserTexts, family: FAMILY })
-  const t = buildTotemTools({ origin: "http://x", cookieHeader: null, userId: "u", hints })
+  const t = buildTotemTools({ origin: "http://x", cookieHeader: null, userId: "u", hints, shownMediaIds })
   return {
     search: (input: unknown) => (t.searchMedia.execute as unknown as Exec)(input, opts),
     rail: (input: unknown) => (t.getDiscoveryRail.execute as unknown as Exec)(input, opts),
@@ -123,5 +123,23 @@ describe("requested type", () => {
     const out = await tools("Qu'est-ce qu'on peut voir au cinéma avec Hugo et Inès ?").rail({ rail: "cinema" })
     expect((out.results as Array<{ title: string }>).map((r) => r.title)).toEqual(["Pour Hugo"])
     expect(out.seeAllUrl).toBe("/films?sort=cinema&maxAge=10")
+  })
+})
+
+describe("already shown in the conversation", () => {
+  const shown = new Set(["m-piper", "m-winnie"])
+
+  it("never returns them from a recommendation", async () => {
+    const t = tools("Un autre ?", ["Un dessin animé pour Léa ?"], shown)
+    await t.rail({ rail: "by-age", age: 6 })
+    expect(lastQuery().where.NOT).toEqual({ id: { in: ["m-piper", "m-winnie"] } })
+    const out = await t.search({ maxAge: 6, genre: "Animation", limit: 5 })
+    expect(lastQuery().where.NOT).toEqual({ id: { in: ["m-piper", "m-winnie"] } })
+    expect(out.alreadyShownExcluded).toBeDefined()
+  })
+
+  it("still finds them by title", async () => {
+    await tools("Et Piper, c'est pour quel âge ?", [], shown).search({ q: "Piper", limit: 3 })
+    expect(lastQuery().where.NOT).toBeUndefined()
   })
 })
