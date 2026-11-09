@@ -57,6 +57,12 @@ export interface BuildSystemPromptParams {
   pageContext?: PageContextSnapshot | null
   conversationTurnCount: number
   personalizationNudgeAllowed: boolean
+  /**
+   * Per-turn instructions computed on the server (crisis protocol, audience,
+   * already-shown titles…), appended LAST to the dynamic tail so they are
+   * the final word the model reads. Never cached.
+   */
+  turnNotes?: string[]
 }
 
 /**
@@ -153,7 +159,9 @@ Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait r
 - Nombre de tours échangés : ${params.conversationTurnCount}
 - Utilisateur connecté : ${params.userIsAnonymous ? "NON (anonyme)" : "OUI"}
 - Invitation à se connecter autorisée ce tour : ${params.personalizationNudgeAllowed ? "oui (à glisser en demi-phrase si pertinent)" : "non"}
-${pageBlock ? `\n${pageBlock}\n` : ""}${familyBlock ? `\n${familyBlock}` : ""}`
+${pageBlock ? `\n${pageBlock}\n` : ""}${familyBlock ? `\n${familyBlock}` : ""}${
+    params.turnNotes && params.turnNotes.length > 0 ? `\n\n${params.turnNotes.join("\n\n")}` : ""
+  }`
 
   return { staticHead, dynamicTail }
 }

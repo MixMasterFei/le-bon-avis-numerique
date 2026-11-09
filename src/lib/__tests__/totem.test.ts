@@ -52,8 +52,11 @@ describe("totem model-router (pickModel)", () => {
 
   it("escalates on a grave/sensitive keyword (accent-insensitive)", () => {
     expect(pickModel({ ...base, userText: "mon enfant fait des cauchemars" }).reason).toBe("grave_keyword")
-    expect(pickModel({ ...base, userText: "victime de harcelement a l'ecole" }).reason).toBe("grave_keyword")
     expect(pickModel({ ...base, userText: "Harcèlement scolaire" }).reason).toBe("grave_keyword")
+    // A victim, not a topic: the crisis protocol takes it (same stronger model).
+    const victim = pickModel({ ...base, userText: "victime de harcelement a l'ecole" })
+    expect(victim.reason).toBe("crisis")
+    expect(victim.model).toBe(pickModel({ ...base, userText: "Harcèlement scolaire" }).model)
   })
 })
 

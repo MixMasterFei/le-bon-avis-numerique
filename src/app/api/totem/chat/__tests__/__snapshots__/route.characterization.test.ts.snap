@@ -14,8 +14,8 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "721da2cb27baf8c7",
+          "length": 36093,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -190,8 +190,8 @@ exports[`POST /api/totem/chat — characterization > news article page context 1
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "721da2cb27baf8c7",
+          "length": 36093,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -368,8 +368,8 @@ exports[`POST /api/totem/chat — characterization > signed-in family on a media
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "721da2cb27baf8c7",
+          "length": 36093,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -646,8 +646,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "721da2cb27baf8c7",
+          "length": 36093,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -748,8 +748,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "721da2cb27baf8c7",
+          "length": 36093,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {

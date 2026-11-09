@@ -63,10 +63,9 @@ describe("the scenario set", () => {
   it("estimates a run's cost from the measured token profile", () => {
     const live = estimateRunCostUsd(EVAL_SCENARIOS, undefined)
     expect(live.turns).toBeGreaterThanOrEqual(55)
-    // Baseline finding: none of the crisis phrasings (« veut mourir », « on le
-    // frappe », « se fait harceler », « je me fais du mal ») matches the
-    // router's grave keywords, so the live estimate is all default model.
-    expect(Object.keys(live.byModel)).toEqual(["claude-haiku-4-5-20251001"])
+    // Since the crisis protocol, the four crisis turns go to the stronger
+    // model (in the 2026-11-08 baseline none of them matched a keyword).
+    expect(live.byModel).toMatchObject({ "claude-sonnet-4-6": 4 })
     const haiku55 = estimateRunCostUsd(EVAL_SCENARIOS, "claude-haiku-5-5").usd!
     const sonnet55 = estimateRunCostUsd(EVAL_SCENARIOS, "claude-sonnet-5-5").usd!
     expect(haiku55).toBeLessThan(live.usd!)

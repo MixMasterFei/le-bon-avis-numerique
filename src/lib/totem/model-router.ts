@@ -1,4 +1,5 @@
 import { DEFAULT_MODEL, ESCALATION_MODEL } from "@/lib/anthropic"
+import { detectCrisis } from "@/lib/totem/crisis"
 
 // Words that indicate a grave/sensitive parental concern. Hits Sonnet
 // because the answer needs more nuance than Haiku reliably gives.
@@ -37,13 +38,14 @@ export interface ModelRouterInput {
 
 export interface ModelRouterDecision {
   model: string
-  reason: "long_thread" | "multi_tool_prev" | "grave_keyword" | "default"
+  reason: "crisis" | "long_thread" | "multi_tool_prev" | "grave_keyword" | "default"
 }
 
 /**
  * Decide whether to escalate from Haiku to Sonnet for the upcoming turn.
  *
  * Triggers (any one is enough):
+ *   - the message describes a person in distress (crisis.ts) — always first;
  *   - turnCount >= 8: long conversation, conversational density.
  *   - lastTurnToolCount >= 2: multi-tool reasoning loop.
  *   - userText matches a grave/sensitive French keyword.
@@ -51,6 +53,12 @@ export interface ModelRouterDecision {
  * Otherwise stays on Haiku (default model).
  */
 export function pickModel(input: ModelRouterInput): ModelRouterDecision {
+  // None of « veut mourir », « on le frappe », « se fait harceler », « je me
+  // fais du mal » matched the grave keywords below (baseline run 2026-11-08):
+  // every crisis turn ran on the default model.
+  if (detectCrisis(input.userText)) {
+    return { model: ESCALATION_MODEL, reason: "crisis" }
+  }
   if (input.turnCount >= 8) {
     return { model: ESCALATION_MODEL, reason: "long_thread" }
   }

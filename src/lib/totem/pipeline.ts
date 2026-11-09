@@ -18,6 +18,7 @@ import {
 } from "@/lib/totem/system-prompt"
 import { buildTotemTools, type TotemToolContext } from "@/lib/totem/tools"
 import { pickModel, type ModelRouterDecision } from "@/lib/totem/model-router"
+import { buildCareBlock, detectCrisis, type CrisisSignal } from "@/lib/totem/crisis"
 import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 
 /**
@@ -221,6 +222,8 @@ export interface TotemTurn {
   model: string
   routing: ModelRouterDecision["reason"] | "override"
   tools: TotemTools
+  /** Set when the crisis protocol ran this turn (crisis.ts). */
+  crisis: CrisisSignal | null
 }
 
 /**
@@ -229,6 +232,11 @@ export interface TotemTurn {
  */
 export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   const now = input.now ?? new Date()
+
+  // A person in distress: care block, stronger model, no tools (crisis.ts).
+  const crisis = detectCrisis(input.userText)
+  const turnNotes: string[] = []
+  if (crisis) turnNotes.push(buildCareBlock(crisis))
 
   // System prompt (static head, cached + dynamic tail, sent fresh each turn).
   const { staticHead, dynamicTail } = buildSystemPrompt({
@@ -239,13 +247,14 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     pageContext: input.pageContext,
     conversationTurnCount: input.turnsSoFar + 1,
     personalizationNudgeAllowed: input.personalizationNudgeAllowed,
+    turnNotes,
   })
 
   // Tools — server tools have execute(); propose* are client-resolved.
   const tools = buildTotemTools(input.toolContext)
 
-  // Escalate to the higher-capability model on long threads, after a
-  // multi-tool turn, or on a grave keyword.
+  // Escalate to the higher-capability model in a crisis, on long threads,
+  // after a multi-tool turn, or on a grave keyword.
   const decision = pickModel({
     turnCount: input.turnsSoFar + 1,
     lastTurnToolCount: input.lastTurnToolCount,
@@ -269,6 +278,11 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ],
     messages: input.messages,
     tools,
+    // A crisis turn runs with NO active tool: no catalogue search, no card,
+    // no link can be produced, whatever the model attempts (a call to an
+    // inactive tool is refused by the SDK, never executed). Costs one cache
+    // miss on a rare turn.
+    ...(crisis ? { activeTools: [] as Array<keyof TotemTools> } : {}),
     stopWhen: stepCountIs(TOTEM_MAX_STEPS),
     // Cost bounds: per-step output cap (worst case = steps × cap), a single
     // retry, and a hard stream timeout under the function's maxDuration.
@@ -281,5 +295,5 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ...(input.onError ? { onError: input.onError } : {}),
   })
 
-  return { result, model, routing, tools }
+  return { result, model, routing, tools, crisis }
 }
