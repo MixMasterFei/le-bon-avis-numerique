@@ -34,10 +34,16 @@ const AGE_QUESTION = new RegExp(
     "\\btrop (jeune|jeunes|age|ages|agee|violent|violente|effrayant|effrayante|dur|choquant|petit|petite)\\b",
     "\\bpegi\\b",
     "\\binterdit aux\\b",
+    // A cautious parent about a title: « je préfère que Léa ne joue pas à
+    // Fortnite, j'ai raison ? » — the answer must carry the catalogue's age.
+    "\\b(je prefere|je prefererais|j'aime mieux|on prefere|je ne veux pas|je refuse|j'interdis)\\b[^.?!]{0,60}\\b(joue|jouer|regarde|regarder|voie|voir|lise|lire)\\b",
   ].join("|"),
 )
 
-/** The message asks for an age, or whether a title suits a child. */
+/**
+ * The message asks for an age, whether a title suits a child, or whether a
+ * parent is right to keep a title from a child.
+ */
 export function asksAboutAge(text: string): boolean {
   return AGE_QUESTION.test(norm(text))
 }

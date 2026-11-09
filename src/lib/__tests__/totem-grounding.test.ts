@@ -40,6 +40,16 @@ describe("age questions get a lookup first", () => {
     expect(asksAboutAge(text)).toBe(false)
   })
 
+  it("looks a title up when a cautious parent asks about it, not a genre", () => {
+    const caution = Object.fromEntries(
+      EVAL_SCENARIOS.filter((s) => s.category === "caution").map((s) => [s.id, s.turns[0].user]),
+    )
+    expect(asksAboutAge(caution["caution-spiderman-hugo"])).toBe(true)
+    expect(asksAboutAge(caution["caution-fortnite-lea"])).toBe(true)
+    // « un film d'horreur » names no title: nothing to look up.
+    expect(asksAboutAge(caution["caution-horror-ines"])).toBe(false)
+  })
+
   it("leaves « ce film » on its own fiche to the page context", () => {
     expect(refersToPageTitle("Ce film convient à Léa ?")).toBe(true)
     expect(refersToPageTitle("Et Stranger Things, ça convient à Léa ?")).toBe(true)
