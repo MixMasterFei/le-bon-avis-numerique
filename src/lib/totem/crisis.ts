@@ -205,7 +205,7 @@ const NOT_SCREEN_CONFLICT =
   "(?![^.!?]*\\bquand (?:je|on) (?:lui |leur )?(?:coupe|enleve|eteins|retire|confisque|interdis|refuse|dis non|prive|arrete)\\b)"
 const HIT =
   `(?:frapp\\w*|tap(?:e|ent|ait|aient)\\b(?!\\s+(?:sur les nerfs|sur le systeme|la discute|dans l'oeil))|cogn\\w*|maltrait\\w*|agress\\w*|gifl\\w*|etrangl\\w*|brutalis\\w*|molest\\w*|enferm\\w*|brul(?:e|ent|ait|aient)\\b|viol(?:e|ent|ait|aient)\\b|violent(?:e|ent|ait|aient)\\b` +
-  `|touch(?:e|ent|ait|aient)\\b(?=[^.!?]{0,40}\\b(?:parties|intimes?|sexe|seins|fesses|de force|contre (?:son|mon) gre|sans (?:son|mon) (?:accord|consentement)|alors qu'(?:elle|il|je) ne (?:veut|voulait|voulais) pas)\\b)` +
+  `|touch(?:e|ee|es|ees|ent|ait|aient)\\b(?=[^.!?]{0,40}\\b(?:parties|intimes?|sexe|seins|fesses|de force|contre (?:son|mon) gre|sans (?:son|mon) (?:accord|consentement)|alors qu'(?:elle|il|je) ne (?:veut|voulait|voulais) pas)\\b)` +
   `|(?:bat|battent|battait|battaient|tabass\\w*|defonc\\w*)\\b${NOT_A_GAME})`
 const HIT_ACTIVE = `${HIT}${BY_HIT_GAME}${NOT_SCREEN_CONFLICT}`
 // « il me harcèle pour avoir Fortnite », « elle nous menace de partir » are
@@ -239,6 +239,25 @@ const OBJ = "(?<obj>le|la|les|l'|me|m'|te|t'|nous|vous|lui|leur)"
 const AUX = "(?:a\\s+|ont\\s+|avait\\s+|avaient\\s+)?"
 const FAMILY_ABUSER =
   "(?:mon|ma|mes|notre|nos)\\s+(?:beau-pere|belle-mere|beau pere|belle mere|pere|mere|parents|frere|soeur|grand-pere|grand-mere|oncle|tante|cousin|cousine|mari|femme|conjoint|conjointe|compagnon|compagne|ex|nounou|baby-sitter|prof|professeur|entraineur|maitre|maitresse)"
+// Self-harm marks (« des marques sur les bras, je crois qu'il se coupe »),
+// not felt-tip, scratches from the cat or an old operation.
+const HARM_MARKS = "(?:marques?|cicatrices?|coupures?|entailles?|griffures?|traces? de (?:coupures?|lame))"
+const HARM_SITES = "(?:bras|avant-bras|poignets?|cuisses?)"
+const NOT_AN_ACCIDENT =
+  "(?![^.!?]{0,40}\\b(?:operation|accident|chute|vaccins?|varicelle|eczema|moustiques?|piqures?|feutres?|stylos?|peinture|tatouages?|chat|chaton|chien|ronces?|jeu|sport|velo|tombe\\w*)\\b)"
+// Adults around a child, for the euphemisms of sexual abuse (« gestes
+// déplacés », « l'a touchée », « des caresses »). Not doctors: an
+// examination is a touch too.
+const ADULT =
+  "(?:une? adulte|des adultes|un homme|des hommes|une femme|un monsieur|un vieux|un inconnu|une inconnue|un ami de (?:la famille|mes parents|ses parents)" +
+  "|(?:(?:le|la|un|une|son|sa|mon|ma|leur)\\s+|l')(?:moniteur|monitrice|animateur|animatrice|entraineur|entraineuse|coach|educateur|educatrice|prof|professeur|maitre|maitresse|surveillant|surveillante|voisin|voisine|oncle|tante|cousin|cousine|beau-pere|grand-pere|parrain|baby-sitter|nounou|pretre|cure|chauffeur))"
+const ADULT_FROM = "(?:\\s+(?:du|de la|de l'|des|de|d')\\s*[a-z'-]+(?:\\s+(?:de|d'|du)\\s*[a-z'-]+)?)?"
+const NOT_A_PLAIN_TOUCH =
+  "(?![^.!?]{0,30}\\b(?:pour (?:l'|la |le |les )?(?:soigner|examiner|consoler|rassurer|aider|feliciter)|la tete|les cheveux|l'epaule|la main|la joue|le dos|au (?:loup|chat|jeu)|a chat|avec (?:le|la|un|une) (?:ballon|balle))\\b)"
+// « il la fait chanter » is blackmail only next to what it is about.
+const BLACKMAIL_CONTEXT =
+  /\b(?:photos?|videos?|nudes?|images?|argent|payer|euros?|menac\w*|publier|diffuser|balancer|envoyer|nue?s?|intimes?|chantage|sinon)\b/
+
 const INTIMATE = "(?:nudes?|(?:photos?|videos?|images?)\\s+(?:intimes?|denudees?|nues?|sexuelles?|osees?))"
 const SPREAD = "(?:circul\\w*|partag\\w*|publi\\w*|diffus\\w*|envoy\\w*|tourn\\w*|post\\w*|balanc\\w*|vend\\w*)"
 
@@ -264,7 +283,9 @@ const RULES: Rule[] = [
   {
     kind: "suicide",
     rx: g(
-      "(?:\\b(?:n'|ne\\s+))?\\b(?:(?:a|ai|as|ont|avait|avais|aurait)\\s+)?(?:plus|pas)\\s+envie\\s+de\\s+vivre\\b|\\b(?:en (?:a|ai|as|ont|avait|avais)\\s+)?marre de (?:vivre|la vie)\\b|\\b(?:ne\\s+)?veu[tx] plus vivre\\b|\\bplus (?:aucune )?raison de vivre\\b",
+      "(?:\\b(?:n'|ne\\s+))?\\b(?:(?:a|ai|as|ont|avait|avais|aurait)\\s+)?(?:plus|pas)\\s+envie\\s+de\\s+vivre\\b|\\b(?:en (?:a|ai|as|ont|avait|avais)\\s+)?marre de (?:vivre|la vie)\\b|\\bplus (?:aucune )?raison de vivre\\b" +
+        // « elle ne voulait plus vivre » — not « ne veut plus vivre chez son père / sans sa console »
+        "|(?:\\b(?:n'|ne\\s+))?\\b(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient)\\s+plus\\s+vivre\\b(?!\\s+(?:chez|avec|ici|la-bas|la bas|a|au|aux|en|dans|sous|sans|pres|loin)\\b)",
     ),
   },
   { kind: "suicide", rx: g("\\b(?:serait|seraient|serais|serait-il|irait|iraient)\\s+mieux\\s+sans\\s+(?<victim>moi|lui|elle)\\b"), who: fromVictim },
@@ -287,6 +308,18 @@ const RULES: Rule[] = [
   },
   { kind: "self_harm", rx: g("\\b(?:se\\s|s'|me\\s|m'|te\\s|t')\\s?(?:scarifi\\w*|mutil\\w*|automutil\\w*)"), who: byPerson },
   { kind: "self_harm", rx: g("\\b(?:fait|fais|font|faisait)\\s+de\\s+(?:la\\s+scarification|l'automutilation)\\b") },
+  // « mon fils a des marques sur les bras », « j'ai vu des cicatrices sur ses poignets »
+  {
+    kind: "self_harm",
+    rx: g(`\\b(?:a|ai|as|ont|avait|avais)\\s+(?:des |plein de |de |de nombreuses |plusieurs )?${HARM_MARKS}\\s+(?:sur|aux?|a l'|au niveau des?)\\s+(?:les |ses |mes |son |sa |mon |ma )?${HARM_SITES}\\b${NOT_AN_ACCIDENT}`),
+  },
+  {
+    kind: "self_harm",
+    rx: g(
+      `\\b(?:vu|remarque|remarquee|trouve|decouvert|apercu|vois|voit)\\s+(?:des |plein de |de |plusieurs )?${HARM_MARKS}\\s+(?:sur|aux?|a l')\\s+(?<owner>ses|son|sa|les|mes|mon|ma|leurs)\\s+${HARM_SITES}\\b(?:\\s+de\\s+(?<ownerNp>${PERSONAL_NP}))?${NOT_AN_ACCIDENT}`,
+    ),
+    who: (m) => (m.groups?.ownerNp || /^(?:mes|mon|ma)$/.test(m.groups?.owner ?? "") ? "personal" : "pronoun"),
+  },
   {
     kind: "self_harm",
     rx: g(
@@ -319,6 +352,39 @@ const RULES: Rule[] = [
   { kind: "abuse", rx: g(`\\b${OBJ}\\s?(?:fait|font|faisait|a fait|ont fait)\\s+des\\s+attouchements\\b`), who: fromObj },
   { kind: "abuse", rx: g(`\\battouchements\\s+(?:a|sur)\\s+(?<victim>moi|elle|lui|${PERSONAL_NP})\\b`), who: fromVictim },
   { kind: "abuse", rx: g("\\bil y a (?:de l'inceste|eu (?:un viol|des attouchements)) dans (?<victim>ma|notre|sa) famille\\b"), who: (m) => (m.groups?.victim === "sa" ? "pronoun" : "personal") },
+  // Euphemisms: « des gestes déplacés envers ma fille », « un adulte du club
+  // a eu des gestes déplacés », « le moniteur l'a touchée », « des caresses »
+  {
+    kind: "abuse",
+    rx: g(
+      `\\b(?:gestes?|comportements?|attitudes?|propos|caresses?|contacts?)\\s+(?:deplaces?|deplacees?|inappropriee?s?|inapproprie?s?|equivoques?|sexuels?|sexuelles?|douteux|douteuses)\\b[^.!?]{0,40}?\\b(?:envers|sur|avec|a l'egard de|vis-a-vis de|contre)\\s+(?<victim>moi|elle|lui|eux|${PERSONAL_NP})\\b`,
+    ),
+    who: fromVictim,
+  },
+  {
+    kind: "abuse",
+    rx: g(`\\b${ADULT}${ADULT_FROM}\\s+(?:a|avait|aurait|ont|avaient)\\s+(?:eu\\s+)?(?:des |un |une )?(?:gestes?|comportements?|attitudes?)\\s+(?:deplace\\w*|inapproprie\\w*|equivoques?|sexuels?|sexuelles?)`),
+    who: () => "pronoun",
+  },
+  {
+    kind: "abuse",
+    rx: g(`\\b${ADULT}${ADULT_FROM}\\s+${OBJ}\\s?(?:(?:a|avait|aurait|ont)\\s+)?(?:touche|touchee|touches|touchees|touchait|tripot\\w*|pelot\\w*|caresse|caressee|caressait)\\b${NOT_A_PLAIN_TOUCH}`),
+    who: fromObj,
+  },
+  {
+    kind: "abuse",
+    rx: g(
+      `\\b${ADULT}${ADULT_FROM}\\s+${OBJ}\\s?(?:a\\s+)?(?:fait|faisait|faisaient|font)\\s+des\\s+(?:caresses|calins? (?:bizarres?|genants?|deplaces?|insistants?))\\b(?![^.!?]{0,20}\\b(?:sur la tete|dans les cheveux|sur la joue|dans le dos)\\b)`,
+    ),
+    who: fromObj,
+  },
+  {
+    kind: "abuse",
+    rx: g(
+      "\\bcaresses?\\s+(?:deplacees?|inappropriees?|genantes?|sur (?:le|son|ses|sa) (?:corps|sexe|parties|seins|fesses|cuisses|poitrine)|sous (?:ses|les|son|sa) (?:vetements|habits|pull|t-shirt|culotte))",
+    ),
+    who: () => "pronoun",
+  },
 
   // ---- harassment ----
   { kind: "harassment", rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?${AUX}${HARASS_ACTIVE}`), who: fromObj },
@@ -352,6 +418,19 @@ const RULES: Rule[] = [
     who: fromObj,
   },
   { kind: "harassment", rx: g(`\\b${OBJ}\\s?(?:fait|font|faisait|faisaient|a fait|ont fait)\\s+(?:du |un )?chantage\\b`), who: fromObj },
+  // « il la fait chanter » (sextortion), not « la prof la fait chanter à la chorale »
+  {
+    kind: "harassment",
+    rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?(?:(?:a|ont|avait)\\s+)?(?:fait|font|faisait|faisaient)\\s+chanter\\b`),
+    who: (m) => (BLACKMAIL_CONTEXT.test(m.input ?? "") ? fromObj(m) : "other"),
+  },
+  // The child sent them: « a envoyé des photos d'elle nue », « a envoyé des nudes »
+  {
+    kind: "harassment",
+    rx: g(`\\b(?:envoy\\w*|partag\\w*|publi\\w*|post\\w*)\\s+(?:des |une |sa |ses |mes |les )?(?:photos?|videos?)\\s+(?:de|d')\\s*(?<victim>moi|elle|lui|${PERSONAL_NP})\\s+(?:nue?s?|denudee?s?|tout nu|toute nue|en sous-vetements)\\b`),
+    who: fromVictim,
+  },
+  { kind: "harassment", rx: g("\\b(?:a|ai|as|ont|avait)\\s+(?:envoy\\w*|partag\\w*)\\s+(?:des |ses |mes |une )?nudes?\\b") },
   { kind: "harassment", rx: g(`\\bfai\\w*\\s+(?:du |un )?chantage\\s+(?:a|au|aux)\\s+(?<victim>moi|lui|elle|${PERSONAL_NP})\\b`), who: fromVictim },
   {
     kind: "harassment",

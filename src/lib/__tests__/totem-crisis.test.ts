@@ -90,6 +90,27 @@ const MORE_BENIGN = [
   "Ma fille se fait des films sur tout",
   "Mon fils s'est fait mal au genou en jouant",
   "Mon ado se coupe les cheveux tout seul",
+  // controls for the Director's held-out misses (follow-up)
+  "Le prix fait chanter les parents",
+  "La prof la fait chanter devant toute la classe à la chorale",
+  "Ma fille fait chanter toute la famille avec ce karaoké",
+  "Dans ce film, il y a une scène où il la touche, c'est pour quel âge ?",
+  "Une scène où il la touche, c'est trop pour 12 ans ?",
+  "Il a des marques de feutre sur les bras, c'est lavable ?",
+  "Il se coupe en cuisinant, quel jeu de cuisine pour enfants ?",
+  "Il a des cicatrices sur les bras depuis son opération",
+  "Mon fils a des griffures sur les bras à cause du chat",
+  "Dans la série, elle a des cicatrices sur les poignets, ok pour 14 ans ?",
+  "Ma fille ne veut plus vivre chez son père depuis le divorce",
+  "Il ne voulait plus vivre sans sa console, une alternative ?",
+  "Mon ado ne veut plus vivre à la campagne",
+  "Le prof la touche à l'épaule pour la féliciter",
+  "Ce film l'a beaucoup touchée",
+  "Le grand-père caresse le chat dans le film",
+  "Son grand-père lui caresse les cheveux pour l'endormir",
+  "Mon fils a eu un comportement déplacé en classe, un livre pour en parler ?",
+  "Le moniteur l'a touchée au jeu du loup",
+  "Le personnage a des gestes déplacés dans le film, ok pour 13 ans ?",
   // a child nagging or hitting a parent
   "Mon fils me harcèle pour avoir Fortnite, à partir de quel âge ?",
   "Ma fille me harcèle de questions sur le dernier Pixar",
@@ -169,6 +190,37 @@ const MORE_CRISES = [
   "Un adulte lui demande des nudes sur Discord",
 ]
 
+// The Director's held-out set (2026-11-10): four real distress messages the
+// precision fix missed, each with a few variants.
+const HELD_OUT_CRISES = [
+  // « (ne) veut / voulait / voudrait plus vivre »
+  "Ma fille m'a dit qu'elle ne voulait plus vivre",
+  "Mon fils ne veut plus vivre",
+  "Il dit qu'il voudrait ne plus vivre",
+  "Elle veut plus vivre, elle pleure tout le temps",
+  "Mon ado ne voudrait plus vivre, il me l'a écrit",
+  // marks on the arms or wrists, the body part before the verb
+  "Mon fils a des marques sur les bras, je crois qu'il se coupe",
+  "J'ai vu des cicatrices sur ses poignets, elle porte toujours des manches longues",
+  "Ma fille a des coupures sur les cuisses",
+  "Il a plein de griffures sur les avant-bras et il les cache",
+  "J'ai remarqué des marques sur les bras de ma fille",
+  // « faire chanter » (sextortion), « photos d'elle nue »
+  "Ma fille a envoyé des photos d'elle nue à un garçon et maintenant il la fait chanter",
+  "Un garçon la fait chanter avec des photos",
+  "On me fait chanter, il veut de l'argent sinon il publie mes photos",
+  "Mon fils a envoyé des nudes à une inconnue sur Insta",
+  "Il menace de diffuser des photos d'elle nue",
+  // euphemisms of sexual abuse by an adult
+  "Un adulte du club de foot a eu des gestes déplacés envers ma fille",
+  "Un moniteur de colo a eu des comportements déplacés envers mon fils",
+  "L'entraîneur l'a touchée, elle ne veut plus y aller",
+  "Un adulte lui faisait des caresses quand ils étaient seuls",
+  "Le prof de piano a des gestes déplacés avec ma fille",
+  "Mon oncle l'a touchée pendant les vacances",
+  "Le voisin lui a fait des caresses sous ses vêtements",
+]
+
 describe("detectCrisis — precision: ordinary questions are not crises", () => {
   it.each(DIRECTOR_BENIGN)("Director's probe: « %s »", (text) => {
     expect(detectCrisis(text)).toBeNull()
@@ -183,6 +235,9 @@ describe("detectCrisis — recall: a real person in distress", () => {
     expect(detectCrisis(text)).not.toBeNull()
   })
   it.each(MORE_CRISES)("« %s »", (text) => {
+    expect(detectCrisis(text)).not.toBeNull()
+  })
+  it.each(HELD_OUT_CRISES)("Director's held-out set: « %s »", (text) => {
     expect(detectCrisis(text)).not.toBeNull()
   })
 
