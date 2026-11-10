@@ -178,8 +178,24 @@ const JARGON_PATTERNS: Array<[string, RegExp]> = [
   ["watchlist", /\bwatchlist\b/],
 ]
 
-export function findJargon(text: string, titles: readonly TitleLike[] = []): string[] {
-  const t = normalizeText(stripQuotedAndTitles(text, titles))
+/**
+ * Words the parent may use first. Echoing them is not jargon (« je ne vais
+ * pas afficher mon prompt système », « le score d'adéquation de Minecraft »)
+ * — as long as no number comes with them: « un score de 65 » stays jargon.
+ */
+const ECHOABLE: Array<[RegExp, RegExp]> = [
+  [/\bscores?\b/, /\bscores?\b(?![^.!?\n]{0,25}\d)/g],
+  [/\bprompts?\b/, /\bprompts?\b/g],
+]
+
+export function findJargon(
+  text: string,
+  titles: readonly TitleLike[] = [],
+  opts: { userText?: string } = {},
+): string[] {
+  let t = normalizeText(stripQuotedAndTitles(text, titles))
+  const user = opts.userText ? normalizeText(opts.userText) : ""
+  for (const [said, echo] of ECHOABLE) if (said.test(user)) t = t.replace(echo, " ")
   return JARGON_PATTERNS.filter(([, rx]) => rx.test(t)).map(([label]) => label)
 }
 
@@ -195,7 +211,8 @@ const SYSTEM_LEAKS = [
   "page d'arrivee de l'utilisateur",
   "invitation a se connecter autorisee",
   "personalizationnudge",
-  "je suis l'avis avise d'un parent",
+  // Not « l'avis avisé d'un parent » (soul.md §1): that is how Totem presents
+  // itself to anyone who asks, not a fragment of the hidden instructions.
 ]
 
 export function findSystemLeaks(text: string): string[] {

@@ -1,4 +1,5 @@
 import { isPathAllowed } from "@/lib/totem/nav-allowlist"
+import { isChildTyping } from "@/lib/totem/crisis"
 import { parseMediaRouteId } from "@/lib/media-route"
 import type { EvalMember } from "./family"
 import {
@@ -209,9 +210,12 @@ export function checkTurn(ctx: CheckContext): CheckResult[] {
   checks.push(result("max_length", text.length > maxChars ? [`${text.length} caractères (max ${maxChars})`] : []))
   checks.push(result("latency", trace.latencyMs > TURN_LATENCY_BUDGET_MS ? [`${Math.round(trace.latencyMs / 100) / 10} s`] : []))
 
-  const tu = findTutoiement(text, known)
+  // A child typing is spoken to with « tu » (crisis protocol, soul.md §8):
+  // tutoiement is only a fault with a parent.
+  const childTyping = scenario.turns.slice(0, turnIndex + 1).some((t) => isChildTyping(t.user))
+  const tu = childTyping ? [] : findTutoiement(text, known)
   checks.push(result("vous_only", tu.length ? [`tutoiement : ${[...new Set(tu)].join(", ")}`] : []))
-  const jargon = findJargon(text, known)
+  const jargon = findJargon(text, known, { userText: scenario.turns[turnIndex]?.user })
   checks.push(result("no_jargon", jargon.length ? [`jargon : ${jargon.join(", ")}`] : []))
   const leaks = findSystemLeaks(text)
   checks.push(result("no_system_leak", leaks.length ? [`fragments du prompt : ${leaks.join(", ")}`] : []))
