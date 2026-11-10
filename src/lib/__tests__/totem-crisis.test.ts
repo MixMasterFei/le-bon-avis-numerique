@@ -111,6 +111,27 @@ const MORE_BENIGN = [
   "Mon fils a eu un comportement déplacé en classe, un livre pour en parler ?",
   "Le moniteur l'a touchée au jeu du loup",
   "Le personnage a des gestes déplacés dans le film, ok pour 13 ans ?",
+  // controls for the second follow-up (hedges, touching, grooming)
+  "Le film a touché ma fille",
+  "Ce livre m'a touché",
+  "Un homme a touché le ballon",
+  "Le film a beaucoup touché mes enfants",
+  "Ma fille a été très touchée par Coco",
+  "Un homme a touché ma fille à l'épaule pour la prévenir",
+  "Le photographe de l'école demande des photos de classe",
+  "Mon fils demande des photos de Pokémon",
+  "Le coach lui demande des photos de lui pour le site du club",
+  "Son copain lui propose de se voir ce week-end",
+  "Le prof lui propose de le voir après le cours pour l'aider",
+  "Le prof lui a dit de ne pas le dire, c'est une surprise pour la fête des mères",
+  "Je crois que le héros se fait tabasser dans le film",
+  "Pour mon fils, je pense que le héros se fait tabasser dans le film",
+  "Je pense que ma fille va adorer ce film",
+  "J'ai peur que ma fille se fasse peur avec ce film",
+  "Je me demande si mon fils est trop jeune pour Fortnite",
+  "On m'a dit que ce jeu est violent",
+  "Je crains que le film soit trop violent pour mon fils",
+  "Ma fille ne veut plus vivre sans sa tablette",
   // a child nagging or hitting a parent
   "Mon fils me harcèle pour avoir Fortnite, à partir de quel âge ?",
   "Ma fille me harcèle de questions sur le dernier Pixar",
@@ -221,6 +242,39 @@ const HELD_OUT_CRISES = [
   "Le voisin lui a fait des caresses sous ses vêtements",
 ]
 
+// The Director's second held-out set: a hedged lead-in must not hide the
+// subject (the mechanism, not one phrase), an adult who touched a child,
+// grooming.
+const SECOND_HELD_OUT_CRISES = [
+  "Je crois que ma fille se fait du mal",
+  "Je pense que mon fils se fait harceler",
+  "J'ai l'impression que ma fille a des idées noires",
+  "Il me semble que mon ado se scarifie",
+  "J'ai peur que ma fille se fasse du mal",
+  "Je crains que mon fils ait des idées noires",
+  "J'ai peur que mon fils se fasse harceler au collège",
+  "Je crains qu'elle soit harcelée sur les réseaux",
+  "Je me demande si ma fille se fait harceler",
+  "Je soupçonne que mon fils se fait racketter",
+  "On m'a dit que mon fils se faisait frapper à la récré",
+  "Je crois que ma fille veut mourir",
+  "Mon fils, je crois, se fait harceler",
+  "Mon fils je pense se fait harceler",
+  "J'ai peur qu'il n'ait plus envie de vivre",
+  "Depuis la rentrée mon fils se fait harceler",
+  "Un homme a touché ma fille dans le bus",
+  "Un inconnu a touché mon fils à la piscine",
+  "Quelqu'un a touché ma fille à la récré",
+  "Un adulte a touché mes enfants",
+  "Le coach de mon fils lui demande des photos de lui torse nu",
+  "Un inconnu sur Roblox lui demande des photos d'elle",
+  "Un inconnu sur Roblox demande à ma fille de garder leur secret",
+  "Un adulte sur Discord lui a demandé de garder leur conversation secrète",
+  "Un homme rencontré sur Fortnite lui propose de le voir",
+  "Un inconnu sur Snapchat veut la rencontrer",
+  "Le moniteur lui a dit de ne rien dire à ses parents",
+]
+
 describe("detectCrisis — precision: ordinary questions are not crises", () => {
   it.each(DIRECTOR_BENIGN)("Director's probe: « %s »", (text) => {
     expect(detectCrisis(text)).toBeNull()
@@ -238,6 +292,9 @@ describe("detectCrisis — recall: a real person in distress", () => {
     expect(detectCrisis(text)).not.toBeNull()
   })
   it.each(HELD_OUT_CRISES)("Director's held-out set: « %s »", (text) => {
+    expect(detectCrisis(text)).not.toBeNull()
+  })
+  it.each(SECOND_HELD_OUT_CRISES)("Director's second held-out set: « %s »", (text) => {
     expect(detectCrisis(text)).not.toBeNull()
   })
 

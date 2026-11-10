@@ -111,12 +111,22 @@ const PRONOUN_END = new RegExp(`(?:^|\\s|qu')(?:il|elle|ils|elles|on)${FILLERS}$
 const CLASSMATE_END = new RegExp(
   `(?:^|\\s)(?:un|une|des)\\s+(?:eleves?|enfants?|copains?|copines?|amis?|amies?|camarades?|ados?)\\s+(?:de|d')\\s*(?:ma|mon|notre|sa|son)\\s+(?:classe|ecole|college|lycee|equipe|club|groupe|famille)${FILLERS}$`,
 )
-/** A comma-separated piece that names nobody (« mon fils, depuis un mois, se fait… »). */
-const ADVERBIAL =
-  /^(?:depuis|encore|toujours|souvent|parfois|tous les jours|chaque jour|en ce moment|ces temps|ces derniers|apparemment|je crois|je pense|j'ai l'impression|visiblement|a l'ecole|au college|au lycee|en classe|la semaine derniere|hier|aujourd'hui|ce matin|ce soir|maintenant|du coup|bref|enfin)\b/
+/**
+ * How parents hedge a worry: « je crois que ma fille… », « j'ai peur que mon
+ * fils… », « je me demande si… », « on m'a dit que… ». The subject that
+ * follows still counts.
+ */
+const HEDGE =
+  "(?:je crois|je pense|j'ai l'impression|il me semble|j'ai peur|je crains|je me demande|je soupconne|on m'a dit|on me dit|il parait|apparemment|visiblement|a mon avis|peut-etre|sans doute|je sais|j'ai appris|j'ai decouvert|je viens d'apprendre|je viens de decouvrir)"
+/** « mon fils je pense se fait… »: a hedge after the subject. */
+const TRAILING_HEDGE = new RegExp(`\\s+${HEDGE}$`)
+/** A comma-separated piece that names nobody (« mon fils, depuis un mois, se fait… », « je crois »). */
+const ADVERBIAL_ONLY = new RegExp(
+  `^(?:${HEDGE}(?: que| qu'| si)?|depuis(?: [a-z'-]+){1,4}|encore|toujours|souvent|parfois|tous les jours|chaque jour|en ce moment|ces temps(?:-ci)?|ces derniers (?:jours|temps|mois)|a l'ecole|au college|au lycee|en classe|la semaine derniere|hier|aujourd'hui|ce matin|ce soir|maintenant|du coup|bref|enfin)$`,
+)
 
 function whoAtEnd(segment: string, names: ReadonlySet<string>): Who {
-  const s = segment.trim()
+  const s = segment.trim().replace(TRAILING_HEDGE, "")
   if (!s) return "other"
   if (REPORTED_END.test(s) || PERSONAL_END.test(s)) return "personal"
   if (PRONOUN_END.test(s) || CLASSMATE_END.test(s)) return "pronoun"
@@ -129,14 +139,23 @@ function whoAtEnd(segment: string, names: ReadonlySet<string>): Who {
   return names.has(last) ? "pronoun" : "other"
 }
 
-/** Who the phrase starting after `before` is about: its grammatical subject. */
+/**
+ * Who the phrase starting after `before` is about: its grammatical subject,
+ * at the end of the same clause. A piece that ends on a subject wins (« je
+ * crois que ma fille », « depuis la rentrée mon fils »); a piece that is only
+ * a hedge or a time (« je crois », « depuis un mois ») passes to the one
+ * before it; anything else names nobody close.
+ */
 function subjectBefore(before: string, names: ReadonlySet<string>): Who {
   const clause = before.split(/[.!?;:]/).pop() ?? ""
   const parts = clause.split(",")
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i].trim()
-    if (!p || ADVERBIAL.test(p)) continue
-    return whoAtEnd(p, names)
+    if (!p) continue
+    const who = whoAtEnd(p, names)
+    if (who !== "other") return who
+    if (ADVERBIAL_ONLY.test(p)) continue
+    return "other"
   }
   return "other"
 }
@@ -191,7 +210,8 @@ const DIE =
   `|disparaitre(?=\\s*(?:$|[.,;!?]|et\\b|pour toujours\\b|a jamais\\b|definitivement\\b|de ce monde\\b|de la surface\\b))` +
   `|ne plus (?:etre la|exister|se reveiller|vivre))`
 const WANT =
-  "(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient|(?:a|ai|as|avait|avais|ont) envie de|envie de|pense a|pensait a|pensais a|parle de|parlait de|menace de|menacait de|(?:a|ai|as|ont) tente de|tente de|essaie de|essaye de|essayait de|aimerait|aimerais|souhaite|souhaiterait|reve de)"
+  // (subjunctives too: « j'ai peur qu'elle veuille mourir »)
+  "(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient|veuille|veuillent|(?:a|ai|as|ait|aient|avait|avais|ont) envie de|envie de|pense a|pensait a|pensais a|parle de|parlait de|menace de|menacait de|(?:a|ai|as|ait|ont) tente de|tente de|essaie de|essaye de|essayait de|aimerait|aimerais|souhaite|souhaiterait|reve de)"
 
 // Blows. The « battre » family is a game result after « à / au / en » (« le
 // bat à Mario Kart », « se fait battre à Fortnite »), unless the place is a
@@ -223,7 +243,8 @@ const PASSIVE_HIT =
 const PASSIVE_HARASS =
   "(?:(?:cyber-?)?harcel(?:er|e|ee|es|ees)|insult(?:er|e|ee|es|ees)|menac(?:er|e|ee|es|ees)|humili(?:er|e|ee|es|ees)|rackett?(?:er|e|ee|es|ees)|ridiculis(?:er|e|ee|es|ees))\\b"
 const PASSIVE_HEAD =
-  "\\b(?:se\\s+(?:fait|fais|faire|font|faisait|faisaient)|s'est\\s+fait(?:e|s)?|me\\s+(?:fais|faisais)|me\\s+suis\\s+fait(?:e)?|te\\s+fais|t'es\\s+fait(?:e)?|(?:a|ont|avait|aurait)\\s+ete|est|suis|es|sont|etait|etaient)\\s+"
+  // (subjunctives too: « j'ai peur qu'il se fasse harceler », « qu'elle soit frappée »)
+  "\\b(?:se\\s+(?:fait|fais|faire|font|faisait|faisaient|fasse|fassent)|s'est\\s+fait(?:e|s)?|se\\s+soit\\s+fait(?:e|s)?|me\\s+(?:fais|faisais|fasse)|me\\s+suis\\s+fait(?:e)?|te\\s+(?:fais|fasses)|t'es\\s+fait(?:e)?|(?:a|ont|avait|aurait|ait|aient)\\s+ete|est|suis|es|sont|etait|etaient|soit|soient|sois)\\s+"
 
 /** People who can hurt a child (a « méchant » or « Bowser » is a character). */
 const PERSON_NOUN =
@@ -251,7 +272,21 @@ const NOT_AN_ACCIDENT =
 const ADULT =
   "(?:une? adulte|des adultes|un homme|des hommes|une femme|un monsieur|un vieux|un inconnu|une inconnue|un ami de (?:la famille|mes parents|ses parents)" +
   "|(?:(?:le|la|un|une|son|sa|mon|ma|leur)\\s+|l')(?:moniteur|monitrice|animateur|animatrice|entraineur|entraineuse|coach|educateur|educatrice|prof|professeur|maitre|maitresse|surveillant|surveillante|voisin|voisine|oncle|tante|cousin|cousine|beau-pere|grand-pere|parrain|baby-sitter|nounou|pretre|cure|chauffeur))"
-const ADULT_FROM = "(?:\\s+(?:du|de la|de l'|des|de|d')\\s*[a-z'-]+(?:\\s+(?:de|d'|du)\\s*[a-z'-]+)?)?"
+// « l'entraîneur du club de foot », « le coach de mon fils »
+const ADULT_FROM = `(?:\\s+(?:(?:de|d')\\s*(?:${PERSONAL_NP})|(?:du|de la|de l'|des|de|d')\\s*[a-z'-]+(?:\\s+(?:de|d'|du)\\s*[a-z'-]+)?))?`
+// Someone met online: « un inconnu sur Roblox », « quelqu'un rencontré sur Discord »
+const ONLINE_STRANGER =
+  "(?:un inconnu|une inconnue|quelqu'un|un mec|un type|un gars|un homme|une femme|une? adulte|un joueur|une joueuse|un ami|une amie|un garcon|une fille)" +
+  "(?:\\s+(?:qu'(?:il|elle) a rencontre\\w*|rencontre\\w*|connu\\w*))?\\s+(?:sur|dans|de)\\s+(?:roblox|discord|fortnite|minecraft|snap\\w*|insta\\w*|tiktok|whatsapp|telegram|messenger|facebook|twitch|youtube|internet|un jeu|le jeu|un forum|les reseaux|un chat|le chat|un site)"
+// An adult, or someone met online, asking a child for something.
+const GROOMER = `(?:${ADULT}${ADULT_FROM}|${ONLINE_STRANGER})`
+/** What they ask for: photos of the child, a secret, a meeting. */
+const GROOMING_ASK =
+  "(?:(?:des |une |de |d'autres |plein de )?(?:photos?|videos?|selfies?)\\s+(?:de|d')\\s*(?:lui|elle|moi|toi|eux)\\b(?![^.!?]{0,40}\\bpour (?:le site|le journal|le trombinoscope|l'album|la photo de classe|le club|l'equipe|le bulletin|la licence|l'inscription|le dossier)\\b)" +
+  "|(?:de\\s+)?(?:garder (?:le|un|ca|ce|leur|notre|son) secret|garder (?:leur|notre|cette|la|ses) (?:conversations?|discussions?|relation|amitie|echanges?|messages?) secrete?s?|ne (?:rien|pas en|le|pas le) dire|ne pas (?:en parler|le dire))(?![^.!?]{0,40}\\b(?:surprise|cadeau|anniversaire|fete|spoil\\w*|la fin|le film|l'episode)\\b)" +
+  "|(?:de\\s+)?(?:se voir|le voir|la voir|me voir|les voir|le rencontrer|la rencontrer|me rencontrer|se rencontrer|un rendez-vous|un rdv|le retrouver|la retrouver|me retrouver|venir chez (?:lui|elle|moi))" +
+  // a teacher seeing a pupil after class to help is not a meeting to hide
+  "(?![^.!?]{0,40}\\b(?:pour (?:l'aider|le soutien|ses devoirs|reviser|ses notes|un cours|le rattrapage|travailler)|avec (?:ses|mes|leurs) parents|avec moi|avec nous|en presence)\\b))"
 const NOT_A_PLAIN_TOUCH =
   "(?![^.!?]{0,30}\\b(?:pour (?:l'|la |le |les )?(?:soigner|examiner|consoler|rassurer|aider|feliciter)|la tete|les cheveux|l'epaule|la main|la joue|le dos|au (?:loup|chat|jeu)|a chat|avec (?:le|la|un|une) (?:ballon|balle))\\b)"
 // « il la fait chanter » is blackmail only next to what it is about.
@@ -283,9 +318,9 @@ const RULES: Rule[] = [
   {
     kind: "suicide",
     rx: g(
-      "(?:\\b(?:n'|ne\\s+))?\\b(?:(?:a|ai|as|ont|avait|avais|aurait)\\s+)?(?:plus|pas)\\s+envie\\s+de\\s+vivre\\b|\\b(?:en (?:a|ai|as|ont|avait|avais)\\s+)?marre de (?:vivre|la vie)\\b|\\bplus (?:aucune )?raison de vivre\\b" +
+      "(?:\\b(?:n'|ne\\s+))?\\b(?:(?:a|ai|as|ait|aient|ont|avait|avais|aurait)\\s+)?(?:plus|pas)\\s+envie\\s+de\\s+vivre\\b|\\b(?:en (?:a|ai|as|ait|ont|avait|avais)\\s+)?marre de (?:vivre|la vie)\\b|\\bplus (?:aucune )?raison de vivre\\b" +
         // « elle ne voulait plus vivre » — not « ne veut plus vivre chez son père / sans sa console »
-        "|(?:\\b(?:n'|ne\\s+))?\\b(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient)\\s+plus\\s+vivre\\b(?!\\s+(?:chez|avec|ici|la-bas|la bas|a|au|aux|en|dans|sous|sans|pres|loin)\\b)",
+        "|(?:\\b(?:n'|ne\\s+))?\\b(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient|veuille|veuillent)\\s+plus\\s+vivre\\b(?!\\s+(?:chez|avec|ici|la-bas|la bas|a|au|aux|en|dans|sous|sans|pres|loin)\\b)",
     ),
   },
   { kind: "suicide", rx: g("\\b(?:serait|seraient|serais|serait-il|irait|iraient)\\s+mieux\\s+sans\\s+(?<victim>moi|lui|elle)\\b"), who: fromVictim },
@@ -293,7 +328,7 @@ const RULES: Rule[] = [
   {
     kind: "suicide",
     rx: g(
-      "\\b(?:a|ai|as|ont|avait|avais|avaient|aurait|eu|eue|eues)\\s+(?:souvent\\s+|parfois\\s+|encore\\s+)?(?:des |de |d'|ses |mes |les )?(?:idees|pensees) (?:noires|suicidaires|de mort)\\b|\\b(?:a|ai|as|ont|avait)\\s+(?:deja\\s+)?fait\\s+(?:une\\s+)?(?:tentative de suicide|ts)\\b|\\bs'est (?:suicide|suicidee|tue|tuee)\\b",
+      "\\b(?:a|ai|as|ait|aient|aies|ont|avait|avais|avaient|aurait|eu|eue|eues)\\s+(?:souvent\\s+|parfois\\s+|encore\\s+)?(?:des |de |d'|ses |mes |les )?(?:idees|pensees) (?:noires|suicidaires|de mort)\\b|\\b(?:a|ai|as|ait|ont|avait)\\s+(?:deja\\s+)?fait\\s+(?:une\\s+)?(?:tentative de suicide|ts)\\b|\\bs'est (?:suicide|suicidee|tue|tuee)\\b",
     ),
   },
   { kind: "suicide", rx: g("\\bparl(?:e|es|ent|ait|aient)\\s+(?:souvent\\s+|beaucoup\\s+|tout le temps\\s+|de plus en plus\\s+|encore\\s+)?(?:de|du)\\s+(?:suicide|mort)\\b") },
@@ -302,7 +337,7 @@ const RULES: Rule[] = [
   {
     kind: "self_harm",
     rx: g(
-      "(?:\\b(?:se\\s|s')(?:fait|font|faisait|faisaient|faire|est fait|est faite|sont faits?)|\\b(?:me\\s|m')(?:fais|faisais|faire|suis fait|suis faite)|\\b(?:te\\s|t')(?:fais|faisais|faire|es fait|es faite))\\s+du mal\\b(?!\\s+(?:en tombant|en jouant|au sport|au foot|au genou|a la cheville|au dos|au pied))",
+      "(?:\\b(?:se\\s|s')(?:fait|font|faisait|faisaient|faire|fasse|fassent|est fait|est faite|sont faits?|soit fait|soit faite)|\\b(?:me\\s|m')(?:fais|faisais|faire|fasse|suis fait|suis faite)|\\b(?:te\\s|t')(?:fais|faisais|faire|fasses|es fait|es faite))\\s+du mal\\b(?!\\s+(?:en tombant|en jouant|au sport|au foot|au genou|a la cheville|au dos|au pied))",
     ),
     who: byPerson,
   },
@@ -311,7 +346,7 @@ const RULES: Rule[] = [
   // « mon fils a des marques sur les bras », « j'ai vu des cicatrices sur ses poignets »
   {
     kind: "self_harm",
-    rx: g(`\\b(?:a|ai|as|ont|avait|avais)\\s+(?:des |plein de |de |de nombreuses |plusieurs )?${HARM_MARKS}\\s+(?:sur|aux?|a l'|au niveau des?)\\s+(?:les |ses |mes |son |sa |mon |ma )?${HARM_SITES}\\b${NOT_AN_ACCIDENT}`),
+    rx: g(`\\b(?:a|ai|as|ait|aient|ont|avait|avais)\\s+(?:des |plein de |de |de nombreuses |plusieurs )?${HARM_MARKS}\\s+(?:sur|aux?|a l'|au niveau des?)\\s+(?:les |ses |mes |son |sa |mon |ma )?${HARM_SITES}\\b${NOT_AN_ACCIDENT}`),
   },
   {
     kind: "self_harm",
@@ -346,7 +381,7 @@ const RULES: Rule[] = [
   {
     kind: "abuse",
     rx: g(
-      "\\b(?:a|ai|as|ont|avait|avais|aurait)\\s+(?:ete\\s+)?(?:subi|victime d'?|victime de)\\s*(?:des |un |une |d'|de l'|de la )?(?:attouchements?|abus(?: sexuels?)?|agression(?: sexuelle)?|viol\\b|inceste|violences?(?: sexuelles)?|maltraitance)|\\bagressee?s? sexuellement\\b",
+      "\\b(?:a|ai|as|ait|aient|ont|avait|avais|aurait)\\s+(?:ete\\s+)?(?:subi|victime d'?|victime de)\\s*(?:des |un |une |d'|de l'|de la )?(?:attouchements?|abus(?: sexuels?)?|agression(?: sexuelle)?|viol\\b|inceste|violences?(?: sexuelles)?|maltraitance)|\\bagressee?s? sexuellement\\b",
     ),
   },
   { kind: "abuse", rx: g(`\\b${OBJ}\\s?(?:fait|font|faisait|a fait|ont fait)\\s+des\\s+attouchements\\b`), who: fromObj },
@@ -385,6 +420,33 @@ const RULES: Rule[] = [
     ),
     who: () => "pronoun",
   },
+  // « un homme a touché ma fille dans le bus » — not « le film a touché ma
+  // fille » nor « un homme a touché le ballon »
+  {
+    kind: "abuse",
+    rx: g(
+      `\\b(?:${ADULT}|quelqu'un|un mec|un type|un gars|un garcon|un grand)${ADULT_FROM}\\s+(?:a|avait|aurait|ont)\\s+(?:touche|tripote|pelote|caresse)\\s+(?<victim>${PERSONAL_NP}|moi)\\b${NOT_A_PLAIN_TOUCH}`,
+    ),
+    who: fromVictim,
+  },
+  // Grooming: an adult or someone met online asking a child for photos of
+  // themself, a secret or a meeting (« le coach de mon fils lui demande des
+  // photos de lui torse nu », « un inconnu sur Roblox veut la voir »)
+  {
+    kind: "abuse",
+    rx: g(`\\b${GROOMER}\\s+${OBJ}\\s?(?:(?:a|avait|ont)\\s+)?(?:demande|demandent|demandait|reclame|reclamait|exige|exigeait|dit|disait|fait promettre|faisait promettre|propose|proposait|insiste pour)\\s+${GROOMING_ASK}`),
+    who: fromObj,
+  },
+  {
+    kind: "abuse",
+    rx: g(`\\b${GROOMER}\\s+(?:(?:a|avait|ont)\\s+)?(?:demande|demandent|demandait|reclame|propose|proposait)\\s+a\\s+(?<victim>${PERSONAL_NP}|moi)\\s+${GROOMING_ASK}`),
+    who: fromVictim,
+  },
+  {
+    kind: "abuse",
+    rx: g(`\\b${GROOMER}\\s+(?:(?:a|avait)\\s+)?(?:veut|voulait|voudrait|cherche a)\\s+(?:le|la|les|me|m'|te|t')\\s?(?:voir|rencontrer|retrouver)\\b`),
+    who: () => "pronoun",
+  },
 
   // ---- harassment ----
   { kind: "harassment", rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?${AUX}${HARASS_ACTIVE}`), who: fromObj },
@@ -393,11 +455,11 @@ const RULES: Rule[] = [
   {
     kind: "harassment",
     rx: g(
-      "\\b(?:est|suis|es|sont|etait|etaient|a ete|ont ete|devenu|devenue|devenus|se sent)\\s+(?:la |le |une |un |leur |sa )?(?:victime|cible|souffre-douleur|tete de turc|bouc emissaire)s?\\b(?!\\s+(?:de la mode|du succes|de son succes|d'une erreur|d'un bug|d'une arnaque|de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression))",
+      "\\b(?:est|suis|es|sont|etait|etaient|soit|soient|sois|a ete|ont ete|ait ete|aient ete|devenu|devenue|devenus|se sent)\\s+(?:la |le |une |un |leur |sa )?(?:victime|cible|souffre-douleur|tete de turc|bouc emissaire)s?\\b(?!\\s+(?:de la mode|du succes|de son succes|d'une erreur|d'un bug|d'une arnaque|de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression))",
     ),
     who: byPerson,
   },
-  { kind: "abuse", rx: g("\\b(?:est|suis|es|sont|etait|a ete|ont ete)\\s+victimes?\\s+(?:de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression)"), who: byPerson },
+  { kind: "abuse", rx: g("\\b(?:est|suis|es|sont|etait|soit|soient|sois|a ete|ont ete|ait ete)\\s+victimes?\\s+(?:de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression)"), who: byPerson },
   {
     kind: "harassment",
     rx: g(`\\b${INTIMATE}\\s+(?:de|d')\\s*(?<victim>moi|elle|lui|${PERSONAL_NP})\\b[^.!?]{0,60}\\b${SPREAD}`),
