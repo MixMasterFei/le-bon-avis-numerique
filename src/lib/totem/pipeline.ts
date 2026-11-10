@@ -272,7 +272,10 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   const shown = input.shownMedia ?? collectShownMedia(input.messages)
 
   // A person in distress: care block, stronger model, no tools (crisis.ts).
-  const crisis = detectCrisis(input.userText)
+  // The household's first names: « Inès se fait harceler » is a child of the
+  // house; any other bare name is more likely a character.
+  const familyNames = (input.familyContext ?? []).map((m) => m.name)
+  const crisis = detectCrisis(input.userText, { familyNames })
   const turnNotes: string[] = []
   if (!crisis) {
     const hintsNote = buildHintsNote(hints)
@@ -311,6 +314,7 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     turnCount: input.turnsSoFar + 1,
     lastTurnToolCount: input.lastTurnToolCount,
     userText: input.userText,
+    familyNames,
   })
   const model = input.modelOverride ?? decision.model
   const routing = input.modelOverride ? "override" : decision.reason

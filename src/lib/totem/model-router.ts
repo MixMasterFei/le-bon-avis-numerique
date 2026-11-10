@@ -34,6 +34,8 @@ export interface ModelRouterInput {
   lastTurnToolCount: number
   /** The current user message text (already trimmed). */
   userText: string
+  /** Household first names, so the crisis check reads « Inès » as a child of the house. */
+  familyNames?: readonly string[]
 }
 
 export interface ModelRouterDecision {
@@ -56,7 +58,7 @@ export function pickModel(input: ModelRouterInput): ModelRouterDecision {
   // None of « veut mourir », « on le frappe », « se fait harceler », « je me
   // fais du mal » matched the grave keywords below (baseline run 2026-11-08):
   // every crisis turn ran on the default model.
-  if (detectCrisis(input.userText)) {
+  if (detectCrisis(input.userText, { familyNames: input.familyNames })) {
     return { model: ESCALATION_MODEL, reason: "crisis" }
   }
   if (input.turnCount >= 8) {

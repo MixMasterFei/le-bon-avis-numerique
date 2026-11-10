@@ -10,10 +10,11 @@
  * catalogue card can be pushed).
  *
  * Broader than src/lib/nl-search/care.ts on purpose (that one only adds a
- * banner next to search results), but it still separates a person in
- * distress (« ma fille dit qu'elle veut mourir », « on le frappe ») from a
- * TOPIC request (« un film qui aborde le suicide », « un film sur le
- * harcèlement scolaire »), which stays an ordinary media question.
+ * banner next to search results), but it separates a person in distress
+ * (« ma fille dit qu'elle veut mourir », « on le frappe ») from a TOPIC
+ * request (« un film qui aborde le suicide, pour mon fils ») and from a scene
+ * or a game (« dans le film il se fait frapper », « un jeu où on tape sur des
+ * taupes »), which stay ordinary media questions — see « Detection » below.
  *
  * Helplines — checked on 2026-11-09 against official sources (web search;
  * the gouv.fr hosts are not reachable from the build sandbox, so the cited
@@ -52,6 +53,9 @@ export interface CrisisSignal {
 /** Lowercase, no accents, folded apostrophes — the patterns below expect it. */
 export function normalizeForCrisis(text: string): string {
   return text
+    .replace(/œ/g, "oe")
+    .replace(/Œ/g, "Oe")
+    .replace(/æ/g, "ae")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[’‘`´]/g, "'")
@@ -59,42 +63,304 @@ export function normalizeForCrisis(text: string): string {
     .replace(/\s+/g, " ")
 }
 
-// Someone in distress, in their own words or a parent's — not the topic.
-const SUICIDE: RegExp[] = [
-  /\b(veut|veux|voulait|voudrait|veulent|envie de|pense a|parle de|menace de|a tente de|tente de|essaie de|essaye de)\s+(se |me |te )?(mourir|suicider|tuer|en finir|disparaitre)\b/,
-  /\bidees? (suicidaires?|noires?)\b/,
-  /\bplus envie de vivre\b|\bpas envie de vivre\b/,
-  /\bmettre fin a (ses|mes|tes) jours\b/,
-  /\btentative de suicide\b|\bs'est suicide|\bva se suicider\b|\bse suicider\b/,
-]
-const SELF_HARM: RegExp[] = [
-  /\b(se|me|te) (fait|fais|faire|faisait) du mal\b/,
-  /\b(se|me|te) (scarifie|scarifier|mutile|mutiler)\b|\bscarification|\bautomutil/,
-  /\b(se|me|te) (coupe|coupent|couper|blesse|blesser|brule|bruler)\b.{0,30}\b(expres|bras|poignets?|jambes?|cuisses?|lame|rasoir|cutter)\b/,
-]
-const ABUSER =
-  "(on|il|elle|ils|elles|quelqu'un|mon pere|ma mere|mes parents|son pere|sa mere|ses parents|mon beau-pere|son beau-pere|ma belle-mere|sa belle-mere|un adulte|un prof|le prof|l'entraineur|un grand)\\s+(le |la |les |me |m'|l'|te |t')?"
-const ABUSE: RegExp[] = [
-  new RegExp(`\\b${ABUSER}(frappe|frappent|cogne|cognent|maltraite|maltraitent|violente|violentent|agresse|agressent|enferme|enferment|brule|brulent)\\b`),
-  // « il me tape sur les nerfs » is an idiom, not a blow.
-  new RegExp(`\\b${ABUSER}(tape|tapent)\\b(?!\\s+sur\\s+(les nerfs|le systeme))`),
-  // « il le bat à Mario Kart » is a game, not a blow.
-  new RegExp(`\\b${ABUSER}(bat|battent)\\b(?!\\s+(a|aux|au|en)\\s)`),
-  /\b(mon fils|ma fille|mon enfant|notre fils|notre fille|mon ado|mon petit|ma petite|il|elle|je)\s+(se fait|s'est fait|se faisait|me fais|me suis fait)\s+(frapper|taper|battre|violer|agresser|tabasser)\b/,
-  /\b(abus|agression|violence)s? sexuel|\battouchements?\b|\binceste\b|\bviol\b|\b(a ete|s'est fait|s'est faite|me suis fait|me suis faite)\s+violee?s?\b/,
-  /\bon me fait du mal\b|\bils me font du mal\b|\bme maltrait/,
-]
-const HARASSMENT: RegExp[] = [
-  /\b(se fait|se font|s'est fait|se faisait|me fais|me fait|me suis fait|est|sont|suis|etait|etre)\s+(cyber-?)?(harceler|harcele|harcelee|harceles|harcelees)\b/,
-  /\b(on|ils|elles|des eleves|des camarades|ses camarades|mes camarades|des filles|des garcons|sa classe|ma classe)\s+(le |la |les |me |m')?(harcele|harcelent|insulte|insultent|menace|menacent|rackette|rackettent|humilie|humilient)\b/,
-  /\bvictime de (cyber-?)?harcelement\b|\bharcelement (en ligne|sur les reseaux)\b.{0,40}\b(mon|ma|mes|notre|nos|je|il|elle)\b/,
-  /\b(chantage|sextorsion|revenge porn)\b/,
-  /\b(photos?|videos?) (intimes?|denudees?|nues?)\b.{0,50}\b(circule|circulent|partage|partagee|publie|publiee|diffuse|diffusee|envoye|envoyee)/,
+// ---------------------------------------------------------------------------
+// Detection
+// ---------------------------------------------------------------------------
+//
+// A crisis turn REPLACES the answer (no tools, helplines), so a false alarm
+// costs as much as a miss. The first version matched distress words alone and
+// flagged 13 of 20 ordinary questions in the Director's probe (2026-11-10):
+// « un jeu où on tape sur des taupes », « il bat son record à Tetris », « j'ai
+// envie de mourir de rire », « dans le film, il se fait frapper par son
+// père »… So a distress phrase now counts only once we know WHO it is about:
+//   - the writer or someone close to them (« je », « me », « mon fils », « ma
+//     fille de 13 ans », « mes parents me… », « ma fille dit qu'elle… ») →
+//     crisis, whatever else the message asks (« mon fils se fait harceler, un
+//     film pour lui changer les idées ? » stays a crisis);
+//   - a pronoun, a household first name, a classmate (« il », « on le… »,
+//     « Hugo », « un élève de ma classe ») → crisis, unless the message
+//     describes a scene inside a work (« dans le film », « le héros », « un
+//     film où… », « dans Harry Potter ») and names no real people around it
+//     (« d'autres joueurs », « en ligne », « dans le chat »…);
+//   - anyone else (« le héros », « un enfant qui… », « Mario ») → not a
+//     crisis: the subject of a story, not someone to help.
+// Idioms and game talk are ruled out in the patterns: « mourir de rire »,
+// « en finir avec Fortnite », « me tape sur les nerfs », « se faire battre à
+// Fortnite », « tuer des zombies » (only « se tuer » counts).
+//
+// No softer tier: what stays ambiguous (a pronoun inside a scene) goes
+// through the ordinary pipeline, which keeps its tools and still carries
+// soul.md §8 (distress → care, never a title) and the router's grave
+// keywords. A middle tier would put a care note on every scene question.
+
+type Who = "personal" | "pronoun" | "other"
+
+/** People close to the writer: their child, family, friends, classmates. */
+const KIN =
+  "fils|fille|filles|enfant|enfants|ado|ados|garcon|garcons|bebe|petit|petite|petits|petites|grand|grande|cadet|cadette|aine|ainee|benjamin|benjamine|fiston|puce|frere|freres|soeur|soeurs|neveu|niece|filleul|filleule|eleve|eleves|copain|copine|ami|amie|pere|mere|parents|mari|femme|conjoint|conjointe|compagnon|compagne|petit-fils|petite-fille"
+const PERSONAL_NP = `(?:mon|ma|mes|notre|nos)\\s+(?:(?:petit|petite|grand|grande|plus jeune|jeune|tout petit|toute petite|meilleur|meilleure)\\s+)?(?:beau-|belle-|demi-)?(?:${KIN})(?:\\s+(?:de|d')\\s*\\d{1,2}\\s+ans)?`
+/** Words that may sit between a subject and its verb. */
+const FILLERS = "(?:\\s+(?:aussi|meme|encore|toujours|souvent|parfois|deja|vraiment|ne|n'|y|en))*"
+
+const PERSONAL_END = new RegExp(`(?:^|\\s)(?:(?:${PERSONAL_NP})(?:\\s+[a-z][a-z-]+)?|je|j'|moi|moi-meme)${FILLERS}$`)
+// « ma fille dit qu'elle… », « mon fils m'a dit qu'il… »
+const REPORTED_END = new RegExp(
+  `(?:^|\\s)(?:${PERSONAL_NP})(?:\\s+[a-z][a-z-]+)?\\s+(?:me\\s+|m')?(?:dit|a dit|disait|ecrit|a ecrit|repete|raconte|a raconte|explique|a explique|avoue|a avoue|confie|a confie)\\s+(?:qu'|que\\s+)(?:il|elle)${FILLERS}$`,
+)
+const PRONOUN_END = new RegExp(`(?:^|\\s|qu')(?:il|elle|ils|elles|on)${FILLERS}$`)
+const CLASSMATE_END = new RegExp(
+  `(?:^|\\s)(?:un|une|des)\\s+(?:eleves?|enfants?|copains?|copines?|amis?|amies?|camarades?|ados?)\\s+(?:de|d')\\s*(?:ma|mon|notre|sa|son)\\s+(?:classe|ecole|college|lycee|equipe|club|groupe|famille)${FILLERS}$`,
+)
+/** A comma-separated piece that names nobody (« mon fils, depuis un mois, se fait… »). */
+const ADVERBIAL =
+  /^(?:depuis|encore|toujours|souvent|parfois|tous les jours|chaque jour|en ce moment|ces temps|ces derniers|apparemment|je crois|je pense|j'ai l'impression|visiblement|a l'ecole|au college|au lycee|en classe|la semaine derniere|hier|aujourd'hui|ce matin|ce soir|maintenant|du coup|bref|enfin)\b/
+
+function whoAtEnd(segment: string, names: ReadonlySet<string>): Who {
+  const s = segment.trim()
+  if (!s) return "other"
+  if (REPORTED_END.test(s) || PERSONAL_END.test(s)) return "personal"
+  if (PRONOUN_END.test(s) || CLASSMATE_END.test(s)) return "pronoun"
+  const tokens = s.split(" ")
+  const last = tokens[tokens.length - 1]
+  // « mon fils qui se fait… », « un enfant qui se fait… »: the antecedent.
+  if (last === "qui") return whoAtEnd(tokens.slice(0, -1).join(" "), names)
+  // A household member's first name (« Inès se fait harceler »). Any other
+  // bare name is more often a character (« Mario se fait frapper ? »).
+  return names.has(last) ? "pronoun" : "other"
+}
+
+/** Who the phrase starting after `before` is about: its grammatical subject. */
+function subjectBefore(before: string, names: ReadonlySet<string>): Who {
+  const clause = before.split(/[.!?;:]/).pop() ?? ""
+  const parts = clause.split(",")
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i].trim()
+    if (!p || ADVERBIAL.test(p)) continue
+    return whoAtEnd(p, names)
+  }
+  return "other"
+}
+
+/** The victim named by an object pronoun or a noun phrase inside the match. */
+function victim(word: string | undefined): Who {
+  if (!word) return "other"
+  if (/^(?:me|m'|moi|nous)$/.test(word) || new RegExp(`^${PERSONAL_NP}$`).test(word)) return "personal"
+  return "pronoun"
+}
+
+/** A reflexive or passive form whose person tells who it is about. */
+function byPerson(m: RegExpMatchArray): Who | "before" {
+  const head = m[0]
+  if (/^(?:me\s|m'|suis\s)/.test(head)) return "personal"
+  if (/^(?:te\s|t'|es\s)/.test(head)) return "pronoun"
+  return "before"
+}
+
+// A scene inside a film, a series or a book: told, not lived.
+const WORK_SCENE =
+  /\bdans (?:le|la|les|ce|cette|cet|ces|un|une|l')\s?(?:film|films|serie|series|episode|saison|livre|roman|manga|bd|dessin anime|anime|scene|histoire|clip|video|trailer|bande-annonce|saga|tome|chapitre)\b|\b(?:le|la|les|un|une|ce|cette|des)\s+(?:personnage|personnages|heros|heroine|protagoniste|mechant|mechants|acteur|actrice)\b|\b(?:film|serie|livre|roman|manga|dessin anime|episode|scene|histoire|bd|clip|video)s?\s+(?:ou|dans lequel|dans laquelle|qui montre|qui raconte)\b|\b(?:a la fin|au debut|au milieu) (?:du|de la|de l')\s?(?:film|serie|jeu|livre|episode|saison|tome|histoire)\b/
+// In a game, a blow is a game mechanic; harassment comes from real players.
+const GAME_SCENE = /\bdans (?:le|ce|un|les|ces) jeux?\b|\bjeux? (?:ou|dans lequel)\b/
+// « Dans Harry Potter », « dans Minecraft » (read on the original casing).
+const TITLE_SCENE = /\b[Dd]ans\s+(?!(?:[Ll]es?|[Ll]a|[Uu]ne?|[Mm]on|[Mm]a|[Mm]es|[Ss]on|[Ss]a|[Ss]es|[Cc]es?|[Cc]ette|[Nn]otre|[Nn]os|[Ll]eurs?)\b)[A-Z0-9]/
+// Real players around a game: then it is not a game mechanic. (Not « en
+// ligne » or a platform: a series can show harassment on Instagram.)
+const REAL_PLAYERS =
+  /\b(?:par d'autres joueurs|par des joueurs|d'autres joueurs|des joueurs|un joueur|dans le chat|sur le chat|dans le tchat|sur le tchat|en vocal|dans la vraie vie|pour de vrai)\b/
+
+function inScene(t: string, original: string, kind: CrisisKind): boolean {
+  if (WORK_SCENE.test(t)) return true
+  const realPlayers = REAL_PLAYERS.test(t)
+  // A title may be a game (« dans Fortnite, des joueurs le harcèlent »).
+  if (TITLE_SCENE.test(original) && !realPlayers) return true
+  return kind !== "harassment" && GAME_SCENE.test(t) && !realPlayers
+}
+
+// ---- the phrases ------------------------------------------------------------
+
+const IDIOM_DEATH =
+  "(?:rire|faim|froid|chaud|soif|ennui|honte|fatigue|impatience|envie|peur|jalousie|plaisir|bonheur|joie|curiosite|trouille|stress)"
+const DIE =
+  `(?:mourir(?!\\s+(?:de|d')\\s*${IDIOM_DEATH}\\b)` +
+  // « se tuer », never « tuer des zombies »
+  `|(?:se|me|te|s'|m'|t')\\s?(?:suicider|tuer|foutre en l'air|pendre|jeter (?:par la fenetre|sous un train|d'un pont|du haut)|ouvrir les veines)` +
+  // « en finir », « en finir avec la vie », never « en finir avec Fortnite »
+  // or « en finir au plus vite avec ses devoirs »
+  `|en finir(?=\\s*(?:$|[.,;!?]|et\\b|avec (?:la vie|tout|(?:ses|mes|tes) jours|(?:son|mon|ton) existence|(?:lui|elle|moi)-meme)\\b|une bonne fois pour toutes\\s*(?:$|[.,;!?])))` +
+  // « veut disparaître », never « disparaître sous sa couette »
+  `|disparaitre(?=\\s*(?:$|[.,;!?]|et\\b|pour toujours\\b|a jamais\\b|definitivement\\b|de ce monde\\b|de la surface\\b))` +
+  `|ne plus (?:etre la|exister|se reveiller|vivre))`
+const WANT =
+  "(?:veut|veux|voulait|voulais|voudrait|voudrais|veulent|voulaient|(?:a|ai|as|avait|avais|ont) envie de|envie de|pense a|pensait a|pensais a|parle de|parlait de|menace de|menacait de|(?:a|ai|as|ont) tente de|tente de|essaie de|essaye de|essayait de|aimerait|aimerais|souhaite|souhaiterait|reve de)"
+
+// Blows. The « battre » family is a game result after « à / au / en » (« le
+// bat à Mario Kart », « se fait battre à Fortnite »), unless the place is a
+// school, the home or the blows themselves (« à coups de ceinture »).
+const NOT_A_GAME =
+  "(?![^.!?]*?\\b(?:a|au|aux|en|sur)\\s+(?!l'ecole\\b|la recre|la maison\\b|la cantine\\b|la sortie\\b|la cour\\b|la piscine\\b|la garderie\\b|l'internat\\b|la colo|la gym\\b|l'arret\\b|la gare\\b|(?:son|mon|leur|notre) (?:ecole|college|lycee)\\b|ecole\\b|college\\b|lycee\\b|cours\\b|classe\\b|la classe\\b|coups?\\b|mains nues\\b|la ceinture\\b)[a-z0-9])"
+// A blow taken inside a game (« dans le jeu », « par un monstre »).
+const BY_HIT_GAME = "(?![^.!?]*\\b(?:dans (?:le|ce|un|les|ces) jeux?|par (?:un|une|des|le|la|les) (?:monstres?|zombies?|boss|ennemis?|robots?|aliens?|pnj|creatures?|dinosaures?))\\b)"
+// A parent and a child at odds over screens is not a child in danger.
+const NOT_SCREEN_CONFLICT =
+  "(?![^.!?]*\\bquand (?:je|on) (?:lui |leur )?(?:coupe|enleve|eteins|retire|confisque|interdis|refuse|dis non|prive|arrete)\\b)"
+const HIT =
+  `(?:frapp\\w*|tap(?:e|ent|ait|aient)\\b(?!\\s+(?:sur les nerfs|sur le systeme|la discute|dans l'oeil))|cogn\\w*|maltrait\\w*|agress\\w*|gifl\\w*|etrangl\\w*|brutalis\\w*|molest\\w*|enferm\\w*|brul(?:e|ent|ait|aient)\\b|viol(?:e|ent|ait|aient)\\b|violent(?:e|ent|ait|aient)\\b` +
+  `|touch(?:e|ent|ait|aient)\\b(?=[^.!?]{0,40}\\b(?:parties|intimes?|sexe|seins|fesses|de force|contre (?:son|mon) gre|sans (?:son|mon) (?:accord|consentement)|alors qu'(?:elle|il|je) ne (?:veut|voulait|voulais) pas)\\b)` +
+  `|(?:bat|battent|battait|battaient|tabass\\w*|defonc\\w*)\\b${NOT_A_GAME})`
+const HIT_ACTIVE = `${HIT}${BY_HIT_GAME}${NOT_SCREEN_CONFLICT}`
+// « il me harcèle pour avoir Fortnite », « elle nous menace de partir » are
+// a child nagging; « il me menace de publier mes photos » is not.
+const HARASS =
+  // (\b after \w* so the lookahead cannot be dodged by matching half a word)
+  "(?:harcel\\w*\\b(?!\\s+(?:pour (?:avoir|acheter|jouer|regarder|sortir|aller|une? |des |du |le |la |les )(?![^.!?]{0,30}\\b(?:photos?|nudes?|videos?)\\b)|de questions|avec ses demandes))" +
+  "|insult\\w*|humili\\w*|racket\\w*|rackett\\w*" +
+  "|menac\\w*\\b(?!\\s+de\\s+(?!publier|partager|diffuser|envoyer|balancer|poster|montrer|(?:me|te|se|nous|vous|le|la|les|l')\\s?(?:tuer|frapper|taper|faire du mal|battre))))"
+const HARASS_ACTIVE = `${HARASS}${NOT_SCREEN_CONFLICT}`
+const PASSIVE_HIT =
+  `(?:(?:frapp(?:er|e|ee|es|ees)\\b(?!\\s+par\\s+(?:la|le|l'|cette|ce|cet|sa|son)\\s*(?:beaute|realisme|ressemblance|justesse|qualite|scene|fin|musique|histoire|film|serie|livre|jeu|idee|foudre))` +
+  `|tap(?:er|e|ee|es|ees)\\b(?!\\s+(?:sur les nerfs|dans l'oeil))|cogn(?:er|e|ee|es|ees)\\b|maltrait(?:er|e|ee|es|ees)\\b|agress(?:er|e|ee|es|ees)\\b|gifl(?:er|e|ee|es|ees)\\b|etrangl(?:er|e|ee|es|ees)\\b|brutalis(?:er|e|ee|es|ees)\\b|lynch(?:er|e|ee|es|ees)\\b|viol(?:er|e|ee|es|ees)\\b` +
+  `|(?:battre|battu|battue|battus|battues|tabass(?:er|e|ee|es|ees)|defonc(?:er|e|ee|es|ees))\\b${NOT_A_GAME})${BY_HIT_GAME})`
+const PASSIVE_HARASS =
+  "(?:(?:cyber-?)?harcel(?:er|e|ee|es|ees)|insult(?:er|e|ee|es|ees)|menac(?:er|e|ee|es|ees)|humili(?:er|e|ee|es|ees)|rackett?(?:er|e|ee|es|ees)|ridiculis(?:er|e|ee|es|ees))\\b"
+const PASSIVE_HEAD =
+  "\\b(?:se\\s+(?:fait|fais|faire|font|faisait|faisaient)|s'est\\s+fait(?:e|s)?|me\\s+(?:fais|faisais)|me\\s+suis\\s+fait(?:e)?|te\\s+fais|t'es\\s+fait(?:e)?|(?:a|ont|avait|aurait)\\s+ete|est|suis|es|sont|etait|etaient)\\s+"
+
+/** People who can hurt a child (a « méchant » or « Bowser » is a character). */
+const PERSON_NOUN =
+  "camarades?|eleves?|copains?|copines?|garcons?|filles?|grands?|grandes?|ados?|adultes?|joueurs?|inconnus?|voisins?|voisines?|surveillants?|surveillantes?|animateurs?|animatrices?|profs?|professeurs?|maitre|maitresse|entraineurs?|moniteurs?|monitrices?|cousins?|cousines?|oncles?|tantes?|freres?|soeurs?|peres?|meres?|parents|beau-pere|belle-mere|nounous?|baby-sitters?|gens|autres"
+const ABUSERS =
+  `(?:on|il|elle|ils|elles|quelqu'un|tout le monde|toute la classe|(?:sa|ma) classe|(?<kin>${PERSONAL_NP})` +
+  `|(?:(?:un|une|des|le|la|les|ses|mes|son|sa|leur|leurs|d'autres|plusieurs|deux|trois)\\s+|l')(?:${PERSON_NOUN}))` +
+  "(?:\\s+(?:de|d')\\s*(?:sa|ma|son|mon|leur|la|l')?\\s*(?:classe|ecole|college|lycee|equipe|club|quartier|bus|famille|\\d(?:e|eme)|cm\\d|terminale|seconde|premiere))?(?:\\s+(?:aussi|encore|toujours|souvent|tous les jours|parfois|deja))?"
+/** The writer's own child as the one who hits or nags: a parent's day, not a crisis. */
+const CHILD_OF_WRITER =
+  /^(?:mon|ma|mes|notre|nos)\s+(?:(?:petit|petite|grand|grande|plus jeune|jeune|tout petit|toute petite)\s+)?(?:fils|fille|filles|enfant|enfants|ado|ados|garcon|garcons|bebe|petit|petite|petits|petites|grand|grande|cadet|cadette|aine|ainee|benjamin|benjamine|fiston|puce)\b/
+const OBJ = "(?<obj>le|la|les|l'|me|m'|te|t'|nous|vous|lui|leur)"
+const AUX = "(?:a\\s+|ont\\s+|avait\\s+|avaient\\s+)?"
+const FAMILY_ABUSER =
+  "(?:mon|ma|mes|notre|nos)\\s+(?:beau-pere|belle-mere|beau pere|belle mere|pere|mere|parents|frere|soeur|grand-pere|grand-mere|oncle|tante|cousin|cousine|mari|femme|conjoint|conjointe|compagnon|compagne|ex|nounou|baby-sitter|prof|professeur|entraineur|maitre|maitresse)"
+const INTIMATE = "(?:nudes?|(?:photos?|videos?|images?)\\s+(?:intimes?|denudees?|nues?|sexuelles?|osees?))"
+const SPREAD = "(?:circul\\w*|partag\\w*|publi\\w*|diffus\\w*|envoy\\w*|tourn\\w*|post\\w*|balanc\\w*|vend\\w*)"
+
+interface Rule {
+  kind: CrisisKind
+  rx: RegExp
+  /** Who the phrase is about; "before" = its subject, read before the match. */
+  who?: (m: RegExpMatchArray) => Who | "before"
+}
+
+const g = (source: string) => new RegExp(source, "g")
+const fromVictim = (m: RegExpMatchArray) => victim(m.groups?.victim)
+const fromObj = (m: RegExpMatchArray): Who => {
+  const who = victim(m.groups?.obj)
+  // « ma fille me tape quand elle est fatiguée », « mon fils me harcèle »
+  if (who === "personal" && m.groups?.kin && CHILD_OF_WRITER.test(m.groups.kin)) return "other"
+  return who
+}
+
+const RULES: Rule[] = [
+  // ---- suicide ----
+  { kind: "suicide", rx: g(`\\b${WANT}\\s+${DIE}`) },
+  {
+    kind: "suicide",
+    rx: g(
+      "(?:\\b(?:n'|ne\\s+))?\\b(?:(?:a|ai|as|ont|avait|avais|aurait)\\s+)?(?:plus|pas)\\s+envie\\s+de\\s+vivre\\b|\\b(?:en (?:a|ai|as|ont|avait|avais)\\s+)?marre de (?:vivre|la vie)\\b|\\b(?:ne\\s+)?veu[tx] plus vivre\\b|\\bplus (?:aucune )?raison de vivre\\b",
+    ),
+  },
+  { kind: "suicide", rx: g("\\b(?:serait|seraient|serais|serait-il|irait|iraient)\\s+mieux\\s+sans\\s+(?<victim>moi|lui|elle)\\b"), who: fromVictim },
+  { kind: "suicide", rx: g("\\bmettre fin a (?<victim>ses|mes|tes) jours\\b"), who: (m) => (m.groups?.victim === "mes" ? "personal" : "before") },
+  {
+    kind: "suicide",
+    rx: g(
+      "\\b(?:a|ai|as|ont|avait|avais|avaient|aurait|eu|eue|eues)\\s+(?:souvent\\s+|parfois\\s+|encore\\s+)?(?:des |de |d'|ses |mes |les )?(?:idees|pensees) (?:noires|suicidaires|de mort)\\b|\\b(?:a|ai|as|ont|avait)\\s+(?:deja\\s+)?fait\\s+(?:une\\s+)?(?:tentative de suicide|ts)\\b|\\bs'est (?:suicide|suicidee|tue|tuee)\\b",
+    ),
+  },
+  { kind: "suicide", rx: g("\\bparl(?:e|es|ent|ait|aient)\\s+(?:souvent\\s+|beaucoup\\s+|tout le temps\\s+|de plus en plus\\s+|encore\\s+)?(?:de|du)\\s+(?:suicide|mort)\\b") },
+
+  // ---- self-harm ----
+  {
+    kind: "self_harm",
+    rx: g(
+      "(?:\\b(?:se\\s|s')(?:fait|font|faisait|faisaient|faire|est fait|est faite|sont faits?)|\\b(?:me\\s|m')(?:fais|faisais|faire|suis fait|suis faite)|\\b(?:te\\s|t')(?:fais|faisais|faire|es fait|es faite))\\s+du mal\\b(?!\\s+(?:en tombant|en jouant|au sport|au foot|au genou|a la cheville|au dos|au pied))",
+    ),
+    who: byPerson,
+  },
+  { kind: "self_harm", rx: g("\\b(?:se\\s|s'|me\\s|m'|te\\s|t')\\s?(?:scarifi\\w*|mutil\\w*|automutil\\w*)"), who: byPerson },
+  { kind: "self_harm", rx: g("\\b(?:fait|fais|font|faisait)\\s+de\\s+(?:la\\s+scarification|l'automutilation)\\b") },
+  {
+    kind: "self_harm",
+    rx: g(
+      "\\b(?:se\\s|s'|me\\s|m'|te\\s|t')(?:coupe|coupent|couper|coupait|coupais|blesse|blesser|blessait|brule|bruler|brulait|griffe|griffer|griffait|tape la tete|frappe la tete|cogne la tete)\\b(?=[^.!?]{0,40}\\b(?:expres|volontairement|bras|poignets?|jambes?|cuisses?|ventre|lame|rasoir|cutter|compas|ciseaux|cigarettes?|murs?)\\b)",
+    ),
+    who: byPerson,
+  },
+
+  // ---- abuse ----
+  // « on le frappe », « mes parents me tapent », « des élèves de sa classe l'ont frappé »
+  { kind: "abuse", rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?${AUX}${HIT_ACTIVE}`), who: fromObj },
+  // « mon père frappe ma mère »: violence at home, whoever it hits
+  // (« mon frère bat tous mes records » is not a blow: « bat » needs a victim, below)
+  {
+    kind: "abuse",
+    rx: g(`\\b${FAMILY_ABUSER}(?:\\s+(?:aussi|encore|toujours|souvent|parfois))?\\s+${AUX}(?!bat\\b|battent\\b|battait\\b|battaient\\b)${HIT_ACTIVE}`),
+    who: () => "personal",
+  },
+  // « ils frappent mon fils », « mon père bat ma mère »
+  { kind: "abuse", rx: g(`\\b${HIT_ACTIVE}\\s+(?<victim>${PERSONAL_NP})`), who: fromVictim },
+  // « il se fait frapper », « mon fils s'est fait tabasser », « elle a été violée »
+  { kind: "abuse", rx: g(`${PASSIVE_HEAD}${PASSIVE_HIT}`), who: byPerson },
+  { kind: "abuse", rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?(?:fait|font|faisait|faisaient|a fait|ont fait|avait fait)\\s+(?:du\\s+)?mal\\b`), who: fromObj },
+  {
+    kind: "abuse",
+    rx: g(
+      "\\b(?:a|ai|as|ont|avait|avais|aurait)\\s+(?:ete\\s+)?(?:subi|victime d'?|victime de)\\s*(?:des |un |une |d'|de l'|de la )?(?:attouchements?|abus(?: sexuels?)?|agression(?: sexuelle)?|viol\\b|inceste|violences?(?: sexuelles)?|maltraitance)|\\bagressee?s? sexuellement\\b",
+    ),
+  },
+  { kind: "abuse", rx: g(`\\b${OBJ}\\s?(?:fait|font|faisait|a fait|ont fait)\\s+des\\s+attouchements\\b`), who: fromObj },
+  { kind: "abuse", rx: g(`\\battouchements\\s+(?:a|sur)\\s+(?<victim>moi|elle|lui|${PERSONAL_NP})\\b`), who: fromVictim },
+  { kind: "abuse", rx: g("\\bil y a (?:de l'inceste|eu (?:un viol|des attouchements)) dans (?<victim>ma|notre|sa) famille\\b"), who: (m) => (m.groups?.victim === "sa" ? "pronoun" : "personal") },
+
+  // ---- harassment ----
+  { kind: "harassment", rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?${AUX}${HARASS_ACTIVE}`), who: fromObj },
+  { kind: "harassment", rx: g(`\\b${HARASS}\\s+(?<victim>${PERSONAL_NP})`), who: fromVictim },
+  { kind: "harassment", rx: g(`${PASSIVE_HEAD}${PASSIVE_HARASS}`), who: byPerson },
+  {
+    kind: "harassment",
+    rx: g(
+      "\\b(?:est|suis|es|sont|etait|etaient|a ete|ont ete|devenu|devenue|devenus|se sent)\\s+(?:la |le |une |un |leur |sa )?(?:victime|cible|souffre-douleur|tete de turc|bouc emissaire)s?\\b(?!\\s+(?:de la mode|du succes|de son succes|d'une erreur|d'un bug|d'une arnaque|de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression))",
+    ),
+    who: byPerson,
+  },
+  { kind: "abuse", rx: g("\\b(?:est|suis|es|sont|etait|a ete|ont ete)\\s+victimes?\\s+(?:de violences?|de maltraitance|d'abus|d'attouchements|d'inceste|de viol|d'agression)"), who: byPerson },
+  {
+    kind: "harassment",
+    rx: g(`\\b${INTIMATE}\\s+(?:de|d')\\s*(?<victim>moi|elle|lui|${PERSONAL_NP})\\b[^.!?]{0,60}\\b${SPREAD}`),
+    who: fromVictim,
+  },
+  {
+    kind: "harassment",
+    rx: g(`\\b(?:photos?|videos?)\\s+(?:de|d')\\s*(?<victim>moi|elle|lui|${PERSONAL_NP})\\s+(?:nue?s?|denudee?s?|tout nu|toute nue|en sous-vetements)\\b[^.!?]{0,60}\\b${SPREAD}`),
+    who: fromVictim,
+  },
+  { kind: "harassment", rx: g(`\\b(?<victim>mes|ses|leurs)\\s+${INTIMATE}\\s+(?:circul\\w*|ont ete (?:partag|publi|diffus|envoy)\\w*|tourn\\w*)`), who: (m) => (m.groups?.victim === "mes" ? "personal" : "pronoun") },
+  { kind: "harassment", rx: g(`\\bmenac\\w*\\s+de\\s+(?:publier|partager|diffuser|envoyer|balancer|poster|montrer)\\s+(?:des |mes |ses |les )?(?:nudes?|photos?|videos?)\\s+(?:intimes?\\s+|nues?\\s+)?(?:de|d')\\s*(?<victim>moi|elle|lui|${PERSONAL_NP})\\b`), who: fromVictim },
+  {
+    kind: "harassment",
+    rx: g(
+      `\\b${OBJ}\\s?(?:demande|demandent|demandait|a demande|ont demande|reclame|reclament|a reclame)\\s+(?:des |une |de |mes |ses )?(?:nudes?\\b|(?:photos?|videos?)\\s+(?:intimes?|nue?s?|denudee?s?|sexy|osees?|coquines?|de (?:moi|toi|elle|lui) (?:nue?|tout nu|toute nue|en sous-vetements)))`,
+    ),
+    who: fromObj,
+  },
+  { kind: "harassment", rx: g(`\\b${OBJ}\\s?(?:fait|font|faisait|faisaient|a fait|ont fait)\\s+(?:du |un )?chantage\\b`), who: fromObj },
+  { kind: "harassment", rx: g(`\\bfai\\w*\\s+(?:du |un )?chantage\\s+(?:a|au|aux)\\s+(?<victim>moi|lui|elle|${PERSONAL_NP})\\b`), who: fromVictim },
+  {
+    kind: "harassment",
+    rx: g(`\\b(?:tout le monde|toute la classe|ils|elles|on|des eleves|les eleves|ses camarades|mes camarades|les autres|des filles|des garcons)\\s+(?:se moque|se moquent|se moquait|se moquaient)\\s+(?:de|d')\\s*(?<victim>moi|lui|elle|eux|${PERSONAL_NP})\\b`),
+    who: fromVictim,
+  },
 ]
 
-/** « Un film qui aborde le suicide », « une série sur le harcèlement » — a media question. */
-const TOPIC_FRAMING =
-  /\b(film|serie|livre|roman|bd|jeu|documentaire|dessin anime|episode|article|podcast)s?\b.{0,50}\b(sur|parle|parlant|aborde|abordant|traite|traitant|evoque|evoquant|autour)\b/
+const KIND_ORDER: CrisisKind[] = ["suicide", "self_harm", "abuse", "harassment"]
 
 const CHILD_TYPING: RegExp[] = [
   /\bj'ai (\d{1,2}) ans\b/,
@@ -109,21 +375,31 @@ export function isChildTyping(text: string): boolean {
   return CHILD_TYPING.slice(1).some((rx) => rx.test(t))
 }
 
-/** null when the message is not about a person in distress. */
-export function detectCrisis(text: string): CrisisSignal | null {
+/**
+ * null when the message is not about a real person in distress.
+ * `familyNames`: the household's first names, so « Inès se fait harceler »
+ * reads as the writer's child (any other bare name is taken for a character).
+ */
+export function detectCrisis(
+  text: string,
+  opts: { familyNames?: readonly string[] } = {},
+): CrisisSignal | null {
   const t = normalizeForCrisis(text)
-  const kinds: CrisisKind[] = []
-  if (SUICIDE.some((rx) => rx.test(t))) kinds.push("suicide")
-  if (SELF_HARM.some((rx) => rx.test(t))) kinds.push("self_harm")
-  if (ABUSE.some((rx) => rx.test(t))) kinds.push("abuse")
-  if (HARASSMENT.some((rx) => rx.test(t))) kinds.push("harassment")
-  if (kinds.length === 0) return null
-  // A pure topic request (« un film qui aborde le suicide ») is not a crisis;
-  // a personal statement inside it still is (« ma fille veut mourir, un film
-  // pour lui changer les idées ? » — "veut mourir" is personal).
-  const personal = /\b(mon|ma|mes|notre|nos|je|j'|il|elle|on)\b/.test(t)
-  if (TOPIC_FRAMING.test(t) && !personal) return null
-  return { kinds, childTyping: isChildTyping(text) }
+  const names = new Set((opts.familyNames ?? []).map((n) => normalizeForCrisis(n).trim()).filter((n) => n.length > 1))
+  const kinds = new Set<CrisisKind>()
+  for (const rule of RULES) {
+    if (kinds.has(rule.kind)) continue
+    for (const m of t.matchAll(rule.rx)) {
+      const read = rule.who ? rule.who(m) : "before"
+      const who = read === "before" ? subjectBefore(t.slice(0, m.index), names) : read
+      if (who === "personal" || (who === "pronoun" && !inScene(t, text, rule.kind))) {
+        kinds.add(rule.kind)
+        break
+      }
+    }
+  }
+  if (kinds.size === 0) return null
+  return { kinds: KIND_ORDER.filter((k) => kinds.has(k)), childTyping: isChildTyping(text) }
 }
 
 // ---------------------------------------------------------------------------
