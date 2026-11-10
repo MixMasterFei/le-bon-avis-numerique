@@ -41,24 +41,29 @@ and measures each of them before and after every change.
 - Minors / EU guardrails (`CLAUDE.md`): distress gets 3114 / 119 / 3018 with help, never a
   cold refusal and never a pushed title; no vendor or model names in rendered text.
 
-## Open work (2026-11-07)
-- **Branch `trainer/eval-bench`** (local, not pushed): characterization test of the chat
-  route, shared pipeline, F07 + input hardening, trusted server-side history, ignored-card
-  fix, all-step logging, feedback ids, cost fix, aborted-turn logging, the bench.
-- **Before deploy:** apply `sql/add_totem_message_telemetry.sql` to production (Xavier's
-  OK) — the new code reads and writes its columns.
-- **After deploy:** dispatch `totem-eval` with `dry_run`, then one real run on the live
-  router (the baseline), then `claude-haiku-5-5` and `claude-sonnet-5-5` for the model
-  choice. Read the `cron_logs` row (`/admin/operations`).
-- **Baseline findings to fix after measuring, not before:** no care protocol in Totem
-  (`care.ts` unused, `soul.md` §8 suggests « une alternative apaisante »); the router's grave
-  keywords miss « veut mourir », « on le frappe », « se fait harceler », « je me fais du mal »;
-  `soul.md` examples state ages from memory; the « déjà vu » filter hides a title asked for
-  by name; an age filter empties a by-title lookup; provisional ages and PEGI are absent from
-  tool outputs; rails sort by age ascending; action cards count towards Sonnet routing.
-- **Later (Director's list):** care protocol + child-typing rule; prompt rewrite (grounded
-  examples, one tool section, ~30 % fewer tokens, `site-brief.md` still names TMDB/IGDB);
-  `ageStatus` / `inCatalog` / `officialRating` in tool outputs; `getSimilarMedia`; rails sort
-  and `URLSearchParams`; privacy retention (90 days, strip family data from `tool_results`
-  and `model_messages`, provider list in the privacy policy); panel states and French copy;
-  a second cache breakpoint.
+## Open work (2026-11-10)
+- **Branch `trainer/quality-pass-1`** (local, not pushed, from main `e1ae0330`): quality
+  pass 1, one commit per item, each green on its own — crisis protocol (`crisis.ts`), group
+  age window + requested type (`turn-hints.ts`), no repeats (`shown.ts`), grounding + title
+  lookup + provisional ages (`grounding.ts`), the cautious parent (soul §7, guard-rail 7),
+  three bench false positives. The crisis commit can ship alone.
+- **After deploy:** one real `totem-eval` run on the live router, full suite, to compare
+  with the baseline (`cron_logs` `6abbb7b4…`, 30/53, $0.685, p90 7.1 s). Expected to move:
+  crisis-*, family-*/fit-*, memory-*, page-film-on-game-page, age-stranger-things-8,
+  title-*, ambiguous-spiderman, caution-*, inject-*, tone-scores, provisional-latest-release.
+  Watch the cost: the cached static head grew from 36.1k to 39.9k characters, and an age
+  question now always spends one tool step (forced on the first step).
+- **Guards that depend on the model line:** the forced lookup (`toolChoice: "required"`)
+  only runs on 4.x models (`supportsForcedToolChoice`); on a 5.x router it falls back to the
+  prompt rule — re-measure grounding before any model switch.
+- **Still failing at baseline, not in this pass:** `page-this-game` (957 characters > 900);
+  `scope-homework` (the model still gives « 391 »: the check is right, the prompt is not
+  fixed yet); PEGI / `officialRating` absent from tool outputs (needs a display label: the
+  `CSA_*` codes must never reach a sentence).
+- **Crisis helplines:** sources and the date checked are in `crisis.ts`; re-check yearly
+  (next: November 2027) or when a number changes.
+- **Later (Director's list):** prompt rewrite (one tool section, ~30 % fewer tokens,
+  `site-brief.md` still names TMDB/IGDB); `getSimilarMedia`; rails `URLSearchParams`;
+  privacy retention (90 days, strip family data from `tool_results` and `model_messages`,
+  provider list in the privacy policy); panel states and French copy; a second cache
+  breakpoint.
