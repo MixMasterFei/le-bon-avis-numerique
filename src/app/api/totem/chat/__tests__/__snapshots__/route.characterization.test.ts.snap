@@ -14,8 +14,8 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "d6347d9edfa4742a",
+          "length": 39859,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -33,7 +33,10 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
 - Nombre de tours échangés : 1
 - Utilisateur connecté : NON (anonyme)
 - Invitation à se connecter autorisée ce tour : non
-",
+
+
+# Demande en cours
+- Type demandé : film. Les outils de recommandation ne renvoient que ce type ; ne propose rien d'autre (même sur la fiche d'un autre type).",
           "providerOptions": undefined,
           "role": "system",
         },
@@ -54,7 +57,7 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
       },
       "tools": [
         {
-          "descriptionSha": "d850533eacd7a6d5",
+          "descriptionSha": "2a09bd1a689a68e1",
           "name": "searchMedia",
           "schemaSha": "771a07540c7ae6ba",
         },
@@ -76,7 +79,7 @@ exports[`POST /api/totem/chat — characterization > anonymous first turn on the
         {
           "descriptionSha": "d72560a309a3e7d5",
           "name": "getDiscoveryRail",
-          "schemaSha": "cf937eab19d740c0",
+          "schemaSha": "2a4491315b20c314",
         },
         {
           "descriptionSha": "30eba988b44058d0",
@@ -190,8 +193,8 @@ exports[`POST /api/totem/chat — characterization > news article page context 1
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "d6347d9edfa4742a",
+          "length": 39859,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -234,7 +237,7 @@ Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait r
       },
       "tools": [
         {
-          "descriptionSha": "d850533eacd7a6d5",
+          "descriptionSha": "2a09bd1a689a68e1",
           "name": "searchMedia",
           "schemaSha": "771a07540c7ae6ba",
         },
@@ -256,7 +259,7 @@ Si l'utilisateur dit "cet article" / "celui-ci" / demande un résumé, il fait r
         {
           "descriptionSha": "d72560a309a3e7d5",
           "name": "getDiscoveryRail",
-          "schemaSha": "cf937eab19d740c0",
+          "schemaSha": "2a4491315b20c314",
         },
         {
           "descriptionSha": "30eba988b44058d0",
@@ -368,8 +371,8 @@ exports[`POST /api/totem/chat — characterization > signed-in family on a media
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "d6347d9edfa4742a",
+          "length": 39859,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -393,7 +396,14 @@ Si l'utilisateur dit "ce film" / "cette série" / "ce titre" / "celui-là" sans 
 
 Composition du foyer connecté :
 - Léa (6 ans) — sensibilités : violence 3, peur 3, sexualité 3, langage 2, substances 3 — aime : Animation, Familial — éviter : mort d'un parent
-- Hugo (10 ans) — sensibilités : violence 2, peur 2, sexualité 3, langage 1, substances 2 — aime : Aventure, Science-Fiction",
+- Hugo (10 ans) — sensibilités : violence 2, peur 2, sexualité 3, langage 1, substances 2 — aime : Aventure, Science-Fiction
+
+# Demande en cours
+- Public de cette demande (déduit des messages) : Léa (6 ans). Le plus jeune a 6 ans : rien au-dessus de 6 ans. Les outils de recommandation appliquent déjà ces bornes.
+- Type demandé : film. Les outils de recommandation ne renvoient que ce type ; ne propose rien d'autre (même sur la fiche d'un autre type).
+
+# Déjà montré
+- Déjà montrés au parent dans cette conversation : Vice-versa. Les outils de recommandation les excluent déjà ; pour « un autre », rappelle un outil et ne repropose aucun de ces titres de mémoire.",
           "providerOptions": undefined,
           "role": "system",
         },
@@ -477,7 +487,7 @@ Composition du foyer connecté :
       },
       "tools": [
         {
-          "descriptionSha": "d850533eacd7a6d5",
+          "descriptionSha": "2a09bd1a689a68e1",
           "name": "searchMedia",
           "schemaSha": "771a07540c7ae6ba",
         },
@@ -499,7 +509,7 @@ Composition du foyer connecté :
         {
           "descriptionSha": "d72560a309a3e7d5",
           "name": "getDiscoveryRail",
-          "schemaSha": "cf937eab19d740c0",
+          "schemaSha": "2a4491315b20c314",
         },
         {
           "descriptionSha": "30eba988b44058d0",
@@ -646,8 +656,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "d6347d9edfa4742a",
+          "length": 39859,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -682,11 +692,11 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
         },
       ],
       "toolChoice": {
-        "type": "auto",
+        "type": "required",
       },
       "tools": [
         {
-          "descriptionSha": "d850533eacd7a6d5",
+          "descriptionSha": "2a09bd1a689a68e1",
           "name": "searchMedia",
           "schemaSha": "771a07540c7ae6ba",
         },
@@ -708,7 +718,7 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
         {
           "descriptionSha": "d72560a309a3e7d5",
           "name": "getDiscoveryRail",
-          "schemaSha": "cf937eab19d740c0",
+          "schemaSha": "2a4491315b20c314",
         },
         {
           "descriptionSha": "30eba988b44058d0",
@@ -748,8 +758,8 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       "modelId": "claude-haiku-4-5-20251001",
       "prompt": [
         {
-          "contentSha": "c744ed7dc18968d8",
-          "length": 35500,
+          "contentSha": "d6347d9edfa4742a",
+          "length": 39859,
           "providerOptions": {
             "anthropic": {
               "cacheControl": {
@@ -843,7 +853,7 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
       },
       "tools": [
         {
-          "descriptionSha": "d850533eacd7a6d5",
+          "descriptionSha": "2a09bd1a689a68e1",
           "name": "searchMedia",
           "schemaSha": "771a07540c7ae6ba",
         },
@@ -865,7 +875,7 @@ exports[`POST /api/totem/chat — characterization > tool loop: searchMedia then
         {
           "descriptionSha": "d72560a309a3e7d5",
           "name": "getDiscoveryRail",
-          "schemaSha": "cf937eab19d740c0",
+          "schemaSha": "2a4491315b20c314",
         },
         {
           "descriptionSha": "30eba988b44058d0",

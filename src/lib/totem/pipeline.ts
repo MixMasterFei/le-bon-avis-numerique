@@ -18,6 +18,10 @@ import {
 } from "@/lib/totem/system-prompt"
 import { buildTotemTools, type TotemToolContext } from "@/lib/totem/tools"
 import { pickModel, type ModelRouterDecision } from "@/lib/totem/model-router"
+import { buildCareBlock, detectCrisis, type CrisisSignal } from "@/lib/totem/crisis"
+import { buildHintsNote, inferTurnHints, type TurnHints } from "@/lib/totem/turn-hints"
+import { buildShownNote, collectShownMedia, saysAlreadySeen, type ShownMedia } from "@/lib/totem/shown"
+import { asksAboutAge, refersToPageTitle, supportsForcedToolChoice } from "@/lib/totem/grounding"
 import { TOTEM_MAX_OUTPUT_TOKENS } from "@/lib/totem/cost"
 
 /**
@@ -202,6 +206,11 @@ export interface TotemTurnInput {
   personalizationNudgeAllowed: boolean
   /** Tool calls made in the previous assistant turn (router input). */
   lastTurnToolCount: number
+  /**
+   * Titles already shown in the whole conversation (TrustedHistory.shownMedia).
+   * Absent → read from `messages`, which may be trimmed.
+   */
+  shownMedia?: ShownMedia[]
   toolContext: TotemToolContext
   /**
    * Evaluation bench only: run every turn on this model instead of the live
@@ -216,11 +225,31 @@ export interface TotemTurnInput {
   onError?: StreamTextOnErrorCallback
 }
 
+/** Text of every user message before the last one (the current turn). */
+function priorUserTexts(messages: ModelMessage[]): string[] {
+  const texts = messages
+    .filter((m) => m.role === "user")
+    .map((m) =>
+      typeof m.content === "string"
+        ? m.content
+        : m.content
+            .map((p) => (p.type === "text" ? p.text : ""))
+            .join("\n"),
+    )
+  return texts.slice(0, -1)
+}
+
 export interface TotemTurn {
   result: ReturnType<typeof streamText<TotemTools>>
   model: string
   routing: ModelRouterDecision["reason"] | "override"
   tools: TotemTools
+  /** Set when the crisis protocol ran this turn (crisis.ts). */
+  crisis: CrisisSignal | null
+  /** Audience and requested type the tools enforced this turn (turn-hints.ts). */
+  hints: TurnHints
+  /** An age question: the first step had to call a tool (grounding.ts). */
+  forcedLookup: boolean
 }
 
 /**
@@ -229,6 +258,36 @@ export interface TotemTurn {
  */
 export function startTotemTurn(input: TotemTurnInput): TotemTurn {
   const now = input.now ?? new Date()
+
+  // Who the request is for and what type is asked for, from the parent's own
+  // messages — enforced by the recommendation tools (turn-hints.ts).
+  const hints = inferTurnHints({
+    userText: input.userText,
+    priorUserTexts: priorUserTexts(input.messages),
+    family: input.familyContext,
+  })
+
+  // Titles already shown: the recommendation tools exclude them, and the
+  // model is told not to bring them back from memory (shown.ts).
+  const shown = input.shownMedia ?? collectShownMedia(input.messages)
+
+  // A person in distress: care block, stronger model, no tools (crisis.ts).
+  // The household's first names: « Inès se fait harceler » is a child of the
+  // house; any other bare name is more likely a character.
+  const familyNames = (input.familyContext ?? []).map((m) => m.name)
+  const crisis = detectCrisis(input.userText, { familyNames })
+  const turnNotes: string[] = []
+  if (!crisis) {
+    const hintsNote = buildHintsNote(hints)
+    if (hintsNote) turnNotes.push(hintsNote)
+    const shownNote = buildShownNote({
+      shown,
+      alreadySeen: saysAlreadySeen(input.userText),
+      userIsAnonymous: !input.userId,
+    })
+    if (shownNote) turnNotes.push(shownNote)
+  }
+  if (crisis) turnNotes.push(buildCareBlock(crisis))
 
   // System prompt (static head, cached + dynamic tail, sent fresh each turn).
   const { staticHead, dynamicTail } = buildSystemPrompt({
@@ -239,20 +298,37 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     pageContext: input.pageContext,
     conversationTurnCount: input.turnsSoFar + 1,
     personalizationNudgeAllowed: input.personalizationNudgeAllowed,
+    turnNotes,
   })
 
   // Tools — server tools have execute(); propose* are client-resolved.
-  const tools = buildTotemTools(input.toolContext)
+  const tools = buildTotemTools({
+    ...input.toolContext,
+    hints,
+    shownMediaIds: new Set(shown.map((s) => s.id)),
+  })
 
-  // Escalate to the higher-capability model on long threads, after a
-  // multi-tool turn, or on a grave keyword.
+  // Escalate to the higher-capability model in a crisis, on long threads,
+  // after a multi-tool turn, or on a grave keyword.
   const decision = pickModel({
     turnCount: input.turnsSoFar + 1,
     lastTurnToolCount: input.lastTurnToolCount,
     userText: input.userText,
+    familyNames,
   })
   const model = input.modelOverride ?? decision.model
   const routing = input.modelOverride ? "override" : decision.reason
+
+  // An age question gets a catalogue lookup before any answer: the first
+  // step must call a tool (grounding.ts). Not in a crisis (no tools), not for
+  // « ce film » on its own fiche (the page context carries its age), and only
+  // on models that honour a forced tool call. toolChoice does not touch the
+  // cached system head.
+  const forcedLookup =
+    !crisis &&
+    asksAboutAge(input.userText) &&
+    !(input.pageContext?.type === "media" && refersToPageTitle(input.userText)) &&
+    supportsForcedToolChoice(model)
 
   const result = streamText({
     model: anthropic(model),
@@ -269,6 +345,14 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ],
     messages: input.messages,
     tools,
+    // A crisis turn runs with NO active tool: no catalogue search, no card,
+    // no link can be produced, whatever the model attempts (a call to an
+    // inactive tool is refused by the SDK, never executed). Costs one cache
+    // miss on a rare turn.
+    ...(crisis ? { activeTools: [] as Array<keyof TotemTools> } : {}),
+    ...(forcedLookup
+      ? { prepareStep: ({ stepNumber }: { stepNumber: number }) => (stepNumber === 0 ? { toolChoice: "required" as const } : undefined) }
+      : {}),
     stopWhen: stepCountIs(TOTEM_MAX_STEPS),
     // Cost bounds: per-step output cap (worst case = steps × cap), a single
     // retry, and a hard stream timeout under the function's maxDuration.
@@ -281,5 +365,5 @@ export function startTotemTurn(input: TotemTurnInput): TotemTurn {
     ...(input.onError ? { onError: input.onError } : {}),
   })
 
-  return { result, model, routing, tools }
+  return { result, model, routing, tools, crisis, hints, forcedLookup }
 }

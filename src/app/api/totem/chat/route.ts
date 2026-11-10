@@ -232,6 +232,7 @@ export async function POST(req: NextRequest) {
     turnsSoFar,
     personalizationNudgeAllowed,
     lastTurnToolCount: history.lastTurnToolCount,
+    shownMedia: history.shownMedia,
     toolContext: {
       origin: req.nextUrl.origin,
       cookieHeader: req.headers.get("cookie"),
