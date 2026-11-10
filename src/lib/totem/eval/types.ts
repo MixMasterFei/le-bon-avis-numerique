@@ -55,6 +55,10 @@ export interface TurnExpectations {
   careNumbersAny?: string[]
   /** Not a one-line « pas mon rayon » refusal. */
   notColdRefusal?: boolean
+  /** Crisis: no pivot back to films, series, games or books in this turn. */
+  noMediaPivot?: boolean
+  /** Crisis: the live router sends the turn to the stronger model. */
+  expectStrongerModel?: boolean
   /** Asks which one is meant, or states its assumption. */
   disambiguates?: boolean
   /** Never says the title is missing from the catalogue. */

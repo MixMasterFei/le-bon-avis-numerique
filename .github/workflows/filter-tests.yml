@@ -104,7 +104,10 @@ jobs:
 
       # One worker: every filter change is a server navigation on production,
       # and bursts from a single runner get refused by Vercel's edge
-      # (« This request was blocked », 7 Nov 2026).
+      # (« This request was blocked », 7–9 Nov 2026). For the same reason the
+      # suites' browser keeps images, link prefetches and repeat downloads of
+      # static files off the network (e2e/filters/fixtures.ts), and pauses
+      # once before reloading when the edge refuses it (assertNotEdgeBlocked).
       - name: Run E2E filter tests (${{ matrix.suite }})
         run: npx playwright test e2e/filters/${{ matrix.suite }}-filters.spec.ts --project=chromium --workers=1
 

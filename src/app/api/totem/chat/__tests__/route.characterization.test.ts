@@ -331,6 +331,7 @@ describe("POST /api/totem/chat — characterization", () => {
         communityAgeRec: null,
         genres: ["Science-Fiction", "Drame"],
         synopsisFr: "Des astronautes traversent un trou de ver.",
+        isEnriched: true,
       },
     ])
     h.script.push(toolTurn("call-1", "searchMedia", { q: "Interstellar" }, "Je regarde."))

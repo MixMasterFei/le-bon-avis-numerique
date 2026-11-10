@@ -1,4 +1,7 @@
-import { expect, type Locator, type Page, type Response } from "@playwright/test"
+import { rmSync, statSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { expect, test, type Locator, type Page, type Response } from "@playwright/test"
 import { FAMILY_VIP_BRAND_TOPICS } from "../../src/lib/family-vip-brands"
 
 /**
@@ -26,27 +29,65 @@ const VIP_TOPICS: readonly string[] = FAMILY_VIP_BRAND_TOPICS
 
 /**
  * Vercel's edge can refuse a CI runner (« This request was blocked », the
- * security checkpoint) — seen on the 7 Nov 2026 run. That is an
- * infrastructure failure, not a product one: fail fast with a recognisable
- * message instead of timing out 60 s later on a control that isn't there.
- * The workflow summary counts these separately.
+ * security checkpoint) — seen on the 7, 8 and 9 Nov 2026 runs. That is an
+ * infrastructure failure, not a product one.
+ *
+ * The refusal is temporary, so the first time it shows the helper pauses
+ * (EDGE_PAUSE_MS) and reloads the same URL: the catalogue keeps its whole
+ * state in the URL, so the test resumes where it was. If the edge still
+ * refuses, the test fails fast with a recognisable message (the workflow
+ * summary counts these separately), and for EDGE_PAUSE_COOLDOWN_MS the next
+ * refusals fail fast too, instead of every remaining test spending the pause.
  */
-export async function assertNotEdgeBlocked(page: Page, response?: Response | null) {
-  const status = response?.status()
+const EDGE_PAUSE_MS = 30_000
+const EDGE_PAUSE_COOLDOWN_MS = 3 * 60_000
+/** A file, not a variable: Playwright restarts the worker after each failed test. */
+const EDGE_PAUSE_FAILED = join(tmpdir(), "totem-filter-tests-edge-refusal")
+
+function edgeRefusedError(url: string, reason: string) {
+  return new Error(
+    `${INFRA} Vercel's edge refused this runner on ${url} (${reason}). ` +
+      "Infrastructure failure, not a product defect: this run cannot vouch for this test.",
+  )
+}
+
+async function edgeRefusal(page: Page, status?: number): Promise<string | null> {
   const blockedTitle = page.locator("h1#error-title")
-  const blocked = (await blockedTitle.count()) > 0
-  const checkpoint = /security checkpoint/i.test(await page.title().catch(() => ""))
-  if (blocked || checkpoint || status === 403 || status === 429) {
-    const reason = blocked
-      ? (await blockedTitle.first().innerText()).trim()
-      : checkpoint
-        ? "security checkpoint"
-        : `HTTP ${status}`
-    throw new Error(
-      `${INFRA} Vercel's edge refused this runner on ${page.url()} (${reason}). ` +
-        "Infrastructure failure, not a product defect: this run cannot vouch for this test.",
-    )
+  if ((await blockedTitle.count()) > 0) return (await blockedTitle.first().innerText()).trim()
+  if (/security checkpoint/i.test(await page.title().catch(() => ""))) return "security checkpoint"
+  if (status === 403 || status === 429) return `HTTP ${status}`
+  return null
+}
+
+function edgePauseFailedRecently(): boolean {
+  try {
+    return Date.now() - statSync(EDGE_PAUSE_FAILED).mtimeMs < EDGE_PAUSE_COOLDOWN_MS
+  } catch {
+    return false
   }
+}
+
+export async function assertNotEdgeBlocked(page: Page, response?: Response | null) {
+  let reason = await edgeRefusal(page, response?.status())
+  if (!reason) return
+  if (!edgePauseFailedRecently()) {
+    const refusedUrl = page.url()
+    const info = test.info()
+    if (info.timeout > 0) info.setTimeout(info.timeout + EDGE_PAUSE_MS + 30_000)
+    await new Promise((resolve) => setTimeout(resolve, EDGE_PAUSE_MS))
+    const reloaded = await page.reload().catch(() => null)
+    reason = await edgeRefusal(page, reloaded?.status())
+    if (!reason) {
+      rmSync(EDGE_PAUSE_FAILED, { force: true })
+      info.annotations.push({
+        type: "edge refusal",
+        description: `${refusedUrl}: cleared after a ${EDGE_PAUSE_MS / 1000} s pause`,
+      })
+      return
+    }
+    writeFileSync(EDGE_PAUSE_FAILED, refusedUrl)
+  }
+  throw edgeRefusedError(page.url(), reason)
 }
 
 export function getMediaCards(page: Page): Locator {
@@ -188,6 +229,7 @@ export async function expectAgeBand(page: Page, minAge: number, maxAge: number) 
   })
   for (const card of cards.filter((c) => c.age! < minAge)) {
     const res = await page.request.get(`/api/db/media/${encodeURIComponent(card.id)}`)
+    if (res.status() === 403 || res.status() === 429) throw edgeRefusedError(res.url(), `HTTP ${res.status()}`)
     expect(res.ok(), `catalogue API for ${card.title} returned ${res.status()}`).toBe(true)
     const { topics = [] } = (await res.json()) as { topics?: string[] }
     expect(

@@ -6,6 +6,8 @@ import { isPathAllowed } from "@/lib/totem/nav-allowlist"
 import { searchPublishedBlogPosts } from "@/lib/totem/sanity-search"
 import { matchMediaIdsByTitle, matchMediaIdsByTheme } from "@/lib/search-normalize"
 import { getMemberAge } from "@/lib/age-utils"
+import { ageWindowFor, REQUESTED_TYPE_LABELS, type RequestedType, type TurnHints } from "@/lib/totem/turn-hints"
+import { ageStatusOf, titleQueryVariants } from "@/lib/totem/grounding"
 
 /**
  * Where the three household-dependent tools read their data. Live chat uses
@@ -28,6 +30,42 @@ export interface TotemToolContext {
   userId: string | null
   /** Evaluation bench only. Absent in live chat. */
   familyData?: TotemFamilyDataAccess
+  /**
+   * Who the request is for and the type asked for, read on the server from
+   * the parent's messages (turn-hints.ts). Recommendation tools ENFORCE them;
+   * a by-title lookup ignores them. Set by the pipeline on every turn.
+   */
+  hints?: TurnHints
+  /**
+   * Media already shown in this conversation (shown.ts): recommendation
+   * tools never return them again; a by-title lookup still finds them.
+   */
+  shownMediaIds?: ReadonlySet<string>
+}
+
+type MediaTypeFilter = Prisma.MediaItemWhereInput["type"]
+
+/** Where-clause for a requested type ("SCREEN" = film or series). */
+function typeFilter(type: RequestedType | (typeof MEDIA_TYPES)[number]): MediaTypeFilter {
+  return type === "SCREEN" ? { in: ["MOVIE", "TV"] } : type
+}
+
+/**
+ * The type a recommendation returns: the type the parent named in THIS
+ * message wins over the model's argument; a type carried from just before
+ * (« Un autre ? ») only fills in when the model passes none.
+ */
+function resolveType<T extends string>(hints: TurnHints | undefined, modelType: T | undefined): RequestedType | T | undefined {
+  if (hints?.requestedType && hints.typeStatedNow) return hints.requestedType
+  return modelType ?? hints?.requestedType ?? undefined
+}
+
+/** The listing page a rail's « voir tout » points to, by type. */
+function listingFor(type: RequestedType): string {
+  if (type === "TV") return "/series"
+  if (type === "GAME") return "/jeux"
+  if (type === "BOOK") return "/livres"
+  return "/films"
 }
 
 const MEDIA_TYPES = ["MOVIE", "TV", "GAME", "BOOK", "APP"] as const
@@ -182,6 +220,90 @@ async function liveUserFamilyContext(ctx: TotemToolContext): Promise<unknown> {
   }
 }
 
+const SEARCH_SELECT = {
+  id: true,
+  title: true,
+  originalTitle: true,
+  type: true,
+  releaseDate: true,
+  posterUrl: true,
+  expertAgeRec: true,
+  communityAgeRec: true,
+  genres: true,
+  synopsisFr: true,
+  isEnriched: true,
+} satisfies Prisma.MediaItemSelect
+
+type SearchRow = Prisma.MediaItemGetPayload<{ select: typeof SEARCH_SELECT }>
+
+/** One compact search result. A non-confirmed age says so (« provisoire »). */
+function toSearchResult(m: SearchRow) {
+  const ageStatus = ageStatusOf(m)
+  return {
+    id: m.id,
+    title: m.title,
+    type: m.type,
+    year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
+    posterUrl: m.posterUrl,
+    recommendedAge: m.expertAgeRec,
+    ...(ageStatus !== "confirmé" ? { ageStatus } : {}),
+    communityAge: m.communityAgeRec,
+    genres: m.genres.slice(0, 3),
+    shortPitch: trimText(m.synopsisFr, 220),
+  }
+}
+
+/**
+ * By-title lookup. The parent NAMED the title, so nothing hides it: not the
+ * family's « déjà vu » (Vice-versa 2, seen by Inès, came back « absent du
+ * catalogue » when asked for Hugo), not an age filter (Deadpool for a
+ * 10-year-old), not a wrongly guessed type (the model's type only ranks), not
+ * a missing analysis (a provisional title is flagged instead). A query that
+ * finds nothing is retried with its other spellings (grounding.ts).
+ */
+async function lookUpTitle(
+  q: string,
+  type: (typeof MEDIA_TYPES)[number] | undefined,
+  sort: "popular" | "newest" | undefined,
+  cap: number,
+) {
+  let ids = await matchMediaIdsByTitle(q, { limit: 40 })
+  let matchedQuery = q
+  if (ids.length === 0) {
+    for (const variant of titleQueryVariants(q)) {
+      ids = await matchMediaIdsByTitle(variant, { limit: 40 })
+      if (ids.length > 0) {
+        matchedQuery = variant
+        break
+      }
+    }
+  }
+  if (ids.length === 0) {
+    return {
+      results: [],
+      status: "not_found",
+      hint: "Aucun titre de ce nom dans le catalogue (orthographes voisines comprises). Dis-le franchement ; tu peux proposer le titre original ou une autre orthographe.",
+    }
+  }
+
+  const rows = await prisma.mediaItem.findMany({
+    where: { id: { in: ids }, type: { not: "MANGA" } },
+    select: SEARCH_SELECT,
+  })
+  const pos = new Map(ids.map((id, i) => [id, i]))
+  const time = (d: Date | null) => (d ? new Date(d).getTime() : -Infinity)
+  const ranked = [...rows].sort((a, b) => {
+    const typeRank = (m: SearchRow) => (type && m.type !== type ? 1 : 0)
+    if (typeRank(a) !== typeRank(b)) return typeRank(a) - typeRank(b)
+    if (sort === "newest" && time(a.releaseDate) !== time(b.releaseDate)) return time(b.releaseDate) - time(a.releaseDate)
+    return (pos.get(a.id) ?? 1e9) - (pos.get(b.id) ?? 1e9)
+  })
+  return {
+    results: ranked.slice(0, cap).map(toSearchResult),
+    ...(matchedQuery !== q ? { matchedQuery } : {}),
+  }
+}
+
 /** Live household data: the signed-in user's rows and the family-fit API. */
 function liveFamilyData(ctx: TotemToolContext): TotemFamilyDataAccess {
   return {
@@ -193,13 +315,22 @@ function liveFamilyData(ctx: TotemToolContext): TotemFamilyDataAccess {
 
 export function buildTotemTools(ctx: TotemToolContext) {
   const familyData = ctx.familyData ?? liveFamilyData(ctx)
+  const shownIds = ctx.shownMediaIds ?? new Set<string>()
+  /** Ids a recommendation must not return: seen by the family, or already shown here. */
+  const notAgain = async (): Promise<Set<string>> => {
+    const seen = await familyData.getSeenMediaIds()
+    return shownIds.size ? new Set([...seen, ...shownIds]) : seen
+  }
+  const shownNote = shownIds.size
+    ? { alreadyShownExcluded: "Les titres déjà montrés dans cette conversation sont exclus." }
+    : {}
   return {
     /**
      * Search the catalogue for titles matching a query / filters.
      */
     searchMedia: tool({
       description:
-        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme déjà vus.",
+        "Recherche dans le catalogue Totem (films, séries, jeux, livres). Renvoie au maximum 10 titres compacts. Trois usages : (1) par TITRE → passe 'q' (insensible aux accents : 'amelie' trouve 'Amélie') ; (2) par SUJET/THÈME (ex: 'un film sur l'histoire', 'sur l'amitié', 'sur l'espace') → passe 'theme', PAS 'q' ni 'genre' — 'theme' classe par pertinence thématique alors que 'q'/défaut classent par notoriété et renvoient des blockbusters hors-sujet ; (3) par filtre (âge, genre exact). IMPORTANT : pour 'le dernier', 'le plus récent', 'la dernière sortie', 'la dernière saison' — passe sort='newest'. Les résultats excluent déjà les titres que la famille a marqués comme vus et, hors recherche par titre, ceux déjà montrés dans la conversation.",
       inputSchema: z.object({
         q: z.string().optional().describe("Requête par TITRE (titre partiel, insensible aux accents et à la casse)."),
         theme: z
@@ -222,42 +353,44 @@ export function buildTotemTools(ctx: TotemToolContext) {
       }),
       execute: async ({ q, theme, type, minAge, maxAge, genre, sort, limit }) => {
         const cap = limit ?? 5
+        // The parent NAMED a title: look it up with nothing hiding it.
+        if (q && q.trim().length > 0) return lookUpTitle(q.trim(), type, sort, cap)
+
         // Data-layer safety floor (the system prompt is not the only guard):
         // isEnriched → only titles with real analysis, never provisional /
         // unanalyzed rows with no reliable age or metrics.
         const where: Prisma.MediaItemWhereInput = { type: { not: "MANGA" }, isEnriched: true }
-        if (type) where.type = type
-        const isTitleLookup = !!(q && q.trim().length > 0)
-        if (minAge != null || maxAge != null) {
-          // The asker specified an age band — respect it exactly.
+        // For a recommendation, the type the parent asked for (« un film »)
+        // wins over the model's argument, and the audience's age window
+        // (youngest viewer as ceiling, a floor for older groups) is enforced.
+        const effectiveType = resolveType(ctx.hints, type)
+        if (effectiveType) where.type = typeFilter(effectiveType)
+        const window = ageWindowFor(ctx.hints?.audience ?? null, { minAge, maxAge })
+        if (window.minAge != null || window.maxAge != null) {
           where.expertAgeRec = {
-            gte: minAge ?? 0,
-            lte: maxAge ?? 99,
+            gte: window.minAge ?? 0,
+            lte: window.maxAge ?? 99,
           }
-        } else if (!isTitleLookup) {
+        } else {
           // Browse / theme / genre with NO explicit age → default family
           // ceiling, so an open "recommande-moi un jeu" can never surface an
           // adult title (esp. once TOTEM_PUBLIC opens the assistant to all).
-          // A specific TITLE lookup (q) is deliberately exempt: a parent asking
-          // "est-ce que <titre 18+> convient à mon enfant ?" must still find it,
-          // so the assistant can explain that it's too old.
           where.expertAgeRec = { not: null, lte: TOTEM_DEFAULT_MAX_AGE }
         }
         if (genre) where.genres = { has: genre }
 
-        // Resolve a thematic or title query to an ordered id list — both
-        // accent-insensitive. 'theme' also matches genres/topics/synopsis and
-        // is ranked by relevance (not raw popularity), which is what stops
-        // "films historiques pour enfants" from returning Avengers first.
+        // Resolve a thematic query to an ordered id list (accent-insensitive;
+        // matches genres/topics/synopsis, ranked by relevance rather than raw
+        // popularity — what stops "films historiques pour enfants" from
+        // returning Avengers first).
         let orderedIds: string[] | null = null
         if (theme && theme.trim().length >= 2) {
           orderedIds = await matchMediaIdsByTheme(theme, { limit: 40 })
-        } else if (q && q.trim().length > 0) {
-          orderedIds = await matchMediaIdsByTitle(q, { limit: 40 })
         }
 
-        // Auto-hide titles the family has already seen.
-        const seen = await familyData.getSeenMediaIds()
+        // Auto-hide titles the family has already seen and titles already
+        // shown in this conversation.
+        const seen = await notAgain()
 
         let filteredIds: string[] | null = null
         if (orderedIds) {
@@ -267,9 +400,9 @@ export function buildTotemTools(ctx: TotemToolContext) {
           where.NOT = { id: { in: [...seen] } }
         }
 
-        // 'theme' owns the ranking; for a plain title/browse we let Postgres
-        // order. When we resolved ids we re-rank in JS to preserve their
-        // order — except for sort='newest', where date order must win.
+        // 'theme' owns the ranking; for a plain browse we let Postgres order.
+        // When we resolved ids we re-rank in JS to preserve their order —
+        // except for sort='newest', where date order must win.
         const useRelevanceOrder = !!orderedIds && sort !== "newest"
 
         let orderBy: Prisma.MediaItemOrderByWithRelationInput[]
@@ -280,8 +413,12 @@ export function buildTotemTools(ctx: TotemToolContext) {
           ]
         } else if (orderedIds) {
           orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+        } else if (window.maxAge != null) {
+          // Closest to the audience's age first — the ascending order used
+          // to open every list on toddler titles (review #9).
+          orderBy = [{ expertAgeRec: "desc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
         } else {
-          orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+          orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
         }
 
         const fetchTake = orderedIds ? Math.min(filteredIds?.length ?? 0, 40) : cap
@@ -292,18 +429,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 where,
                 orderBy,
                 take: fetchTake,
-                select: {
-                  id: true,
-                  title: true,
-                  originalTitle: true,
-                  type: true,
-                  releaseDate: true,
-                  posterUrl: true,
-                  expertAgeRec: true,
-                  communityAgeRec: true,
-                  genres: true,
-                  synopsisFr: true,
-                },
+                select: SEARCH_SELECT,
               })
 
         let ranked = items
@@ -313,17 +439,13 @@ export function buildTotemTools(ctx: TotemToolContext) {
         }
 
         return {
-          results: ranked.slice(0, cap).map((m) => ({
-            id: m.id,
-            title: m.title,
-            type: m.type,
-            year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
-            posterUrl: m.posterUrl,
-            recommendedAge: m.expertAgeRec,
-            communityAge: m.communityAgeRec,
-            genres: m.genres.slice(0, 3),
-            shortPitch: trimText(m.synopsisFr, 220),
-          })),
+          results: ranked.slice(0, cap).map(toSearchResult),
+          appliedFilters: {
+            minAge: window.minAge ?? null,
+            maxAge: window.maxAge ?? null,
+            type: effectiveType ? (REQUESTED_TYPE_LABELS[effectiveType as RequestedType] ?? effectiveType) : null,
+          },
+          ...shownNote,
         }
       },
     }),
@@ -347,6 +469,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           return { found: false, reason: "Titre introuvable dans le catalogue." }
         }
 
+        const ageStatus = ageStatusOf(media)
         return {
           found: true,
           id: media.id,
@@ -355,6 +478,10 @@ export function buildTotemTools(ctx: TotemToolContext) {
           year: media.releaseDate ? new Date(media.releaseDate).getFullYear() : null,
           synopsis: trimText(media.synopsisFr, 600),
           recommendedAge: media.expertAgeRec,
+          ageStatus,
+          ...(ageStatus === "provisoire"
+            ? { ageNote: "Âge estimé avant analyse : dis « à confirmer » à chaque fois que tu le cites." }
+            : {}),
           communityAge: media.communityAgeRec,
           genres: media.genres,
           platforms: media.platforms,
@@ -392,18 +519,20 @@ export function buildTotemTools(ctx: TotemToolContext) {
         const [media, userMetrics] = await Promise.all([
           prisma.mediaItem.findUnique({
             where: { id: mediaId },
-            select: { expertAgeRec: true, communityAgeRec: true, title: true },
+            select: { expertAgeRec: true, communityAgeRec: true, title: true, isEnriched: true },
           }),
           prisma.userContentMetrics.findMany({ where: { mediaId } }),
         ])
 
         if (!media) return { found: false }
+        const ageStatus = ageStatusOf(media)
 
         if (userMetrics.length === 0) {
           return {
             found: true,
             title: media.title,
             recommendedAge: media.expertAgeRec,
+            ageStatus,
             communityAge: media.communityAgeRec,
             sampleSize: 0,
             averages: null,
@@ -428,6 +557,7 @@ export function buildTotemTools(ctx: TotemToolContext) {
           found: true,
           title: media.title,
           recommendedAge: media.expertAgeRec,
+          ageStatus,
           communityAge: media.communityAgeRec,
           sampleSize: n,
           averages: {
@@ -488,12 +618,33 @@ export function buildTotemTools(ctx: TotemToolContext) {
           .string()
           .optional()
           .describe("Genre exact (REQUIS pour rail='by-genre'). Ex: 'Aventure', 'Animation', 'Comédie', 'Fantastique', 'Drame'."),
+        type: z
+          .enum(["MOVIE", "TV", "GAME", "BOOK"])
+          .optional()
+          .describe("Type de titre pour les rails 'newest', 'by-age' et 'by-genre' (films par défaut)."),
         limit: z.number().int().min(1).max(10).default(6),
       }),
-      execute: async ({ rail, age, platform, genre, limit }) => {
+      execute: async ({ rail, age, platform, genre, type, limit }) => {
         const cap = limit ?? 6
-        // Auto-hide titles the family has already seen from every rail.
-        const seen = await familyData.getSeenMediaIds()
+        // Auto-hide from every rail the titles the family has already seen
+        // and the titles already shown in this conversation.
+        const seen = await notAgain()
+
+        // The audience's age window (youngest viewer = ceiling, a floor for
+        // older groups) and the type the parent asked for are enforced here,
+        // whatever the model passed (turn-hints.ts).
+        const { minAge, maxAge } = ageWindowFor(ctx.hints?.audience ?? null, { maxAge: age })
+        // Only a type named in THIS message can refuse a rail.
+        const requested = ctx.hints?.typeStatedNow ? ctx.hints.requestedType : null
+        const mismatch = (wanted: RequestedType) => ({
+          rail,
+          status: "type_mismatch",
+          error: `Le parent a demandé : ${REQUESTED_TYPE_LABELS[wanted]}. Ce rail ne renvoie pas ce type ; choisis un autre rail.`,
+          results: [],
+        })
+        if (rail === "cinema" && requested && requested !== "MOVIE" && requested !== "SCREEN") return mismatch(requested)
+        if (rail === "recent-games" && requested && requested !== "GAME") return mismatch(requested)
+        const appliedFilters = { minAge: minAge ?? null, maxAge: maxAge ?? null }
 
         // ---- cinema: live TMDB ----------------------------------
         if (rail === "cinema") {
@@ -512,22 +663,27 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 communityAgeRec: number | null
                 genres: string[]
                 inDatabase: boolean
+                isProvisional?: boolean
               }>
             }
-            let movies = data.movies ?? []
-            // Age cap: the asker's age if given, else the default family
-            // ceiling. Require a non-null age — an unrated theatrical film
-            // can't be vouched for, so the assistant shouldn't propose it.
-            const cinemaCap = typeof age === "number" ? age : TOTEM_DEFAULT_MAX_AGE
-            movies = movies.filter((m) => m.expertAgeRec != null && m.expertAgeRec <= cinemaCap)
+            // Only films with a catalogue fiche: a film not imported yet has
+            // no page (its card linked to a 404, review #4) and only a
+            // genre-guessed age.
+            let movies = (data.movies ?? []).filter((m) => m.inDatabase)
+            // Age cap: the audience's window if known, else the asker's age,
+            // else the default family ceiling. Require a non-null age — an
+            // unrated theatrical film can't be vouched for.
+            const cinemaCap = maxAge ?? TOTEM_DEFAULT_MAX_AGE
+            movies = movies.filter(
+              (m) => m.expertAgeRec != null && m.expertAgeRec <= cinemaCap && (minAge == null || m.expertAgeRec >= minAge),
+            )
             if (seen.size) {
               movies = movies.filter((m) => !seen.has(m.id))
             }
             // Honour the age cap in the canonical "see all" URL so the
             // user lands on a pre-filtered films page, not the raw
             // cinema list.
-            const seeAllUrl =
-              typeof age === "number" ? `/films?sort=cinema&maxAge=${age}` : "/films?sort=cinema"
+            const seeAllUrl = maxAge != null ? `/films?sort=cinema&maxAge=${maxAge}` : "/films?sort=cinema"
             return {
               rail,
               status: "ok",
@@ -538,15 +694,16 @@ export function buildTotemTools(ctx: TotemToolContext) {
                 year: m.releaseDate ? new Date(m.releaseDate).getFullYear() : null,
                 posterUrl: m.posterUrl,
                 recommendedAge: m.expertAgeRec,
+                // Imported but not analysed yet: the age is an estimate.
+                ...(m.isProvisional ? { ageStatus: "provisoire" as const } : {}),
                 communityAge: m.communityAgeRec,
                 genres: m.genres.slice(0, 3),
-                inCatalog: m.inDatabase,
               })),
               seeAllUrl,
               seeAllLabel:
-                typeof age === "number"
-                  ? `En ce moment au cinéma (jusqu'à ${age} ans)`
-                  : "En ce moment au cinéma",
+                maxAge != null ? `En ce moment au cinéma (jusqu'à ${maxAge} ans)` : "En ce moment au cinéma",
+              appliedFilters,
+              ...shownNote,
             }
           } catch (err) {
             console.error("[totem] getDiscoveryRail(cinema) failed", err)
@@ -560,29 +717,39 @@ export function buildTotemTools(ctx: TotemToolContext) {
         let orderBy: Prisma.MediaItemOrderByWithRelationInput[] = [
           { tmdbVoteCount: { sort: "desc", nulls: "last" } },
         ]
-        let seeAllUrl = "/films"
+        // The « films » rails used to mix in series and games (Peppa Pig and
+        // Mario Kart 8 in a film list): they now return the type asked for,
+        // films by default.
+        const railType: RequestedType =
+          rail === "recent-games"
+            ? "GAME"
+            : (resolveType(ctx.hints, type) ?? (rail === "by-platform" ? "SCREEN" : "MOVIE"))
+        where.type = typeFilter(railType)
+        const listing = listingFor(railType)
+        const onFilms = listing === "/films"
+        let seeAllUrl = listing
         let seeAllLabel = "Le catalogue"
 
         if (rail === "newest") {
           orderBy = [{ createdAt: "desc" }]
-          seeAllUrl = "/films?sort=newest"
+          seeAllUrl = onFilms ? "/films?sort=newest" : listing
           seeAllLabel = "Derniers ajouts"
         } else if (rail === "by-age") {
-          if (typeof age !== "number") {
+          if (maxAge == null) {
             return { rail, status: "missing_param", error: "age is required for by-age" }
           }
-          where.expertAgeRec = { lte: age, gte: 0 }
-          orderBy = [{ expertAgeRec: "asc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
-          seeAllUrl = `/films?maxAge=${age}`
-          seeAllLabel = `Films adaptés jusqu'à ${age} ans`
+          where.expertAgeRec = { lte: maxAge, gte: minAge ?? 0 }
+          // Closest to the child's age first (it used to open on toddler titles).
+          orderBy = [{ expertAgeRec: "desc" }, { tmdbVoteCount: { sort: "desc", nulls: "last" } }]
+          seeAllUrl = onFilms ? `/films?maxAge=${maxAge}` : listing
+          seeAllLabel = `Adapté jusqu'à ${maxAge} ans`
         } else if (rail === "by-platform") {
           if (!platform || platform.trim().length === 0) {
             return { rail, status: "missing_param", error: "platform is required for by-platform" }
           }
           where.platforms = { has: platform }
-          where.type = { in: ["MOVIE", "TV"] }
           orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
-          seeAllUrl = `/films/recherche?platforms=${encodeURIComponent(platform)}&maxAge=10`
+          seeAllUrl = `/films/recherche?platforms=${encodeURIComponent(platform)}&maxAge=${maxAge ?? 10}`
           seeAllLabel = `Sur ${platform}`
         } else if (rail === "by-genre") {
           if (!genre || genre.trim().length === 0) {
@@ -590,23 +757,24 @@ export function buildTotemTools(ctx: TotemToolContext) {
           }
           where.genres = { has: genre }
           orderBy = [{ tmdbVoteCount: { sort: "desc", nulls: "last" } }]
-          seeAllUrl = `/films/recherche?genres=${encodeURIComponent(genre)}`
-          seeAllLabel = `Films ${genre.toLowerCase()}`
+          seeAllUrl = onFilms ? `/films/recherche?genres=${encodeURIComponent(genre)}` : listing
+          seeAllLabel = `${genre} (${REQUESTED_TYPE_LABELS[railType]})`
         } else if (rail === "recent-games") {
-          where.type = "GAME"
           orderBy = [{ releaseDate: { sort: "desc", nulls: "last" } }]
           seeAllUrl = "/jeux?sort=releaseDate"
           seeAllLabel = "Jeux récents"
         }
 
-        // Optional age cap on rails that aren't by-age (e.g. "des films
-        // de comédie pour mes 7 ans" → rail=by-genre, age=7). When no age is
-        // given, fall back to the default family ceiling (and require a
+        // Age cap on rails that aren't by-age (e.g. "des films de comédie
+        // pour mes 7 ans" → rail=by-genre, age=7), floored for older groups.
+        // When no age is known, the default family ceiling applies (with a
         // non-null age) so an open browse can't surface adult titles.
         if (rail !== "by-age") {
-          if (typeof age === "number") {
-            where.expertAgeRec = { lte: age, gte: 0 }
-            seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${age}` : `?maxAge=${age}`
+          if (maxAge != null) {
+            where.expertAgeRec = { lte: maxAge, gte: minAge ?? 0 }
+            if (rail !== "by-platform" && seeAllUrl.startsWith("/films")) {
+              seeAllUrl += seeAllUrl.includes("?") ? `&maxAge=${maxAge}` : `?maxAge=${maxAge}`
+            }
           } else {
             where.expertAgeRec = { not: null, lte: TOTEM_DEFAULT_MAX_AGE }
           }
@@ -648,6 +816,8 @@ export function buildTotemTools(ctx: TotemToolContext) {
           })),
           seeAllUrl,
           seeAllLabel,
+          appliedFilters: { ...appliedFilters, type: REQUESTED_TYPE_LABELS[railType] },
+          ...shownNote,
         }
       },
     }),

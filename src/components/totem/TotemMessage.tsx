@@ -56,6 +56,7 @@ interface MediaDetailsResult {
   year?: number | null
   posterUrl?: string | null
   recommendedAge?: number | null
+  ageStatus?: string
   communityAge?: number | null
   genres?: string[]
 }
@@ -239,6 +240,7 @@ export function TotemMessage({
                       year: out.year ?? null,
                       posterUrl: out.posterUrl ?? null,
                       recommendedAge: out.recommendedAge ?? null,
+                      ageStatus: out.ageStatus,
                       communityAge: out.communityAge ?? null,
                       genres: out.genres ?? [],
                       shortPitch: null,

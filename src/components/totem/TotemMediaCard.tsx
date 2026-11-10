@@ -14,6 +14,8 @@ export interface TotemCitedMedia {
   year: number | null
   posterUrl: string | null
   recommendedAge: number | null
+  /** « provisoire » = estimated before analysis; the badge says « à confirmer ». */
+  ageStatus?: string
   communityAge?: number | null
   genres: string[]
   shortPitch?: string | null
@@ -37,6 +39,8 @@ export function TotemMediaCard({
 }) {
   // 0 = « Tous publics » → « TP », never « 0+ » (see @/lib/age-label).
   const ageLabel = ageBadgeLabel(media.recommendedAge)
+  // A provisional age is an estimate: the badge says so, as on the site.
+  const provisional = media.ageStatus === "provisoire"
   // Canonical route form (/media/<type>:<id>) so Totem links match the rest
   // of the site for SEO/analytics, instead of the raw-id shortcut.
   const href = media.type
@@ -104,8 +108,10 @@ export function TotemMediaCard({
                 background: "color-mix(in srgb, var(--color-accent) 12%, transparent)",
                 color: "var(--color-accent)",
               }}
+              title={provisional ? "Âge provisoire, à confirmer" : undefined}
             >
               {ageLabel}
+              {provisional ? " · à confirmer" : ""}
             </span>
           ) : (
             <span />
