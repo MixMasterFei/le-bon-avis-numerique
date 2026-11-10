@@ -107,7 +107,8 @@ const PERSONAL_END = new RegExp(`(?:^|\\s)(?:(?:${PERSONAL_NP})(?:\\s+[a-z][a-z-
 const REPORTED_END = new RegExp(
   `(?:^|\\s)(?:${PERSONAL_NP})(?:\\s+[a-z][a-z-]+)?\\s+(?:me\\s+|m')?(?:dit|a dit|disait|ecrit|a ecrit|repete|raconte|a raconte|explique|a explique|avoue|a avoue|confie|a confie)\\s+(?:qu'|que\\s+)(?:il|elle)${FILLERS}$`,
 )
-const PRONOUN_END = new RegExp(`(?:^|\\s|qu')(?:il|elle|ils|elles|on)${FILLERS}$`)
+// (« qu'il », and « s'il » after « je me demande »)
+const PRONOUN_END = new RegExp(`(?:^|\\s|qu'|s')(?:il|elle|ils|elles|on)${FILLERS}$`)
 const CLASSMATE_END = new RegExp(
   `(?:^|\\s)(?:un|une|des)\\s+(?:eleves?|enfants?|copains?|copines?|amis?|amies?|camarades?|ados?)\\s+(?:de|d')\\s*(?:ma|mon|notre|sa|son)\\s+(?:classe|ecole|college|lycee|equipe|club|groupe|famille)${FILLERS}$`,
 )
@@ -289,9 +290,35 @@ const GROOMING_ASK =
   "(?![^.!?]{0,40}\\b(?:pour (?:l'aider|le soutien|ses devoirs|reviser|ses notes|un cours|le rattrapage|travailler)|avec (?:ses|mes|leurs) parents|avec moi|avec nous|en presence)\\b))"
 const NOT_A_PLAIN_TOUCH =
   "(?![^.!?]{0,30}\\b(?:pour (?:l'|la |le |les )?(?:soigner|examiner|consoler|rassurer|aider|feliciter)|la tete|les cheveux|l'epaule|la main|la joue|le dos|au (?:loup|chat|jeu)|a chat|avec (?:le|la|un|une) (?:ballon|balle))\\b)"
-// « il la fait chanter » is blackmail only next to what it is about.
+// « il la fait chanter » is blackmail next to what it is about, or online;
+// « la prof la fait chanter à la chorale » is music.
 const BLACKMAIL_CONTEXT =
   /\b(?:photos?|videos?|nudes?|images?|argent|payer|euros?|menac\w*|publier|diffuser|balancer|envoyer|nue?s?|intimes?|chantage|sinon)\b/
+const ONLINE_CONTEXT =
+  /\b(?:sur|via|par) (?:instagram|insta|snap\w*|tiktok|whatsapp|discord|messenger|facebook|telegram|roblox|fortnite|internet|les reseaux)\b|\ben ligne\b/
+const MUSIC_CONTEXT =
+  /\b(?:chorale|chansons?|chant|karaoke|spectacle|concert|musique|micro|en choeur|choeur|solfege|comedie musicale|refrain|juste|faux)\b/
+const STRANGER = /^(?:quelqu'un|un inconnu|une inconnue|un mec|un type|un gars|des gens|on)$/
+function blackmail(m: RegExpMatchArray, victimOf: (m: RegExpMatchArray) => Who): Who {
+  const t = m.input ?? ""
+  if (MUSIC_CONTEXT.test(t)) return "other"
+  if (BLACKMAIL_CONTEXT.test(t) || ONLINE_CONTEXT.test(t) || STRANGER.test(m.groups?.subj ?? "")) return victimOf(m)
+  return "other"
+}
+
+/**
+ * After « je me demande si », « j'ai peur que », « je crains que », the « ne …
+ * pas » negates nothing: « je me demande si mon fils ne se fait pas harceler »
+ * means he may be. Drop that « pas » so the phrase reads as it is meant. A
+ * plain negation stays (« mon fils ne se fait pas harceler, je voulais juste
+ * un film »): no lead-in, no change.
+ */
+function dropExpletiveNe(t: string): string {
+  return t.replace(
+    /\b(?:je me demande (?:si|s')|j'ai peur (?:que|qu')|je crains (?:que|qu')|j'ai peur (?:qu'il|qu'elle)|je crains (?:qu'il|qu'elle))[^.!?;]*/g,
+    (clause) => clause.replace(/\b(ne\s+|n')((?:[a-z'-]+\s+){0,2}?[a-z'-]+)\s+pas\b/g, "$1$2"),
+  )
+}
 
 const INTIMATE = "(?:nudes?|(?:photos?|videos?|images?)\\s+(?:intimes?|denudees?|nues?|sexuelles?|osees?))"
 const SPREAD = "(?:circul\\w*|partag\\w*|publi\\w*|diffus\\w*|envoy\\w*|tourn\\w*|post\\w*|balanc\\w*|vend\\w*)"
@@ -484,7 +511,16 @@ const RULES: Rule[] = [
   {
     kind: "harassment",
     rx: g(`\\b${ABUSERS}\\s+${OBJ}\\s?(?:(?:a|ont|avait)\\s+)?(?:fait|font|faisait|faisaient)\\s+chanter\\b`),
-    who: (m) => (BLACKMAIL_CONTEXT.test(m.input ?? "") ? fromObj(m) : "other"),
+    who: (m) => blackmail(m, fromObj),
+  },
+  // « quelqu'un fait chanter ma fille sur Instagram » — not « le prix fait
+  // chanter les parents »
+  {
+    kind: "harassment",
+    rx: g(
+      `\\b(?<subj>quelqu'un|une? inconnue?|un mec|un type|un gars|des gens|on|il|elle|ils|elles|une? adulte|un homme|une femme|un garcon|une fille|des garcons|des filles|des eleves|une? eleve|son ex|un ex|une ex)(?:\\s+(?:de|d')\\s*(?:sa|ma|son|mon|leur|la|l')?\\s*(?:classe|ecole|college|lycee|equipe|club|quartier))?\\s+(?:(?:a|ont|avait)\\s+)?(?:fait|font|faisait|faisaient)\\s+chanter\\s+(?<victim>${PERSONAL_NP}|moi)\\b`,
+    ),
+    who: (m) => blackmail(m, fromVictim),
   },
   // The child sent them: « a envoyé des photos d'elle nue », « a envoyé des nudes »
   {
@@ -525,7 +561,7 @@ export function detectCrisis(
   text: string,
   opts: { familyNames?: readonly string[] } = {},
 ): CrisisSignal | null {
-  const t = normalizeForCrisis(text)
+  const t = dropExpletiveNe(normalizeForCrisis(text))
   const names = new Set((opts.familyNames ?? []).map((n) => normalizeForCrisis(n).trim()).filter((n) => n.length > 1))
   const kinds = new Set<CrisisKind>()
   for (const rule of RULES) {

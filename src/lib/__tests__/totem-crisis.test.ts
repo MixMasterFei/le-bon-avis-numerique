@@ -132,6 +132,14 @@ const MORE_BENIGN = [
   "On m'a dit que ce jeu est violent",
   "Je crains que le film soit trop violent pour mon fils",
   "Ma fille ne veut plus vivre sans sa tablette",
+  // controls for the last round (expletive « ne … pas », « fait chanter » + a name)
+  "Mon fils ne se fait pas harceler, je voulais juste un film",
+  "Ma fille ne se fait pas du mal, elle s'est juste griffée",
+  "Je me demande si mon fils n'est pas trop jeune pour Fortnite",
+  "Je crains que ce jeu ne soit pas adapté à 8 ans",
+  "Je me demande si ce film ne va pas lui faire du mal",
+  "La prof fait chanter ma fille à la chorale",
+  "Ce karaoké fait chanter ma fille tous les soirs",
   // a child nagging or hitting a parent
   "Mon fils me harcèle pour avoir Fortnite, à partir de quel âge ?",
   "Ma fille me harcèle de questions sur le dernier Pixar",
@@ -273,6 +281,17 @@ const SECOND_HELD_OUT_CRISES = [
   "Un homme rencontré sur Fortnite lui propose de le voir",
   "Un inconnu sur Snapchat veut la rencontrer",
   "Le moniteur lui a dit de ne rien dire à ses parents",
+  // last round: an expletive « ne … pas » after « je me demande si / j'ai
+  // peur que / je crains que », and « fait chanter » + a name
+  "Je me demande si mon fils ne se fait pas harceler au collège, il ne veut plus y aller",
+  "J'ai peur que ma fille ne se fasse pas harceler sur les réseaux",
+  "Je crains que mon fils ne soit pas victime de racket",
+  "Je me demande s'il ne se fait pas du mal",
+  "Je me demande si ma fille n'a pas des idées noires",
+  "Je soupçonne que quelqu'un fait chanter ma fille sur Instagram",
+  "Un inconnu fait chanter mon fils avec des photos",
+  "Quelqu'un fait chanter ma fille",
+  "Un garçon de sa classe fait chanter ma fille sur Snap",
 ]
 
 describe("detectCrisis — precision: ordinary questions are not crises", () => {

@@ -46,7 +46,20 @@ and measures each of them before and after every change.
   pass 1, one commit per item, each green on its own — crisis protocol (`crisis.ts`), group
   age window + requested type (`turn-hints.ts`), no repeats (`shown.ts`), grounding + title
   lookup + provisional ages (`grounding.ts`), the cautious parent (soul §7, guard-rail 7),
-  three bench false positives. The crisis commit can ship alone.
+  three bench false positives. The crisis commit can ship alone, together with the
+  detector's precision and recall commits that follow it (`9c5ad6ba` and after).
+- **Crisis detector — known limits.** `detectCrisis` is a set of French regular
+  expressions that reads WHO a distress phrase is about (the writer or someone close →
+  crisis; a pronoun or a household name → crisis unless the message describes a scene in a
+  work; anyone else → not a crisis). Its precision held on every probe so far, but its
+  recall on phrasings it has never seen is not guaranteed: the Director's unseen sets found
+  4, then 3, then 2 misses before each fix. Every reported miss becomes a test case in
+  `src/lib/__tests__/totem-crisis.test.ts` (the ordinary questions stay in the same file as
+  controls). A miss is not silent: the turn goes through the ordinary pipeline, which keeps
+  soul.md §8 (distress → care first, never a title, never « pas mon rayon ») and the
+  router's grave keywords (stronger model) — but without the fixed care block, the forced
+  stronger model or the tool lock. Next steps if recall matters more: log the turns that the
+  grave keywords route but the detector does not flag, and review them.
 - **After deploy:** one real `totem-eval` run on the live router, full suite, to compare
   with the baseline (`cron_logs` `6abbb7b4…`, 30/53, $0.685, p90 7.1 s). Expected to move:
   crisis-*, family-*/fit-*, memory-*, page-film-on-game-page, age-stranger-things-8,
