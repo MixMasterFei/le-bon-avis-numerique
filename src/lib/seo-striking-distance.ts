@@ -181,3 +181,40 @@ export async function runSeoStrikingDistance(opts: { minImpressions?: number } =
     report: buildReport(striking, range, totalImpressionsAtStake),
   }
 }
+
+/** How many queries a run keeps in cron_logs for the weekly review. */
+export const LOGGED_QUERIES = 50
+
+export interface LoggedQuery {
+  query: string
+  /** Path only (« /media/movie:… »): the host is always ours. */
+  page: string
+  position: number
+  impressions: number
+  clicks: number
+}
+
+/**
+ * The run's best opportunities in a compact, storable form (cron_logs
+ * `details.topQueries`). The email only reached a human inbox, so the weekly
+ * review had totals but no query, position or click to reason from, and could
+ * not tell next week whether a change moved anything. Search Console already
+ * aggregates and anonymises these queries; nothing here is per-visitor.
+ */
+export function toLoggedQueries(queries: StrikingQuery[], limit = LOGGED_QUERIES): LoggedQuery[] {
+  return queries.slice(0, limit).map((q) => {
+    let page = q.page
+    try {
+      page = new URL(q.page).pathname
+    } catch {
+      /* already a path */
+    }
+    return {
+      query: q.query,
+      page,
+      position: Math.round(q.position * 10) / 10,
+      impressions: q.impressions,
+      clicks: q.clicks,
+    }
+  })
+}
