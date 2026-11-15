@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
-import { runSeoStrikingDistance } from "@/lib/seo-striking-distance"
+import { runSeoStrikingDistance, toLoggedQueries } from "@/lib/seo-striking-distance"
 import { runSeoAutofix } from "@/lib/seo-autofix"
 import { sendSeoReport } from "@/lib/email"
 
@@ -92,6 +92,9 @@ export async function GET(req: NextRequest) {
         range: result.range,
         emailed,
         dryRun,
+        // The queries themselves (best opportunity first), so the weekly SEO
+        // review can rank by impressions and follow a page week over week.
+        topQueries: toLoggedQueries(result.actionableQueries),
         linksCreated: autofix.linksCreated,
         synopsesRewritten: autofix.synopsesRewritten,
         titlesSet: autofix.titlesSet,
