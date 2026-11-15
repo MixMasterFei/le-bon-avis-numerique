@@ -50,7 +50,7 @@ export async function NewsComments({
         >
           <span>Connectez-vous pour partager votre avis.</span>
           <Link
-            href={`/connexion?callbackUrl=/apercudecouverte/${slug}`}
+            href={`/connexion?callbackUrl=/apercudecouverte/${slug}`} rel="nofollow"
             className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold"
             style={{ background: p.ink, color: p.bg }}
           >

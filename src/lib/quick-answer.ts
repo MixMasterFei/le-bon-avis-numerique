@@ -23,6 +23,12 @@ export interface QuickAnswerInput {
    * See `shouldHideContentAnalysis` in @/lib/release-status.
    */
   hideContentAnalysis?: boolean
+  /**
+   * Release date (ISO or « YYYY-MM-DD »). Its year follows the title in the
+   * answer — « Le Seigneur des anneaux (2001) » — so a franchise or remake
+   * search lands on the right work. Absent or unparsable: no year.
+   */
+  releaseDate?: string | Date | null
 }
 
 export interface QuickAnswer {
@@ -42,15 +48,39 @@ function ageVerdict(age: number): string {
   return age === 0 ? "pour tous publics" : `à partir de ${age} ans`
 }
 
+/** « en raison » + each axis, article included, in severity order. */
+const REASON_PHRASES = {
+  violence: "de la violence",
+  sexNudity: "des scènes de sexe ou de nudité",
+  language: "du langage",
+  substanceUse: "de la consommation de substances",
+  consumerism: "du consumérisme",
+} as const
+
+function releaseYear(date: string | Date | null | undefined): number | null {
+  if (!date) return null
+  const year = typeof date === "string" ? Number(date.slice(0, 4)) : date.getUTCFullYear()
+  return Number.isInteger(year) && year >= 1870 && year <= 2100 ? year : null
+}
+
+/** « a », « a et b », « a, b et c ». */
+function joinFr(items: string[]): string {
+  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`
+}
+
 // Shared by the media detail page (FAQPage JSON-LD + hero block) and
 // the /md/media/[id] route, so both renders give the same wording.
-export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
-  const typeLabel = mediaTypeLabels[media.type]?.toLowerCase() || "contenu"
+export function buildQuickAnswer(input: QuickAnswerInput): QuickAnswer {
+  const typeLabel = mediaTypeLabels[input.type]?.toLowerCase() || "contenu"
+  // The question keeps the bare title (it mirrors the search); the answer
+  // names the work with its year.
+  const question = `${input.title} : à partir de quel âge ? Est-il adapté aux enfants ?`
+  const year = releaseYear(input.releaseDate)
+  const media = { ...input, title: year ? `${input.title} (${year})` : input.title }
   const ageRec = media.expertAgeRec
 
   // Question phrased to match the dominant search intent ("à partir de quel
   // âge") while keeping the natural "adapté aux enfants" follow-up.
-  const question = `${media.title} : à partir de quel âge ? Est-il adapté aux enfants ?`
 
   // No evaluation to stand on, so an honest estimate and no content claims:
   // a pre-release / provisional fiche, or no age at all. A title without a
@@ -96,9 +126,22 @@ export function buildQuickAnswer(media: QuickAnswerInput): QuickAnswer {
     ? `Points favorables : ${positivePoints.join(", ")}.`
     : "Les apports positifs sont à lire dans l'analyse détaillée."
 
+  // Say WHY the age, not only which axes to check: a parent searching « à
+  // partir de quel âge » gets the reason in the answer itself. Only for a
+  // minimum age — « tous publics » has no reason, its elevated axes stay
+  // « points à vérifier ». Built from the stored metrics only, never a new age.
+  const reasons = (Object.keys(REASON_PHRASES) as (keyof typeof REASON_PHRASES)[])
+    .filter((k) => media.contentMetrics[k] >= 3)
+    .sort((a, b) => media.contentMetrics[b] - media.contentMetrics[a])
+    .map((k) => REASON_PHRASES[k])
+  const verdict =
+    ageRec > 0 && reasons.length > 0
+      ? `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé, surtout en raison ${joinFr(reasons)}.`
+      : `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText}`
+
   return {
     question,
-    answer: `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText} ${positiveText}`,
+    answer: `${verdict} ${positiveText}`,
     age,
     sensitiveText,
     positiveText,

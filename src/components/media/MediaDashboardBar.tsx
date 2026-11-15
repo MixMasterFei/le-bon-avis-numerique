@@ -223,6 +223,7 @@ export function MediaDashboardBar({
                 ) : (
                   <Link
                     href={familyStatus === "no_family" ? "/profil" : connexionHref}
+                    rel={familyStatus === "no_family" ? undefined : "nofollow"}
                     className="whitespace-nowrap rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
                     style={{ background: "var(--color-bg2)", color: "var(--color-accent)" }}
                   >
@@ -313,6 +314,7 @@ export function MediaDashboardBar({
               ) : (
                 <Link
                   href={connexionHref}
+                  rel="nofollow"
                   aria-label="À voir"
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full"
                   style={{ background: "var(--color-bg2)", color: "var(--color-ink)" }}

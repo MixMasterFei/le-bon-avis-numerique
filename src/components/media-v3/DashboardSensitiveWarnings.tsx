@@ -187,7 +187,7 @@ export function DashboardSensitiveWarnings({
             )
           ) : (
             <Link
-              href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+              href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow"
               className="inline-flex items-center gap-1.5 text-[12px] font-semibold transition-opacity hover:opacity-80"
               style={{ color: "var(--f-accent)" }}
             >

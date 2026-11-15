@@ -78,7 +78,7 @@ export function ReviewsSection({ reviews, mediaId, mediaTitle }: ReviewsSectionP
             </>
           ) : (
             <Link
-              href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+              href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow"
               className="mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
               style={{ background: p.accent }}
             >

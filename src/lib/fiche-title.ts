@@ -117,3 +117,63 @@ export function ficheOgVerdict({ age, provisional }: FicheAgeInput): string {
 export function ficheTypicalAgeRange({ age, provisional }: FicheAgeInput): string | null {
   return !provisional && isKnownAge(age) ? `${age}-` : null
 }
+
+/** Google shows roughly this many characters of a meta description. */
+export const MAX_DESCRIPTION = 160
+
+/** A synopsis that already opens on the age (« Dès 8 ans, … », « Conseillé dès 14 ans : … »). */
+const AGE_OPENING = /^(?:(?:âge )?conseillé\s+)?(?:dès|à partir de)\s+\d{1,2}\s+ans\b|^(?:conseillé\s+)?(?:pour\s+)?tous publics\b/i
+
+export interface FicheDescriptionInput extends FicheAgeInput {
+  synopsis?: string | null
+  /** « Film », « Série »… for the fallback sentences. */
+  typeLabel: string
+  releaseDate?: string | Date | null
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text
+}
+
+function yearOf(date: string | Date | null | undefined): number | null {
+  if (!date) return null
+  const year = typeof date === "string" ? Number(date.slice(0, 4)) : date.getUTCFullYear()
+  return Number.isInteger(year) && year >= 1870 && year <= 2100 ? year : null
+}
+
+/**
+ * The fiche's meta description: the verdict first, then as much of the
+ * synopsis as fits.
+ *
+ * Synopses rewritten by the SEO agent open on the age themselves (« Dès 8 ans,
+ * adaptation musicale… »), so the lead « Dès 8 ans · Notre avis famille — »
+ * used to say the age twice and push the story past the cut. When the
+ * synopsis already carries the age, the lead drops its own copy — unless the
+ * fiche is provisional, whose « (à confirmer) » must stay.
+ *
+ * The release year rides in the lead (« Film de 2001 ») so a franchise title
+ * — Le Seigneur des anneaux, Fast & Furious — says which work it is.
+ */
+export function buildFicheDescription({
+  age,
+  provisional,
+  synopsis,
+  typeLabel,
+  releaseDate,
+}: FicheDescriptionInput): string {
+  const lead = ficheAgeLead({ age, provisional })
+  const text = synopsis?.trim() || ""
+  const year = yearOf(releaseDate)
+  const work = year ? `${typeLabel} de ${year}` : null
+
+  if (lead && text) {
+    const head =
+      !provisional && AGE_OPENING.test(text)
+        ? [work, "Notre avis famille"].filter(Boolean).join(" · ") + " · "
+        : [lead, work].filter(Boolean).join(" · ") + " — "
+    return head + truncate(text, MAX_DESCRIPTION - head.length)
+  }
+  if (text) return truncate(work ? `${work} — ${text}` : text, MAX_DESCRIPTION)
+  if (lead) return `${lead}. ${typeLabel} analysé par Totem Avisé pour les familles.`
+  return `${typeLabel} analysé par Totem Avisé. Découvrez notre avis détaillé et recommandation d'âge pour les familles.`
+}

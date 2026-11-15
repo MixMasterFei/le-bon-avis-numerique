@@ -215,7 +215,7 @@ export function FamilyReactions({ mediaId, mediaType, embedded = false }: Family
           contenu.
         </p>
         <Link
-          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
           style={{ background: p.ink, color: p.bg }}
         >

@@ -37,7 +37,7 @@ export function UserMetricsButton({ mediaId, mediaTitle, onSubmit }: UserMetrics
   if (!session) {
     return (
       <Link
-        href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+        href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow"
         className={pillClass}
         style={pillStyle}
       >

@@ -75,6 +75,13 @@ const SEO_TITLE_MAX = MAX_TITLE
 // work — but each target still costs 2-3 DB round-trips, so cap the walk to
 // stay well inside the route's 180s budget.
 const MAX_TARGETS = 60
+// Links-only pass (approved 14 Nov 2026). The 60-fiche cap above is sized for
+// the AI levers; internal links cost no AI call, yet 138–162 fiches a week
+// were dropped by it with no link work at all. So the next fiches in the pool
+// get the maillage lever only — no synopsis, no title — bounded by count and
+// by its own deadline so the email still goes out inside the route's budget.
+const MAX_LINK_ONLY_TARGETS = 120
+const LINK_ONLY_DEADLINE_MS = 250_000
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for unit tests)
@@ -256,6 +263,10 @@ export interface SeoAutofixResult {
   missingItems: number
   /** Distinct fiches examined this run (after dedup + MAX_TARGETS). */
   targetsExamined: number
+  /** Fiches past MAX_TARGETS that got the links-only pass. */
+  linkOnlyExamined: number
+  /** Links created by that pass (also counted in linksCreated). */
+  linkOnlyLinksCreated: number
   /** Fiches with nothing left to do on any lever — already fully optimised. */
   saturated: number
   /**
@@ -616,7 +627,8 @@ export async function runSeoAutofix(
   const targets: SeoActionTarget[] = []
   let rewritesUsed = 0
   let titleRewritesUsed = 0
-  const aiDeadline = Date.now() + AI_DEADLINE_MS
+  const startedAt = Date.now()
+  const aiDeadline = startedAt + AI_DEADLINE_MS
 
   // Best-opportunity fiches first (the striking list arrives sorted), capped so
   // a deep pool can't blow the route's time budget.
@@ -736,7 +748,32 @@ export async function runSeoAutofix(
     })
   }
 
-  const linksCreated = targets.reduce((s, t) => s + t.linksCreated.length, 0)
+  // Links-only pass over the fiches the cap dropped (best opportunity first).
+  let linkOnlyExamined = 0
+  let linkOnlyLinksCreated = 0
+  const linkOnly = [...byTarget.values()]
+    .sort((a, b) => b.opportunity - a.opportunity)
+    .slice(MAX_TARGETS, MAX_TARGETS + MAX_LINK_ONLY_TARGETS)
+  for (const t of linkOnly) {
+    if (Date.now() - startedAt > LINK_ONLY_DEADLINE_MS) break
+    const item = await prisma.mediaItem.findUnique({
+      where: { id: t.id },
+      select: {
+        id: true, title: true, type: true, genres: true, topics: true,
+        director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
+      },
+    })
+    linkOnlyExamined++
+    if (!item) {
+      missingItems++
+      continue
+    }
+    const links = await ensureInternalLinks(item, dryRun)
+    linkOnlyLinksCreated += links.created.length
+  }
+
+  const linksCreated =
+    targets.reduce((s, t) => s + t.linksCreated.length, 0) + linkOnlyLinksCreated
   const synopsesRewritten = targets.filter((t) => t.synopsis === "rewritten").length
   const titlesSet = targets.filter((t) => t.seoTitle === "set").length
   // "Flagged" = couldn't be auto-handled and wants human eyes. Titles are no
@@ -770,10 +807,13 @@ export async function runSeoAutofix(
     droppedByCap,
     missingItems,
     targetsExamined: targets.length,
+    linkOnlyExamined,
+    linkOnlyLinksCreated,
     saturated,
     outcomes,
     section: buildActionsSection({
       dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia, saturated,
+      linkOnlyExamined, linkOnlyLinksCreated,
     }),
   }
 }
@@ -814,8 +854,12 @@ function buildActionsSection(input: {
   titlesSet: number
   skippedNonMedia: number
   saturated: number
+  linkOnlyExamined?: number
+  linkOnlyLinksCreated?: number
 }): string {
   const { dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia, saturated } = input
+  const linkOnlyExamined = input.linkOnlyExamined ?? 0
+  const linkOnlyLinksCreated = input.linkOnlyLinksCreated ?? 0
   const verb = dryRun ? "à faire (simulation)" : "fait"
   const lines: string[] = [
     "",
@@ -826,7 +870,10 @@ function buildActionsSection(input: {
       : "_Écritures appliquées automatiquement. Le titre SEO modifie UNIQUEMENT la balise <title> (résultat Google) — jamais le nom affiché (H1/cartes)._",
     "",
     `- Fiches examinées : **${targets.length}**`,
-    `- Liens internes ${verb} : **${linksCreated}**`,
+    `- Liens internes ${verb} : **${linksCreated}**` +
+      (linkOnlyExamined > 0
+        ? ` (dont ${linkOnlyLinksCreated} sur ${linkOnlyExamined} fiches suivantes, maillage seul)`
+        : ""),
     `- Synopsis ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.synopsis === "would-rewrite").length : synopsesRewritten}**`,
     `- Titres SEO ${dryRun ? "à réécrire" : "réécrits"} : **${dryRun ? targets.filter((t) => t.seoTitle === "would-set").length : titlesSet}**`,
     `- Fiches déjà entièrement optimisées : ${saturated}`,

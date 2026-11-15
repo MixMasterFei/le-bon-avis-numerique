@@ -62,6 +62,8 @@ describe("family fit guardrails", () => {
     expect(result.score).toBe(30)
     expect(result.level).toBe("poor")
     expect(result.ageWarning).toBe(true)
+    // Shown to families as is: it used to read « Trop tÃ´t : recommandÃ© Ã … ».
+    expect(result.reasonOverride).toBe("Trop tôt : recommandé à partir de 16 ans")
   })
 
   it("keeps incomplete profiles in the review band", () => {

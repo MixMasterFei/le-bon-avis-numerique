@@ -95,8 +95,20 @@ test.describe("Family fit — disliked-genre filtering", () => {
     await page.goto(`/media/${seededFamily.media.horror.id}`)
 
     await expect(page.getByText(/Trop tôt/i).first()).toBeVisible({ timeout: 15_000 })
-    await expect(
-      page.getByText(/Pas pour ce profil|À vérifier/i).first(),
-    ).toBeVisible({ timeout: 15_000 })
+
+    // The PREFERENCES axis is computed by the family-fit API but not shown as
+    // its own line on the fiche (the hero leads with the age reason), so it is
+    // asserted where it lives. This used to match « À vérifier » on the page,
+    // which only ever hit the quick answer's « Points à vérifier » — a
+    // different block — and broke when that answer began giving the reason.
+    const res = await page.request.get(`/api/media/${seededFamily.media.horror.id}/family-fit`)
+    expect(res.ok()).toBe(true)
+    const body = (await res.json()) as {
+      members?: { id: string; preferenceVerdict?: { pillar: string } }[]
+    }
+    const child = body.members?.find((m) => m.id === seededFamily.members.child.id)
+    // « Pas pour ce profil » (avoid) or « À vérifier » (check) — the same two
+    // labels the original on-page assertion accepted.
+    expect(["avoid", "check"]).toContain(child?.preferenceVerdict?.pillar)
   })
 })

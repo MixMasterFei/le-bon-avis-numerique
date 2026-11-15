@@ -160,7 +160,7 @@ export function NewsFeedbackInline({ slug }: { slug: string }) {
       {showLoginNudge && !loggedIn && (
         <p className="mt-1.5 text-[11px]" style={{ color: p.ink2 }}>
           <Link
-            href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+            href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`} rel="nofollow"
             className="font-semibold underline underline-offset-2"
             style={{ color: p.ink }}
           >

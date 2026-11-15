@@ -85,7 +85,7 @@ export function FamilyFitSignIn({
           Gratuit · connexion Google rapide
         </span>
         <Link
-          href={`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+          href={`/connexion?callbackUrl=${encodeURIComponent(callbackUrl)}`} rel="nofollow"
           className="font-semibold underline underline-offset-2"
           style={{ color: variant === "dashboard" ? "var(--f-ink)" : "var(--color-warm-ink)" }}
         >

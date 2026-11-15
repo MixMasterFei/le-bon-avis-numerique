@@ -201,20 +201,20 @@ export function MediaActions({
   if (status === "unauthenticated") {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow">
           <PillButton>
             <Heart className="h-4 w-4" />
             <span className="text-xs">{favoriteCount}</span>
           </PillButton>
         </Link>
-        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+        <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow">
           <PillButton>
             <Bookmark className="h-4 w-4" />
             <span className="text-xs">À voir</span>
           </PillButton>
         </Link>
         {seeReviewsPill ?? (
-          <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+          <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow">
             <PillButton>
               <MessageSquare className="h-4 w-4" />
               <span className="text-xs">Donner mon avis</span>

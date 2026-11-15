@@ -470,7 +470,7 @@ export function PosterActionBar({
               S&apos;inscrire
             </Link>
             <Link
-              href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`}
+              href={`/connexion?callbackUrl=${encodeURIComponent(pathname ?? "/")}`} rel="nofollow"
               onClick={(e) => e.stopPropagation()}
               className="rounded-full px-3 py-1 text-[11px] font-semibold"
               style={{ background: "rgba(255,255,255,0.16)", color: "#fff" }}
