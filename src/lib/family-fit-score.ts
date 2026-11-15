@@ -604,7 +604,7 @@ export function applyFitGuardrails(input: {
     reasonOverride = `Recommandé à partir de ${input.expertAgeRec} ans`
     const ageGap = input.expertAgeRec - input.memberAge
     if (ageGap >= 2) {
-      reasonOverride = `Trop tÃ´t : recommandÃ© Ã  partir de ${input.expertAgeRec} ans`
+      reasonOverride = `Trop tôt : recommandé à partir de ${input.expertAgeRec} ans`
       score = Math.min(score, 30)
       level = "poor"
     } else {
