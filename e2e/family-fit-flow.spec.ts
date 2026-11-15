@@ -95,8 +95,12 @@ test.describe("Family fit — disliked-genre filtering", () => {
     await page.goto(`/media/${seededFamily.media.horror.id}`)
 
     await expect(page.getByText(/Trop tôt/i).first()).toBeVisible({ timeout: 15_000 })
+    // The preference axis surfaces in the fit hero's reason line. (This used
+    // to match « À vérifier », which no fit surface on the fiche renders: it
+    // passed only on the quick answer's « Points à vérifier », a different
+    // block, and broke when that answer started giving the reason instead.)
     await expect(
-      page.getByText(/Pas pour ce profil|À vérifier/i).first(),
+      page.getByText(/genre non apprécié|Pas pour ce profil/i).first(),
     ).toBeVisible({ timeout: 15_000 })
   })
 })
