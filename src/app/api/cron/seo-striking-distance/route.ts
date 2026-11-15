@@ -101,6 +101,8 @@ export async function GET(req: NextRequest) {
         droppedByCap: autofix.droppedByCap,
         missingItems: autofix.missingItems,
         targetsExamined: autofix.targetsExamined,
+        linkOnlyExamined: autofix.linkOnlyExamined,
+        linkOnlyLinksCreated: autofix.linkOnlyLinksCreated,
         saturated: autofix.saturated,
         // Per-lever tallies — tells "nothing left to do" apart from "every
         // write rejected" without re-reading the email.
@@ -136,6 +138,8 @@ export async function GET(req: NextRequest) {
         droppedByCap: autofix.droppedByCap,
         missingItems: autofix.missingItems,
         targetsExamined: autofix.targetsExamined,
+        linkOnlyExamined: autofix.linkOnlyExamined,
+        linkOnlyLinksCreated: autofix.linkOnlyLinksCreated,
         saturated: autofix.saturated,
         outcomes: autofix.outcomes,
         targets: autofix.targets,

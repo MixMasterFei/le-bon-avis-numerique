@@ -173,7 +173,7 @@ export function AgeVoteButton({ mediaId, className }: AgeVoteButtonProps) {
         // Not logged in — counts plus an invitation to vote (was a dead-end
         // showing nothing at 0 votes).
         <Link
-          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}
+          href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow"
           className="flex items-center gap-1.5 text-[11px] transition-opacity hover:opacity-75"
           style={{ color: p.ink2 }}
           title="Connectez-vous pour voter sur l'âge conseillé"

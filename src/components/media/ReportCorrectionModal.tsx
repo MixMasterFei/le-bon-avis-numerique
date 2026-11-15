@@ -143,7 +143,7 @@ export function ReportCorrectionModal({ mediaId, mediaTitle, isLoggedIn }: Repor
               Vous devez être connecté pour signaler une erreur.
             </p>
             <Button asChild>
-              <a href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>Se connecter</a>
+              <a href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow">Se connecter</a>
             </Button>
           </div>
         ) : success ? (

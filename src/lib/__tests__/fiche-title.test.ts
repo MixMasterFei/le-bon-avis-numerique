@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { buildFicheTitle, MAX_TITLE } from "../fiche-title"
+import { buildFicheDescription, buildFicheTitle, MAX_DESCRIPTION, MAX_TITLE } from "../fiche-title"
 
 describe("buildFicheTitle", () => {
   it("puts the query wording in the title for short names", () => {
@@ -49,5 +49,51 @@ describe("buildFicheTitle", () => {
   it("puts « Tous publics » in the title for a TP fiche", () => {
     expect(buildFicheTitle({ title: "Roblox", age: 0 })).toBe("Roblox — À partir de quel âge ? Tous publics")
     expect(buildFicheTitle({ title: "Roblox", age: 0, provisional: true })).toBe("Roblox — Tous publics (à confirmer)")
+  })
+})
+
+describe("buildFicheDescription", () => {
+  const base = { typeLabel: "Film", age: 8 }
+
+  it("never says the age twice when the synopsis opens on it", () => {
+    const d = buildFicheDescription({
+      ...base,
+      releaseDate: "2022-11-18",
+      synopsis: "Dès 8 ans, adaptation musicale du conte de Dickens où l'avare Ebenezer Scrooge est visité la veille de Noël.",
+    })
+    expect(d).toBe(
+      "Film de 2022 · Notre avis famille · Dès 8 ans, adaptation musicale du conte de Dickens où l'avare Ebenezer Scrooge est visité la veille de Noël.",
+    )
+    expect(d.match(/8 ans/g)).toHaveLength(1)
+  })
+
+  it("recognises the agent's other openings", () => {
+    for (const synopsis of ["Conseillé dès 14 ans : une comédie.", "À partir de 10 ans, une quête.", "Tous publics, un conte."]) {
+      expect(buildFicheDescription({ ...base, synopsis }).startsWith("Notre avis famille · ")).toBe(true)
+    }
+  })
+
+  it("keeps the verdict lead, with the year, when the synopsis does not carry the age", () => {
+    expect(buildFicheDescription({ ...base, releaseDate: "2001-12-19", synopsis: "Frodon hérite d'un anneau." })).toBe(
+      "Dès 8 ans · Notre avis famille · Film de 2001 — Frodon hérite d'un anneau.",
+    )
+  })
+
+  it("a provisional fiche keeps its « à confirmer » lead even when the synopsis opens on an age", () => {
+    const d = buildFicheDescription({ ...base, provisional: true, synopsis: "Dès 8 ans, un conte." })
+    expect(d.startsWith("Âge conseillé dès 8 ans (à confirmer) — ")).toBe(true)
+  })
+
+  it("stays within the length Google shows", () => {
+    const d = buildFicheDescription({ ...base, releaseDate: "2001-01-01", synopsis: "x".repeat(400) })
+    expect(d.length).toBeLessThanOrEqual(MAX_DESCRIPTION)
+    expect(d.endsWith("…")).toBe(true)
+  })
+
+  it("falls back without a synopsis or an age", () => {
+    expect(buildFicheDescription({ ...base, synopsis: null })).toBe(
+      "Dès 8 ans · Notre avis famille. Film analysé par Totem Avisé pour les familles.",
+    )
+    expect(buildFicheDescription({ typeLabel: "Série", age: null, synopsis: "Une saga." })).toBe("Une saga.")
   })
 })

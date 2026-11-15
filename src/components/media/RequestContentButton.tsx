@@ -33,7 +33,7 @@ export function RequestContentButton({
 
   if (!session) {
     return (
-      <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`}>
+      <Link href={`/connexion?callbackUrl=${encodeURIComponent(pathname)}`} rel="nofollow">
         <Button variant={variant} size={size}>
           <LogIn className="h-4 w-4 mr-2" />
           Connectez-vous pour demander

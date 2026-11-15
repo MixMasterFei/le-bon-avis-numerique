@@ -74,15 +74,19 @@ function PillButton({
 
 function PillLink({
   href,
+  rel,
   children,
 }: {
   href: string
+  /** "nofollow" on login links, so crawlers don't queue one per page. */
+  rel?: string
   children: React.ReactNode
 }) {
   const p = APERCU_PALETTE
   return (
     <Link
       href={href}
+      rel={rel}
       className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-opacity hover:opacity-80"
       style={{
         background: p.card,
@@ -270,12 +274,12 @@ export function NewsStoryActions({
     </>
   ) : (
     <>
-      <PillLink href={`/connexion?callbackUrl=${callbackUrl}`}>
+      <PillLink href={`/connexion?callbackUrl=${callbackUrl}`} rel="nofollow">
         <ThumbsUp className="h-4 w-4" />
         <span>Utile</span>
         {engagement.reactions.LIKE > 0 && <span>{engagement.reactions.LIKE}</span>}
       </PillLink>
-      <PillLink href={`/connexion?callbackUrl=${callbackUrl}`}>
+      <PillLink href={`/connexion?callbackUrl=${callbackUrl}`} rel="nofollow">
         <ThumbsDown className="h-4 w-4" />
         <span>Pas pour nous</span>
         {engagement.reactions.DISLIKE > 0 && <span>{engagement.reactions.DISLIKE}</span>}
@@ -367,7 +371,7 @@ export function NewsStoryActions({
           <span>{engagement.saved ? "Dans ma liste" : "Lire plus tard"}</span>
         </PillButton>
       ) : (
-        <PillLink href={`/connexion?callbackUrl=${callbackUrl}`}>
+        <PillLink href={`/connexion?callbackUrl=${callbackUrl}`} rel="nofollow">
           <Bookmark className="h-4 w-4" />
           <span>Lire plus tard</span>
         </PillLink>
