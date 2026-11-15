@@ -388,6 +388,12 @@ export async function discoverTVShows(options: {
   "vote_count.gte"?: string
   with_original_language?: string
   "first_air_date.gte"?: string
+  "first_air_date.lte"?: string
+  without_genres?: string // comma-separated genre IDs (AND-excluded)
+  // Availability filters (JustWatch data) — both needed together.
+  watch_region?: string
+  with_watch_providers?: string // pipe-separated provider IDs (OR)
+  with_watch_monetization_types?: string // e.g. "flatrate|free|ads"
 }) {
   const params: Record<string, string> = {}
   Object.entries(options).forEach(([key, value]) => {
@@ -395,6 +401,18 @@ export async function discoverTVShows(options: {
   })
   params.include_adult = "false"
   return tmdbFetch<TMDBSearchResult<TMDBTVShow>>("/discover/tv", params)
+}
+
+/**
+ * Every TV watch provider TMDB knows for a region (JustWatch data). Provider
+ * ids are looked up by name at run time rather than hard-coded, because the
+ * French broadcasters' streaming apps (TF1+, M6+, france.tv) are renamed often.
+ */
+export async function getTVWatchProviderList(region = "FR"): Promise<TMDBWatchProvider[]> {
+  const res = await tmdbFetch<{ results?: TMDBWatchProvider[] }>("/watch/providers/tv", {
+    watch_region: region,
+  })
+  return res.results ?? []
 }
 
 // ============================================

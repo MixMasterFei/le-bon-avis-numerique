@@ -537,6 +537,72 @@ export async function getFreshReleases(
   return igdbFetch<IGDBGame[]>("/games", body)
 }
 
+// ── Import candidates (read-only preview, see src/lib/import-candidates.ts) ──
+
+/**
+ * Platforms French families actually play on: current consoles, PC, phones.
+ * 508 = Nintendo Switch 2 (an unknown id in an IGDB `= (…)` list is harmless).
+ */
+export const FR_CANDIDATE_PLATFORM_IDS = [130, 508, 167, 48, 169, 49, 6, 39, 34] as const
+
+/**
+ * The fixed discovery lanes of the import-candidates preview. Every clause is a
+ * constant (no caller input reaches the query); `parent_game = null` and
+ * `version_parent = null` drop DLCs, expansions and re-editions.
+ *  - pegi:   released in Europe (has a PEGI rating), ≥ 30 ratings
+ *  - family: PEGI 3 / PEGI 7, lower floor (≥ 10 ratings) — kids' titles get rated less
+ *  - mobile: iOS / Android, ≥ 30 ratings, PEGI not required (often missing on IGDB)
+ */
+export type GameCandidateLane = "pegi" | "family" | "mobile"
+
+const CANDIDATE_FIELDS = `
+    fields name, summary, cover.url, cover.image_id, first_release_date,
+           genres.name, platforms.name, platforms.abbreviation,
+           ${IGDB_AGE_RATING_FIELDS},
+           themes.name,
+           total_rating, total_rating_count;`
+
+function candidateLaneWhere(lane: GameCandidateLane, nowSec: number): string {
+  const base = `parent_game = null & version_parent = null & cover != null & first_release_date < ${nowSec}`
+  const fr = `platforms = (${FR_CANDIDATE_PLATFORM_IDS.join(",")})`
+  switch (lane) {
+    case "pegi":
+      return `${base} & ${fr} & age_ratings.organization = 2 & total_rating_count >= 30`
+    case "family":
+      return `${base} & ${fr} & age_ratings.organization = 2 & age_ratings.rating_category = (8,9) & total_rating_count >= 10`
+    case "mobile":
+      return `${base} & platforms = (39,34) & total_rating_count >= 30`
+  }
+}
+
+/** One page (≤ 500) of a candidate lane, most-rated first. Read-only. */
+export async function getImportCandidateGames(
+  lane: GameCandidateLane,
+  offset = 0,
+  limit = 500,
+): Promise<IGDBGame[]> {
+  const safeLimit = sanitizeNumber(limit, 1, 500) || 500
+  const safeOffset = sanitizeNumber(offset, 0, 5000) ?? 0
+  const body = `${CANDIDATE_FIELDS}
+    where ${candidateLaneWhere(lane, Math.floor(Date.now() / 1000))};
+    sort total_rating_count desc;
+    limit ${safeLimit};
+    offset ${safeOffset};
+  `
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
+/** Candidate fields for an explicit id list (e.g. the trending ids). ≤ 500 ids. */
+export async function getCandidateGamesByIds(ids: number[]): Promise<IGDBGame[]> {
+  const safe = [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))].slice(0, 500)
+  if (safe.length === 0) return []
+  const body = `${CANDIDATE_FIELDS}
+    where id = (${safe.join(",")});
+    limit ${safe.length};
+  `
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
 // Platform IDs for specific platform queries
 const PLATFORM_IDS = {
   SWITCH: 130,

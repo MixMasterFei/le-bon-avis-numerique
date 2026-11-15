@@ -52,6 +52,8 @@ export const CRON_JOB_ROUTES: readonly CronJobRoute[] = [
   { method: "GET", path: "/api/cron/debt-digest", calledBy: "cron.yml" },
   { method: "GET", path: "/api/cron/seo-striking-distance", calledBy: "cron.yml" },
   { method: "POST", path: "/api/cron/totem-eval", calledBy: "cron.yml" },
+  // Dispatch-only: import-candidates preview (dryRun) / approved-ids import.
+  { method: "POST", path: "/api/cron/import-candidates", calledBy: "cron.yml" },
 
   // .github/workflows/cron.yml — catalogue jobs under /api/admin (all POST).
   // The supervisor's remediations re-run a subset of these, same method.

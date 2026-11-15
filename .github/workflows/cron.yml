@@ -114,6 +114,8 @@ on:
           - revert-unreleased
           - game-guides-check
           - totem-eval
+          - import-candidates-tv
+          - import-candidates-games
       dry_run:
         description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
         required: false
@@ -129,6 +131,11 @@ on:
           - claude-haiku-4-5-20251001
           - claude-haiku-5-5
           - claude-sonnet-5-5
+      import_ids:
+        description: "import-candidates-* only: approved ids to import (comma-separated TMDB ids for tv, IGDB ids for games). Empty = read-only preview of the candidate list."
+        required: false
+        type: string
+        default: ""
 
 env:
   SITE_URL: ${{ secrets.SITE_URL }}
@@ -1097,6 +1104,52 @@ jobs:
           echo "$body" | jq '{status, summary, estimate, totals, categories}' 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Totem eval failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Dispatch-only: targeted import batches, preview first ─────────
+  # Never scheduled, never part of "all". With import_ids empty it is a
+  # read-only preview: the ranked candidate list (family series streamable in
+  # France / games popular in France, deduped against the catalogue) comes back
+  # in the job log and in one cron_logs row — nothing else is written. With
+  # import_ids (the titles Xavier approved) it imports exactly those ids, as
+  # provisional fiches the daily enrichment then picks up.
+  import-candidates:
+    name: Import candidates (preview / approved ids)
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 8
+    if: >-
+      github.event.inputs.task == 'import-candidates-tv' ||
+      github.event.inputs.task == 'import-candidates-games'
+    env:
+      TASK: ${{ github.event.inputs.task }}
+      IMPORT_IDS: ${{ github.event.inputs.import_ids }}
+    steps:
+      - name: Preview candidates or import the approved ids
+        run: |
+          echo "::group::Import candidates"
+          if [ "$TASK" = "import-candidates-tv" ]; then kind=tv; else kind=games; fi
+          ids=$(printf '%s' "$IMPORT_IDS" | tr -d ' ')
+          if [ -z "$ids" ]; then
+            qs="kind=$kind&dryRun=1"
+          elif printf '%s' "$ids" | grep -Eq '^[0-9]+(,[0-9]+)*$'; then
+            qs="kind=$kind&ids=$ids"
+          else
+            echo "::error::import_ids must be comma-separated numbers"
+            exit 1
+          fi
+          # 310s — the route stops itself at ~265s (maxDuration 300).
+          response=$(curl -sSL --max-time 310 -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/import-candidates?$qs")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{mode, stats, missingPlatforms, errors, results}' 2>/dev/null || echo "$body"
+          echo "$body" | jq -r '.candidates[]? | [(.tmdbId // .igdbId), .title, (.originalTitle // ""), (.year // ""), .tier, .why, (.possibleDuplicateOf // "")] | @tsv' 2>/dev/null || true
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::import-candidates failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"

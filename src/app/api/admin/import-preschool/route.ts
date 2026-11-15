@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomUUID } from "crypto"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
 import {
@@ -7,11 +6,10 @@ import {
   getTVDetails,
   getTVFrenchRating,
   getTVWatchProviders,
-  mapCertificationToInternal,
   TVGenres,
   type TMDBTVDetails,
 } from "@/lib/tmdb"
-import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
+import { createTvFromTmdb } from "@/lib/tv-import"
 import { extractProviders } from "@/lib/streaming-providers"
 import { isAdultTmdbTv } from "@/lib/adult-content-filter"
 import { logCronRun } from "@/lib/cron-log"
@@ -142,37 +140,10 @@ export async function POST(req: NextRequest) {
         }
 
         if (!dryRun) {
-          const id = randomUUID()
-          const [posterUrl, backdropUrl] = await Promise.all([
-            uploadTMDBPoster(id, details.poster_path),
-            uploadTMDBBackdrop(id, details.backdrop_path),
-          ])
-          await prisma.mediaItem.create({
-            data: {
-              id,
-              tmdbId: details.id,
-              title: details.name,
-              originalTitle: details.original_name !== details.name ? details.original_name : null,
-              type: "TV",
-              releaseDate: details.first_air_date ? new Date(details.first_air_date) : null,
-              releaseStatus: (details as { status?: string }).status || null,
-              posterUrl,
-              backdropUrl,
-              synopsisFr: details.overview || null,
-              officialRating: mapCertificationToInternal(frRating),
-              expertAgeRec: tvCertToAge(frRating),
-              numberOfSeasons: details.number_of_seasons || null,
-              genres: details.genres?.map((g: { name: string }) => g.name) ?? [],
-              platforms: rel.providers,
-              topics: [],
-              originalLanguage: details.original_language || null,
-              tmdbRating: details.vote_average || null,
-              tmdbVoteCount: details.vote_count || null,
-              dataSource: "TMDB",
-              dataQualityScore: 30,
-              isEnriched: false,
-              lastVerifiedAt: new Date(),
-            },
+          await createTvFromTmdb(details, {
+            frRating,
+            expertAgeRec: tvCertToAge(frRating),
+            platforms: rel.providers,
           })
         }
         stats.imported++

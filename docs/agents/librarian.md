@@ -20,6 +20,25 @@ enriched, and the scheduled jobs that keep it all running.
 - Manual SQL migrations only (`prisma db execute`), never `prisma db push`.
 - `media_items` is unique on `(tmdb_id, type)` — never on bare `tmdb_id`.
 
+## Open work (2026-11-15) — import batches, preview first
+Branch `librarian/import-candidates` (pushed, no PR). Xavier approved preparing two
+targeted batches (~300 family series available in France, ~150 games popular in France)
+for title-by-title review. Nothing written to production.
+- `POST /api/cron/import-candidates?kind=tv|games&dryRun=1` = read-only ranked list
+  (one `cron_logs` row, task `import-candidates`); `&ids=…` imports exactly the approved
+  ids (≤ 40 séries / ≤ 100 jeux per call), never a discover result. Dispatch-only in
+  cron.yml (`import-candidates-tv` / `-games`, input `import_ids`), so not in
+  EXPECTED_TASKS / KNOWN_CRON_TASKS / PIPELINE_TASKS (ad-hoc, like news-reset-recent).
+  Rules + thresholds: `src/lib/import-candidates.ts`; TV creation shared with the
+  pre-school sweep via `src/lib/tv-import.ts`.
+- Next: Xavier dispatches the two previews, approves ids, then the import runs.
+- **Pre-school sweep has imported 0 series for days** (cron_logs: ~30 « déjà en base »
+  + ~30 « pas dispo FR » per call, pages 1-15 every day, never past 15). The FR test
+  relies on `extractProviders`, which knows neither TF1+ nor M6+ (and the catalogue
+  holds 0 series tagged France TV). Decide: add TF1+/M6+ to `PROVIDER_NAME_MAP` /
+  `FILTERABLE_PLATFORMS` (UI change → Age Keeper), and persist the sweep's cursor.
+- 373 / 954 series have no platform at all; Saturday streaming sync should be checked.
+
 ## Open work (2026-11-07)
 Branch `librarian/f05-f06` (local, not pushed) — fixes from the 7 Nov assessment:
 - F05: a similarity title is stamped only when all its writes succeeded; only
