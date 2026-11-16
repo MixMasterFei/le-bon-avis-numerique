@@ -22,73 +22,73 @@ sourceLinks:
 
 # Des films pour parler des émotions et découvrir le monde en famille
 
-Un film peut donner envie de parler de quelque chose qu'on n'aurait pas abordé au dîner. Pourquoi ce personnage cache-t-il sa tristesse ? Pourquoi cette famille se dispute-t-elle à propos de musique ? Pourquoi cette planète est-elle couverte de déchets ?
+Un film peut amener sur la table un sujet qu'on n'aurait jamais abordé entre la poire et le fromage. Pourquoi ce personnage cache-t-il sa tristesse ? Pourquoi cette famille se dispute-t-elle à cause de la musique ? Pourquoi cette planète est-elle couverte de déchets ?
 
-C'est dans ces questions que nous voyons l'intérêt d'un film dit « éducatif ». Le mot ne garantit ni un apprentissage ni une séance adaptée à tous les enfants. Il indique une possibilité, à examiner avec autant d'attention que les scènes qui pourraient faire peur.
+Quand on parle de film « éducatif », c'est à ces questions que nous pensons. L'étiquette ne garantit ni que l'enfant apprendra quelque chose, ni que la séance lui convient. Elle signale une occasion, à examiner d'aussi près que les scènes qui pourraient lui faire peur.
 
-Voici trois films et, pour chacun, une question proposée par Totem Avisé pour prolonger la séance.
+Nous avons retenu trois films, avec pour chacun une question à garder pour la fin de la séance.
 
 ## Vice-versa pour parler des émotions
 
-Dans [Vice-versa](/media/movie:23985d35-c8be-4b2e-ac43-323d782fb4b6), les émotions de Riley deviennent des personnages. Le film donne une forme visible à ce qui peut se bousculer dans sa tête lorsqu'elle déménage et perd ses repères.
+Dans [Vice-versa](/media/movie:23985d35-c8be-4b2e-ac43-323d782fb4b6), les émotions de Riley deviennent des personnages. Le film rend visible ce qui se bouscule dans sa tête au moment où elle déménage et perd ses repères.
 
-**Une question à garder :** « Est-ce qu'on peut être content et triste à la fois ? »
+La question à garder : « Est-ce qu'on peut être content et triste à la fois ? »
 
-Vous pouvez laisser l'enfant choisir un exemple dans le film, puis éventuellement dans sa vie. Il n'a aucune obligation de raconter quelque chose de personnel. Dessiner plusieurs émotions pour une même journée peut être une autre manière de poursuivre, s'il en a envie.
+Laissez l'enfant choisir un exemple dans le film, puis, s'il le veut, dans sa propre vie. Rien ne l'oblige à raconter quelque chose de personnel. S'il préfère, il peut dessiner plusieurs émotions pour une même journée.
 
-**Avant de lancer :** le film aborde le changement, la séparation avec un environnement familier et des moments de détresse. Vérifiez sa fiche et tenez compte d'un éventuel déménagement ou d'une période difficile. Les personnages colorés ne garantissent pas une expérience légère.
+Avant de lancer, sachez que le film parle de changement, de la perte d'un environnement familier, et montre des moments de détresse. Jetez un œil à sa fiche, surtout si vous venez de déménager ou si la période est compliquée à la maison. Des personnages tout en couleurs peuvent porter une histoire assez lourde.
 
-La représentation du cerveau reste une invention de cinéma. On peut s'en servir pour parler, sans la présenter comme une explication scientifique de son fonctionnement. [Présentation de Pixar](https://www.pixar.com/inside-out).
+La représentation du cerveau est une invention de cinéma. Elle aide à parler des émotions, mais ne dit pas comment le cerveau fonctionne vraiment. Pixar présente le film sur [son site](https://www.pixar.com/inside-out).
 
 ## Coco pour parler de la mémoire familiale
 
-Dans [Coco](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212), Miguel veut faire de la musique alors que sa famille l'interdit depuis plusieurs générations. Sa rencontre avec le monde des morts l'amène à découvrir son histoire familiale.
+Dans [Coco](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212), Miguel veut faire de la musique alors que sa famille l'interdit depuis plusieurs générations. Son passage dans le monde des morts lui fait découvrir l'histoire de sa famille.
 
-**Une question à garder :** « Comment connaît-on les personnes de notre famille qu'on n'a jamais rencontrées ? »
+La question à garder : « Comment connaît-on les personnes de notre famille qu'on n'a jamais rencontrées ? »
 
-Une photo, une recette ou une chanson peut prolonger la discussion. Vous pouvez raconter un souvenir, sans demander à l'enfant de produire à son tour un récit émouvant.
+Une vieille photo, la recette d'une grand-mère ou une chanson peuvent prendre le relais. Racontez un souvenir à vous, sans attendre de l'enfant qu'il vous livre à son tour un récit émouvant.
 
-**Avant de lancer :** la mort, le souvenir des proches et la peur de l'oubli occupent une place importante. Le film comporte aussi des conflits et des menaces. Le présenter seulement comme une aventure musicale rassurante ferait manquer une partie essentielle du choix.
+Côté points sensibles, la mort, le souvenir des proches et la peur de l'oubli tiennent une grande place dans l'histoire. Le film comporte aussi des conflits et des menaces. Si vous le présentez comme une simple aventure musicale, vous passez à côté d'une bonne partie de ce qu'il faut savoir pour le choisir.
 
-Si un deuil est récent, ce sujet peut donner envie de parler ou sembler trop proche. Ne supposez pas que le film aidera forcément : demandez-vous d'abord si votre enfant souhaite l'aborder. [Présentation de Pixar](https://www.pixar.com/coco).
+Après un deuil récent, ce sujet peut donner envie d'en parler, ou au contraire toucher de trop près. Ne partez pas du principe que le film aidera : demandez-vous d'abord si votre enfant a envie d'aborder ce thème. La [page de Pixar](https://www.pixar.com/coco) présente le film.
 
 ## WALL-E pour observer nos habitudes
 
-Dans [WALL-E](/media/movie:2eb49468-f860-47d4-86e1-e78f04cbd253), un robot continue à nettoyer une Terre abandonnée, envahie de déchets. Le début du film laisse beaucoup de place aux gestes, aux objets et aux sons.
+Dans [WALL-E](/media/movie:2eb49468-f860-47d4-86e1-e78f04cbd253), un robot continue à nettoyer une Terre abandonnée et envahie de déchets. Le début du film laisse une grande place aux gestes, aux objets et aux sons.
 
-**Une question à garder :** « Qu'est-ce que tu remarques dans ce monde qui ressemble un peu au nôtre ? »
+La question à garder : « Qu'est-ce que tu remarques dans ce monde qui ressemble un peu au nôtre ? »
 
-L'enfant parlera peut-être des déchets, des écrans, des objets qu'on garde ou de la solitude du robot. Suivez son idée avant d'ajouter la vôtre. Une promenade où l'on regarde les objets réparés, jetés ou réutilisés peut prolonger sa curiosité.
+Il parlera peut-être des déchets, des écrans, des objets qu'on garde ou de la solitude du robot. Suivez son idée avant d'avancer la vôtre. Une balade à regarder ce qui a été réparé, jeté ou réutilisé dans le quartier peut prolonger sa curiosité.
 
-**Avant de lancer :** ce monde désert, les dangers rencontrés par les robots et certaines scènes d'action peuvent impressionner. Un film avec peu de dialogues n'est pas automatiquement facile pour un petit.
+Attention quand même : ce monde désert, les dangers que courent les robots et certaines scènes d'action peuvent impressionner. Peu de dialogues ne veut pas dire film facile pour un petit.
 
-Le récit imagine un futur extrême. Distinguez cette fiction des faits que vous pourrez vérifier ensuite si votre enfant pose une question sur l'environnement. [Présentation de Pixar](https://www.pixar.com/wall-e).
+Le récit imagine un futur extrême. Si votre enfant pose ensuite une question sur l'environnement, faites la part entre cette fiction et les faits que vous pourrez vérifier ensemble. Présentation du film sur le [site de Pixar](https://www.pixar.com/wall-e).
 
 ## Choisir selon le sujet et selon l'enfant
 
-Avant la séance, demandez-vous ce que vous cherchez vraiment. Un moment drôle ? Une première rencontre avec un thème ? Un film dont votre enfant a envie depuis longtemps ? Il est possible que le meilleur choix du jour soit simplement une comédie.
+Avant la séance, demandez-vous ce que vous attendez de ce moment. Rire ensemble ? Découvrir un thème pour la première fois ? Regarder enfin le film qu'il réclame depuis des semaines ? Ce soir, le bon choix est peut-être tout simplement une comédie.
 
-L'âge conseillé reste un repère utile. Regardez aussi la durée, les situations sensibles et ce que votre enfant traverse en ce moment. Deux films classés « tous publics » peuvent demander des efforts de compréhension très différents.
+L'âge conseillé reste un bon repère. Regardez aussi la durée, les situations sensibles et ce que votre enfant traverse en ce moment. Deux films classés « tous publics » peuvent demander des efforts de compréhension très différents.
 
-Pour préparer une séance avec un enfant sensible, vous pouvez aussi consulter nos [repères sur les films qui font peur](/blog/films-qui-font-peur-enfant-pret).
+Si votre enfant est sensible, nos [repères sur les films qui font peur](/blog/films-qui-font-peur-enfant-pret) peuvent aider à préparer la séance.
 
-Sur une [fiche Totem](/films), distinguez la classification officielle, l'âge recommandé et les informations de contenu disponibles. Lorsqu'un point compte particulièrement pour votre enfant, comme la mort d'un animal ou une séparation, vérifiez-le précisément. Une information absente ne signifie pas que la scène n'existe pas.
+Sur une [fiche Totem](/films), faites la différence entre la classification officielle, l'âge que nous recommandons et les informations de contenu disponibles. Si un point compte beaucoup pour votre enfant, comme la mort d'un animal ou une séparation, vérifiez-le précisément. Une information absente de la fiche ne veut pas dire que la scène n'existe pas.
 
 ## Poser une question sans organiser un contrôle
 
-À la fin, commencez par ce que l'enfant a aimé ou n'a pas aimé. S'il répond « je ne sais pas », laissez-lui ce droit. Il pourra reparler du film plus tard, ou ne pas avoir envie d'en parler du tout.
+À la fin, commencez par ce qu'il a aimé ou pas. S'il répond « je ne sais pas », laissez-lui ce droit. Il en reparlera peut-être plus tard, ou pas du tout.
 
-Une question ouverte suffit. Évitez d'enchaîner jusqu'à obtenir la « bonne » morale. Un enfant peut aimer un personnage que vous trouvez peu sympathique ; demandez ce qui lui plaît chez lui. Vous découvrirez peut-être qu'il parle d'une scène drôle, et non de tous ses comportements.
+Une question ouverte suffit ; inutile d'en enchaîner d'autres jusqu'à obtenir la « bonne » morale. Votre enfant peut adorer un personnage que vous trouvez antipathique. Demandez-lui ce qui lui plaît chez lui : il pensait peut-être à une scène drôle, et pas à l'ensemble de son comportement.
 
-Vous pouvez aussi exprimer votre propre hésitation : « Je n'ai pas aimé ce qu'il a fait, mais je comprends pourquoi il était en colère. » Cela laisse une place à la nuance sans transformer la séance en leçon.
+Vous pouvez aussi partager vos propres hésitations : « Je n'ai pas aimé ce qu'il a fait, mais je comprends pourquoi il était en colère. » La nuance trouve sa place, et la séance ne tourne pas à la leçon.
 
 ## Garder la trace de ce qui a plu
 
-Après quelques films, notez les réactions qui vous aideront à choisir le prochain : aime suivre une enquête, décroche quand il y a trop de personnages, supporte mal les séparations, adore reparler des inventions.
+Au fil des films, notez les réactions qui vous aideront à choisir le suivant : aime suivre une enquête, décroche quand il y a trop de personnages, supporte mal les séparations, adore reparler des inventions.
 
-Ce petit carnet peut rester très simple. Il ne sert pas à noter l'enfant, mais à ne pas oublier ce que vous avez observé. Retrouvez ensuite des pistes dans les [collections](/collections), en vérifiant chaque titre selon ces repères.
+Un petit carnet suffit, comme aide-mémoire pour vous. Vous trouverez ensuite des idées dans les [collections](/collections), en vérifiant chaque titre avec ces repères.
 
-Pour les plus jeunes, un long-métrage ne doit pas devenir un passage obligé sous prétexte qu'il est instructif. Les [recommandations publiques par âge](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121) restent valables, et un livre ou une activité partagée peut être plus approprié.
+Pour les plus jeunes, un long-métrage ne doit pas devenir un passage obligé parce qu'il serait instructif. Les [recommandations publiques par âge](https://www.education.gouv.fr/bien-grandir-avec-les-ecrans-des-reperes-pour-chaque-age-451121) s'appliquent toujours, et un livre ou une activité faite ensemble peut mieux convenir.
 
 ## Sources
 
