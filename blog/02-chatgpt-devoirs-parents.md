@@ -4,7 +4,7 @@ slug: "chatgpt-devoirs-parents"
 author: "Totem Avisé"
 category: "parentalite-numerique"
 excerpt: "Vérifiez d'abord l'âge d'accès et les consignes du professeur. Pour les devoirs, demandez une explication ou un exercice, puis faites fermer l'outil."
-seoTitle: "ChatGPT et devoirs enfant — les bons usages"
+seoTitle: "ChatGPT et devoirs enfant : les bons usages"
 seoDescription: "Un exemple corrigé, des consignes à essayer et les règles d'âge pour accompagner les devoirs avec ChatGPT sans faire le travail à la place de l'élève."
 internalLinks:
   - "/guides"

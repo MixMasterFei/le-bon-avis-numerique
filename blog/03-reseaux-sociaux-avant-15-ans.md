@@ -4,7 +4,7 @@ slug: "reseaux-sociaux-avant-15-ans"
 author: "Totem Avisé"
 category: "parentalite-numerique"
 excerpt: "En France, l'interdiction générale envisagée en 2026 a été censurée. Pour votre famille, commencez par vérifier les comptes, les contacts et les recours."
-seoTitle: "Réseaux sociaux avant 15 ans — règles et loi en France"
+seoTitle: "Réseaux sociaux avant 15 ans : règles et loi en France"
 seoDescription: "Le point sur la loi en France en septembre 2026, puis des conseils concrets pour préparer un premier compte ou reprendre les réglages d'un ado."
 internalLinks:
   - "/films"

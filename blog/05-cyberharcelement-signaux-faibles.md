@@ -4,7 +4,7 @@ slug: "cyberharcelement-signaux-faibles"
 author: "Totem Avisé"
 category: "parentalite-numerique"
 excerpt: "Écoutez l'enfant, gardez les éléments utiles et demandez de l'aide. En France, le 3018 accompagne les familles face aux violences numériques."
-seoTitle: "Cyberharcèlement enfant — signes et premiers gestes"
+seoTitle: "Cyberharcèlement enfant : signes et premiers gestes"
 seoDescription: "Les signes qui méritent une conversation, quoi conserver, un message à adapter pour l'école et les contacts utiles en France, dont le 3018."
 internalLinks: []
 sourceLinks:
@@ -67,7 +67,7 @@ Bloquer un compte et signaler un contenu peuvent limiter les contacts. Si la sit
 
 Si des élèves sont impliqués, prévenez l'établissement, même si tout se passe en dehors des cours. Décrivez les faits que vous connaissez, sans présenter une supposition comme une certitude.
 
-Voici un message que vous pouvez adapter :
+Un message à adapter :
 
 « Bonjour, mon enfant m'a signalé des messages et publications qui le visent sur [plateforme ou groupe]. Les faits dont j'ai connaissance datent de [dates]. J'ai conservé les éléments disponibles. Il m'indique que cela affecte [son sommeil, sa venue en classe, ses relations…]. Je souhaite un échange rapide pour convenir des mesures de protection et du suivi. Pouvez-vous me préciser à qui transmettre ces éléments et quand nous pourrons faire le point ? »
 

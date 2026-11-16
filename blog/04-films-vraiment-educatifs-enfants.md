@@ -4,7 +4,7 @@ slug: "films-vraiment-educatifs-enfants"
 author: "Totem Avisé"
 category: "films-series"
 excerpt: "Vice-versa, Coco ou WALL-E peuvent ouvrir des conversations différentes. Choisissez le sujet, vérifiez les points sensibles et gardez une question pour après."
-seoTitle: "Films éducatifs pour enfants — émotions et découvertes"
+seoTitle: "Films éducatifs pour enfants : émotions et découvertes"
 seoDescription: "Des films pour parler des émotions, de la mémoire et du monde, avec des questions à poser et les points à vérifier avant une séance en famille."
 internalLinks:
   - "/media/movie:23985d35-c8be-4b2e-ac43-323d782fb4b6"

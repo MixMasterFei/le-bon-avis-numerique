@@ -4,7 +4,7 @@ slug: "premier-smartphone-enfant"
 author: "Totem Avisé"
 category: "guides-pratiques"
 excerpt: "Partez de ce dont votre enfant a besoin, puis choisissez l'appareil. Réglez les comptes, les achats et les contacts avant de lui confier le téléphone."
-seoTitle: "Premier téléphone enfant — âge, choix et réglages"
+seoTitle: "Premier téléphone enfant : âge, choix et réglages"
 seoDescription: "Téléphone simple ou smartphone, besoins selon l'âge, contrôles parentaux Android et iPhone, achats et règles à préparer avant de le donner."
 internalLinks:
   - "/jeux"
@@ -17,7 +17,7 @@ sourceLinks:
 
 # Premier téléphone : quoi préparer avant de le donner
 
-Votre enfant commence à rentrer seul du collège et vous aimeriez pouvoir le joindre. Lui rêve surtout du même téléphone que ses copains. Les deux envies se retrouvent dans la même discussion, mais elles ne mènent pas forcément au même appareil.
+Votre enfant commence à faire certains trajets seul et vous aimeriez pouvoir le joindre. Lui rêve surtout du même téléphone que ses copains. Les deux envies se retrouvent dans la même discussion, mais elles ne mènent pas forcément au même appareil.
 
 Avant de comparer les modèles, notez ce que le téléphone doit permettre dès maintenant. Appeler en cas de retard ? Recevoir un SMS ? Trouver son chemin ? Le reste pourra attendre, et vous saurez sur quoi vous appuyer pour le dire.
 
@@ -86,7 +86,7 @@ Choisissez une date pour faire le point. Demandez-lui ce qui lui a servi, ce qui
 
 ## Garder l'achat réversible dans ses usages
 
-Ajouter une application au bout de quelques semaines est bien plus facile que d'en retirer dix le lendemain de l'anniversaire. Vous pouvez donner le téléphone avec peu de fonctions au départ et annoncer ce qui sera rediscuté plus tard.
+Ajouter une application au bout de quelques semaines est bien plus facile que d'en retirer dix le lendemain du cadeau. Vous pouvez donner le téléphone avec peu de fonctions au départ et annoncer ce qui sera rediscuté plus tard.
 
 Pour les jeux et les films auxquels il aura accès, regardez leur contenu avec lui dans le [catalogue Totem Avisé](/jeux). Le contrôle parental et les classifications limitent l'accès ; pour choisir un titre, il faut encore savoir ce qu'il propose.
 
