@@ -4,7 +4,7 @@ slug: "jeux-video-en-famille"
 author: "Totem Avisé"
 category: "jeux-video"
 excerpt: "Vérifiez l'âge, le mode local, les commandes et la place de chacun. Minecraft, Kirby et Overcooked 2 se jouent à plusieurs de façons très différentes."
-seoTitle: "Jeux vidéo en famille — choisir pour jouer ensemble"
+seoTitle: "Jeux vidéo en famille : choisir pour jouer ensemble"
 seoDescription: "Minecraft, Kirby, Overcooked 2 : modes de jeu, coopération, difficulté et achats à vérifier avant de choisir un jeu à partager avec vos enfants."
 internalLinks:
   - "/media/game:f746214a-3978-473c-9ee0-949fafb0d8be"

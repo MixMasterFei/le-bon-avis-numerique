@@ -4,7 +4,7 @@ slug: "revisions-ecrans-outils-numeriques"
 author: "Totem Avisé"
 category: "guides-pratiques"
 excerpt: "Une notion, une ressource, un exercice refait sans écran. Lumni, Les fondamentaux et quelques cartes mémoire suffisent souvent."
-seoTitle: "Révisions sur écran — outils et séance pratique"
+seoTitle: "Révisions sur écran : outils et séance pratique"
 seoDescription: "Une séance de révision à adapter, des ressources Lumni et Canopé, et une façon simple de vérifier ce qui a été retenu sans multiplier les applications."
 internalLinks:
   - "/blog/chatgpt-devoirs-parents"
