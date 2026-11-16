@@ -4,6 +4,9 @@ slug: "bon-age-film-enfant"
 author: "Totem Avisé"
 category: "films-series"
 publishedAt: "2026-11-17"
+heroImage: "blog/images/12-bon-age-film-enfant.webp"
+heroAlt: "Vus de dos sur un canapé, trois enfants regardent un paysage de château au coucher du soleil sur l'écran du salon"
+heroCredit: "Image générée par IA"
 excerpt: "Classification, conseil d'âge et sensibilité de votre enfant ne répondent pas à la même question. Voici dans quel ordre les lire avant de choisir un film."
 seoTitle: "À quel âge voir un film ? Comprendre les repères"
 seoDescription: "Tous publics, signalétique TV, âge conseillé : apprenez à distinguer les repères et à vérifier les scènes sensibles avant une séance avec votre enfant."
@@ -48,19 +51,19 @@ Une recommandation éditoriale cherche à répondre à une autre question : à q
 
 Chez Totem Avisé, nous voulons vous aider à relier ce repère aux éléments du film : peur, violence, thèmes sensibles, mais aussi histoire et intérêt de la séance. Notre [méthode](/notre-methode) explique comment lire les informations proposées.
 
-**Regardez les raisons avant de retenir le chiffre.** Si une fiche signale une séparation familiale et que ce sujet inquiète votre enfant en ce moment, cette information compte dans votre choix.
+Regardez les raisons avant de retenir le chiffre. Si une fiche signale une séparation familiale et que ce sujet inquiète votre enfant en ce moment, cette information compte dans votre choix.
 
 Les données peuvent aussi être incomplètes. Une indication absente ne veut pas dire que le film ne contient aucune scène sensible. Quand une réponse compte vraiment pour vous, cherchez une description plus précise ou regardez le passage concerné en amont.
 
 ## Le même thème peut prendre des formes très différentes
 
-Prenons deux films d'animation.
+Deux films d'animation montrent l'écart.
 
 Dans [Coco](/media/movie:3393ce29-40eb-4078-bb35-ef0e89738212), Miguel rencontre des membres de sa famille dans le monde des morts. La mémoire familiale et la disparition sont au cœur de l'histoire, comme le présente [Pixar](https://www.pixar.com/coco). Les chansons et les couleurs ne rendent pas ces sujets anodins pour tous les enfants.
 
-Dans [WALL-E](/media/movie:2eb49468-f860-47d4-86e1-e78f04cbd253), la Terre désertée et couverte de déchets sert de point de départ. La [présentation du studio](https://www.pixar.com/wall-e) permet de situer cette aventure. Un enfant peut être intrigué par les robots et inquiet devant cet avenir.
+Dans [WALL-E](/media/movie:2eb49468-f860-47d4-86e1-e78f04cbd253), la Terre désertée et couverte de déchets sert de point de départ. La [présentation du studio](https://www.pixar.com/wall-e) situe cette aventure. Un enfant peut être intrigué par les robots et inquiet devant cet avenir.
 
-Ces indications ne permettent pas d'attribuer un âge universel à chaque réaction. Elles donnent surtout une question à vous poser : **quel élément pourrait compter pour mon enfant ?**
+On ne peut pas en tirer un âge valable pour tous les enfants. La question utile est plus simple : quel élément pourrait compter pour le vôtre ?
 
 Si vous hésitez sur une scène inquiétante, notre guide sur les [films qui font peur](/blog/films-qui-font-peur-enfant-pret) aide à préciser ce qui peut impressionner votre enfant.
 
@@ -68,7 +71,7 @@ Si vous hésitez sur une scène inquiétante, notre guide sur les [films qui fon
 
 Imaginons une famille avec deux enfants de 7 et 11 ans. Le plus grand réclame un film d'aventure. Le plus jeune accepte pour passer la soirée avec lui, mais les créatures menaçantes l'impressionnent beaucoup.
 
-La solution n'est pas de chercher un film « pour 9 ans ». Pour une séance commune, commencez par les limites du plus jeune ou du plus sensible sur le thème concerné. Puis cherchez ce qui peut intéresser l'aîné à l'intérieur de ce choix.
+Chercher un film « pour 9 ans », à mi-chemin, ne règle rien. Pour une séance commune, partez des limites du plus jeune ou du plus sensible sur le thème concerné. Puis cherchez ce qui peut intéresser l'aîné à l'intérieur de ce choix.
 
 Vous pouvez aussi prévoir deux séances différentes. Cela évite de demander au petit de tenir bon et au grand de renoncer chaque fois au film qu'il attend.
 
@@ -76,11 +79,11 @@ Vous pouvez aussi prévoir deux séances différentes. Cela évite de demander a
 
 Avant d'appuyer sur lecture :
 
-- **Vérifiez le titre et l'année.** Un remake, une suite et le film que vous avez vu enfant ne sont pas interchangeables.
-- **Lisez la classification applicable.** Au cinéma, respectez l'interdiction d'âge.
-- **Cherchez le motif qui vous concerne.** Violence réaliste, disparition, humiliation, menace, sons intenses : quel point mérite votre attention ?
-- **Décidez des conditions de la séance.** À la maison, pouvez-vous arrêter facilement ? Votre enfant a-t-il envie de ce film aujourd'hui ?
+- Vérifiez le titre et l'année. Un remake, une suite et le film que vous avez vu enfant ne sont pas interchangeables.
+- Lisez la classification applicable. Au cinéma, respectez l'interdiction d'âge.
+- Cherchez le motif qui vous concerne. Violence réaliste, disparition, humiliation, menace, sons intenses : quel point mérite votre attention ?
+- Décidez des conditions de la séance. À la maison, pouvez-vous arrêter facilement ? Votre enfant a-t-il envie de ce film aujourd'hui ?
 
-Vous n'avez pas besoin de trouver une œuvre sans aucune émotion difficile. Vous cherchez assez d'informations pour proposer une séance qui a du sens pour votre famille.
+Un film peut contenir des émotions difficiles et rester un bon choix. Il vous faut simplement assez d'informations pour proposer une séance qui a du sens chez vous.
 
-Le [catalogue de films Totem Avisé](/films) peut vous aider à préparer cette comparaison. Gardez deux ou trois possibilités et lisez leurs détails : vous aurez plus de prise sur votre décision qu'avec un chiffre isolé.
+Pour comparer, le [catalogue de films Totem Avisé](/films) est un bon point de départ. Gardez deux ou trois titres et lisez leurs détails : c'est plus parlant qu'un chiffre isolé.

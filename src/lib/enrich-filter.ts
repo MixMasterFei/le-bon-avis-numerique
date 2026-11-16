@@ -14,27 +14,29 @@ import { UNRELEASED_TMDB_STATUSES } from "./release-status"
  */
 
 /**
- * How long after release a title must wait before enrichment may run.
+ * When may a newly released title be enriched?
  *
- * The guard used to be `releaseDate <= now`, which flips at MIDNIGHT on release
- * day. Spider-Man: Brand New Day opened in France on 2026-07-29 and was
- * enriched at 06:31 that same morning — six hours into its theatrical run,
- * before a single review existed and for a film that cannot be in the model's
- * training data. The model duly confabulated, and published it as parent
- * guidance: « Peut inclure scènes de tension, antagonistes menaçants et
- * contrôles mentaux. » — "peut inclure" being the model saying it does not
- * know, and the mind-control detail being invented outright.
+ * The model has never seen a film released this week: it works only from the
+ * data we hold (synopsis, keywords, genres, the French certification). On
+ * release morning that data is thin and it fills the gaps by inventing. The
+ * guard used to be `releaseDate <= now`; Spider-Man: Brand New Day was enriched
+ * six hours into its run on 2026-07-29 and published « peut inclure… contrôles
+ * mentaux » as parent guidance — invented. A fixed 7-day wait followed.
  *
- * A day-0 title is epistemically identical to a day-minus-1 title, so the old
- * threshold was one day too early. Waiting a week lets reviews, parent guides
- * and the CSA rating land first. Meanwhile the fiche is not empty: provisional
- * ages still show (badged "à confirmer") and the content analysis stays hidden
- * via `shouldHideContentAnalysis`, which is the honest state for a film nobody
- * has written about yet.
+ * Seven days was too long for us: Search Console (Nov 2026) shows the
+ * « [titre] à partir de quel âge » searches peak in release week, while the
+ * fiche still showed a provisional age. Rule since 16 Nov 2026 (Xavier):
  *
- * Override with ENRICH_RELEASE_GRACE_DAYS (0 restores the old behaviour).
+ * - a released title WITH a French certification (CNC visa — usually known
+ *   before release) is eligible from its release day;
+ * - one WITHOUT waits ENRICH_RELEASE_GRACE_DAYS (default 3) after release;
+ * - nothing unreleased, ever, and no pre-release TMDB status.
+ *
+ * The certification grounds the age; the model still has only the synopsis
+ * for content, so the Age Keeper reviews the first release-week batches.
+ * ENRICH_RELEASE_GRACE_DAYS=0 lets everything through on release day.
  */
-export const DEFAULT_ENRICH_GRACE_DAYS = 7
+export const DEFAULT_ENRICH_GRACE_DAYS = 3
 
 export function enrichGraceDays(): number {
   const raw = process.env.ENRICH_RELEASE_GRACE_DAYS
@@ -43,18 +45,37 @@ export function enrichGraceDays(): number {
   return Number.isFinite(n) && n >= 0 ? n : DEFAULT_ENRICH_GRACE_DAYS
 }
 
-/** The newest release date currently eligible for enrichment. */
+/** The newest release date eligible WITHOUT a French certification. */
 export function enrichCutoffDate(now: Date = new Date()): Date {
   return new Date(now.getTime() - enrichGraceDays() * 24 * 60 * 60 * 1000)
 }
 
+/** Pure mirror of notUnreleasedWhere's date rule, for tests and callers holding a row. */
+export function isEnrichableRelease(
+  item: { releaseDate: Date | null; officialRating?: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (item.releaseDate == null) return true
+  if (item.releaseDate.getTime() > now.getTime()) return false
+  if (item.officialRating) return true
+  return item.releaseDate.getTime() <= enrichCutoffDate(now).getTime()
+}
+
 /** Prisma predicate: title is released enough to honestly enrich. */
-export function notUnreleasedWhere(): Prisma.MediaItemWhereInput {
-  const cutoff = enrichCutoffDate()
+export function notUnreleasedWhere(now: Date = new Date()): Prisma.MediaItemWhereInput {
+  const cutoff = enrichCutoffDate(now)
   return {
     AND: [
-      // null release date = unknown/old catalog item → still eligible.
-      { OR: [{ releaseDate: null }, { releaseDate: { lte: cutoff } }] },
+      {
+        OR: [
+          // null release date = unknown/old catalog item → still eligible.
+          { releaseDate: null },
+          // No French certification: wait the grace period.
+          { releaseDate: { lte: cutoff } },
+          // French certification known: eligible from release day.
+          { AND: [{ releaseDate: { lte: now } }, { officialRating: { not: null } }] },
+        ],
+      },
       // null-safe: keep rows with no status AND rows whose status isn't a
       // pre-release value. A bare NOT/in would drop NULLs.
       { OR: [{ releaseStatus: null }, { releaseStatus: { notIn: [...UNRELEASED_TMDB_STATUSES] } }] },

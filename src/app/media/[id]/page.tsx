@@ -38,6 +38,8 @@ import { BlurredPoster } from "@/components/media/BlurredPoster"
 import { MediaV3Toggle } from "@/components/media-v3/MediaV3Toggle"
 import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
 import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
+import { HomonymNotice } from "@/components/media/HomonymNotice"
+import { findHomonyms } from "@/lib/homonyms"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
 import { getDashboardMedia } from "@/lib/media-dashboard-data"
@@ -569,6 +571,15 @@ export default async function MediaPage({ params }: MediaPageProps) {
     (media.type === "MOVIE" || media.type === "TV" || media.type === "GAME") &&
     mediaV3Enabled(await isAdmin())
 
+  // « Ne pas confondre » — same-type works sharing this exact title (catalogue
+  // fiches only). One cheap query; an error just hides the notice.
+  const homonyms =
+    source === "database" && dbId ? await findHomonyms({ id: dbId, type: media.type, title: media.title }) : []
+  const releaseYear = media.releaseDate ? new Date(media.releaseDate).getUTCFullYear() : null
+  const homonymNotice = (
+    <HomonymNotice homonyms={homonyms} type={media.type} year={Number.isFinite(releaseYear) ? releaseYear : null} />
+  )
+
   if (wantsDashboard) {
     const dash = await getDashboardMedia(rawId)
     if (dash) {
@@ -581,7 +592,12 @@ export default async function MediaPage({ params }: MediaPageProps) {
               dbId={dash.id}
               hideAnalysis={hideContentAnalysis}
               quickAnswer={{ question: quickAnswer.question, answer: quickAnswer.answer }}
-              breadcrumb={<DashboardBreadcrumb type={dash.type} title={dash.title} />}
+              breadcrumb={
+                <>
+                  <DashboardBreadcrumb type={dash.type} title={dash.title} />
+                  {homonymNotice}
+                </>
+              }
               guideKey={guideKey}
               ageGuideHref={ageGuideHref}
             />
@@ -650,6 +666,7 @@ export default async function MediaPage({ params }: MediaPageProps) {
 
         <div className="container mx-auto px-4 pt-6 pb-10 relative">
           <BackButton className="mb-5" />
+          {homonymNotice}
 
           <div
             className="rounded-2xl p-5 sm:p-6 lg:p-7"
