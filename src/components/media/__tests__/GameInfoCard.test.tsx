@@ -43,3 +43,21 @@ describe("GameInfoCard — Totem age next to PEGI", () => {
     expect(screen.queryByText(/Totem recommande/)).toBeNull()
   })
 })
+
+describe("GameInfoCard — in-game purchases are never denied", () => {
+  it("says « non renseigné », not « Pas d'achats », when nothing flags purchases (the Minecraft case)", () => {
+    render(<GameInfoCard consumerism={1} officialRating="PEGI_7" pegiDescriptors={[]} expertAgeRec={7} />)
+    expect(screen.queryByText(/Pas d'achats/)).toBeNull()
+    expect(screen.getByText(/Non renseigné · à vérifier/)).toBeInTheDocument()
+  })
+
+  it("credits PEGI's own « Achats intégrés » pictogram, even with a low analysis score", () => {
+    render(<GameInfoCard consumerism={0} officialRating="PEGI_3" pegiDescriptors={["Achats intégrés"]} expertAgeRec={3} />)
+    expect(screen.getByText(/Oui · signalé par PEGI/)).toBeInTheDocument()
+  })
+
+  it("says the analysis flagged purchases when the consumerism score is high", () => {
+    render(<GameInfoCard consumerism={4} officialRating="PEGI_12" pegiDescriptors={[]} expertAgeRec={12} />)
+    expect(screen.getByText(/Signalé par notre analyse/)).toBeInTheDocument()
+  })
+})
