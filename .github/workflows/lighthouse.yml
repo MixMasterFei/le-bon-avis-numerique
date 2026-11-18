@@ -19,7 +19,10 @@ on:
 jobs:
   lighthouse:
     name: Performance budgets
-    runs-on: ubuntu-latest
+    # Pinned (18 Nov 2026): ubuntu-latest moved to 26.04, where Playwright 1.58
+    # cannot install Chromium (« does not support chromium on ubuntu26.04-x64 »).
+    # Lift once the pinned Playwright supports 26.04.
+    runs-on: ubuntu-24.04
     # Allow the job to complete even if Vercel hasn't finished deploying
     # — lhci will retry the URL fetch a few times before failing.
     timeout-minutes: 15

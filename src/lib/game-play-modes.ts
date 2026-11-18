@@ -104,7 +104,15 @@ export function describePlayModes(input: PlayModeInput): PlayModeSummary {
     }
   }
   if (signals.has("solo")) {
-    return { label: "Solo uniquement", status: "no", description: "Se joue seul", isMultiplayer: false, hasOnline }
+    // « Solo » comes from tags, not a verified fact: never assert there is no
+    // online mode (Minecraft carried tags that contradicted each other).
+    return {
+      label: "Mode solo",
+      status: "unknown",
+      description: "Mode solo signalé ; vérifiez s'il existe aussi un mode en ligne",
+      isMultiplayer: false,
+      hasOnline,
+    }
   }
   return { label: "Modes de jeu", status: "unknown", description: "Nombre de joueurs non renseigné", isMultiplayer: false, hasOnline }
 }

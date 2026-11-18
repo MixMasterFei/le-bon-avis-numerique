@@ -19,7 +19,7 @@ describe("describePlayModes", () => {
   })
 
   it("ignores enrichment themes that only look like modes", () => {
-    expect(describePlayModes({ topics: ["Coopération", "Amitié", "Solo"] })).toMatchObject({ label: "Solo uniquement", status: "no" })
+    expect(describePlayModes({ topics: ["Coopération", "Amitié", "Solo"] })).toMatchObject({ label: "Mode solo", status: "unknown" })
   })
 
   it("flags online play on explicit signals only: MMO / battle royale tags, MOBA genre, PEGI « Jeu en ligne »", () => {
@@ -36,7 +36,7 @@ describe("describePlayModes", () => {
       status: "yes",
     })
     expect(describePlayModes({ gameModes: ["Massively Multiplayer Online (MMO)"] })).toMatchObject({ status: "warning" })
-    expect(describePlayModes({ gameModes: ["Single player"] })).toMatchObject({ label: "Solo uniquement", description: "Se joue seul" })
+    expect(describePlayModes({ gameModes: ["Single player"] })).toMatchObject({ label: "Mode solo", description: "Mode solo signalé ; vérifiez s'il existe aussi un mode en ligne" })
   })
 
   it("says « non renseigné » instead of « Se joue seul » when there is no mode data", () => {
@@ -56,7 +56,9 @@ describe("describePlayModes", () => {
   it("recognises every « Multi » style tag the importer can write (no silent drift)", () => {
     const multi = GAME_STYLE_GROUPS.find((g) => g.label === "Multi")!.tags
     for (const tag of multi) {
-      expect({ tag, status: describePlayModes({ topics: [tag] }).status }).not.toEqual({ tag, status: "unknown" })
+      // « Modes de jeu » is the not-recognised fallback. (« Mode solo » is
+      // recognised but reported as unverified, so status alone can't tell.)
+      expect({ tag, label: describePlayModes({ topics: [tag] }).label }).not.toEqual({ tag, label: "Modes de jeu" })
     }
   })
 })

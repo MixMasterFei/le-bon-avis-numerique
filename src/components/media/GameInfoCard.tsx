@@ -177,6 +177,30 @@ function GamePegiPanel({
   )
 }
 
+/**
+ * The « Achats intégrés » line. Never a negative claim: we do not hold a
+ * verified « no purchases » fact for any game. It used to read « Pas
+ * d'achats supplémentaires » whenever the model's consumerism score was
+ * below 3 — 1,653 game fiches in Nov 2026, Minecraft included, some of them
+ * carrying PEGI's own « Achats intégrés » pictogram on the same page.
+ */
+export function describePurchases({
+  providedPurchases,
+  consumerism,
+  pegiDescriptors,
+}: {
+  providedPurchases?: boolean
+  consumerism?: number
+  pegiDescriptors?: string[]
+}): { status: "warning" | "unknown"; description: string } {
+  const pegi = (pegiDescriptors ?? []).some((d) => d.trim().toLowerCase() === "achats intégrés")
+  if (pegi) return { status: "warning", description: "Oui · signalé par PEGI (achats avec de l'argent réel)" }
+  if (providedPurchases === true || (consumerism !== undefined && consumerism >= 3)) {
+    return { status: "warning", description: "Signalé par notre analyse : achats avec de l'argent réel possibles" }
+  }
+  return { status: "unknown", description: "Non renseigné · à vérifier dans les réglages du jeu ou de la console" }
+}
+
 export function GameInfoCard({
   platforms,
   genres,
@@ -193,7 +217,7 @@ export function GameInfoCard({
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
 
-  const hasPurchases = providedPurchases ?? (consumerism !== undefined && consumerism >= 3)
+  const purchases = describePurchases({ providedPurchases, consumerism, pegiDescriptors })
   const gameType = getGameType(genres)
   const playModes = describePlayModes({ gameModes, topics, genres, pegiDescriptors, hasOnlineFeatures })
 
@@ -246,12 +270,8 @@ export function GameInfoCard({
           <StatusItem
             icon={DollarSign}
             label="Achats intégrés"
-            status={hasPurchases ? "warning" : "no"}
-            description={
-              hasPurchases
-                ? "Propose des achats avec de l'argent réel"
-                : "Pas d'achats supplémentaires"
-            }
+            status={purchases.status}
+            description={purchases.description}
           />
 
           {genres?.some(
