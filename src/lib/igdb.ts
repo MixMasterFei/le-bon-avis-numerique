@@ -17,6 +17,7 @@ import { escapeIGDBQuery, sanitizeNumber } from "./security"
 import { isUnreleasedStatus } from "./release-status"
 import { normalizeGameGenres } from "./igdb-genres"
 import { extractPegiDescriptors, type IGDBAgeRatingEntry } from "./pegi-descriptors"
+import type { IgdbGameFactsRecord, IgdbSeriesRecord, IgdbTimeToBeatRecord } from "./game-facts"
 
 const IGDB_BASE_URL = "https://api.igdb.com/v4"
 const TWITCH_AUTH_URL = "https://id.twitch.tv/oauth2/token"
@@ -364,6 +365,75 @@ export async function getGameDetails(gameId: number): Promise<IGDBGame | null> {
 
   const results = await igdbFetch<IGDBGame[]>("/games", body)
   return results[0] || null
+}
+
+// ============================================
+// GAME FACTS (« Fiche pratique »)
+// ============================================
+// Batched by IGDB id (`where id = (…)`) so a 100-game run is three requests,
+// not three hundred. The caller paces calls (≤ 4 req/s, IGDB's limit). The
+// mapping is pure and lives in src/lib/game-facts.ts.
+
+const MULTIPLAYER_MODE_FIELDS = [
+  "campaigncoop", "dropin", "lancoop", "offlinecoop", "offlinecoopmax", "offlinemax",
+  "onlinecoop", "onlinecoopmax", "onlinemax", "splitscreen", "splitscreenonline", "platform",
+].map((f) => `multiplayer_modes.${f}`).join(", ")
+
+function safeIdList(igdbIds: number[]): number[] {
+  return [...new Set(igdbIds.map((id) => sanitizeNumber(id, 1)).filter((id): id is number => !!id))]
+}
+
+/**
+ * Multiplayer modes, game modes, companies and age ratings for up to 500
+ * games. Only long-standing field names: a failure here THROWS (the caller
+ * reports the chunk as failed and writes nothing for it).
+ */
+export async function getGameFactsRecords(igdbIds: number[]): Promise<IgdbGameFactsRecord[]> {
+  const ids = safeIdList(igdbIds).slice(0, 500)
+  if (!ids.length) return []
+  return igdbFetch<IgdbGameFactsRecord[]>(
+    "/games",
+    `fields name, game_modes.name, ${MULTIPLAYER_MODE_FIELDS},
+            involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
+            ${IGDB_AGE_RATING_FIELDS};
+     where id = (${ids.join(",")}); limit 500;`,
+  )
+}
+
+/**
+ * Series for up to 500 games, or NULL when every spelling failed. Isolated
+ * like getGameReleaseStatus: `collection` was replaced by `collections` and
+ * IGDB rejects a whole query on one unknown field, so a renamed field costs
+ * this lookup only. NULL tells the caller to keep what it already stores.
+ */
+export async function getGameSeriesRecords(igdbIds: number[]): Promise<IgdbSeriesRecord[] | null> {
+  const ids = safeIdList(igdbIds).slice(0, 500)
+  if (!ids.length) return []
+  for (const fields of ["name, collections.name, franchise.name, franchises.name", "name, collection.name, franchise.name"]) {
+    try {
+      return await igdbFetch<IgdbSeriesRecord[]>("/games", `fields ${fields}; where id = (${ids.join(",")}); limit 500;`)
+    } catch {
+      // Unknown field / transport error — try the next spelling.
+    }
+  }
+  return null
+}
+
+/**
+ * Time-to-beat records (seconds, with a submission count) for up to 500
+ * games, or NULL when the endpoint failed. Isolated for the same reason.
+ */
+export async function getGameTimeToBeats(igdbIds: number[]): Promise<IgdbTimeToBeatRecord[] | null> {
+  const ids = safeIdList(igdbIds).slice(0, 500)
+  if (!ids.length) return []
+  try {
+    return await igdbFetch<IgdbTimeToBeatRecord[]>(
+      "/game_time_to_beats",
+      `fields game_id, hastily, normally, completely, count; where game_id = (${ids.join(",")}); limit 500;`,
+    )
+  } catch {
+    return null
+  }
 }
 
 /**

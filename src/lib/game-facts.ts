@@ -342,3 +342,117 @@ export function isEmptyGameFacts(facts: GameFacts): boolean {
     facts.timeToBeatHours === null
   )
 }
+
+// ── Run planning (pure) ─────────────────────────────────────────────────────
+
+/** The stored facts of one fiche, as read before the run. */
+export interface StoredGameFacts {
+  gameOnlinePlay: boolean | null
+  gameLocalPlay: boolean | null
+  gameSplitScreen: boolean | null
+  gameMinPlayers: number | null
+  gameMaxPlayers: number | null
+  gameInGamePurchases: boolean | null
+  gameDeveloper: string | null
+  gamePublisher: string | null
+  gameSeries: string | null
+  gameTimeToBeatHours: number | null
+}
+
+export interface GameFactsRow extends StoredGameFacts {
+  id: string
+  title: string
+  igdbId: number
+}
+
+export type GameFactsPlan =
+  | { id: string; title: string; igdbId: number; outcome: "not-found" }
+  | {
+      id: string
+      title: string
+      igdbId: number
+      outcome: "changed" | "unchanged"
+      facts: GameFacts
+      /** Columns whose value moves, as « column: before → after ». */
+      changes: string[]
+    }
+
+export function storedFromFacts(f: GameFacts): StoredGameFacts {
+  return {
+    gameOnlinePlay: f.onlinePlay,
+    gameLocalPlay: f.localPlay,
+    gameSplitScreen: f.splitScreen,
+    gameMinPlayers: f.minPlayers,
+    gameMaxPlayers: f.maxPlayers,
+    gameInGamePurchases: f.inGamePurchases,
+    gameDeveloper: f.developer,
+    gamePublisher: f.publisher,
+    gameSeries: f.series,
+    gameTimeToBeatHours: f.timeToBeatHours,
+  }
+}
+
+/**
+ * What a run would write for each fiche. `series` / `timeToBeat` are NULL
+ * when that isolated lookup failed: the stored value is then KEPT (a failed
+ * request is not « no series »). A game the source no longer returns is
+ * reported « not-found » and left untouched.
+ */
+export function planGameFactsRun(
+  rows: GameFactsRow[],
+  records: IgdbGameFactsRecord[],
+  series: IgdbSeriesRecord[] | null,
+  timeToBeat: IgdbTimeToBeatRecord[] | null,
+): GameFactsPlan[] {
+  const byId = new Map(records.map((r) => [r.id, r]))
+  const seriesById = series ? new Map(series.map((r) => [r.id, r])) : null
+  const ttbById = new Map<number, IgdbTimeToBeatRecord>()
+  for (const t of timeToBeat ?? []) if (typeof t.game_id === "number") ttbById.set(t.game_id, t)
+
+  return rows.map((row): GameFactsPlan => {
+    const record = byId.get(row.igdbId)
+    if (!record) return { id: row.id, title: row.title, igdbId: row.igdbId, outcome: "not-found" }
+
+    const facts = gameFactsFromIgdb(record, {
+      series: seriesById?.get(row.igdbId) ?? null,
+      timeToBeat: ttbById.get(row.igdbId) ?? null,
+    })
+    if (seriesById === null) {
+      facts.series = row.gameSeries
+      if (row.gameSeries !== null) facts.sources = [...facts.sources, "collections(kept)"].sort()
+    }
+    if (timeToBeat === null) {
+      facts.timeToBeatHours = row.gameTimeToBeatHours
+      if (row.gameTimeToBeatHours !== null) facts.sources = [...facts.sources, "time_to_beat(kept)"].sort()
+    }
+
+    const next = storedFromFacts(facts)
+    const changes: string[] = []
+    for (const key of Object.keys(next) as (keyof StoredGameFacts)[]) {
+      if (next[key] !== row[key]) changes.push(`${key}: ${String(row[key])} → ${String(next[key])}`)
+    }
+    return {
+      id: row.id,
+      title: row.title,
+      igdbId: row.igdbId,
+      outcome: changes.length ? "changed" : "unchanged",
+      facts,
+      changes,
+    }
+  })
+}
+
+/** Paces async calls to at most one every `minIntervalMs` (IGDB: 4 req/s). */
+export function createPacer(
+  minIntervalMs: number,
+  now: () => number = Date.now,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+) {
+  let last = -Infinity
+  return async function pace<T>(fn: () => Promise<T>): Promise<T> {
+    const wait = last + minIntervalMs - now()
+    if (wait > 0) await sleep(wait)
+    last = now()
+    return fn()
+  }
+}

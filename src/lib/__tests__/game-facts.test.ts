@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest"
 import {
+  createPacer,
+  planGameFactsRun,
+  type GameFactsRow,
   gameFactsFromIgdb,
   gameFactsSourceLabel,
   isEmptyGameFacts,
@@ -191,5 +194,85 @@ describe("timeToBeatHoursFromIgdb", () => {
     expect(timeToBeatHoursFromIgdb({ normally: 5_000_000, count: 50 })).toBeNull()
     expect(timeToBeatHoursFromIgdb({ hastily: 3600, count: 50 })).toBeNull()
     expect(timeToBeatHoursFromIgdb(null)).toBeNull()
+  })
+})
+
+const EMPTY_ROW: Omit<GameFactsRow, "id" | "title" | "igdbId"> = {
+  gameOnlinePlay: null,
+  gameLocalPlay: null,
+  gameSplitScreen: null,
+  gameMinPlayers: null,
+  gameMaxPlayers: null,
+  gameInGamePurchases: null,
+  gameDeveloper: null,
+  gamePublisher: null,
+  gameSeries: null,
+  gameTimeToBeatHours: null,
+}
+
+describe("planGameFactsRun", () => {
+  const rows: GameFactsRow[] = [
+    { ...EMPTY_ROW, id: "mk", title: "Mario Kart 8 Deluxe", igdbId: 1001 },
+    { ...EMPTY_ROW, id: "gone", title: "Disparu", igdbId: 9999 },
+  ]
+
+  it("reports changes, and a game the source no longer returns as not-found", () => {
+    const plan = planGameFactsRun(rows, [MARIO_KART], [{ id: 1001, collections: [{ name: "Mario Kart" }] }], [])
+    expect(plan[0].outcome).toBe("changed")
+    expect(plan[1]).toEqual({ id: "gone", title: "Disparu", igdbId: 9999, outcome: "not-found" })
+    if (plan[0].outcome !== "not-found") {
+      expect(plan[0].changes).toContain("gameMaxPlayers: null → 12")
+      expect(plan[0].facts.series).toBe("Mario Kart")
+    }
+  })
+
+  it("a re-read finding the same values is unchanged", () => {
+    const stored: GameFactsRow = {
+      id: "mk",
+      title: "Mario Kart 8 Deluxe",
+      igdbId: 1001,
+      gameOnlinePlay: true,
+      gameLocalPlay: true,
+      gameSplitScreen: true,
+      gameMinPlayers: 1,
+      gameMaxPlayers: 12,
+      gameInGamePurchases: true,
+      gameDeveloper: "Nintendo EPD",
+      gamePublisher: "Nintendo",
+      gameSeries: "Mario Kart",
+      gameTimeToBeatHours: 12.5,
+    }
+    // Both isolated lookups failed (null): the stored series and duration are kept.
+    const plan = planGameFactsRun([stored], [MARIO_KART], null, null)
+    expect(plan[0].outcome).toBe("unchanged")
+    if (plan[0].outcome !== "not-found") {
+      expect(plan[0].facts.sources).toContain("collections(kept)")
+      expect(plan[0].facts.sources).toContain("time_to_beat(kept)")
+    }
+  })
+
+  it("a lookup that answered without the game clears nothing it never had", () => {
+    const plan = planGameFactsRun([{ ...rows[0] }], [{ id: 1001 }], [], [])
+    expect(plan[0].outcome).toBe("unchanged")
+  })
+})
+
+describe("createPacer", () => {
+  it("spaces calls by the minimum interval", async () => {
+    let clock = 0
+    const sleeps: number[] = []
+    const pace = createPacer(
+      250,
+      () => clock,
+      async (ms) => {
+        sleeps.push(ms)
+        clock += ms
+      },
+    )
+    await pace(async () => 1)
+    clock += 100
+    await pace(async () => 2)
+    await pace(async () => 3)
+    expect(sleeps).toEqual([150, 250])
   })
 })
