@@ -463,15 +463,14 @@ export function MediaDashboard({
         {/* ===== Alternatives plus jeunes — pilot game fiches, streamed ===== */}
         {pilot && !hideAnalysis && typeof media.expertAgeRec === "number" && (
           <Suspense fallback={null}>
-            <div className="mb-[13px]">
-              <AgeAlternativesGames
-                mediaId={dbId}
-                title={media.title}
-                genres={media.genres}
-                topics={media.topics}
-                currentAge={media.expertAgeRec}
-              />
-            </div>
+            <AgeAlternativesGames
+              mediaId={dbId}
+              title={media.title}
+              genres={media.genres}
+              topics={media.topics}
+              currentAge={media.expertAgeRec}
+              className="mb-[13px]"
+            />
           </Suspense>
         )}
 
