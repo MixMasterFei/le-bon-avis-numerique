@@ -24,7 +24,22 @@ how sure it must be, what it costs, and how a human keeps control.
   care banners with results, never instead.
 - Never expose model or vendor names in rendered text.
 
-## Open work (2026-11-06)
+## Open work (2026-11-20)
+- **Game « augmentation » pilot** (approved by Xavier 19 Nov 2026, under the Age Keeper's
+  rules) on `claude/agentic-master-game-facts-pilot`, no PR yet, nothing applied or deployed:
+  - Migration `sql/add_game_facts.sql` (12 nullable `game_*` columns; the ten visible facts
+    move `content_updated_at`, bookkeeping columns don't). **NOT applied** — apply before
+    deploying (every fiche selects the columns), then `prisma generate`.
+  - Dispatch-only task `game-facts` (Actions › Scheduled Maintenance, `dry_run=true` first):
+    writes the facts of the 100 treated games only; control games are refused.
+  - Pilot lists frozen in `src/lib/game-pilot.ts` (100 treated weighted toward Totem > PEGI
+    and shared quick-answer wording, 100 controls matched on age band × popularity quintile ×
+    PEGI gap). Selection query in the file's comment.
+  - Pilot V3 fiches: « Fiche pratique » (hidden until the facts were read once), visible
+    « Pourquoi cet âge ? » + PEGI comparison, every parent point, younger alternatives.
+    Classic body unchanged. Controls get nothing.
+  - Next: Xavier reviews → apply migration → dry run → write → deploy → compare treated vs
+    control in Search Console after ~4–6 weeks before widening.
 - **Agent ledger** on `claude/blissful-cori-knkti4` (25 files, no PR yet): « À valider »
   queue, run/cost ledger, autonomy levels. Migration 015 is **already applied in
   production** (tables `agent_runs`, `agent_actions`, `agent_autonomy` exist, unused by the
