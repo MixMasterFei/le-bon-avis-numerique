@@ -8,7 +8,7 @@
  * no purchases descriptor is not « sans achats » — the 18 Nov fix on
  * GameInfoCard). The columns therefore read « oui / valeur / non renseigné ».
  *
- * No I/O here: the fetch lives in game-facts-fetch.ts, the write in the
+ * No I/O here: the fetch lives in src/lib/igdb.ts (getGameFactsRecords…), the write in the
  * dispatch-only route POST /api/cron/game-facts.
  */
 
