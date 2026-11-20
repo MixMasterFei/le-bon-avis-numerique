@@ -50,3 +50,37 @@ describe("getDashboardMedia — « Fiche mise à jour le »", () => {
     expect(media).not.toHaveProperty("updatedAt")
   })
 })
+
+describe("getDashboardMedia — game « Fiche pratique » facts", () => {
+  it("maps the facts columns, keeping NULL as unknown", async () => {
+    db.mediaItem.findUnique.mockResolvedValue({
+      ...row,
+      type: "GAME",
+      gameOnlinePlay: true,
+      gameLocalPlay: null,
+      gameSplitScreen: null,
+      gameMinPlayers: 1,
+      gameMaxPlayers: 4,
+      gameInGamePurchases: null,
+      gameDeveloper: "Studio",
+      gamePublisher: null,
+      gameSeries: "Série",
+      gameTimeToBeatHours: 9.5,
+      gameFactsCheckedAt: new Date("2026-11-20T08:00:00Z"),
+    } as never)
+    const media = await getDashboardMedia(row.id)
+    expect(media?.gameFacts).toEqual({
+      gameOnlinePlay: true,
+      gameLocalPlay: null,
+      gameSplitScreen: null,
+      gameMinPlayers: 1,
+      gameMaxPlayers: 4,
+      gameInGamePurchases: null,
+      gameDeveloper: "Studio",
+      gamePublisher: null,
+      gameSeries: "Série",
+      gameTimeToBeatHours: 9.5,
+      gameFactsCheckedAt: "2026-11-20T08:00:00.000Z",
+    })
+  })
+})
