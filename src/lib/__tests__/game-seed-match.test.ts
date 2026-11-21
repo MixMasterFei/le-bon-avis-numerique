@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { matchTier, normalizeGameName, pickIgdbCandidate } from "@/lib/game-seed-match"
+import { isInReleaseWindow, matchTier, normalizeGameName, pickIgdbCandidate } from "@/lib/game-seed-match"
+import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
 
 // ---------------------------------------------------------------------------
 // The games-top-names cron imports whatever this picks, under the seed's
@@ -49,6 +50,26 @@ describe("pickIgdbCandidate", () => {
     expect(pick?.id).toBe(3)
     // An exact title still wins over every "starts with" hit.
     expect(pickIgdbCandidate(seed, [c(3, "Minecraft Legends", 500), c(9, "Minecraft", 10)])?.id).toBe(9)
+  })
+
+  it("picks a remake sold under its original's exact name only through its release window", () => {
+    // Ocarina of Time (1998), the 3DS version (2011) and the Switch 2 remake
+    // (2026) all answer to the same name. By rating count the original wins,
+    // so without a window the remake's seed would import the 1998 game.
+    const ts = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / 1000
+    const original = { ...c(1, "The Legend of Zelda: Ocarina of Time", 3000), first_release_date: ts("1998-11-21") }
+    const threeDs = { ...c(2, "The Legend of Zelda: Ocarina of Time 3D", 900), first_release_date: ts("2011-06-16") }
+    const remake = { ...c(3, "The Legend of Zelda: Ocarina of Time", 40), first_release_date: ts("2026-11-05") }
+    const undated = c(4, "The Legend of Zelda: Ocarina of Time", 10)
+
+    const seed = TOP_GAMES.find((s) => s.key === "zelda-ocarina-of-time")!
+    expect(seed.releasedFrom).toBeDefined()
+    expect(pickIgdbCandidate(seed, [original, threeDs, remake, undated])?.id).toBe(3)
+    // Not out yet on IGDB → no pick, never the original as a stand-in.
+    expect(pickIgdbCandidate(seed, [original, threeDs, undated])).toBeNull()
+    // Seeds without a window are untouched.
+    expect(isInReleaseWindow({ name: "x", aliases: ["x"] }, undated)).toBe(true)
+    expect(pickIgdbCandidate({ ...seed, releasedFrom: undefined }, [original, remake])?.id).toBe(1)
   })
 
   it("compares without accents, curly apostrophes or trademark signs", () => {
