@@ -224,7 +224,11 @@ export function seriesFromIgdb(
 export const TIME_TO_BEAT_MIN_COUNT = 3
 
 /**
- * Main-story duration in hours (« normally »), rounded to the half hour.
+ * Main-story duration in hours, rounded to the half hour. Read from
+ * `hastily` — the source's « to the credits, without notable time on extras »
+ * figure, which is what the fiche labels « Durée de l'histoire principale ».
+ * `normally` mixes in side content (Crash Bandicoot read 38 h, Fallout 4
+ * 75 h in the 21 Nov 2026 dry run) and would overstate it.
  * Null unless the record carries a submission count of at least
  * TIME_TO_BEAT_MIN_COUNT and a plausible duration (30 min – 1 000 h): a
  * shape we don't recognise yields null, never a guess.
@@ -232,7 +236,7 @@ export const TIME_TO_BEAT_MIN_COUNT = 3
 export function timeToBeatHoursFromIgdb(record: IgdbTimeToBeatRecord | null | undefined): number | null {
   if (!record) return null
   if (typeof record.count !== "number" || record.count < TIME_TO_BEAT_MIN_COUNT) return null
-  const seconds = record.normally
+  const seconds = record.hastily
   if (typeof seconds !== "number" || !Number.isFinite(seconds)) return null
   const hours = seconds / 3600
   if (hours < 0.5 || hours > 1000) return null
