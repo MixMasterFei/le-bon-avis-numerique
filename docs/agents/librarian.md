@@ -20,6 +20,18 @@ enriched, and the scheduled jobs that keep it all running.
 - Manual SQL migrations only (`prisma db execute`), never `prisma db push`.
 - `media_items` is unique on `(tmdb_id, type)` — never on bare `tmdb_id`.
 
+## Open work (2026-11-21)
+- `games-top-names` counts a seed « déjà présent » when ANY edition is in the catalogue
+  (alias search, most-rated pick), so a seed's preferred `catalogueTitles[0]` is never
+  imported: Mario Kart World, Splatoon 3, Overwatch 2, Just Dance 2025/2026, Toca Boca
+  World, Sonic Superstars/Frontiers are absent and the pillar shows older editions
+  (Just Dance **2014**). Fix: also look up `catalogueTitles` in order. Zelda: Ocarina of
+  Time (any version) is not in the catalogue at all.
+- « Les Chroniques de Noël » (tmdb 527435, a 2018 film) carries `release_date`
+  2025-12-10 and so ranks in « Meilleurs films 2025 ».
+- Kaamelott Deuxième Volet partie 2: dated 2026-11-11 but TMDB still says Post
+  Production (re-read today) — the stored date is probably stale.
+
 ## Open work (2026-11-07)
 Branch `librarian/f05-f06` (local, not pushed) — fixes from the 7 Nov assessment:
 - F05: a similarity title is stamped only when all its writes succeeded; only
