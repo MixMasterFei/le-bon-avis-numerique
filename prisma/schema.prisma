@@ -178,6 +178,23 @@ model MediaItem {
   duration        Int? // minutes for movies/shows, null for others
   numberOfSeasons Int?      @map("number_of_seasons") // For TV shows only
   director        String?
+  // Game « Fiche pratique » facts (sql/add_game_facts.sql). NULL = not known,
+  // NEVER « no »: the writer (src/lib/game-facts.ts) only stores what the
+  // source states. Purchases are TRUE only from a PEGI/ESRB descriptor. The
+  // ten fact columns move contentUpdatedAt (DB trigger); source/checkedAt are
+  // bookkeeping and don't. Written with a raw UPDATE (no updatedAt churn).
+  gameOnlinePlay       Boolean?  @map("game_online_play")
+  gameLocalPlay        Boolean?  @map("game_local_play")
+  gameSplitScreen      Boolean?  @map("game_split_screen")
+  gameMinPlayers       Int?      @map("game_min_players")
+  gameMaxPlayers       Int?      @map("game_max_players")
+  gameInGamePurchases  Boolean?  @map("game_in_game_purchases")
+  gameDeveloper        String?   @map("game_developer")
+  gamePublisher        String?   @map("game_publisher")
+  gameSeries           String?   @map("game_series")
+  gameTimeToBeatHours  Float?    @map("game_time_to_beat_hours")
+  gameFactsSource      String?   @map("game_facts_source")
+  gameFactsCheckedAt   DateTime? @map("game_facts_checked_at") @db.Timestamptz(6)
   genres          String[]
   platforms       String[] // Netflix, Disney+, Canal+, etc.
   topics          String[] // Princesses, Dinosaurs, History, etc.

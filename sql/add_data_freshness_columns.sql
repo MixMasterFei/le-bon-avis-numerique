@@ -62,6 +62,9 @@ END
 $$;
 
 -- ── 2. Triggers keeping content_updated_at exact ────────────────────────────
+-- NOTE (2026-11-19): sql/add_game_facts.sql redefines the media_items function
+-- and trigger below to also cover the game « Fiche pratique » columns. Re-run
+-- add_game_facts.sql after this file if you ever re-run this one.
 -- Age or synopsis changed → stamp. `BEFORE UPDATE OF` only fires when the
 -- statement SETs one of these columns, so the quality job, the similarity and
 -- TMDB cursors, streaming syncs etc. never even enter the function, and

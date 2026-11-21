@@ -27,6 +27,16 @@ export interface GuideGameMedia {
   screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[]
 }
 
+const MEDIA_SELECT = {
+  id: true,
+  title: true,
+  posterUrl: true,
+  backdropUrl: true,
+  expertAgeRec: true,
+  platforms: true,
+  screenshots: { orderBy: { order: "asc" as const }, take: 12 },
+} as const
+
 /** Aliases that identify this guide's game in the catalogue. */
 function aliasesFor(guideKey: string): string[] {
   const seed = TOP_GAMES.find((s) => s.key === guideKey)
@@ -34,9 +44,24 @@ function aliasesFor(guideKey: string): string[] {
 }
 
 export async function getGuideGameMedia(guideKey: string): Promise<GuideGameMedia | null> {
-  if (!GAME_GUIDES.some((g) => g.key === guideKey)) return null
+  const guide = GAME_GUIDES.find((g) => g.key === guideKey)
+  if (!guide) return null
+
+  // A guide written about one release (GTA VI, not the most-voted GTA) pins
+  // its fiche. If that row is gone, fall through to alias matching rather
+  // than render without furniture.
+  if (guide.catalogueId) {
+    const pinned = await prisma.mediaItem.findFirst({
+      where: { id: guide.catalogueId, type: "GAME" },
+      select: MEDIA_SELECT,
+    })
+    if (pinned) return toGuideMedia(pinned)
+  }
 
   const aliases = aliasesFor(guideKey)
+  // A remake sold under its original's exact name: only rows released inside
+  // the seed's window can stand for it (see TopGameSeed.releasedFrom).
+  const releasedFrom = TOP_GAMES.find((s) => s.key === guideKey)?.releasedFrom
 
   // A title match can hit spin-offs ("Minecraft Legends", "Minecraft Dungeons")
   // as well as the game itself. Order by the signals that identify the main
@@ -44,6 +69,7 @@ export async function getGuideGameMedia(guideKey: string): Promise<GuideGameMedi
   const candidates = await prisma.mediaItem.findMany({
     where: {
       type: "GAME",
+      ...(releasedFrom ? { releaseDate: { gte: new Date(`${releasedFrom}T00:00:00.000Z`) } } : {}),
       OR: aliases.map((a) => ({ title: { contains: a, mode: "insensitive" as const } })),
     },
     select: {
@@ -66,8 +92,18 @@ export async function getGuideGameMedia(guideKey: string): Promise<GuideGameMedi
   // Prefer an exact-ish title (the bare game name) over a spin-off, then fall
   // back to the best-ranked candidate.
   const exact = candidates.find((c) => aliases.includes(c.title.trim().toLowerCase()))
-  const row = exact ?? candidates[0]
+  return toGuideMedia(exact ?? candidates[0])
+}
 
+function toGuideMedia(row: {
+  id: string
+  title: string
+  posterUrl: string | null
+  backdropUrl: string | null
+  expertAgeRec: number | null
+  platforms: string[] | null
+  screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[] | null
+}): GuideGameMedia {
   return {
     id: row.id,
     title: row.title,
