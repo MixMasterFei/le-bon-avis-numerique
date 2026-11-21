@@ -506,7 +506,7 @@ export const GAME_GUIDES: GameGuide[] = [
     },
     playTogether: {
       intro:
-        "Jouer à GTA VI avec un enfant de 12 ans n'est pas la piste de ce guide. En revanche, s'intéresser à ce qui l'attire dans le jeu, c'est jouer avec lui sur un autre terrain.",
+        "Ici, jouer ensemble veut dire s'intéresser à ce qui l'attire dans GTA, puis trouver à deux le jeu qui y répond à son âge.",
       ideas: [
         "Demandez-lui ce qu'il a vu passer et ce qui lui plaît : la ville, les voitures, l'histoire, ou le fait que tout le monde en parle. La réponse oriente vers l'alternative à lui proposer.",
         "Choisissez ensemble un jeu en monde ouvert adapté à son âge, en lisant les fiches à deux. Il ne vit plus votre décision comme une simple privation.",
