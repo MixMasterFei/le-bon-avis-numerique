@@ -273,6 +273,7 @@ model MediaItem {
   triggerVotes          TriggerVote[]
   recoClicks            RecoClick[]
   releaseAlerts         ReleaseAlert[]
+  homepageSpotlight     HomepageSpotlight?
 
   @@unique([tmdbId, type]) // tmdbId unique per type (TMDB has separate ID namespaces)
   @@index([type])
@@ -1491,4 +1492,24 @@ model DecouverteBoardVote {
   @@unique([boardId, voterToken, mediaId])
   @@index([boardId])
   @@map("decouverte_board_votes")
+}
+
+// Homepage « À ne pas manquer cette semaine » pins (sql/016_homepage_spotlight.sql).
+// source "watch" = homepage-watch cron (expires ~14 days, max 8 active),
+// "admin" = added by hand, never overwritten by the cron. No age and no
+// family-facing text here: cards read media_items. See src/lib/homepage-spotlight.ts.
+model HomepageSpotlight {
+  id        String   @id @default(uuid())
+  mediaId   String   @unique @map("media_id")
+  reason    String
+  source    String
+  rank      Int      @default(0)
+  startsAt  DateTime @default(now()) @map("starts_at") @db.Timestamptz(6)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  media MediaItem @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("homepage_spotlight")
 }
