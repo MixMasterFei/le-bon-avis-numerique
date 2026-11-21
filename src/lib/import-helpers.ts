@@ -14,13 +14,15 @@ import {
   getDirector,
   getFrenchCertification,
   getMovieWatchProviders,
+  getTVFrenchRating,
   mapCertificationToInternal,
   MovieGenres,
   type TMDBMovieDetails,
+  type TMDBTVDetails,
 } from "@/lib/tmdb"
 import { uploadTMDBPoster, uploadTMDBBackdrop } from "@/lib/supabase-storage"
 import { extractProviders } from "@/lib/streaming-providers"
-import { isAdultTmdbMovie } from "@/lib/adult-content-filter"
+import { isAdultTmdbMovie, isAdultTmdbTv } from "@/lib/adult-content-filter"
 
 export type AgeSource = "csa" | "foreign" | "genre"
 
@@ -261,6 +263,66 @@ export async function createMovieFromTmdb(
       dataSource: "TMDB",
       // age is always set now (genre floor) → provisional films start at 30.
       dataQualityScore: 30,
+      isEnriched: false,
+      lastVerifiedAt: new Date(),
+    },
+  })
+  return id
+}
+
+/**
+ * Create a TV DB row from TMDB details — moved here unchanged from the daily
+ * import cron (weekly-import) so the homepage-watch cron creates series the
+ * same way. The age is the French TV rating when TMDB has one, else NULL: no
+ * estimate for series, the enrichment pass sets it. Returns the created id,
+ * or `null` when the adult-content guard rejects the title. Caller handles
+ * dedup (skip an existing (tmdbId, TV)) and French relevance before calling.
+ * `providers` (normalized) fills day-one platforms; the daily import passes
+ * none, as before.
+ */
+export async function createTvFromTmdb(
+  details: TMDBTVDetails,
+  opts: { providers?: string[] } = {},
+): Promise<string | null> {
+  if (isAdultTmdbTv(details)) return null
+
+  const frRating = getTVFrenchRating(details.content_ratings)
+  const internalRating = mapCertificationToInternal(frRating)
+  const ageRec = certificationToAge(frRating)
+
+  const genres = details.genres?.map((g: { id: number; name: string }) => g.name) || []
+  const releaseDate = details.first_air_date ? new Date(details.first_air_date) : null
+
+  const id = randomUUID()
+  const [posterUrl, backdropUrl] = await Promise.all([
+    uploadTMDBPoster(id, details.poster_path),
+    uploadTMDBBackdrop(id, details.backdrop_path),
+  ])
+
+  await prisma.mediaItem.create({
+    data: {
+      id,
+      tmdbId: details.id,
+      title: details.name,
+      originalTitle: details.original_name !== details.name ? details.original_name : null,
+      type: "TV",
+      releaseDate,
+      // TMDB lifecycle for the anti-fabrication guard (src/lib/release-status).
+      releaseStatus: (details as { status?: string }).status || null,
+      posterUrl,
+      backdropUrl,
+      synopsisFr: details.overview || null,
+      officialRating: internalRating,
+      expertAgeRec: ageRec,
+      numberOfSeasons: details.number_of_seasons || null,
+      genres,
+      platforms: opts.providers ?? [],
+      topics: [],
+      originalLanguage: details.original_language || null,
+      tmdbRating: details.vote_average || null,
+      tmdbVoteCount: details.vote_count || null,
+      dataSource: "TMDB",
+      dataQualityScore: ageRec ? 30 : 10,
       isEnriched: false,
       lastVerifiedAt: new Date(),
     },

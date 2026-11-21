@@ -384,6 +384,34 @@ function safeIdList(igdbIds: number[]): number[] {
 }
 
 /**
+ * Full game records (same fields as `getGameDetails`) for up to 100 ids in one
+ * request — no platform filter, so a Switch 2-only release is not dropped.
+ * Used by the homepage-watch cron to look at IGDB's trending ids that are not
+ * in the catalogue yet. Throws on an IGDB error (the caller reports it).
+ */
+export async function getGamesByIds(igdbIds: number[]): Promise<IGDBGame[]> {
+  const ids = safeIdList(igdbIds).slice(0, 100)
+  if (ids.length === 0) return []
+  const body = `
+    fields name, summary, storyline, url,
+           cover.url, cover.image_id,
+           first_release_date,
+           genres.name,
+           platforms.name, platforms.abbreviation,
+           ${IGDB_AGE_RATING_FIELDS},
+           involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
+           themes.name,
+           game_modes.name,
+           player_perspectives.name,
+           keywords.name,
+           total_rating, total_rating_count;
+    where id = (${ids.join(",")});
+    limit ${ids.length};
+  `
+  return igdbFetch<IGDBGame[]>("/games", body)
+}
+
+/**
  * Multiplayer modes, game modes, companies and age ratings for up to 500
  * games. Only long-standing field names: a failure here THROWS (the caller
  * reports the chunk as failed and writes nothing for it).
