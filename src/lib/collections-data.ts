@@ -50,15 +50,32 @@ export interface CollectionDef {
   query?: CollectionQuery
 }
 
-/** Featured on the homepage strip — order matters, keep to 4. */
+/** Featured on the homepage strip — order matters, keep to 4. The second
+ *  slot is seasonal: see `collectionHighlights`. */
 export const COLLECTION_HIGHLIGHTS = [
   "top-films-famille",
-  // Rentrée (fin août–septembre) — remplace la sélection « vacances d'été »
-  // qui menait la strip jusqu'ici ; l'été reste accessible sur /collections.
   "films-rentree",
   "top-jeux-famille",
   "meilleurs-films-2026",
 ] as const
+
+/** Fills the seasonal slot when no seasonal collection is in season. */
+const OFF_SEASON_HIGHLIGHT = "top-films-animation-enfants"
+
+/**
+ * The homepage strip for a given month (0-indexed). The second slot used to
+ * be hand-edited (« films-rentree » was still promoted on 21 Nov 2026, a
+ * month and a half after la rentrée); it now takes the first seasonal
+ * collection in season — Noël in November–December, Halloween in October,
+ * été in June–August, rentrée in August–September — and a permanent list
+ * otherwise.
+ */
+export function collectionHighlights(month0: number = new Date().getMonth()): string[] {
+  const seasonal =
+    COLLECTIONS.find((c) => c.category === "seasonal" && c.months?.includes(month0))?.id ??
+    OFF_SEASON_HIGHLIGHT
+  return COLLECTION_HIGHLIGHTS.map((id, i) => (i === 1 ? seasonal : id))
+}
 
 export const COLLECTIONS: CollectionDef[] = [
   // ── Top curated lists (permanent, high SEO value) ──────────────────

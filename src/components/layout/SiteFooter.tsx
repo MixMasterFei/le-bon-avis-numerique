@@ -1,5 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
+import { isChristmasSeason } from "@/lib/seasonal"
+import { NOEL_HUB_PATH } from "@/lib/noel/pages"
 
 // "Livres" removed — books aren't part of the offering (catalog is
 // films / séries / jeux). "Mangas" intentionally omitted — admin-only
@@ -24,6 +26,8 @@ const GUIDES = { name: "Guides parents", href: "/guides" }
 const BLOG = { name: "Conseils", href: "/blog" }
 
 const discover = (showBlog: boolean) => [
+  // Seasonal: listed in November–December only (see isChristmasSeason).
+  ...(isChristmasSeason() ? [{ name: "Noël en famille", href: NOEL_HUB_PATH }] : []),
   { name: "Jeux : quel âge ?", href: "/jeux/quel-age" },
   { name: "Collections thématiques", href: "/collections" },
   { name: "Recommandations", href: "/recommandations" },
