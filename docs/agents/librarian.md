@@ -21,12 +21,12 @@ enriched, and the scheduled jobs that keep it all running.
 - `media_items` is unique on `(tmdb_id, type)` — never on bare `tmdb_id`.
 
 ## Open work (2026-11-21)
-- `games-top-names` counts a seed « déjà présent » when ANY edition is in the catalogue
-  (alias search, most-rated pick), so a seed's preferred `catalogueTitles[0]` is never
-  imported: Mario Kart World, Splatoon 3, Overwatch 2, Just Dance 2025/2026, Toca Boca
-  World, Sonic Superstars/Frontiers are absent and the pillar shows older editions
-  (Just Dance **2014**). Fix: also look up `catalogueTitles` in order. Zelda: Ocarina of
-  Time (any version) is not in the catalogue at all.
+- `games-top-names` now searches each seed's `catalogueTitles` first (exact names, in
+  order; branch `claude/growth-noel-2026`). Check the first Monday run after merge:
+  Mario Kart World, Splatoon 3, Overwatch 2, Just Dance 2025/2026, Sonic Superstars
+  should appear as « édition préférée » imports, then wait for enrichment before the
+  pillar shows them. A `partial` with « reportés (temps écoulé) » means the 50 s budget
+  ran out — rerun by dispatch.
 - « Les Chroniques de Noël » (tmdb 527435, a 2018 film) carries `release_date`
   2025-12-10 and so ranks in « Meilleurs films 2025 ».
 - Kaamelott Deuxième Volet partie 2: dated 2026-11-11 but TMDB still says Post

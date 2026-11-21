@@ -122,3 +122,56 @@ export function pickIgdbCandidate<T extends IgdbCandidateLike>(
     )
   return ranked[0]?.candidate ?? null
 }
+
+/**
+ * The candidate that IS this exact catalogue title (tier 0 only — a title +
+ * subtitle could be a DLC of the edition we want), inside the seed's release
+ * window, most-rated first. Null when IGDB has no entry by that exact name.
+ */
+export function pickExactTitleCandidate<T extends IgdbCandidateLike>(
+  seed: GameSeedLike,
+  title: string,
+  candidates: readonly T[],
+): T | null {
+  return pickIgdbCandidate({ name: seed.name, aliases: [title], releasedFrom: seed.releasedFrom }, candidates.filter(
+    (candidate) => matchTier({ name: seed.name, aliases: [title] }, candidate.name) === 0,
+  ))
+}
+
+export type SeedLookup =
+  | { kind: "catalogueTitle"; query: string; title: string }
+  | { kind: "alias"; query: string }
+
+/**
+ * The searches the games-top-names cron runs for a seed, in order.
+ *
+ * Editions first: the pillar shows the first `catalogueTitles` entry the
+ * catalogue holds (src/lib/curated-game-matching.ts), so the cron must try
+ * to import THAT one before anything else. Until 21 Nov 2026 it searched the
+ * aliases only and stopped at the most-rated hit — « mario kart » found
+ * Mario Kart 8 Deluxe, already present, so Mario Kart World was never
+ * imported and the pillar kept showing older editions (Just Dance 2014).
+ *
+ * The caller stops at the first catalogue title IGDB knows (imported or
+ * already present): an older edition is never imported once a newer
+ * preferred one exists. Aliases come last, with the usual strict pick, for
+ * seeds whose catalogue titles IGDB does not list by those exact names.
+ */
+export function seedLookups(seed: GameSeedLike): SeedLookup[] {
+  const titles = (seed.catalogueTitles ?? []).filter((t) => normalizeGameName(t))
+  return [
+    ...titles.map((title): SeedLookup => ({ kind: "catalogueTitle", query: title, title })),
+    ...seed.aliases.map((alias): SeedLookup => ({ kind: "alias", query: alias })),
+  ]
+}
+
+/** Pick for one lookup: exact title for an edition, strict alias rules otherwise. */
+export function pickForLookup<T extends IgdbCandidateLike>(
+  seed: GameSeedLike,
+  lookup: SeedLookup,
+  candidates: readonly T[],
+): T | null {
+  return lookup.kind === "catalogueTitle"
+    ? pickExactTitleCandidate(seed, lookup.title, candidates)
+    : pickIgdbCandidate(seed, candidates)
+}
