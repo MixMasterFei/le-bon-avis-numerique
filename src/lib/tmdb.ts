@@ -219,6 +219,10 @@ export interface TMDBTVDetails extends Omit<TMDBTVShow, "genre_ids"> {
   type: string
   created_by: { id: number; name: string }[]
   networks: { id: number; name: string; logo_path: string }[]
+  /** Last aired episode date (YYYY-MM-DD) — tells a NEW SEASON of an old show. */
+  last_air_date?: string | null
+  last_episode_to_air?: { air_date: string | null; season_number: number } | null
+  next_episode_to_air?: { air_date: string | null; season_number: number } | null
   content_ratings?: {
     results: {
       iso_3166_1: string

@@ -285,6 +285,16 @@ export const PIPELINE_TASKS: PipelineTaskInfo[] = [
     partialIsNormal: true,
   },
 
+  {
+    task: "homepage-watch",
+    label: "Veille de la page d'accueil",
+    family: "editorial",
+    cadence: "Tous les deux jours, 5 h 41",
+    what: "Compare la page d'accueil avec les sorties et les titres dont on parle cette semaine (cinéma, séries, jeux, nos actualités), importe ceux qui manquent au catalogue et met à jour le bandeau « À ne pas manquer cette semaine ».",
+    why: "Un parent qui ne trouve pas en page d'accueil le film ou le jeu dont toute la cour d'école parle pense que le site n'est pas à jour.",
+    staleAfterHours: 60,
+  },
+
   // ── Se rendre visible ─────────────────────────────────────────────
   {
     task: "seo-striking-distance",

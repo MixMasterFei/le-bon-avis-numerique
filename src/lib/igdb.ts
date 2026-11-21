@@ -265,6 +265,10 @@ export function getIGDBImageUrl(
 // Platform IDs from IGDB
 const CONSOLE_PLATFORM_IDS = [
   130, // Nintendo Switch
+  508, // Nintendo Switch 2 — missing until 21 Nov 2026, so every Switch 2-only
+       // release (the Ocarina of Time remake) was invisible to search, the
+       // fresh-release import and games-top-names. Id as listed by the source's
+       // platforms endpoint; a wrong id would only match nothing.
   167, // PlayStation 5
   48,  // PlayStation 4
   169, // Xbox Series X|S
@@ -381,6 +385,34 @@ const MULTIPLAYER_MODE_FIELDS = [
 
 function safeIdList(igdbIds: number[]): number[] {
   return [...new Set(igdbIds.map((id) => sanitizeNumber(id, 1)).filter((id): id is number => !!id))]
+}
+
+/**
+ * Full game records (same fields as `getGameDetails`) for up to 100 ids in one
+ * request — no platform filter, so a Switch 2-only release is not dropped.
+ * Used by the homepage-watch cron to look at IGDB's trending ids that are not
+ * in the catalogue yet. Throws on an IGDB error (the caller reports it).
+ */
+export async function getGamesByIds(igdbIds: number[]): Promise<IGDBGame[]> {
+  const ids = safeIdList(igdbIds).slice(0, 100)
+  if (ids.length === 0) return []
+  const body = `
+    fields name, summary, storyline, url,
+           cover.url, cover.image_id,
+           first_release_date,
+           genres.name,
+           platforms.name, platforms.abbreviation,
+           ${IGDB_AGE_RATING_FIELDS},
+           involved_companies.company.name, involved_companies.developer, involved_companies.publisher,
+           themes.name,
+           game_modes.name,
+           player_perspectives.name,
+           keywords.name,
+           total_rating, total_rating_count;
+    where id = (${ids.join(",")});
+    limit ${ids.length};
+  `
+  return igdbFetch<IGDBGame[]>("/games", body)
 }
 
 /**

@@ -118,6 +118,7 @@ const KNOWN_CRON_TASKS = [
   "revert-unreleased",      // Sunday — un-enrich fiches evaluated before release
   "game-guides-check",      // Monthly (1st) — Parents' Guide re-read reminder
   "totem-eval",             // Sunday — Totem assistant evaluation bench
+  "homepage-watch",         // Every 2 days — homepage vs the week's releases, imports + band pins
   "cron-supervisor",        // Daily — health check + remediation digest
   "heartbeat",              // Daily — Vercel-Cron watchdog for the GH Actions pipeline
 ]

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomUUID } from "crypto"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import {
@@ -10,7 +9,6 @@ import {
   getMovieDetails,
   getFrenchCertification,
   MovieGenres,
-  mapCertificationToInternal,
   getPopularTVShows,
   getTVDetails,
   getTVFrenchRating,
@@ -20,14 +18,12 @@ import {
   TMDBTVDetails,
 } from "@/lib/tmdb"
 import {
-  uploadTMDBPoster,
-  uploadTMDBBackdrop,
   isImageUrlValid,
   uploadPoster,
   isStorageEnabled,
 } from "@/lib/supabase-storage"
 import { getWeekSeed } from "@/lib/seeded-shuffle"
-import { certificationToAge, createMovieFromTmdb } from "@/lib/import-helpers"
+import { createMovieFromTmdb, createTvFromTmdb } from "@/lib/import-helpers"
 import { isAdultTmdbTv } from "@/lib/adult-content-filter"
 import { extractProviders } from "@/lib/streaming-providers"
 import { refreshTrending } from "@/lib/trending"
@@ -248,47 +244,9 @@ async function importTVFromSource(pages: number): Promise<ImportStats> {
         continue
       }
 
-      const internalRating = mapCertificationToInternal(frRating)
-      const ageRec = certificationToAge(frRating)
-
-      const genres = details.genres?.map((g: { id: number; name: string }) => g.name) || []
-      const releaseDate = details.first_air_date ? new Date(details.first_air_date) : null
-
-      const id = randomUUID()
-      const [posterUrl, backdropUrl] = await Promise.all([
-        uploadTMDBPoster(id, details.poster_path),
-        uploadTMDBBackdrop(id, details.backdrop_path),
-      ])
-
-      await prisma.mediaItem.create({
-        data: {
-          id,
-          tmdbId: details.id,
-          title: details.name,
-          originalTitle: details.original_name !== details.name ? details.original_name : null,
-          type: "TV",
-          releaseDate,
-          // TMDB lifecycle for the anti-fabrication guard (src/lib/release-status).
-          releaseStatus: (details as { status?: string }).status || null,
-          posterUrl,
-          backdropUrl,
-          synopsisFr: details.overview || null,
-          officialRating: internalRating,
-          expertAgeRec: ageRec,
-          numberOfSeasons: details.number_of_seasons || null,
-          genres,
-          platforms: [],
-          topics: [],
-          originalLanguage: details.original_language || null,
-          tmdbRating: details.vote_average || null,
-          tmdbVoteCount: details.vote_count || null,
-          dataSource: "TMDB",
-          dataQualityScore: ageRec ? 30 : 10,
-          isEnriched: false,
-          lastVerifiedAt: new Date(),
-        },
-      })
-      stats.imported++
+      // Shared create (src/lib/import-helpers.ts), also used by homepage-watch.
+      const created = await createTvFromTmdb(details)
+      if (created) stats.imported++
       await new Promise((resolve) => setTimeout(resolve, 150))
     } catch (e) {
       // Named, not swallowed: the bare catch hid a P2002 on a legacy unique

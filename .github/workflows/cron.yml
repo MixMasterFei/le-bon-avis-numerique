@@ -82,6 +82,12 @@ on:
     # model calls (~$1–2 on the live router): weekly, never part of "all", and
     # the endpoint refuses more than 3 runs a day. Off-the-hour (:51).
     - cron: "51 5 * * 0"
+    # Every 2 days (odd days of the month), 5:41 AM UTC — homepage watch.
+    # Compares the homepage with the week's releases and buzz (cinema, series,
+    # games, our news), imports what's missing (≤ 8) and refreshes the
+    # « À ne pas manquer cette semaine » pins. After the 3:07 import and 4:11
+    # enrichment, so it sees today's catalogue. Off-the-hour (:41).
+    - cron: "41 5 */2 * *"
   workflow_dispatch:
     inputs:
       task:
@@ -115,8 +121,9 @@ on:
           - game-guides-check
           - totem-eval
           - game-facts
+          - homepage-watch
       dry_run:
-        description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval, game-facts): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
+        description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval, game-facts, homepage-watch): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
         required: false
         type: boolean
         default: false
@@ -1129,6 +1136,36 @@ jobs:
           echo "$body" | jq '{status, summary, estimate, totals, categories}' 2>/dev/null || echo "$body"
           if [ "$http_code" -ge 400 ]; then
             echo "::error::Totem eval failed with HTTP $http_code"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+  # ── Every 2 days 05:41 UTC: homepage watch ───────────────────────
+  homepage-watch:
+    name: Homepage Watch
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: >-
+      github.event.schedule == '41 5 */2 * *' ||
+      github.event.inputs.task == 'homepage-watch' ||
+      github.event.inputs.task == 'all'
+    steps:
+      - name: Compare the homepage with the week's releases and buzz
+        run: |
+          echo "::group::Homepage watch"
+          # dry_run reports without importing, pinning, emailing or logging.
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then qs="?dryRun=1"; else qs=""; fi
+          # 130s — the route runs up to 120s (maxDuration).
+          response=$(curl -sSL --max-time 130 -w "\n%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/homepage-watch$qs")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{health, remaining, outcomes, pins}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Homepage watch failed with HTTP $http_code"
             exit 1
           fi
           echo "::endgroup::"
