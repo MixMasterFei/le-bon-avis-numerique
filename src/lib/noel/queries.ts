@@ -61,6 +61,7 @@ const CHRISTMAS_TITLE_TOKENS = [
 ]
 
 export const NOEL_FILMS_PER_BAND = 12
+export const NOEL_FILM_EXCLUDED_GENRES = ["Horreur", "Thriller", "Crime"] as const
 export const NOEL_GAMES_PER_BAND = 10
 /** Nintendo Switch launch: the oldest generation still sold in shops. */
 export const GIFT_RELEASE_FLOOR = new Date("2017-01-01T00:00:00Z")
@@ -75,8 +76,9 @@ export async function fetchChristmasFilmsByBand(now: Date = new Date()): Promise
         posterUrl: { not: null, notIn: [...NON_POSTER_URLS] },
         expertAgeRec: { not: null, lte: OLDEST },
         releaseDate: { lte: now },
-        // A Christmas horror film is not a « film de Noël en famille ».
-        NOT: { genres: { hasSome: ["Horreur"] } },
+        // « Piège de cristal » happens at Christmas; it is not a « film de
+        // Noël en famille ». Same exclusions as the « Voir tout » link.
+        NOT: { genres: { hasSome: [...NOEL_FILM_EXCLUDED_GENRES] } },
         // Vote floor: keeps a 3-vote TV movie from outranking the classics.
         tmdbVoteCount: { gte: 50 },
         OR: [

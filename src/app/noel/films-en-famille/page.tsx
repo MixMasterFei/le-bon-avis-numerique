@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { ChevronRight } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { NoelBandNav, NoelBandSections } from "@/components/noel/NoelBandSections"
-import { fetchChristmasFilmsByBand } from "@/lib/noel/queries"
+import { fetchChristmasFilmsByBand, NOEL_FILM_EXCLUDED_GENRES } from "@/lib/noel/queries"
 import { noelItemListJsonLd, noelBreadcrumbJsonLd, NOEL_BASE_URL } from "@/lib/noel/structured-data"
 
 // Same ISR window as the games pillar: ages move only when a fiche is
@@ -73,8 +73,9 @@ export default async function FilmsDeNoelPage() {
           <p className="text-sm md:text-base leading-relaxed mb-6" style={{ color: p.ink2 }}>
             Chaque affiche mène à la fiche du film : les scènes qui peuvent faire peur, le
             langage, les messages, et la raison de l&apos;âge retenu. Dans chaque tranche, les
-            films les plus appréciés passent en premier. Les films d&apos;horreur de Noël ne
-            figurent pas ici, ni les films dont l&apos;âge n&apos;a pas encore été vérifié.
+            films les plus appréciés passent en premier. Les films d&apos;horreur, les
+            thrillers et les polars qui se passent à Noël n&apos;y figurent pas, pas plus que
+            les films dont l&apos;âge n&apos;a pas encore été vérifié.
           </p>
           <NoelBandNav groups={groups} />
         </header>
@@ -83,7 +84,7 @@ export default async function FilmsDeNoelPage() {
           groups={groups}
           emptyText="Pas encore de film vérifié dans cette tranche."
           seeAll={(band) => ({
-            href: `/films/recherche?topics=${encodeURIComponent("Noël")}&maxAge=${band.max}&excludeGenres=Horreur`,
+            href: `/films/recherche?topics=${encodeURIComponent("Noël")}&maxAge=${band.max}&excludeGenres=${NOEL_FILM_EXCLUDED_GENRES.join(",")}`,
             label: "Tous les films de Noël de cet âge",
           })}
         />
