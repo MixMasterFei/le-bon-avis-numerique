@@ -4,10 +4,12 @@ import { NON_POSTER_URLS } from "@/lib/media-route"
 import { isChristmasThemed } from "@/lib/seasonal"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { isGameGuidePublic } from "@/lib/game-guide-flag"
+import { getCinemaMovies } from "@/lib/cinema"
 import {
   NOEL_AGE_BANDS,
   dropAddOns,
   effectiveGameAge,
+  familyCinemaPicks,
   giftOrder,
   giftPlatforms,
   groupByBand,
@@ -194,5 +196,28 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
         guideKey: guidesPublic ? guideKeyForTitle(r.title) : null,
       }),
     ),
+  }))
+}
+
+export const NOEL_CINEMA_MAX_AGE = 12
+
+/** Films en salle pour les vacances : fiche vérifiée, âge ≤ 12 ans. Never throws. */
+export async function fetchHolidayCinemaPicks(limit = 10): Promise<NoelCard[]> {
+  let movies: Awaited<ReturnType<typeof getCinemaMovies>> = []
+  try {
+    movies = await getCinemaMovies({ maxAge: NOEL_CINEMA_MAX_AGE })
+  } catch {
+    return []
+  }
+  return familyCinemaPicks(movies, NOEL_CINEMA_MAX_AGE, limit).map((m) => ({
+    id: m.id,
+    type: "MOVIE" as const,
+    title: m.title,
+    disambiguationYear: null,
+    posterUrl: m.posterUrl,
+    expertAgeRec: m.expertAgeRec!,
+    officialRating: null,
+    platforms: [],
+    guideKey: null,
   }))
 }

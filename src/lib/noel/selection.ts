@@ -173,3 +173,24 @@ export function giftPlatforms(platforms: readonly string[] | null | undefined): 
 export function onCurrentConsole(platforms: readonly string[] | null | undefined): boolean {
   return (platforms ?? []).some((p) => CONSOLE_PLATFORMS.has(p))
 }
+
+/**
+ * Family picks among the films now in theatres: only titles with a fiche and
+ * a verified age (a provisional age is a genre guess — never a family pick,
+ * same rule as the homepage TopPicksRail), a poster, and an age within reach
+ * of the family (`maxAge`). Keeps the cinema order (newest releases first).
+ */
+export function familyCinemaPicks<
+  T extends { inDatabase: boolean; isProvisional: boolean; posterUrl: string | null; expertAgeRec: number | null },
+>(movies: readonly T[], maxAge: number, limit: number): T[] {
+  return movies
+    .filter(
+      (m) =>
+        m.inDatabase &&
+        !m.isProvisional &&
+        Boolean(m.posterUrl) &&
+        typeof m.expertAgeRec === "number" &&
+        m.expertAgeRec <= maxAge,
+    )
+    .slice(0, limit)
+}

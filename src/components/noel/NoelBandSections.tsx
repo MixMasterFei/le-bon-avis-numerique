@@ -69,18 +69,25 @@ export function NoelBandSections({
                 {emptyText}
               </p>
             ) : (
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {items.map((item) => (
-                  <li key={item.id}>
-                    <NoelCardView item={item} />
-                  </li>
-                ))}
-              </ul>
+              <NoelCardGrid items={items} />
             )}
           </section>
         )
       })}
     </div>
+  )
+}
+
+/** Poster grid of cards, each linking to its fiche. */
+export function NoelCardGrid({ items }: { items: NoelCard[] }) {
+  return (
+    <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {items.map((item) => (
+        <li key={item.id}>
+          <NoelCardView item={item} />
+        </li>
+      ))}
+    </ul>
   )
 }
 
