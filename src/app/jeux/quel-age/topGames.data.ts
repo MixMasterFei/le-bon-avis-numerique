@@ -35,6 +35,12 @@ export interface TopGameSeed {
   familyIssues?: string[]
   /** Override: skip alias lookup and use this exact catalogue id. */
   forcedId?: string
+  /**
+   * YYYY-MM-DD. The games-top-names job only imports an entry first released
+   * on or after this day — for a remake sold under its original's exact name
+   * (see src/lib/game-seed-match.ts). Not a display date.
+   */
+  releasedFrom?: string
   /** Override: use this exact FAQ answer instead of the generated one. */
   customFaqAnswer?: string
 }
@@ -207,6 +213,25 @@ export const TOP_GAMES: TopGameSeed[] = [
     catalogueTitles: ["the legend of zelda: tears of the kingdom", "the legend of zelda: breath of the wild"],
     parentNote:
       "Aventure Nintendo acclamée : les parents veulent savoir à partir de quel âge la proposer.",
+  },
+  {
+    // The Switch 2 remake (Nintendo, 2026) carries the 1998 original's exact
+    // title, so names alone can't tell them apart: `releasedFrom` makes the
+    // games-top-names job pick only the remake. Not in the catalogue on
+    // 2026-11-21; once imported, pin it with forcedId if the 1998 or 3DS
+    // version ever lands too (same normalized title = ambiguous = card hidden).
+    key: "zelda-ocarina-of-time",
+    name: "The Legend of Zelda: Ocarina of Time (Switch 2)",
+    aliases: ["ocarina of time"],
+    catalogueTitles: ["the legend of zelda: ocarina of time"],
+    releasedFrom: "2026-06-01",
+    parentNote:
+      "Remake sur Switch 2 d'une aventure que beaucoup de parents ont eux-mêmes connue : la question est souvent de savoir quand la partager.",
+    familyIssues: [
+      "Aventure en solo : pas de joueurs inconnus dans la partie.",
+      "Combats à l'épée contre des créatures fantastiques : c'est sur cette violence fantastique que porte la classification du remake.",
+      "Les réglages de la console (temps de jeu, achats, communication) se gèrent depuis l'application de contrôle parental Nintendo Switch.",
+    ],
   },
   {
     key: "pokemon",
