@@ -607,6 +607,94 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
   },
+  {
+    key: "ea-sports-fc",
+    name: "EA Sports FC (ex-FIFA)",
+    // Current edition. The seed pins FC 26 for the pillar page; the guide
+    // speaks about the series and shows the edition on sale now.
+    catalogueId: "1dc26c31-2f13-40a9-89a0-00b5d90c1cd8",
+    tagline: "Un jeu de foot sans histoire, et un mode, Ultimate Team, qui mérite toute votre attention.",
+    whatItIs:
+      "La simulation de football d'Electronic Arts, longtemps vendue sous le nom FIFA. Une nouvelle édition sort chaque automne. Le jeu de football lui-même ne pose guère de questions. Le point de vigilance tient presque entièrement dans un mode, Ultimate Team, où l'on construit son équipe à partir de pochettes de joueurs au contenu tiré au hasard.",
+    whatHappens: [
+      "En match rapide, en carrière ou à plusieurs sur le même canapé, on joue au football, sans rien acheter.",
+      "En Ultimate Team, l'enfant compose une équipe de rêve en ouvrant des pochettes dont il ne connaît pas le contenu à l'avance.",
+      "Ces pochettes se gagnent en jouant ou s'achètent avec des FC Points, une monnaie vendue en argent réel.",
+      "Les matchs en ligne opposent l'enfant à d'autres joueurs, et les événements à durée limitée invitent à se connecter souvent.",
+    ],
+    whyKidsLove:
+      "C'est le football qu'ils aiment, avec les vrais clubs et les vrais joueurs. Ouvrir une pochette et y trouver une star procure une vraie montée d'émotion, que les copains commentent ensuite. C'est ce moment-là qu'il faut comprendre avant de parler d'argent.",
+    decisions: [
+      {
+        question: "Ultimate Team, oui ou non ?",
+        detail:
+          "Vous pouvez autoriser le jeu sans ce mode, ou l'autoriser sans achats. Les deux options sont défendables. Laisser Ultimate Team ouvert avec un moyen de paiement enregistré est la seule configuration qui pose vraiment problème.",
+      },
+      {
+        question: "Quelle règle pour l'argent ?",
+        detail:
+          "Les FC Points se dépensent en petits montants qui se cumulent vite. Décidez d'un principe clair, par exemple pas d'achat ou un montant fixe par saison, et faites-le respecter par les réglages plutôt que par la surveillance.",
+      },
+      {
+        question: "Comment parler des pochettes ?",
+        detail:
+          "Une pochette est un tirage au sort payant. Expliquer cela à un enfant qui aime le foot ne le prive de rien : cela l'aide à voir la différence entre jouer et tirer.",
+      },
+    ],
+    advanced: [
+      "Le changement de nom en 2023 est une affaire de licence : EA a perdu le nom FIFA, pas le jeu. Les mécaniques d'Ultimate Team ont traversé le changement sans rupture.",
+      "Les nouvelles règles PEGI de 2026 font des objets aléatoires payants un critère de classification. Deux éditions qui se ressemblent beaucoup peuvent donc afficher des classifications très différentes : fiez-vous à celle de l'édition que vous achetez.",
+      "Les modes hors ligne à deux sur la même console restent l'usage le plus simple et le moins coûteux du jeu, et un bon terrain commun entre parent et enfant.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "EA Sports FC 27 est classé PEGI 16 à cause des pochettes payantes d'Ultimate Team. Les éditions précédentes étaient classées PEGI 3.",
+        "Un compte EA d'adolescent a une limite de dépenses fixée à zéro par défaut. Seul un parent qui l'ajoute à son compte famille EA peut la modifier.",
+        "L'outil FC Playtime, dans le jeu, montre le temps passé, les pochettes ouvertes et les FC Points achetés, et permet de se fixer des limites.",
+        "Sur console, les plafonds de dépenses et l'accord parental avant achat de PlayStation et de Xbox s'appliquent aussi aux FC Points.",
+      ],
+      doesNotDo: [
+        "Couper les achats ne retire pas les pochettes gagnées en jouant : le tirage au sort reste au cœur d'Ultimate Team.",
+        "La nouvelle classification ne modifie pas le jeu : les pochettes payantes restent présentes dans les éditions classées plus bas.",
+        "Les réglages de la console et ceux du compte EA sont indépendants. En régler un ne règle pas l'autre.",
+      ],
+      officialLinks: [
+        {
+          label: "Contrôle parental et compte famille EA",
+          url: "https://help.ea.com/fr/help/ea/ea-app/player-controls-ea/",
+          source: "Electronic Arts",
+        },
+        {
+          label: "PEGI met à jour la classification des jeux contenant des objets aléatoires payants",
+          url: "https://pegi.info/news/pegi-updates-age-ratings-existing-games-paid-random-items",
+          source: "PEGI",
+        },
+        {
+          label: "Contrôle parental et limites de dépenses sur PlayStation",
+          url: "https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/",
+          source: "Sony Interactive Entertainment",
+        },
+        {
+          label: "Jouer en famille sur Xbox (paramètres familiaux)",
+          url: "https://www.xbox.com/fr-FR/family-hub",
+          source: "Microsoft",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "C'est l'un des jeux les plus faciles à partager en famille : tout le monde connaît les règles du football, et un match en local ne coûte rien.",
+      ideas: [
+        "Jouez un match l'un contre l'autre, ou dans la même équipe contre l'ordinateur si l'écart de niveau est trop grand.",
+        "Lancez une carrière ensemble avec votre club préféré : on y prend des décisions de long terme sans aucune pochette.",
+        "Si Ultimate Team est autorisé, ouvrez une pochette gagnée en jouant avec lui et parlez de ce qu'il ressent quand le contenu déçoit.",
+        "Regardez un vrai match, puis rejouez-le à la console. Le jeu devient un prolongement du sport plutôt qu'une fin en soi.",
+      ],
+    },
+  },
 ]
 
 /** Guide for a seed key, or null. */
