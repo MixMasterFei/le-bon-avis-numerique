@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { buildFicheDescription, buildFicheTitle, MAX_DESCRIPTION, MAX_TITLE } from "../fiche-title"
+import {
+  buildCanonicalSeoTitle,
+  buildFicheDescription,
+  buildFicheTitle,
+  MAX_DESCRIPTION,
+  MAX_TITLE,
+  seoTitleMatchesAge,
+} from "../fiche-title"
 
 describe("buildFicheTitle", () => {
   it("puts the query wording in the title for short names", () => {
@@ -95,5 +102,43 @@ describe("buildFicheDescription", () => {
       "Dès 8 ans · Notre avis famille. Film analysé par Totem Avisé pour les familles.",
     )
     expect(buildFicheDescription({ typeLabel: "Série", age: null, synopsis: "Une saga." })).toBe("Une saga.")
+  })
+})
+
+describe("buildCanonicalSeoTitle (forme unique du titre SEO, 21 Nov 2026)", () => {
+  it("writes « <Titre> — âge conseillé : dès N ans »", () => {
+    expect(buildCanonicalSeoTitle({ title: "Arcane", age: 14 })).toBe("Arcane — âge conseillé : dès 14 ans")
+  })
+  it("writes « tous publics » for 0, as the badges do", () => {
+    expect(buildCanonicalSeoTitle({ title: "Bluey", age: 0 })).toBe("Bluey — âge conseillé : tous publics")
+  })
+  it("adds the release year for a homonym", () => {
+    expect(buildCanonicalSeoTitle({ title: "Scrooge", age: 8, year: 1970 })).toBe(
+      "Scrooge (1970) — âge conseillé : dès 8 ans",
+    )
+  })
+  it("returns null for an unknown age or a form over MAX_TITLE", () => {
+    expect(buildCanonicalSeoTitle({ title: "Arcane", age: null })).toBeNull()
+    const long = "Les Animaux fantastiques : Les Crimes de Grindelwald"
+    expect(buildCanonicalSeoTitle({ title: long, age: 10 })).toBeNull()
+    const fits = buildCanonicalSeoTitle({ title: "Toy Story 5", age: 6 })
+    expect(fits!.length).toBeLessThanOrEqual(MAX_TITLE)
+  })
+})
+
+describe("seoTitleMatchesAge — old and canonical forms", () => {
+  it("accepts the canonical form for the matching age only", () => {
+    expect(seoTitleMatchesAge("Arcane — âge conseillé : dès 14 ans", 14)).toBe(true)
+    expect(seoTitleMatchesAge("Arcane — âge conseillé : dès 14 ans", 12)).toBe(false)
+    expect(seoTitleMatchesAge("Scrooge (1970) — âge conseillé : dès 8 ans", 8)).toBe(true)
+    expect(seoTitleMatchesAge("Bluey — âge conseillé : tous publics", 0)).toBe(true)
+    expect(seoTitleMatchesAge("Bluey — âge conseillé : tous publics", 6)).toBe(false)
+  })
+  it("keeps accepting the forms written before the canonical one", () => {
+    expect(seoTitleMatchesAge("Tigre et Dragon : âge minimum ? Dès 12 ans", 12)).toBe(true)
+    expect(seoTitleMatchesAge("Toy Story 5 — à partir de quel âge ? Dès 6 ans", 6)).toBe(true)
+    expect(seoTitleMatchesAge("The Sheep Detectives — des 8 ans", 8)).toBe(true)
+    expect(seoTitleMatchesAge("Bluey — Tous publics", 0)).toBe(true)
+    expect(seoTitleMatchesAge("Arcane — quel âge ?", 14)).toBe(true)
   })
 })

@@ -24,7 +24,9 @@ import OpenAI from "openai"
 import { MediaType } from "@prisma/client"
 import { prisma } from "./prisma"
 import { parseMediaRouteId } from "./media-route"
-import { seoTitleMatchesAge, MAX_TITLE } from "./fiche-title"
+import { seoTitleMatchesAge, buildCanonicalSeoTitle, releaseYearOf, MAX_TITLE } from "./fiche-title"
+import { isKnownAge } from "./age-label"
+import { hasHomonym } from "./homonyms"
 import type { StrikingQuery } from "./seo-striking-distance"
 
 // How many inbound similarity edges a target should have before we stop adding
@@ -237,13 +239,19 @@ export interface SeoActionTarget {
   position: number
   linksCreated: string[] // neighbour titles linked toward this page
   linksSkippedReason?: string
-  synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "no-keyword"
+  synopsis: "rewritten" | "would-rewrite" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "refused" | "no-keyword"
   synopsisBefore?: string
   synopsisAfter?: string
+  /** Why the guard refused the draft (synopsis === "refused"). */
+  synopsisRefusal?: string
+  /** The refused draft, shown in the email so a human can judge the guard. */
+  synopsisRejected?: string
   titleNeedsKeyword: boolean // query term missing from the display title
   // Lever C — meta <title> override action (display title is never changed).
-  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "n/a"
+  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "refused" | "n/a"
   seoTitleAfter?: string
+  /** Why the gate refused the title (seoTitle === "refused"). */
+  seoTitleRefusal?: string
 }
 
 export interface SeoAutofixResult {
@@ -278,6 +286,11 @@ export interface SeoAutofixResult {
     synopsis: Record<string, number>
     seoTitle: Record<string, number>
     links: Record<string, number>
+    /** Refusal reasons per lever — « formulation SEO (« contenu ») »: 2… */
+    refusals: {
+      synopsis: Record<string, number>
+      seoTitle: Record<string, number>
+    }
   }
   section: string // markdown to append to the email
 }
@@ -311,6 +324,7 @@ type TargetItem = {
   synopsisFr: string | null
   seoTitle: string | null
   isEnriched: boolean
+  releaseDate: Date | null
 }
 
 async function ensureInternalLinks(
@@ -407,7 +421,9 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
     target.expertAgeRec ? `Âge conseillé : dès ${target.expertAgeRec} ans.` : "",
     `Synopsis actuel : ${target.synopsisFr || "(aucun)"}`,
     "",
-    `Des familles cherchent ce contenu via la requête : « ${query} ».`,
+    // The query is given as context only — it is DATA, not wording to reuse
+    // (the 19 Nov run pasted « arcane age » into the copy verbatim).
+    `Intention des familles (contexte, à ne pas citer) : ${query}`,
     "Réécris le synopsis pour qu'il réponde NATURELLEMENT à cette intention,",
     "en intégrant les mots-clés pertinents là où ils ont du sens, et donne envie",
     "de lire la fiche (pas juste de répondre puis partir).",
@@ -421,7 +437,11 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
     "  (« conseillé dès 12 ans »). JAMAIS au milieu d'une proposition narrative :",
     "  « sa vie de super-héros dès 12 ans, quand... » décrit le personnage, pas le public.",
     "- Inutile de répéter le format (« film », « série », « jeu ») : la page l'indique déjà.",
-    "- Pas de bourrage de mots-clés, pas de la requête recopiée telle quelle.",
+    "- Le synopsis parle de l'ŒUVRE, jamais de la recherche : n'évoque ni requête, ni recherche,",
+    "  ni mot-clé, ni « contenu », ni « suggestions », ni des familles « qui cherchent ».",
+    "- Ne cite JAMAIS la requête, ni entre « » ni entre guillemets, et ne la recopie pas :",
+    "  intègre le titre de l'œuvre naturellement dans une phrase, comme un critique l'écrirait.",
+    "- Pas de bourrage de mots-clés.",
     "- Ton informatif et sobre, destiné aux parents.",
     'Réponds en JSON valide uniquement : {"synopsis": "..."}',
   ].filter(Boolean).join("\n")
@@ -525,44 +545,185 @@ export function ageMentionReadsNaturally(text: string): boolean {
   return true
 }
 
-/** Gate a candidate rewrite before it ever touches the DB. */
-export function rewritePasses(query: string, title: string, before: string | null, after: string): boolean {
-  if (!after || after.length > SYNOPSIS_MAX) return false
-  if (isJunkQuery(after)) return false
+// ---------------------------------------------------------------------------
+// Keyword-stuffing guard (approved by Xavier, 21 Nov 2026)
+// ---------------------------------------------------------------------------
+//
+// The 19 Nov 2026 run shipped synopses that talk ABOUT the search instead of
+// the work:
+//   Arcane — « …idéale pour les familles cherchant un contenu « arcane age » réfléchi »
+//   Les 101 Dalmatiens — « …des suggestions autour de 101 dalmatiens »
+// Both passed every gate above: the keyword was "present", just pasted in. A
+// synopsis is the chapô AND the meta description; a parent reading one that
+// quotes a search query sees a machine at work. Deterministic, fail-closed:
+// a refusal only costs the rewrite (the old synopsis stays).
+
+/**
+ * Meta-SEO phrasing — words that describe searching or the page, never the
+ * work. Matched on the `normalize`d text (accent-free, punctuation → space)
+ * with word boundaries. Deliberately NOT bare « recherche » / « cherchant »:
+ * « part à la recherche de son père », « un garçon cherchant un moyen de
+ * rentrer » are plot, so only search-about-the-page shapes are listed.
+ */
+export const META_SEO_PATTERNS: ReadonlyArray<{ label: string; re: RegExp }> = [
+  { label: "contenu", re: /\bcontenus?\b/ },
+  { label: "suggestions", re: /\bsuggestions?\b/ },
+  { label: "requête", re: /\brequetes?\b/ },
+  { label: "mot-clé", re: /\bmots? cles?\b/ },
+  { label: "référencement", re: /\b(?:referencement|seo)\b/ },
+  { label: "moteur de recherche", re: /\bmoteurs? de recherche\b/ },
+  { label: "votre recherche", re: /\b(?:votre|vos) recherches?\b/ },
+  { label: "recherche en ligne", re: /\brecherches? (?:en ligne|sur internet|google|web)\b/ },
+  // The audience searching: « les familles cherchant un… », « aux parents qui
+  // recherchent ». The generic article is required so plot stays allowed:
+  // « ses parents recherchent leur fille disparue » is a story, not a search.
+  {
+    label: "familles qui cherchent",
+    re: /\b(?:les|aux|des) (?:familles|parents|internautes|spectateurs|lecteurs|joueurs) (?:qui )?(?:re)?cherch\w*/,
+  },
+  { label: "vous cherchez", re: /\b(?:si )?vous (?:re)?cherch\w*/ },
+]
+
+/** Age words that turn a work name into a search query (« arcane age »). */
+function queryHasAgeWord(query: string): boolean {
+  const n = ` ${normalize(query)} `
+  return / ages? /.test(n) || / a partir de /.test(n)
+}
+
+/** Every quoted span: « … », “ … ”, " … ". */
+function quotedSpans(text: string): string[] {
+  const spans: string[] = []
+  for (const m of text.matchAll(/«\s*([^»]+?)\s*»|“([^”]+)”|"([^"]+)"/g)) {
+    spans.push(m[1] ?? m[2] ?? m[3] ?? "")
+  }
+  return spans
+}
+
+/**
+ * Why a rewritten synopsis reads as keyword stuffing — or null when it
+ * doesn't. Three checks:
+ *   1. the search query appears inside « » or "" (quoting the WORK's title is
+ *      fine, so a query that is just the title is exempt);
+ *   2. meta-SEO phrasing (META_SEO_PATTERNS);
+ *   3. the raw query verbatim when it carries an age word — « arcane age »,
+ *      « bluey à partir de quel âge » are searches, not French sentences.
+ */
+export function synopsisStuffingReason(query: string, title: string, text: string): string | null {
+  const q = normalize(query)
+  if (q && q !== normalize(title)) {
+    for (const span of quotedSpans(text)) {
+      if (` ${normalize(span)} `.includes(` ${q} `)) return "requête citée entre guillemets"
+    }
+  }
+  const n = normalize(text)
+  for (const { label, re } of META_SEO_PATTERNS) {
+    if (re.test(n)) return `formulation SEO (« ${label} »)`
+  }
+  if (q && queryHasAgeWord(query) && ` ${n} `.includes(` ${q} `)) return "requête recopiée telle quelle"
+  return null
+}
+
+/**
+ * Why a candidate rewrite must not touch the DB — or null when it may. The
+ * reason is reported in the email and in `cron_logs` outcomes, so a refused
+ * draft is distinguishable from a failed model call.
+ */
+export function rewriteRejection(query: string, title: string, before: string | null, after: string): string | null {
+  if (!after) return "réponse vide"
+  if (after.length > SYNOPSIS_MAX) return "trop long"
+  if (isJunkQuery(after)) return "vocabulaire navigationnel"
+  const stuffing = synopsisStuffingReason(query, title, after)
+  if (stuffing) return stuffing
   // An age keyword dropped mid-clause reads as a fact about the characters.
-  if (!ageMentionReadsNaturally(after)) return false
+  if (!ageMentionReadsNaturally(after)) return "âge mal placé"
   // Must now cover the keyword it was supposed to add. The TITLE counts toward
   // coverage (same haystack as the decision gate): a synopsis describes the
   // plot and never repeats its own title, so requiring "toy story" inside the
   // synopsis text rejected every legitimate draft — the second reason the
   // agent's rewrites always came back "échouée/refusée".
-  if (!keywordPresent(query, title, after)) return false
+  if (!keywordPresent(query, title, after)) return "mot-clé toujours absent"
   // Don't let the model gut the description.
-  if (before && after.length < before.length * 0.5) return false
-  return true
+  if (before && after.length < before.length * 0.5) return "synopsis amputé"
+  return null
+}
+
+/** Gate a candidate rewrite before it ever touches the DB. */
+export function rewritePasses(query: string, title: string, before: string | null, after: string): boolean {
+  return rewriteRejection(query, title, before, after) === null
 }
 
 // ---------------------------------------------------------------------------
 // Lever C — SEO meta <title> (separate `seoTitle` field; NEVER the display name)
 // ---------------------------------------------------------------------------
 
-function buildTitlePrompt(target: TargetItem, query: string): string {
+function buildTitlePrompt(target: TargetItem, query: string, canonical: string): string {
   const typeLabel = target.type.toLowerCase()
   return [
     `Tu rédiges la balise <title> SEO d'une fiche ${typeLabel} de notre guide média familial.`,
     `Titre exact de l'œuvre (à placer au début, sans le modifier) : « ${target.title} »`,
-    target.expertAgeRec ? `Âge conseillé : dès ${target.expertAgeRec} ans.` : "",
-    `Des familles cherchent cette fiche via : « ${query} ».`,
-    "Rédige un <title> Google qui COMMENCE par le titre exact de l'œuvre, puis répond à cette intention.",
+    `Intention des familles (contexte, à ne pas citer) : ${query}`,
+    "Le format est imposé, sans variante :",
+    `  ${canonical}`,
     "Contraintes STRICTES :",
-    `- Français, ${SEO_TITLE_MAX} caractères MAXIMUM.`,
-    `- DOIT commencer par « ${target.title} ».`,
-    "- Intègre naturellement le mot-clé de la requête (ex. « à partir de quel âge », « âge minimum »).",
-    "  Pour une intention d'âge, le mot « âge » ou une tranche (« dès 12 ans ») suffit.",
-    "- Inutile de répéter le format (« film », « série », « jeu ») : ça gaspille des caractères.",
-    "- N'invente aucun fait. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
+    "- Recopie ce format tel quel : tiret cadratin « — », « âge conseillé : » en minuscules, puis l'âge.",
+    "- N'invente aucun fait, ne change pas l'âge. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
     'Réponds en JSON valide uniquement : {"title": "..."}',
-  ].filter(Boolean).join("\n")
+  ].join("\n")
+}
+
+/**
+ * Year to put in the <title>, or why no title may be written. Only a homonym
+ * carries its year (« Scrooge (1970) » vs « Scrooge (2026) » — in Nov 2026
+ * « scrooge 2026 » searches landed on the 1970 fiche); a homonym whose year is
+ * unknown, or a homonym lookup that failed, fails closed.
+ */
+export function homonymYear(
+  homonym: boolean | null,
+  releaseDate: Date | string | null | undefined,
+): { year: number | null } | { refusal: string } {
+  if (homonym === null) return { refusal: "homonymes non vérifiés" }
+  if (!homonym) return { year: null }
+  const year = releaseYearOf(releaseDate)
+  return year ? { year } : { refusal: "homonyme sans année de sortie" }
+}
+
+/**
+ * Bring whatever the model returned to the canonical
+ * « <Titre> — âge conseillé : dès N ans » form (buildCanonicalSeoTitle), or
+ * say why it can't be used. The draft must still name the work and must not
+ * contradict the verdict; its wording is then replaced, so the <title> shape
+ * is identical across the catalogue whatever the model wrote.
+ */
+export function normalizeSeoTitle(
+  candidate: string,
+  ctx: { title: string; age: number | null | undefined; year?: number | null },
+): { title: string } | { refusal: string } {
+  const draft = candidate.trim()
+  if (!draft) return { refusal: "réponse vide" }
+  if (isJunkQuery(draft)) return { refusal: "vocabulaire navigationnel" }
+  if (!normalize(draft).includes(normalize(ctx.title))) return { refusal: "titre de l'œuvre absent" }
+  if (!seoTitleMatchesAge(draft, ctx.age)) return { refusal: "âge contredit la fiche" }
+  const canonical = buildCanonicalSeoTitle(ctx)
+  if (!canonical) {
+    return { refusal: isKnownAge(ctx.age) ? "trop long pour la forme canonique" : "âge inconnu" }
+  }
+  return { title: canonical }
+}
+
+/**
+ * The full Lever C gate: normalise the draft, then check the canonical title
+ * still covers the ranking keyword. Returns the title to write or the reason
+ * it was refused (reported in the email and `outcomes.refusals`).
+ */
+export function prepareSeoTitle(
+  query: string,
+  ctx: { title: string; age: number | null | undefined; year?: number | null },
+  candidate: string,
+): { title: string } | { refusal: string } {
+  const normalized = normalizeSeoTitle(candidate, ctx)
+  if ("refusal" in normalized) return normalized
+  if (!seoTitlePasses(query, ctx.title, normalized.title, ctx.age)) return { refusal: "mot-clé toujours absent" }
+  return normalized
 }
 
 /** Gate a candidate meta title before it touches the DB. */
@@ -646,6 +807,7 @@ export async function runSeoAutofix(
       select: {
         id: true, title: true, type: true, genres: true, topics: true,
         director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
+        releaseDate: true,
       },
     })
     if (!item) {
@@ -661,6 +823,8 @@ export async function runSeoAutofix(
     let synopsis: SeoActionTarget["synopsis"]
     let synopsisBefore: string | undefined
     let synopsisAfter: string | undefined
+    let synopsisRefusal: string | undefined
+    let synopsisRejected: string | undefined
 
     if (!item.isEnriched) {
       synopsis = "not-enriched"
@@ -679,7 +843,15 @@ export async function runSeoAutofix(
     } else {
       rewritesUsed++
       const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
-      if (draft && rewritePasses(t.query, item.title, item.synopsisFr, draft)) {
+      const refusal = draft ? rewriteRejection(t.query, item.title, item.synopsisFr, draft) : null
+      if (!draft) {
+        synopsis = "ai-failed"
+      } else if (refusal) {
+        // Keep the old synopsis; report the reason and the draft.
+        synopsis = "refused"
+        synopsisRefusal = refusal
+        synopsisRejected = draft
+      } else {
         // Un-mark the grammar/tone check too — this rewrite is fresh text the
         // synopsis-audit sweep hasn't seen yet.
         await prisma.mediaItem.update({
@@ -689,8 +861,6 @@ export async function runSeoAutofix(
         synopsis = "rewritten"
         synopsisBefore = item.synopsisFr ?? ""
         synopsisAfter = draft
-      } else {
-        synopsis = "ai-failed"
       }
     }
 
@@ -701,33 +871,62 @@ export async function runSeoAutofix(
     // only uses title + age + query intent — nothing to confabulate — and
     // pre-release tentpoles (L'Odyssée, Spider-Man…) are precisely where the
     // striking-distance traffic concentrates.
+    //
+    // Every title written is the canonical « <Titre> — âge conseillé : dès N
+    // ans » (buildCanonicalSeoTitle), with the release year when another work
+    // of the same type shares the title (« Scrooge (1970) — … »). Refusals
+    // that need no model (homonym without a year, form too long, keyword the
+    // canonical form can't carry) are decided BEFORE the call and cost no
+    // cap slot.
     let seoTitle: SeoActionTarget["seoTitle"]
     let seoTitleAfter: string | undefined
+    let seoTitleRefusal: string | undefined
     if (!titleNeedsKeyword) {
       seoTitle = "n/a"
     } else if (!item.isEnriched && item.expertAgeRec == null) {
       seoTitle = "not-enriched"
     } else if (isJunkQuery(t.query)) {
       seoTitle = "flagged-junk"
-    } else if (item.seoTitle && keywordPresent(t.query, item.seoTitle)) {
-      seoTitle = "covered"
-    } else if (dryRun) {
-      seoTitle = "would-set"
-    } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
-      seoTitle = "deferred-cap"
-    } else if (Date.now() > aiDeadline) {
-      seoTitle = "deferred-time"
-    } else if (!openai) {
-      seoTitle = "ai-failed"
     } else {
-      titleRewritesUsed++
-      const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title")
-      if (draft && seoTitlePasses(t.query, item.title, draft, item.expertAgeRec)) {
-        await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: draft } })
-        seoTitle = "set"
-        seoTitleAfter = draft
-      } else {
+      const yearInfo = homonymYear(await hasHomonym(item), item.releaseDate)
+      const year = "year" in yearInfo ? yearInfo.year : null
+      // A homonym's stored override that doesn't name its year is ambiguous
+      // in the SERP, however well it covers the keyword: not « covered ».
+      const storedCovers =
+        !!item.seoTitle &&
+        keywordPresent(t.query, item.seoTitle) &&
+        (year == null || item.seoTitle.includes(`(${year})`))
+      const ctx = { title: item.title, age: item.expertAgeRec, year }
+      const expected = "refusal" in yearInfo ? yearInfo : prepareSeoTitle(t.query, ctx, buildCanonicalSeoTitle(ctx) ?? "")
+
+      if (storedCovers) {
+        seoTitle = "covered"
+      } else if ("refusal" in expected) {
+        seoTitle = "refused"
+        seoTitleRefusal = expected.refusal
+      } else if (dryRun) {
+        seoTitle = "would-set"
+        seoTitleAfter = expected.title
+      } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
+        seoTitle = "deferred-cap"
+      } else if (Date.now() > aiDeadline) {
+        seoTitle = "deferred-time"
+      } else if (!openai) {
         seoTitle = "ai-failed"
+      } else {
+        titleRewritesUsed++
+        const draft = await callJsonField(openai, buildTitlePrompt(item, t.query, expected.title), "title")
+        const prepared = draft ? prepareSeoTitle(t.query, ctx, draft) : null
+        if (!prepared) {
+          seoTitle = "ai-failed"
+        } else if ("refusal" in prepared) {
+          seoTitle = "refused"
+          seoTitleRefusal = prepared.refusal
+        } else {
+          await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: prepared.title } })
+          seoTitle = "set"
+          seoTitleAfter = prepared.title
+        }
       }
     }
 
@@ -742,9 +941,12 @@ export async function runSeoAutofix(
       synopsis,
       synopsisBefore,
       synopsisAfter,
+      synopsisRefusal,
+      synopsisRejected,
       titleNeedsKeyword,
       seoTitle,
       seoTitleAfter,
+      seoTitleRefusal,
     })
   }
 
@@ -761,6 +963,7 @@ export async function runSeoAutofix(
       select: {
         id: true, title: true, type: true, genres: true, topics: true,
         director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
+        releaseDate: true,
       },
     })
     linkOnlyExamined++
@@ -778,7 +981,7 @@ export async function runSeoAutofix(
   const titlesSet = targets.filter((t) => t.seoTitle === "set").length
   // "Flagged" = couldn't be auto-handled and wants human eyes. Titles are no
   // longer auto-flagged just for missing a keyword — the agent sets seoTitle.
-  const blocked = new Set(["flagged-junk", "deferred-cap", "deferred-time", "ai-failed"])
+  const blocked = new Set(["flagged-junk", "deferred-cap", "deferred-time", "ai-failed", "refused"])
   const flagged = targets.filter(
     (t) => blocked.has(t.synopsis) || blocked.has(t.seoTitle),
   ).length
@@ -792,6 +995,10 @@ export async function runSeoAutofix(
         t.linksCreated.length > 0 ? "created" : t.linksSkippedReason ?? "aucun",
       ),
     ),
+    refusals: {
+      synopsis: tally(targets.flatMap((t) => (t.synopsisRefusal ? [t.synopsisRefusal] : []))),
+      seoTitle: tally(targets.flatMap((t) => (t.seoTitleRefusal ? [t.seoTitleRefusal] : []))),
+    },
   }
 
   return {
@@ -830,7 +1037,8 @@ const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
   "deferred-cap": "réécriture reportée (plafond atteint)",
   "deferred-time": "réécriture reportée (budget temps du run atteint)",
   "not-enriched": "fiche non enrichie — ignorée",
-  "ai-failed": "réécriture échouée/refusée",
+  "ai-failed": "réécriture échouée (pas de réponse exploitable)",
+  "refused": "réécriture refusée par le garde-fou — synopsis inchangé",
   "no-keyword": "rien à ajouter",
 }
 
@@ -842,7 +1050,8 @@ const SEO_TITLE_LABEL: Record<SeoActionTarget["seoTitle"], string> = {
   "deferred-cap": "titre SEO reporté (plafond atteint)",
   "deferred-time": "titre SEO reporté (budget temps du run atteint)",
   "not-enriched": "fiche non enrichie — titre ignoré",
-  "ai-failed": "titre SEO échoué/refusé",
+  "ai-failed": "titre SEO échoué (pas de réponse exploitable)",
+  "refused": "titre SEO refusé — balise inchangée",
   "n/a": "",
 }
 
@@ -916,10 +1125,17 @@ function buildActionsSection(input: {
       lines.push(`  - Avant : ${t.synopsisBefore || "(vide)"}`)
       lines.push(`  - Après : ${t.synopsisAfter}`)
     }
+    if (t.synopsis === "refused") {
+      lines.push(`  - Motif : ${t.synopsisRefusal ?? "?"}`)
+      if (t.synopsisRejected) lines.push(`  - Brouillon refusé : ${t.synopsisRejected}`)
+    }
     if (t.seoTitle !== "n/a") {
       lines.push(`- Titre SEO : ${SEO_TITLE_LABEL[t.seoTitle]}`)
-      if ((t.seoTitle === "set") && t.seoTitleAfter) {
+      if ((t.seoTitle === "set" || t.seoTitle === "would-set") && t.seoTitleAfter) {
         lines.push(`  - Balise <title> : ${t.seoTitleAfter}`)
+      }
+      if (t.seoTitle === "refused" && t.seoTitleRefusal) {
+        lines.push(`  - Motif : ${t.seoTitleRefusal}`)
       }
     }
     lines.push("")
