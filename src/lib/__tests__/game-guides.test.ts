@@ -77,6 +77,15 @@ describe("GAME_GUIDES", () => {
     expect(guideKeyForTitle("The Legend of Zelda: Tears of the Kingdom")).toBeNull()
     expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBe("call-of-duty")
     expect(guideKeyForTitle("Valorant")).toBeNull()
+    expect(guideKeyForTitle("Among Us")).toBe("among-us")
+    expect(guideKeyForTitle("Minecraft Dungeons")).toBe("minecraft")
+    expect(guideKeyForTitle("The Legend of Zelda: Ocarina of Time 3D")).toBe("zelda-ocarina-of-time")
+  })
+
+  it("never puts a guide on a different game that merely contains the name", () => {
+    // A substring match put the Among Us guide on an adult-rated game.
+    expect(guideKeyForTitle("The Wolf Among Us")).toBeNull()
+    expect(guideKeyForTitle("Commandos: Beyond the Call of Duty")).toBeNull()
     expect(guideKeyForTitle("L'Odyssée")).toBeNull()
   })
 

@@ -49,6 +49,7 @@
  */
 
 import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
+import { matchTier } from "@/lib/game-seed-match"
 
 export interface GuideLink {
   label: string
@@ -785,6 +786,78 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
   },
+  {
+    key: "among-us",
+    name: "Among Us",
+    catalogueId: "44546986-2ba2-484e-a6f6-ead48a733678",
+    tagline: "Un jeu de bluff entre amis, à condition de savoir avec qui on joue.",
+    whatItIs:
+      "Un jeu de déduction en ligne, de quatre à quinze joueurs, dans un vaisseau spatial. La plupart des joueurs accomplissent de petites tâches, un ou plusieurs « imposteurs » les éliminent en secret, puis tout le monde discute pour démasquer le coupable. Le dessin est enfantin et la violence très stylisée. L'essentiel du jeu se passe dans la discussion.",
+    whatHappens: [
+      "Les parties durent une dizaine de minutes et alternent phases d'action et réunions où l'on vote pour exclure un suspect.",
+      "Un imposteur gagne en mentant, en accusant les autres et en semant le doute : le bluff est la mécanique du jeu.",
+      "Les éliminations sont courtes et caricaturales, dans un style de dessin animé.",
+      "On peut jouer dans une partie privée avec un code partagé entre amis, ou dans une partie publique avec des inconnus.",
+      "Des tenues et accessoires cosmétiques s'achètent, sans effet sur la partie.",
+    ],
+    whyKidsLove:
+      "C'est un jeu de société en ligne : on soupçonne, on se défend, on rit beaucoup. Les enfants y retrouvent le plaisir des jeux de rôle cachés, avec l'avantage de pouvoir jouer à dix sans être dans la même pièce.",
+    decisions: [
+      {
+        question: "Partie privée ou publique ?",
+        detail:
+          "C'est la décision qui change tout. Entre camarades qui se connaissent, avec un code de partie, les réserves habituelles tombent. En partie publique, l'enfant discute avec des inconnus de tous âges.",
+      },
+      {
+        question: "Chat libre ou chat rapide ?",
+        detail:
+          "Le chat rapide n'autorise que des phrases toutes faites, ce qui suffit pour jouer. Le chat libre permet d'écrire ce que l'on veut, et donc d'en recevoir autant. Pour un jeune enfant, le chat rapide en partie publique est un bon compromis.",
+      },
+      {
+        question: "Le mensonge, est-ce un problème ?",
+        detail:
+          "Mentir pour gagner est la règle du jeu, comme au Loup-Garou. La plupart des enfants font très bien la différence, mais un plus jeune peut être déstabilisé d'être accusé à tort, ou de devoir mentir à ses amis. Une partie en famille permet de voir comment il le vit.",
+      },
+    ],
+    advanced: [
+      "Les règles s'apparentent à celles du Loup-Garou de Thiercelieux : si votre enfant y joue déjà autour d'une table, il connaît le principe.",
+      "Le jeu a connu un pic de popularité soudain en 2020, bien après sa sortie en 2018. Son public actuel est plus jeune qu'au moment de ce pic.",
+      "Le jeu se pratique aussi avec un chat vocal externe, chacun parlant dans une autre application pendant les réunions. Ce chat-là échappe entièrement aux réglages du jeu.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "Si votre enfant indique, à la création de son compte, un âge inférieur à l'âge du consentement numérique de son pays, il doit fournir l'adresse e-mail d'un parent. Vous confirmez alors le compte et choisissez ses autorisations.",
+        "Tant que vous ne l'avez pas autorisé, ce compte n'a accès qu'au chat rapide, fait de phrases toutes faites.",
+        "Le parent peut ouvrir ou non le chat libre, le choix d'un pseudonyme personnalisé, la liste d'amis et l'utilisation du compte sur d'autres appareils.",
+        "Sans compte, en invité, les échanges sont aussi limités au chat rapide.",
+      ],
+      doesNotDo: [
+        "Le chat rapide limite ce qui peut être écrit, pas avec qui l'enfant joue : il peut toujours rejoindre une partie publique avec des inconnus.",
+        "Ces restrictions reposent sur l'âge déclaré à l'inscription. Un enfant qui se vieillit au moment de créer son compte y échappe.",
+        "Rien dans le jeu ne couvre un chat vocal tenu en parallèle sur une autre application.",
+      ],
+      officialLinks: [
+        {
+          label: "Les comptes Among Us et les autorisations parentales",
+          url: "https://www.innersloth.com/info-on-accounts",
+          source: "Innersloth",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "C'est sans doute le jeu de cette liste le plus simple à lancer en famille : pas de dextérité, des règles comprises en une partie, et un plaisir qui vient de la discussion.",
+      ideas: [
+        "Créez une partie privée avec les cousins ou les copains de l'enfant, chacun sur son appareil, et jouez dans la même pièce : les réunions deviennent un vrai jeu de société.",
+        "Jouez l'imposteur au moins une fois devant lui. Voir un parent mentir pour de faux, puis en rire, aide à poser la frontière entre le jeu et la vraie vie.",
+        "Après une partie publique, demandez-lui comment se sont passées les discussions et ce qu'il fait quand quelqu'un est désagréable.",
+        "Alternez avec une partie de Loup-Garou autour de la table : c'est le même plaisir, sans écran.",
+      ],
+    },
+  },
 ]
 
 /** Guide for a seed key, or null. */
@@ -804,13 +877,18 @@ export function guideKeys(): string[] {
  * list: those aliases are already maintained against real catalogue titles
  * ("Minecraft: Java Edition", "Fortnite OG: Chapter 1 Season 7"), so a guide
  * written for "minecraft" attaches to every edition without extra wiring.
+ *
+ * Matching is the strict one the import job uses (src/lib/game-seed-match.ts:
+ * the alias itself, or the alias followed by a subtitle/edition), never a bare
+ * "contains": with "among us" and "call of duty" guides, a substring match put
+ * the Among Us guide on The Wolf Among Us and the Call of Duty guide on
+ * « Commandos: Beyond the Call of Duty ».
  */
 export function guideKeyForTitle(title: string): string | null {
-  const t = title.toLowerCase()
   for (const guide of GAME_GUIDES) {
     const seed = TOP_GAMES.find((s) => s.key === guide.key)
-    const aliases = seed?.aliases ?? [guide.key]
-    if (aliases.some((a) => t.includes(a))) return guide.key
+    const matchable = seed ?? { name: guide.name, aliases: [guide.key] }
+    if (matchTier(matchable, title) !== null) return guide.key
   }
   return null
 }
