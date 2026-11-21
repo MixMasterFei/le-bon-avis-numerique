@@ -4,6 +4,7 @@ import { withPrismaRetry } from "@/lib/prisma-retry"
 import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
 import { sanityClient } from "@/sanity/client"
 import { COLLECTIONS } from "@/lib/collections-data"
+import { NOEL_HUB_PATH, NOEL_PAGES } from "@/lib/noel/pages"
 import { isAiConnectorsPagePublic } from "@/lib/ai-connectors-flag"
 
 /**
@@ -84,6 +85,14 @@ export function staticPageEntries(now: Date): MetadataRoute.Sitemap {
     // /mangas intentionally omitted — admin-only during soft launch.
     // /livres removed — books aren't part of the offering (route redirects to home).
     { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    // Seasonal /noel pages: listed all year (permanent URLs that build
+    // authority before each December); only their PROMOTION is seasonal.
+    ...[NOEL_HUB_PATH, ...NOEL_PAGES.map((p) => p.path)].map((path) => ({
+      url: `${baseUrl}${path}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
     // /recommandations omitted — client-side filtering page that SSR-renders
     // with "0 résultats" (thin content); noindex set via layout.tsx.
     { url: `${baseUrl}/recherche`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },

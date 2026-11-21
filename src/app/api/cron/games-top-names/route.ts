@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import { searchGames, type IGDBGame } from "@/lib/igdb"
 import { createGameFromIgdb } from "@/lib/game-import"
-import { pickIgdbCandidate } from "@/lib/game-seed-match"
+import { pickForLookup, seedLookups } from "@/lib/game-seed-match"
 import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
 import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential"
 
@@ -15,7 +15,9 @@ import { allowsInsecureLocalCron, isCronJobRequest } from "@/lib/cron-credential
 // the normal daily cron. Source of truth for the list is topGames.data.ts,
 // shared with the pillar page.
 //
-// Search runs on each seed's aliases (never on the display name — "Toca
+// Each seed's preferred editions (`catalogueTitles`, exact names) are searched
+// first, so a newer edition the pillar prefers gets imported (Mario Kart
+// World, not another Mario Kart 8); then its aliases (never the display name — "Toca
 // Boca (Toca Life World)" is a label, not a query), with mobile platforms
 // included because several seeds are phone-only, and the pick is strict
 // (src/lib/game-seed-match.ts): a seed with no real match is reported as
@@ -31,6 +33,8 @@ function isAuthorized(req: NextRequest): boolean {
 }
 
 const PACE_MS = 150
+// Stop starting new seeds past this point; maxDuration is 60 s.
+const TIME_BUDGET_MS = 50_000
 
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
@@ -38,7 +42,7 @@ export async function GET(req: NextRequest) {
   }
 
   const startTime = Date.now()
-  const stats = { examined: 0, imported: 0, alreadyPresent: 0, notFound: 0, errors: 0 }
+  const stats = { examined: 0, imported: 0, alreadyPresent: 0, notFound: 0, skipped: 0, errors: 0 }
   const details: string[] = []
 
   try {
@@ -60,17 +64,35 @@ export async function GET(req: NextRequest) {
           continue
         }
 
+        // Out of time: report the rest instead of being killed mid-run
+        // (maxDuration) with no cron_logs row at all.
+        if (Date.now() - startTime > TIME_BUDGET_MS) {
+          stats.skipped++
+          continue
+        }
+
+        // Preferred editions first, then aliases (see seedLookups).
         let pick: IGDBGame | null = null
-        for (const alias of seed.aliases) {
-          const candidates = await searchGames(alias, 20, { includeMobile: true })
-          pick = pickIgdbCandidate(seed, candidates)
-          // Gentle pacing so a 40-title run stays well under IGDB rate limits.
-          await new Promise((r) => setTimeout(r, PACE_MS))
-          if (pick) break
+        let viaEdition = false
+        const results = new Map<string, IGDBGame[]>()
+        for (const lookup of seedLookups(seed)) {
+          const key = lookup.query.toLowerCase()
+          let candidates = results.get(key)
+          if (!candidates) {
+            candidates = await searchGames(lookup.query, 20, { includeMobile: true })
+            results.set(key, candidates)
+            // Gentle pacing so a 40-title run stays well under IGDB rate limits.
+            await new Promise((r) => setTimeout(r, PACE_MS))
+          }
+          pick = pickForLookup(seed, lookup, candidates)
+          if (pick) {
+            viaEdition = lookup.kind === "catalogueTitle"
+            break
+          }
         }
         if (!pick) {
           stats.notFound++
-          details.push(`Introuvable sur IGDB : ${seed.name} (essayé : ${seed.aliases.join(", ")})`)
+          details.push(`Introuvable sur IGDB : ${seed.name} (essayé : ${seedLookups(seed).map((l) => l.query).join(", ")})`)
           continue
         }
 
@@ -86,7 +108,7 @@ export async function GET(req: NextRequest) {
         const created = await createGameFromIgdb(pick)
         if (created) {
           stats.imported++
-          details.push(`Importé : ${pick.name} (${seed.name})`)
+          details.push(`Importé : ${pick.name} (${seed.name}${viaEdition ? ", édition préférée" : ""})`)
         } else {
           details.push(`Ignoré (guard) : ${pick.name}`)
         }
@@ -99,8 +121,8 @@ export async function GET(req: NextRequest) {
     const duration = Math.round((Date.now() - startTime) / 1000)
     await logCronRun({
       task: "games-top-names",
-      status: stats.errors > 0 && stats.imported === 0 ? "partial" : "success",
-      summary: `${stats.imported} jeux importés, ${stats.alreadyPresent} déjà présents, ${stats.notFound} introuvables en ${duration}s`,
+      status: (stats.errors > 0 && stats.imported === 0) || stats.skipped > 0 ? "partial" : "success",
+      summary: `${stats.imported} jeux importés, ${stats.alreadyPresent} déjà présents, ${stats.notFound} introuvables${stats.skipped ? `, ${stats.skipped} reportés (temps écoulé)` : ""} en ${duration}s`,
       details: { stats, details },
       startTime,
     })

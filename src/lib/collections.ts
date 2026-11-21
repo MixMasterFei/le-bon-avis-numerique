@@ -123,7 +123,9 @@ function weightedRating(rating: number | null, votes: number | null): number {
 /** Fetch items dynamically via query filters. */
 async function getDynamicItems(query: CollectionQuery, limit: number): Promise<CollectionItem[]> {
   const where = buildWhereClause(query)
-  // Quality gates
+  // Quality gates. Expert-only, like every curated surface: a provisional
+  // age is a genre guess and can't headline « Meilleurs films 2026 ».
+  where.isEnriched = true
   where.posterUrl = { not: null, notIn: [...NON_POSTER_URLS] }
   if (!("expertAgeRec" in where)) where.expertAgeRec = { not: null }
   where.releaseDate = { ...((where.releaseDate as object) || {}), lte: new Date() }

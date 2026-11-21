@@ -20,6 +20,7 @@ const CatalogueRedesign = dynamicImport(() =>
 import { isCinemaSort } from "@/lib/cinema-policy"
 import { getCinemaMovies } from "@/lib/cinema"
 import { runSmartFilter } from "@/lib/smart-filter"
+import { NoelSeasonBanner } from "@/components/noel/NoelSeasonBanner"
 
 // Force dynamic rendering to ensure notFound() returns HTTP 404 (not 200 with 404 UI).
 // ISR caches the 404 page HTML but may serve it with status 200; force-dynamic avoids this.
@@ -467,6 +468,10 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
         />
       )}
+      <NoelSeasonBanner
+        href="/noel/films-en-famille"
+        label="Les films de Noël à regarder en famille, rangés par âge."
+      />
       {showV2 ? (
         <CatalogueRedesign {...listProps} defaultSort="releaseDate" />
       ) : (

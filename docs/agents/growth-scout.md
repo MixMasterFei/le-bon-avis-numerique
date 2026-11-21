@@ -19,6 +19,15 @@ AI answer engines, social, newsletter.
   19 Nov 2026 run on. Rank and follow pages from there; compare a changed page across runs
   3–4 weeks apart, never one.
 
+## Open work (2026-11-21) — Noël
+Branch `claude/growth-noel-2026` (local, not pushed): `/noel` hub (cinéma ≤ 12 ans,
+fiche vérifiée), `/noel/films-en-famille`, `/noel/jeux-video-a-offrir` — live DB reads,
+expert-only, sitemap, promoted Nov–Dec only (homepage strip banner, /films, /jeux, footer);
+the strip's 2nd slot now follows the season (`collectionHighlights`). After merge: submit
+the three URLs in Search Console; read « scrooge / grinch / films de noël » queries in
+`topQueries` mid-December. Part A defects (wrong versions in collections, stale pillar
+editions, Chroniques de Noël date) handed to the Director as proposals — no DB write.
+
 ## Open work (2026-11-15)
 - Shipped 15 Nov (#112): real 404 for missing fiches, login links nofollow, description
   without the doubled age + year, FAQ answer gives the reason, links-only pass on 120 more

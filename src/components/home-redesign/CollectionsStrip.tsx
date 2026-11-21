@@ -1,8 +1,10 @@
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Band, Wrap, Eyebrow, Em } from "./parts"
-import { COLLECTIONS, COLLECTION_HIGHLIGHTS } from "@/lib/collections-data"
+import { COLLECTIONS, collectionHighlights } from "@/lib/collections-data"
 import { CollectionIcon } from "@/components/collections/CollectionIcon"
+import { isChristmasSeason } from "@/lib/seasonal"
+import { NOEL_HUB_PATH } from "@/lib/noel/pages"
 
 /**
  * "Nos collections" band — static, crawlable links to the Top-X collection
@@ -12,9 +14,12 @@ import { CollectionIcon } from "@/components/collections/CollectionIcon"
  * band is the collections' discovery path for crawlers, alongside sitemap).
  */
 export function CollectionsStrip() {
-  const featured = COLLECTION_HIGHLIGHTS
+  const month = new Date().getMonth()
+  const featured = collectionHighlights(month)
     .map((id) => COLLECTIONS.find((c) => c.id === id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c))
+  // The /noel pages are promoted only in season (see isChristmasSeason).
+  const christmas = isChristmasSeason(month)
 
   return (
     <Band alt>
@@ -42,6 +47,22 @@ export function CollectionsStrip() {
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
+
+        {christmas && (
+          <Link
+            href={NOEL_HUB_PATH}
+            className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-[18px] px-5 py-4 transition-opacity hover:opacity-90"
+            style={{ background: "color-mix(in srgb, var(--terra) 13%, var(--paper))", color: "var(--ink)" }}
+          >
+            <span className="text-[15px] font-bold" style={{ fontFamily: "var(--font-bricolage)" }}>
+              Vacances de Noël : films par âge, sorties ciné, jeux à offrir
+            </span>
+            <span className="inline-flex items-center gap-1 text-[13px] font-bold" style={{ color: "var(--terra)" }}>
+              Préparer les fêtes
+              <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        )}
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           {featured.map((c) => (

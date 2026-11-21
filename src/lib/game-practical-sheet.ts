@@ -77,11 +77,21 @@ function yes(v: boolean | null, alsoTrue = false): string | null {
   return v === true || alsoTrue ? "Oui" : null
 }
 
+/**
+ * True when the game is known to sell in-game purchases: the stored fact, or
+ * the official PEGI descriptor « Achats intégrés ». False means « not
+ * signalled », never « sans achats » (see THE RULE above). Shared with the
+ * /noel gift cards so both surfaces answer the same way.
+ */
+export function hasInGamePurchases(input: {
+  gameInGamePurchases?: boolean | null
+  pegiDescriptors?: string[] | null
+}): boolean {
+  return input.gameInGamePurchases === true || hasDescriptor(input.pegiDescriptors ?? undefined, "Achats intégrés")
+}
+
 export function buildPracticalSheet(input: PracticalSheetInput): PracticalSheet {
-  const purchases =
-    input.gameInGamePurchases === true || hasDescriptor(input.pegiDescriptors, "Achats intégrés")
-      ? "Oui · signalé par la classification d'âge"
-      : null
+  const purchases = hasInGamePurchases(input) ? "Oui · signalé par la classification d'âge" : null
 
   const raw: Omit<PracticalSheetRow, "known">[] = [
     { key: "players", label: "Joueurs", value: formatPlayers(input.gameMinPlayers, input.gameMaxPlayers) ?? "" },

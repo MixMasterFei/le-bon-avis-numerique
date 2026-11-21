@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { isInReleaseWindow, matchTier, normalizeGameName, pickIgdbCandidate } from "@/lib/game-seed-match"
+import {
+  isInReleaseWindow,
+  matchTier,
+  normalizeGameName,
+  pickForLookup,
+  pickIgdbCandidate,
+  seedLookups,
+} from "@/lib/game-seed-match"
 import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
 
 // ---------------------------------------------------------------------------
@@ -76,5 +83,64 @@ describe("pickIgdbCandidate", () => {
     expect(normalizeGameName("Pokémon™ Legends: Z-A")).toBe("pokemon legends: z-a")
     const ac = { name: "Assassin's Creed", aliases: ["assassin's creed"] }
     expect(pickIgdbCandidate(ac, [c(1, "Assassin’s Creed Mirage")])?.id).toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Preferred editions (21 Nov 2026): the cron searched aliases only and stopped
+// at the most-rated hit, so « mario kart » kept finding Mario Kart 8 Deluxe
+// (already present) and Mario Kart World was never imported.
+// ---------------------------------------------------------------------------
+
+describe("seedLookups", () => {
+  it("searches the preferred editions first, in order, then the aliases", () => {
+    const seed = TOP_GAMES.find((s) => s.key === "mario-kart")!
+    expect(seedLookups(seed).map((l) => `${l.kind}:${l.query}`)).toEqual([
+      "catalogueTitle:mario kart world",
+      "catalogueTitle:mario kart 8 deluxe",
+      "catalogueTitle:mario kart 8",
+      "alias:mario kart",
+    ])
+  })
+
+  it("is the alias search alone for a seed without catalogue titles", () => {
+    expect(seedLookups({ name: "Roblox", aliases: ["roblox"] })).toEqual([{ kind: "alias", query: "roblox" }])
+  })
+})
+
+describe("pickForLookup", () => {
+  const mk = { name: "Mario Kart", aliases: ["mario kart"], catalogueTitles: ["mario kart world", "mario kart 8 deluxe"] }
+
+  it("finds the preferred edition by its exact name, even when an older one is more rated", () => {
+    const [world] = seedLookups(mk)
+    const results = [c(1, "Mario Kart 8 Deluxe", 900), c(2, "Mario Kart World", 120), c(3, "Mario Kart World: Booster Pack", 300)]
+    expect(pickForLookup(mk, world, results)?.id).toBe(2)
+  })
+
+  it("never takes an edition's subtitle variant (a DLC) for the edition", () => {
+    const [world] = seedLookups(mk)
+    expect(pickForLookup(mk, world, [c(1, "Mario Kart 8 Deluxe", 900), c(3, "Mario Kart World: Booster Pack", 300)])).toBeNull()
+  })
+
+  it("never takes IGDB's fuzzy first hit for an edition", () => {
+    const [world] = seedLookups(mk)
+    expect(pickForLookup(mk, world, [c(9, "Kart Racers World", 5000)])).toBeNull()
+  })
+
+  it("keeps the strict alias rules on the alias step", () => {
+    const alias = seedLookups(mk).find((l) => l.kind === "alias")!
+    expect(pickForLookup(mk, alias, [c(9, "Super Mario Kartoon", 5000)])).toBeNull()
+    expect(pickForLookup(mk, alias, [c(1, "Mario Kart 8 Deluxe", 900)])?.id).toBe(1)
+  })
+
+  it("applies the release window to editions too (Ocarina of Time remake)", () => {
+    const ts = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / 1000
+    const seed = TOP_GAMES.find((s) => s.key === "zelda-ocarina-of-time")!
+    const [title] = seedLookups(seed)
+    expect(title.kind).toBe("catalogueTitle")
+    const original = { ...c(1, "The Legend of Zelda: Ocarina of Time", 3000), first_release_date: ts("1998-11-21") }
+    const remake = { ...c(3, "The Legend of Zelda: Ocarina of Time", 40), first_release_date: ts("2026-11-05") }
+    expect(pickForLookup(seed, title, [original, remake])?.id).toBe(3)
+    expect(pickForLookup(seed, title, [original])).toBeNull()
   })
 })
