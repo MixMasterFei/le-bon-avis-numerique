@@ -70,8 +70,9 @@ export default async function JeuxAOffrirPage() {
             Chaque jeu est rangé selon le plus strict des deux : un jeu PEGI 12 ne se retrouve
             jamais chez les 9-11 ans. Tous sortent sur une console actuelle (Switch, Switch 2,
             PS5 ou Xbox Series). Dans chaque tranche, quelques sorties récentes passent devant,
-            puis les jeux les mieux notés. La fiche de chaque jeu précise le reste : jeu en
-            ligne, achats intégrés, ce qui peut gêner selon l&apos;âge.
+            puis les jeux les mieux notés. Quand un jeu vend des achats intégrés, la carte le
+            signale ; la fiche précise le reste : jeu en ligne, ce qui peut gêner selon
+            l&apos;âge.
           </p>
           <NoelBandNav groups={groups} />
         </header>

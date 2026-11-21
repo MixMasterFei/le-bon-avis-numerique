@@ -125,6 +125,11 @@ function NoelCardView({ item }: { item: NoelCard }) {
           </span>
         )}
         {pegi && <span style={{ color: p.ink2 }}>{pegi}</span>}
+        {item.inGamePurchases && (
+          <span className="rounded-full px-2 py-0.5" style={{ border: `1px solid ${p.line2}`, color: p.ink }}>
+            Achats intégrés
+          </span>
+        )}
       </div>
       {item.platforms.length > 0 && (
         <p className="mt-1 text-xs" style={{ color: p.ink2 }}>

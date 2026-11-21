@@ -5,6 +5,7 @@ import { isChristmasThemed } from "@/lib/seasonal"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { isGameGuidePublic } from "@/lib/game-guide-flag"
 import { getCinemaMovies } from "@/lib/cinema"
+import { hasInGamePurchases } from "@/lib/game-practical-sheet"
 import {
   NOEL_AGE_BANDS,
   dropAddOns,
@@ -41,6 +42,8 @@ export interface NoelCard {
   platforms: string[]
   /** Parents' guide key, only when the guides are public. */
   guideKey: string | null
+  /** Games: in-game purchases are signalled (fact or PEGI descriptor). */
+  inGamePurchases: boolean
 }
 
 // Accent variants: Postgres ILIKE does not fold « ë ». The prefilter only
@@ -124,6 +127,7 @@ export async function fetchChristmasFilmsByBand(now: Date = new Date()): Promise
         officialRating: r.officialRating,
         platforms: [],
         guideKey: null,
+        inGamePurchases: false,
       }),
     ),
   }))
@@ -158,6 +162,8 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
         platforms: true,
         tmdbRating: true,
         tmdbVoteCount: true,
+        gameInGamePurchases: true,
+        pegiDescriptors: true,
       },
       take: 1500,
     }),
@@ -196,6 +202,8 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
         officialRating: r.officialRating,
         platforms: giftPlatforms(r.platforms),
         guideKey: guidesPublic ? guideKeyForTitle(r.title) : null,
+        // Not a reason to leave a game out: a parent buying it needs to know.
+        inGamePurchases: hasInGamePurchases(r),
       }),
     ),
   }))
@@ -221,5 +229,6 @@ export async function fetchHolidayCinemaPicks(limit = 10): Promise<NoelCard[]> {
     officialRating: null,
     platforms: [],
     guideKey: null,
+    inGamePurchases: false,
   }))
 }

@@ -19,6 +19,7 @@ import { NOEL_HUB_PATH, NOEL_PAGES } from "../noel/pages"
 import { isChristmasSeason, isChristmasThemed } from "../seasonal"
 import { COLLECTIONS, collectionHighlights } from "../collections-data"
 import { staticPageEntries } from "../sitemap"
+import { hasInGamePurchases } from "../game-practical-sheet"
 
 describe("bandForAge", () => {
   it("puts « Tous publics » (0) in the youngest band", () => {
@@ -161,6 +162,15 @@ describe("platforms", () => {
   it("requires a current console (a PC-only game is not a boxed present here)", () => {
     expect(onCurrentConsole(["PC", "Mac"])).toBe(false)
     expect(onCurrentConsole(["PC", "Switch 2"])).toBe(true)
+  })
+})
+
+describe("in-game purchases on gift cards", () => {
+  it("uses the fiche's rule: the stored fact or the PEGI descriptor", () => {
+    expect(hasInGamePurchases({ gameInGamePurchases: true })).toBe(true)
+    expect(hasInGamePurchases({ gameInGamePurchases: null, pegiDescriptors: ["Violence", "Achats intégrés"] })).toBe(true)
+    expect(hasInGamePurchases({ gameInGamePurchases: false, pegiDescriptors: [] })).toBe(false)
+    expect(hasInGamePurchases({ gameInGamePurchases: null, pegiDescriptors: null })).toBe(false)
   })
 })
 
