@@ -45,7 +45,7 @@ describe("gameFactsFromIgdb", () => {
   it("maps a full record", () => {
     const facts = gameFactsFromIgdb(MARIO_KART, {
       series: { id: 1001, collections: [{ name: "Mario" }, { name: "Mario Kart" }], franchise: { name: "Mario" } },
-      timeToBeat: { game_id: 1001, normally: 12 * 3600 + 20 * 60, count: 40 },
+      timeToBeat: { game_id: 1001, hastily: 12 * 3600 + 20 * 60, normally: 30 * 3600, count: 40 },
     })
     expect(facts).toEqual({
       onlinePlay: true,
@@ -183,16 +183,20 @@ describe("seriesFromIgdb", () => {
 
 describe("timeToBeatHoursFromIgdb", () => {
   it("rounds the main-story duration to the half hour", () => {
-    expect(timeToBeatHoursFromIgdb({ normally: 7 * 3600 + 50 * 60, count: 10 })).toBe(8)
-    expect(timeToBeatHoursFromIgdb({ normally: 40 * 60, count: 3 })).toBe(0.5)
+    expect(timeToBeatHoursFromIgdb({ hastily: 7 * 3600 + 50 * 60, count: 10 })).toBe(8)
+    expect(timeToBeatHoursFromIgdb({ hastily: 40 * 60, count: 3 })).toBe(0.5)
+  })
+
+  it("reads the credits-only figure, never the « with extras » one", () => {
+    expect(timeToBeatHoursFromIgdb({ hastily: 6 * 3600, normally: 38 * 3600, completely: 60 * 3600, count: 20 })).toBe(6)
   })
 
   it("is null without enough submissions, or with an implausible or unknown shape", () => {
-    expect(timeToBeatHoursFromIgdb({ normally: 36000, count: 2 })).toBeNull()
-    expect(timeToBeatHoursFromIgdb({ normally: 36000 })).toBeNull()
-    expect(timeToBeatHoursFromIgdb({ normally: 600, count: 50 })).toBeNull()
-    expect(timeToBeatHoursFromIgdb({ normally: 5_000_000, count: 50 })).toBeNull()
-    expect(timeToBeatHoursFromIgdb({ hastily: 3600, count: 50 })).toBeNull()
+    expect(timeToBeatHoursFromIgdb({ hastily: 36000, count: 2 })).toBeNull()
+    expect(timeToBeatHoursFromIgdb({ hastily: 36000 })).toBeNull()
+    expect(timeToBeatHoursFromIgdb({ hastily: 600, count: 50 })).toBeNull()
+    expect(timeToBeatHoursFromIgdb({ hastily: 5_000_000, count: 50 })).toBeNull()
+    expect(timeToBeatHoursFromIgdb({ normally: 3600, completely: 7200, count: 50 })).toBeNull()
     expect(timeToBeatHoursFromIgdb(null)).toBeNull()
   })
 })
