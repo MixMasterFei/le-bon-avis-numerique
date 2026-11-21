@@ -33,13 +33,13 @@ how sure it must be, what it costs, and how a human keeps control.
     anime kept.
   - Cron `homepage-watch` every 2 days (05:41 UTC, odd days), fully registered
     (activatedAt 2026-11-21); writes ON in production, kill switch `HOMEPAGE_WATCH_AUTOFIX`.
-  - **Before release:** Xavier's OK to apply `sql/016_homepage_spotlight.sql`. Until then
-    the band runs on its fallback and the cron reports « épingles non posées : table
-    absente » (not a failure — imports still run). Then run the task once with `dry_run`.
-  - Found, not fixed (Librarian's area): `CONSOLE_PLATFORM_IDS` in `src/lib/igdb.ts` has no
-    Switch 2, so `getFreshReleases` / `getRecentGames` never return a Switch 2-only game —
-    likely why the Zelda: Ocarina of Time remake is missing. The watch's trending path
-    (`getGamesByIds`, no platform filter) can still catch it.
+  - Merged in #121 (21 Nov 2026). `sql/016_homepage_spotlight.sql` applied in production
+    the same day (table empty until the first run). **To do:** one manual `homepage-watch`
+    dispatch with `dry_run`, then read the first scheduled report (23 Nov).
+  - Switch 2 (IGDB platform 508) added to `CONSOLE_PLATFORM_IDS` by the Director in #121 —
+    every Switch 2-only game (the Zelda: Ocarina of Time remake) was invisible to search,
+    fresh-release import and games-top-names. Confirm on the Monday import that the id
+    matches (a wrong id would only match nothing).
 - **SEO agent guards** (approved by Xavier 21 Nov, merged in #116): synopsis keyword-stuffing refusal (`synopsisStuffingReason`), canonical
   `seoTitle` « <Titre> — âge conseillé : dès N ans », year for homonyms. Existing
   overrides in the old forms are left as they are (still valid for `seoTitleMatchesAge`);
