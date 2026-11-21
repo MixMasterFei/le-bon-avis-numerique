@@ -90,12 +90,11 @@ export const TOP_GAMES: TopGameSeed[] = [
     key: "gta",
     name: "Grand Theft Auto (GTA)",
     aliases: ["grand theft auto", "gta"],
-    // The catalogue holds TWO "Grand Theft Auto V" rows (IGDB 1020, the 2013
-    // original, and IGDB 239064, the 2015 PC release). Exact matching treats a
-    // duplicate as ambiguous and drops the card, so pin the canonical one
-    // until the pair is merged in /admin/dedupe.
-    forcedId: "ced84a43-f4b1-4d7a-ae0c-489aee0a11e1",
-    catalogueTitles: ["grand theft auto v", "grand theft auto iv", "grand theft auto: san andreas"],
+    // Pinned to Grand Theft Auto VI (released 19 Nov 2026): the opus children
+    // ask for this Christmas. It was pinned to GTA V while the catalogue held
+    // two GTA V rows; that pair has since been merged (src/lib/merged-media.ts).
+    forcedId: "57065822-8280-4fe1-9598-5ed442f4319c",
+    catalogueTitles: ["grand theft auto vi", "grand theft auto v", "grand theft auto iv", "grand theft auto: san andreas"],
     parentNote:
       "Série d'action pour adultes que les plus jeunes réclament : la question de l'âge revient sans cesse.",
     familyIssues: [
@@ -142,6 +141,10 @@ export const TOP_GAMES: TopGameSeed[] = [
       "Les dépenses passent par petits montants, souvent invisibles jusqu'au relevé bancaire. Les achats se coupent dans les réglages console et le compte enfant EA — ils ne sont pas actifs par défaut.",
       "FC 26 reste PEGI 3. FC 27 (septembre 2026) sera PEGI 16 : les pochettes payantes au hasard deviennent un critère d'âge sur les nouveaux jeux, pas un recalcul des opus déjà classés 3.",
     ],
+    // Stays on EA Sports FC 26 (PEGI 3) on purpose. FC 27 (1dc26c31-…) is in
+    // the catalogue with PEGI_16 / age 16; that rating is being checked with
+    // Xavier (21 Nov 2026) before the pillar moves to it. Do not re-pin until
+    // then.
     forcedId: "095106fa-bc48-4bd9-9461-adc1ae2a088e",
     customFaqAnswer:
       "EA Sports FC 26 est un jeu vidéo conseillé à partir de 7 ans par Totem Avisé. Points à vérifier : consumérisme. Points favorables : messages positifs, modèles positifs.",
