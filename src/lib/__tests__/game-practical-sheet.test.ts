@@ -76,6 +76,29 @@ describe("buildPracticalSheet", () => {
     expect(value(input, "online")?.value).toBe("Oui")
   })
 
+  // Xavier, 21 Nov 2026: when the ONLY source is the stored PEGI descriptors,
+  // online play and in-game purchases still read « Oui » (an official
+  // statement), even with no stored fact or a stored FALSE.
+  it("reads « Oui » for online play and purchases when PEGI descriptors are the only source", () => {
+    for (const stored of [null, false] as const) {
+      const input = {
+        ...EMPTY,
+        gameOnlinePlay: stored,
+        gameInGamePurchases: stored,
+        pegiDescriptors: ["Achats intégrés", "Jeu en ligne"],
+      }
+      expect(value(input, "online")).toMatchObject({ value: "Oui", known: true })
+      expect(value(input, "purchases")).toMatchObject({ value: "Oui · signalé par la classification d'âge", known: true })
+    }
+    // Descriptor matching tolerates case / surrounding spaces, nothing looser.
+    const loose = { ...EMPTY, pegiDescriptors: [" achats intégrés ", "JEU EN LIGNE"] }
+    expect(value(loose, "online")?.value).toBe("Oui")
+    expect(value(loose, "purchases")?.known).toBe(true)
+    const other = { ...EMPTY, pegiDescriptors: ["Violence", "Langage grossier"] }
+    expect(value(other, "online")?.value).toBe(NOT_KNOWN)
+    expect(value(other, "purchases")?.value).toBe(NOT_KNOWN)
+  })
+
   it("carries the version / platform caveat and names no source database", () => {
     const sheet = buildPracticalSheet(EMPTY)
     expect(sheet.caveat).toMatch(/varier selon la version et la plateforme/)

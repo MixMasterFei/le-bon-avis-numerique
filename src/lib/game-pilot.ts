@@ -75,6 +75,11 @@
  *   order by grp desc, title
  */
 
+// ── Pilot length (Xavier, 21 Nov 2026) ─────────────────────────────────────
+// SIX WEEKS before comparing treated vs control in Search Console. Day 0 = the
+// day the game-facts backfill runs on the treated games (start date recorded
+// in docs/agents/agentic-master.md once it has run). Don't widen, re-draw or
+// edit these lists before the comparison: either would spoil it.
 export const GAME_PILOT_TREATED_IDS: readonly string[] = [
   "01f7bc58-97ea-432e-bdc6-614f7ae37393",
   "05c10fcd-9b53-4255-b85a-2ab1be4cc923",
