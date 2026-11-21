@@ -13,6 +13,7 @@ import { canUseNlSearch } from "@/lib/nl-search/access"
 import { resolveHomepageTimeContext, type HomepageState } from "@/lib/homepage-time-context"
 import { getHolidayCalendar } from "@/lib/school-holidays"
 import { getExpertPicks } from "@/lib/expert-picks"
+import { getHomepageSpotlight } from "@/lib/homepage-spotlight-data"
 
 // V2 redesign is admin-only and dynamically imported so its chunk + the
 // three design fonts never ship to anonymous visitors.
@@ -179,11 +180,13 @@ export default async function HomePage({
   const showV2 = v2Enabled(isAdmin) && sp.v !== "classic"
 
   if (showV2) {
-    const [heroPosters, familyMembers, homepageState, familyDisplayName] = await Promise.all([
+    const [heroPosters, familyMembers, homepageState, familyDisplayName, spotlight] = await Promise.all([
       getHeroWallPosters(getWeekSeed()),
       session?.user?.id ? getFamilyMembersLite(session.user.id) : Promise.resolve([]),
       resolveHomepageState(),
       session?.user?.id ? getFamilyDisplayName(session.user.id) : Promise.resolve(null),
+      // « À ne pas manquer cette semaine » — cached 30 min, server-rendered.
+      getHomepageSpotlight().catch(() => []),
     ])
     return (
       <>
@@ -196,6 +199,7 @@ export default async function HomePage({
           familyMembers={familyMembers}
           homepageState={homepageState}
           nlSearchEnabled={canUseNlSearch({ isAuthenticated: isLoggedIn, role: session?.user?.role })}
+          spotlight={spotlight}
         />
         <AdminVariantToggle variant="v2" />
       </>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Gauge, Loader2 } from "lucide-react"
+import { RefreshCw, Settings, Upload, Sparkles, FileWarning, Wrench, CalendarClock, BookOpenCheck, Gauge, Loader2, Megaphone } from "lucide-react"
 import {
   QuickActionsBar,
   ImportPresetsBar,
@@ -38,6 +38,17 @@ const ModerationPanel = dynamic(
 
 const GameGuidesPanel = dynamic(
   () => import("./panels/GameGuidesPanel").then((m) => m.GameGuidesPanel),
+  {
+    loading: () => (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: adminPalette.accent }} />
+      </div>
+    ),
+  },
+)
+
+const HomepageSpotlightPanel = dynamic(
+  () => import("./panels/HomepageSpotlightPanel").then((m) => m.HomepageSpotlightPanel),
   {
     loading: () => (
       <div className="flex justify-center py-12">
@@ -160,6 +171,16 @@ export function AdminOperationsView({ initialEnrichType }: Props) {
           subtitle="Fraîcheur des blocs « L'état du jeu » et liens éditeurs"
         >
           <GameGuidesPanel />
+        </AdminSectionCard>
+      </div>
+
+      <div id="a-ne-pas-manquer" className="scroll-mt-28">
+        <AdminSectionCard
+          icon={Megaphone}
+          title="À ne pas manquer"
+          subtitle="Le bandeau de la page d'accueil et ses épingles"
+        >
+          <HomepageSpotlightPanel />
         </AdminSectionCard>
       </div>
 

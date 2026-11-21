@@ -16,6 +16,8 @@ import { PlatformsSection } from "./PlatformsSection"
 import { MethodeBand } from "./MethodeBand"
 import { CollectionsStrip } from "./CollectionsStrip"
 import { FamilyNudge } from "./FamilyNudge"
+import { SpotlightBand } from "./SpotlightBand"
+import type { SpotlightItem } from "@/lib/homepage-spotlight"
 
 import type { FamilyMemberLite } from "./FamilyChips"
 import type { HomepageState } from "@/lib/homepage-time-context"
@@ -36,6 +38,8 @@ interface HomepageRedesignProps {
   homepageState: HomepageState
   /** Natural-language search in the hero (NL_SEARCH_PUBLIC, see nl-search/access). */
   nlSearchEnabled?: boolean
+  /** « À ne pas manquer cette semaine » — server-selected, NOT age-filtered. */
+  spotlight?: SpotlightItem[]
 }
 
 /**
@@ -76,7 +80,7 @@ function HomeFilterProgress({ filterKey }: { filterKey: string }) {
   return <TopProgressBar loading={pulse} />
 }
 
-export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayName = null, heroPosters, defaultMaxAge, familyMembers, homepageState, nlSearchEnabled = false }: HomepageRedesignProps) {
+export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayName = null, heroPosters, defaultMaxAge, familyMembers, homepageState, nlSearchEnabled = false, spotlight = [] }: HomepageRedesignProps) {
   const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
 
@@ -157,6 +161,8 @@ export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayNam
             data rails (each fetches + renders a poster grid) — deferred until
             scrolled near, so they don't all mount on load and delay LCP. */}
         <TopPicksRail maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} state={homepageState} />
+        {/* Informational band: deliberately NOT age-capped (see SpotlightBand). */}
+        <SpotlightBand items={spotlight} />
         <DeferUntilVisible minHeight={300}>
           <UpcomingRail maxAge={effectiveMaxAge} />
         </DeferUntilVisible>

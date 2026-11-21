@@ -42,6 +42,8 @@ const CRON_STALE_HOURS: Record<string, number> = {
   "game-guides-check": 800,
   // Weekly (Sunday) Totem evaluation bench.
   "totem-eval": 200,
+  // Every 2 days — homepage watch (mirrors EXPECTED_TASKS).
+  "homepage-watch": 60,
   "backfill-ratings": 220,
   streaming: 220,
   similarity: 220,
