@@ -1,7 +1,7 @@
 -- Migration 016: homepage spotlight pins (« À ne pas manquer cette semaine »)
 -- Table: homepage_spotlight
 --
--- NOT APPLIED. Written 2026-11-21 (Agentic Master, branch
+-- Applied in production on 21 Nov 2026 (Director, verified: 8 columns). Written 2026-11-21 (Agentic Master, branch
 -- claude/agentic-master-homepage-watch). Apply only with Xavier's OK, then
 -- `npx prisma generate`. Number 015 is the agent ledger (already applied).
 --

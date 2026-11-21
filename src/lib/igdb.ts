@@ -265,6 +265,10 @@ export function getIGDBImageUrl(
 // Platform IDs from IGDB
 const CONSOLE_PLATFORM_IDS = [
   130, // Nintendo Switch
+  508, // Nintendo Switch 2 — missing until 21 Nov 2026, so every Switch 2-only
+       // release (the Ocarina of Time remake) was invisible to search, the
+       // fresh-release import and games-top-names. Id as listed by the source's
+       // platforms endpoint; a wrong id would only match nothing.
   167, // PlayStation 5
   48,  // PlayStation 4
   169, // Xbox Series X|S
