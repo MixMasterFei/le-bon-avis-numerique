@@ -4,9 +4,9 @@ import { getNowPlayingMovies, getUpcomingMovies, getImageUrl, ImageSize, type TM
 import { estimateAgeFromTmdbGenreIds } from "@/lib/import-helpers"
 import {
   CINEMA_TMDB_PAGES,
-  EUROPEAN_LANGUAGES,
-  cinemaReleaseBucketPriority,
   getCinemaReleaseBucket,
+  isFrenchCinemaEligible,
+  rankCinemaForFrance,
   selectUpcomingCinema,
   type CinemaReleaseBucket,
 } from "@/lib/cinema-policy"
@@ -42,35 +42,26 @@ interface CinemaFilters {
   maxAge?: number
 }
 
-function uniqueEuropeanMovies(tmdbMovies: TMDBMovie[]): TMDBMovie[] {
+function uniqueEligibleMovies(tmdbMovies: TMDBMovie[]): TMDBMovie[] {
   const seenTmdbIds = new Set<number>()
   return tmdbMovies.filter((movie) => {
-    if (!EUROPEAN_LANGUAGES.has(movie.original_language)) return false
+    if (!isFrenchCinemaEligible(movie)) return false
     if (seenTmdbIds.has(movie.id)) return false
     seenTmdbIds.add(movie.id)
     return true
   })
 }
 
-function sortCinemaMovies(movies: TMDBMovie[]): TMDBMovie[] {
-  return movies
-    .map((movie, index) => ({ movie, index }))
-    .sort((a, b) => {
-      const bucketDelta =
-        cinemaReleaseBucketPriority(getCinemaReleaseBucket(a.movie.release_date)) -
-        cinemaReleaseBucketPriority(getCinemaReleaseBucket(b.movie.release_date))
-      if (bucketDelta !== 0) return bucketDelta
-      // Within a release bucket, surface the MAINSTREAM films first. TMDB's
-      // now_playing (region=FR) lists every title in French theaters — incl.
-      // tiny art-house — in an order that doesn't reflect box-office. Ranking
-      // by TMDB popularity brings the well-known releases to the top (closer to
-      // what mainstream French cinema listings show) and buries the obscure
-      // long-tail below the single visible row.
-      const popDelta = (b.movie.popularity ?? 0) - (a.movie.popularity ?? 0)
-      if (popDelta !== 0) return popDelta
-      return a.index - b.index
-    })
-    .map(({ movie }) => movie)
+/**
+ * All now_playing (region=FR) pages, each fetched on its own: one page timing
+ * out must not empty the cinema rail. Cached 1 h by tmdbFetch.
+ */
+async function fetchNowPlayingPages(): Promise<TMDBMovie[]> {
+  const pages = await Promise.all(
+    CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page).catch(() => null)),
+  )
+  if (pages.every((p) => p === null)) throw new Error("TMDB now_playing unavailable")
+  return pages.flatMap((page) => page?.results ?? [])
 }
 
 function matchesAgeFilter(movie: Pick<CinemaMovie, "expertAgeRec">, filters: CinemaFilters): boolean {
@@ -89,8 +80,7 @@ function matchesAgeFilter(movie: Pick<CinemaMovie, "expertAgeRec">, filters: Cin
  */
 export async function getNowPlayingTmdbIds(): Promise<Set<number>> {
   try {
-    const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
-    return new Set(tmdbPages.flatMap((page) => page.results || []).map((movie) => movie.id))
+    return new Set((await fetchNowPlayingPages()).map((movie) => movie.id))
   } catch {
     return new Set()
   }
@@ -106,10 +96,9 @@ export async function isMovieNowPlaying(tmdbId: number | null | undefined): Prom
 }
 
 export async function getCinemaMovies(filters: CinemaFilters = {}): Promise<CinemaMovie[]> {
-  const tmdbPages = await Promise.all(CINEMA_TMDB_PAGES.map((page) => getNowPlayingMovies(page)))
-  const filteredMovies = sortCinemaMovies(
-    uniqueEuropeanMovies(tmdbPages.flatMap((page) => page.results || [])),
-  )
+  // French-relevance order (src/lib/cinema-policy.ts, formula in the comment
+  // there) — replaces the old release-bucket + raw global popularity sort.
+  const filteredMovies = rankCinemaForFrance(uniqueEligibleMovies(await fetchNowPlayingPages()))
 
   if (filteredMovies.length === 0) return []
 
@@ -244,7 +233,9 @@ export async function getUpcomingCinemaMovies(limit = 12): Promise<UpcomingCinem
   let nowPlayingIds: Set<number>
   try {
     const [pages, playing] = await Promise.all([
-      Promise.all(CINEMA_TMDB_PAGES.map((page) => getUpcomingMovies(page))),
+      // Upcoming keeps its first three pages: it is sorted soonest-first and
+      // the rail shows a dozen, so deeper pages only add far-off dates.
+      Promise.all(CINEMA_TMDB_PAGES.slice(0, 3).map((page) => getUpcomingMovies(page))),
       getNowPlayingTmdbIds(),
     ])
     upcoming = pages.flatMap((page) => page.results || [])
