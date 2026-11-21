@@ -25,6 +25,22 @@ how sure it must be, what it costs, and how a human keeps control.
 - Never expose model or vendor names in rendered text.
 
 ## Open work (2026-11-21)
+- **Homepage « À ne pas manquer » + `homepage-watch` agent** (Xavier's request, 21 Nov) on
+  `claude/agentic-master-homepage-watch`, committed locally, not pushed, no PR:
+  - V2 band right after « Pour ce week-end », informational and NOT age-capped (GTA VI
+    shows with its 18); pure selection in `src/lib/homepage-spotlight.ts`.
+  - Cinema rail ranked by French relevance (`rankCinemaForFrance`), 6 now_playing pages,
+    anime kept.
+  - Cron `homepage-watch` every 2 days (05:41 UTC, odd days), fully registered
+    (activatedAt 2026-11-21); writes ON in production, kill switch `HOMEPAGE_WATCH_AUTOFIX`.
+  - **Before release:** Xavier's OK to apply `sql/016_homepage_spotlight.sql` (the band
+    works on its fallback until then; the cron's pin write will report « épingles en
+    échec » every run while the table is missing — apply the migration first, or set
+    `HOMEPAGE_WATCH_AUTOFIX=false` until it is). Then run the task once with `dry_run`.
+  - Found, not fixed (Librarian's area): `CONSOLE_PLATFORM_IDS` in `src/lib/igdb.ts` has no
+    Switch 2, so `getFreshReleases` / `getRecentGames` never return a Switch 2-only game —
+    likely why the Zelda: Ocarina of Time remake is missing. The watch's trending path
+    (`getGamesByIds`, no platform filter) can still catch it.
 - **SEO agent guards** (approved by Xavier 21 Nov, merged in #116): synopsis keyword-stuffing refusal (`synopsisStuffingReason`), canonical
   `seoTitle` « <Titre> — âge conseillé : dès N ans », year for homonyms. Existing
   overrides in the old forms are left as they are (still valid for `seoTitleMatchesAge`);
