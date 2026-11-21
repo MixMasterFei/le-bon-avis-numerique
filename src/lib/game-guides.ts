@@ -514,6 +514,99 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
   },
+  {
+    key: "brawl-stars",
+    name: "Brawl Stars",
+    catalogueId: "8fe148bb-81ca-4a12-a57c-b40713c5a872",
+    tagline: "Des parties de trois minutes, des récompenses au hasard : les deux sujets à régler avec votre enfant.",
+    whatItIs:
+      "Un jeu d'affrontement en équipe sur téléphone et tablette, édité par Supercell. Des parties très courtes, un style de dessin animé et une collection de personnages, les « brawlers », à débloquer. Le jeu est gratuit à installer et se finance par une monnaie payante et un passe de saison.",
+    whatHappens: [
+      "Une partie oppose le plus souvent deux équipes de trois joueurs et dure quelques minutes.",
+      "Les combats sont stylisés, sans sang : un personnage éliminé réapparaît ou quitte la manche.",
+      "Une grande partie des récompenses arrive sous forme de tirages au contenu aléatoire, ce qui pousse à jouer « encore une » pour voir ce qui va tomber.",
+      "Les joueurs peuvent rejoindre un club, avec son propre fil de discussion écrite.",
+      "Une boutique propose personnages, apparences et passes contre de l'argent réel.",
+    ],
+    whyKidsLove:
+      "Les parties sont courtes, nerveuses et lisibles, on progresse vite et on joue avec ses copains d'école. La collection de personnages nourrit les conversations de récréation, et c'est aussi ce qui rend la demande d'achat si insistante.",
+    decisions: [
+      {
+        question: "Combien d'argent, et qui valide ?",
+        detail:
+          "C'est la décision principale. Fixez le principe avant le montant : rien du tout, le passe de saison de temps en temps, ou une somme d'argent de poche. Puis faites en sorte que chaque achat passe par vous, via les réglages du téléphone plutôt que via une promesse.",
+      },
+      {
+        question: "Comment parler des récompenses au hasard ?",
+        detail:
+          "Le ressort du tirage aléatoire est celui des jeux de hasard : l'envie de recommencer vient de l'incertitude. Le nommer avec votre enfant, sans dramatiser, l'aide à reconnaître le moment où il joue pour le tirage plutôt que pour la partie.",
+      },
+      {
+        question: "Le club : avec qui ?",
+        detail:
+          "Un club entre camarades de classe ne pose pas les mêmes questions qu'un club ouvert à des inconnus. Demandez à voir lequel il a rejoint.",
+      },
+      {
+        question: "Comment on s'arrête.",
+        detail:
+          "Trois minutes par partie, c'est peu, et c'est justement le piège : « une dernière » se répète facilement. Un nombre de parties ou un créneau fixe tient mieux qu'un temps qui s'étire.",
+      },
+    ],
+    advanced: [
+      "Supercell a retiré ses anciens coffres en 2022 avant d'introduire de nouveaux tirages, les Starr Drops : le mécanisme aléatoire a changé de forme sans disparaître.",
+      "Depuis octobre 2026, PEGI relève progressivement à 16 la classification des jeux numériques qui vendent des objets aléatoires payants. La classification affichée par la boutique au moment de l'installation est la plus à jour : regardez-la plutôt qu'un souvenir.",
+      "Le même éditeur publie Clash Royale et Clash of Clans, avec un compte commun (Supercell ID). Les conseils de ce guide s'y appliquent presque tels quels.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "Le jeu ne propose pas de compte parent intégré : pour les achats et le temps d'écran, Supercell renvoie aux réglages de l'appareil.",
+        "Supercell conseille de créer le compte Supercell ID de l'enfant avec une adresse e-mail que vous gérez. Vous pouvez alors suivre l'activité du compte et sa liste d'amis.",
+        "Sur iPhone et iPad, l'option « Demander l'autorisation d'achat » du partage familial fait passer chaque achat de l'enfant par une demande que vous acceptez ou refusez.",
+        "Sur Android, Family Link permet d'exiger votre approbation pour les achats intégrés aux applications.",
+      ],
+      doesNotDo: [
+        "Bloquer les achats ne supprime pas les tirages aléatoires gagnés en jouant : le ressort reste, seule la dépense est coupée.",
+        "Sur Android, l'approbation ne couvre que les achats payés via Google Play, pas un autre moyen de paiement.",
+        "Les réglages du téléphone ne modèrent pas la discussion du club.",
+        "Si votre enfant se connecte à son compte sur un autre appareil, celui d'un aîné par exemple, les réglages du vôtre ne le suivent pas.",
+      ],
+      officialLinks: [
+        {
+          label: "Guide pour les parents (Supercell)",
+          url: "https://supercell.com/en/parents/fr",
+          source: "Supercell",
+        },
+        {
+          label: "Approuver les achats de vos enfants avec « Demander l'autorisation d'achat »",
+          url: "https://support.apple.com/fr-fr/105055",
+          source: "Apple",
+        },
+        {
+          label: "Approbation des achats sur Google Play (Family Link)",
+          url: "https://support.google.com/families/answer/7039872?hl=fr",
+          source: "Google",
+        },
+        {
+          label: "PEGI met à jour la classification des jeux contenant des objets aléatoires payants",
+          url: "https://pegi.info/news/pegi-updates-age-ratings-existing-games-paid-random-items",
+          source: "PEGI",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "Les parties sont si courtes qu'un parent peut s'y essayer entre deux tâches, et c'est la meilleure façon de comprendre ce que votre enfant y vit.",
+      ideas: [
+        "Faites une partie en équipe avec lui, sur deux appareils ou en vous passant le téléphone. Vous verrez vite où sont la pression et le plaisir.",
+        "Ouvrez un tirage à ses côtés et demandez-lui ce qu'il espérait. La conversation sur le hasard vient toute seule.",
+        "Regardez la boutique ensemble avant de décider d'un achat : ce qui coûte quoi, ce qui disparaît bientôt, et pourquoi c'est présenté ainsi.",
+        "Demandez-lui de vous expliquer ses brawlers préférés. Un enfant qui explique un jeu prend aussi un peu de recul sur lui.",
+      ],
+    },
+  },
 ]
 
 /** Guide for a seed key, or null. */
