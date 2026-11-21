@@ -24,7 +24,14 @@ how sure it must be, what it costs, and how a human keeps control.
   care banners with results, never instead.
 - Never expose model or vendor names in rendered text.
 
-## Open work (2026-11-06)
+## Open work (2026-11-21)
+- **SEO agent guards** on `agentic-master/seo-autofix-guards` (approved by Xavier 21 Nov,
+  not merged): synopsis keyword-stuffing refusal (`synopsisStuffingReason`), canonical
+  `seoTitle` « <Titre> — âge conseillé : dès N ans », year for homonyms. Existing
+  overrides in the old forms are left as they are (still valid for `seoTitleMatchesAge`);
+  a deterministic one-off normalisation would need Xavier's go-ahead. After the first
+  Thursday run, read `outcomes.refusals` in `cron_logs` to check the guard isn't
+  refusing clean drafts.
 - **Agent ledger** on `claude/blissful-cori-knkti4` (25 files, no PR yet): « À valider »
   queue, run/cost ledger, autonomy levels. Migration 015 is **already applied in
   production** (tables `agent_runs`, `agent_actions`, `agent_autonomy` exist, unused by the
