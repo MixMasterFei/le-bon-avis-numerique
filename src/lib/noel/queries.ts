@@ -60,6 +60,8 @@ const CHRISTMAS_TITLE_TOKENS = [
 
 export const NOEL_FILMS_PER_BAND = 12
 export const NOEL_GAMES_PER_BAND = 10
+/** Nintendo Switch launch: the oldest generation still sold in shops. */
+export const GIFT_RELEASE_FLOOR = new Date("2017-01-01T00:00:00Z")
 
 /** Films de Noël, enrichis, rangés par tranche d'âge. */
 export async function fetchChristmasFilmsByBand(now: Date = new Date()): Promise<BandGroup<NoelCard>[]> {
@@ -134,7 +136,10 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
         expertAgeRec: { not: null, lte: OLDEST },
         // A PEGI on the box: something a parent can check in the shop.
         officialRating: { startsWith: "PEGI_" },
-        releaseDate: { lte: now },
+        // Current-generation releases only. Older titles listed on Switch or
+        // PS5 are often emulation catalogue entries (« Pokémon FireRed »)
+        // that cannot be bought as a boxed present.
+        releaseDate: { gte: GIFT_RELEASE_FLOOR, lte: now },
         platforms: { hasSome: ["Switch 2", "Switch", "PS5", "Xbox Series"] },
         dataQualityScore: { gte: 80 },
         tmdbVoteCount: { gte: 20 },
