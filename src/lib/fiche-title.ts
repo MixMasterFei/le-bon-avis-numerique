@@ -81,6 +81,42 @@ export function seoTitleMatchesAge(
   return true
 }
 
+export interface CanonicalSeoTitleInput {
+  /** The work's display name — never rewritten. */
+  title: string
+  /** Totem's recommended age (0 = « tous publics »). */
+  age: number | null | undefined
+  /**
+   * Release year — pass it only when another work of the same type shares the
+   * title (src/lib/homonyms.ts): « Scrooge (1970) » vs « Scrooge (2026) ».
+   */
+  year?: number | null
+}
+
+/**
+ * The ONE form the SEO agent writes into `seoTitle` (approved 21 Nov 2026):
+ *
+ *   « Arcane — âge conseillé : dès 14 ans »
+ *   « Bluey — âge conseillé : tous publics »
+ *   « Scrooge (1970) — âge conseillé : dès 8 ans »   (homonym → year)
+ *
+ * Before, every override had its own shape (« : âge minimum ? Dès 12 ans »,
+ * « — à partir de quel âge ? », « Dès 8 ans · … »). The age wording reuses
+ * `ageSentenceLabel`, lower-cased mid-sentence, so TP reads « tous publics »
+ * as on every badge. Null when the age is unknown or the canonical form does
+ * not fit MAX_TITLE — the render path's `buildFicheTitle` already handles long
+ * names better than a clipped override would.
+ */
+export function buildCanonicalSeoTitle({ title, age, year }: CanonicalSeoTitleInput): string | null {
+  const label = ageSentenceLabel(age)
+  if (!label) return null
+  const name = title.trim()
+  if (!name) return null
+  const head = year ? `${name} (${year})` : name
+  const out = `${head} — âge conseillé : ${label.charAt(0).toLowerCase()}${label.slice(1)}`
+  return out.length <= MAX_TITLE ? out : null
+}
+
 interface FicheAgeInput {
   age?: number | null
   /** Pre-release / provisional: the age is an estimate (shouldHideContentAnalysis). */
@@ -135,7 +171,8 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1).trimEnd() + "…" : text
 }
 
-function yearOf(date: string | Date | null | undefined): number | null {
+/** Release year of a stored date (UTC), null when absent or implausible. */
+export function releaseYearOf(date: string | Date | null | undefined): number | null {
   if (!date) return null
   const year = typeof date === "string" ? Number(date.slice(0, 4)) : date.getUTCFullYear()
   return Number.isInteger(year) && year >= 1870 && year <= 2100 ? year : null
@@ -163,7 +200,7 @@ export function buildFicheDescription({
 }: FicheDescriptionInput): string {
   const lead = ficheAgeLead({ age, provisional })
   const text = synopsis?.trim() || ""
-  const year = yearOf(releaseDate)
+  const year = releaseYearOf(releaseDate)
   const work = year ? `${typeLabel} de ${year}` : null
 
   if (lead && text) {

@@ -46,6 +46,38 @@ export function homonymLabel(row: HomonymRow, now: Date = new Date()): string {
   return parts.join(" · ")
 }
 
+/**
+ * Does another work of the same type carry this title (case- and accent-
+ * insensitive: « L'Odyssée » = « L'ODYSSEE »)? Used by the SEO agent, which must put the release year in a
+ * homonym's <title> (« Scrooge (1970) — … »). `null` = could not tell: the
+ * caller must fail closed rather than write an ambiguous title.
+ */
+export async function hasHomonym(media: { id: string; type: string; title: string }): Promise<boolean | null> {
+  const title = media.title.trim()
+  if (!title) return false
+  try {
+    const rows = await prisma.$queryRaw<Array<{ one: number }>>`
+      SELECT 1 AS one FROM media_items
+      WHERE type::text = ${media.type}
+        AND id <> ${media.id}
+        AND unaccent(lower(btrim(title))) = unaccent(lower(${title}))
+      LIMIT 1`
+    return rows.length > 0
+  } catch {
+    // `unaccent` unavailable: fall back to the case-insensitive match
+    // findHomonyms uses (misses accent-only variants, never invents one).
+    try {
+      const row = await prisma.mediaItem.findFirst({
+        where: { type: media.type as never, id: { not: media.id }, title: { equals: title, mode: "insensitive" } },
+        select: { id: true },
+      })
+      return row != null
+    } catch {
+      return null
+    }
+  }
+}
+
 /** Same type, same title (case-insensitive), another id; newest first. */
 export async function findHomonyms(media: {
   id: string

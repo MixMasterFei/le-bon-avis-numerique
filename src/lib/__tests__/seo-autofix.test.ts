@@ -9,6 +9,12 @@ import {
   rewritePasses,
   ageMentionReadsNaturally,
   isSaturated,
+  synopsisStuffingReason,
+  rewriteRejection,
+  META_SEO_PATTERNS,
+  normalizeSeoTitle,
+  prepareSeoTitle,
+  homonymYear,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -327,5 +333,163 @@ describe("ageMentionReadsNaturally", () => {
         "Peter Parker jongle entre ses devoirs de lycéen et sa vie de super-héros dès 12 ans, quand de nouveaux ennemis menacent New York.",
       ),
     ).toBe(false)
+  })
+})
+
+describe("synopsisStuffingReason (garde-fou bourrage, 21 Nov 2026)", () => {
+  it("refuses the 19 Nov Arcane draft (query quoted in « »)", () => {
+    const draft =
+      "À Piltover et Zaun, deux sœurs se déchirent. Une série d'animation idéale pour les familles cherchant un contenu « arcane age » réfléchi, dès 14 ans."
+    expect(synopsisStuffingReason("arcane age", "Arcane", draft)).toBe("requête citée entre guillemets")
+  })
+
+  it("refuses the 19 Nov Les 101 Dalmatiens draft (« suggestions autour de »)", () => {
+    const draft =
+      "Pongo et Perdita partent sauver leurs chiots enlevés par Cruella. Dès 6 ans, avec des suggestions autour de 101 dalmatiens."
+    expect(synopsisStuffingReason("101 dalmatiens", "Les 101 Dalmatiens", draft)).toMatch(/^formulation SEO/)
+  })
+
+  it("refuses a query quoted with straight or curly quotes too", () => {
+    expect(synopsisStuffingReason("bluey age", "Bluey", 'Une chienne joueuse, pour "bluey age" et plus.')).toBe(
+      "requête citée entre guillemets",
+    )
+    expect(synopsisStuffingReason("bluey age", "Bluey", "Une chienne joueuse, “Bluey âge” compris.")).toBe(
+      "requête citée entre guillemets",
+    )
+  })
+
+  it("lets the work's own title be quoted when the query IS the title", () => {
+    expect(synopsisStuffingReason("arcane", "Arcane", "La série « Arcane » suit deux sœurs, dès 14 ans.")).toBeNull()
+  })
+
+  it("refuses the raw query verbatim when it carries an age word", () => {
+    expect(
+      synopsisStuffingReason("arcane age", "Arcane", "Arcane âge conseillé dès 14 ans : deux sœurs s'affrontent."),
+    ).toBe("requête recopiée telle quelle")
+    expect(
+      synopsisStuffingReason(
+        "bluey a partir de quel age",
+        "Bluey",
+        "Bluey à partir de quel âge ? Dès 3 ans, une chienne invente des jeux.",
+      ),
+    ).toBe("requête recopiée telle quelle")
+  })
+
+  it("accepts a natural draft that names the work and the age", () => {
+    expect(
+      synopsisStuffingReason(
+        "arcane age",
+        "Arcane",
+        "Dès 14 ans, Arcane suit Vi et Jinx, deux sœurs que la guerre entre Piltover et Zaun sépare.",
+      ),
+    ).toBeNull()
+  })
+
+  it("does not mistake plot for search talk", () => {
+    const plots = [
+      "Marlin part à la recherche de son fils Nemo à travers l'océan, dès 6 ans.",
+      "Un garçon cherchant un moyen de rentrer chez lui traverse un monde enchanté.",
+      "Ses parents recherchent leur fille disparue dans la forêt.",
+      "Un laboratoire de recherche cache un secret, à voir dès 12 ans.",
+    ]
+    for (const p of plots) expect(synopsisStuffingReason("film age", "Titre", p)).toBeNull()
+  })
+
+  it("matches each meta-SEO phrase it lists", () => {
+    const samples: Record<string, string> = {
+      contenu: "Un contenu familial dès 8 ans.",
+      suggestions: "Des suggestions pour toute la famille.",
+      "requête": "Répond à votre requête.",
+      "mot-clé": "Le mot-clé de la soirée.",
+      "référencement": "Optimisé pour le référencement.",
+      "moteur de recherche": "Le moteur de recherche le confirme.",
+      "votre recherche": "Parfait pour votre recherche.",
+      "recherche en ligne": "Après une recherche en ligne, dès 8 ans.",
+      "familles qui cherchent": "Idéal pour les parents qui cherchent un film.",
+      "vous cherchez": "Si vous cherchez un dessin animé, dès 3 ans.",
+    }
+    for (const { label, re } of META_SEO_PATTERNS) {
+      expect(samples[label], `sample for ${label}`).toBeDefined()
+      expect(re.test(normalize(samples[label])), label).toBe(true)
+      expect(synopsisStuffingReason("x age", "Titre", samples[label])).toBe(`formulation SEO (« ${label} »)`)
+    }
+  })
+})
+
+describe("rewriteRejection", () => {
+  const before = "Pongo et Perdita vivent heureux à Londres avec leurs quinze chiots."
+  it("names the stuffing reason instead of a bare false", () => {
+    expect(
+      rewriteRejection(
+        "101 dalmatiens age",
+        "Les 101 Dalmatiens",
+        before,
+        "Pongo et Perdita sauvent leurs chiots de Cruella, un contenu à partager dès 6 ans.",
+      ),
+    ).toBe("formulation SEO (« contenu »)")
+  })
+  it("returns null for a clean draft (rewritePasses agrees)", () => {
+    const after = "Pongo et Perdita partent sauver leurs chiots enlevés par Cruella, une aventure à partager dès 6 ans."
+    expect(rewriteRejection("101 dalmatiens age", "Les 101 Dalmatiens", before, after)).toBeNull()
+    expect(rewritePasses("101 dalmatiens age", "Les 101 Dalmatiens", before, after)).toBe(true)
+  })
+})
+
+describe("normalizeSeoTitle / prepareSeoTitle (forme canonique)", () => {
+  const ctx = { title: "Arcane", age: 14 }
+  it("rewrites any faithful draft into the canonical form", () => {
+    for (const draft of [
+      "Arcane : à partir de quel âge ? Dès 14 ans",
+      "Arcane — Âge conseillé : Dès 14 ans",
+      "Arcane - quel âge ?",
+      "arcane, âge minimum",
+    ]) {
+      expect(normalizeSeoTitle(draft, ctx)).toEqual({ title: "Arcane — âge conseillé : dès 14 ans" })
+    }
+  })
+  it("writes « tous publics » for a TP fiche", () => {
+    expect(normalizeSeoTitle("Bluey — Tous publics", { title: "Bluey", age: 0 })).toEqual({
+      title: "Bluey — âge conseillé : tous publics",
+    })
+  })
+  it("refuses a draft that drops the work or contradicts the age", () => {
+    expect(normalizeSeoTitle("Série animée culte : quel âge ?", ctx)).toEqual({ refusal: "titre de l'œuvre absent" })
+    expect(normalizeSeoTitle("Arcane — dès 12 ans", ctx)).toEqual({ refusal: "âge contredit la fiche" })
+    expect(normalizeSeoTitle("", ctx)).toEqual({ refusal: "réponse vide" })
+    expect(normalizeSeoTitle("Arcane streaming", ctx)).toEqual({ refusal: "vocabulaire navigationnel" })
+  })
+  it("refuses when the canonical form can't be built", () => {
+    expect(normalizeSeoTitle("Arcane — quel âge ?", { title: "Arcane", age: null })).toEqual({
+      refusal: "âge inconnu",
+    })
+    const long = "Les Animaux fantastiques : Les Crimes de Grindelwald"
+    expect(normalizeSeoTitle(`${long} — dès 10 ans`, { title: long, age: 10 })).toEqual({
+      refusal: "trop long pour la forme canonique",
+    })
+  })
+  it("puts the year in a homonym's title", () => {
+    expect(
+      prepareSeoTitle("scrooge age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge : quel âge ? Dès 8 ans"),
+    ).toEqual({ title: "Scrooge (1970) — âge conseillé : dès 8 ans" })
+  })
+  it("refuses when the canonical form still misses the ranking keyword", () => {
+    // « scrooge 2026 age » on the 1970 fiche: the right answer is NOT to claim 2026.
+    expect(
+      prepareSeoTitle("scrooge 2026 age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge 2026 — dès 8 ans"),
+    ).toEqual({ refusal: "mot-clé toujours absent" })
+  })
+})
+
+describe("homonymYear", () => {
+  it("no homonym → no year", () => {
+    expect(homonymYear(false, "1970-11-05")).toEqual({ year: null })
+  })
+  it("homonym → its release year", () => {
+    expect(homonymYear(true, new Date("1970-11-05T00:00:00Z"))).toEqual({ year: 1970 })
+    expect(homonymYear(true, "2026-11-11")).toEqual({ year: 2026 })
+  })
+  it("fails closed on a homonym without a year or a failed lookup", () => {
+    expect(homonymYear(true, null)).toEqual({ refusal: "homonyme sans année de sortie" })
+    expect(homonymYear(null, "1970-11-05")).toEqual({ refusal: "homonymes non vérifiés" })
   })
 })
