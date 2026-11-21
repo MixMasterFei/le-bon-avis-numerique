@@ -293,6 +293,22 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
     allowRepeatedPartial: true,
   },
   {
+    // Every 2 days (05:41 UTC, odd days of the month): homepage vs the week's
+    // releases and buzz, imports + « À ne pas manquer » pins. 60h = one
+    // 48h cadence plus runner slack. No outputMetric: « rien à faire » (0
+    // imports, same pins) is the healthy steady state. "partial" = a source
+    // or a write failed — worth a look if it repeats, so no allowRepeatedPartial.
+    task: "homepage-watch",
+    staleAfterHours: 60,
+    // Registered 2026-11-21; first scheduled fire 2026-11-23 (odd day).
+    activatedAt: "2026-11-21",
+    remediation: {
+      label: "Relance veille de la page d'accueil",
+      method: "GET",
+      path: "/api/cron/homepage-watch",
+    },
+  },
+  {
     task: "streaming",
     staleAfterHours: 192,
     // `updated`, not `total`: total is the scan-window size (a constant ~50,
