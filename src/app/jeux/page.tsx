@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma"
 import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { runSmartFilter } from "@/lib/smart-filter"
+import { NoelSeasonBanner } from "@/components/noel/NoelSeasonBanner"
 
 // Admin-only V2 catalogue, code-split so its chunk + fonts stay out of the
 // public bundle. Classic /jeux is unchanged for anon/non-admin.
@@ -360,6 +361,10 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
         />
       )}
+      <NoelSeasonBanner
+        href="/noel/jeux-video-a-offrir"
+        label="Un jeu à offrir pour Noël ? Nos idées par âge, jamais plus jeunes que leur PEGI."
+      />
       {(() => {
         const listProps = {
           items,

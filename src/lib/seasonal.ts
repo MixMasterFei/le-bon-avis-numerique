@@ -53,6 +53,21 @@ export function isOutOfSeason(
   return false
 }
 
+/** True when the title is Christmas-themed (title, genres or topics). */
+export function isChristmasThemed(m: SeasonalCandidate): boolean {
+  return CHRISTMAS.test(haystack(m))
+}
+
+/**
+ * True in the months where Christmas content is promoted (novembre –
+ * décembre). The /noel pages stay reachable all year — they are permanent
+ * SEO surfaces, like the seasonal collections — but the links that PUSH
+ * them (homepage strip, /films, /jeux) only show while this is true.
+ */
+export function isChristmasSeason(month0: number = new Date().getMonth()): boolean {
+  return CHRISTMAS_MONTHS.has(month0)
+}
+
 /** Convenience predicate for `Array#filter`. */
 export function inSeason(month0: number = new Date().getMonth()) {
   return (m: SeasonalCandidate) => !isOutOfSeason(m, month0)
