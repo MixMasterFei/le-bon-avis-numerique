@@ -188,6 +188,18 @@ describe("report: « rien à faire » vs « tout a échoué »", () => {
     expect(r.report.split("\n")[0]).toMatch(/^❌ ÉCHEC DES ÉCRITURES/)
   })
 
+  it("treats a missing pins table (migration 016 not applied) as a setup note, not a failed write", () => {
+    const classified = classifyExpected([gta6], catalogue, homepage)
+    const pins = buildWatchPins(classified, now)
+    const o = outcomes({ pins: { desired: pins.length, written: 0, failed: false, removed: 0, tableMissing: true } })
+    const r = buildWatchReport({ classified, outcomes: o, pins, now })
+    expect(r.health).toBe("ok")
+    expect(r.report).toContain("migration 016 à appliquer")
+    // Not pinned, so GTA VI is still « à traiter ».
+    expect(r.remaining).toBe(1)
+    expect(r.report).toContain("proposées")
+  })
+
   it("flags a partial check when one source is down", () => {
     const o = outcomes({ sources: { a: { ok: true, count: 3 }, b: { ok: false, count: 0, error: "503" } } })
     const r = buildWatchReport({ classified: onHome, outcomes: o, pins: [], now })

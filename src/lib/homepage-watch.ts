@@ -243,7 +243,8 @@ export interface WatchOutcomes {
   catalogueReadOk: boolean
   /** `keys` = ExpectedItem keys actually created this run. */
   imports: { candidates: number; created: number; skipped: number; failed: number; keys: string[] }
-  pins: { desired: number; written: number; failed: boolean; removed: number; error?: string }
+  /** `tableMissing`: homepage_spotlight doesn't exist yet (migration 016) — nothing written, not a failure. */
+  pins: { desired: number; written: number; failed: boolean; removed: number; error?: string; tableMissing?: boolean }
 }
 
 export type WatchHealth = "ok" | "sources-degraded" | "sources-failed" | "writes-failed"
@@ -253,8 +254,9 @@ export function watchHealth(o: WatchOutcomes): WatchHealth {
   if (sources.length === 0 || sources.every((s) => !s.ok) || !o.homepageReadOk || !o.catalogueReadOk) {
     return "sources-failed"
   }
-  const attempted = o.imports.created + o.imports.failed + (o.pins.desired > 0 ? 1 : 0)
-  const succeeded = o.imports.created + (o.pins.desired > 0 && !o.pins.failed ? 1 : 0)
+  const pinAttempt = o.pins.desired > 0 && !o.pins.tableMissing
+  const attempted = o.imports.created + o.imports.failed + (pinAttempt ? 1 : 0)
+  const succeeded = o.imports.created + (pinAttempt && !o.pins.failed ? 1 : 0)
   if (o.writesEnabled && !o.dryRun && attempted > 0 && succeeded === 0) return "writes-failed"
   if (sources.some((s) => !s.ok)) return "sources-degraded"
   return "ok"
@@ -295,7 +297,9 @@ export function buildWatchReport(input: {
 }): { report: string; subject: string; health: WatchHealth; remaining: number } {
   const { classified, outcomes: o, pins } = input
   const health = watchHealth(o)
-  const pinned = new Set(o.dryRun || !o.writesEnabled || o.pins.failed ? [] : pins.map((p) => p.mediaId))
+  const pinned = new Set(
+    o.dryRun || !o.writesEnabled || o.pins.failed || o.pins.tableMissing ? [] : pins.map((p) => p.mediaId),
+  )
   const { missing, unshown } = remainingWork(classified, o, pinned)
   const remaining = missing.length + unshown.length
 
@@ -328,7 +332,13 @@ export function buildWatchReport(input: {
   )
   if (!o.dryRun && o.writesEnabled) {
     lines.push(
-      `Écritures : ${o.imports.created} import(s) sur ${o.imports.candidates} tenté(s)${o.imports.failed ? ` (${o.imports.failed} en échec)` : ""} · ${o.pins.failed ? `épingles en échec (${o.pins.error ?? "erreur"})` : `${o.pins.written} épingle(s) posée(s), ${o.pins.removed} retirée(s)`}`,
+      `Écritures : ${o.imports.created} import(s) sur ${o.imports.candidates} tenté(s)${o.imports.failed ? ` (${o.imports.failed} en échec)` : ""} · ${
+        o.pins.tableMissing
+          ? "épingles non posées : table homepage_spotlight absente (migration 016 à appliquer)"
+          : o.pins.failed
+            ? `épingles en échec (${o.pins.error ?? "erreur"})`
+            : `${o.pins.written} épingle(s) posée(s), ${o.pins.removed} retirée(s)`
+      }`,
     )
   } else {
     lines.push(`Écritures prévues : ${o.imports.candidates} import(s), ${pins.length} épingle(s)`)
@@ -358,7 +368,8 @@ export function buildWatchReport(input: {
   section("Déjà à l'accueil", onHome, (c) => ` → ${placementLabel(c)}`)
 
   if (pins.length > 0) {
-    lines.push(`Épingles « À ne pas manquer » ${o.dryRun || !o.writesEnabled ? "proposées" : "posées"} (expirent dans ${WATCH_PIN_DAYS} jours)`)
+    const written = !o.dryRun && o.writesEnabled && !o.pins.failed && !o.pins.tableMissing
+    lines.push(`Épingles « À ne pas manquer » ${written ? "posées" : "proposées"} (expirent dans ${WATCH_PIN_DAYS} jours)`)
     for (const p of pins) lines.push(`  ${p.rank + 1}. ${p.title} — ${p.reason}`)
     lines.push("")
   }

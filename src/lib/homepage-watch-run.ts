@@ -503,8 +503,14 @@ export async function runHomepageWatch(opts: {
       outcomes.pins.written = created.count
       revalidateTag(HOMEPAGE_SPOTLIGHT_TAG, { expire: 0 })
     } catch (e) {
-      outcomes.pins.failed = true
-      outcomes.pins.error = errorText(e)
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2021") {
+        // Migration 016 not applied yet: a known setup state, not a failing
+        // write — reported in the email, without tripping the supervisor.
+        outcomes.pins.tableMissing = true
+      } else {
+        outcomes.pins.failed = true
+        outcomes.pins.error = errorText(e)
+      }
     }
   }
 

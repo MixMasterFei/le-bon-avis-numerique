@@ -33,10 +33,9 @@ how sure it must be, what it costs, and how a human keeps control.
     anime kept.
   - Cron `homepage-watch` every 2 days (05:41 UTC, odd days), fully registered
     (activatedAt 2026-11-21); writes ON in production, kill switch `HOMEPAGE_WATCH_AUTOFIX`.
-  - **Before release:** Xavier's OK to apply `sql/016_homepage_spotlight.sql` (the band
-    works on its fallback until then; the cron's pin write will report « épingles en
-    échec » every run while the table is missing — apply the migration first, or set
-    `HOMEPAGE_WATCH_AUTOFIX=false` until it is). Then run the task once with `dry_run`.
+  - **Before release:** Xavier's OK to apply `sql/016_homepage_spotlight.sql`. Until then
+    the band runs on its fallback and the cron reports « épingles non posées : table
+    absente » (not a failure — imports still run). Then run the task once with `dry_run`.
   - Found, not fixed (Librarian's area): `CONSOLE_PLATFORM_IDS` in `src/lib/igdb.ts` has no
     Switch 2, so `getFreshReleases` / `getRecentGames` never return a Switch 2-only game —
     likely why the Zelda: Ocarina of Time remake is missing. The watch's trending path
