@@ -695,6 +695,96 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
   },
+  {
+    key: "call-of-duty",
+    name: "Call of Duty",
+    // Warzone: free to play, so it is the episode younger players actually
+    // reach first. The guide speaks about the series.
+    catalogueId: "ce8a57ba-a920-4ff4-8adc-add3086c6d7c",
+    tagline: "Un jeu de guerre pour adultes, et une version gratuite qui le met à portée de tous.",
+    whatItIs:
+      "Une série de jeux de tir militaires d'Activision, avec un nouvel épisode presque chaque année et un mode bataille royale gratuit, Warzone. Les épisodes se ressemblent de loin mais ne sont pas tous classés de la même façon. Comme pour GTA, la demande arrive souvent bien avant l'âge prévu, parce que les grands frères et les copains y jouent.",
+    whatHappens: [
+      "La campagne solo raconte une guerre à la manière d'un film d'action, avec une violence armée réaliste.",
+      "Le multijoueur oppose des équipes de joueurs en ligne, dans des parties courtes qui s'enchaînent.",
+      "Warzone, gratuit, réunit un grand nombre de joueurs sur une même carte jusqu'à la dernière équipe en vie.",
+      "Le chat vocal met l'enfant en contact avec des inconnus, souvent adultes, dont le langage n'est pas filtré à la source.",
+      "Une boutique vend apparences, armes cosmétiques et passe de combat contre une monnaie payante.",
+    ],
+    whyKidsLove:
+      "C'est le jeu des grands : y jouer, c'est être admis dans le groupe. Les parties rapides, la progression permanente et le jeu en équipe avec les copains font le reste. La gratuité de Warzone retire en plus l'obstacle du prix d'achat, qui servait autrefois de garde-fou naturel.",
+    decisions: [
+      {
+        question: "Quel épisode, exactement ?",
+        detail:
+          "Les parents confondent souvent les opus. Avant de répondre, regardez la classification de celui que votre enfant demande : c'est elle que le filtre de la console appliquera.",
+      },
+      {
+        question: "Le chat vocal, c'est le vrai sujet.",
+        detail:
+          "Le contenu du jeu est une chose, les propos tenus en ligne en sont une autre. Un adolescent qui joue avec ses amis et coupe le chat avec les inconnus ne vit pas du tout le même jeu que celui qui joue seul, casque sur les oreilles, avec des adultes qu'il ne connaît pas.",
+      },
+      {
+        question: "Non, pas encore : comment le dire ?",
+        detail:
+          "Comme pour tout jeu réservé aux adultes, expliquez la raison plutôt que d'invoquer l'interdit, reconnaissez la pression du groupe et fixez une date pour en reparler. Proposer un jeu d'équipe en ligne classé pour son âge rend le « non » plus facile à accepter.",
+      },
+    ],
+    advanced: [
+      "Chaque nouvel épisode s'intègre à Warzone : le jeu gratuit fait vivre la boutique des épisodes payants, et inversement.",
+      "Le passe de combat récompense la régularité. La pression à se connecter souvent compte plus, en pratique, que la pression à payer.",
+      "Si vous jouez à des jeux de tir, notez que le multijoueur de Call of Duty est bien plus rapide et punitif que la plupart des autres : un débutant y passe beaucoup de temps à mourir, ce qui pèse sur l'humeur de fin de partie.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "Les épisodes récents, dont Black Ops 7, sont classés PEGI 18.",
+        "Warzone se télécharge et se joue gratuitement. Un numéro de téléphone lié au compte Activision peut être demandé pour jouer.",
+        "Activision enregistre et analyse le chat vocal pour repérer les comportements toxiques, dont le harcèlement. Le français fait partie des langues analysées depuis Black Ops 6.",
+        "Sur PlayStation et Xbox, vous pouvez limiter les jeux selon leur classification d'âge, choisir avec qui l'enfant peut communiquer et plafonner ou valider ses achats.",
+      ],
+      doesNotDo: [
+        "L'analyse du chat vocal sanctionne après coup. Elle n'empêche pas votre enfant d'entendre une insulte au moment où elle est prononcée.",
+        "Couper le chat dans le jeu n'empêche pas un groupe d'amis de se parler en parallèle sur une autre application vocale.",
+        "Le filtre par âge de la console ne joue que si le compte de l'enfant est un compte enfant. Sur un compte adulte, il ne s'applique pas.",
+        "La gratuité de Warzone ne dit rien de son contenu : un jeu gratuit passe aussi par le filtre de classification, encore faut-il qu'il soit activé.",
+      ],
+      officialLinks: [
+        {
+          label: "Modération du chat vocal dans Call of Duty",
+          url: "https://support.activision.com/fr/articles/call-of-duty-voice-chat-moderation",
+          source: "Activision",
+        },
+        {
+          label: "Contrôle parental et limites de dépenses sur PlayStation",
+          url: "https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/",
+          source: "Sony Interactive Entertainment",
+        },
+        {
+          label: "Jouer en famille sur Xbox (paramètres familiaux)",
+          url: "https://www.xbox.com/fr-FR/family-hub",
+          source: "Microsoft",
+        },
+        {
+          label: "Rechercher la classification sur le site PEGI",
+          url: "https://pegi.info/fr",
+          source: "PEGI",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "Si votre adolescent a l'âge du jeu, ou si vous avez décidé de l'autoriser, une partie à deux vaut mieux qu'un long débat sur la violence des jeux vidéo.",
+      ideas: [
+        "Jouez quelques parties dans la même équipe. Vous entendrez vous-même le ton du chat vocal, ce qui rend la discussion sur les réglages beaucoup plus concrète.",
+        "Demandez-lui de vous montrer ses réglages audio : avec qui il parle, qui il a coupé, comment on signale un joueur.",
+        "Si c'est encore non, cherchez ensemble un jeu d'équipe en ligne classé pour son âge, en lisant les fiches à deux.",
+        "Mettez-vous d'accord sur une fin de session en nombre de parties, une partie interrompue pénalisant toute l'équipe.",
+      ],
+    },
+  },
 ]
 
 /** Guide for a seed key, or null. */

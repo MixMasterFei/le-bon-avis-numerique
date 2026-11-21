@@ -75,7 +75,8 @@ describe("GAME_GUIDES", () => {
     expect(getGameGuide("gta")?.catalogueId).toBe("57065822-8280-4fe1-9598-5ed442f4319c")
     // The franchise seed has no guide: other Zelda fiches get no button.
     expect(guideKeyForTitle("The Legend of Zelda: Tears of the Kingdom")).toBeNull()
-    expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBeNull()
+    expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBe("call-of-duty")
+    expect(guideKeyForTitle("Valorant")).toBeNull()
     expect(guideKeyForTitle("L'Odyssée")).toBeNull()
   })
 
