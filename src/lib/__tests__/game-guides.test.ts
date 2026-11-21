@@ -70,6 +70,9 @@ describe("GAME_GUIDES", () => {
     expect(guideKeyForTitle("Minecraft: Java Edition")).toBe("minecraft")
     expect(guideKeyForTitle("Fortnite OG: Chapter 1 Season 7")).toBe("fortnite")
     expect(guideKeyForTitle("The Legend of Zelda: Ocarina of Time")).toBe("zelda-ocarina-of-time")
+    expect(guideKeyForTitle("Grand Theft Auto VI")).toBe("gta")
+    expect(guideKeyForTitle("Grand Theft Auto Online")).toBe("gta")
+    expect(getGameGuide("gta")?.catalogueId).toBe("57065822-8280-4fe1-9598-5ed442f4319c")
     // The franchise seed has no guide: other Zelda fiches get no button.
     expect(guideKeyForTitle("The Legend of Zelda: Tears of the Kingdom")).toBeNull()
     expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBeNull()

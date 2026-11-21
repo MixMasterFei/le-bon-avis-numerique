@@ -412,6 +412,108 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
   },
+  {
+    key: "gta",
+    name: "Grand Theft Auto VI (GTA 6)",
+    // The seed's aliases match every GTA, and by votes GTA V wins: pin VI.
+    catalogueId: "57065822-8280-4fe1-9598-5ed442f4319c",
+    tagline: "Votre enfant le réclame parce que toute sa classe en parle. Voici de quoi lui répondre.",
+    whatItIs:
+      "Le nouvel épisode de la série d'action criminelle de Rockstar Games, sorti en novembre 2026 sur PlayStation 5 et Xbox Series X|S. Le jeu a été conçu pour des adultes et classé comme tel. Si votre enfant vous le demande entre 11 et 15 ans, la question ne porte donc pas sur un réglage à trouver : il s'agit de savoir comment dire non, ou pas encore, sans en faire une guerre. Ce guide vaut aussi pour GTA V et GTA Online, que les enfants réclament pour les mêmes raisons.",
+    whatHappens: [
+      "Le joueur incarne un duo de criminels, Lucia et Jason, dans Leonida, un État fictif inspiré de la Floride qui comprend la ville de Vice City.",
+      "Les missions tournent autour du crime : braquages, fusillades, poursuites en voiture.",
+      "Entre les missions, le monde ouvert laisse le joueur aller où il veut et faire ce qu'il veut, y compris commettre des violences sans lien avec l'histoire.",
+      "Les motifs de la classification européenne sont la violence, le contenu sexuel et la drogue.",
+      "À sa sortie, le jeu se joue seul. La série a déjà eu un volet en ligne séparé, GTA Online, où l'on croise des inconnus.",
+    ],
+    whyKidsLove:
+      "C'est d'abord un sujet de cour de récréation. Ce lancement était attendu depuis plus de dix ans, les bandes-annonces ont circulé partout, et un enfant qui n'y a pas accès a l'impression d'être le seul exclu de la conversation. Le monde ouvert fascine aussi pour lui-même : conduire où l'on veut, dans une ville qui ressemble à une vraie. Entendre cette envie sérieusement, sans s'en moquer, rend le « non » beaucoup plus facile à faire accepter.",
+    decisions: [
+      {
+        question: "Non, pas encore : comment le dire sans guerre ?",
+        detail:
+          "Expliquez la raison plutôt que de vous retrancher derrière « c'est interdit » : le jeu est réservé aux adultes à cause de ce qu'il montre (sexe, drogue, violence sur des personnes), pas parce qu'il serait trop difficile. Reconnaissez le coût social, puis proposez quelque chose de concret : un âge où vous en reparlerez, ou un autre jeu en monde ouvert pensé pour son âge. Un « non » assorti d'une date se négocie bien mieux qu'un « non » tout court.",
+      },
+      {
+        question: "Et les vidéos, vous les autorisez ?",
+        detail:
+          "Beaucoup d'enfants découvrent GTA sans jamais y jouer, en regardant des parties filmées ou commentées en direct. Aucun réglage de console ne touche à cela. Décidez si regarder relève de la même règle que jouer, et dites-le clairement : c'est souvent là que le sujet se règle en pratique.",
+      },
+      {
+        question: "Que se passe-t-il chez les copains ?",
+        detail:
+          "Vous ne contrôlez pas la console des autres familles. Plutôt qu'une interdiction impossible à vérifier, dites à votre enfant ce que vous attendez de lui s'il se retrouve devant le jeu ailleurs, et parlez-en aux parents que vous connaissez.",
+      },
+      {
+        question: "Quand le mode en ligne arrivera.",
+        detail:
+          "Rockstar n'a pas annoncé de date, mais si un volet en ligne voit le jour, il ajoutera des inconnus, un chat vocal et une boutique. Si vous avez dit « oui » au jeu solo pour un grand adolescent, ce « oui » ne vaut pas automatiquement pour le mode en ligne : la question se repose à ce moment-là.",
+      },
+    ],
+    advanced: [
+      "Le modèle économique de GTA V s'est surtout joué dans GTA Online, avec sa monnaie interne vendue en argent réel. C'est l'expérience à garder en tête pour le jour où un volet en ligne sera annoncé.",
+      "Pour un adolescent qui veut surtout un grand monde ouvert à parcourir en voiture, les jeux de course en monde ouvert et les aventures d'action classées plus bas couvrent une bonne partie de l'envie. Regardez leur fiche avant de proposer un titre précis.",
+      "Une console familiale partagée a souvent un compte adulte ouvert : un enfant qui y a accès contourne tous les réglages décrits ici. Le compte de l'enfant doit être un compte enfant, rattaché au vôtre.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "GTA VI est disponible sur PlayStation 5 et Xbox Series X|S depuis le 19 novembre 2026. Aucune version PC n'est disponible à ce jour.",
+        "Il est classé PEGI 18 pour la violence, le contenu sexuel et la drogue. PEGI signale des achats intégrés, mais pas d'objets aléatoires payants.",
+        "À sa sortie, le jeu se joue en solo : Rockstar n'a pas annoncé de date pour un mode en ligne.",
+        "Sur PlayStation 5, un compte enfant rattaché à votre compte peut être limité aux jeux d'une certaine classification d'âge : un jeu au-dessus ne se lance pas.",
+        "PlayStation permet aussi de fixer un plafond de dépenses mensuel, de restreindre la communication avec d'autres joueurs et de limiter le temps de jeu jour par jour, depuis la console ou l'application PlayStation Family.",
+        "Sur Xbox, les paramètres familiaux permettent de filtrer les jeux selon leur classification d'âge, d'exiger votre accord avant un achat, et de choisir avec qui l'enfant peut jouer et discuter en ligne : personne, ses amis, ou tout le monde.",
+        "Ces réglages Xbox se gèrent aussi depuis l'application gratuite Xbox Family Settings, sur votre téléphone.",
+      ],
+      doesNotDo: [
+        "Les limites d'âge de la console n'empêchent pas votre enfant de regarder des parties en vidéo ou en direct, sur son téléphone ou un ordinateur.",
+        "Elles ne s'appliquent qu'à son compte, sur votre console : chez un ami, ou sur un compte adulte resté ouvert, rien ne s'y oppose.",
+        "Elles ne protègent pas d'un second compte créé avec une fausse date de naissance. Vérifiez de temps en temps quels comptes existent sur la console.",
+        "Le plafond de dépenses et l'accord avant achat portent sur les achats faits avec le compte de l'enfant, pas sur une carte prépayée utilisée sur un autre compte.",
+      ],
+      officialLinks: [
+        {
+          label: "Contrôle parental et limites de dépenses sur PlayStation",
+          url: "https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/",
+          source: "Sony Interactive Entertainment",
+        },
+        {
+          label: "L'application PlayStation Family",
+          url: "https://www.playstation.com/fr-fr/parental-controls/",
+          source: "Sony Interactive Entertainment",
+        },
+        {
+          label: "Jouer en famille sur Xbox (paramètres familiaux)",
+          url: "https://www.xbox.com/fr-FR/family-hub",
+          source: "Microsoft",
+        },
+        {
+          label: "Rechercher la classification sur le site PEGI",
+          url: "https://pegi.info/fr",
+          source: "PEGI",
+        },
+        {
+          label: "Grand Theft Auto VI (site officiel)",
+          url: "https://www.rockstargames.com/VI",
+          source: "Rockstar Games",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "Jouer à GTA VI avec un enfant de 12 ans n'est pas la piste de ce guide. En revanche, s'intéresser à ce qui l'attire dans le jeu, c'est jouer avec lui sur un autre terrain.",
+      ideas: [
+        "Demandez-lui ce qu'il a vu passer et ce qui lui plaît : la ville, les voitures, l'histoire, ou le fait que tout le monde en parle. La réponse oriente vers l'alternative à lui proposer.",
+        "Choisissez ensemble un jeu en monde ouvert adapté à son âge, en lisant les fiches à deux. Il ne vit plus votre décision comme une simple privation.",
+        "Si vous jouez vous-même à GTA, dites-le-lui et expliquez pourquoi vous attendez pour lui. L'incohérence perçue est l'argument qu'il vous opposera en premier.",
+        "Fixez dès maintenant la date à laquelle vous en reparlerez, et tenez-la.",
+      ],
+    },
+  },
 ]
 
 /** Guide for a seed key, or null. */
