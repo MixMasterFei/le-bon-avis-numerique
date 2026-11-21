@@ -12,6 +12,9 @@ import {
   synopsisStuffingReason,
   rewriteRejection,
   META_SEO_PATTERNS,
+  normalizeSeoTitle,
+  prepareSeoTitle,
+  homonymYear,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -429,5 +432,64 @@ describe("rewriteRejection", () => {
     const after = "Pongo et Perdita partent sauver leurs chiots enlevés par Cruella, une aventure à partager dès 6 ans."
     expect(rewriteRejection("101 dalmatiens age", "Les 101 Dalmatiens", before, after)).toBeNull()
     expect(rewritePasses("101 dalmatiens age", "Les 101 Dalmatiens", before, after)).toBe(true)
+  })
+})
+
+describe("normalizeSeoTitle / prepareSeoTitle (forme canonique)", () => {
+  const ctx = { title: "Arcane", age: 14 }
+  it("rewrites any faithful draft into the canonical form", () => {
+    for (const draft of [
+      "Arcane : à partir de quel âge ? Dès 14 ans",
+      "Arcane — Âge conseillé : Dès 14 ans",
+      "Arcane - quel âge ?",
+      "arcane, âge minimum",
+    ]) {
+      expect(normalizeSeoTitle(draft, ctx)).toEqual({ title: "Arcane — âge conseillé : dès 14 ans" })
+    }
+  })
+  it("writes « tous publics » for a TP fiche", () => {
+    expect(normalizeSeoTitle("Bluey — Tous publics", { title: "Bluey", age: 0 })).toEqual({
+      title: "Bluey — âge conseillé : tous publics",
+    })
+  })
+  it("refuses a draft that drops the work or contradicts the age", () => {
+    expect(normalizeSeoTitle("Série animée culte : quel âge ?", ctx)).toEqual({ refusal: "titre de l'œuvre absent" })
+    expect(normalizeSeoTitle("Arcane — dès 12 ans", ctx)).toEqual({ refusal: "âge contredit la fiche" })
+    expect(normalizeSeoTitle("", ctx)).toEqual({ refusal: "réponse vide" })
+    expect(normalizeSeoTitle("Arcane streaming", ctx)).toEqual({ refusal: "vocabulaire navigationnel" })
+  })
+  it("refuses when the canonical form can't be built", () => {
+    expect(normalizeSeoTitle("Arcane — quel âge ?", { title: "Arcane", age: null })).toEqual({
+      refusal: "âge inconnu",
+    })
+    const long = "Les Animaux fantastiques : Les Crimes de Grindelwald"
+    expect(normalizeSeoTitle(`${long} — dès 10 ans`, { title: long, age: 10 })).toEqual({
+      refusal: "trop long pour la forme canonique",
+    })
+  })
+  it("puts the year in a homonym's title", () => {
+    expect(
+      prepareSeoTitle("scrooge age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge : quel âge ? Dès 8 ans"),
+    ).toEqual({ title: "Scrooge (1970) — âge conseillé : dès 8 ans" })
+  })
+  it("refuses when the canonical form still misses the ranking keyword", () => {
+    // « scrooge 2026 age » on the 1970 fiche: the right answer is NOT to claim 2026.
+    expect(
+      prepareSeoTitle("scrooge 2026 age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge 2026 — dès 8 ans"),
+    ).toEqual({ refusal: "mot-clé toujours absent" })
+  })
+})
+
+describe("homonymYear", () => {
+  it("no homonym → no year", () => {
+    expect(homonymYear(false, "1970-11-05")).toEqual({ year: null })
+  })
+  it("homonym → its release year", () => {
+    expect(homonymYear(true, new Date("1970-11-05T00:00:00Z"))).toEqual({ year: 1970 })
+    expect(homonymYear(true, "2026-11-11")).toEqual({ year: 2026 })
+  })
+  it("fails closed on a homonym without a year or a failed lookup", () => {
+    expect(homonymYear(true, null)).toEqual({ refusal: "homonyme sans année de sortie" })
+    expect(homonymYear(null, "1970-11-05")).toEqual({ refusal: "homonymes non vérifiés" })
   })
 })

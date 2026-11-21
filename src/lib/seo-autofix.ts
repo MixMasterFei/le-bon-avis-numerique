@@ -24,7 +24,9 @@ import OpenAI from "openai"
 import { MediaType } from "@prisma/client"
 import { prisma } from "./prisma"
 import { parseMediaRouteId } from "./media-route"
-import { seoTitleMatchesAge, MAX_TITLE } from "./fiche-title"
+import { seoTitleMatchesAge, buildCanonicalSeoTitle, releaseYearOf, MAX_TITLE } from "./fiche-title"
+import { isKnownAge } from "./age-label"
+import { hasHomonym } from "./homonyms"
 import type { StrikingQuery } from "./seo-striking-distance"
 
 // How many inbound similarity edges a target should have before we stop adding
@@ -322,6 +324,7 @@ type TargetItem = {
   synopsisFr: string | null
   seoTitle: string | null
   isEnriched: boolean
+  releaseDate: Date | null
 }
 
 async function ensureInternalLinks(
@@ -653,23 +656,74 @@ export function rewritePasses(query: string, title: string, before: string | nul
 // Lever C — SEO meta <title> (separate `seoTitle` field; NEVER the display name)
 // ---------------------------------------------------------------------------
 
-function buildTitlePrompt(target: TargetItem, query: string): string {
+function buildTitlePrompt(target: TargetItem, query: string, canonical: string): string {
   const typeLabel = target.type.toLowerCase()
   return [
     `Tu rédiges la balise <title> SEO d'une fiche ${typeLabel} de notre guide média familial.`,
     `Titre exact de l'œuvre (à placer au début, sans le modifier) : « ${target.title} »`,
-    target.expertAgeRec ? `Âge conseillé : dès ${target.expertAgeRec} ans.` : "",
-    `Des familles cherchent cette fiche via : « ${query} ».`,
-    "Rédige un <title> Google qui COMMENCE par le titre exact de l'œuvre, puis répond à cette intention.",
+    `Intention des familles (contexte, à ne pas citer) : ${query}`,
+    "Le format est imposé, sans variante :",
+    `  ${canonical}`,
     "Contraintes STRICTES :",
-    `- Français, ${SEO_TITLE_MAX} caractères MAXIMUM.`,
-    `- DOIT commencer par « ${target.title} ».`,
-    "- Intègre naturellement le mot-clé de la requête (ex. « à partir de quel âge », « âge minimum »).",
-    "  Pour une intention d'âge, le mot « âge » ou une tranche (« dès 12 ans ») suffit.",
-    "- Inutile de répéter le format (« film », « série », « jeu ») : ça gaspille des caractères.",
-    "- N'invente aucun fait. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
+    "- Recopie ce format tel quel : tiret cadratin « — », « âge conseillé : » en minuscules, puis l'âge.",
+    "- N'invente aucun fait, ne change pas l'âge. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
     'Réponds en JSON valide uniquement : {"title": "..."}',
-  ].filter(Boolean).join("\n")
+  ].join("\n")
+}
+
+/**
+ * Year to put in the <title>, or why no title may be written. Only a homonym
+ * carries its year (« Scrooge (1970) » vs « Scrooge (2026) » — in Nov 2026
+ * « scrooge 2026 » searches landed on the 1970 fiche); a homonym whose year is
+ * unknown, or a homonym lookup that failed, fails closed.
+ */
+export function homonymYear(
+  homonym: boolean | null,
+  releaseDate: Date | string | null | undefined,
+): { year: number | null } | { refusal: string } {
+  if (homonym === null) return { refusal: "homonymes non vérifiés" }
+  if (!homonym) return { year: null }
+  const year = releaseYearOf(releaseDate)
+  return year ? { year } : { refusal: "homonyme sans année de sortie" }
+}
+
+/**
+ * Bring whatever the model returned to the canonical
+ * « <Titre> — âge conseillé : dès N ans » form (buildCanonicalSeoTitle), or
+ * say why it can't be used. The draft must still name the work and must not
+ * contradict the verdict; its wording is then replaced, so the <title> shape
+ * is identical across the catalogue whatever the model wrote.
+ */
+export function normalizeSeoTitle(
+  candidate: string,
+  ctx: { title: string; age: number | null | undefined; year?: number | null },
+): { title: string } | { refusal: string } {
+  const draft = candidate.trim()
+  if (!draft) return { refusal: "réponse vide" }
+  if (isJunkQuery(draft)) return { refusal: "vocabulaire navigationnel" }
+  if (!normalize(draft).includes(normalize(ctx.title))) return { refusal: "titre de l'œuvre absent" }
+  if (!seoTitleMatchesAge(draft, ctx.age)) return { refusal: "âge contredit la fiche" }
+  const canonical = buildCanonicalSeoTitle(ctx)
+  if (!canonical) {
+    return { refusal: isKnownAge(ctx.age) ? "trop long pour la forme canonique" : "âge inconnu" }
+  }
+  return { title: canonical }
+}
+
+/**
+ * The full Lever C gate: normalise the draft, then check the canonical title
+ * still covers the ranking keyword. Returns the title to write or the reason
+ * it was refused (reported in the email and `outcomes.refusals`).
+ */
+export function prepareSeoTitle(
+  query: string,
+  ctx: { title: string; age: number | null | undefined; year?: number | null },
+  candidate: string,
+): { title: string } | { refusal: string } {
+  const normalized = normalizeSeoTitle(candidate, ctx)
+  if ("refusal" in normalized) return normalized
+  if (!seoTitlePasses(query, ctx.title, normalized.title, ctx.age)) return { refusal: "mot-clé toujours absent" }
+  return normalized
 }
 
 /** Gate a candidate meta title before it touches the DB. */
@@ -753,6 +807,7 @@ export async function runSeoAutofix(
       select: {
         id: true, title: true, type: true, genres: true, topics: true,
         director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
+        releaseDate: true,
       },
     })
     if (!item) {
@@ -816,33 +871,62 @@ export async function runSeoAutofix(
     // only uses title + age + query intent — nothing to confabulate — and
     // pre-release tentpoles (L'Odyssée, Spider-Man…) are precisely where the
     // striking-distance traffic concentrates.
+    //
+    // Every title written is the canonical « <Titre> — âge conseillé : dès N
+    // ans » (buildCanonicalSeoTitle), with the release year when another work
+    // of the same type shares the title (« Scrooge (1970) — … »). Refusals
+    // that need no model (homonym without a year, form too long, keyword the
+    // canonical form can't carry) are decided BEFORE the call and cost no
+    // cap slot.
     let seoTitle: SeoActionTarget["seoTitle"]
     let seoTitleAfter: string | undefined
+    let seoTitleRefusal: string | undefined
     if (!titleNeedsKeyword) {
       seoTitle = "n/a"
     } else if (!item.isEnriched && item.expertAgeRec == null) {
       seoTitle = "not-enriched"
     } else if (isJunkQuery(t.query)) {
       seoTitle = "flagged-junk"
-    } else if (item.seoTitle && keywordPresent(t.query, item.seoTitle)) {
-      seoTitle = "covered"
-    } else if (dryRun) {
-      seoTitle = "would-set"
-    } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
-      seoTitle = "deferred-cap"
-    } else if (Date.now() > aiDeadline) {
-      seoTitle = "deferred-time"
-    } else if (!openai) {
-      seoTitle = "ai-failed"
     } else {
-      titleRewritesUsed++
-      const draft = await callJsonField(openai, buildTitlePrompt(item, t.query), "title")
-      if (draft && seoTitlePasses(t.query, item.title, draft, item.expertAgeRec)) {
-        await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: draft } })
-        seoTitle = "set"
-        seoTitleAfter = draft
-      } else {
+      const yearInfo = homonymYear(await hasHomonym(item), item.releaseDate)
+      const year = "year" in yearInfo ? yearInfo.year : null
+      // A homonym's stored override that doesn't name its year is ambiguous
+      // in the SERP, however well it covers the keyword: not « covered ».
+      const storedCovers =
+        !!item.seoTitle &&
+        keywordPresent(t.query, item.seoTitle) &&
+        (year == null || item.seoTitle.includes(`(${year})`))
+      const ctx = { title: item.title, age: item.expertAgeRec, year }
+      const expected = "refusal" in yearInfo ? yearInfo : prepareSeoTitle(t.query, ctx, buildCanonicalSeoTitle(ctx) ?? "")
+
+      if (storedCovers) {
+        seoTitle = "covered"
+      } else if ("refusal" in expected) {
+        seoTitle = "refused"
+        seoTitleRefusal = expected.refusal
+      } else if (dryRun) {
+        seoTitle = "would-set"
+        seoTitleAfter = expected.title
+      } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
+        seoTitle = "deferred-cap"
+      } else if (Date.now() > aiDeadline) {
+        seoTitle = "deferred-time"
+      } else if (!openai) {
         seoTitle = "ai-failed"
+      } else {
+        titleRewritesUsed++
+        const draft = await callJsonField(openai, buildTitlePrompt(item, t.query, expected.title), "title")
+        const prepared = draft ? prepareSeoTitle(t.query, ctx, draft) : null
+        if (!prepared) {
+          seoTitle = "ai-failed"
+        } else if ("refusal" in prepared) {
+          seoTitle = "refused"
+          seoTitleRefusal = prepared.refusal
+        } else {
+          await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: prepared.title } })
+          seoTitle = "set"
+          seoTitleAfter = prepared.title
+        }
       }
     }
 
@@ -862,6 +946,7 @@ export async function runSeoAutofix(
       titleNeedsKeyword,
       seoTitle,
       seoTitleAfter,
+      seoTitleRefusal,
     })
   }
 
@@ -878,6 +963,7 @@ export async function runSeoAutofix(
       select: {
         id: true, title: true, type: true, genres: true, topics: true,
         director: true, expertAgeRec: true, synopsisFr: true, seoTitle: true, isEnriched: true,
+        releaseDate: true,
       },
     })
     linkOnlyExamined++
@@ -1045,7 +1131,7 @@ function buildActionsSection(input: {
     }
     if (t.seoTitle !== "n/a") {
       lines.push(`- Titre SEO : ${SEO_TITLE_LABEL[t.seoTitle]}`)
-      if ((t.seoTitle === "set") && t.seoTitleAfter) {
+      if ((t.seoTitle === "set" || t.seoTitle === "would-set") && t.seoTitleAfter) {
         lines.push(`  - Balise <title> : ${t.seoTitleAfter}`)
       }
       if (t.seoTitle === "refused" && t.seoTitleRefusal) {
