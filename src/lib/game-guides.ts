@@ -69,6 +69,12 @@ export interface GameGuide {
   name: string
   /** One line, for the fiche button and meta description. */
   tagline: string
+  /**
+   * The catalogue fiche this guide is about, when the seed's aliases would
+   * pick another one (the most-voted GTA is V, not VI). Furniture only: the
+   * age strip and imagery come from this row, the verdict stays on the fiche.
+   */
+  catalogueId?: string
 
   // ── Layer 1 — understanding. Long half-life. ─────────────────────────
   whatItIs: string
@@ -314,6 +320,95 @@ export const GAME_GUIDES: GameGuide[] = [
         "Essayez les modes sans construction, nettement plus accessibles à un adulte qui débute.",
         "Faites-vous expliquer la boutique et le passe de combat — c'est le meilleur point d'entrée pour parler d'argent sans que ce soit un reproche.",
         "Les modes créatifs permettent de jouer ensemble sans affrontement, si l'élimination vous gêne.",
+      ],
+    },
+  },
+  {
+    key: "zelda-ocarina-of-time",
+    name: "The Legend of Zelda: Ocarina of Time (Switch 2)",
+    tagline: "Un jeu que vous avez peut-être connu revient, et cette fois vous pouvez y jouer avec votre enfant.",
+    whatItIs:
+      "Le remake, sur Nintendo Switch 2, d'une aventure sortie en 1998 sur Nintendo 64 et souvent citée parmi les jeux les plus marquants de son époque. Beaucoup de parents l'ont terminée eux-mêmes. On y incarne Link, un jeune garçon qui parcourt le royaume d'Hyrule, explore des donjons et voyage dans le temps pour revenir adulte. Tout se joue seul, sans boutique ni joueurs inconnus.",
+    whatHappens: [
+      "L'enfant explore un grand monde, parle aux habitants et suit une histoire découpée en donjons.",
+      "Chaque donjon est un casse-tête : trouver la clé, actionner le bon mécanisme, comprendre comment atteindre une porte.",
+      "Les combats se font à l'épée et au bouclier contre des monstres et des créatures fantastiques, avec un adversaire plus coriace au bout de chaque donjon.",
+      "Une ocarina sert à jouer des mélodies qui ouvrent des passages ou changent l'heure du jour : il faut les retenir.",
+      "On peut se perdre ou rester bloqué un moment. Cela fait partie du jeu, et c'est souvent là qu'un adulte devient utile.",
+    ],
+    whyKidsLove:
+      "Le sentiment d'être un petit héros qui grandit, au sens propre puisque Link passe de l'enfance à l'âge adulte au milieu de l'histoire. Et la fierté de résoudre seul un donjon qui résistait depuis deux soirs. Pour beaucoup d'enfants, c'est aussi le jeu dont leurs parents parlent avec émotion, ce qui lui donne un attrait particulier.",
+    decisions: [
+      {
+        question: "Jouer à côté, ou le laisser seul ?",
+        detail:
+          "C'est un jeu solo, donc aucune question de chat ou d'inconnus. La vraie question est l'accompagnement : certains passages demandent de la lecture, de la patience et un peu d'orientation. Un enfant qui lit encore lentement profitera davantage du jeu avec un adulte à côté qu'en autonomie.",
+      },
+      {
+        question: "Les moments qui peuvent impressionner.",
+        detail:
+          "La classification porte sur des combats contre des créatures fantastiques. La sensibilité aux monstres et aux lieux sombres varie beaucoup d'un enfant à l'autre : jouer les premiers donjons ensemble est le moyen le plus simple de voir comment il réagit.",
+      },
+      {
+        question: "Le temps, plutôt que le contenu.",
+        detail:
+          "Une aventure de ce type se joue sur des dizaines d'heures et se prête mal aux sessions de dix minutes. Convenir de sessions plus longues mais moins fréquentes évite de couper au milieu d'un donjon.",
+      },
+    ],
+    advanced: [
+      "Il s'agit d'un remake reconstruit pour la Switch 2, pas d'une simple conversion : Nintendo a présenté des scènes désormais doublées et un saut que l'on déclenche soi-même, absent de l'original. Si vous avez joué en 1998, ne vous fiez pas entièrement à vos souvenirs du rythme.",
+      "Le remake porte exactement le même titre que l'original, et une version 3DS existe aussi depuis 2011. Au moment d'acheter, vérifiez que vous prenez bien la version Switch 2.",
+      "L'original avait popularisé le verrouillage de cible pendant les combats, devenu depuis la norme des jeux d'aventure. C'est une bonne porte d'entrée pour un enfant qui découvre les jeux en 3D.",
+    ],
+    stateOfPlay: {
+      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
+      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
+      verifiedOn: "2026-11-21",
+      facts: [
+        "Le remake est sorti en novembre 2026 et fonctionne uniquement sur Nintendo Switch 2.",
+        "La fiche officielle de Nintendo l'affiche PEGI 12.",
+        "L'application gratuite Contrôle parental Nintendo Switch permet de fixer un temps de jeu quotidien pour la console, d'accorder une prolongation ponctuelle et de consulter ce à quoi l'enfant a joué.",
+        "Les logiciels peuvent être limités selon leur classification d'âge, depuis la console ou l'application.",
+        "Pour un enfant de moins de 16 ans, la discussion GameChat de la Switch 2 ne fonctionne qu'une fois le contrôle parental configuré, et elle ne se règle que depuis l'application.",
+        "Les achats sur le Nintendo eShop se restreignent dans les paramètres du compte Nintendo de l'enfant, pas dans l'application de contrôle parental.",
+      ],
+      doesNotDo: [
+        "La limite de temps porte sur la console entière, pas sur un jeu en particulier.",
+        "Le contrôle parental est attaché à la console : il ne suit pas l'enfant qui joue chez un ami.",
+        "Le filtre par âge s'appuie sur la classification officielle du jeu. Il ne dit rien de la sensibilité de votre enfant à un donjon sombre ou à un monstre précis.",
+        "Régler l'application ne bloque pas les achats : ceux-ci dépendent du compte Nintendo, à paramétrer à part.",
+      ],
+      officialLinks: [
+        {
+          label: "Présentation et FAQ du contrôle parental sur Nintendo Switch 2 et Nintendo Switch",
+          url: "https://www.nintendo.com/fr-fr/Assistance/Controle-parental/Presentation-et-FAQ-sur-le-controle-parental-sur-Nintendo-Switch-2-et-Nintendo-Switch-1494768.html",
+          source: "Nintendo",
+        },
+        {
+          label: "Paramétrer ou modifier le contrôle parental de la Nintendo Switch 2",
+          url: "https://www.nintendo.com/fr-fr/Assistance/Controle-parental/Comment-parametrer-modifier-ou-desactiver-le-controle-parental-de-la-console-Nintendo-Switch-2-2843839.html",
+          source: "Nintendo",
+        },
+        {
+          label: "Fiche officielle du jeu (boutique Nintendo, Royaume-Uni)",
+          url: "https://www.nintendo.com/en-gb/Games/Nintendo-Switch-2-games/The-Legend-of-Zelda-Ocarina-of-Time-3115664.html",
+          source: "Nintendo",
+        },
+        {
+          label: "Rechercher la classification sur le site PEGI",
+          url: "https://pegi.info/fr",
+          source: "PEGI",
+        },
+      ],
+    },
+    playTogether: {
+      intro:
+        "C'est le guide où la question s'inverse : vous connaissez peut-être déjà ce jeu mieux que votre enfant. L'enjeu est de ne pas lui confisquer la manette pour autant.",
+      ideas: [
+        "Laissez-lui la manette et prenez le rôle du copilote : vous lisez les dialogues à voix haute, il décide où aller.",
+        "Quand il bloque dans un donjon, posez-lui des questions plutôt que de donner la solution. « Qu'est-ce qu'on n'a pas encore essayé ? » marche mieux qu'un doigt sur l'écran.",
+        "Apprenez les mélodies d'ocarina ensemble, sur un bout de papier ou en les chantant : c'est le moment du jeu qui reste le plus longtemps en mémoire.",
+        "Racontez-lui comment vous y jouiez vous-même. Les enfants aiment savoir que leurs parents ont eux aussi été bloqués au même endroit.",
       ],
     },
   },

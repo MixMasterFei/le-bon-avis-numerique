@@ -69,6 +69,9 @@ describe("GAME_GUIDES", () => {
     expect(guideKeyForTitle("Roblox")).toBe("roblox")
     expect(guideKeyForTitle("Minecraft: Java Edition")).toBe("minecraft")
     expect(guideKeyForTitle("Fortnite OG: Chapter 1 Season 7")).toBe("fortnite")
+    expect(guideKeyForTitle("The Legend of Zelda: Ocarina of Time")).toBe("zelda-ocarina-of-time")
+    // The franchise seed has no guide: other Zelda fiches get no button.
+    expect(guideKeyForTitle("The Legend of Zelda: Tears of the Kingdom")).toBeNull()
     expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBeNull()
     expect(guideKeyForTitle("L'Odyssée")).toBeNull()
   })
@@ -112,11 +115,53 @@ describe("guides must not cannibalise the fiches", () => {
     // fortnite.com is Epic's own product domain — the French parental-controls
     // page lives there, not under the generic epicgames.com/help root (which
     // 403s our probe and isn't game-specific anyway).
-    const official = /roblox\.com|epicgames\.com|fortnite\.com|minecraft\.net|microsoft\.com|xbox\.com|playstation\.com|nintendo\.|supercell\./i
+    // Matched on the HOST, not anywhere in the URL: a third-party page whose
+    // path merely mentions "playstation.com" must not pass.
+    const official =
+      /^(?:[a-z0-9-]+\.)*(?:roblox\.com|epicgames\.com|fortnite\.com|minecraft\.net|microsoft\.com|xbox\.com|playstation\.com|nintendo\.com|nintendo\.fr|supercell\.com|rockstargames\.com|pegi\.info|ea\.com|activision\.com|innersloth\.com|apple\.com|google\.com)$/i
     for (const g of GAME_GUIDES) {
       for (const l of g.stateOfPlay.officialLinks) {
-        expect(official.test(l.url), `${g.key}: non-official link ${l.url}`).toBe(true)
+        const host = new URL(l.url).hostname
+        expect(official.test(host), `${g.key}: non-official link ${l.url}`).toBe(true)
       }
+    }
+  })
+
+  it("never names the internal data providers or credits the CSA", () => {
+    // CLAUDE.md: no third-party service names in rendered text, and the CSA
+    // became the Arcom on 1 January 2022.
+    const forbidden = /\b(tmdb|igdb|openai|claude|anthropic|chatgpt|csa)\b/i
+    for (const g of GAME_GUIDES) {
+      const text = JSON.stringify({ ...g, stateOfPlay: { ...g.stateOfPlay, officialLinks: [] } })
+      expect(forbidden.test(text), `${g.key} names a forbidden source`).toBe(false)
+    }
+  })
+
+  it("never states a Totem age verdict anywhere in the guide", () => {
+    // The live strip at the top of the page shows the fiche's age and links
+    // to it — that is the single mention. The prose never repeats it.
+    const totemAge = /dès \d{1,2} ans|à partir de \d{1,2} ans|conseillé (?:à partir|dès)/i
+    for (const g of GAME_GUIDES) {
+      const text = JSON.stringify(g)
+      expect(totemAge.test(text), `${g.key} states an age verdict`).toBe(false)
+    }
+  })
+
+  it("cites an official classification at most twice", () => {
+    // A PEGI label is a fact a parent needs (and FC 26 vs FC 27 needs both),
+    // but a guide that repeats it is drifting into age-page territory.
+    for (const g of GAME_GUIDES) {
+      const mentions = JSON.stringify(g).match(/\bPEGI \d{1,2}\b|\bESRB [A-Z]/g) ?? []
+      expect(mentions.length, `${g.key}: ${mentions.join(", ")}`).toBeLessThanOrEqual(2)
+    }
+  })
+})
+
+describe("guides pinned to a fiche", () => {
+  it("pin a well-formed catalogue id", () => {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    for (const g of GAME_GUIDES) {
+      if (g.catalogueId) expect(g.catalogueId, g.key).toMatch(uuid)
     }
   })
 })
