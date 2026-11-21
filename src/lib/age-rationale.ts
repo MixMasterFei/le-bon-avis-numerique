@@ -1,6 +1,7 @@
 import type { MediaType } from "@/lib/media-route"
 import { isAnimationStyle } from "@/lib/age-floor"
 import { isKnownAge } from "@/lib/age-label"
+import { pegiAgeFromOfficialRating } from "@/lib/pegi-descriptors"
 
 /**
  * Builds the public "Pourquoi cet âge ?" rationale shown on a fiche.
@@ -212,4 +213,31 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
     plainText,
     faqQuestion: `${input.title} : pourquoi est-ce conseillé ${recommended} ?`,
   }
+}
+
+/**
+ * Game fiches: how the Totem age compares with the PEGI classification, in one
+ * sentence (« PEGI 7 ; Totem Avisé conseille dès 10 ans en raison de : … » or
+ * « … en accord avec PEGI »). Built only from the stored age, the stored PEGI
+ * code and the rationale drivers — it never produces an age. Null when there
+ * is nothing to compare (no PEGI code, no age) or when the content analysis
+ * is hidden (pre-release / provisional fiche).
+ */
+export function buildPegiComparison(input: {
+  expertAgeRec: number | null
+  officialRating?: string | null
+  drivers: AgeRationaleDriver[]
+  hideContentAnalysis?: boolean
+}): string | null {
+  if (input.hideContentAnalysis || !isKnownAge(input.expertAgeRec)) return null
+  const pegi = pegiAgeFromOfficialRating(input.officialRating)
+  if (pegi === null) return null
+  const age = input.expertAgeRec
+  const totem = age === 0 ? "Totem Avisé le conseille pour tous publics" : `Totem Avisé conseille dès ${age} ans`
+  if (age === pegi) return `PEGI ${pegi} ; ${totem}, en accord avec PEGI.`
+  if (age > pegi) {
+    const reasons = input.drivers.map((d) => `${d.label.toLowerCase()} (${d.level.toLowerCase()})`).join(", ")
+    return reasons ? `PEGI ${pegi} ; ${totem} en raison de : ${reasons}.` : `PEGI ${pegi} ; ${totem}.`
+  }
+  return `PEGI ${pegi} ; ${totem}. La classification PEGI reste celle qui s'applique à la vente du jeu.`
 }

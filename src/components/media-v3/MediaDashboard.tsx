@@ -20,6 +20,11 @@ import { DashboardSimilar } from "./DashboardSimilar"
 import type { DashboardMedia } from "@/lib/media-dashboard-data"
 import { aiWarningsState } from "@/lib/sensitive-warnings"
 import { officialRatingLabel } from "@/lib/utils"
+import { AgeAlternativesGames } from "@/components/media/AgeAlternativesGames"
+import { DashboardAgeRationale, DashboardPracticalSheet } from "./DashboardGamePilot"
+import { buildAgeRationale, buildPegiComparison } from "@/lib/age-rationale"
+import { buildPracticalSheet } from "@/lib/game-practical-sheet"
+import { isGamePilot } from "@/lib/game-pilot"
 
 // Handoff palette (already matches the site's warm art direction).
 const C = {
@@ -111,6 +116,36 @@ export function MediaDashboard({
   const seeAllHref = media.genres[0] ? genreHref(media.genres[0]) : listing
 
   const cardStyle = { background: C.card, border: `1px solid ${C.border}` } as const
+
+  // Game « augmentation » pilot (src/lib/game-pilot.ts): only the TREATED
+  // fiches change; control fiches render exactly like every other game.
+  const pilot = media.type === "GAME" && isGamePilot(media.id)
+  const rationale =
+    pilot && !hideAnalysis && media.metrics
+      ? buildAgeRationale({
+          title: media.title,
+          type: media.type,
+          expertAgeRec: media.expertAgeRec,
+          officialRating: media.officialRating,
+          genres: media.genres,
+          topics: media.topics,
+          contentMetrics: media.metrics,
+          hideContentAnalysis: hideAnalysis,
+        })
+      : null
+  const pegiComparison = rationale
+    ? buildPegiComparison({
+        expertAgeRec: media.expertAgeRec,
+        officialRating: media.officialRating,
+        drivers: rationale.drivers,
+        hideContentAnalysis: hideAnalysis,
+      })
+    : null
+  const practicalSheet = pilot
+    ? buildPracticalSheet({ ...media.gameFacts, pegiDescriptors: media.pegiDescriptors })
+    : null
+  const parentPoints = media.metrics?.whatParentsNeedToKnow ?? []
+  const shownParentPoints = pilot ? parentPoints : parentPoints.slice(0, 3)
 
   return (
     <div data-fiche="v3" className="min-h-screen" style={{ background: C.page }}>
@@ -317,6 +352,10 @@ export function MediaDashboard({
           </div>
         )}
 
+        {/* ===== Pourquoi cet âge ? — pilot game fiches (visible source of
+            the FAQ JSON-LD rationale, plus the PEGI comparison) ===== */}
+        {rationale && <DashboardAgeRationale rationale={rationale} pegiComparison={pegiComparison} />}
+
         {/* ===== three-column row ===== */}
         <div className="mb-[13px] grid gap-[13px] lg:grid-cols-[1fr_1.25fr_1fr]">
           {/* Pour ma famille */}
@@ -338,10 +377,10 @@ export function MediaDashboard({
             <div className={`${SECTION_LABEL} mb-3`} style={{ color: C.faint }}>
               Ce que les parents doivent savoir
             </div>
-            {!hideAnalysis && media.metrics && media.metrics.whatParentsNeedToKnow.length > 0 ? (
+            {!hideAnalysis && shownParentPoints.length > 0 ? (
               <>
                 <div className="flex flex-col gap-2.5">
-                  {media.metrics.whatParentsNeedToKnow.slice(0, 3).map((item, i) => (
+                  {shownParentPoints.map((item, i) => (
                     <div key={i} className="flex items-baseline gap-2.5">
                       <span
                         className="flex-none w-4 font-serif text-[15px] font-bold tabular-nums"
@@ -406,6 +445,7 @@ export function MediaDashboard({
         )}
 
         {/* ===== game specifics (PEGI descriptors, modes, online/purchases) ===== */}
+        {practicalSheet && <DashboardPracticalSheet sheet={practicalSheet} />}
         {media.type === "GAME" && (
           <div className="mb-[13px]">
             <GameInfoCard
@@ -418,6 +458,20 @@ export function MediaDashboard({
               expertAgeRec={media.expertAgeRec}
             />
           </div>
+        )}
+
+        {/* ===== Alternatives plus jeunes — pilot game fiches, streamed ===== */}
+        {pilot && !hideAnalysis && typeof media.expertAgeRec === "number" && (
+          <Suspense fallback={null}>
+            <AgeAlternativesGames
+              mediaId={dbId}
+              title={media.title}
+              genres={media.genres}
+              topics={media.topics}
+              currentAge={media.expertAgeRec}
+              className="mb-[13px]"
+            />
+          </Suspense>
         )}
 
         {/* ===== Vous l'avez vu ? — reactions + written avis (collapsible) ===== */}

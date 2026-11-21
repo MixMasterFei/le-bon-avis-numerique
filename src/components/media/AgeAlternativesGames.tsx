@@ -23,6 +23,9 @@ interface AgeAlternativesGamesProps {
   genres: string[]
   topics: string[]
   currentAge: number
+  /** Extra classes on the card (e.g. its bottom margin on the V3 fiche, so
+   *  no empty spacer remains when there is no alternative to show). */
+  className?: string
 }
 
 export async function AgeAlternativesGames({
@@ -31,6 +34,7 @@ export async function AgeAlternativesGames({
   genres,
   topics,
   currentAge,
+  className,
 }: AgeAlternativesGamesProps) {
   const maxAge = currentAge - AGE_GAP
   if (maxAge < 3) return null
@@ -83,7 +87,7 @@ export async function AgeAlternativesGames({
 
   return (
     <div
-      className="rounded-2xl p-5 sm:p-6"
+      className={className ? `rounded-2xl p-5 sm:p-6 ${className}` : "rounded-2xl p-5 sm:p-6"}
       style={{ background: "var(--color-warm-card)", border: "1px solid var(--color-warm-line)" }}
     >
       <h2

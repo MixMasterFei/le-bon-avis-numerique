@@ -49,6 +49,7 @@ import { notFound, permanentRedirect } from "next/navigation"
 import { parseMediaRouteId, toMediaRouteId } from "@/lib/media-route"
 import { buildQuickAnswer } from "@/lib/quick-answer"
 import { buildAgeRationale } from "@/lib/age-rationale"
+import { buildPilotPegiFaq } from "@/lib/game-pilot-faq"
 import { AGE_GUIDE_POST_SLUG, isBlogPostLive } from "@/lib/published-blog"
 import { shouldHideContentAnalysis, isUnreleased, isUnreleasedStatus } from "@/lib/release-status"
 import {
@@ -194,7 +195,14 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
 // `hideContentAnalysis` = pre-release/provisional: we suppress the
 // AggregateRating (a rating on an unwatched title reads like a full "avis")
 // and keep the FAQ answer an honest estimate.
-function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnalysis: boolean) {
+// `withPilotPegiFaq` = the V3 dashboard body is rendered — the only body that
+// shows the PEGI comparison, so the only one whose FAQ may carry it.
+function buildJsonLd(
+  media: DatabaseMediaItem,
+  routeId: string,
+  hideContentAnalysis: boolean,
+  withPilotPegiFaq = false,
+) {
   const baseUrl = "https://totemavise.com"
   const pageUrl = `${baseUrl}/media/${routeId}`
   const category = typeCategoryPaths[media.type]
@@ -323,6 +331,9 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
   // on-page "Pourquoi cet âge ?" panel (single source via buildAgeRationale),
   // so answer engines can cite the reasoning, not just the number.
   const rationale = buildAgeRationale({ ...media, hideContentAnalysis })
+  // Third Q&A, TREATED game-pilot fiches only (src/lib/game-pilot-faq.ts):
+  // the PEGI comparison sentence shown under « Pourquoi cet âge ? ».
+  const pegiFaq = withPilotPegiFaq ? buildPilotPegiFaq({ ...media, hideContentAnalysis }) : null
   const faqPage = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -338,6 +349,15 @@ function buildJsonLd(media: DatabaseMediaItem, routeId: string, hideContentAnaly
               "@type": "Question",
               name: rationale.faqQuestion,
               acceptedAnswer: { "@type": "Answer", text: rationale.plainText },
+            },
+          ]
+        : []),
+      ...(pegiFaq
+        ? [
+            {
+              "@type": "Question",
+              name: pegiFaq.question,
+              acceptedAnswer: { "@type": "Answer", text: pegiFaq.answer },
             },
           ]
         : []),
@@ -585,7 +605,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
     if (dash) {
       return (
         <>
-          <MediaJsonLd data={jsonLd} />
+          {/* Same JSON-LD, plus the pilot PEGI Q&A — the dashboard shows that
+              sentence only when the content analysis exists (dash.metrics). */}
+          <MediaJsonLd
+            data={buildJsonLd(media, toMediaRouteId(media.type, media.id), hideContentAnalysis, dash.metrics != null)}
+          />
           <FicheDataProvider mediaId={dash.id} mediaType={dash.type}>
             <MediaDashboard
               media={dash}
