@@ -25,13 +25,36 @@ how sure it must be, what it costs, and how a human keeps control.
 - Never expose model or vendor names in rendered text.
 
 ## Open work (2026-11-21)
-- **SEO agent guards** on `agentic-master/seo-autofix-guards` (approved by Xavier 21 Nov,
-  not merged): synopsis keyword-stuffing refusal (`synopsisStuffingReason`), canonical
+- **SEO agent guards** (approved by Xavier 21 Nov, merged in #116): synopsis keyword-stuffing refusal (`synopsisStuffingReason`), canonical
   `seoTitle` « <Titre> — âge conseillé : dès N ans », year for homonyms. Existing
   overrides in the old forms are left as they are (still valid for `seoTitleMatchesAge`);
-  a deterministic one-off normalisation would need Xavier's go-ahead. After the first
+  a deterministic one-off normalisation was approved by Xavier on 21 Nov (to do). After the first
   Thursday run, read `outcomes.refusals` in `cron_logs` to check the guard isn't
   refusing clean drafts.
+- **Game « augmentation » pilot** (approved by Xavier 19 Nov 2026, under the Age Keeper's
+  rules) on `claude/agentic-master-game-facts-pilot`, no PR yet, nothing applied or deployed:
+  - Migration `sql/add_game_facts.sql` (12 nullable `game_*` columns; the ten visible facts
+    move `content_updated_at`, bookkeeping columns don't). **Applied in production on
+    21 Nov 2026** (verified: 12 columns + trigger).
+  - Dispatch-only task `game-facts` (Actions › Scheduled Maintenance, `dry_run=true` first):
+    writes the facts of the 100 treated games only; control games are refused.
+  - Pilot lists frozen in `src/lib/game-pilot.ts` (100 treated weighted toward Totem > PEGI
+    and shared quick-answer wording, 100 controls matched on age band × popularity quintile ×
+    PEGI gap). Selection query in the file's comment.
+  - Pilot V3 fiches: « Fiche pratique » (hidden until the facts were read once), visible
+    « Pourquoi cet âge ? » + PEGI comparison, every parent point, younger alternatives.
+    Classic body unchanged. Controls get nothing.
+  - Xavier's decisions (21 Nov 2026): « Oui » for online play / in-game purchases when the
+    stored PEGI descriptors are the only source (kept, pinned by
+    `game-practical-sheet.test.ts`); younger alternatives on pilot games under 14 kept; the
+    PEGI comparison sentence is ALSO a FAQPage Q/A on treated fiches only
+    (`src/lib/game-pilot-faq.ts`, emitted only with the V3 body and a content analysis —
+    hidden when the analysis is hidden, restates the stored age only).
+  - **Pilot length: 6 weeks** before comparing treated vs control in Search Console.
+    Start = the day the `game-facts` backfill runs: **start date: _à remplir_** →
+    comparison due start + 6 weeks: **_à remplir_**. No widening, re-draw or list edit before.
+  - Next: Xavier reviews → apply migration → dry run → write (= day 0, fill the date above)
+    → deploy → compare treated vs control in Search Console at week 6 before widening.
 - **Agent ledger** on `claude/blissful-cori-knkti4` (25 files, no PR yet): « À valider »
   queue, run/cost ledger, autonomy levels. Migration 015 is **already applied in
   production** (tables `agent_runs`, `agent_actions`, `agent_autonomy` exist, unused by the

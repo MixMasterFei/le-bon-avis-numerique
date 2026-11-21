@@ -1,6 +1,7 @@
 import { cache } from "react"
 import { prisma } from "@/lib/prisma"
 import type { MediaType } from "@/lib/media-route"
+import type { StoredGameFacts } from "@/lib/game-facts"
 
 export interface DashboardReview {
   id: string
@@ -49,6 +50,9 @@ export interface DashboardMedia {
   pegiDescriptors: string[]
   topics: string[]
   numberOfSeasons: number | null
+  /** Game « Fiche pratique » facts (sql/add_game_facts.sql) — NULL = not
+   *  known, never « no ». Rendered on pilot fiches only (isGamePilot). */
+  gameFacts: StoredGameFacts & { gameFactsCheckedAt: string | null }
   metrics: {
     violence: number
     sexNudity: number
@@ -122,6 +126,19 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
       pegiDescriptors: row.pegiDescriptors ?? [],
       topics: row.topics ?? [],
       numberOfSeasons: (row as unknown as { numberOfSeasons?: number | null }).numberOfSeasons ?? null,
+      gameFacts: {
+        gameOnlinePlay: row.gameOnlinePlay,
+        gameLocalPlay: row.gameLocalPlay,
+        gameSplitScreen: row.gameSplitScreen,
+        gameMinPlayers: row.gameMinPlayers,
+        gameMaxPlayers: row.gameMaxPlayers,
+        gameInGamePurchases: row.gameInGamePurchases,
+        gameDeveloper: row.gameDeveloper,
+        gamePublisher: row.gamePublisher,
+        gameSeries: row.gameSeries,
+        gameTimeToBeatHours: row.gameTimeToBeatHours,
+        gameFactsCheckedAt: row.gameFactsCheckedAt?.toISOString() ?? null,
+      },
       metrics: cm
         ? {
             violence: cm.violence,

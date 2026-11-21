@@ -114,8 +114,9 @@ on:
           - revert-unreleased
           - game-guides-check
           - totem-eval
+          - game-facts
       dry_run:
-        description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
+        description: "Dry run (age-floor, revert-unreleased, game-guides-check, totem-eval, game-facts): report without writing/emailing (totem-eval: list scenarios + cost estimate, no model call)"
         required: false
         type: boolean
         default: false
@@ -595,6 +596,37 @@ jobs:
             sleep 1
           done
           echo "Total raised (dry=$dry): $total_raised"
+          echo "::endgroup::"
+
+  # ── Manual: game « Fiche pratique » facts (pilot) ────────────────
+  # Dispatch only, NEVER scheduled and not part of "all". Reads the game
+  # database for the treated games of the pilot (src/lib/game-pilot.ts) and
+  # writes the nullable game_* fact columns (sql/add_game_facts.sql must be
+  # applied first). Control games are refused by the route. Run with
+  # dry_run=true first and read the reported changes.
+  game-facts:
+    name: Game Facts (pilot)
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 5
+    if: github.event.inputs.task == 'game-facts'
+    steps:
+      - name: Read and write the pilot games' practical facts
+        run: |
+          echo "::group::Game facts"
+          qs="pilot=1"
+          dry="${{ github.event.inputs.dry_run }}"
+          if [ "$dry" = "true" ]; then qs="$qs&dryRun=1"; fi
+          response=$(curl -sSL --max-time 70 -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/cron/game-facts?$qs")
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body" | jq '{summary, stats, coverage, failedChunks, notFound, changes: (.changes[0:15])}' 2>/dev/null || echo "$body"
+          if [ "$http_code" -ge 400 ]; then
+            echo "::error::Game facts failed with HTTP $http_code"
+            exit 1
+          fi
           echo "::endgroup::"
 
   # ── Saturday: TMDB ratings + streaming platforms + similarity ─────
