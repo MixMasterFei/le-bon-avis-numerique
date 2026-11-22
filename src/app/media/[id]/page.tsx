@@ -39,6 +39,7 @@ import { MediaV3Toggle } from "@/components/media-v3/MediaV3Toggle"
 import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
 import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { HomonymNotice } from "@/components/media/HomonymNotice"
+import { NoelFicheLink } from "@/components/noel/NoelFicheLink"
 import { findHomonyms } from "@/lib/homonyms"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
@@ -624,6 +625,19 @@ export default async function MediaPage({ params }: MediaPageProps) {
               }
               guideKey={guideKey}
               ageGuideHref={ageGuideHref}
+              seasonalLink={
+                <Suspense fallback={null}>
+                  <NoelFicheLink
+                    mediaId={dash.id}
+                    type={dash.type}
+                    title={dash.title}
+                    genres={dash.genres}
+                    topics={dash.topics}
+                    variant="v3"
+                    className="mt-[13px]"
+                  />
+                </Suspense>
+              }
             />
           </FicheDataProvider>
         </>
@@ -1078,6 +1092,20 @@ export default async function MediaPage({ params }: MediaPageProps) {
                   serifClass="font-serif"
                 />
               </div>
+            </Suspense>
+          )}
+
+          {/* Noël en famille — in season only (Nov–Dec), Christmas films/series
+              and gift-list games. Low on the page, streamed: off the LCP path. */}
+          {dbId && (
+            <Suspense fallback={null}>
+              <NoelFicheLink
+                mediaId={dbId}
+                type={media.type}
+                title={media.title}
+                genres={media.genres}
+                topics={media.topics}
+              />
             </Suspense>
           )}
 

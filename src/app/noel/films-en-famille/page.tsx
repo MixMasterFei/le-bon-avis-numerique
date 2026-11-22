@@ -4,13 +4,14 @@ import { ChevronRight } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { NoelBandNav, NoelBandSections } from "@/components/noel/NoelBandSections"
 import { fetchChristmasFilmsByBand, NOEL_FILM_EXCLUDED_GENRES } from "@/lib/noel/queries"
+import { NOEL_FILMS_PATH, noelCrossLinks } from "@/lib/noel/pages"
 import { noelItemListJsonLd, noelBreadcrumbJsonLd, NOEL_BASE_URL } from "@/lib/noel/structured-data"
 
 // Same ISR window as the games pillar: ages move only when a fiche is
 // re-enriched, and an hour is plenty for that.
 export const revalidate = 3600
 
-const PATH = "/noel/films-en-famille"
+const PATH = NOEL_FILMS_PATH
 const TITLE = "Films de Noël en famille, par âge"
 const DESCRIPTION =
   "Les films de Noël à regarder en famille, rangés par âge : 3-5 ans, 6-8 ans, 9-11 ans et 12 ans et plus. Pour chaque film, l'âge conseillé et ce qui peut gêner un enfant."
@@ -95,16 +96,13 @@ export default async function FilmsDeNoelPage() {
             personne. {total > 0 ? `${total} films sont listés aujourd'hui ; la page se met à jour d'elle-même quand une fiche change.` : null}
           </p>
           <ul className="flex flex-wrap gap-x-6 gap-y-2 font-semibold" style={{ color: p.accent }}>
-            <li>
-              <Link href="/collections/films-noel-famille" className="hover:opacity-70">
-                Notre sélection resserrée de films de Noël
-              </Link>
-            </li>
-            <li>
-              <Link href="/noel/jeux-video-a-offrir" className="hover:opacity-70">
-                Jeux vidéo à offrir, par âge
-              </Link>
-            </li>
+            {noelCrossLinks(PATH).map((page) => (
+              <li key={page.path}>
+                <Link href={page.path} className="hover:opacity-70">
+                  {page.title}
+                </Link>
+              </li>
+            ))}
             <li>
               <Link href="/films?sort=cinema" className="hover:opacity-70">
                 En ce moment au cinéma
