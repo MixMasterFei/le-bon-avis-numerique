@@ -13,6 +13,7 @@ import {
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 import { resolveMergedMediaPath } from "@/lib/merged-media"
 import { isCronJobRequest } from "@/lib/cron-credential"
+import { isGameGuidePublic } from "@/lib/game-guide-flag"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -114,13 +115,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     if (rawPage !== null) {
       const parsedPage = parseCataloguePage(rawPage)
       if (parsedPage === null) {
-        return new NextResponse(
-          `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page introuvable</title></head><body><h1>404 — Page introuvable</h1><p>Cette page n'existe pas.</p><p><a href="/">Retour à l'accueil</a></p></body></html>`,
-          {
-            status: 404,
-            headers: { "Content-Type": "text/html; charset=utf-8" },
-          }
-        )
+        return plainNotFound()
       }
 
       // page=1 → 301 redirect to clean URL
@@ -316,6 +311,20 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
+  // Parents' guides (/jeux/guide/*) while GAME_GUIDES_PUBLIC is off: a real
+  // 404 for everyone but admins. The page's own notFound() came too late —
+  // /jeux/loading.tsx opens a Suspense boundary, the response is already
+  // streaming with 200 when the gate runs, so visitors and crawlers got an
+  // empty « 200 » shell (a soft 404). The page keeps its own check as a
+  // second line of defence.
+  if (pathname.startsWith("/jeux/guide/") && !isGameGuidePublic()) {
+    const { auth } = await import("@/lib/auth")
+    const session = await auth()
+    if (session?.user?.role !== "ADMIN") {
+      return applySecurityHeaders(plainNotFound())
+    }
+  }
+
   // Check staff routes (/steph) — ADMIN or MODERATOR, read-only surface
   if (staffRoutes.some((route) => pathname.startsWith(route))) {
     const { auth } = await import("@/lib/auth")
@@ -470,6 +479,17 @@ function checkInMemoryRateLimit(
     remaining: config.maxRequests - entry.count,
     resetIn: entry.resetTime - now,
   }
+}
+
+/** Minimal 404 page served straight from the middleware (no app shell). */
+function plainNotFound(): NextResponse {
+  return new NextResponse(
+    `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Page introuvable</title></head><body><h1>404 — Page introuvable</h1><p>Cette page n'existe pas.</p><p><a href="/">Retour à l'accueil</a></p></body></html>`,
+    {
+      status: 404,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    }
+  )
 }
 
 export const config = {

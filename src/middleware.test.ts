@@ -136,3 +136,28 @@ describe("automation credential scope (/admin, /api/admin)", () => {
     expect(response.status).toBe(status)
   })
 })
+
+describe("parents' guides gate (/jeux/guide/*)", () => {
+  const url = "https://totemavise.com/jeux/guide/gta"
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([null, { user: { role: "USER" } }])("answers a real 404 while the flag is off", async (session) => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "")
+    auth.mockResolvedValue(session)
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(404)
+    expect(await response.text()).toContain("noindex")
+  })
+  it("lets an admin through while the flag is off", async () => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "")
+    auth.mockResolvedValue({ user: { role: "ADMIN" } })
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(200)
+  })
+  it("lets everyone through once the flag is on", async () => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "true")
+    auth.mockResolvedValue(null)
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(200)
+  })
+})
