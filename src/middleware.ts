@@ -13,7 +13,7 @@ import {
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 import { resolveMergedMediaPath } from "@/lib/merged-media"
 import { isCronJobRequest } from "@/lib/cron-credential"
-import { isGameGuidePublic } from "@/lib/game-guide-flag"
+import { isGuideReleased } from "@/lib/game-guide-flag"
 
 // Security headers applied to all responses
 function applySecurityHeaders(response: NextResponse): NextResponse {
@@ -311,13 +311,14 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     }
   }
 
-  // Parents' guides (/jeux/guide/*) while GAME_GUIDES_PUBLIC is off: a real
-  // 404 for everyone but admins. The page's own notFound() came too late —
+  // Parents' guides (/jeux/guide/<key>) not released yet (GAME_GUIDES_PUBLIC
+  // off, or no human review recorded for that guide): a real 404 for everyone
+  // but admins. The page's own notFound() came too late —
   // /jeux/loading.tsx opens a Suspense boundary, the response is already
   // streaming with 200 when the gate runs, so visitors and crawlers got an
   // empty « 200 » shell (a soft 404). The page keeps its own check as a
   // second line of defence.
-  if (pathname.startsWith("/jeux/guide/") && !isGameGuidePublic()) {
+  if (pathname.startsWith("/jeux/guide/") && !isGuideReleased(pathname.slice("/jeux/guide/".length).split("/")[0])) {
     const { auth } = await import("@/lib/auth")
     const session = await auth()
     if (session?.user?.role !== "ADMIN") {

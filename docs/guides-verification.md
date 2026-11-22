@@ -1026,41 +1026,38 @@ l'accord d'un parent (point 1) et le chat rapide par défaut tant que le parent 
 
 ## Après la vérification : rendre les guides publics
 
-**Important : l'ouverture est globale.** Un seul interrupteur ouvre les neuf guides d'un coup.
-Il n'est pas possible d'en publier trois et de garder les six autres cachés sans modifier le
-code. Si un guide n'est pas prêt à temps, demandez à un développeur de le retirer avant
-l'ouverture, plutôt que de l'ouvrir sans vérification.
+**Les guides s'ouvrent un par un** (changement du 22 nov. 2026). Un guide devient public — et
+visible dans Google — seulement quand les deux conditions sont réunies : l'interrupteur
+général `GAME_GUIDES_PUBLIC` est à `true`, **et** le guide figure dans la liste des guides relus
+(`src/lib/game-guide-reviews.ts`). On peut donc publier GTA VI, Fortnite et Roblox dès qu'ils
+sont vérifiés, sans attendre les six autres, qui restent cachés (vraie page 404 pour le public).
 
 1. **Faire corriger ce qui doit l'être.** Transmettez les lignes « à corriger » au Directeur.
-   Les corrections doivent être en ligne **avant** de changer la date du guide concerné.
-2. **Mettre à jour la date de chaque guide vérifié**, dans le fichier `src/lib/game-guides.ts`
-   (un développeur peut le faire en deux minutes) :
-   - remplacer la valeur de `verifiedOn` par la date du jour où le guide a réellement été
-     vérifié, au format `"AAAA-MM-JJ"` (par exemple `verifiedOn: "2026-11-28"`). Jamais une date
-     future : la page la considérerait comme invalide et afficherait « considérez-le comme non
-     vérifié » ;
+   Les corrections doivent être en ligne **avant** d'enregistrer la relecture du guide concerné.
+2. **Enregistrer la relecture de chaque guide vérifié** (un développeur ou le Directeur le fait en
+   deux minutes) :
+   - ajouter une ligne dans `src/lib/game-guide-reviews.ts`, par exemple
+     `gta: { reviewedOn: "2026-11-28", by: "Xavier" },` ;
+   - mettre la **même date** dans `verifiedOn` du guide, dans `src/lib/game-guides.ts` (un test
+     refuse les deux dates si elles diffèrent). Jamais une date future ;
    - pour les six guides du 21 novembre (GTA VI, Zelda, Brawl Stars, EA Sports FC, Call of Duty,
      Among Us), supprimer en même temps les deux lignes de commentaire « Date des recherches en
      ligne (21 nov. 2026), PAS une relecture humaine… », qui ne seront plus vraies.
-3. **Mettre ces changements en ligne** : le développeur prépare la modification, Xavier la valide
-   et la fusionne, Vercel déploie. Vérifiez ensuite sur chaque page, avec le compte admin, que la
-   ligne « Vérifié le … » affiche la bonne date et que l'avertissement « pas relu depuis … jours »
-   a disparu.
-4. **Ouvrir les guides au public** : dans Vercel, projet Totem Avisé → *Settings* →
-   *Environment Variables*, créer ou modifier la variable **`GAME_GUIDES_PUBLIC`** avec la valeur
-   **`true`** pour l'environnement *Production*, puis **redéployer** la dernière version
-   (*Deployments* → dernier déploiement → *Redeploy*). Une variable modifiée ne prend effet qu'au
-   déploiement suivant.
-5. **Contrôler dans une fenêtre de navigation privée** (donc sans être connecté) : la page
-   `totemavise.com/jeux/guide/gta` doit s'ouvrir, le bouton doré « Guide parents » doit apparaître
-   sur les fiches des neuf jeux, et les liens vers les guides apparaissent aussi dans la sélection
-   de Noël.
+3. **Mettre ces changements en ligne** : le Directeur prépare la modification, la fusionne quand
+   les contrôles passent, Vercel déploie.
+4. **Ouvrir l'interrupteur général, une seule fois** : dans Vercel, projet Totem Avisé →
+   *Settings* → *Environment Variables*, variable **`GAME_GUIDES_PUBLIC`** = **`true`** pour
+   *Production*, puis **redéployer** (*Deployments* → dernier déploiement → *Redeploy*). Les
+   guides relus suivants n'ont plus besoin de cette étape : il suffit de refaire 1 à 3.
+5. **Contrôler dans une fenêtre de navigation privée** (sans être connecté) : la page du guide
+   relu (par exemple `totemavise.com/jeux/guide/gta`) s'ouvre ; un guide non relu répond « page
+   introuvable » ; le bouton doré « Guide parents » n'apparaît que sur les fiches des jeux dont le
+   guide est relu.
 6. **En cas de problème**, il suffit de supprimer la variable (ou de lui donner une autre valeur
-   que `true`) et de redéployer : les guides redeviennent invisibles pour le public.
+   que `true`) et de redéployer : tous les guides redeviennent invisibles pour le public.
 
-Bon à savoir : même publics, les guides restent **exclus des moteurs de recherche** (la page
-porte une consigne « noindex »). Les rendre indexables est une décision séparée, qui demande une
-petite modification du code.
+Bon à savoir : un guide relu et public est **indexable** par les moteurs de recherche et figure
+dans le plan du site ; un guide non relu reste « noindex » et hors du plan du site.
 
 ---
 

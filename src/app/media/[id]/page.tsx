@@ -6,7 +6,7 @@ import type { Metadata } from "next"
 import { buildFicheDescription, buildFicheTitle, ficheTypicalAgeRange, seoTitleMatchesAge } from "@/lib/fiche-title"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
-import { gameGuideEnabled } from "@/lib/game-guide-flag"
+import { guideVisible } from "@/lib/game-guide-flag"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/BackButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -559,10 +559,9 @@ export default async function MediaPage({ params }: MediaPageProps) {
   // Games only, and only when a guide has actually been written for this
   // title. Admin-gated behind the same flag as the guide pages themselves, so
   // the button never points at a 404 for the public.
+  const matchedGuideKey = media.type === "GAME" ? guideKeyForTitle(media.title) : null
   const guideKey =
-    media.type === "GAME" && gameGuideEnabled(await isAdmin())
-      ? guideKeyForTitle(media.title)
-      : null
+    matchedGuideKey && guideVisible(matchedGuideKey, await isAdmin()) ? matchedGuideKey : null
 
   // Film fiches: « Comment lire cet âge ? » from the age block to the blog
   // article (draft 12) — only once that post is live, never a dead link.

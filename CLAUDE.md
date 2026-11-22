@@ -472,9 +472,13 @@ TOTEM_GLOBAL_DAILY_CAP            # Totem chat: max messages/day across ALL user
 HOMEPAGE_V2_PUBLIC                # Set to "true" to flip the V2 visual system (home-redesign homepage + catalogue layouts, site-wide V2 typography via [data-v2-type] in globals.css, and the monogram avatars) ON for everyone. Default: admin-only. Single switch with instant rollback — gate lives in src/lib/v2-flag.ts (v2Enabled). Mirrors TOTEM_PUBLIC. `?v=classic` still forces the classic page per-request.
 GAME_GUIDES_PUBLIC                # Parents' Guide rollout (/jeux/guide/[key] + the gold button on game fiches).
                                   # Unset/anything else = ADMIN-ONLY (pages 404 for everyone else, button hidden).
-                                  # "true" = public. Default is closed on purpose: a guide asserting a parental
-                                  # control that no longer exists does real harm, so each "état du jeu" block must
-                                  # be read end-to-end by a human first. Gate: src/lib/game-guide-flag.ts.
+                                  # "true" = the global switch only: a guide is public (and indexable, in the
+                                  # sitemap) when the switch is on AND its key is in GUIDE_HUMAN_REVIEWS
+                                  # (src/lib/game-guide-reviews.ts — a human read its docs/guides-verification.md
+                                  # checklist; same date as its stateOfPlay.verifiedOn, test-enforced). Unreviewed
+                                  # guides stay a real 404 (middleware) for non-admins. Default is closed on purpose:
+                                  # a guide asserting a parental control that no longer exists does real harm.
+                                  # Gate: src/lib/game-guide-flag.ts (isGuideReleased / guideVisible).
 NL_SEARCH_PUBLIC                  # « Recherche magique » rollout — the natural-language search field in the V2 hero
                                   # + the /decouverte results page. EXACT TOTEM_PUBLIC semantics: unset = admin-only
                                   # (launch default) · "auth" = logged-in users · "true"/"1" = public · "off"/"0" =

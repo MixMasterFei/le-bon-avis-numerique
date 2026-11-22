@@ -1,16 +1,42 @@
 import { describe, expect, it } from "vitest"
 import { GAME_GUIDES, getGameGuide, guideKeyForTitle } from "../game-guides"
 import { TOP_GAMES } from "@/app/jeux/quel-age/topGames.data"
-import { gameGuideEnabled, isGameGuidePublic } from "../game-guide-flag"
+import { guideVisible, isGameGuidePublic, isGuideReleased, releasedGuideKeys } from "../game-guide-flag"
+import { GUIDE_HUMAN_REVIEWS } from "../game-guide-reviews"
 
 describe("game guide flag", () => {
   it("is admin-only by default", () => {
     const prev = process.env.GAME_GUIDES_PUBLIC
     delete process.env.GAME_GUIDES_PUBLIC
     expect(isGameGuidePublic()).toBe(false)
-    expect(gameGuideEnabled(false)).toBe(false)
-    expect(gameGuideEnabled(true)).toBe(true)
+    expect(guideVisible("gta", false)).toBe(false)
+    expect(guideVisible("gta", true)).toBe(true)
+    expect(releasedGuideKeys()).toEqual([])
     if (prev !== undefined) process.env.GAME_GUIDES_PUBLIC = prev
+  })
+
+  it("releases a guide only when the switch is on AND a human reviewed it", () => {
+    const prev = process.env.GAME_GUIDES_PUBLIC
+    process.env.GAME_GUIDES_PUBLIC = "true"
+    const unreviewed = GAME_GUIDES.map((g) => g.key).find((k) => !(k in GUIDE_HUMAN_REVIEWS))
+    if (unreviewed) {
+      expect(isGuideReleased(unreviewed)).toBe(false)
+      expect(guideVisible(unreviewed, false)).toBe(false)
+    }
+    for (const key of Object.keys(GUIDE_HUMAN_REVIEWS)) expect(isGuideReleased(key)).toBe(true)
+    expect(isGuideReleased("no-such-guide")).toBe(false)
+    if (prev === undefined) delete process.env.GAME_GUIDES_PUBLIC
+    else process.env.GAME_GUIDES_PUBLIC = prev
+  })
+
+  it("every human review names a real guide and matches its « vérifié le » date", () => {
+    for (const [key, review] of Object.entries(GUIDE_HUMAN_REVIEWS)) {
+      const guide = getGameGuide(key)
+      expect(guide, `review for unknown guide: ${key}`).not.toBeNull()
+      expect(review.reviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(review.by.trim().length).toBeGreaterThan(0)
+      expect(guide!.stateOfPlay.verifiedOn, `${key}: set stateOfPlay.verifiedOn to the review date`).toBe(review.reviewedOn)
+    }
   })
 })
 
