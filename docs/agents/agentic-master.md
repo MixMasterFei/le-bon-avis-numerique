@@ -66,8 +66,10 @@ how sure it must be, what it costs, and how a human keeps control.
     (`src/lib/game-pilot-faq.ts`, emitted only with the V3 body and a content analysis —
     hidden when the analysis is hidden, restates the stored age only).
   - **Pilot length: 6 weeks** before comparing treated vs control in Search Console.
-    Start = the day the `game-facts` backfill runs: **start date: _à remplir_** →
-    comparison due start + 6 weeks: **_à remplir_**. No widening, re-draw or list edit before.
+    Start = the day the `game-facts` backfill runs: **start date: 22 Nov 2026** (100/100
+    written, second run idempotent) → comparison due start + 6 weeks: **3 Jan 2027**.
+    One hand fix on day 0: Crash Bandicoot's duration (36.5 h from the source, real ≈ 6 h)
+    set to null by the Director. No widening, re-draw or list edit before.
   - Next: Xavier reviews → apply migration → dry run → write (= day 0, fill the date above)
     → deploy → compare treated vs control in Search Console at week 6 before widening.
 - **Agent ledger** on `claude/blissful-cori-knkti4` (25 files, no PR yet): « À valider »
