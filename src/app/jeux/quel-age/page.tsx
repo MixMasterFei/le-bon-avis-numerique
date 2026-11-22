@@ -1,6 +1,8 @@
 import Link from "next/link"
 import type { Metadata } from "next"
-import { ArrowLeft, Gamepad2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Gamepad2 } from "lucide-react"
+import { isChristmasSeason } from "@/lib/seasonal"
+import { NOEL_GAMES_PATH } from "@/lib/noel/pages"
 import { toMediaRouteId } from "@/lib/media-route"
 import { getOfficialRatingDisplay } from "@/lib/utils"
 import { buildQuickAnswer } from "@/lib/quick-answer"
@@ -45,6 +47,7 @@ export default async function GamesAgePillarPage() {
   const p = APERCU_PALETTE
   const serifClass = "font-serif"
   const rows = await fetchTopGameRows()
+  const christmas = isChristmasSeason()
 
   // One honest verdict per row, from the shared builder so the wording matches
   // the fiche and the /md layer exactly. Seeds with customFaqAnswer override
@@ -203,6 +206,26 @@ export default async function GamesAgePillarPage() {
               fiche de chaque jeu pour le détail.
             </p>
           </div>
+
+          {/* In season only (Nov–Dec): the gift page, from the pillar Google
+              already ranks. Out of season the block is not rendered at all. */}
+          {christmas && (
+            <Link
+              href={NOEL_GAMES_PATH}
+              className="mt-4 flex max-w-3xl flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-3 text-sm transition-opacity hover:opacity-90"
+              style={{ background: p.card, border: `1px solid ${p.line}`, color: p.ink }}
+            >
+              <span>
+                <strong className="font-semibold">Un jeu à offrir pour Noël ?</strong>{" "}
+                <span style={{ color: p.ink2 }}>
+                  Nos idées rangées par âge, jamais plus jeunes que leur PEGI.
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1 font-semibold" style={{ color: p.accent }}>
+                Jeux vidéo à offrir <ArrowRight className="h-4 w-4" aria-hidden />
+              </span>
+            </Link>
+          )}
         </div>
       </section>
 

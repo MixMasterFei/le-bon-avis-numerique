@@ -77,6 +77,7 @@ export function MediaDashboard({
   breadcrumb,
   guideKey,
   ageGuideHref,
+  seasonalLink,
 }: {
   media: DashboardMedia
   dbId: string
@@ -89,6 +90,8 @@ export function MediaDashboard({
   guideKey?: string | null
   /** « Comment lire cet âge ? » article (film fiches, once it is published). Resolved server-side. */
   ageGuideHref?: string | null
+  /** In-season link card (e.g. « Noël en famille »), rendered under the similar titles — below the fold. */
+  seasonalLink?: React.ReactNode
 }) {
   // 0 = « Tous publics » — a REAL verdict (CSA TP / CNC U), never « Non
   // évalué » (that reading is the Oak-Street bug, see @/lib/age-label).
@@ -504,6 +507,9 @@ export function MediaDashboard({
             />
           </Suspense>
         </div>
+
+        {/* ===== Seasonal link (Noël in Nov–Dec) — low on the page, off the LCP path ===== */}
+        {seasonalLink}
 
         {/* ===== Signaler une correction ===== */}
         <div className="flex justify-center pt-4">
