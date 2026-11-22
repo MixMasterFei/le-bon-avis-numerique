@@ -9,6 +9,8 @@ import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { getCollectionWithItems } from "@/lib/collections"
 import { COLLECTIONS } from "@/lib/collections-data"
 import { CollectionIcon } from "@/components/collections/CollectionIcon"
+import { isChristmasSeason } from "@/lib/seasonal"
+import { NOEL_COLLECTION, NOEL_COLLECTION_ID, noelCrossLinks } from "@/lib/noel/pages"
 
 // Server component (July 2026 rebuild): the Top-X list itself must be in the
 // crawled HTML. The previous client version served a spinner to Google — the
@@ -249,6 +251,37 @@ export default async function CollectionPage({
             )
           })}
         </div>
+
+        {/* The Christmas collection links to the /noel pages in season
+            (Nov–Dec), so the four Noël pages always reach one another. */}
+        {collection.id === NOEL_COLLECTION_ID && isChristmasSeason() && (
+          <nav aria-label="Noël en famille" className="mt-12">
+            <h2
+              className={`${serifClass} text-xl md:text-2xl font-medium mb-4`}
+              style={{ color: p.ink, letterSpacing: "-0.02em" }}
+            >
+              Aussi pour Noël
+            </h2>
+            <ul className="grid gap-3 sm:grid-cols-3">
+              {noelCrossLinks(NOEL_COLLECTION.path).map((page) => (
+                <li key={page.path}>
+                  <Link
+                    href={page.path}
+                    className="block h-full rounded-2xl p-4 hover:opacity-90"
+                    style={{ background: p.card, border: `1px solid ${p.line}` }}
+                  >
+                    <span className="block text-sm font-semibold" style={{ color: p.ink }}>
+                      {page.title}
+                    </span>
+                    <span className="mt-1 block text-xs" style={{ color: p.ink2 }}>
+                      {page.blurb}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
 
         <div className="mt-12 pt-8 text-center border-t" style={{ borderColor: p.line }}>
           <p className="text-sm mb-4" style={{ color: p.ink2 }}>

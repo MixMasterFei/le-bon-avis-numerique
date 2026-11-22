@@ -4,11 +4,12 @@ import { ChevronRight } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { NoelBandNav, NoelBandSections } from "@/components/noel/NoelBandSections"
 import { fetchGiftGamesByBand } from "@/lib/noel/queries"
+import { NOEL_GAMES_PATH, noelCrossLinks } from "@/lib/noel/pages"
 import { noelItemListJsonLd, noelBreadcrumbJsonLd, NOEL_BASE_URL } from "@/lib/noel/structured-data"
 
 export const revalidate = 3600
 
-const PATH = "/noel/jeux-video-a-offrir"
+const PATH = NOEL_GAMES_PATH
 const TITLE = "Jeux vidéo à offrir à Noël, par âge"
 const DESCRIPTION =
   "Des idées de jeux vidéo à offrir à Noël, rangées par âge (3-5, 6-8, 9-11 et 12 ans et plus), avec la classification PEGI, les consoles et l'âge que nous conseillons."
@@ -96,11 +97,13 @@ export default async function JeuxAOffrirPage() {
                 Jeux à partager en famille
               </Link>
             </li>
-            <li>
-              <Link href="/noel/films-en-famille" className="hover:opacity-70">
-                Films de Noël, par âge
-              </Link>
-            </li>
+            {noelCrossLinks(PATH).map((page) => (
+              <li key={page.path}>
+                <Link href={page.path} className="hover:opacity-70">
+                  {page.title}
+                </Link>
+              </li>
+            ))}
           </ul>
         </footer>
       </div>

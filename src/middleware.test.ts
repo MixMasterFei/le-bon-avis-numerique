@@ -7,6 +7,7 @@ import { CRON_JOB_ROUTES } from "@/lib/cron-credential"
 const { auth, getToken, throttle } = vi.hoisted(() => ({ auth: vi.fn(), getToken: vi.fn(), throttle: vi.fn() }))
 vi.mock("@/lib/auth", () => ({ auth }))
 vi.mock("next-auth/jwt", () => ({ getToken }))
+vi.mock("@/lib/game-guide-reviews", () => ({ GUIDE_HUMAN_REVIEWS: { gta: { reviewedOn: "2026-11-24", by: "test" } } }))
 vi.mock("@/lib/auth-rate-limit", () => ({ checkAuthRateLimit: throttle, cleanupAuthRateLimits: vi.fn() }))
 const event = { waitUntil: vi.fn() } as unknown as NextFetchEvent
 
@@ -134,5 +135,36 @@ describe("automation credential scope (/admin, /api/admin)", () => {
     auth.mockResolvedValue(session)
     const response = await middleware(request("GET", "/api/admin/totem/conversations"), event)
     expect(response.status).toBe(status)
+  })
+})
+
+describe("parents' guides gate (/jeux/guide/*)", () => {
+  const url = "https://totemavise.com/jeux/guide/gta"
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([null, { user: { role: "USER" } }])("answers a real 404 while the flag is off", async (session) => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "")
+    auth.mockResolvedValue(session)
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(404)
+    expect(await response.text()).toContain("noindex")
+  })
+  it("lets an admin through while the flag is off", async () => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "")
+    auth.mockResolvedValue({ user: { role: "ADMIN" } })
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(200)
+  })
+  it("lets everyone through a human-reviewed guide once the flag is on", async () => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "true")
+    auth.mockResolvedValue(null)
+    const response = await middleware(new NextRequest(url), event)
+    expect(response.status).toBe(200)
+  })
+  it("keeps an unreviewed guide a 404 even with the flag on", async () => {
+    vi.stubEnv("GAME_GUIDES_PUBLIC", "true")
+    auth.mockResolvedValue(null)
+    const response = await middleware(new NextRequest("https://totemavise.com/jeux/guide/fortnite"), event)
+    expect(response.status).toBe(404)
   })
 })

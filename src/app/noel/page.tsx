@@ -4,7 +4,7 @@ import { ArrowRight, ChevronRight } from "lucide-react"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
 import { NoelCardGrid } from "@/components/noel/NoelBandSections"
 import { fetchHolidayCinemaPicks, NOEL_CINEMA_MAX_AGE } from "@/lib/noel/queries"
-import { NOEL_PAGES, NOEL_HUB_PATH } from "@/lib/noel/pages"
+import { NOEL_HUB_PATH, noelCrossLinks } from "@/lib/noel/pages"
 import { noelBreadcrumbJsonLd, noelItemListJsonLd, NOEL_BASE_URL } from "@/lib/noel/structured-data"
 
 // The cinema block reads the theatre listings live (cached one hour there);
@@ -74,14 +74,7 @@ export default async function NoelHubPage() {
         </header>
 
         <ul className="mb-14 grid gap-4 md:grid-cols-3">
-          {[
-            ...NOEL_PAGES,
-            {
-              path: "/collections/films-noel-famille",
-              title: "Notre sélection de films de Noël",
-              blurb: "Les classiques et quelques nouveautés, choisis un par un.",
-            },
-          ].map((page) => (
+          {noelCrossLinks(NOEL_HUB_PATH).map((page) => (
             <li key={page.path}>
               <Link
                 href={page.path}

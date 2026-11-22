@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import type { GameRow } from "../gamesAgeData"
 
@@ -35,5 +35,32 @@ describe("/jeux/quel-age — age chip", () => {
     expect(within(screen.getByRole("link", { name: /Jeu douze ans/ })).getByText("Dès 12 ans")).toBeInTheDocument()
     expect(within(screen.getByRole("link", { name: /Jeu sans âge/ })).queryByText(/^(Tous publics|Dès \d+ ans)$/)).toBeNull()
     expect(screen.queryByText(/Dès 0 ans/)).toBeNull()
+  })
+})
+
+// In November–December the pillar links to the gift page; the rest of the
+// year the block is not rendered at all (no « Noël » in March).
+describe("/jeux/quel-age — gift page link", () => {
+  afterEach(() => vi.useRealTimers())
+
+  const giftLink = () =>
+    screen.queryAllByRole("link").find((a) => a.getAttribute("href") === "/noel/jeux-video-a-offrir") ?? null
+
+  it("links to /noel/jeux-video-a-offrir in season", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date("2026-12-01T12:00:00"))
+    data.fetchTopGameRows.mockResolvedValue([row("tp", "Jeu tous publics", 0)])
+    render(await GamesAgePillarPage())
+    expect(giftLink()).not.toBeNull()
+    expect(giftLink()).toHaveTextContent(/Un jeu à offrir pour Noël/)
+  })
+
+  it("renders no gift link out of season", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] })
+    vi.setSystemTime(new Date("2027-03-15T12:00:00"))
+    data.fetchTopGameRows.mockResolvedValue([row("tp", "Jeu tous publics", 0)])
+    render(await GamesAgePillarPage())
+    expect(giftLink()).toBeNull()
+    expect(screen.queryByText(/Noël/)).toBeNull()
   })
 })

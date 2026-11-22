@@ -108,7 +108,7 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Settings context | `src/contexts/SettingsContext.tsx` |
 | Media card | `src/components/media/MediaCard.tsx` |
 | Media detail page | `src/app/media/[id]/page.tsx` |
-| Homepage « À ne pas manquer cette semaine » | `src/lib/homepage-spotlight.ts` (pure selection, tested) + `src/lib/homepage-spotlight-data.ts` (loader, `unstable_cache` 30 min, tag `homepage-spotlight`) + `src/components/home-redesign/SpotlightBand.tsx`, passed from `page.tsx` as a prop (server HTML, no client fetch). Right after `TopPicksRail` in `HomepageRedesign`. **Informational, deliberately NOT age-capped** (the browse rails default to ≤ 12, which hid GTA VI): every card shows its age, blur rules and « à confirmer » still apply. Sources: active pins of `homepage_spotlight` (admin first, then the watch cron's), topped up by a deterministic fallback (films in French cinemas, trending first; series on a French platform premiered ≤ 120 days and trending; games released ≤ 45 days). Only catalogue titles with an age and a poster. Migration `sql/016_homepage_spotlight.sql` (**not applied yet** — without the table the band runs on the fallback). Admin: `/admin/operations#a-ne-pas-manquer` (see/remove pins, simulate the watch). |
+| Homepage « À ne pas manquer cette semaine » | `src/lib/homepage-spotlight.ts` (pure selection, tested) + `src/lib/homepage-spotlight-data.ts` (loader, `unstable_cache` 30 min, tag `homepage-spotlight`) + `src/components/home-redesign/SpotlightBand.tsx`, passed from `page.tsx` as a prop (server HTML, no client fetch). Right after `TopPicksRail` in `HomepageRedesign`. **Informational, deliberately NOT age-capped** (the browse rails default to ≤ 12, which hid GTA VI): every card shows its age, blur rules and « à confirmer » still apply. Sources: active pins of `homepage_spotlight` (admin first, then the watch cron's), topped up by a deterministic fallback (films in French cinemas, trending first; series on a French platform premiered ≤ 120 days and trending; games released ≤ 45 days). Only catalogue titles with an age and a poster. Migration `sql/016_homepage_spotlight.sql` (applied in production 21 Nov 2026; without active pins the band runs on the fallback). Admin: `/admin/operations#a-ne-pas-manquer` (see/remove pins, simulate the watch). |
 | Homepage watch (cron) | `src/lib/homepage-watch.ts` (pure: classify / pins / report) + `src/lib/homepage-watch-run.ts` (I/O) + `GET /api/cron/homepage-watch` — see the cron table |
 | Cinema French ranking | `src/lib/cinema-policy.ts` (`frenchCinemaScore`, `rankCinemaForFrance`, `isFrenchCinemaEligible` — formula in the comment) used by `getCinemaMovies` (`src/lib/cinema.ts`) |
 | Family fit API (scoring) | `src/app/api/media/[id]/family-fit/route.ts` |
@@ -472,9 +472,13 @@ TOTEM_GLOBAL_DAILY_CAP            # Totem chat: max messages/day across ALL user
 HOMEPAGE_V2_PUBLIC                # Set to "true" to flip the V2 visual system (home-redesign homepage + catalogue layouts, site-wide V2 typography via [data-v2-type] in globals.css, and the monogram avatars) ON for everyone. Default: admin-only. Single switch with instant rollback — gate lives in src/lib/v2-flag.ts (v2Enabled). Mirrors TOTEM_PUBLIC. `?v=classic` still forces the classic page per-request.
 GAME_GUIDES_PUBLIC                # Parents' Guide rollout (/jeux/guide/[key] + the gold button on game fiches).
                                   # Unset/anything else = ADMIN-ONLY (pages 404 for everyone else, button hidden).
-                                  # "true" = public. Default is closed on purpose: a guide asserting a parental
-                                  # control that no longer exists does real harm, so each "état du jeu" block must
-                                  # be read end-to-end by a human first. Gate: src/lib/game-guide-flag.ts.
+                                  # "true" = the global switch only: a guide is public (and indexable, in the
+                                  # sitemap) when the switch is on AND its key is in GUIDE_HUMAN_REVIEWS
+                                  # (src/lib/game-guide-reviews.ts — a human read its docs/guides-verification.md
+                                  # checklist; same date as its stateOfPlay.verifiedOn, test-enforced). Unreviewed
+                                  # guides stay a real 404 (middleware) for non-admins. Default is closed on purpose:
+                                  # a guide asserting a parental control that no longer exists does real harm.
+                                  # Gate: src/lib/game-guide-flag.ts (isGuideReleased / guideVisible).
 NL_SEARCH_PUBLIC                  # « Recherche magique » rollout — the natural-language search field in the V2 hero
                                   # + the /decouverte results page. EXACT TOTEM_PUBLIC semantics: unset = admin-only
                                   # (launch default) · "auth" = logged-in users · "true"/"1" = public · "off"/"0" =

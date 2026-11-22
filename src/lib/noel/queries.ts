@@ -3,7 +3,7 @@ import { withPrismaRetry } from "@/lib/prisma-retry"
 import { NON_POSTER_URLS } from "@/lib/media-route"
 import { isChristmasThemed } from "@/lib/seasonal"
 import { guideKeyForTitle } from "@/lib/game-guides"
-import { isGameGuidePublic } from "@/lib/game-guide-flag"
+import { isGuideReleased } from "@/lib/game-guide-flag"
 import { getCinemaMovies } from "@/lib/cinema"
 import { hasInGamePurchases } from "@/lib/game-practical-sheet"
 import {
@@ -70,6 +70,12 @@ export const NOEL_GAMES_PER_BAND = 10
 export const GIFT_RELEASE_FLOOR = new Date("2017-01-01T00:00:00Z")
 
 /** Films de Noël, enrichis, rangés par tranche d'âge. */
+/** A guide link only for a released guide — never a link to a 404. */
+function releasedGuideKey(title: string): string | null {
+  const key = guideKeyForTitle(title)
+  return key && isGuideReleased(key) ? key : null
+}
+
 export async function fetchChristmasFilmsByBand(now: Date = new Date()): Promise<BandGroup<NoelCard>[]> {
   const rows = await withPrismaRetry(() =>
     prisma.mediaItem.findMany({
@@ -169,7 +175,6 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
     }),
   )
 
-  const guidesPublic = isGameGuidePublic()
   const pool = dropAddOns(
     rows
       .filter((r) => onCurrentConsole(r.platforms))
@@ -201,7 +206,7 @@ export async function fetchGiftGamesByBand(now: Date = new Date()): Promise<Band
         expertAgeRec: r.expertAgeRec!,
         officialRating: r.officialRating,
         platforms: giftPlatforms(r.platforms),
-        guideKey: guidesPublic ? guideKeyForTitle(r.title) : null,
+        guideKey: releasedGuideKey(r.title),
         // Not a reason to leave a game out: a parent buying it needs to know.
         inGamePurchases: hasInGamePurchases(r),
       }),

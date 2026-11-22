@@ -19,6 +19,27 @@ AI answer engines, social, newsletter.
   19 Nov 2026 run on. Rank and follow pages from there; compare a changed page across runs
   3–4 weeks apart, never one.
 
+## Open work (2026-11-22) — Noël, maillage et prises de contact
+Branch `claude/growth-noel-maillage` (local, not pushed).
+- **Internal links, Nov–Dec only (`isChristmasSeason`)**: fiche card « Noël en famille :
+  nos sélections par âge » (classic + V3 bodies, under the similar titles, in Suspense) on
+  films/series matched by `isChristmasThemed` → `/noel/films-en-famille`, and on games
+  listed by the gift page → `/noel/jeux-video-a-offrir` (membership = `fetchGiftGamesByBand`
+  ids, `unstable_cache` 1 h, tag `noel-gift-games`); in-season block on `/jeux/quel-age`;
+  the hub, both sub-pages and `/collections/films-noel-famille` now all link to one another
+  (`noelCrossLinks` in `src/lib/noel/pages.ts`).
+- Known gap: « La Reine des neiges » (2013) has no Christmas signal in title, genres or
+  topics, so its fiche gets no card although « reine des neiges âge » is a striking-distance
+  query. Not forced by hand; a « Noël » topic would be a Librarian/Age Keeper data call.
+- Outreach drafts: `docs/marketing/noel-2026-outreach.md` (GTA VI note read from the DB on
+  22 Nov 2026, press pitch, members' email, outlet types). **Nothing sent.** The members'
+  email goes only to the consented Resend audience, on Xavier's go.
+- **Xavier, 5 minutes:** in Search Console, « Inspection de l'URL » → « Demander une
+  indexation » for `/noel`, `/noel/films-en-famille`, `/noel/jeux-video-a-offrir` (once
+  this branch is live, so Google sees the new internal links at the same time).
+- Mid-December: read « scrooge / grinch / films de noël / jeux à offrir » in `topQueries`
+  and the three pages' impressions; compare with the 19 Nov run.
+
 ## Open work (2026-11-21) — Noël
 Branch `claude/growth-noel-2026` (local, not pushed): `/noel` hub (cinéma ≤ 12 ans,
 fiche vérifiée), `/noel/films-en-famille`, `/noel/jeux-video-a-offrir` — live DB reads,

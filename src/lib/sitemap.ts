@@ -5,6 +5,7 @@ import { toMediaRouteId, publicMediaWhere } from "@/lib/media-route"
 import { sanityClient } from "@/sanity/client"
 import { COLLECTIONS } from "@/lib/collections-data"
 import { NOEL_HUB_PATH, NOEL_PAGES } from "@/lib/noel/pages"
+import { releasedGuideKeys } from "@/lib/game-guide-flag"
 import { isAiConnectorsPagePublic } from "@/lib/ai-connectors-flag"
 
 /**
@@ -91,6 +92,14 @@ export function staticPageEntries(now: Date): MetadataRoute.Sitemap {
       url: `${baseUrl}${path}`,
       lastModified: now,
       changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
+    // Parents' guides: only the released ones (switch on + human review), so
+    // the sitemap never lists a 404 or a noindex page.
+    ...releasedGuideKeys().map((key) => ({
+      url: `${baseUrl}/jeux/guide/${key}`,
+      lastModified: now,
+      changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
     // /recommandations omitted — client-side filtering page that SSR-renders

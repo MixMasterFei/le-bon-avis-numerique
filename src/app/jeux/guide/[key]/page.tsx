@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck, Gamepad2 } from "lucide-react"
 import { isAdmin } from "@/lib/auth"
-import { gameGuideEnabled } from "@/lib/game-guide-flag"
+import { guideVisible, isGuideReleased } from "@/lib/game-guide-flag"
 import { guideFreshness } from "@/lib/game-guide-freshness"
 import { getGameGuide, GAME_GUIDES } from "@/lib/game-guides"
 import { APERCU_PALETTE } from "@/components/home-v2/apercuTheme"
@@ -37,9 +37,9 @@ export async function generateMetadata({
     title: `${guide.name} — Guide parents`,
     description: guide.tagline,
     alternates: { canonical: `${baseUrl}/jeux/guide/${guide.key}` },
-    // Admin-only while the flag is off: keep it out of the index either way
-    // until a human has read each guide end to end.
-    robots: { index: false, follow: true },
+    // Indexable only once released (switch on + human review recorded in
+    // game-guide-reviews.ts); admin previews of unreviewed guides stay noindex.
+    robots: { index: isGuideReleased(guide.key), follow: true },
   }
 }
 
@@ -54,7 +54,7 @@ export default async function GameGuidePage({
   const { key } = await params
   const guide = getGameGuide(key)
   if (!guide) notFound()
-  if (!gameGuideEnabled(await isAdmin())) notFound()
+  if (!guideVisible(guide.key, await isAdmin())) notFound()
 
   const freshness = guideFreshness(guide)
 
