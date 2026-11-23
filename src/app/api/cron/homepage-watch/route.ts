@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
     const result = await runHomepageWatch({ writesEnabled, dryRun })
     const { outcomes, classified, pins } = result
 
+    // 16+ launches the band's 16+ cap kept out of the pins.
+    const capSkipped = new Set(result.matureSkipped.map((c) => c.key))
     // Compact per-title outcome, so a run can be read back from cron_logs.
     const titles = classified.map((c) => ({
       key: c.key,
@@ -46,6 +48,7 @@ export async function GET(req: NextRequest) {
       sources: c.sources,
       placements: c.placements,
       imported: outcomes.imports.keys.includes(c.key),
+      ...(capSkipped.has(c.key) ? { matureCapSkipped: true } : {}),
     }))
 
     if (dryRun) {

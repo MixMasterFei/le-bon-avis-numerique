@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest"
 import {
+  SPOTLIGHT_FALLBACK_MIN,
   SPOTLIGHT_MAX,
+  SPOTLIGHT_MAX_MATURE,
+  SPOTLIGHT_WATCH_MAX,
   freshTrendingScore,
+  gameLaunchScore,
   interleaveByType,
   isActivePin,
+  isRecentGame,
+  launchRecencyFactor,
   rankSpotlightFilms,
   rankSpotlightGames,
   rankSpotlightSeries,
@@ -191,5 +197,228 @@ describe("fallback ranking", () => {
       now,
     )
     expect(ranked.map((r) => r.id)).toEqual(["gta6", "enshrouded", "lightyear"])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// 23 Nov 2026: the first watch run wrote 8 pins, filled the whole band and
+// pushed out Zelda: Ocarina of Time (Switch 2, 5 Nov) and VisionQuest.
+// Ages below are the catalogue's that day.
+// ---------------------------------------------------------------------------
+
+describe("recency", () => {
+  const nov23 = new Date("2026-11-23T18:00:00.000Z")
+  const d = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
+
+  it("weighs recency strongly: ≤ 30 days beats 39 days with similar signals", () => {
+    expect(launchRecencyFactor(18)).toBeGreaterThan(launchRecencyFactor(39) * 1.5)
+    const zelda = gameLaunchScore({ votes: 61, trending: null, releaseDate: d("2026-11-05") }, nov23)
+    const enshrouded = gameLaunchScore({ votes: 69, trending: null, releaseDate: d("2026-10-15") }, nov23)
+    expect(zelda).toBeGreaterThan(enshrouded)
+  })
+
+  it("ranks the fallback games by notability × recency (Zelda before Enshrouded, GTA VI first)", () => {
+    const fresh = new Date("2026-11-23T12:00:00.000Z")
+    const ranked = rankSpotlightGames(
+      [
+        { id: "enshrouded", releaseDate: d("2026-10-15"), tmdbVoteCount: 69, trendingScore: null, trendingUpdatedAt: null },
+        { id: "zelda", releaseDate: d("2026-11-05"), tmdbVoteCount: 61, trendingScore: null, trendingUpdatedAt: null },
+        { id: "gta6", releaseDate: d("2026-11-19"), tmdbVoteCount: 54, trendingScore: 80, trendingUpdatedAt: fresh },
+      ],
+      nov23,
+    )
+    expect(ranked.map((r) => r.id)).toEqual(["gta6", "zelda", "enshrouded"])
+  })
+
+  it("weighs a film's trending score by recency (Scrooge, out 12 days, before Malfaisante, out 7 weeks)", () => {
+    const fresh = new Date("2026-11-23T12:00:00.000Z")
+    const ranked = rankSpotlightFilms(
+      [
+        { id: "malfaisante", releaseDate: d("2026-10-07"), trendingScore: 67, trendingUpdatedAt: fresh },
+        { id: "scrooge", releaseDate: d("2026-11-11"), trendingScore: 64, trendingUpdatedAt: fresh },
+      ],
+      nov23,
+    )
+    expect(ranked.map((r) => r.id)).toEqual(["scrooge", "malfaisante"])
+  })
+
+  it("a « recent game » is a game out 0 to 30 days ago", () => {
+    expect(isRecentGame({ type: "GAME", releaseDate: d("2026-11-05") }, nov23)).toBe(true)
+    expect(isRecentGame({ type: "GAME", releaseDate: d("2026-10-15") }, nov23)).toBe(false)
+    expect(isRecentGame({ type: "GAME", releaseDate: d("2026-12-01") }, nov23)).toBe(false)
+    expect(isRecentGame({ type: "GAME", releaseDate: null }, nov23)).toBe(false)
+    expect(isRecentGame({ type: "MOVIE", releaseDate: d("2026-11-18") }, nov23)).toBe(false)
+  })
+})
+
+describe("band composition rules", () => {
+  const recentGame = media("zelda", "GAME", { title: "The Legend of Zelda: Ocarina of Time", releaseDate: daysAgo(16) })
+  const olderGame = media("enshrouded-39", "GAME", { releaseDate: daysAgo(37) })
+  const cinemaFilm = media("scrooge-cinema", "MOVIE", { expertAgeRec: 8 })
+  const series = (n: number, extra: Partial<SpotlightMedia> = {}) =>
+    Array.from({ length: n }, (_, i) => media(`s${i}`, "TV", extra))
+
+  it("never lets watch pins take more than 6 slots: the fallback keeps 2", () => {
+    const watch = series(8).map((m, rank) => pin(m, { rank }))
+    const out = selectSpotlight({
+      pins: watch,
+      fallback: { films: [cinemaFilm], series: [], games: [recentGame] },
+      now,
+    })
+    expect(out).toHaveLength(SPOTLIGHT_MAX)
+    expect(out.filter((i) => i.origin === "watch")).toHaveLength(SPOTLIGHT_WATCH_MAX)
+    expect(out.filter((i) => i.origin === "fallback").map((i) => i.id)).toEqual(["scrooge-cinema", "zelda"])
+  })
+
+  it("leaves 2 fallback slots after the admin pins too (2 admin → 4 watch)", () => {
+    const admin = series(2).map((m) => pin({ ...m, id: `admin-${m.id}` }, { source: "admin" }))
+    const watch = series(8).map((m, rank) => pin(m, { rank }))
+    const out = selectSpotlight({
+      pins: [...admin, ...watch],
+      fallback: { films: [cinemaFilm], series: [], games: [recentGame, olderGame] },
+      now,
+    })
+    expect(out.map((i) => i.origin)).toEqual(["admin", "admin", "watch", "watch", "watch", "watch", "fallback", "fallback"])
+    expect(out.filter((i) => i.origin === "fallback")).toHaveLength(SPOTLIGHT_FALLBACK_MIN)
+  })
+
+  it("lets watch pins past the cap fill slots the fallback cannot", () => {
+    const watch = series(8).map((m, rank) => pin(m, { rank }))
+    const out = selectSpotlight({ pins: watch, fallback: { films: [], series: [], games: [] }, now })
+    expect(out).toHaveLength(SPOTLIGHT_MAX)
+    expect(out.every((i) => i.origin === "watch")).toBe(true)
+  })
+
+  it("reserves a slot for a recent game and one for a film in cinemas, even behind 6 admin pins", () => {
+    const admin = series(6).map((m) => pin({ ...m, id: `admin-${m.id}` }, { source: "admin" }))
+    const watch = series(4).map((m, rank) => pin(m, { rank }))
+    const out = selectSpotlight({
+      pins: [...admin, ...watch],
+      // Plain interleave would give film, série: no game at all.
+      fallback: { films: [cinemaFilm], series: [media("fallback-series", "TV")], games: [olderGame, recentGame] },
+      now,
+    })
+    expect(out).toHaveLength(SPOTLIGHT_MAX)
+    expect(out.slice(6).map((i) => i.id)).toEqual(["scrooge-cinema", "zelda"])
+    // The 39-day-old game is not « recent »: it never takes the reserved slot.
+    expect(out.some((i) => i.id === "enshrouded-39")).toBe(false)
+  })
+
+  it("lets a pin fill a reserved slot: no slot is spent twice", () => {
+    const watch = [pin(recentGame, { rank: 0 }), ...series(7).map((m, rank) => pin(m, { rank: rank + 1 }))]
+    const out = selectSpotlight({
+      pins: watch,
+      fallback: { films: [cinemaFilm], series: [], games: [olderGame] },
+      now,
+    })
+    expect(out.find((i) => i.id === "zelda")?.origin).toBe("watch")
+    expect(out.filter((i) => i.origin === "watch")).toHaveLength(SPOTLIGHT_WATCH_MAX)
+    expect(out.filter((i) => i.origin === "fallback").map((i) => i.id)).toEqual(["scrooge-cinema", "enshrouded-39"])
+  })
+
+  it("reserves nothing when no candidate exists", () => {
+    const out = selectSpotlight({ pins: [], fallback: { films: [], series: series(3), games: [olderGame] }, now })
+    expect(out.map((i) => i.id)).toEqual(["s0", "enshrouded-39", "s1", "s2"])
+  })
+
+  it("admin pins come first and are never displaced by a reservation", () => {
+    const admin = series(8).map((m) => pin({ ...m, id: `admin-${m.id}` }, { source: "admin" }))
+    const out = selectSpotlight({ pins: admin, fallback: { films: [cinemaFilm], series: [], games: [recentGame] }, now })
+    expect(out.every((i) => i.origin === "admin")).toBe(true)
+  })
+})
+
+describe("at most 2 titles rated 16+", () => {
+  const mature = (id: string, type: SpotlightMedia["type"], age: number) => media(id, type, { expertAgeRec: age })
+
+  it("skips a third 16+ title for the next candidate, all sources together", () => {
+    const out = selectSpotlight({
+      pins: [pin(mature("mobland", "TV", 17), { rank: 0 }), pin(gta6, { rank: 1 })],
+      fallback: {
+        films: [mature("clayface", "MOVIE", 16), scrooge],
+        series: [visionQuest],
+        games: [mature("cod", "GAME", 18), enshrouded],
+      },
+      now,
+    })
+    expect(out.filter((i) => (i.expertAgeRec ?? 0) >= 16)).toHaveLength(SPOTLIGHT_MAX_MATURE)
+    expect(out.map((i) => i.id)).toEqual(["mobland", "gta6", "scrooge", "visionquest", "enshrouded"])
+  })
+
+  it("keeps GTA VI: the cap goes to the first 16+ candidates, pins before fallback", () => {
+    const out = selectSpotlight({
+      pins: [pin(gta6, { rank: 0 })],
+      fallback: { films: [mature("clayface", "MOVIE", 16), mature("goodboy", "MOVIE", 16)], series: [], games: [] },
+      now,
+    })
+    expect(out.map((i) => i.id)).toEqual(["gta6", "clayface"])
+  })
+
+  it("counts admin pins in the cap but never removes them", () => {
+    const admin = ["a1", "a2", "a3"].map((id) => pin(mature(id, "MOVIE", 18), { source: "admin" }))
+    const out = selectSpotlight({
+      pins: [...admin, pin(gta6, { rank: 0 })],
+      fallback: { films: [scrooge], series: [visionQuest], games: [mature("cod", "GAME", 18), enshrouded] },
+      now,
+    })
+    expect(out.filter((i) => i.origin === "admin").map((i) => i.id)).toEqual(["a1", "a2", "a3"])
+    expect(out.some((i) => i.id === "gta6" || i.id === "cod")).toBe(false)
+    expect(out.map((i) => i.id)).toEqual(["a1", "a2", "a3", "scrooge", "visionquest", "enshrouded"])
+  })
+
+  it("treats 15 as under the cap", () => {
+    const out = selectSpotlight({
+      pins: [],
+      fallback: { films: ["m1", "m2", "m3"].map((id) => mature(id, "MOVIE", 15)), series: [], games: [] },
+      now,
+    })
+    expect(out).toHaveLength(3)
+  })
+})
+
+describe("the band on 23 Nov 2026 under the new rules (pins and ages read from the DB that evening)", () => {
+  const nov23 = new Date("2026-11-23T20:00:00.000Z")
+  const at = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
+  const pinAt = (m: SpotlightMedia, source: string, rank: number): SpotlightPin => ({
+    mediaId: m.id,
+    source,
+    rank,
+    startsAt: new Date("2026-11-23T16:28:20.000Z"),
+    expiresAt: new Date("2026-12-07T16:28:20.000Z"),
+    media: m,
+  })
+  const zelda = media("zelda", "GAME", { title: "The Legend of Zelda: Ocarina of Time", releaseDate: at("2026-11-05") })
+  const vq = media("visionquest", "TV", { releaseDate: at("2026-10-13") })
+  const hunger = media("hunger", "MOVIE", { expertAgeRec: 14, releaseDate: at("2026-11-18") })
+  const mobland = media("mobland", "TV", { expertAgeRec: 17 })
+  const gta = media("gta6", "GAME", { expertAgeRec: 18, releaseDate: at("2026-11-19") })
+  const scr = media("scrooge", "MOVIE", { expertAgeRec: 8, releaseDate: at("2026-11-11") })
+  const anneaux = media("anneaux", "TV")
+  const ensh = media("enshrouded", "GAME", { releaseDate: at("2026-10-15") })
+  const malf = media("malfaisante", "MOVIE", { releaseDate: at("2026-10-07") })
+  const percy = media("percy", "TV")
+  const clay = media("clayface", "MOVIE", { expertAgeRec: 16, releaseDate: at("2026-10-21") })
+
+  it("keeps both admin pins, 4 watch pins, 2 fallback titles, and 2 titles rated 16+", () => {
+    const out = selectSpotlight({
+      pins: [
+        pinAt(zelda, "admin", 0),
+        pinAt(vq, "admin", 1),
+        ...[hunger, mobland, gta, scr, anneaux, ensh, malf, percy].map((m, rank) => pinAt(m, "watch", rank)),
+      ],
+      fallback: { films: [hunger, scr, malf, clay], series: [vq], games: [gta, zelda, ensh] },
+      now: nov23,
+    })
+    expect(out.map((i) => [i.id, i.origin])).toEqual([
+      ["zelda", "admin"],
+      ["visionquest", "admin"],
+      ["hunger", "watch"],
+      ["mobland", "watch"],
+      ["gta6", "watch"],
+      ["scrooge", "watch"],
+      ["malfaisante", "fallback"],
+      ["enshrouded", "fallback"],
+    ])
+    expect(out.filter((i) => (i.expertAgeRec ?? 0) >= 16).map((i) => i.id)).toEqual(["mobland", "gta6"])
   })
 })

@@ -20,9 +20,23 @@
  * Writes (imports, pins) happen in `homepage-watch-run.ts`. Nothing here
  * produces or changes an age: imports go through the existing import
  * functions, and the band reads ages from the catalogue.
+ *
+ * Pin choice (23 Nov 2026): at most WATCH_MAX_PINS (6) so the band's
+ * fallback keeps 2 slots for the recent releases; ranked by signal ×
+ * recency (`launchRecencyFactor`), so a game out 18 days ago beats one out
+ * 39 days ago; at most SPOTLIGHT_MAX_MATURE titles rated 16+ counting the
+ * admin pins — the 16+ launches left out are listed in the report, never
+ * hidden from it.
  */
 
-import { isShowable, interleaveByType } from "@/lib/homepage-spotlight"
+import {
+  SPOTLIGHT_MAX_MATURE,
+  SPOTLIGHT_WATCH_MAX,
+  isMatureAge,
+  isShowable,
+  launchRecencyFactor,
+  roundRobin,
+} from "@/lib/homepage-spotlight"
 import { verdictLine } from "@/lib/agent-verdict"
 
 export type WatchKind = "MOVIE" | "TV" | "GAME"
@@ -67,6 +81,11 @@ export interface ExpectedItem {
   isNew: boolean
   /** Short human note for the report / pin reason (« saison 2 le 12 nov. »). */
   note?: string
+  /**
+   * Days since the release (film, game), the premiere or the latest episode
+   * (series); negative = not out yet. Weighs the pin choice by recency.
+   */
+  releasedDaysAgo?: number
 }
 
 export interface CatalogueEntry {
@@ -115,8 +134,12 @@ export const HOMEPAGE_CINEMA_CAP = 14
 
 /** Import at most this many missing titles per run (the brief: ~8). */
 export const WATCH_MAX_IMPORTS = 8
-/** Band pins written per run, and how long they live if the cron stops. */
-export const WATCH_MAX_PINS = 8
+/**
+ * Band pins written per run (6 of the 8 slots: the fallback keeps 2 for the
+ * recent releases — the band enforces the same cap), and how long they live
+ * if the cron stops.
+ */
+export const WATCH_MAX_PINS = SPOTLIGHT_WATCH_MAX
 export const WATCH_PIN_DAYS = 14
 const WATCH_PINS_PER_KIND = 3
 
@@ -140,6 +163,10 @@ export function mergeExpected(items: ExpectedItem[]): ExpectedItem[] {
     prev.isNew = prev.isNew || item.isNew
     prev.note = prev.note ?? item.note
     prev.mediaId = prev.mediaId ?? item.mediaId
+    if (item.releasedDaysAgo != null) {
+      prev.releasedDaysAgo =
+        prev.releasedDaysAgo == null ? item.releasedDaysAgo : Math.min(prev.releasedDaysAgo, item.releasedDaysAgo)
+    }
   }
   return [...byKey.values()].sort((a, b) => b.signal - a.signal || a.title.localeCompare(b.title))
 }
@@ -190,26 +217,62 @@ export interface PinDraft {
   expiresAt: Date
 }
 
+/** Pin priority: the week's signal, weighted strongly by how recent the launch is. */
+export function watchPinPriority(c: Pick<ExpectedItem, "signal" | "releasedDaysAgo">): number {
+  return c.signal * launchRecencyFactor(c.releasedDaysAgo)
+}
+
+export interface WatchPinOptions {
+  adminPinnedIds?: Set<string>
+  /** Admin pins rated 16+: they count towards the band's 16+ cap. */
+  adminMatureCount?: number
+  max?: number
+  days?: number
+}
+
 /**
  * The week's launches already in the catalogue with an age and a poster, at
- * most three per kind, interleaved film / série / jeu, strongest first.
- * Titles that already hold an admin pin are left alone.
+ * most three per kind and WATCH_MAX_PINS in all, interleaved film / série /
+ * jeu, by `watchPinPriority`. Titles that already hold an admin pin are left
+ * alone. At most SPOTLIGHT_MAX_MATURE titles rated 16+ counting the admin
+ * pins: the slots go to the strongest 16+ launches (GTA VI stays eligible),
+ * and the ones that would have been pinned without the cap come back in
+ * `matureSkipped` so the report lists them.
  */
-export function buildWatchPins(
+export function selectWatchPins(
   classified: ClassifiedItem[],
   now: Date,
-  opts: { adminPinnedIds?: Set<string>; max?: number; days?: number } = {},
-): PinDraft[] {
+  opts: WatchPinOptions = {},
+): { pins: PinDraft[]; matureSkipped: ClassifiedItem[] } {
   const max = opts.max ?? WATCH_MAX_PINS
   const days = opts.days ?? WATCH_PIN_DAYS
   const admin = opts.adminPinnedIds ?? new Set<string>()
   const eligible = classified
     .filter((c) => c.isNew && c.frRelevant && c.entry && isShowable(c.entry) && !admin.has(c.entry.id))
-    .sort((a, b) => b.signal - a.signal)
-  const perKind = (kind: WatchKind) => eligible.filter((c) => c.kind === kind).slice(0, WATCH_PINS_PER_KIND)
-  const ordered = interleaveByType([perKind("MOVIE"), perKind("TV"), perKind("GAME")], max)
+    .sort((a, b) => watchPinPriority(b) - watchPinPriority(a) || b.signal - a.signal)
+  const matureSlots = Math.max(0, SPOTLIGHT_MAX_MATURE - (opts.adminMatureCount ?? 0))
+  // The 16+ slots go by priority across kinds, not by interleave turn.
+  const matureAllowed = new Set(
+    eligible.filter((c) => isMatureAge(c.entry?.expertAgeRec)).slice(0, matureSlots).map((c) => c.key),
+  )
+
+  const ordered: ClassifiedItem[] = []
+  const matureSkipped: ClassifiedItem[] = []
+  const perKindCount = new Map<WatchKind, number>()
+  const byKind = (kind: WatchKind) => eligible.filter((c) => c.kind === kind)
+  roundRobin([byKind("MOVIE"), byKind("TV"), byKind("GAME")], (c) => {
+    if (ordered.length >= max || (perKindCount.get(c.kind) ?? 0) >= WATCH_PINS_PER_KIND) return false
+    if (isMatureAge(c.entry?.expertAgeRec) && !matureAllowed.has(c.key)) {
+      matureSkipped.push(c)
+      return false
+    }
+    ordered.push(c)
+    perKindCount.set(c.kind, (perKindCount.get(c.kind) ?? 0) + 1)
+    return true
+  })
+
   const expiresAt = new Date(now.getTime() + days * 24 * 3_600_000)
-  return ordered.map((c, rank) => ({
+  const pins = ordered.map((c, rank) => ({
     mediaId: (c.entry as CatalogueEntry).id,
     title: (c.entry as CatalogueEntry).title,
     kind: c.kind,
@@ -218,6 +281,12 @@ export function buildWatchPins(
     startsAt: now,
     expiresAt,
   }))
+  return { pins, matureSkipped }
+}
+
+/** The pins alone (see `selectWatchPins`). */
+export function buildWatchPins(classified: ClassifiedItem[], now: Date, opts: WatchPinOptions = {}): PinDraft[] {
+  return selectWatchPins(classified, now, opts).pins
 }
 
 function pinReason(c: ExpectedItem): string {
@@ -262,8 +331,17 @@ export function watchHealth(o: WatchOutcomes): WatchHealth {
   return "ok"
 }
 
-/** What still needs a human after this run (the verdict count). */
-export function remainingWork(classified: ClassifiedItem[], o: WatchOutcomes, pinned: Set<string>) {
+/**
+ * What still needs a human after this run (the verdict count). A 16+ launch
+ * left out by the band's 16+ cap (`policySkipped`, by key) is a rule applied,
+ * not work left: it is listed in the report but not counted.
+ */
+export function remainingWork(
+  classified: ClassifiedItem[],
+  o: WatchOutcomes,
+  pinned: Set<string>,
+  policySkipped: Set<string> = new Set(),
+) {
   const imported = new Set(o.imports.keys)
   const missing = classified.filter(
     (c) => c.status === "missing" && c.frRelevant && !imported.has(c.key),
@@ -273,7 +351,8 @@ export function remainingWork(classified: ClassifiedItem[], o: WatchOutcomes, pi
       (c.status === "absent" || c.status === "age-capped") &&
       c.isNew &&
       c.frRelevant &&
-      !(c.entry && pinned.has(c.entry.id)),
+      !(c.entry && pinned.has(c.entry.id)) &&
+      !policySkipped.has(c.key),
   )
   return { missing, unshown }
 }
@@ -294,13 +373,17 @@ export function buildWatchReport(input: {
   outcomes: WatchOutcomes
   pins: PinDraft[]
   now: Date
+  /** 16+ launches left unpinned by the band's 16+ cap (`selectWatchPins`). */
+  matureSkipped?: ClassifiedItem[]
 }): { report: string; subject: string; health: WatchHealth; remaining: number } {
   const { classified, outcomes: o, pins } = input
+  const matureSkipped = input.matureSkipped ?? []
   const health = watchHealth(o)
   const pinned = new Set(
     o.dryRun || !o.writesEnabled || o.pins.failed || o.pins.tableMissing ? [] : pins.map((p) => p.mediaId),
   )
-  const { missing, unshown } = remainingWork(classified, o, pinned)
+  const capSkipped = new Set(matureSkipped.map((c) => c.key))
+  const { missing, unshown } = remainingWork(classified, o, pinned, capSkipped)
   const remaining = missing.length + unshown.length
 
   const by = (s: WatchStatus) => classified.filter((c) => c.status === s)
@@ -357,15 +440,19 @@ export function buildWatchReport(input: {
     o.imports.keys.includes(c.key) ? " → importé, en attente d'analyse" : c.frRelevant ? "" : " (hors France, ignoré)",
   )
   section("Au catalogue mais pas encore analysés / sans âge", by("not-ready"))
-  section(
-    `Écartés des rails par le filtre d'âge par défaut`,
-    by("age-capped"),
-    (c) => (pinned.has(c.entry?.id ?? "") ? " → épinglé dans « À ne pas manquer »" : ""),
-  )
-  section("Analysés mais absents de l'accueil", by("absent"), (c) =>
-    pinned.has(c.entry?.id ?? "") ? " → épinglé dans « À ne pas manquer »" : "",
-  )
+  const pinNote = (c: ClassifiedItem) =>
+    pinned.has(c.entry?.id ?? "")
+      ? " → épinglé dans « À ne pas manquer »"
+      : capSkipped.has(c.key)
+        ? ` → non épinglé : déjà ${SPOTLIGHT_MAX_MATURE} titres 16 ans et plus dans le bandeau`
+        : ""
+  section(`Écartés des rails par le filtre d'âge par défaut`, by("age-capped"), pinNote)
+  section("Analysés mais absents de l'accueil", by("absent"), pinNote)
   section("Déjà à l'accueil", onHome, (c) => ` → ${placementLabel(c)}`)
+  section(
+    `Non épinglés : plafond de ${SPOTLIGHT_MAX_MATURE} titres 16 ans et plus dans « À ne pas manquer » (épingles admin comprises)`,
+    matureSkipped,
+  )
 
   if (pins.length > 0) {
     const written = !o.dryRun && o.writesEnabled && !o.pins.failed && !o.pins.tableMissing
