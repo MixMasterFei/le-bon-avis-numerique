@@ -37,8 +37,10 @@ export interface TopGameSeed {
   forcedId?: string
   /**
    * YYYY-MM-DD. The games-top-names job only imports an entry first released
-   * on or after this day — for a remake sold under its original's exact name
-   * (see src/lib/game-seed-match.ts). Not a display date.
+   * on or after this day — for a remake or successor sold under its
+   * original's exact name (see src/lib/game-seed-match.ts). On the pillar it
+   * only settles a tie between rows with the same title (see
+   * src/lib/curated-game-matching.ts). Not a display date.
    */
   releasedFrom?: string
   /** Override: use this exact FAQ answer instead of the generated one. */
@@ -220,9 +222,9 @@ export const TOP_GAMES: TopGameSeed[] = [
   {
     // The Switch 2 remake (Nintendo, 2026) carries the 1998 original's exact
     // title, so names alone can't tell them apart: `releasedFrom` makes the
-    // games-top-names job pick only the remake. Not in the catalogue on
-    // 2026-11-21; once imported, pin it with forcedId if the 1998 or 3DS
-    // version ever lands too (same normalized title = ambiguous = card hidden).
+    // games-top-names job pick only the remake. Imported on 2026-11-22; if
+    // the 1998 version ever lands too, the pillar settles the same-title tie
+    // with the same window (src/lib/curated-game-matching.ts).
     key: "zelda-ocarina-of-time",
     name: "The Legend of Zelda: Ocarina of Time (Switch 2)",
     aliases: ["ocarina of time"],
@@ -270,10 +272,18 @@ export const TOP_GAMES: TopGameSeed[] = [
       "Jeu de combat festif réunissant les héros Nintendo, très demandé en famille.",
   },
   {
+    // The game families play is the free-to-play successor (Overwatch 2,
+    // 4 Oct 2022), which Blizzard has since sold as plain « Overwatch » again.
+    // Without a window the « overwatch » lookup matched the 2016 original
+    // (exact name, most rated, already in the catalogue) and the run of
+    // 23 Nov 2026 counted the seed « déjà présent ». `releasedFrom` keeps
+    // the 2016 entry out of the import whatever IGDB calls the successor;
+    // on the pillar it only breaks a tie between two « Overwatch » rows.
     key: "overwatch",
     name: "Overwatch",
     aliases: ["overwatch"],
     catalogueTitles: ["overwatch 2", "overwatch"],
+    releasedFrom: "2022-10-01",
     parentNote:
       "Jeu de tir en équipe stylisé : coloré, mais en ligne et compétitif.",
   },

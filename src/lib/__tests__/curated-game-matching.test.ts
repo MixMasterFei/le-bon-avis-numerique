@@ -58,3 +58,28 @@ describe("curated game identity", () => {
     }
   })
 })
+
+describe("same-title tie settled by the seed's release window", () => {
+  const original = { id: "ow2016", title: "Overwatch", releaseDate: new Date("2016-05-24") }
+
+  it("keeps the 2016 Overwatch card until the successor is in the catalogue", () => {
+    expect(matchCuratedGame(seedFor("overwatch"), [original])).toBe(original)
+  })
+
+  it("prefers « Overwatch 2 » when the catalogue holds it under that name", () => {
+    const ow2 = { id: "ow2", title: "Overwatch 2", releaseDate: new Date("2022-10-04") }
+    expect(matchCuratedGame(seedFor("overwatch"), [original, ow2])).toBe(ow2)
+  })
+
+  it("picks the successor when both rows are called « Overwatch »", () => {
+    const renamed = { id: "ow2", title: "Overwatch", releaseDate: new Date("2022-10-04") }
+    expect(matchCuratedGame(seedFor("overwatch"), [original, renamed])).toBe(renamed)
+  })
+
+  it("stays fail-closed without a window, or when the window does not decide", () => {
+    const twin = { id: "twin", title: "Overwatch", releaseDate: new Date("2023-01-01") }
+    const renamed = { id: "ow2", title: "Overwatch", releaseDate: new Date("2022-10-04") }
+    expect(matchCuratedGame(seedFor("overwatch"), [renamed, twin])).toBeUndefined()
+    expect(matchCuratedGame({ aliases: ["overwatch"] }, [original, renamed])).toBeUndefined()
+  })
+})

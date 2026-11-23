@@ -144,3 +144,45 @@ describe("pickForLookup", () => {
     expect(pickForLookup(seed, title, [original])).toBeNull()
   })
 })
+
+// ---------------------------------------------------------------------------
+// Overwatch (23 Nov 2026): the run counted the seed « déjà présent » because
+// the « overwatch » lookup matched the 2016 original (exact name, most rated,
+// in the catalogue since 2025) — the free-to-play successor families play
+// (Overwatch 2, 4 Oct 2022, sold as plain « Overwatch » again since) was
+// never imported. Preferred edition first + a release window.
+// ---------------------------------------------------------------------------
+
+describe("Overwatch seed", () => {
+  const ts = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / 1000
+  const seed = TOP_GAMES.find((s) => s.key === "overwatch")!
+  const original = { ...c(8173, "Overwatch", 3000), first_release_date: ts("2016-05-24") }
+
+  it("looks up « Overwatch 2 » first, then the plain name, then the alias", () => {
+    expect(seed.catalogueTitles?.[0]).toBe("overwatch 2")
+    expect(seedLookups(seed).map((l) => `${l.kind}:${l.query}`)).toEqual([
+      "catalogueTitle:overwatch 2",
+      "catalogueTitle:overwatch",
+      "alias:overwatch",
+    ])
+  })
+
+  it("imports the successor under its « Overwatch 2 » name, never the 2016 original", () => {
+    const successor = { ...c(125174, "Overwatch 2", 900), first_release_date: ts("2022-10-04") }
+    const [first] = seedLookups(seed)
+    expect(pickForLookup(seed, first, [original, successor])?.id).toBe(125174)
+  })
+
+  it("still finds the successor when it is listed as plain « Overwatch »", () => {
+    const renamed = { ...c(125174, "Overwatch", 900), first_release_date: ts("2022-10-04") }
+    const lookups = seedLookups(seed)
+    expect(pickForLookup(seed, lookups[0], [original, renamed])).toBeNull()
+    expect(pickForLookup(seed, lookups[1], [original, renamed])?.id).toBe(125174)
+  })
+
+  it("never settles for the 2016 original: no successor means « introuvable », not « déjà présent »", () => {
+    for (const lookup of seedLookups(seed)) {
+      expect(pickForLookup(seed, lookup, [original])).toBeNull()
+    }
+  })
+})
