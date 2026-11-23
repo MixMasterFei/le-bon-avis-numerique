@@ -61,6 +61,7 @@ export function toSpotlightMedia(row: SpotlightRow): SpotlightMedia | null {
     expertAgeRec: row.expertAgeRec,
     isEnriched: row.isEnriched,
     genres: row.genres ?? [],
+    releaseDate: row.releaseDate,
     contentMetrics: row.contentMetrics
       ? {
           violence: row.contentMetrics.violence,
@@ -121,7 +122,9 @@ export async function loadSpotlightFallback(now: Date): Promise<SpotlightFallbac
         )
         const byId = new Map(rows.map((r) => [r.id, r]))
         const inCinemaOrder = ids.map((id) => byId.get(id)).filter((r): r is SpotlightRow => !!r)
-        return mediaList(rankSpotlightFilms(inCinemaOrder, now).slice(0, 12))
+        // Not cut to the band size: this list also tells the selection which
+        // pinned films are in French cinemas (the reserved « au cinéma » slot).
+        return mediaList(rankSpotlightFilms(inCinemaOrder, now).slice(0, 40))
       } catch {
         return []
       }
@@ -189,6 +192,7 @@ export const getHomepageSpotlight = unstable_cache(
       return []
     }
   },
-  ["homepage-spotlight-v1"],
+  // v2: reserved slots, watch-pin cap and 16+ cap (23 Nov 2026).
+  ["homepage-spotlight-v2"],
   { revalidate: 1800, tags: [HOMEPAGE_SPOTLIGHT_TAG] },
 )

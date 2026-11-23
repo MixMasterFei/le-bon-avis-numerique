@@ -18,8 +18,25 @@
  *  (b) a deterministic fallback that tops the band up when pins don't fill it:
  *      films in French cinemas (trending this week first, then the French
  *      cinema ranking), series on a French platform that premiered recently
- *      and trend this week, games released in the last weeks (IGDB trending,
- *      then rating count). Interleaved film / série / jeu so the band is mixed.
+ *      and trend this week, games released in the last weeks (notability ×
+ *      recency, see `gameLaunchScore`). Interleaved film / série / jeu so the
+ *      band is mixed.
+ *
+ * Composition rules (23 Nov 2026 — the first watch run filled all 8 slots
+ * with its pins and pushed out Zelda: Ocarina of Time and VisionQuest):
+ *  1. Admin pins first, always; no rule below ever removes one.
+ *  2. Watch pins take at most SPOTLIGHT_WATCH_MAX slots and always leave
+ *     SPOTLIGHT_FALLBACK_MIN to the fallback (which brings the recent
+ *     releases). Watch pins past that only fill slots the fallback can't.
+ *  3. Reserved slots, when a candidate exists: one game released in the last
+ *     SPOTLIGHT_RECENT_DAYS days, one film in French cinemas. A title already
+ *     in the band fills them (no slot spent twice); otherwise the best
+ *     candidate — pins first, then the fallback's ranking — replaces the
+ *     last title taken that is neither an admin pin nor reserved.
+ *  4. At most SPOTLIGHT_MAX_MATURE titles rated SPOTLIGHT_MATURE_AGE or more,
+ *     all sources together, granted in priority order (admin, watch, then
+ *     fallback). Admin pins count but are never dropped; a 16+ watch /
+ *     fallback candidate past the cap is skipped for the next one.
  */
 
 import { RELEVANT_PROVIDERS } from "@/lib/streaming-providers"
@@ -41,6 +58,8 @@ export interface SpotlightMedia {
     language: number | null
     substanceUse: number | null
   } | null
+  /** Selection only (the « recent game » slot) — never passed to the card. */
+  releaseDate?: Date | null
 }
 
 export interface SpotlightPin {
@@ -52,7 +71,9 @@ export interface SpotlightPin {
   media: SpotlightMedia | null
 }
 
-export interface SpotlightItem extends SpotlightMedia {
+// `releaseDate` stays out of the item: the band is cached (`unstable_cache`
+// serialises Dates to strings) and the card has no use for it.
+export interface SpotlightItem extends Omit<SpotlightMedia, "releaseDate"> {
   /** Imported but not analysed yet — badged « à confirmer » like the cinema rail. */
   isProvisional: boolean
   origin: SpotlightOrigin
@@ -78,7 +99,66 @@ export const SPOTLIGHT_GAME_MIN_VOTES = 3
 /** A trending score older than this is stale (the import cron stopped). */
 export const SPOTLIGHT_TRENDING_MAX_AGE_HOURS = 72
 
+/** « Big recent release »: a game out for at most this many days gets a reserved slot. */
+export const SPOTLIGHT_RECENT_DAYS = 30
+/** Watch pins never take more than this many slots… */
+export const SPOTLIGHT_WATCH_MAX = 6
+/** …and always leave at least this many to the fallback (recent releases). */
+export const SPOTLIGHT_FALLBACK_MIN = 2
+/** A family site: at most this many titles rated SPOTLIGHT_MATURE_AGE or more. */
+export const SPOTLIGHT_MAX_MATURE = 2
+export const SPOTLIGHT_MATURE_AGE = 16
+
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Whole days since `date` (negative = not out yet), or null without a date. */
+export function daysSince(date: Date | null | undefined, now: Date): number | null {
+  if (!date) return null
+  const t = date.getTime()
+  if (Number.isNaN(t)) return null
+  return Math.floor((now.getTime() - t) / DAY_MS)
+}
+
+/**
+ * How much recency weighs on a launch's rank — strongly: a game out 18 days
+ * ago outranks one out 39 days ago with similar signals (1.25 vs 0.8).
+ * Unknown date = neutral; not out yet (the watch looks 7 days ahead) = like
+ * a recent release.
+ */
+export function launchRecencyFactor(days: number | null | undefined): number {
+  if (days == null) return 1
+  if (days < 0) return 1.25
+  if (days <= 14) return 1.5
+  if (days <= SPOTLIGHT_RECENT_DAYS) return 1.25
+  if (days <= SPOTLIGHT_GAME_FRESH_DAYS) return 0.8
+  return 0.6
+}
+
+/**
+ * A game launch's weight: notability (log of the rating count, plus this
+ * week's trending score when there is one — 80 weighs like ~1,600 ratings)
+ * × recency. A rating count alone is lifetime notoriety: Enshrouded (early
+ * access since 2024, 1.0 on 15 Oct, 69 ratings) out-ranked the 5 Nov
+ * Ocarina of Time remake (61 ratings) on the 23 Nov 2026 run.
+ */
+export function gameLaunchScore(
+  input: { votes: number | null | undefined; trending: number | null | undefined; releaseDate: Date | null | undefined },
+  now: Date,
+): number {
+  const notability = Math.log10(1 + Math.max(0, input.votes ?? 0)) + Math.max(0, input.trending ?? 0) / 25
+  return notability * launchRecencyFactor(daysSince(input.releaseDate, now))
+}
+
+export function isMatureAge(age: number | null | undefined): boolean {
+  return typeof age === "number" && age >= SPOTLIGHT_MATURE_AGE
+}
+
+/** A game released in the last SPOTLIGHT_RECENT_DAYS days (not a future date). */
+export function isRecentGame(media: Pick<SpotlightMedia, "type" | "releaseDate">, now: Date): boolean {
+  if (media.type !== "GAME") return false
+  const days = daysSince(media.releaseDate, now)
+  return days != null && days >= 0 && days <= SPOTLIGHT_RECENT_DAYS
+}
 
 export function isActivePin(pin: Pick<SpotlightPin, "startsAt" | "expiresAt">, now: Date): boolean {
   return pin.startsAt.getTime() <= now.getTime() && now.getTime() < pin.expiresAt.getTime()
@@ -96,7 +176,18 @@ export function isShowable(media: Pick<SpotlightMedia, "expertAgeRec" | "posterU
 }
 
 function toItem(media: SpotlightMedia, origin: SpotlightOrigin): SpotlightItem {
-  return { ...media, isProvisional: !media.isEnriched && media.expertAgeRec != null, origin }
+  return {
+    id: media.id,
+    type: media.type,
+    title: media.title,
+    posterUrl: media.posterUrl,
+    expertAgeRec: media.expertAgeRec,
+    isEnriched: media.isEnriched,
+    genres: media.genres,
+    contentMetrics: media.contentMetrics,
+    isProvisional: !media.isEnriched && media.expertAgeRec != null,
+    origin,
+  }
 }
 
 /** Active pins in display order: admin before watch, then rank, then newest. */
@@ -114,18 +205,32 @@ export function orderActivePins(pins: SpotlightPin[], now: Date): SpotlightPin[]
 /** Round-robin film → série → jeu until `limit`; a short list lets the others fill. */
 export function interleaveByType<T>(lists: T[][], limit: number): T[] {
   const out: T[] = []
-  const cursors = lists.map(() => 0)
-  while (out.length < limit) {
-    let progressed = false
-    for (let i = 0; i < lists.length && out.length < limit; i++) {
-      if (cursors[i] < lists[i].length) {
-        out.push(lists[i][cursors[i]++])
-        progressed = true
-      }
-    }
-    if (!progressed) break
-  }
+  roundRobin(lists, (item) => {
+    if (out.length >= limit) return false
+    out.push(item)
+    return true
+  })
   return out
+}
+
+/**
+ * Round-robin over `lists`: on its turn a list offers its next items until
+ * `visit` accepts one (a refused item is skipped and the turn stays with
+ * that list, so a skipped film is replaced by the next film, not by a
+ * series). Runs until every list is exhausted.
+ */
+export function roundRobin<T>(lists: T[][], visit: (item: T) => boolean): void {
+  const cursors = lists.map(() => 0)
+  for (;;) {
+    let remaining = false
+    for (let i = 0; i < lists.length; i++) {
+      while (cursors[i] < lists[i].length) {
+        if (visit(lists[i][cursors[i]++])) break
+      }
+      if (cursors[i] < lists[i].length) remaining = true
+    }
+    if (!remaining) return
+  }
 }
 
 export function selectSpotlight(input: {
@@ -134,34 +239,113 @@ export function selectSpotlight(input: {
   now: Date
   limit?: number
 }): SpotlightItem[] {
+  const { now, fallback } = input
   const limit = input.limit ?? SPOTLIGHT_MAX
+  // `fallback.films` is the catalogue's « à l'affiche » list: in French cinemas.
+  const inCinema = new Set(fallback.films.map((m) => m.id))
+  const isCinemaFilm = (m: SpotlightMedia) => m.type === "MOVIE" && inCinema.has(m.id)
+
+  // `order` = display order (admin 0…, watch 1000 + pin index, fallback
+  // 2000 + pick index); `seq` = when it was taken (the latest taken is the
+  // first to give way to a reserved slot).
+  interface Slot {
+    media: SpotlightMedia
+    origin: SpotlightOrigin
+    order: number
+    seq: number
+  }
+  const band: Slot[] = []
   const seen = new Set<string>()
-  const out: SpotlightItem[] = []
-
-  for (const pin of orderActivePins(input.pins, input.now)) {
-    if (out.length >= limit) break
-    const media = pin.media
-    if (!media || seen.has(media.id) || !isShowable(media)) continue
+  let seq = 0
+  const matureCount = () => band.filter((s) => isMatureAge(s.media.expertAgeRec)).length
+  const fits = (m: SpotlightMedia) =>
+    !seen.has(m.id) &&
+    isShowable(m) &&
+    (!isMatureAge(m.expertAgeRec) || matureCount() < SPOTLIGHT_MAX_MATURE)
+  const add = (media: SpotlightMedia, origin: SpotlightOrigin, order: number) => {
     seen.add(media.id)
-    out.push(toItem(media, pin.source === "admin" ? "admin" : "watch"))
+    band.push({ media, origin, order, seq: seq++ })
   }
-  if (out.length >= limit) return out
 
-  const fresh = (list: SpotlightMedia[]) => {
-    const kept: SpotlightMedia[] = []
-    for (const m of list) {
-      if (seen.has(m.id) || !isShowable(m)) continue
-      // Mark now so the same id in two lists can't take two slots.
-      seen.add(m.id)
-      kept.push(m)
-    }
-    return kept
+  // 1. Admin pins: first, counted in the 16+ cap but never dropped by it.
+  const ordered = orderActivePins(input.pins, now)
+  for (const pin of ordered) {
+    if (band.length >= limit) break
+    const m = pin.media
+    if (pin.source !== "admin" || !m || seen.has(m.id) || !isShowable(m)) continue
+    add(m, "admin", band.length)
   }
-  const topUp = interleaveByType(
-    [fresh(input.fallback.films), fresh(input.fallback.series), fresh(input.fallback.games)],
-    limit - out.length,
-  )
-  return [...out, ...topUp.map((m) => toItem(m, "fallback"))]
+  const adminCount = band.length
+  const watchPins = ordered
+    .filter((p) => p.source !== "admin" && p.media)
+    .map((p) => p.media as SpotlightMedia)
+
+  // 2. Watch pins, capped so the fallback keeps its slots.
+  const watchCap = Math.max(0, Math.min(SPOTLIGHT_WATCH_MAX, limit - SPOTLIGHT_FALLBACK_MIN - adminCount))
+  let watchTaken = 0
+  watchPins.forEach((m, index) => {
+    if (watchTaken >= watchCap || band.length >= limit || !fits(m)) return
+    add(m, "watch", 1000 + index)
+    watchTaken++
+  })
+
+  // 3. Fallback, interleaved film → série → jeu.
+  let picks = 0
+  roundRobin([fallback.films, fallback.series, fallback.games], (m) => {
+    if (band.length >= limit || !fits(m)) return false
+    add(m, "fallback", 2000 + picks++)
+    return true
+  })
+
+  // 4. Watch pins past the cap fill what the fallback could not.
+  watchPins.forEach((m, index) => {
+    if (band.length < limit && fits(m)) add(m, "watch", 1000 + index)
+  })
+
+  // 5. Reserved slots: a recent game, then a film in French cinemas. Already
+  //    there (pin or fallback) → that title is kept; otherwise the best
+  //    candidate (pins first, then the fallback's ranking) takes the place of
+  //    the last title taken that is neither an admin pin nor reserved.
+  const kept = new Set<string>()
+  const reserve = (satisfies: (m: SpotlightMedia) => boolean, fallbackPool: SpotlightMedia[]) => {
+    const present = band.find((s) => satisfies(s.media))
+    if (present) {
+      kept.add(present.media.id)
+      return
+    }
+    const victim =
+      band.length < limit
+        ? null
+        : band
+            .filter((s) => s.origin !== "admin" && !kept.has(s.media.id))
+            .reduce<Slot | null>((last, s) => (last == null || s.seq > last.seq ? s : last), null)
+    if (band.length >= limit && !victim) return
+    const matureAfter = matureCount() - (victim && isMatureAge(victim.media.expertAgeRec) ? 1 : 0)
+    const eligible = (m: SpotlightMedia) =>
+      satisfies(m) &&
+      !seen.has(m.id) &&
+      isShowable(m) &&
+      (!isMatureAge(m.expertAgeRec) || matureAfter < SPOTLIGHT_MAX_MATURE)
+    const pinIndex = watchPins.findIndex(eligible)
+    const fromFallback = pinIndex < 0 ? fallbackPool.find(eligible) : undefined
+    if (pinIndex < 0 && !fromFallback) return
+    if (victim) {
+      band.splice(band.indexOf(victim), 1)
+      seen.delete(victim.media.id)
+    }
+    if (pinIndex >= 0) {
+      add(watchPins[pinIndex], "watch", 1000 + pinIndex)
+      kept.add(watchPins[pinIndex].id)
+    } else if (fromFallback) {
+      // Takes the replaced title's place when that was a fallback one.
+      add(fromFallback, "fallback", victim?.origin === "fallback" ? victim.order : 2999)
+      kept.add(fromFallback.id)
+    }
+  }
+  reserve((m) => isRecentGame(m, now), fallback.games)
+  reserve(isCinemaFilm, fallback.films)
+
+  return [...band].sort((a, b) => a.order - b.order).map((s) => toItem(s.media, s.origin))
 }
 
 // ── Fallback ranking helpers (pure, fed by the loader) ─────────────────────
@@ -181,13 +365,17 @@ export function freshTrendingScore(row: Trending, now: Date): number | null {
 /**
  * Films: catalogue titles in French cinemas (`cinemaOrder`, already in the
  * French-relevance order of the cinema rail). Those trending this week lead,
- * by trending score; the rest follow in cinema order.
+ * by trending score weighted by recency (a film out 10 days ago beats one out
+ * 7 weeks ago with a similar score); the rest follow in cinema order.
  */
-export function rankSpotlightFilms<T extends { id: string } & Trending>(
+export function rankSpotlightFilms<T extends { id: string; releaseDate?: Date | null } & Trending>(
   cinemaOrder: T[],
   now: Date,
 ): T[] {
-  const indexed = cinemaOrder.map((row, index) => ({ row, index, t: freshTrendingScore(row, now) }))
+  const indexed = cinemaOrder.map((row, index) => {
+    const t = freshTrendingScore(row, now)
+    return { row, index, t: t == null ? null : t * launchRecencyFactor(daysSince(row.releaseDate, now)) }
+  })
   return indexed
     .sort((a, b) => {
       if (a.t != null && b.t != null) return b.t - a.t || a.index - b.index
@@ -224,8 +412,8 @@ export function rankSpotlightSeries<
 
 /**
  * Games: released in the last SPOTLIGHT_GAME_FRESH_DAYS (not before today),
- * with a token rating floor; trending this week first, then rating count,
- * then the most recent.
+ * with a token rating floor, ranked by `gameLaunchScore` (rating count +
+ * this week's trending score, weighted by recency), then the most recent.
  */
 export function rankSpotlightGames<
   T extends { releaseDate: Date | null; tmdbVoteCount: number | null } & Trending,
@@ -239,15 +427,16 @@ export function rankSpotlightGames<
         row.releaseDate.getTime() <= now.getTime() &&
         (row.tmdbVoteCount ?? 0) >= SPOTLIGHT_GAME_MIN_VOTES,
     )
-    .map((row, index) => ({ row, index, t: freshTrendingScore(row, now) }))
+    .map((row, index) => ({
+      row,
+      index,
+      score: gameLaunchScore(
+        { votes: row.tmdbVoteCount, trending: freshTrendingScore(row, now), releaseDate: row.releaseDate },
+        now,
+      ),
+    }))
     .sort((a, b) => {
-      if (a.t != null || b.t != null) {
-        if (a.t == null) return 1
-        if (b.t == null) return -1
-        if (a.t !== b.t) return b.t - a.t
-      }
-      const votes = (b.row.tmdbVoteCount ?? 0) - (a.row.tmdbVoteCount ?? 0)
-      if (votes !== 0) return votes
+      if (a.score !== b.score) return b.score - a.score
       const date = (b.row.releaseDate?.getTime() ?? 0) - (a.row.releaseDate?.getTime() ?? 0)
       return date || a.index - b.index
     })
