@@ -19,6 +19,7 @@ function result(health: string, failedImports = 0) {
   return {
     classified: [],
     pins: [],
+    matureSkipped: [],
     report: "rapport",
     subject: "Veille accueil — rien à faire",
     health,
@@ -89,6 +90,16 @@ describe("GET /api/cron/homepage-watch", () => {
     runHomepageWatch.mockResolvedValue(result(health, failed))
     await call()
     expect(logCronRun).toHaveBeenCalledWith(expect.objectContaining({ task: "homepage-watch", status }))
+  })
+
+  it("flags the 16+ launches left unpinned by the band's 16+ cap in cron_logs", async () => {
+    const cod = { key: "GAME:igdb:403310", title: "Call of Duty: Modern Warfare 4", kind: "GAME", status: "age-capped", entry: { expertAgeRec: 18 }, sources: ["igdb-fresh"], placements: [] }
+    const zelda = { key: "GAME:igdb:405460", title: "The Legend of Zelda: Ocarina of Time", kind: "GAME", status: "on-homepage", entry: { expertAgeRec: 12 }, sources: ["igdb-fresh"], placements: [] }
+    runHomepageWatch.mockResolvedValue({ ...result("ok"), classified: [cod, zelda], matureSkipped: [cod] })
+    await call()
+    const titles = logCronRun.mock.calls[0][0].details.titles
+    expect(titles.find((t: { key: string }) => t.key === cod.key)?.matureCapSkipped).toBe(true)
+    expect(titles.find((t: { key: string }) => t.key === zelda.key)).not.toHaveProperty("matureCapSkipped")
   })
 
   it("still logs the run when the email fails", async () => {

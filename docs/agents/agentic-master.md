@@ -24,9 +24,8 @@ how sure it must be, what it costs, and how a human keeps control.
   care banners with results, never instead.
 - Never expose model or vendor names in rendered text.
 
-## Open work (2026-11-21)
-- **Homepage « À ne pas manquer » + `homepage-watch` agent** (Xavier's request, 21 Nov) on
-  `claude/agentic-master-homepage-watch`, committed locally, not pushed, no PR:
+## Open work (2026-11-23)
+- **Homepage « À ne pas manquer » + `homepage-watch` agent** (Xavier's request, 21 Nov):
   - V2 band right after « Pour ce week-end », informational and NOT age-capped (GTA VI
     shows with its 18); pure selection in `src/lib/homepage-spotlight.ts`.
   - Cinema rail ranked by French relevance (`rankCinemaForFrance`), 6 now_playing pages,
@@ -34,8 +33,23 @@ how sure it must be, what it costs, and how a human keeps control.
   - Cron `homepage-watch` every 2 days (05:41 UTC, odd days), fully registered
     (activatedAt 2026-11-21); writes ON in production, kill switch `HOMEPAGE_WATCH_AUTOFIX`.
   - Merged in #121 (21 Nov 2026). `sql/016_homepage_spotlight.sql` applied in production
-    the same day (table empty until the first run). **To do:** one manual `homepage-watch`
-    dispatch with `dry_run`, then read the first scheduled report (23 Nov).
+    the same day. First real run 23 Nov: 8 imports, 8 watch pins (the whole band), which
+    pushed out Zelda: Ocarina of Time and VisionQuest — the Director re-added both as
+    `admin` pins (expire 7 Dec).
+  - **Band rules v2 (approved by Xavier 23 Nov)** on branch
+    `worktree-agent-adbea46e40999d0a1`, committed locally, not pushed: watch pins capped
+    at 6 (fallback keeps 2), reserved slots (a game out ≤ 30 days, a film in French
+    cinemas), launches ranked by notability × recency (`gameLaunchScore`,
+    `launchRecencyFactor`), at most 2 titles rated 16+ (admin pins counted, never
+    removed; the skipped 16+ launches are listed in the report). Zelda root cause: the IGDB
+    « jeux sortis récemment » source ranked by lifetime rating count only (Enshrouded 69 >
+    Zelda 61) and 8 interleaved pins left 2 game slots. **To do:** after merge, read the
+    next run's report (odd day) and check `titles[].matureCapSkipped` in `cron_logs`.
+  - Overwatch seed (Librarian scope, same branch): `releasedFrom: "2022-10-01"`, so the 2016
+    « Overwatch » can never satisfy the seed; the pillar settles a same-title tie with the
+    window. **To do:** read the next Monday `games-top-names` report — expect « Importé :
+    Overwatch… » or « Introuvable » (never « déjà présent »); if the successor lands as plain
+    « Overwatch », check the pillar card shows it.
   - Switch 2 (IGDB platform 508) added to `CONSOLE_PLATFORM_IDS` by the Director in #121 —
     every Switch 2-only game (the Zelda: Ocarina of Time remake) was invisible to search,
     fresh-release import and games-top-names. Confirm on the Monday import that the id

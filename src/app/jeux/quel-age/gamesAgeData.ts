@@ -94,6 +94,8 @@ export async function fetchTopGameRows(): Promise<GameRow[]> {
               expertAgeRec: true,
               officialRating: true,
               dataQualityScore: true,
+              // Settles a same-title tie for a seed with `releasedFrom`.
+              releaseDate: true,
               contentMetrics: {
                 select: {
                   violence: true,

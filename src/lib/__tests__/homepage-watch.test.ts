@@ -3,13 +3,16 @@ import {
   HOMEPAGE_CINEMA_CAP,
   HOMEPAGE_DEFAULT_CAP,
   WATCH_MAX_IMPORTS,
+  WATCH_MAX_PINS,
   buildWatchPins,
   buildWatchReport,
   catalogueKey,
   classifyExpected,
   mergeExpected,
   pickImports,
+  selectWatchPins,
   watchHealth,
+  watchPinPriority,
   type CatalogueEntry,
   type ClassifiedItem,
   type ExpectedItem,
@@ -136,7 +139,7 @@ describe("buildWatchPins", () => {
     expect(pins).toEqual([])
   })
 
-  it("caps each type at three and the band at eight", () => {
+  it("caps each type at three", () => {
     const films = Array.from({ length: 6 }, (_, i) => expected({ key: `MOVIE:tmdb:${i + 50}`, kind: "MOVIE", title: `F${i}`, tmdbId: i + 50 }))
     const cat = new Map(films.map((f, i) => [f.key, entry(`f${i}`, "MOVIE", 10)] as const))
     expect(buildWatchPins(classifyExpected(films, cat, []), now)).toHaveLength(3)
@@ -227,5 +230,90 @@ describe("report: « rien à faire » vs « tout a échoué »", () => {
     expect(r.remaining).toBe(2)
     expect(r.report).toContain("simulation")
     expect(r.report).toContain("proposées")
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The first real run (23 Nov 2026) wrote 8 pins — the whole band — and chose
+// Enshrouded (15 Oct) over the Ocarina of Time remake (5 Nov): the IGDB
+// fresh-releases source ranked by lifetime rating count only (69 vs 61), and
+// with 8 pins interleaved film / série / jeu only two games fit.
+// ---------------------------------------------------------------------------
+
+describe("watch pins: room for recent releases", () => {
+  const nov23 = new Date("2026-11-23T16:00:00.000Z")
+  const game = (id: string, partial: Partial<ExpectedItem>) =>
+    expected({ key: `GAME:igdb:${id}`, kind: "GAME", title: id, sources: ["igdb-fresh"], ...partial })
+
+  it("never writes more than 6 pins: the band's fallback keeps 2 slots", () => {
+    expect(WATCH_MAX_PINS).toBe(6)
+    const items = [
+      ...["m1", "m2", "m3"].map((id, i) => expected({ key: `MOVIE:tmdb:${200 + i}`, kind: "MOVIE", title: id, tmdbId: 200 + i })),
+      ...["t1", "t2", "t3"].map((id, i) => expected({ key: `TV:tmdb:${300 + i}`, kind: "TV", title: id, tmdbId: 300 + i })),
+      ...["g1", "g2", "g3"].map((id) => game(id, {})),
+    ]
+    const cat = new Map(items.map((it) => [it.key, entry(it.title, it.kind, 10)] as const))
+    const pins = buildWatchPins(classifyExpected(items, cat, []), nov23)
+    expect(pins).toHaveLength(6)
+    expect(pins.map((p) => p.kind)).toEqual(["MOVIE", "TV", "GAME", "MOVIE", "TV", "GAME"])
+  })
+
+  it("weighs recency strongly: a game out 18 days beats one out 39 days with a similar signal", () => {
+    const zeldaFresh = game("zelda", { signal: 64, releasedDaysAgo: 18 })
+    const enshrouded = game("enshrouded", { signal: 72, releasedDaysAgo: 39 })
+    expect(watchPinPriority(zeldaFresh)).toBeGreaterThan(watchPinPriority(enshrouded))
+    const gta = game("gta6", { signal: 100, releasedDaysAgo: 4 })
+    const cat = new Map([gta, zeldaFresh, enshrouded].map((g) => [g.key, entry(g.title, "GAME", g.title === "gta6" ? 18 : 12)] as const))
+    // Only games: the interleave lets them take the slots, three at most.
+    const pins = buildWatchPins(classifyExpected([enshrouded, zeldaFresh, gta], cat, []), nov23, { max: 2 })
+    expect(pins.map((p) => p.title)).toEqual(["gta6", "zelda"])
+  })
+
+  it("merges the most recent release date seen by any source", () => {
+    const [merged] = mergeExpected([
+      game("x", { releasedDaysAgo: 40 }),
+      game("x", { releasedDaysAgo: 3, sources: ["igdb-trending"] }),
+    ])
+    expect(merged.releasedDaysAgo).toBe(3)
+  })
+})
+
+describe("watch pins: at most 2 titles rated 16+", () => {
+  const nov23 = new Date("2026-11-23T16:00:00.000Z")
+  const gta = expected({ key: "GAME:igdb:52189", kind: "GAME", title: "gta6", igdbId: 52189, signal: 100, releasedDaysAgo: 4 })
+  const cod = expected({ key: "GAME:igdb:403310", kind: "GAME", title: "cod", igdbId: 403310, signal: 70, releasedDaysAgo: 31 })
+  const mobland = expected({ key: "TV:tmdb:1", kind: "TV", title: "mobland", tmdbId: 1, sources: ["trending-tv"], signal: 90, releasedDaysAgo: 3 })
+  const clayface = expected({ key: "MOVIE:tmdb:2", kind: "MOVIE", title: "clayface", tmdbId: 2, signal: 60, releasedDaysAgo: 33 })
+  const scrooge = expected({ key: "MOVIE:tmdb:3", kind: "MOVIE", title: "scrooge", tmdbId: 3, signal: 80, releasedDaysAgo: 12 })
+  const cat = new Map<string, CatalogueEntry>([
+    [gta.key, entry("gta6", "GAME", 18)],
+    [cod.key, entry("cod", "GAME", 18)],
+    [mobland.key, entry("mobland", "TV", 17)],
+    [clayface.key, entry("clayface", "MOVIE", 16)],
+    [scrooge.key, entry("scrooge", "MOVIE", 8)],
+  ])
+  const classified = classifyExpected([gta, cod, mobland, clayface, scrooge], cat, [])
+
+  it("keeps the two strongest 16+ launches (GTA VI stays) and skips the others for the next candidate", () => {
+    const { pins, matureSkipped } = selectWatchPins(classified, nov23)
+    expect(pins.map((p) => p.title)).toEqual(["scrooge", "mobland", "gta6"])
+    expect(matureSkipped.map((c) => c.title).sort()).toEqual(["clayface", "cod"])
+  })
+
+  it("counts the admin 16+ pins in the cap", () => {
+    const { pins, matureSkipped } = selectWatchPins(classified, nov23, { adminMatureCount: 1 })
+    expect(pins.map((p) => p.title)).toEqual(["scrooge", "gta6"])
+    expect(matureSkipped.map((c) => c.title).sort()).toEqual(["clayface", "cod", "mobland"])
+    expect(selectWatchPins(classified, nov23, { adminMatureCount: 2 }).pins.map((p) => p.title)).toEqual(["scrooge"])
+  })
+
+  it("lists the skipped 16+ launches in the report without counting them as work left", () => {
+    const { pins, matureSkipped } = selectWatchPins(classified, nov23)
+    const o = outcomes({ pins: { desired: pins.length, written: pins.length, failed: false, removed: 0 } })
+    const r = buildWatchReport({ classified, outcomes: o, pins, now: nov23, matureSkipped })
+    expect(r.remaining).toBe(0)
+    expect(r.report).toContain("Non épinglés : plafond de 2 titres 16 ans et plus")
+    expect(r.report).toMatch(/clayface \(film · 16 ans\).*non épinglé : déjà 2 titres 16 ans et plus/)
+    expect(r.report).toMatch(/cod \(jeu · 18 ans\)/)
   })
 })

@@ -32,11 +32,12 @@ import { createGameFromIgdb } from "@/lib/game-import"
 import { extractProviders } from "@/lib/streaming-providers"
 import { isAdultIgdbGame } from "@/lib/adult-content-filter"
 import { computeHomepageSpotlight, HOMEPAGE_SPOTLIGHT_TAG } from "@/lib/homepage-spotlight-data"
+import { gameLaunchScore, isMatureAge } from "@/lib/homepage-spotlight"
 import {
   HOMEPAGE_CINEMA_CAP,
   HOMEPAGE_DEFAULT_CAP,
-  buildWatchPins,
   buildWatchReport,
+  selectWatchPins,
   catalogueKey,
   classifyExpected,
   mergeExpected,
@@ -95,10 +96,21 @@ export interface HomepageWatchResult {
   classified: ClassifiedItem[]
   outcomes: WatchOutcomes
   pins: PinDraft[]
+  /** 16+ launches the band's 16+ cap kept out of the pins (listed in the report). */
+  matureSkipped: ClassifiedItem[]
   report: string
   subject: string
   health: WatchHealth
   remaining: number
+}
+
+/** `daysFrom`, as an optional field (undefined without a date). */
+function releasedDaysAgo(date: string | Date | null | undefined, now: Date): number | undefined {
+  return daysFrom(date, now) ?? undefined
+}
+
+function igdbReleaseDate(g: IGDBGame): Date | null {
+  return g.first_release_date ? new Date(g.first_release_date * 1000) : null
 }
 
 export async function runHomepageWatch(opts: {
@@ -150,6 +162,7 @@ export async function runHomepageWatch(opts: {
         frRelevant: true,
         isNew: m.cinemaReleaseBucket === "recent" || m.cinemaReleaseBucket === "upcoming",
         note: m.releaseDate ? `sortie le ${shortDate(m.releaseDate)}` : undefined,
+        releasedDaysAgo: releasedDaysAgo(m.releaseDate, now),
       })
     })
     return movies.length
@@ -172,6 +185,7 @@ export async function runHomepageWatch(opts: {
         frRelevant: true,
         isNew: true,
         note: `sortie le ${shortDate(m.release_date)}`,
+        releasedDaysAgo: releasedDaysAgo(m.release_date, now),
       })
     })
     return soon.length
@@ -194,6 +208,7 @@ export async function runHomepageWatch(opts: {
         // Settled below for titles outside French cinemas (platforms / providers).
         frRelevant: inCinema || m.original_language === "fr",
         isNew: inCinema || isLaunch(m.release_date, now),
+        releasedDaysAgo: releasedDaysAgo(m.release_date, now),
       })
     })
     return list.length
@@ -215,6 +230,8 @@ export async function runHomepageWatch(opts: {
         frRelevant: s.original_language === "fr",
         isNew: isLaunch(s.first_air_date, now, NEW_SERIES_DAYS),
         note: s.first_air_date && isLaunch(s.first_air_date, now, NEW_SERIES_DAYS) ? `lancée le ${shortDate(s.first_air_date)}` : undefined,
+        // A new season (step 3) replaces this with its latest episode's date.
+        releasedDaysAgo: releasedDaysAgo(s.first_air_date, now),
       })
     })
     return list.length
@@ -222,7 +239,12 @@ export async function runHomepageWatch(opts: {
 
   await source("Jeux sortis récemment", async () => {
     const games = await getFreshReleases(40, { days: NEW_RELEASE_DAYS, minRatingCount: 3 })
-    const sorted = [...games].sort((a, b) => (b.total_rating_count ?? 0) - (a.total_rating_count ?? 0))
+    // Rating count × recency, not rating count alone: lifetime counts favour
+    // a game that sat in early access for two years (Enshrouded, 15 Oct) over
+    // this month's launch (Ocarina of Time, 5 Nov) — see gameLaunchScore.
+    const score = (g: IGDBGame) =>
+      gameLaunchScore({ votes: g.total_rating_count, trending: null, releaseDate: igdbReleaseDate(g) }, now)
+    const sorted = [...games].sort((a, b) => score(b) - score(a) || (b.first_release_date ?? 0) - (a.first_release_date ?? 0))
     sorted.forEach((g, i) => {
       igdbGames.set(g.id, g)
       raw.push({
@@ -235,6 +257,7 @@ export async function runHomepageWatch(opts: {
         frRelevant: !isAdultIgdbGame(g),
         isNew: true,
         note: g.first_release_date ? `sorti le ${shortDate(new Date(g.first_release_date * 1000).toISOString())}` : undefined,
+        releasedDaysAgo: releasedDaysAgo(igdbReleaseDate(g), now),
       })
     })
     return sorted.length
@@ -273,6 +296,7 @@ export async function runHomepageWatch(opts: {
         frRelevant: g ? !isAdultIgdbGame(g) : true,
         isNew: true,
         note: release ? `sorti le ${shortDate(release.toISOString())}` : undefined,
+        releasedDaysAgo: releasedDaysAgo(release, now),
       })
     })
     return kept
@@ -309,6 +333,7 @@ export async function runHomepageWatch(opts: {
         mediaId: r.id,
         frRelevant: true,
         isNew: isLaunch(r.releaseDate, now),
+        releasedDaysAgo: releasedDaysAgo(r.releaseDate, now),
       })
     }
     return rows.length
@@ -390,10 +415,12 @@ export async function runHomepageWatch(opts: {
       const nextIn = next ? -(daysFrom(next, now) ?? 99) : null
       if (lastAge != null && lastAge >= 0 && lastAge <= NEW_SEASON_RECENT_DAYS) {
         item.isNew = true
+        item.releasedDaysAgo = lastAge
         const season = d.last_episode_to_air?.season_number
         item.note = `${season ? `saison ${season}` : "nouveaux épisodes"} — épisode diffusé le ${shortDate(last as string)}`
       } else if (nextIn != null && nextIn >= 0 && nextIn <= NEW_SEASON_SOON_DAYS) {
         item.isNew = true
+        item.releasedDaysAgo = -nextIn
         const season = d.next_episode_to_air?.season_number
         item.note = `${season ? `saison ${season}` : "nouveaux épisodes"} à partir du ${shortDate(next as string)}`
       }
@@ -475,13 +502,19 @@ export async function runHomepageWatch(opts: {
 
   // ── 6. Band pins ───────────────────────────────────────────────────────
   let adminPinned = new Set<string>()
+  let adminMatureCount = 0
   try {
-    const admin = await prisma.homepageSpotlight.findMany({ where: { source: "admin", expiresAt: { gt: now } }, select: { mediaId: true } })
+    const admin = await prisma.homepageSpotlight.findMany({
+      where: { source: "admin", expiresAt: { gt: now } },
+      select: { mediaId: true, startsAt: true, media: { select: { expertAgeRec: true } } },
+    })
     adminPinned = new Set(admin.map((a) => a.mediaId))
+    // Live admin 16+ pins use the band's 16+ slots first (counted, never removed).
+    adminMatureCount = admin.filter((a) => a.startsAt <= now && isMatureAge(a.media?.expertAgeRec)).length
   } catch {
     /* table not created yet (migration 016) — the write below reports it */
   }
-  const pins = buildWatchPins(classified, now, { adminPinnedIds: adminPinned })
+  const { pins, matureSkipped } = selectWatchPins(classified, now, { adminPinnedIds: adminPinned, adminMatureCount })
   outcomes.pins.desired = pins.length
   if (writeNow) {
     try {
@@ -514,6 +547,6 @@ export async function runHomepageWatch(opts: {
     }
   }
 
-  const { report, subject, health, remaining } = buildWatchReport({ classified, outcomes, pins, now })
-  return { classified, outcomes, pins, report, subject, health, remaining }
+  const { report, subject, health, remaining } = buildWatchReport({ classified, outcomes, pins, now, matureSkipped })
+  return { classified, outcomes, pins, matureSkipped, report, subject, health, remaining }
 }
