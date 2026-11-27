@@ -221,7 +221,8 @@ export const EXPECTED_TASKS: ExpectedTask[] = [
     // Vercel-Cron watchdog. No remediation: if this is stale, Vercel
     // Cron itself isn't firing — that needs a human, not a re-poke
     // (re-running the check would just paper over the gap). A "partial"
-    // means one daily canary was missing, which is often transient.
+    // means only weekly / every-2-days / monthly jobs were missed (a missed
+    // daily job logs "error"); the heartbeat re-dispatches them itself.
     task: "heartbeat",
     staleAfterHours: 50,
     allowRepeatedPartial: true,

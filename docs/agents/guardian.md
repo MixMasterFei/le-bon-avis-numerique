@@ -15,7 +15,30 @@
 - No secret in a client component; no debug setting left on in production.
 - Never skip or weaken a check to get CI green.
 
-## Open work (2026-11-07)
+## Open work (2026-11-27)
+- **Heartbeat names every missed job and re-dispatches it** (approved by Xavier after 22–23
+  Nov, when GitHub delayed/dropped scheduled runs 6–9 h and the old canary rule said
+  « success »). Local branch, not pushed. `src/lib/heartbeat-schedule.ts` (jobs pinned to
+  cron.yml by a test) + `src/lib/heartbeat-dispatch.ts` (allow-list, cap 6, 20 h dedup,
+  production only, kill switch `HEARTBEAT_AUTODISPATCH`).
+  - **Waiting on Xavier:** create `GITHUB_DISPATCH_TOKEN` and add it to Vercel Production —
+    steps in [heartbeat-token.md](heartbeat-token.md). Until then the heartbeat only names
+    the missed jobs.
+  - The delay is chronic, not a one-off: from 10 to 23 Nov import logged ~10:00–12:15 UTC
+    (fired 03:07), enrich ~11:25–14:30 (04:11), the supervisor ~14:30–19:30 (07:47). With
+    the token, import / release-status / enrich will be re-dispatched every morning. The
+    late scheduled run is then skipped by cron.yml's `late-guard` job
+    (`GET /api/cron/already-ran`, `src/lib/late-run-guard.ts`; a skip writes nothing to
+    cron_logs), so enrichment is not paid twice. When every missed daily job was relaunched
+    the heartbeat logs `partial` (no email); `error` stays for a failed dispatch, a missing
+    token or a pipeline down — so **until the token is in Vercel, expect an error email
+    every morning.**
+  - Watch after the first week: the Actions tab should show « Late scheduled run guard »
+    then the late jobs as skipped. If the guard ever fails, jobs run anyway (fail open).
+  - The supervisor sees the heartbeat's "error" too and repeats it in its digest; no
+    remediation exists for `heartbeat`, so it is noise, not an action.
+
+## Earlier (2026-11-07)
 - **F01 + F08 (assessment of 7 Nov)** on local branch `guardian/f01-f08`, waiting for the
   Director to integrate:
   - F08: the cron credential only opens `CRON_JOB_ROUTES` (`src/lib/cron-credential.ts`,
