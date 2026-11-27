@@ -1,4 +1,3 @@
-import { guideKeyForTitle } from "@/lib/game-guides"
 import { isChristmasSeason } from "@/lib/seasonal"
 import { WARNINGS_MIN_CONFIDENCE } from "@/lib/sensitive-warnings"
 
@@ -9,15 +8,15 @@ import { WARNINGS_MIN_CONFIDENCE } from "@/lib/sensitive-warnings"
 // (getLiveBlogSlugs, cached 5 min, never throws) and the gift-list membership
 // (isNoelGiftGame), so every rule is pinned by
 // src/lib/__tests__/blog-links.test.ts. A slug that is not live is never
-// returned: the two Christmas articles show up by themselves on their
-// publication day, and a link never points at a 404.
+// returned: a scheduled article shows up by itself on its publication day,
+// and a link never points at a 404.
 
 export type BlogArticleSlug =
   | "bon-age-film-enfant"
   | "films-qui-font-peur-enfant-pret"
   | "soiree-film-en-famille"
   | "jeux-video-noel-selon-age"
-  | "gta-6-sous-le-sapin"
+  | "gta-6-phenomene-comment-en-parler"
 
 export interface BlogArticleRef {
   slug: BlogArticleSlug
@@ -56,12 +55,13 @@ export const BLOG_ARTICLES: Record<BlogArticleSlug, BlogArticleRef> = {
     shelf: "jeux",
     christmas: true,
   },
-  "gta-6-sous-le-sapin": {
-    slug: "gta-6-sous-le-sapin",
-    title: "GTA 6 sous le sapin : ce que les parents doivent savoir",
-    teaser: "Ce que contient le jeu, pourquoi il est classé PEGI 18 et comment répondre à un enfant qui le réclame.",
+  // Not seasonal (Xavier, 27 Nov 2026): it replaced the GTA VI parents' guide,
+  // and children ask about GTA all year round.
+  "gta-6-phenomene-comment-en-parler": {
+    slug: "gta-6-phenomene-comment-en-parler",
+    title: "GTA 6 : pourquoi tous les enfants en parlent, et comment en parler avec le vôtre",
+    teaser: "Pourquoi le jeu fascine, pourquoi il est réservé aux adultes et comment répondre à un enfant qui le réclame.",
     shelf: "jeux",
-    christmas: true,
   },
 }
 
@@ -143,7 +143,7 @@ export function isFamilyFilm(media: FicheBlogCandidate): boolean {
 }
 
 export function isGtaTitle(title: string): boolean {
-  return guideKeyForTitle(title) === "gta" || /grand theft auto/i.test(title)
+  return /grand theft auto|\bgta\b/i.test(title)
 }
 
 /** Articles in preference order for this fiche, before live / duplicate gating. */
@@ -159,10 +159,10 @@ export function blogCandidatesForFiche(
     return ["bon-age-film-enfant"]
   }
   if (media.type === "GAME") {
-    if (!isChristmasSeason(opts.month0)) return []
     const out: BlogArticleSlug[] = []
-    if (isGtaTitle(media.title)) out.push("gta-6-sous-le-sapin")
-    if (opts.isGiftGame) out.push("jeux-video-noel-selon-age")
+    // The GTA article all year; the gift article in November–December only.
+    if (isGtaTitle(media.title)) out.push("gta-6-phenomene-comment-en-parler")
+    if (opts.isGiftGame && isChristmasSeason(opts.month0)) out.push("jeux-video-noel-selon-age")
     return out
   }
   return []
@@ -190,7 +190,8 @@ export function blogLinkForFiche(
 
 /**
  * Live articles for the « Conseils pour les parents » strip: film articles on
- * /films, game articles on /jeux (Christmas ones in season only).
+ * /films, game articles on /jeux (Christmas ones in season only, so the GTA
+ * article stays alone on /jeux the rest of the year).
  */
 export function blogArticlesForShelf(
   shelf: "films" | "jeux",

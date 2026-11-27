@@ -1,7 +1,7 @@
 import Link from "next/link"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck, Gamepad2 } from "lucide-react"
+import { ArrowLeft, ExternalLink, ShieldAlert, CalendarCheck, Gamepad2, MessagesSquare } from "lucide-react"
 import { isAdmin } from "@/lib/auth"
 import { guideVisible, isGuideReleased } from "@/lib/game-guide-flag"
 import { guideFreshness } from "@/lib/game-guide-freshness"
@@ -20,6 +20,8 @@ import { PlatformIcons } from "@/components/media/PlatformIcons"
 export const revalidate = 3600
 
 const baseUrl = "https://totemavise.com"
+
+const PLAY_TOGETHER_DEFAULT_HEADING = "Jouer avec votre enfant"
 
 export async function generateStaticParams() {
   return GAME_GUIDES.map((g) => ({ key: g.key }))
@@ -325,16 +327,22 @@ export default async function GameGuidePage({
 
         {/* The one section that asks the parent to DO something rather than
             worry about something. Given its own warm block so it reads as the
-            payoff of the page, not another advisory. */}
+            payoff of the page, not another advisory. A guide for an adult-rated
+            game sets its own heading (« Poser un cadre ensemble »): « Jouer
+            avec votre enfant » would read as an invitation to play it. */}
         <section className="mb-10">
           <div
             className="rounded-2xl p-5 sm:p-6"
             style={{ background: `${p.accent}0F`, border: `1px solid ${p.accent}33` }}
           >
             <div className="flex items-center gap-2 mb-2">
-              <Gamepad2 className="h-4.5 w-4.5" style={{ color: p.accent }} />
+              {guide.playTogether.heading ? (
+                <MessagesSquare className="h-4.5 w-4.5" style={{ color: p.accent }} />
+              ) : (
+                <Gamepad2 className="h-4.5 w-4.5" style={{ color: p.accent }} />
+              )}
               <h2 className="font-serif text-xl" style={{ color: p.ink }}>
-                Jouer avec votre enfant
+                {guide.playTogether.heading ?? PLAY_TOGETHER_DEFAULT_HEADING}
               </h2>
             </div>
             <p className="leading-relaxed mb-3" style={{ color: p.ink }}>
