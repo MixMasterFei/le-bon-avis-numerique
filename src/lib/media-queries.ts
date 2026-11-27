@@ -3,6 +3,7 @@ import { withPrismaRetry } from "@/lib/prisma-retry"
 import { Prisma } from "@prisma/client"
 import { seededShuffle, getWeekSeed } from "@/lib/seeded-shuffle"
 import { FAMILY_VIP_BRAND_TOPICS, FAMILY_VIP_AGE_CEILING } from "@/lib/family-vip-brands"
+import { NOTABLE_GAMES_WINDOW_DAYS, rankNotableGames } from "@/lib/games-notable"
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -104,10 +105,13 @@ const EUROPEAN_LANGUAGES = [
   "fi", "pl", "cs", "ro", "hu", "el", "tr", "ru",
 ]
 
-// Console platforms for games
-const CONSOLE_PLATFORMS = [
-  "Switch", "PS5", "PS4", "Xbox Series", "Xbox One",
-  "Nintendo Switch", "PlayStation 5", "PlayStation 4",
+// Console platforms for games. « Switch 2 » (igdb.ts normalises « Nintendo
+// Switch 2 » to it) was missing until 27 Nov 2026: every Switch 2-only game —
+// the Zelda: Ocarina of Time remake, Nintendo Switch Sports Resort — was
+// dropped from every console-only list, the homepage games row included.
+export const CONSOLE_PLATFORMS = [
+  "Switch", "Switch 2", "PS5", "PS4", "Xbox Series", "Xbox One",
+  "Nintendo Switch", "Nintendo Switch 2", "PlayStation 5", "PlayStation 4",
 ]
 
 const DEFAULT_GAME_MIN_QUALITY = 60
@@ -557,12 +561,19 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
   const limit = filters.limit ?? 20
   const skip = (page - 1) * limit
   const consoleOnly = filters.consoleOnly !== false
+  // « notable »: the homepage games row (news, not a recommendation) — the
+  // launches of the last ~60 days ranked by notability × recency in
+  // rankNotableGames, which also applies its own rating floor and bypasses.
+  const notable = filters.sortBy === "notable"
+  const now = new Date()
 
   const where: Prisma.MediaItemWhereInput = {
     type: "GAME",
     isEnriched: true,
     expertAgeRec: { not: null },
-    releaseDate: { lte: new Date() },
+    releaseDate: notable
+      ? { gte: new Date(now.getTime() - NOTABLE_GAMES_WINDOW_DAYS * 24 * 60 * 60 * 1000), lte: now }
+      : { lte: now },
   }
 
   if (filters.requirePoster || filters.featured) {
@@ -623,7 +634,7 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
   // homepage "sortis récemment" rail could go a month without its newest card
   // changing. A brand-new title still needs a real signal (GAME_FRESH_MIN_VOTES
   // ratings), which is what separates it from a zero-signal asset flip.
-  if (typeof filters.minVoteCount === "number" && filters.minVoteCount > 0) {
+  if (!notable && typeof filters.minVoteCount === "number" && filters.minVoteCount > 0) {
     if (filters.minVoteCount > GAME_FRESH_MIN_VOTES) {
       const freshSince = new Date(Date.now() - GAME_FRESH_WINDOW_DAYS * 24 * 60 * 60 * 1000)
       appendAnd(where, {
@@ -643,6 +654,27 @@ export async function fetchGames(filters: MediaQueryFilters = {}): Promise<Media
   }
 
   applySearchFilter(where, filters.search, false) // Games: title only
+
+  if (notable) {
+    // The window holds a few hundred games at most: rank them all in memory
+    // (trending + rating count + seed bonus, × recency), then page.
+    const rows = await withPrismaRetry(() =>
+      prisma.mediaItem.findMany({
+        where,
+        orderBy: withStableOrder({ releaseDate: "desc" }),
+        take: 400,
+        include: {
+          contentMetrics: true,
+          reviews: { select: { rating: true } },
+        },
+      })
+    )
+    const ranked = rankNotableGames(rows, now)
+    return {
+      items: ranked.slice(skip, skip + limit).map(item => transformItem(item as PrismaMediaWithRelations)),
+      pagination: { page, limit, total: ranked.length, totalPages: Math.ceil(ranked.length / limit) },
+    }
+  }
 
   // Default sort: popularity (vote count + rating)
   let orderBy: Prisma.MediaItemOrderByWithRelationInput | Prisma.MediaItemOrderByWithRelationInput[] = [

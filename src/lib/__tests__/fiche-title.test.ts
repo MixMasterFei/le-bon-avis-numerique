@@ -3,6 +3,7 @@ import {
   buildCanonicalSeoTitle,
   buildFicheDescription,
   buildFicheTitle,
+  isCanonicalSeoTitle,
   MAX_DESCRIPTION,
   MAX_TITLE,
   seoTitleMatchesAge,
@@ -140,5 +141,25 @@ describe("seoTitleMatchesAge — old and canonical forms", () => {
     expect(seoTitleMatchesAge("The Sheep Detectives — des 8 ans", 8)).toBe(true)
     expect(seoTitleMatchesAge("Bluey — Tous publics", 0)).toBe(true)
     expect(seoTitleMatchesAge("Arcane — quel âge ?", 14)).toBe(true)
+  })
+})
+
+describe("isCanonicalSeoTitle", () => {
+  it("recognises the canonical form for the current age", () => {
+    expect(isCanonicalSeoTitle("Arcane — âge conseillé : dès 14 ans", { title: "Arcane", age: 14 })).toBe(true)
+    expect(isCanonicalSeoTitle("Bluey — âge conseillé : tous publics", { title: "Bluey", age: 0 })).toBe(true)
+  })
+  it("rejects a stale age, another name or an old form", () => {
+    expect(isCanonicalSeoTitle("Arcane — âge conseillé : dès 12 ans", { title: "Arcane", age: 14 })).toBe(false)
+    expect(isCanonicalSeoTitle("Arcane 2 — âge conseillé : dès 14 ans", { title: "Arcane", age: 14 })).toBe(false)
+    expect(isCanonicalSeoTitle("Arcane : à partir de quel âge ? Dès 14 ans", { title: "Arcane", age: 14 })).toBe(false)
+    expect(isCanonicalSeoTitle("Arcane — âge conseillé : dès 14 ans", { title: "Arcane", age: null })).toBe(false)
+  })
+  it("requires the homonym's year, and accepts a year a human chose to add", () => {
+    const scrooge = { title: "Scrooge", age: 8, year: 1970 }
+    expect(isCanonicalSeoTitle("Scrooge (1970) — âge conseillé : dès 8 ans", scrooge)).toBe(true)
+    expect(isCanonicalSeoTitle("Scrooge — âge conseillé : dès 8 ans", scrooge)).toBe(false)
+    expect(isCanonicalSeoTitle("Scrooge (2026) — âge conseillé : dès 8 ans", scrooge)).toBe(false)
+    expect(isCanonicalSeoTitle("Scrooge (1970) — âge conseillé : dès 8 ans", { title: "Scrooge", age: 8 })).toBe(true)
   })
 })
