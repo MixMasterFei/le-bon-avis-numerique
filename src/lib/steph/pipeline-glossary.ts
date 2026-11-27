@@ -333,7 +333,7 @@ export const PIPELINE_TASKS: PipelineTaskInfo[] = [
     label: "Battement de cœur",
     family: "surveillance",
     cadence: "Tous les jours, 8 h",
-    what: "Vérifie, depuis un autre hébergeur, que les tâches quotidiennes ont bien laissé une trace.",
+    what: "Vérifie, depuis un autre hébergeur, que chaque tâche programmée a bien tourné depuis son dernier horaire prévu, nomme celles qui manquent et les relance sur GitHub.",
     why: "Il surveille le superviseur lui-même : si toute la chaîne tombe, c'est lui qui donne l'alerte.",
     staleAfterHours: 50,
     partialIsNormal: true,

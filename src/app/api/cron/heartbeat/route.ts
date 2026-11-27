@@ -2,32 +2,54 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
+import { EXPECTED_TASKS } from "@/lib/cron-supervisor"
+import {
+  HEARTBEAT_GRACE_MINUTES,
+  HEARTBEAT_JOBS,
+  cadenceOf,
+  describeMissed,
+  findMissedTasks,
+  isUrgentCadence,
+} from "@/lib/heartbeat-schedule"
+import {
+  DISPATCH_DEDUP_HOURS,
+  type DispatchPlan,
+  type DispatchResult,
+  describeDispatch,
+  dispatchGate,
+  dispatchWorkflows,
+  planDispatch,
+  recentlyDispatched,
+} from "@/lib/heartbeat-dispatch"
 
 export const maxDuration = 30
+export const dynamic = "force-dynamic"
 
 /**
- * Watchdog for the GitHub Actions cron pipeline.
+ * Watchdog for the GitHub Actions cron pipeline — runs from **Vercel Cron**
+ * (daily 08:00 UTC, the only Vercel cron), so it stays alive when GitHub
+ * Actions doesn't, and the supervisor with it.
  *
- * Every other automated job in this app runs from GitHub Actions — and
- * so does the daily supervisor that's supposed to catch failures. If
- * GitHub Actions itself stops dispatching runners (it has happened:
- * "job was not acquired by Runner of type hosted"), the supervisor
- * goes silent right alongside everything it watches, and nobody hears
- * about it.
+ * 1. For every job of `HEARTBEAT_JOBS` (src/lib/heartbeat-schedule.ts, pinned
+ *    to cron.yml by a test) it finds the most recent scheduled fire that
+ *    should have logged by now and checks cron_logs for a row since then.
+ *    Every missed job is named in the summary (« Pas encore passés
+ *    aujourd'hui : import (prévu 03:07), enrich (04:11) »); a missed daily
+ *    job logs status "error", which fires the failure email. Only weekly /
+ *    every-2-days / monthly ones missed → "partial" (the supervisor's digest).
+ * 2. It re-dispatches the missed allow-listed jobs through GitHub's
+ *    workflow_dispatch (src/lib/heartbeat-dispatch.ts — allow-list, cap 6,
+ *    20 h dedup, kill switch HEARTBEAT_AUTODISPATCH, GITHUB_DISPATCH_TOKEN).
  *
- * This route runs from **Vercel Cron** instead — separate infra — so it
- * stays alive when GH Actions doesn't. It checks whether the
- * daily-cadence "canary" jobs have logged a run recently; if NONE of
- * them have, the whole GH Actions pipeline is down and `logCronRun`
- * fires the failure email (the only channel left).
+ * Note: the enrich and release-status rows can also come from the
+ * supervisor's remediations or an admin click; such a row counts as « ran ».
  */
 
-// Jobs that GitHub Actions runs at least once a day. Seeing a recent
-// cron_log row from any of these means the GH Actions pipeline is alive.
-const DAILY_CANARY_TASKS = ["cron-supervisor", "enrich", "import", "news-discover"]
-// GH Actions free runners can queue for hours; 30h leaves slack for a
-// late run before we call the pipeline dead.
-const STALE_HOURS = 30
+// When none of the daily jobs logged in this window, GitHub Actions itself is
+// down (« job was not acquired by Runner »): the original alarm, kept as is.
+const PIPELINE_DOWN_HOURS = 30
+// Covers the monthly job's last fire (≤ 31 days) plus slack.
+const LOOKBACK_DAYS = 33
 
 export async function GET(req: NextRequest) {
   // Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}` automatically
@@ -38,35 +60,94 @@ export async function GET(req: NextRequest) {
   }
 
   const startTime = Date.now()
+  const now = new Date(startTime)
   try {
-    const since = new Date(Date.now() - STALE_HOURS * 3_600_000)
-    const recent = await prisma.cronLog.findMany({
-      where: { task: { in: DAILY_CANARY_TASKS }, createdAt: { gte: since } },
-      select: { task: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    })
-    const seen = new Set(recent.map((r) => r.task))
-    const missing = DAILY_CANARY_TASKS.filter((t) => !seen.has(t))
-    const pipelineDown = seen.size === 0
+    const tasks = [...new Set(HEARTBEAT_JOBS.map((j) => j.task))]
+    const [lastRuns, previousHeartbeats] = await Promise.all([
+      prisma.cronLog.groupBy({
+        by: ["task"],
+        where: { task: { in: tasks }, createdAt: { gte: new Date(startTime - LOOKBACK_DAYS * 86_400_000) } },
+        _max: { createdAt: true },
+      }),
+      prisma.cronLog.findMany({
+        where: { task: "heartbeat", createdAt: { gte: new Date(startTime - DISPATCH_DEDUP_HOURS * 3_600_000) } },
+        select: { createdAt: true, details: true },
+      }),
+    ])
 
-    // status === "error" → logCronRun sends sendCronFailureAlert. (Note:
-    // if CRON_ALERT_MODE=digest the immediate mail is suppressed in
-    // favour of the supervisor digest — but the whole point of this
-    // route is the case where the supervisor isn't running, so digest
-    // mode should not be enabled in production.)
+    const lastRunByTask = new Map<string, Date>()
+    for (const row of lastRuns) if (row._max.createdAt) lastRunByTask.set(row.task, row._max.createdAt)
+    const activatedAtByTask = new Map<string, string>()
+    for (const t of EXPECTED_TASKS) if (t.activatedAt) activatedAtByTask.set(t.task, t.activatedAt)
+
+    const missed = findMissedTasks({ now, lastRunByTask, activatedAtByTask })
+    const urgent = missed.filter((m) => m.urgent)
+
+    const dailyTasks = HEARTBEAT_JOBS.filter((j) => isUrgentCadence(cadenceOf(j.cron))).map((j) => j.task)
+    const downSince = startTime - PIPELINE_DOWN_HOURS * 3_600_000
+    const seenDaily = dailyTasks.filter((t) => (lastRunByTask.get(t)?.getTime() ?? 0) >= downSince)
+    const pipelineDown = seenDaily.length === 0
+
+    // ── Re-dispatch ──
+    const gate = dispatchGate({
+      autodispatch: process.env.HEARTBEAT_AUTODISPATCH,
+      token: process.env.GITHUB_DISPATCH_TOKEN,
+      vercelEnv: process.env.VERCEL_ENV,
+    })
+    let plan: DispatchPlan = { toDispatch: [], skipped: [] }
+    let dispatched: DispatchResult[] = []
+    if (missed.length > 0) {
+      plan = planDispatch({ missed, now, alreadyDispatched: recentlyDispatched(previousHeartbeats, now) })
+      if (gate.enabled && plan.toDispatch.length > 0) {
+        dispatched = await dispatchWorkflows(plan.toDispatch, { token: process.env.GITHUB_DISPATCH_TOKEN!.trim() })
+      }
+    }
+    const dispatchText = describeDispatch({
+      gateReason: gate.enabled ? undefined : gate.reason,
+      results: dispatched,
+      skipped: plan.skipped,
+    })
+
+    const head = pipelineDown
+      ? `Pipeline GitHub Actions HORS SERVICE — aucun job quotidien (${dailyTasks.join(", ")}) depuis ${PIPELINE_DOWN_HOURS}h. Vérifier https://github.com/MixMasterFei/le-bon-avis-numerique/actions`
+      : missed.length > 0
+        ? describeMissed(missed, now)
+        : `OK — les ${HEARTBEAT_JOBS.length} tâches GitHub attendues sont passées depuis leur dernier horaire prévu`
+    const status = pipelineDown || urgent.length > 0 ? "error" : missed.length > 0 ? "partial" : "success"
+
+    // status === "error" → logCronRun sends sendCronFailureAlert. (If
+    // CRON_ALERT_MODE=digest the immediate mail is suppressed in favour of the
+    // supervisor digest — but this route exists for when the supervisor isn't
+    // running, so digest mode should not be enabled in production.)
     await logCronRun({
       task: "heartbeat",
-      status: pipelineDown ? "error" : missing.length > 0 ? "partial" : "success",
-      summary: pipelineDown
-        ? `Pipeline GitHub Actions HORS SERVICE — aucun job canary (${DAILY_CANARY_TASKS.join(", ")}) depuis ${STALE_HOURS}h. Vérifier https://github.com/MixMasterFei/le-bon-avis-numerique/actions`
-        : missing.length > 0
-          ? `${seen.size}/${DAILY_CANARY_TASKS.length} canaries vus ${STALE_HOURS}h (manquants: ${missing.join(", ")})`
-          : `OK — ${DAILY_CANARY_TASKS.length}/${DAILY_CANARY_TASKS.length} canaries vus`,
-      details: { seen: [...seen], missing, staleHours: STALE_HOURS },
+      status,
+      summary: dispatchText ? `${head} · ${dispatchText}` : head,
+      details: {
+        missing: missed.map((m) => m.task),
+        missed: missed.map((m) => ({
+          task: m.task,
+          dispatchTask: m.dispatchTask,
+          cadence: m.cadence,
+          scheduledAt: m.scheduledAt.toISOString(),
+        })),
+        pipelineDown,
+        seenDaily,
+        dispatched,
+        dispatchFailures: dispatched.filter((d) => !d.ok),
+        dispatchSkipped: plan.skipped,
+        autodispatch: gate.enabled ? "on" : gate.reason,
+        graceMinutes: HEARTBEAT_GRACE_MINUTES,
+      },
       startTime,
     })
 
-    return NextResponse.json({ ok: !pipelineDown, seen: [...seen], missing })
+    return NextResponse.json({
+      ok: status !== "error",
+      status,
+      missing: missed.map((m) => m.task),
+      dispatched,
+    })
   } catch (error) {
     const msg = error instanceof Error ? error.message : "heartbeat failed"
     console.error("[cron-heartbeat] failed:", error)
