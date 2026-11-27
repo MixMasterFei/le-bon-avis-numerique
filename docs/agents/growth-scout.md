@@ -19,6 +19,19 @@ AI answer engines, social, newsletter.
   19 Nov 2026 run on. Rank and follow pages from there; compare a changed page across runs
   3–4 weeks apart, never one.
 
+## Open work (2026-11-27) — fiches : versions, description, FAQ, URL encodées
+Local branch (worktree), not pushed. Approved by Xavier on 27 Nov 2026.
+- « Autres versions et suites » on fiches (classic + V3, games included) from EXPERT
+  `editorial_cluster` edges; the regular similar rail no longer repeats them.
+- Meta description led by the analysis' reasons; FAQ answer and « Pourquoi cet âge ? »
+  give the same reasons (`src/lib/fiche-reasons.ts`) — Beetlejuice no longer says
+  « Aucun signal sensible majeur » next to its creatures.
+- `/media/<type>%3A<id>` → 308 to the literal colon (middleware).
+- Data gap for the Librarian: the Call of Duty Modern Warfare cluster is not fully
+  linked (CoD 4 2007 only links MW 2019), so each fiche shows only its direct links.
+- To read in 3–4 weeks of `topQueries`: CTR on the fiches whose description changed
+  (Beetlejuice, Gremlins, Warzone among them); the encoded URLs leaving GSC's duplicates.
+
 ## Open work (2026-11-22) — Noël, maillage et prises de contact
 Branch `claude/growth-noel-maillage` (local, not pushed).
 - **Internal links, Nov–Dec only (`isChristmasSeason`)**: fiche card « Noël en famille :
