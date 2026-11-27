@@ -117,6 +117,27 @@ export function buildCanonicalSeoTitle({ title, age, year }: CanonicalSeoTitleIn
   return out.length <= MAX_TITLE ? out : null
 }
 
+/**
+ * Is a stored `seoTitle` already in the canonical form for THIS fiche — its
+ * exact name, the current age wording, and, when a year is required
+ * (homonym), that year? Lets the SEO agent leave a human-set canonical title
+ * alone. A year is accepted when none is required (a human may have chosen to
+ * name it); a stale age never is.
+ */
+export function isCanonicalSeoTitle(stored: string, ctx: CanonicalSeoTitleInput): boolean {
+  const label = ageSentenceLabel(ctx.age)
+  if (!label) return false
+  const name = ctx.title.trim()
+  const tail = ` — âge conseillé : ${label.charAt(0).toLowerCase()}${label.slice(1)}`
+  const value = stored.trim()
+  if (!name || !value.startsWith(name) || !value.endsWith(tail)) return false
+  const middle = value.slice(name.length, value.length - tail.length)
+  if (middle === "") return !ctx.year
+  const year = middle.match(/^ \((\d{4})\)$/)
+  if (!year) return false
+  return ctx.year ? Number(year[1]) === ctx.year : true
+}
+
 interface FicheAgeInput {
   age?: number | null
   /** Pre-release / provisional: the age is an estimate (shouldHideContentAnalysis). */
