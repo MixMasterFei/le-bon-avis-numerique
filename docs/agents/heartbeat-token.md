@@ -75,4 +75,14 @@ plus rien. Supprimer la variable (ou la passer à `true`) pour la rétablir.
   seo-striking-distance / debt-digest uniquement le jour où elles sont prévues.
 - Jamais le banc d'essai Totem (`totem-eval`, payant) ni `game-facts`.
 
+Quand le run programmé de GitHub finit par arriver en retard après une relance, il ne
+refait pas le travail : la première étape du workflow (« Late scheduled run guard »)
+constate que la tâche a déjà tourné depuis son horaire et la saute. Ce saut n'écrit rien
+dans le journal des tâches.
+
+Quand toutes les tâches quotidiennes manquées ont été relancées avec succès, le
+battement de cœur n'envoie plus d'e-mail d'alerte (statut « partial », « Relancés sur
+GitHub : … »). L'e-mail part toujours si une relance échoue, si le jeton manque ou si
+GitHub Actions ne tourne plus du tout.
+
 Détail technique : `src/lib/heartbeat-dispatch.ts`.

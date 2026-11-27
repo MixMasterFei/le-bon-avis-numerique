@@ -143,15 +143,50 @@ env:
   CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
+  # ── Late scheduled run guard (Nov 2026) ──────────────────────────
+  # GitHub has been starting scheduled runs 7–12 h late; the Vercel heartbeat
+  # (08:00 UTC) re-dispatches the missed jobs, and the late scheduled run would
+  # then redo the same work. On SCHEDULE events only, this job asks the site
+  # which jobs of this slot already logged a success/partial run since the
+  # slot (GET /api/cron/already-ran, read-only, src/lib/late-run-guard.ts);
+  # each allow-listed job below drops its schedule branch when listed.
+  # Manual dispatches never consult it. Fails open: no answer = skip nothing.
+  # A skipped job writes nothing to cron_logs.
+  late-guard:
+    name: Late scheduled run guard
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 3
+    if: github.event_name == 'schedule'
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+    steps:
+      - name: Ask which jobs of this slot already ran
+        id: check
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          set +e
+          resp=$(curl -sSL --max-time 30 -G \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            --data-urlencode "schedule=$SCHEDULE" \
+            "$SITE_URL/api/cron/already-ran")
+          echo "$resp" | jq -c '{schedule, skip, checks}' 2>/dev/null || echo "$resp"
+          skip=$(echo "$resp" | jq -c 'if (.skip | type) == "array" then .skip else [] end' 2>/dev/null)
+          if [ -z "$skip" ]; then skip='[]'; fi
+          echo "Jobs skipped for slot '$SCHEDULE': $skip"
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
   # ── Daily: Import new content (was Monday-only) ──────────────────
   monday:
     name: Daily Import
     runs-on: ubuntu-latest
     environment: Production
+    needs: late-guard
     if: >-
-      github.event.schedule == '7 3 * * *' ||
+      ((github.event.schedule == '7 3 * * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'import')) ||
       github.event.inputs.task == 'import' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Import movies & TV shows
         run: |
@@ -259,10 +294,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 5
+    needs: late-guard
     if: >-
-      github.event.schedule == '7 3 * * *' ||
+      ((github.event.schedule == '7 3 * * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'release-status')) ||
       github.event.inputs.task == 'release-status' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Re-read TMDB status of titles whose release date has passed
         run: |
@@ -307,10 +343,11 @@ jobs:
     name: Games — grab the biggest names
     runs-on: ubuntu-latest
     environment: Production
+    needs: late-guard
     if: >-
-      github.event.schedule == '53 6 * * 1' ||
+      ((github.event.schedule == '53 6 * * 1' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'games-top-names')) ||
       github.event.inputs.task == 'games-top-names' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       # Idempotent, seed-list driven (src/app/jeux/quel-age/topGames.data.ts).
       # Searches IGDB for each big-name title and imports the ones missing from
@@ -366,13 +403,14 @@ jobs:
     name: Daily Enrichment & Quality
     runs-on: ubuntu-latest
     environment: Production
+    needs: late-guard
     if: >-
-      github.event.schedule == '11 4 * * *' ||
+      ((github.event.schedule == '11 4 * * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'enrich')) ||
       github.event.inputs.task == 'enrich' ||
       github.event.inputs.task == 'enrich-deep' ||
       github.event.inputs.task == 'recalibrate-ratings' ||
       github.event.inputs.task == 'quality' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Enrich movies (2 batches of 5)
         if: >-
@@ -824,12 +862,13 @@ jobs:
     # job startup + checkout. Without this, a stuck runner could sit
     # in the queue for 6 hours (GitHub's default) and we'd never know.
     timeout-minutes: 10
+    needs: late-guard
     if: >-
-      github.event.schedule == '17 0,6,12,18 * * *' ||
+      ((github.event.schedule == '17 0,6,12,18 * * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'news-discover')) ||
       github.event.inputs.task == 'news-discover' ||
       github.event.inputs.task == 'news-prewarm-images-v4' ||
       github.event.inputs.task == 'news-press-kit-scout' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Run news discovery
         if: >-
@@ -925,10 +964,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 5
+    needs: late-guard
     if: >-
-      github.event.schedule == '37 6 * * 1' ||
+      ((github.event.schedule == '37 6 * * 1' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'family-content-agent')) ||
       github.event.inputs.task == 'family-content-agent' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Send weekly family content priorities
         run: |
@@ -951,10 +991,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 6
+    needs: late-guard
     if: >-
-      github.event.schedule == '47 7 * * *' ||
+      ((github.event.schedule == '47 7 * * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'supervisor')) ||
       github.event.inputs.task == 'supervisor' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Check cron health and remediate safe failures
         run: |
@@ -1062,10 +1103,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 5
+    needs: late-guard
     if: >-
-      github.event.schedule == '13 6 * * 3' ||
+      ((github.event.schedule == '13 6 * * 3' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'debt-digest')) ||
       github.event.inputs.task == 'debt-digest' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Compile and email the debt digest
         run: |
@@ -1087,10 +1129,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 5
+    needs: late-guard
     if: >-
-      github.event.schedule == '23 6 * * 4' ||
+      ((github.event.schedule == '23 6 * * 4' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'seo-striking-distance')) ||
       github.event.inputs.task == 'seo-striking-distance' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Pull GSC striking-distance queries and email the report
         run: |
@@ -1146,10 +1189,11 @@ jobs:
     runs-on: ubuntu-latest
     environment: Production
     timeout-minutes: 5
+    needs: late-guard
     if: >-
-      github.event.schedule == '41 5 */2 * *' ||
+      ((github.event.schedule == '41 5 */2 * *' && !contains(fromJSON(needs.late-guard.outputs.skip || '[]'), 'homepage-watch')) ||
       github.event.inputs.task == 'homepage-watch' ||
-      github.event.inputs.task == 'all'
+      github.event.inputs.task == 'all') && !cancelled()
     steps:
       - name: Compare the homepage with the week's releases and buzz
         run: |

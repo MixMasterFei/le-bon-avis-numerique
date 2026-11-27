@@ -34,12 +34,16 @@ export const dynamic = "force-dynamic"
  *    to cron.yml by a test) it finds the most recent scheduled fire that
  *    should have logged by now and checks cron_logs for a row since then.
  *    Every missed job is named in the summary (« Pas encore passés
- *    aujourd'hui : import (prévu 03:07), enrich (04:11) »); a missed daily
- *    job logs status "error", which fires the failure email. Only weekly /
- *    every-2-days / monthly ones missed → "partial" (the supervisor's digest).
+ *    aujourd'hui : import (prévu 03:07), enrich (04:11) »).
  * 2. It re-dispatches the missed allow-listed jobs through GitHub's
  *    workflow_dispatch (src/lib/heartbeat-dispatch.ts — allow-list, cap 6,
  *    20 h dedup, kill switch HEARTBEAT_AUTODISPATCH, GITHUB_DISPATCH_TOKEN).
+ *    The late scheduled run that may still arrive is skipped by cron.yml's
+ *    `late-guard` job (src/lib/late-run-guard.ts).
+ * 3. Status: "error" (failure email) when the pipeline is down, a dispatch
+ *    failed, or a missed DAILY job was not re-dispatched now; "partial" when
+ *    every missed daily job was re-dispatched (« relancés »), or only weekly /
+ *    every-2-days / monthly ones were missed; "success" otherwise.
  *
  * Note: the enrich and release-status rows can also come from the
  * supervisor's remediations or an admin click; such a row counts as « ran ».
@@ -113,7 +117,16 @@ export async function GET(req: NextRequest) {
       : missed.length > 0
         ? describeMissed(missed, now)
         : `OK — les ${HEARTBEAT_JOBS.length} tâches GitHub attendues sont passées depuis leur dernier horaire prévu`
-    const status = pipelineDown || urgent.length > 0 ? "error" : missed.length > 0 ? "partial" : "success"
+    // A missed daily job is only an emergency if it wasn't handled: when this
+    // run re-dispatched it successfully, « relancés » is a partial, not a
+    // morning failure email. Still "error": pipeline down, any failed
+    // dispatch, or a daily job left un-dispatched (no token, kill switch,
+    // cap, or already re-dispatched < 20 h ago and STILL missing).
+    const relaunched = new Set(dispatched.filter((d) => d.ok).map((d) => d.task))
+    const dispatchFailed = dispatched.some((d) => !d.ok)
+    const urgentUnhandled = urgent.filter((m) => !relaunched.has(m.dispatchTask))
+    const status =
+      pipelineDown || dispatchFailed || urgentUnhandled.length > 0 ? "error" : missed.length > 0 ? "partial" : "success"
 
     // status === "error" → logCronRun sends sendCronFailureAlert. (If
     // CRON_ALERT_MODE=digest the immediate mail is suppressed in favour of the

@@ -30,8 +30,9 @@ export const DISPATCH_TIMEOUT_MS = 8_000
 
 /**
  * Dispatch tasks (cron.yml `workflow_dispatch` options) the heartbeat may
- * trigger. The real scheduled run can still arrive hours later, so each one
- * must be idempotent or harmless when it runs twice:
+ * trigger. The real scheduled run can still arrive hours later; cron.yml's
+ * `late-guard` job skips it (src/lib/late-run-guard.ts), but the guard fails
+ * open, so each one must still be idempotent or harmless when it runs twice:
  */
 export const DISPATCH_ALLOW_LIST: Record<string, "any-day" | "same-day"> = {
   // Imports only what is missing — dedup on (tmdb_id, type) / igdb id; release

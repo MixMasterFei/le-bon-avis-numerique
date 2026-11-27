@@ -24,13 +24,17 @@
   - **Waiting on Xavier:** create `GITHUB_DISPATCH_TOKEN` and add it to Vercel Production —
     steps in [heartbeat-token.md](heartbeat-token.md). Until then the heartbeat only names
     the missed jobs.
-  - **Expect a daily error email at first.** cron_logs show the delay is chronic, not a
-    one-off: from 10 to 23 Nov import logged ~10:00–12:15 UTC (fired 03:07), enrich
-    ~11:25–14:30 (04:11), the supervisor ~14:30–19:30 (07:47). With the token, import /
-    release-status / enrich will be re-dispatched every morning and the late scheduled run
-    will still arrive: allow-listed jobs are double-run-safe (notes in the file), but it
-    doubles the daily enrich spend. If the queueing doesn't improve, the next step is
-    to stop scheduling those jobs on GitHub and have the heartbeat dispatch them on purpose.
+  - The delay is chronic, not a one-off: from 10 to 23 Nov import logged ~10:00–12:15 UTC
+    (fired 03:07), enrich ~11:25–14:30 (04:11), the supervisor ~14:30–19:30 (07:47). With
+    the token, import / release-status / enrich will be re-dispatched every morning. The
+    late scheduled run is then skipped by cron.yml's `late-guard` job
+    (`GET /api/cron/already-ran`, `src/lib/late-run-guard.ts`; a skip writes nothing to
+    cron_logs), so enrichment is not paid twice. When every missed daily job was relaunched
+    the heartbeat logs `partial` (no email); `error` stays for a failed dispatch, a missing
+    token or a pipeline down — so **until the token is in Vercel, expect an error email
+    every morning.**
+  - Watch after the first week: the Actions tab should show « Late scheduled run guard »
+    then the late jobs as skipped. If the guard ever fails, jobs run anyway (fail open).
   - The supervisor sees the heartbeat's "error" too and repeats it in its digest; no
     remediation exists for `heartbeat`, so it is noise, not an action.
 
