@@ -77,6 +77,7 @@ export function MediaDashboard({
   breadcrumb,
   guideKey,
   ageGuideHref,
+  versionsBlock,
   seasonalLink,
 }: {
   media: DashboardMedia
@@ -90,6 +91,8 @@ export function MediaDashboard({
   guideKey?: string | null
   /** « Comment lire cet âge ? » article (film fiches, once it is published). Resolved server-side. */
   ageGuideHref?: string | null
+  /** « Autres versions et suites » (editorial clusters), rendered just above the similar titles. */
+  versionsBlock?: React.ReactNode
   /** In-season link card (e.g. « Noël en famille »), rendered under the similar titles — below the fold. */
   seasonalLink?: React.ReactNode
 }) {
@@ -479,6 +482,9 @@ export function MediaDashboard({
 
         {/* ===== Vous l'avez vu ? — reactions + written avis (collapsible) ===== */}
         <DashboardFamilyFeedback mediaId={dbId} mediaTitle={media.title} mediaType={media.type} reviews={media.reviews} />
+
+        {/* ===== Autres versions et suites — every entry with its own age ===== */}
+        {versionsBlock}
 
         {/* ===== similar titles — compact single row ===== */}
         <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
