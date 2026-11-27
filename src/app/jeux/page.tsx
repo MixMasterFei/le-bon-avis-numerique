@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import dynamicImport from "next/dynamic"
 import { permanentRedirect, notFound } from "next/navigation"
@@ -10,6 +11,7 @@ import { getMemberAge } from "@/lib/age-utils"
 import { ApercuFilmsList } from "@/components/home-v2/ApercuFilmsList"
 import { runSmartFilter } from "@/lib/smart-filter"
 import { NoelSeasonBanner } from "@/components/noel/NoelSeasonBanner"
+import { ParentTipsStrip } from "@/components/blog/ParentTipsStrip"
 
 // Admin-only V2 catalogue, code-split so its chunk + fonts stay out of the
 // public bundle. Classic /jeux is unchanged for anon/non-admin.
@@ -408,6 +410,10 @@ export default async function JeuxPage({ searchParams }: GamesPageProps) {
           <ApercuFilmsList {...listProps} />
         )
       })()}
+      {/* Conseils pour les parents — live game articles (Noël season), below the list. */}
+      <Suspense fallback={null}>
+        <ParentTipsStrip shelf="jeux" />
+      </Suspense>
     </>
   )
 }

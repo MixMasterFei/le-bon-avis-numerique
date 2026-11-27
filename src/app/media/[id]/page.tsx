@@ -40,6 +40,7 @@ import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
 import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { HomonymNotice } from "@/components/media/HomonymNotice"
 import { NoelFicheLink } from "@/components/noel/NoelFicheLink"
+import { FicheBlogLink } from "@/components/blog/FicheBlogLink"
 import { findHomonyms } from "@/lib/homonyms"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
@@ -624,6 +625,25 @@ export default async function MediaPage({ params }: MediaPageProps) {
               }
               guideKey={guideKey}
               ageGuideHref={ageGuideHref}
+              blogLink={
+                <Suspense fallback={null}>
+                  <FicheBlogLink
+                    mediaId={dash.id}
+                    media={{
+                      type: dash.type,
+                      title: dash.title,
+                      genres: dash.genres,
+                      expertAgeRec: dash.expertAgeRec,
+                      sensitiveWarnings: hideContentAnalysis ? [] : dash.metrics?.sensitiveWarnings,
+                      enrichmentConfidence: dash.metrics?.enrichmentConfidence,
+                      toneTags: hideContentAnalysis ? [] : dash.metrics?.toneTags,
+                    }}
+                    ageGuideHref={ageGuideHref}
+                    variant="v3"
+                    className="mb-[13px] block"
+                  />
+                </Suspense>
+              }
               seasonalLink={
                 <Suspense fallback={null}>
                   <NoelFicheLink
@@ -923,6 +943,26 @@ export default async function MediaPage({ params }: MediaPageProps) {
                 </Card>
               )}
             </>
+          )}
+
+          {/* À lire aussi — one blog article chosen for this fiche (@/lib/blog-links),
+              under the age / analysis block, streamed: off the LCP path. */}
+          {dbId && (
+            <Suspense fallback={null}>
+              <FicheBlogLink
+                mediaId={dbId}
+                media={{
+                  type: media.type,
+                  title: media.title,
+                  genres: media.genres,
+                  expertAgeRec: media.expertAgeRec,
+                  sensitiveWarnings: hideContentAnalysis ? [] : media.contentMetrics.sensitiveWarnings,
+                  enrichmentConfidence: media.contentMetrics.enrichmentConfidence,
+                  toneTags: hideContentAnalysis ? [] : media.toneTags,
+                }}
+                ageGuideHref={ageGuideHref}
+              />
+            </Suspense>
           )}
 
           {/* ===== Contribution zone — réactions famille + avis ===== */}

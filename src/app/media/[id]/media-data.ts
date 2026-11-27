@@ -206,6 +206,8 @@ async function readMedia(
       platforms: dbMedia.platforms || [],
       topics: dbMedia.topics || [],
       numberOfSeasons: (dbMedia as unknown as { numberOfSeasons?: number | null }).numberOfSeasons ?? null,
+      // Read by the « À lire aussi » blog link (fear tone, @/lib/blog-links).
+      toneTags: dbMedia.contentMetrics?.toneTags ?? [],
       contentMetrics: dbMedia.contentMetrics
         ? {
             violence: dbMedia.contentMetrics.violence,
