@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest"
 import {
   HOMEPAGE_CINEMA_CAP,
   HOMEPAGE_DEFAULT_CAP,
+  HOMEPAGE_GAMES_CAP,
   WATCH_MAX_IMPORTS,
+  freshGameItems,
+  newSeasonTiming,
+  trendingGameItems,
+  watchTitleLog,
   WATCH_MAX_PINS,
   buildWatchPins,
   buildWatchReport,
@@ -65,9 +70,17 @@ describe("classifyExpected", () => {
   })
 
   it("tells « excluded by the default age cap » apart from « missing »", () => {
-    expect(status("Grand Theft Auto VI")?.status).toBe("age-capped")
-    expect(status("Grand Theft Auto VI")?.cap).toBe(HOMEPAGE_DEFAULT_CAP)
+    const series = expected({ key: "TV:tmdb:77", kind: "TV", title: "MobLand", tmdbId: 77, sources: ["trending-tv"] })
+    const c = classifyExpected([series, zelda], new Map([[series.key, entry("mobland", "TV", 17)]]), homepage)
+    expect(c[0].status).toBe("age-capped")
+    expect(c[0].cap).toBe(HOMEPAGE_DEFAULT_CAP)
     expect(status("The Legend of Zelda: Ocarina of Time")?.status).toBe("missing")
+  })
+
+  it("never calls a game « age-capped »: the games row has no age cap since 27 Nov 2026", () => {
+    expect(HOMEPAGE_GAMES_CAP).toBeNull()
+    expect(status("Grand Theft Auto VI")?.status).toBe("absent")
+    expect(status("Grand Theft Auto VI")?.cap).toBeUndefined()
   })
 
   it("uses the older cinema cap (14) for a film in French cinemas", () => {
@@ -315,5 +328,199 @@ describe("watch pins: at most 2 titles rated 16+", () => {
     expect(r.report).toContain("Non épinglés : plafond de 2 titres 16 ans et plus")
     expect(r.report).toMatch(/clayface \(film · 16 ans\).*non épinglé : déjà 2 titres 16 ans et plus/)
     expect(r.report).toMatch(/cod \(jeu · 18 ans\)/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The 27 Nov 2026 run (cron_logs e8288993): GTA VI (18, out 19 Nov, IGDB fresh
+// + trending) was skipped « plafond 16+ » although the only 16+ title pinned
+// was MobLand and no admin pin was 16+. The two 16+ slots were reserved for
+// the two strongest 16+ candidates — MobLand and South Park — before the
+// interleave ran; South Park, the third series, was never reached (two series
+// slots out of six), so its slot was wasted and GTA VI lost to it.
+// ---------------------------------------------------------------------------
+
+describe("watch pins: the 27 Nov 2026 run", () => {
+  const nov27 = new Date("2026-11-27T15:34:00.000Z")
+  const item = (
+    key: string,
+    kind: ExpectedItem["kind"],
+    title: string,
+    signal: number,
+    releasedDaysAgo: number,
+    sources: ExpectedItem["sources"],
+  ) => expected({ key, kind, title, signal, releasedDaysAgo, sources })
+  const items = [
+    item("MOVIE:tmdb:1", "MOVIE", "Hunger Games", 100, 9, ["cinema", "trending-movie"]),
+    item("MOVIE:tmdb:2", "MOVIE", "Billie", 90, 2, ["cinema", "trending-movie"]),
+    item("MOVIE:tmdb:3", "MOVIE", "Clayface", 70, 20, ["cinema", "trending-movie"]),
+    item("TV:tmdb:10", "TV", "Les Anneaux de pouvoir", 95, 9, ["trending-tv"]),
+    item("TV:tmdb:11", "TV", "MobLand", 90, 7, ["trending-tv"]),
+    item("TV:tmdb:12", "TV", "South Park", 85, 2, ["trending-tv"]),
+    item("TV:tmdb:13", "TV", "Dexter - Résurrection", 60, 5, ["trending-tv"]),
+    item("GAME:igdb:52189", "GAME", "Grand Theft Auto VI", 80, 8, ["igdb-fresh", "igdb-trending"]),
+    item("GAME:igdb:250618", "GAME", "Phantom Blade Zero", 72, 29, ["igdb-fresh"]),
+    item("GAME:igdb:163456", "GAME", "Lightyear Frontier", 64, 24, ["igdb-fresh"]),
+    item("GAME:igdb:403310", "GAME", "Call of Duty: Modern Warfare 4", 40, 35, ["igdb-fresh"]),
+    item("GAME:igdb:405460", "GAME", "The Legend of Zelda: Ocarina of Time", 70, 22, ["igdb-fresh"]),
+  ]
+  const ages: Record<string, number> = {
+    "Hunger Games": 14,
+    Billie: 8,
+    Clayface: 16,
+    "Les Anneaux de pouvoir": 12,
+    MobLand: 17,
+    "South Park": 16,
+    "Dexter - Résurrection": 16,
+    "Grand Theft Auto VI": 18,
+    "Phantom Blade Zero": 14,
+    "Lightyear Frontier": 7,
+    "Call of Duty: Modern Warfare 4": 18,
+    "The Legend of Zelda: Ocarina of Time": 12,
+  }
+  const cat = new Map(items.map((it) => [it.key, { ...entry(it.title, it.kind, ages[it.title]), title: it.title }] as const))
+  const classified = classifyExpected(items, cat, [])
+  // Zelda and VisionQuest were admin pins that day (neither 16+).
+  const adminPinnedIds = new Set(["The Legend of Zelda: Ocarina of Time"])
+
+  it("gives the two 16+ slots to titles that actually get pinned: GTA VI and MobLand", () => {
+    const { pins, matureSkipped } = selectWatchPins(classified, nov27, { adminPinnedIds, adminMatureCount: 0 })
+    const titles = pins.map((p) => p.title)
+    expect(titles).toContain("Grand Theft Auto VI")
+    expect(titles).toContain("MobLand")
+    expect(titles).not.toContain("South Park")
+    expect(pins.filter((p) => ages[p.title] >= 16)).toHaveLength(2)
+    expect(pins).toHaveLength(6)
+    // GTA VI is pinned, so it is not reported as skipped by the 16+ cap.
+    expect(matureSkipped.map((c) => c.title)).not.toContain("Grand Theft Auto VI")
+  })
+
+  it("never leaves a 16+ slot unused while a reachable 16+ launch waits", () => {
+    const { pins } = selectWatchPins(classified, nov27, { adminPinnedIds, adminMatureCount: 0 })
+    expect(pins.map((p) => p.title)).toEqual([
+      "Hunger Games",
+      "Les Anneaux de pouvoir",
+      "Grand Theft Auto VI",
+      "Billie",
+      "MobLand",
+      "Phantom Blade Zero",
+    ])
+  })
+
+  it("with GTA VI as an admin pin (since 27 Nov): it counts in the cap, the watch keeps one 16+ slot", () => {
+    const { pins, matureSkipped } = selectWatchPins(classified, nov27, {
+      adminPinnedIds: new Set([...adminPinnedIds, "Grand Theft Auto VI"]),
+      adminMatureCount: 1,
+    })
+    const titles = pins.map((p) => p.title)
+    expect(titles).not.toContain("Grand Theft Auto VI")
+    expect(titles).toContain("MobLand")
+    expect(pins.filter((p) => ages[p.title] >= 16)).toHaveLength(1)
+    expect(matureSkipped.map((c) => c.title)).not.toContain("Grand Theft Auto VI")
+  })
+
+  it("lists as skipped only the 16+ titles the cap actually turned away", () => {
+    // Only games, one 16+ slot left after an admin 16+ pin; Call of Duty
+    // (here out 20 days ago) ranks between Phantom Blade and Lightyear.
+    const games = classified
+      .filter((c) => c.kind === "GAME")
+      .map((c) => (c.title.startsWith("Call of Duty") ? { ...c, releasedDaysAgo: 20, signal: 70 } : c))
+    const { pins, matureSkipped } = selectWatchPins(games, nov27, { adminPinnedIds, adminMatureCount: 1 })
+    expect(pins.map((p) => p.title)).toEqual(["Grand Theft Auto VI", "Phantom Blade Zero", "Lightyear Frontier"])
+    expect(matureSkipped.map((c) => c.title)).toEqual(["Call of Duty: Modern Warfare 4"])
+  })
+
+  it("a new launch beats an older series once the season's premiere sets its recency", () => {
+    // Same series, weekly episodes: the season premiered 40 days ago.
+    const series = item("TV:tmdb:99", "TV", "Vieille série", 90, 40, ["trending-tv"])
+    const gta = items.find((i) => i.title === "Grand Theft Auto VI") as ExpectedItem
+    expect(watchPinPriority(gta)).toBeGreaterThan(watchPinPriority(series))
+    const c = classifyExpected(
+      [series, gta],
+      new Map([
+        [series.key, { ...entry("Vieille série", "TV", 16), title: "Vieille série" }],
+        [gta.key, { ...entry("Grand Theft Auto VI", "GAME", 18), title: "Grand Theft Auto VI" }],
+      ]),
+      [],
+    )
+    const { pins, matureSkipped } = selectWatchPins(c, nov27, { adminMatureCount: 1 })
+    expect(pins.map((p) => p.title)).toEqual(["Grand Theft Auto VI"])
+    expect(matureSkipped.map((p) => p.title)).toEqual(["Vieille série"])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Release recency must reach the pin choice AND the cron_logs row. The 27 Nov
+// row read back `releasedDaysAgo: null` for every title: the route never
+// logged it, so nobody could check why a game was pinned.
+// ---------------------------------------------------------------------------
+
+describe("game sources carry the release date", () => {
+  const nov27 = new Date("2026-11-27T15:34:00.000Z")
+  const ts = (iso: string) => Date.parse(`${iso}T00:00:00.000Z`) / 1000
+  const igdb = [
+    { id: 52189, name: "Grand Theft Auto VI", first_release_date: ts("2026-11-19"), total_rating_count: 54 },
+    { id: 250618, name: "Phantom Blade Zero", first_release_date: ts("2026-10-29"), total_rating_count: 7 },
+    { id: 163456, name: "Lightyear Frontier", first_release_date: ts("2026-11-03"), total_rating_count: 12 },
+  ]
+
+  it("« jeux sortis récemment »: every game has its recency, newer big launch first", () => {
+    const items = freshGameItems(igdb, nov27, () => false, (g) => g.total_rating_count ?? 0)
+    expect(items.map((i) => [i.title, i.releasedDaysAgo])).toEqual([
+      ["Grand Theft Auto VI", 8],
+      ["Lightyear Frontier", 24],
+      ["Phantom Blade Zero", 29],
+    ])
+    expect(items[0].note).toBe("sorti le 19 nov.")
+  })
+
+  it("« jeux en tendance »: recency from the catalogue, else IGDB; evergreen hits dropped", () => {
+    const known = new Map([
+      [52189, { title: "Grand Theft Auto VI", releaseDate: new Date("2026-11-19T00:00:00.000Z") }],
+      [1020, { title: "Grand Theft Auto V", releaseDate: new Date("2013-09-17T00:00:00.000Z") }],
+    ])
+    const byId = new Map(igdb.map((g) => [g.id, g]))
+    const items = trendingGameItems([{ gameId: 1020 }, { gameId: 52189 }, { gameId: 163456 }], known, byId, nov27, () => false)
+    expect(items.map((i) => [i.title, i.releasedDaysAgo])).toEqual([
+      ["Grand Theft Auto VI", 8],
+      ["Lightyear Frontier", 24],
+    ])
+  })
+
+  it("the cron_logs title row records recency, signal and pin priority", () => {
+    const [gta] = classifyExpected(
+      freshGameItems(igdb.slice(0, 1), nov27, () => false, () => 1),
+      new Map([["GAME:igdb:52189", entry("gta6", "GAME", 18)]]),
+      [],
+    )
+    const log = watchTitleLog(gta, { imported: false, matureCapSkipped: false })
+    expect(log).toMatchObject({ kind: "GAME", releasedDaysAgo: 8, isNew: true, signal: 80, priority: 120 })
+    expect(log).not.toHaveProperty("matureCapSkipped")
+    expect(watchTitleLog(gta, { imported: false, matureCapSkipped: true })).toMatchObject({ matureCapSkipped: true })
+  })
+})
+
+describe("newSeasonTiming: a new season is dated by its premiere", () => {
+  const nov27 = new Date("2026-11-27T15:34:00.000Z")
+  it("uses the season's premiere, not the latest weekly episode", () => {
+    const t = newSeasonTiming(
+      {
+        last_episode_to_air: { air_date: "2026-11-20", season_number: 2 },
+        seasons: [
+          { air_date: "2025-03-30", season_number: 1 },
+          { air_date: "2026-10-19", season_number: 2 },
+        ],
+      },
+      nov27,
+    )
+    expect(t).toEqual({ releasedDaysAgo: 39, note: "saison 2 — épisode diffusé le 20 nov." })
+  })
+
+  it("falls back to the episode date without a season premiere, and to the next episode when one is due", () => {
+    expect(newSeasonTiming({ last_episode_to_air: { air_date: "2026-11-20", season_number: 2 } }, nov27)?.releasedDaysAgo).toBe(7)
+    expect(
+      newSeasonTiming({ last_air_date: "2026-06-01", next_episode_to_air: { air_date: "2026-12-01", season_number: 4 } }, nov27),
+    ).toEqual({ releasedDaysAgo: -4, note: "saison 4 à partir du 1 déc." })
+    expect(newSeasonTiming({ last_air_date: "2026-06-01" }, nov27)).toBeNull()
   })
 })

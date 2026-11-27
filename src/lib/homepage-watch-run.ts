@@ -27,6 +27,7 @@ import { getFreshReleases, getGameDetails, getGamesByIds, getTrendingGameIds, ty
 import { getCinemaMovies, getNowPlayingTmdbIds } from "@/lib/cinema"
 import { selectUpcomingCinema } from "@/lib/cinema-policy"
 import { fetchGames } from "@/lib/media-queries"
+import { GAMES_RAIL_FILTERS, GAMES_RAIL_LIMIT } from "@/lib/homepage-games-rail"
 import { createMovieFromTmdb, createTvFromTmdb } from "@/lib/import-helpers"
 import { createGameFromIgdb } from "@/lib/game-import"
 import { extractProviders } from "@/lib/streaming-providers"
@@ -35,8 +36,18 @@ import { computeHomepageSpotlight, HOMEPAGE_SPOTLIGHT_TAG } from "@/lib/homepage
 import { gameLaunchScore, isMatureAge } from "@/lib/homepage-spotlight"
 import {
   HOMEPAGE_CINEMA_CAP,
-  HOMEPAGE_DEFAULT_CAP,
+  NEW_RELEASE_DAYS,
+  NEW_SERIES_DAYS,
   buildWatchReport,
+  daysFrom,
+  freshGameItems,
+  igdbReleaseDate,
+  isLaunch,
+  newSeasonTiming,
+  rankSignal,
+  releasedDaysAgo,
+  shortDate,
+  trendingGameItems,
   selectWatchPins,
   catalogueKey,
   classifyExpected,
@@ -53,40 +64,10 @@ import {
 } from "@/lib/homepage-watch"
 
 const DAY_MS = 24 * 3_600_000
-/** A film / game counts as a launch for this long after its release. */
-const NEW_RELEASE_DAYS = 45
-/** A series counts as new for this long after its premiere… */
-const NEW_SERIES_DAYS = 120
-/** …or when an episode aired this recently / airs this soon (new season). */
-const NEW_SEASON_RECENT_DAYS = 30
-const NEW_SEASON_SOON_DAYS = 7
 /** How many trending series get a TMDB details read (new-season check). */
 const TV_DETAIL_CHECKS = 12
 /** How many missing trending titles get a French-providers check. */
 const PROVIDER_CHECKS = 12
-
-function rankSignal(index: number, length: number): number {
-  if (length <= 1) return 100
-  return Math.max(1, Math.round((100 * (length - index)) / length))
-}
-
-function daysFrom(date: string | Date | null | undefined, now: Date): number | null {
-  if (!date) return null
-  const d = typeof date === "string" ? new Date(`${date.slice(0, 10)}T00:00:00.000Z`) : date
-  if (Number.isNaN(d.getTime())) return null
-  return Math.floor((now.getTime() - d.getTime()) / DAY_MS)
-}
-
-/** Released within `days`, or due within 7 days. */
-function isLaunch(date: string | Date | null | undefined, now: Date, days = NEW_RELEASE_DAYS): boolean {
-  const age = daysFrom(date, now)
-  return age != null && age >= -7 && age <= days
-}
-
-function shortDate(date: string): string {
-  const d = new Date(`${date.slice(0, 10)}T00:00:00.000Z`)
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" })
-}
 
 function errorText(e: unknown): string {
   return (e instanceof Error ? e.message : String(e)).slice(0, 160)
@@ -102,15 +83,6 @@ export interface HomepageWatchResult {
   subject: string
   health: WatchHealth
   remaining: number
-}
-
-/** `daysFrom`, as an optional field (undefined without a date). */
-function releasedDaysAgo(date: string | Date | null | undefined, now: Date): number | undefined {
-  return daysFrom(date, now) ?? undefined
-}
-
-function igdbReleaseDate(g: IGDBGame): Date | null {
-  return g.first_release_date ? new Date(g.first_release_date * 1000) : null
 }
 
 export async function runHomepageWatch(opts: {
@@ -239,67 +211,34 @@ export async function runHomepageWatch(opts: {
 
   await source("Jeux sortis récemment", async () => {
     const games = await getFreshReleases(40, { days: NEW_RELEASE_DAYS, minRatingCount: 3 })
-    // Rating count × recency, not rating count alone: lifetime counts favour
-    // a game that sat in early access for two years (Enshrouded, 15 Oct) over
-    // this month's launch (Ocarina of Time, 5 Nov) — see gameLaunchScore.
+    for (const g of games) igdbGames.set(g.id, g)
+    // Rating count × recency, not rating count alone (see freshGameItems).
     const score = (g: IGDBGame) =>
       gameLaunchScore({ votes: g.total_rating_count, trending: null, releaseDate: igdbReleaseDate(g) }, now)
-    const sorted = [...games].sort((a, b) => score(b) - score(a) || (b.first_release_date ?? 0) - (a.first_release_date ?? 0))
-    sorted.forEach((g, i) => {
-      igdbGames.set(g.id, g)
-      raw.push({
-        key: `GAME:igdb:${g.id}`,
-        kind: "GAME",
-        title: g.name,
-        sources: ["igdb-fresh"],
-        signal: Math.round(rankSignal(i, sorted.length) * 0.8),
-        igdbId: g.id,
-        frRelevant: !isAdultIgdbGame(g),
-        isNew: true,
-        note: g.first_release_date ? `sorti le ${shortDate(new Date(g.first_release_date * 1000).toISOString())}` : undefined,
-        releasedDaysAgo: releasedDaysAgo(igdbReleaseDate(g), now),
-      })
-    })
-    return sorted.length
+    const items = freshGameItems(games, now, isAdultIgdbGame, score)
+    raw.push(...items)
+    return items.length
   })
 
   await source("Jeux en tendance", async () => {
     const trending = await getTrendingGameIds(80)
     const ids = trending.map((t) => t.gameId)
     // Release dates: from the catalogue when we have the game, else from IGDB.
-    const known = await withPrismaRetry(() =>
+    const knownRows = await withPrismaRetry(() =>
       prisma.mediaItem.findMany({
         where: { type: "GAME", igdbId: { in: ids } },
         select: { igdbId: true, title: true, releaseDate: true },
       }),
     )
-    const knownById = new Map(known.map((k) => [k.igdbId as number, k]))
-    const unknownIds = ids.filter((id) => !knownById.has(id) && !igdbGames.has(id)).slice(0, 60)
+    const knownIds = new Set(knownRows.map((k) => k.igdbId as number))
+    const unknownIds = ids.filter((id) => !knownIds.has(id) && !igdbGames.has(id)).slice(0, 60)
     if (unknownIds.length > 0) {
       for (const g of await getGamesByIds(unknownIds)) igdbGames.set(g.id, g)
     }
-    let kept = 0
-    trending.forEach((t, i) => {
-      const k = knownById.get(t.gameId)
-      const g = igdbGames.get(t.gameId)
-      const release = k?.releaseDate ?? (g?.first_release_date ? new Date(g.first_release_date * 1000) : null)
-      // Evergreen hits (Roblox, GTA V) trend every week: not this week's news.
-      if (!isLaunch(release, now)) return
-      kept++
-      raw.push({
-        key: `GAME:igdb:${t.gameId}`,
-        kind: "GAME",
-        title: k?.title ?? g?.name ?? `IGDB ${t.gameId}`,
-        sources: ["igdb-trending"],
-        signal: rankSignal(i, trending.length),
-        igdbId: t.gameId,
-        frRelevant: g ? !isAdultIgdbGame(g) : true,
-        isNew: true,
-        note: release ? `sorti le ${shortDate(release.toISOString())}` : undefined,
-        releasedDaysAgo: releasedDaysAgo(release, now),
-      })
-    })
-    return kept
+    const known = new Map(knownRows.map((k) => [k.igdbId as number, { title: k.title, releaseDate: k.releaseDate }]))
+    const items = trendingGameItems(trending, known, igdbGames, now, isAdultIgdbGame)
+    raw.push(...items)
+    return items.length
   })
 
   await source("Titres de nos actualités (7 jours)", async () => {
@@ -409,20 +348,11 @@ export async function runHomepageWatch(opts: {
     try {
       const d = await getTVDetails(item.tmdbId as number)
       tvDetails.set(item.key, d)
-      const last = d.last_episode_to_air?.air_date ?? d.last_air_date ?? null
-      const next = d.next_episode_to_air?.air_date ?? null
-      const lastAge = daysFrom(last, now)
-      const nextIn = next ? -(daysFrom(next, now) ?? 99) : null
-      if (lastAge != null && lastAge >= 0 && lastAge <= NEW_SEASON_RECENT_DAYS) {
+      const season = newSeasonTiming(d, now)
+      if (season) {
         item.isNew = true
-        item.releasedDaysAgo = lastAge
-        const season = d.last_episode_to_air?.season_number
-        item.note = `${season ? `saison ${season}` : "nouveaux épisodes"} — épisode diffusé le ${shortDate(last as string)}`
-      } else if (nextIn != null && nextIn >= 0 && nextIn <= NEW_SEASON_SOON_DAYS) {
-        item.isNew = true
-        item.releasedDaysAgo = -nextIn
-        const season = d.next_episode_to_air?.season_number
-        item.note = `${season ? `saison ${season}` : "nouveaux épisodes"} à partir du ${shortDate(next as string)}`
+        item.releasedDaysAgo = season.releasedDaysAgo
+        item.note = season.note
       }
     } catch {
       /* stays as classified from the premiere date */
@@ -436,14 +366,15 @@ export async function runHomepageWatch(opts: {
       computeHomepageSpotlight(now),
       // CinemaRail: /api/cinema?maxAge=14 (default cinema cap), first 12 cards.
       getCinemaMovies({ maxAge: HOMEPAGE_CINEMA_CAP }),
-      // GamesRail: /api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20&maxAge=12.
-      fetchGames({ sortBy: "releaseDate", limit: 12, requirePoster: true, minVoteCount: 20, maxAge: HOMEPAGE_DEFAULT_CAP }),
+      // GamesRail: the same query as the page (gamesRailUrl) — uncapped since
+      // 27 Nov 2026 (a news row), ranked by notability × recency.
+      fetchGames({ ...GAMES_RAIL_FILTERS }),
     ])
     spotlight.forEach((s, i) => homepage.push({ section: "spotlight", position: i + 1, mediaId: s.id }))
     cinema.slice(0, 12).forEach((m, i) =>
       homepage.push({ section: "cinema", position: i + 1, mediaId: m.inDatabase ? m.id : null, tmdbId: m.tmdbId }),
     )
-    games.items.slice(0, 12).forEach((g, i) => homepage.push({ section: "games", position: i + 1, mediaId: g.id }))
+    games.items.slice(0, GAMES_RAIL_LIMIT).forEach((g, i) => homepage.push({ section: "games", position: i + 1, mediaId: g.id }))
   } catch (e) {
     outcomes.homepageReadOk = false
     outcomes.sources["Lecture de l'accueil"] = { ok: false, count: 0, error: errorText(e) }
