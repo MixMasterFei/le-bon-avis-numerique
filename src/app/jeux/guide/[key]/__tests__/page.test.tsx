@@ -49,3 +49,17 @@ describe("/jeux/guide/[key] — age chip back to the fiche", () => {
     expect(screen.queryByRole("link", { name: /voir la fiche/ })).toBeNull()
   })
 })
+
+describe("/jeux/guide/[key] — « play together » heading", () => {
+  it("keeps « Jouer avec votre enfant » by default", async () => {
+    await renderGuide(7)
+    expect(screen.getByRole("heading", { name: "Jouer avec votre enfant" })).toBeInTheDocument()
+  })
+
+  it("uses the guide's own heading on an adult-rated game (Call of Duty)", async () => {
+    media.getGuideGameMedia.mockResolvedValue(game(18))
+    render(await GameGuidePage({ params: Promise.resolve({ key: "call-of-duty" }) }))
+    expect(screen.getByRole("heading", { name: "Poser un cadre ensemble" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "Jouer avec votre enfant" })).toBeNull()
+  })
+})

@@ -25,7 +25,7 @@ const DECEMBER = 11
 const JANUARY = 0
 
 const ALL_LIVE = Object.keys(BLOG_ARTICLES)
-// The state on 27 Nov 2026: the two Christmas articles are scheduled (1 and 4 Dec).
+// The state on 27 Nov 2026: the gift article (1 Dec) and the GTA article (4 Dec) are scheduled.
 const LIVE_NOV_27 = ["bon-age-film-enfant", "films-qui-font-peur-enfant-pret", "soiree-film-en-famille"]
 
 const pick = (
@@ -154,14 +154,25 @@ describe("blogLinkForFiche — films and series", () => {
 })
 
 describe("blogLinkForFiche — games", () => {
-  it("sends GTA VI to the GTA article in season, once it is live", () => {
-    expect(pick(gtaVI, { month0: DECEMBER })).toBe("gta-6-sous-le-sapin")
+  it("sends GTA VI to the GTA article once it is live, in and out of the Christmas season", () => {
+    expect(pick(gtaVI, { month0: DECEMBER })).toBe("gta-6-phenomene-comment-en-parler")
     expect(pick(gtaVI, { month0: NOVEMBER, liveSlugs: LIVE_NOV_27 })).toBeNull()
-    expect(pick(gtaVI, { month0: JANUARY })).toBeNull()
+    // Not seasonal: the article replaced the GTA VI guide.
+    expect(pick(gtaVI, { month0: JANUARY })).toBe("gta-6-phenomene-comment-en-parler")
+    expect(pick(gtaVI, { month0: 5 })).toBe("gta-6-phenomene-comment-en-parler")
+  })
+
+  it("prefers the GTA article over the gift article on a GTA fiche", () => {
+    expect(pick(gtaVI, { month0: DECEMBER, isGiftGame: true })).toBe("gta-6-phenomene-comment-en-parler")
   })
 
   it("matches every GTA title, not only VI", () => {
-    expect(pick({ ...gtaVI, title: "Grand Theft Auto: The Trilogy" })).toBe("gta-6-sous-le-sapin")
+    expect(pick({ ...gtaVI, title: "Grand Theft Auto: The Trilogy" })).toBe("gta-6-phenomene-comment-en-parler")
+    expect(pick({ ...gtaVI, title: "GTA Online" }, { month0: JANUARY })).toBe("gta-6-phenomene-comment-en-parler")
+  })
+
+  it("never takes a word that merely contains « gta » for a GTA title", () => {
+    expect(pick({ ...gtaVI, title: "Agtaria" })).toBeNull()
   })
 
   it("sends a gift-list game to the Christmas article, in season and once live", () => {
@@ -191,11 +202,11 @@ describe("live-slug gating", () => {
       blogArticlesForShelf(shelf, { liveSlugs, month0 }).map((a) => a.slug)
 
     expect(slugs("films", LIVE_NOV_27, NOVEMBER)).toEqual(LIVE_NOV_27)
-    expect(slugs("films", ["bon-age-film-enfant", "gta-6-sous-le-sapin"], DECEMBER)).toEqual(["bon-age-film-enfant"])
-    // Games: nothing before 1 Dec, then the live ones — in season only.
+    expect(slugs("films", ["bon-age-film-enfant", "gta-6-phenomene-comment-en-parler"], DECEMBER)).toEqual(["bon-age-film-enfant"])
+    // Games: nothing before 1 Dec, then the live ones; the gift article in season only.
     expect(slugs("jeux", LIVE_NOV_27, NOVEMBER)).toEqual([])
-    expect(slugs("jeux", ALL_LIVE, DECEMBER)).toEqual(["jeux-video-noel-selon-age", "gta-6-sous-le-sapin"])
-    expect(slugs("jeux", ALL_LIVE, JANUARY)).toEqual([])
+    expect(slugs("jeux", ALL_LIVE, DECEMBER)).toEqual(["jeux-video-noel-selon-age", "gta-6-phenomene-comment-en-parler"])
+    expect(slugs("jeux", ALL_LIVE, JANUARY)).toEqual(["gta-6-phenomene-comment-en-parler"])
   })
 })
 
