@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import dynamicImport from "next/dynamic"
 import { permanentRedirect, notFound } from "next/navigation"
@@ -21,6 +22,7 @@ import { isCinemaSort } from "@/lib/cinema-policy"
 import { getCinemaMovies } from "@/lib/cinema"
 import { runSmartFilter } from "@/lib/smart-filter"
 import { NoelSeasonBanner } from "@/components/noel/NoelSeasonBanner"
+import { ParentTipsStrip } from "@/components/blog/ParentTipsStrip"
 
 // Force dynamic rendering to ensure notFound() returns HTTP 404 (not 200 with 404 UI).
 // ISR caches the 404 page HTML but may serve it with status 200; force-dynamic avoids this.
@@ -477,6 +479,10 @@ export default async function FilmsPage({ searchParams }: FilmsPageProps) {
       ) : (
         <ApercuFilmsList {...listProps} />
       )}
+      {/* Conseils pour les parents — live film articles, below the list. */}
+      <Suspense fallback={null}>
+        <ParentTipsStrip shelf="films" />
+      </Suspense>
     </>
   )
 }

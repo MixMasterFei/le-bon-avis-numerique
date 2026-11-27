@@ -23,7 +23,17 @@ French wording used across the site.
 - Generated images: no faces, nothing identifiable, no text or logo; credit
   « Image générée par IA ».
 
-## Open work (updated 2026-11-22)
+## Open work (updated 2026-11-27)
+- **Fiche → blog links shipped** (local branch, not pushed): one « À lire aussi » card per fiche
+  + « Conseils pour les parents » strips on `/films` and `/jeux` (`src/lib/blog-links.ts`, rules
+  in `CLAUDE.md` « Blog »). To follow up:
+  - A new article is only linkable once added to `BLOG_ARTICLES` (title must match its
+    frontmatter, test-enforced) and given a rule in `blogCandidatesForFiche`.
+  - Most adult films get no card (their only match, `bon-age-film-enfant`, is already the
+    « Comment lire cet âge ? » link). A teen-oriented article (« 12-16 ans : films et séries »)
+    would fill that gap.
+  - Watch the Vercel referrers to `/blog/*` from `/media/*` after a week; if the fear article
+    over-fires on « Fantastique » titles, raise `FEAR_AXIS_MIN` or drop that genre.
 - **Two Christmas drafts written, not published** (branch `claude/blogger-noel-jeux-gta`):
   `blog/16-jeux-video-noel-selon-age.md` (`publishedAt: 2026-12-01`) and
   `blog/17-gta-6-sous-le-sapin.md` (`publishedAt: 2026-12-04`). No hero image (branded card).

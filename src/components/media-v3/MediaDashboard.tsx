@@ -78,6 +78,7 @@ export function MediaDashboard({
   guideKey,
   ageGuideHref,
   versionsBlock,
+  blogLink,
   seasonalLink,
 }: {
   media: DashboardMedia
@@ -93,6 +94,8 @@ export function MediaDashboard({
   ageGuideHref?: string | null
   /** « Autres versions et suites » (editorial clusters), rendered just above the similar titles. */
   versionsBlock?: React.ReactNode
+  /** « À lire aussi » blog article card, rendered under the analysis block — below the fold. */
+  blogLink?: React.ReactNode
   /** In-season link card (e.g. « Noël en famille »), rendered under the similar titles — below the fold. */
   seasonalLink?: React.ReactNode
 }) {
@@ -439,6 +442,9 @@ export function MediaDashboard({
         {!hideAnalysis && isFilmOrTv && (
           <DashboardSensitiveWarnings mediaId={dbId} aiItems={aiWarnings.items} aiState={aiWarnings.state} />
         )}
+
+        {/* ===== À lire aussi — one blog article for this fiche, streamed ===== */}
+        {blogLink}
 
         {/* ===== screenshots (dedup by URL + admin delete) ===== */}
         {media.screenshots.length > 0 && (
