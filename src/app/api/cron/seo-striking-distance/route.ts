@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { runSeoStrikingDistance, toLoggedQueries } from "@/lib/seo-striking-distance"
-import { runSeoAutofix } from "@/lib/seo-autofix"
+import { runSeoAutofix, synopsisModelAlertLine } from "@/lib/seo-autofix"
 import { sendSeoReport } from "@/lib/email"
 
-// Write-side: the agent runs maillage + up to 3 sequential ~35s gpt-5-mini
+// Write-side: the agent runs maillage + up to 3 sequential ~35s text-model
 // synopsis rewrites on top of the GSC pull, so the old 60s ceiling would time out.
 // 300, not 180: the funnel now genuinely reaches MAX_TARGETS=60 fiches (the
 // query-level cap no longer starves it), and the worst-case LLM budget
@@ -62,9 +62,13 @@ export async function GET(req: NextRequest) {
     // The email shows the top 25; the agent works from the deeper pool so it
     // keeps finding fresh fiches once the head of the list is saturated.
     const autofix = await runSeoAutofix(result.actionableQueries, { dryRun })
+    // A dead model must not look green: ≥ 50 % of the attempted synopsis
+    // rewrites « ai-failed » → "partial" + an alert line atop the email.
+    const modelHealth = autofix.outcomes.synopsisModel
+    const modelAlert = synopsisModelAlertLine(modelHealth)
 
     let emailed = false
-    if (result.strikingQueries.length > 0 || forceEmail) {
+    if (result.strikingQueries.length > 0 || forceEmail || modelAlert) {
       const wroteNothing =
         autofix.linksCreated === 0 && autofix.synopsesRewritten === 0 && autofix.titlesSet === 0
       const fixedNote = dryRun
@@ -73,16 +77,16 @@ export async function GET(req: NextRequest) {
           ? ` · ${autofix.targetsExamined} fiche(s) déjà optimisée(s)`
           : ` · ${autofix.linksCreated} lien(s) · ${autofix.synopsesRewritten} synopsis · ${autofix.titlesSet} titre(s)`
       await sendSeoReport({
-        subject: `SEO — ${result.strikingQueries.length} opportunité(s) à portée de page 1${fixedNote}`,
-        report: result.report + autofix.section,
+        subject: `SEO — ${modelAlert ? "réécritures en échec · " : ""}${result.strikingQueries.length} opportunité(s) à portée de page 1${fixedNote}`,
+        report: (modelAlert ? `${modelAlert}\n\n` : "") + result.report + autofix.section,
       })
       emailed = true
     }
 
     await logCronRun({
       task: "seo-striking-distance",
-      status: "success",
-      summary: `${result.totalStriking} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.targetsExamined} fiches examinées, ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis, ${autofix.titlesSet} titres, ${autofix.saturated} déjà optimisées`}${emailed ? " · email envoyé" : ""}`,
+      status: modelHealth.degraded ? "partial" : "success",
+      summary: `${modelHealth.degraded ? `réécritures de synopsis en échec : ${modelHealth.failed}/${modelHealth.attempted} — modèle indisponible ? · ` : ""}${result.totalStriking} requêtes striking-distance · ${result.totalImpressionsAtStake} impressions en jeu${dryRun ? " · simulation" : ` · ${autofix.targetsExamined} fiches examinées, ${autofix.linksCreated} liens, ${autofix.synopsesRewritten} synopsis, ${autofix.titlesSet} titres, ${autofix.saturated} déjà optimisées`}${emailed ? " · email envoyé" : ""}`,
       details: {
         configured: true,
         strikingCount: result.strikingQueries.length,

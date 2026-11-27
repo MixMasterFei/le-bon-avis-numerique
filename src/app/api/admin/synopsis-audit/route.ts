@@ -3,7 +3,14 @@ import OpenAI from "openai"
 import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
-import { AUDIT_BATCH_SIZE, runAuditBatch, correctionPasses, type AuditItemInput } from "@/lib/synopsis-audit"
+import {
+  AUDIT_BATCH_SIZE,
+  auditRunStatus,
+  runAuditBatch,
+  correctionPasses,
+  type AuditItemInput,
+} from "@/lib/synopsis-audit"
+import { openaiTextModel } from "@/lib/openai-text-model"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -113,14 +120,19 @@ export async function POST(req: NextRequest) {
   })
   const done = remaining === 0
 
+  // stats.errors = examined rows without a verdict (failed or unparseable
+  // model answer) — a dead model must log "error", not a quiet "partial".
+  const status = auditRunStatus({ examined: stats.examined, unverified: stats.errors, bailedOnTime })
   await logCronRun({
     task: "synopsis-audit",
-    status: stats.errors > 10 ? "partial" : bailedOnTime ? "partial" : "success",
+    status,
     summary:
       candidates.length === 0
         ? "Rien à vérifier — catalogue à jour"
-        : `${stats.examined} vérifiés, ${stats.fixed} corrigés, ${stats.flagged} signalés (${remaining} restants)${dryRun ? " [dryRun]" : ""}`,
-    details: { ...stats, done, remaining, dryRun, bailedOnTime, flaggedSample, fixedSample },
+        : status === "error"
+          ? `Modèle indisponible ? ${stats.errors}/${stats.examined} synopsis sans réponse exploitable (${openaiTextModel()})${dryRun ? " [dryRun]" : ""}`
+          : `${stats.examined} vérifiés, ${stats.fixed} corrigés, ${stats.flagged} signalés${stats.errors > 0 ? `, ${stats.errors} sans réponse` : ""} (${remaining} restants)${dryRun ? " [dryRun]" : ""}`,
+    details: { ...stats, done, remaining, dryRun, bailedOnTime, flaggedSample, fixedSample, model: openaiTextModel() },
     startTime,
   })
 

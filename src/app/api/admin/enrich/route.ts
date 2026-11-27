@@ -2,20 +2,32 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { logCronRun } from "@/lib/cron-log"
 import { notUnreleasedWhere, unenrichedBacklogWhere } from "@/lib/enrich-filter"
-import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
 import { getMovieKeywords, getTVKeywords } from "@/lib/tmdb"
 import { applyContentSafetyFloors } from "@/lib/content-safety-floors"
+import {
+  VALID_TOPICS,
+  buildEnrichmentMessages,
+  filterToValidList,
+  parseEnrichmentResponse,
+  ENRICHMENT_MAX_COMPLETION_TOKENS,
+  type ContentAnalysis,
+  type EnrichmentPromptItem,
+  enrichRunStatus,
+} from "@/lib/enrichment-analysis"
+import { buildTextCompletionParams, createTextCompletion, openaiTextModel } from "@/lib/openai-text-model"
 import OpenAI from "openai"
 
 // Vercel Pro lets us go up to 300s — same ceiling as /enrich-deep,
-// /import-cnc-ratings, /news-discover. We need it because gpt-5-mini
+// /import-cnc-ratings, /news-discover. We need it because the text model
 // occasionally takes 25-35s on a single analysis (especially mangas
 // with the long manga rubric appended), and the previous 60s ceiling
 // only fit 1-2 items per batch before bailing on time.
 export const maxDuration = 300
 
 // Batch enrichment API - Enrich items that don't have content metrics
-// Uses OpenAI GPT-5 Mini to generate age ratings, content analysis, and v2 metadata
+// Uses the OpenAI text model (src/lib/openai-text-model.ts) to generate age
+// ratings, content analysis, and v2 metadata. Prompt + parser live in
+// src/lib/enrichment-analysis.ts.
 
 interface EnrichmentResult {
   processed: number
@@ -24,88 +36,6 @@ interface EnrichmentResult {
   errors: number
   details: string[]
 }
-
-interface ContentAnalysis {
-  expertAgeRec: number
-  contentMetrics: {
-    violence: number
-    sexNudity: number
-    language: number
-    consumerism: number
-    substanceUse: number
-    positiveMessages: number
-    roleModels: number
-  }
-  whatParentsNeedToKnow: string[]
-  sensitiveWarnings: string[]
-  synopsis: string
-  tags: string[]
-  // V2 enrichment fields
-  confidence: number
-  confidenceReasons: string[]
-  toneTags: string[]
-  pacing: string
-  visualStyle: string
-  emotionalThemes: string[]
-}
-
-// Valid closed lists for enrichment fields
-const VALID_TOPICS = [
-  // Genres/themes
-  "Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction",
-  "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique",
-  "Histoire", "Amitié",
-  // Emotional/social
-  "Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce",
-  "Harcèlement", "Premiers amours",
-  // Life stages
-  "École", "Adolescence",
-  // Worlds/imagination
-  "Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers",
-  "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage",
-  // Nature/environment
-  "Animaux", "Nature", "Écologie", "Mer/Océan", "Montagne", "Voyage",
-  // Arts/culture
-  "Cuisine", "Art", "Danse", "Théâtre",
-  // History/society
-  "Guerre", "Résistance", "Seconde Guerre mondiale",
-  // Studios & brands
-  "Disney", "Pixar", "DreamWorks", "Studio Ghibli",
-  "Aardman", "Illumination", "Laika",
-  "LEGO", "Minecraft", "Astérix", "Tintin",
-  // Seasonal
-  "Noël", "Halloween",
-  // Games
-  "Nintendo", "PlayStation", "Xbox", "PC",
-  // Manga-specific topics
-  "Shounen", "Shoujo", "Seinen", "Josei", "Japon",
-  "Arts martiaux", "Lycée", "Tranche de vie", "Romance", "Isekai",
-]
-
-const VALID_TONE_TAGS = [
-  "Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré",
-  "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose",
-  "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique",
-  "Action intense", "Effrayant et angoissant", "Romantique et tendre",
-  "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant",
-]
-
-const VALID_PACING = [
-  "Très calme", "Lent et contemplatif", "Rythme modéré", "Dynamique", "Rapide et frénétique",
-]
-
-const VALID_VISUAL_STYLES = [
-  "Animation 2D classique", "Animation 3D/CGI", "Stop motion", "Anime japonais",
-  "Prise de vue réelle", "Mix animation/réel", "Pixelisé/rétro", "Style aquarelle/artistique",
-]
-
-const VALID_EMOTIONAL_THEMES = [
-  "Dépassement de soi", "Acceptation de la différence", "Force de l'amitié",
-  "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place",
-  "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs",
-  "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation",
-  "Confiance en soi", "Solidarité et entraide",
-]
 
 function computeFinalConfidence(
   aiConfidence: number,
@@ -124,208 +54,19 @@ function computeFinalConfidence(
   return { score, needsDeepEnrich: score < 0.6 }
 }
 
-function filterToValidList(values: string[], validList: string[]): string[] {
-  return values.filter((v) => validList.includes(v))
-}
+/** Thrown when the model call itself failed (no answer, API error, timeout,
+ *  unparseable JSON) — as opposed to a DB or keyword-fetch error. The status
+ *  rule counts these to tell a dead model from a bad item. */
+class ModelCallError extends Error {}
 
 async function analyzeWithOpenAI(
   openai: OpenAI,
-  item: {
-    title: string
-    originalTitle?: string | null
-    type: string
-    synopsis?: string | null
-    genres: string[]
-    releaseDate?: Date | null
-    officialRating?: string | null
-    tmdbVoteCount?: number | null
-    demographic?: string | null
-    pegiDescriptors?: string[] | null
-  },
+  item: EnrichmentPromptItem,
   tmdbKeywords: string[] = [],
   retryCount = 0
 ): Promise<ContentAnalysis> {
-  // Type label + noun used in the prompt. MANGA has its own phrasing so
-  // the model knows it's reviewing a Japanese print-format comic, not
-  // the anime adaptation or a Western comic.
-  const isManga = item.type === "MANGA"
-  const typeLabel = isManga
-    ? "Manga (bande dessinee japonaise en format papier)"
-    : item.type === "GAME"
-    ? "Jeu video"
-    : item.type === "TV"
-    ? "Serie TV"
-    : "Film"
-  const typeNoun = isManga
-    ? "ce manga"
-    : item.type === "GAME"
-    ? "jeu"
-    : item.type === "TV"
-    ? "cette serie"
-    : "ce film"
-
-  // Manga-specific rubric appended only when needed. Demographics shape
-  // expected tone/violence norms; fanservice and stylised violence are
-  // common in battle shounen and need explicit flagging.
-  const mangaRubric = isManga
-    ? `
-
-PARTICULARITES MANGA — TIENS EN COMPTE:
-- Public cible (${item.demographic || "non specifie"}) : shounen (ados garcons), shoujo (ados filles), seinen (adultes), josei (jeunes femmes adultes)
-- Fanservice (plans suggestifs, tenues courtes) est frequent dans le shounen/seinen — signale-le quand present
-- La violence stylisee (combats, sang stylise) est normale dans le shounen mais peut etre intense
-- Les mangas sont souvent PLUS matures que leurs adaptations anime pour un age equivalent : base-toi sur le support papier
-- Langage cru et themes adultes sont frequents en seinen/josei — n'hesite pas a monter a 16+/18+ si justifie`
-    : ""
-
-  // Best-effort grounding hint. These TMDB keywords are PISTES only — they help
-  // the model recall what categories of sensitive content may be present; they
-  // are never echoed to users and must not be treated as verified scenes.
-  const keywordHint =
-    tmdbKeywords.length > 0
-      ? `\n- Indices (mots-cles TMDB, PISTES uniquement — ne decris jamais une scene precise comme un fait verifie): ${tmdbKeywords.slice(0, 40).join(", ")}`
-      : ""
-
-  const prompt = `Tu es un expert en evaluation de contenu mediatique pour les familles, similaire a Common Sense Media.
-Analyse ce contenu et fournis une evaluation detaillee pour aider les parents.
-
-CONTENU:
-- Titre: ${item.title}
-${item.originalTitle ? `- Titre original: ${item.originalTitle}` : ""}
-- Type: ${typeLabel}
-- Genres: ${item.genres.join(", ") || "Non specifie"}
-${item.releaseDate ? `- Date de sortie: ${item.releaseDate.toISOString().split("T")[0]}` : ""}
-${item.officialRating ? `- Classification officielle: ${item.officialRating}` : ""}
-${item.pegiDescriptors && item.pegiDescriptors.length > 0 ? `- Descripteurs PEGI officiels (AUTORITAIRES — les axes correspondants DOIVENT les refleter, meme si le synopsis n'en parle pas): ${item.pegiDescriptors.join(", ")}` : ""}
-- Synopsis/Description (peut etre en anglais): ${item.synopsis || "Non disponible"}${keywordHint}${mangaRubric}
-
-IMPORTANT:
-- Le synopsis que tu fournis DOIT etre en FRANCAIS (traduis si necessaire)
-- Le synopsis ne doit JAMAIS reveler de spoilers, retournements ou fin de l'histoire. Decris uniquement la premisse et le contexte initial.
-- Base ton analyse sur ta connaissance de ${typeNoun} si tu le connais
-
-Tags possibles (choisis UNIQUEMENT parmi cette liste, en respectant exactement la casse — 3 a 8 tags par contenu):
-
-GENRES/THEMES GENERAUX:
-"Animation", "Aventure", "Comédie", "Fantastique", "Science-Fiction", "Famille", "Éducatif", "Super-héros", "Magie", "Sport", "Musique", "Histoire", "Amitié"
-
-THEMES EMOTIONNELS ET SOCIAUX:
-"Émotions", "Courage", "Différence", "Handicap", "Deuil", "Divorce", "Harcèlement", "Premiers amours"
-
-TRANCHES DE VIE:
-"École", "Adolescence"
-
-UNIVERS ET IMAGINAIRE:
-"Espace", "Aviation", "Mythologie", "Contes", "Pirates", "Chevaliers", "Dinosaures", "Robots", "Enquête/Mystère", "Espionnage"
-
-NATURE ET ENVIRONNEMENT:
-"Animaux" (SEULEMENT si les animaux sont les personnages principaux, ex: Le Roi Lion, Babe)
-"Nature" (SEULEMENT pour documentaires nature ou films sur l'environnement)
-"Écologie", "Mer/Océan", "Montagne", "Voyage"
-
-ARTS ET CULTURE:
-"Cuisine", "Art", "Danse", "Théâtre"
-
-HISTOIRE ET SOCIETE:
-"Guerre", "Résistance", "Seconde Guerre mondiale"
-
-STUDIOS ET MARQUES:
-"Disney", "Pixar", "DreamWorks", "Studio Ghibli", "Aardman", "Illumination", "Laika", "LEGO", "Minecraft", "Astérix", "Tintin"
-
-MANGA (utiliser uniquement si type = MANGA):
-"Shounen", "Shoujo", "Seinen", "Josei", "Japon", "Arts martiaux", "Lycée", "Tranche de vie", "Romance", "Isekai"
-
-SAISONNIER:
-"Noël", "Halloween"
-
-JEUX:
-"Nintendo", "PlayStation", "Xbox", "PC"
-
-ATTENTION:
-- Ne mets JAMAIS "Animaux" ou "Nature" pour les films d'horreur, thriller, fantastique sombre, ou science-fiction meme s'ils mentionnent des creatures, monstres, ou forets
-- Privilegies les tags specifiques aux tags generiques (ex: "Dinosaures" plutot que "Aventure" seul)
-
-TON ET AMBIANCE (choisis 1 a 3 tags parmi cette liste):
-"Doux et chaleureux", "Doux et rassurant", "Joyeux et coloré", "Drôle et léger", "Aventureux et exaltant", "Épique et grandiose", "Mystérieux et intrigant", "Sombre et tendu", "Nostalgique et poétique", "Action intense", "Effrayant et angoissant", "Romantique et tendre", "Fait réfléchir", "Inspiré et motivant", "Mélancolique et touchant"
-
-RYTHME (choisis exactement 1):
-"Très calme", "Lent et contemplatif", "Rythme modéré", "Dynamique", "Rapide et frénétique"
-
-STYLE VISUEL (choisis exactement 1):
-"Animation 2D classique", "Animation 3D/CGI", "Stop motion", "Anime japonais", "Prise de vue réelle", "Mix animation/réel", "Pixelisé/rétro", "Style aquarelle/artistique"
-
-THEMES EMOTIONNELS (choisis 1 a 4 — ce que le spectateur RESSENT):
-"Dépassement de soi", "Acceptation de la différence", "Force de l'amitié", "Lien familial", "Perte et deuil", "Premiers amours", "Trouver sa place", "Combattre l'injustice", "Découverte du monde", "Surmonter ses peurs", "Responsabilité et maturité", "Liberté et indépendance", "Pardon et réconciliation", "Confiance en soi", "Solidarité et entraide"
-
-POINTS A SURVEILLER — "Ce qui peut marquer" (choisis 0 a 6 categories, UNIQUEMENT dans cette liste, casse exacte):
-${VALID_SENSITIVE_WARNINGS.map((w) => `"${w}"`).join(", ")}
-- Ce sont des REPERES DE VIGILANCE prudents ("ce qui PEUT marquer"), pas un verdict.
-- Choisis uniquement les categories reellement pertinentes ; renvoie [] (tableau vide) pour un contenu doux sans point de vigilance.
-- N'INVENTE JAMAIS de scene precise, de minutage, ni de detail d'intrigue. Categories seulement.
-
-CONFIANCE dans ton analyse (0.0 a 1.0):
-- 0.9-1.0: Tu connais tres bien ce contenu et es certain de tes evaluations
-- 0.7-0.8: Tu connais le contenu ou as assez d'informations pour une evaluation fiable
-- 0.5-0.6: Tu as des informations limitees, certaines evaluations sont estimees
-- 0.3-0.4: Tu ne connais pas ce contenu, tes evaluations sont basees uniquement sur le synopsis/genre
-- 0.1-0.2: Information insuffisante, evaluation tres incertaine
-
-ECHELLE DES METRIQUES (0-5) — calibree pour une sensibilite FAMILIALE.
-Distingue TOUJOURS le contenu STYLISE (animation, cartoon, fantastique, super-heros sans consequence reelle) du contenu REALISTE / GRAPHIQUE : la meme scene "vaut" moins en animation legere qu'en prise de vue reelle.
-- Violence: 0=aucune. 1-2=peril leger, slapstick, bagarres cartoon/animees sans consequence ni sang. 3=bagarres repetees, armes, tension, mort hors-champ. 4=violence realiste, sang, blessures montrees. 5=gore, torture, morts graphiques.
-- Sexe/Sensualite: 0=aucun. 1-2=romance, baisers, allusions legeres. 3=sensualite marquee, nudite suggeree. 4=scenes de sexe implicites / nudite. 5=sexe explicite.
-- Langage: 0=aucun. 1-2=quelques mots familiers. 3=insultes regulieres. 4=langage grossier frequent. 5=tres cru ou haineux.
-- Substances: 0=aucune. 1-2=alcool en arriere-plan. 3=consommation montree. 4=abus/drogues au coeur du recit. 5=usage glorifie ou explicite.
-- Achats integres (jeux): 0=aucun. 1-2=cosmetiques optionnels. 3=microtransactions presentes. 4-5=pay-to-win / loot boxes au coeur du jeu.
-Echelle generale des mots: 0=Aucun, 1=Minimal, 2=Leger, 3=Modere, 4=Important, 5=Intense.
-
-CONTENU D'EPOQUE (titres d'avant ~1990) — DEUX REGLES OPPOSEES, applique les deux:
-1. NE GONFLE PAS les axes pour une comedie familiale classique. Le slapstick (courses-poursuites, chutes, gifles comiques, gendarmes maladroits) reste 0-1 en violence, PAS 2+. Un baiser ou un quiproquo galant reste 0-1 en sexe/sensualite. Une comedie tous publics des annees 60-80 ne doit pas ressortir avec le meme profil qu'un film d'action moderne : c'est le principal defaut constate sur le catalogue patrimoine.
-2. SIGNALE en revanche les representations datees. Beaucoup de ces films reposent sur des stereotypes aujourd'hui problematiques (roles de genre, origines, religions, handicap) joues pour le rire. Quand c'est le cas, utilise "Stereotypes dates" et/ou "Humour a connotation ethnique ou religieuse" dans sensitiveWarnings, et dis-le en clair dans un point de whatParentsNeedToKnow.
-- C'est une information de CONTEXTE destinee aux parents, pas un jugement de valeur sur l'oeuvre : reste factuel et neutre, ne condamne pas, ne recommande pas d'eviter.
-- N'invente rien : ne signale ces categories que si tu connais reellement ce ressort dans ce titre precis.
-
-COHERENCE AGE <-> METRIQUES (essentiel):
-- Tes scores de sensibilite et l'age conseille doivent rester coherents. Un titre que tu juges adapte des 6-8 ans ne doit PAS porter de score > 2 ("Leger") en violence/sexe/langage/substances, sauf scene precise qui le justifie vraiment.
-- Si une scene te pousse vers 3+ sur un axe, demande-toi d'abord s'il faut RELEVER l'age conseille. L'age est le signal principal ; les axes ne sont que des reperes secondaires.
-
-CLASSIFICATION OFFICIELLE (indice FAIBLE):
-- La classification fournie n'est qu'un indice : souvent absente, et parfois imprecise (un meme code peut etre colle a des titres tres differents). Ne la suis jamais aveuglement — ta connaissance du titre et les genres priment.
-
-Sois precis et base ton analyse sur les informations fournies ET ta connaissance du contenu.
-
-REGLES DE LONGUEUR (OBLIGATOIRE):
-- synopsis: 2-3 phrases, MAXIMUM 400 caracteres. Pas de resume exhaustif de l'intrigue.
-- whatParentsNeedToKnow: exactement 3 a 5 points, chaque point = 1 phrase courte (max 120 caracteres)
-- confidenceReasons: max 2 raisons courtes (10 mots max chacune), tableau vide si confidence >= 0.7
-- tags: 3-8 tags de la liste ci-dessus, pas de texte libre
-
-Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
-{
-  "expertAgeRec": <nombre entre 3 et 18>,
-  "contentMetrics": {
-    "violence": <0-5>,
-    "sexNudity": <0-5>,
-    "language": <0-5>,
-    "consumerism": <0-5>,
-    "substanceUse": <0-5>,
-    "positiveMessages": <0-5>,
-    "roleModels": <0-5>
-  },
-  "whatParentsNeedToKnow": ["<1 phrase, max 120 car>", "<idem>", "<idem>"],
-  "sensitiveWarnings": ["<categorie de la liste>", "..."],
-  "synopsis": "<EN FRANCAIS, 2-3 phrases, max 400 car>",
-  "tags": ["<tag1>", "<tag2>"],
-  "confidence": <0.0-1.0>,
-  "confidenceReasons": ["<10 mots max>"],
-  "toneTags": ["<ton1>", "<ton2>"],
-  "pacing": "<rythme>",
-  "visualStyle": "<style>",
-  "emotionalThemes": ["<theme1>", "<theme2>"]
-}`
-
   try {
-    // Per-call abort — gpt-5-mini occasionally takes 25-35s on a
+    // Per-call abort — the model occasionally takes 25-35s on a
     // single analysis (mangas in particular, with the long manga
     // rubric appended). Capping each call at 35s lets a slow item
     // finish without dragging neighbours into a timeout, and the
@@ -335,106 +76,27 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
     const timer = setTimeout(() => controller.abort(), 35_000)
     let response
     try {
-      // gpt-5-mini is a reasoning model — internal reasoning tokens
-      // count against max_completion_tokens. With "medium" effort
-      // (the default on project keys), 1500 tokens get eaten by
-      // reasoning before any output is produced, so
-      // .choices[0].message.content comes back empty and our caller
-      // throws "No response from OpenAI". Setting "minimal" keeps
-      // reasoning under control; bumping the budget to 4000 gives
-      // the structured JSON output (~1k tokens) comfortable room.
-      // reasoning_effort isn't yet in the OpenAI SDK's typed params,
-      // so we add it via a typed base + extra-field cast.
-      const completionParams = {
-        model: "gpt-5-mini",
-        messages: [
-          { role: "system" as const, content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
-          { role: "user" as const, content: prompt },
-        ],
-        max_completion_tokens: 4000,
-        reasoning_effort: "minimal",
-      }
-      response = await openai.chat.completions.create(
-        completionParams as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
+      // Reasoning tokens count against max_completion_tokens. With a
+      // "medium" effort (the API default), 1500 tokens got eaten by
+      // reasoning before any output was produced, so
+      // .choices[0].message.content came back empty and the parser
+      // threw "No response from OpenAI". The shared helper sends a low
+      // effort ("none" by default, see src/lib/openai-text-model.ts) and
+      // the 4000 budget gives the structured JSON output (~1k tokens)
+      // comfortable room.
+      response = await createTextCompletion(
+        openai,
+        buildTextCompletionParams({
+          messages: buildEnrichmentMessages(item, tmdbKeywords),
+          maxCompletionTokens: ENRICHMENT_MAX_COMPLETION_TOKENS,
+        }),
         { signal: controller.signal },
       )
     } finally {
       clearTimeout(timer)
     }
 
-    const content = response.choices[0]?.message?.content
-    if (!content) {
-      throw new Error("No response from OpenAI")
-    }
-
-    // Clean the response - remove markdown code blocks and any leading/trailing whitespace
-    let cleanedContent = content
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim()
-
-    // Try to extract JSON if there's extra text
-    const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      cleanedContent = jsonMatch[0]
-    }
-
-    let parsed
-    try {
-      parsed = JSON.parse(cleanedContent)
-    } catch {
-      // If JSON parsing fails, log the content for debugging
-      console.error(`JSON parse error for "${item.title}":`, cleanedContent.substring(0, 200))
-      throw new Error(`Invalid JSON response: ${cleanedContent.substring(0, 100)}...`)
-    }
-
-    // Post-processing: enforce length limits as safety net
-    if (parsed.synopsis && parsed.synopsis.length > 500) {
-      parsed.synopsis = parsed.synopsis.slice(0, 497) + "..."
-    }
-    if (Array.isArray(parsed.whatParentsNeedToKnow)) {
-      parsed.whatParentsNeedToKnow = parsed.whatParentsNeedToKnow
-        .slice(0, 5)
-        .map((tip: string) => (tip.length > 150 ? tip.slice(0, 147) + "..." : tip))
-    }
-    if (Array.isArray(parsed.confidenceReasons)) {
-      parsed.confidenceReasons = parsed.confidenceReasons.slice(0, 2)
-    }
-
-    return {
-      expertAgeRec: Math.min(18, Math.max(3, parsed.expertAgeRec || 8)),
-      contentMetrics: {
-        violence: Math.min(5, Math.max(0, parsed.contentMetrics?.violence || 0)),
-        sexNudity: Math.min(5, Math.max(0, parsed.contentMetrics?.sexNudity || 0)),
-        language: Math.min(5, Math.max(0, parsed.contentMetrics?.language || 0)),
-        consumerism: Math.min(5, Math.max(0, parsed.contentMetrics?.consumerism || 0)),
-        substanceUse: Math.min(5, Math.max(0, parsed.contentMetrics?.substanceUse || 0)),
-        positiveMessages: Math.min(5, Math.max(0, parsed.contentMetrics?.positiveMessages || 3)),
-        roleModels: Math.min(5, Math.max(0, parsed.contentMetrics?.roleModels || 3)),
-      },
-      whatParentsNeedToKnow: Array.isArray(parsed.whatParentsNeedToKnow)
-        ? parsed.whatParentsNeedToKnow.slice(0, 5)
-        : [],
-      sensitiveWarnings: filterToValidList(
-        Array.isArray(parsed.sensitiveWarnings) ? parsed.sensitiveWarnings.slice(0, 6) : [],
-        VALID_SENSITIVE_WARNINGS as unknown as string[]
-      ),
-      synopsis: parsed.synopsis || item.synopsis || "",
-      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-      // V2 fields with validation
-      confidence: typeof parsed.confidence === "number" ? Math.min(1.0, Math.max(0.0, parsed.confidence)) : 0.5,
-      confidenceReasons: Array.isArray(parsed.confidenceReasons) ? parsed.confidenceReasons.slice(0, 3) : [],
-      toneTags: filterToValidList(
-        Array.isArray(parsed.toneTags) ? parsed.toneTags.slice(0, 3) : [],
-        VALID_TONE_TAGS
-      ),
-      pacing: VALID_PACING.includes(parsed.pacing) ? parsed.pacing : "Rythme modéré",
-      visualStyle: VALID_VISUAL_STYLES.includes(parsed.visualStyle) ? parsed.visualStyle : "",
-      emotionalThemes: filterToValidList(
-        Array.isArray(parsed.emotionalThemes) ? parsed.emotionalThemes.slice(0, 4) : [],
-        VALID_EMOTIONAL_THEMES
-      ),
-    }
+    return parseEnrichmentResponse(response.choices[0]?.message?.content, item)
   } catch (error) {
     // Retry on rate limit or temporary errors (max 2 retries)
     if (retryCount < 2) {
@@ -447,7 +109,8 @@ Reponds UNIQUEMENT avec un JSON valide (sans markdown) dans ce format exact:
         return analyzeWithOpenAI(openai, item, tmdbKeywords, retryCount + 1)
       }
     }
-    throw error
+    if (error instanceof ModelCallError) throw error
+    throw new ModelCallError(error instanceof Error ? error.message : String(error))
   }
 }
 
@@ -614,6 +277,10 @@ export async function POST(request: NextRequest) {
     // pick up the rest.
     const TIME_BUDGET_MS = 270_000
     let bailedOnTime = false
+    // Items where the model was called, and those where the call itself
+    // failed — so a dead model logs "error" instead of a quiet "partial".
+    let modelAttempts = 0
+    let modelFailures = 0
 
     for (const item of items) {
       try {
@@ -641,6 +308,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Analyze with OpenAI
+        modelAttempts++
         const analysis = await analyzeWithOpenAI(openai, {
           title: item.title,
           originalTitle: item.originalTitle,
@@ -761,20 +429,30 @@ export async function POST(request: NextRequest) {
         await new Promise((resolve) => setTimeout(resolve, delay))
       } catch (error) {
         result.errors++
+        if (error instanceof ModelCallError) modelFailures++
         result.details.push(
           `✗ Error enriching ${item.title}: ${error instanceof Error ? error.message : "Unknown error"}`
         )
       }
     }
 
+    const status = enrichRunStatus({
+      modelAttempts,
+      modelFailures,
+      errors: result.errors,
+      bailedOnTime,
+    })
+    const modelDown = status === "error"
     await logCronRun({
       task: "enrich",
-      status: result.errors > 0 ? "partial" : bailedOnTime ? "partial" : "success",
+      status,
       summary:
         result.processed === 0
           ? `Backlog vide — rien a enrichir (${type})`
-          : `${result.enriched} enrichis sur ${result.processed} (${type})${bailedOnTime ? " — bailed on time" : ""}`,
-      details: { ...result, type, bailedOnTime },
+          : modelDown
+            ? `Modèle indisponible ? ${modelFailures}/${modelAttempts} analyses en échec, 0 enrichi (${type}, ${openaiTextModel()})`
+            : `${result.enriched} enrichis sur ${result.processed} (${type})${modelFailures > 0 ? ` — ${modelFailures}/${modelAttempts} analyses en échec` : ""}${bailedOnTime ? " — bailed on time" : ""}`,
+      details: { ...result, type, bailedOnTime, modelAttempts, modelFailures, model: openaiTextModel() },
       startTime,
     })
 

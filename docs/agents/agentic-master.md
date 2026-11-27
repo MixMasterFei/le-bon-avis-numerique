@@ -25,6 +25,26 @@ how sure it must be, what it costs, and how a human keeps control.
 - Never expose model or vendor names in rendered text.
 
 ## Open work (2026-11-27)
+- **Text model migration `gpt-5-mini` → `gpt-6.1-terra`** (approved by Xavier; the GPT-5
+  family is shut down on 11 Dec 2026). Committed locally on branch
+  `worktree-agent-adcbecfee2e2fe3b8`, not pushed:
+  - One source: `src/lib/openai-text-model.ts` (`OPENAI_TEXT_MODEL`, default
+    `gpt-6.1-terra`; `OPENAI_TEXT_REASONING_EFFORT`, default `none` — the live API rejects
+    `minimal` with a 400 on param `reasoning_effort`; `createTextCompletion` retries once
+    without the field on that 400). Used by enrich, synopsis audit, TW backfill, SEO
+    synopsis rewrites and `scripts/backfill-enrichment.ts` (its deep pass, Responses API +
+    web search, uses the same model id, no effort). gpt-4o / gpt-4o-mini untouched.
+  - Enrichment prompt + parser moved to `src/lib/enrichment-analysis.ts` (no behaviour
+    change). A guard test bans the old ids from `src/` and `scripts/`.
+  - A dead model is no longer green: enrich and synopsis audit log `error` when every
+    model call fails, `partial` from 50 %; seo-striking-distance logs `partial` + an
+    alert line atop the email from 50 % `ai-failed` (`outcomes.synopsisModel`).
+  - **To do before 11 Dec:** run `scripts/compare-text-models.ts` against production
+    titles (`--models gpt-5-mini,gpt-6.1-terra:none,gpt-6.1-terra:low --json out.json`),
+    compare ages / flags / parse failures, decide `none` vs `low`, measure the real cost
+    (`--price gpt-6.1-terra=IN/OUT`) and update the admin cost estimate in
+    `EnrichmentPanel.tsx` (still the old model's rate). Then watch the first nightly
+    `enrich` / `synopsis-audit` rows and the next Thursday SEO row.
 - **27 Nov batch** (Director's brief, approved by Xavier) on branch
   `worktree-agent-a2dbae55c835aac38`, committed locally, not pushed:
   - SEO agent: `seoTitle` fully deterministic (`decideSeoTitle`, no model call, no

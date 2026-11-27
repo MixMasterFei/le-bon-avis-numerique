@@ -15,7 +15,8 @@
 //   B. Synopsis copy — the chapô AND the meta description both derive from
 //      synopsisFr (there is no separate SEO-copy field). When a striking query's
 //      keyword is genuinely absent from title+synopsis, we re-write synopsisFr via
-//      the same gpt-5-mini pattern enrichment already uses. Enriched fiches only.
+//      the same text model enrichment uses (src/lib/openai-text-model.ts).
+//      Enriched fiches only.
 //   C. SEO <title> — writes the separate `seoTitle` field (the Google <title>
 //      override); the DISPLAY name (H1/cards, media.title) is NEVER auto-edited.
 //      Also runs on provisional fiches that carry an age estimate. Fully
@@ -30,6 +31,7 @@ import { buildCanonicalSeoTitle, isCanonicalSeoTitle, releaseYearOf } from "./fi
 import { isKnownAge } from "./age-label"
 import { hasHomonym } from "./homonyms"
 import type { StrikingQuery } from "./seo-striking-distance"
+import { buildTextCompletionParams, createTextCompletion } from "./openai-text-model"
 
 // How many inbound similarity edges a target should have before we stop adding
 // maillage. Below this it appears in too few rails to get internal-link juice.
@@ -297,6 +299,9 @@ export interface SeoAutofixResult {
       synopsis: Record<string, number>
       seoTitle: Record<string, number>
     }
+    /** Synopsis rewrites that reached the model, and how many came back
+     *  « ai-failed » — `degraded` when ≥ 50 % failed (model down?). */
+    synopsisModel: SynopsisModelHealth
   }
   /** Up to 30 refusals with their draft, so a human can judge the guards. */
   refusalsDetail: RefusalDetail[]
@@ -308,6 +313,32 @@ export function isSaturated(t: SeoActionTarget): boolean {
   const doneSynopsis = t.synopsis === "covered" || t.synopsis === "no-keyword"
   const doneTitle = t.seoTitle === "n/a" || t.seoTitle === "covered" || t.seoTitle === "too-long"
   return t.linksCreated.length === 0 && Boolean(t.linksSkippedReason) && doneSynopsis && doneTitle
+}
+
+export interface SynopsisModelHealth {
+  attempted: number
+  failed: number
+  degraded: boolean
+}
+
+/**
+ * A dead model must not look green: the synopsis rewrites whose call was made
+ * (« rewritten », « refused », « ai-failed ») and how many failed. ≥ 50 %
+ * « ai-failed » → `degraded`, the route logs "partial" and the email opens
+ * with `synopsisModelAlertLine`.
+ */
+export function synopsisModelHealth(targets: Pick<SeoActionTarget, "synopsis">[]): SynopsisModelHealth {
+  const attempted = targets.filter(
+    (t) => t.synopsis === "rewritten" || t.synopsis === "refused" || t.synopsis === "ai-failed",
+  ).length
+  const failed = targets.filter((t) => t.synopsis === "ai-failed").length
+  return { attempted, failed, degraded: attempted > 0 && failed * 2 >= attempted }
+}
+
+/** First line of the weekly email when the synopsis model is failing. */
+export function synopsisModelAlertLine(health: SynopsisModelHealth): string | null {
+  if (!health.degraded) return null
+  return `**Réécritures de synopsis en échec : ${health.failed}/${health.attempted} — modèle indisponible ?**`
 }
 
 function tally(values: string[]): Record<string, number> {
@@ -455,26 +486,21 @@ function buildRewritePrompt(target: TargetItem, query: string): string {
   ].filter(Boolean).join("\n")
 }
 
-/** Single gpt-5-mini call that returns one string field from a JSON reply.
- *  Shared by the synopsis (field "synopsis") and meta-title (field "title")
- *  rewriters. */
+/** Single text-model call (src/lib/openai-text-model.ts) that returns one
+ *  string field from a JSON reply. Used by the synopsis rewriter (field
+ *  "synopsis"); the meta title is deterministic since 27 Nov 2026. */
 async function callJsonField(openai: OpenAI, prompt: string, field: string): Promise<string | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 35_000)
   try {
-    const params = {
-      model: "gpt-5-mini",
+    const params = buildTextCompletionParams({
       messages: [
         { role: "system" as const, content: "Tu es un rédacteur SEO francophone spécialisé dans les contenus médias familiaux. Réponds toujours en JSON valide, concis, sans texte superflu." },
         { role: "user" as const, content: prompt },
       ],
-      max_completion_tokens: 2000,
-      reasoning_effort: "minimal",
-    }
-    const response = await openai.chat.completions.create(
-      params as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
-      { signal: controller.signal },
-    )
+      maxCompletionTokens: 2000,
+    })
+    const response = await createTextCompletion(openai, params, { signal: controller.signal })
     const content = response.choices[0]?.message?.content
     if (!content) return null
     const match = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim().match(/\{[\s\S]*\}/)
@@ -1007,6 +1033,7 @@ export async function runSeoAutofix(
       synopsis: tally(targets.flatMap((t) => (t.synopsisRefusal ? [t.synopsisRefusal] : []))),
       seoTitle: tally(targets.flatMap((t) => (t.seoTitleRefusal ? [t.seoTitleRefusal] : []))),
     },
+    synopsisModel: synopsisModelHealth(targets),
   }
 
   return {

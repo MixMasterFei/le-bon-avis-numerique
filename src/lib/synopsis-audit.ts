@@ -1,4 +1,5 @@
 import OpenAI from "openai"
+import { buildTextCompletionParams, createTextCompletion, modelFailureStatus } from "@/lib/openai-text-model"
 
 /**
  * Synopsis quality audit — checks enriched `synopsisFr` text for two things a
@@ -168,6 +169,23 @@ export function correctionPasses(original: string, corrected: string | null): co
 }
 
 /**
+ * `cron_logs` status of one audit call. `unverified` = examined rows the model
+ * returned no verdict for (failed call, unparseable answer, dropped id).
+ *   - every examined row unverified → "error" (failure email: model down?)
+ *   - ≥ 50 % unverified → "partial"
+ *   - otherwise the historical rule: > 10 unverified or a time bail → "partial".
+ * Before 27 Nov 2026 a dead model logged "partial" at most.
+ */
+export function auditRunStatus(input: {
+  examined: number
+  unverified: number
+  bailedOnTime: boolean
+}): "success" | "partial" | "error" {
+  const fallback = input.unverified > 10 || input.bailedOnTime ? "partial" : "success"
+  return modelFailureStatus({ attempted: input.examined, modelFailures: input.unverified, fallback })
+}
+
+/**
  * One batched OpenAI call: sends up to AUDIT_BATCH_SIZE synopses, returns
  * validated verdicts. Never throws — a failed/malformed batch just returns
  * [], leaving those rows unchecked so the next run retries them.
@@ -176,8 +194,7 @@ export async function runAuditBatch(openai: OpenAI, items: AuditItemInput[]): Pr
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 35_000)
   try {
-    const params = {
-      model: "gpt-5-mini",
+    const params = buildTextCompletionParams({
       messages: [
         {
           role: "system" as const,
@@ -186,13 +203,9 @@ export async function runAuditBatch(openai: OpenAI, items: AuditItemInput[]): Pr
         },
         { role: "user" as const, content: buildAuditPrompt(items) },
       ],
-      max_completion_tokens: 4000,
-      reasoning_effort: "minimal",
-    }
-    const response = await openai.chat.completions.create(
-      params as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
-      { signal: controller.signal },
-    )
+      maxCompletionTokens: 4000,
+    })
+    const response = await createTextCompletion(openai, params, { signal: controller.signal })
     const content = response.choices[0]?.message?.content
     if (!content) return []
     return parseAuditResponse(

@@ -75,7 +75,7 @@ export function EnrichmentPanel({ initialType }: { initialType?: string }) {
     parseMediaType(initialType) !== "all" ? parseMediaType(initialType) : initialTypeFromQuery(),
   )
   // Default batch sized against the server's 300s ceiling: per-item
-  // gpt-5-mini timeout is 35s and the loop bails at 270s elapsed,
+  // model-call timeout is 35s and the loop bails at 270s elapsed,
   // so 5 items × 35s + delays ≈ 178s with comfortable headroom even
   // when manga analyses run long. Auto-mode uses the same value.
   const [batchSize, setBatchSize] = useState(5)
@@ -502,7 +502,7 @@ export function EnrichmentPanel({ initialType }: { initialType?: string }) {
                 <option value={25}>25 contenus (server bailera à 270s)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Cout estime: ~{(batchSize * 0.0013).toFixed(3)}$ (gpt-5-mini)
+                Cout estime: ~{(batchSize * 0.0013).toFixed(3)}$ (tarif de l&apos;ancien modèle, à recaler)
               </p>
             </div>
 

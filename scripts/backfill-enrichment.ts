@@ -17,6 +17,7 @@ config()
 
 import { PrismaClient } from "@prisma/client"
 import OpenAI from "openai"
+import { buildTextCompletionParams, createTextCompletion, openaiTextModel } from "../src/lib/openai-text-model"
 
 let prisma = new PrismaClient()
 
@@ -258,14 +259,13 @@ async function fullReenrich() {
         let response
         for (let attempt = 0; attempt < 3; attempt++) {
           try {
-            response = await openai.chat.completions.create({
-              model: "gpt-5-mini",
+            response = await createTextCompletion(openai, buildTextCompletionParams({
               messages: [
                 { role: "system", content: "Tu es un assistant spécialisé dans l'analyse de contenus médias pour les familles. Réponds toujours en JSON valide. Sois CONCIS : synopsis court (2-3 phrases, max 400 caractères), conseils parents courts (1 phrase chacun, max 120 caractères). Pas de texte superflu." },
                 { role: "user", content: prompt },
               ],
-              max_completion_tokens: 2000,
-            })
+              maxCompletionTokens: 2000,
+            }))
             break // success
           } catch (apiError: unknown) {
             const msg = apiError instanceof Error ? apiError.message : String(apiError)
@@ -434,8 +434,10 @@ async function deepEnrich() {
     try {
       const prompt = buildDeepPrompt(item, item.contentMetrics)
 
+      // Responses API + web search, so not createTextCompletion: same model
+      // id (OPENAI_TEXT_MODEL), no reasoning_effort (none was sent before).
       const response = await openai.responses.create({
-        model: "gpt-5",
+        model: openaiTextModel(),
         tools: [{ type: "web_search_preview" as const }],
         input: prompt,
         max_output_tokens: 1500,

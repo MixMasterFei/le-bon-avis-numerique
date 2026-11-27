@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 import { VALID_SENSITIVE_WARNINGS } from "@/lib/sensitive-warnings"
+import { buildTextCompletionParams, createTextCompletion } from "@/lib/openai-text-model"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300
@@ -66,8 +67,7 @@ Réponds UNIQUEMENT en JSON : {"recognized": <bool>, "warnings": [{"label": "<la
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 30_000)
   try {
-    const completionParams = {
-      model: "gpt-5-mini",
+    const completionParams = buildTextCompletionParams({
       messages: [
         {
           role: "system" as const,
@@ -76,13 +76,9 @@ Réponds UNIQUEMENT en JSON : {"recognized": <bool>, "warnings": [{"label": "<la
         },
         { role: "user" as const, content: prompt },
       ],
-      max_completion_tokens: 1200,
-      reasoning_effort: "minimal",
-    }
-    const response = await openai.chat.completions.create(
-      completionParams as unknown as Parameters<typeof openai.chat.completions.create>[0] & { stream?: false },
-      { signal: controller.signal },
-    )
+      maxCompletionTokens: 1200,
+    })
+    const response = await createTextCompletion(openai, completionParams, { signal: controller.signal })
     const content = response.choices[0]?.message?.content
     if (!content) return []
     const jsonMatch = content

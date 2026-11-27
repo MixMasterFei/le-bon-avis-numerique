@@ -5,7 +5,7 @@ import { callClaudeWithTimeout } from "@/lib/anthropic-with-timeout"
  * Pass-2 family-safety moderation for news stories.
  *
  * Single-provider Claude Haiku 4.5, text-only (May 2026 redesign).
- * The previous 3-path cascade (OpenAI gpt-5-mini vision → DeepSeek
+ * The previous 3-path cascade (OpenAI GPT-5-family vision → DeepSeek
  * V4-Flash → Claude Haiku) was the source of recurring stalls — when
  * OpenAI hung, the entire run blocked because no per-call timeout
  * existed. Vision moderation is overkill given that we now only use
