@@ -126,7 +126,14 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
   // skip the metric dump below. See @/lib/release-status.
   const assessment = mediaAssessment(media)
   const hideContentAnalysis = assessment.status !== "available"
-  const quick = buildQuickAnswer({ ...media, hideContentAnalysis })
+  // The page's analysis, flags included, so the reasons given here are the
+  // fiche's own (src/lib/fiche-reasons.ts) — same gate as « Ce qui peut marquer ».
+  const analysisMetrics = {
+    ...media.contentMetrics,
+    sensitiveWarnings: assessment.warningsStatus !== "unavailable" ? media.sensitiveWarnings ?? [] : [],
+    enrichmentConfidence: media.assessmentConfidence ?? null,
+  }
+  const quick = buildQuickAnswer({ ...media, contentMetrics: analysisMetrics, hideContentAnalysis })
   const sectionLabel = whatParentsSectionLabel(media.type)
 
   const lines: string[] = []
@@ -197,7 +204,7 @@ export function renderMediaMarkdown(media: MediaMdInput): string {
       officialRating: media.officialRating,
       genres: media.genres,
       topics: media.topics,
-      contentMetrics: media.contentMetrics,
+      contentMetrics: analysisMetrics,
     })
     if (rationale.show) {
       lines.push(`## ${rationale.heading}`, "")

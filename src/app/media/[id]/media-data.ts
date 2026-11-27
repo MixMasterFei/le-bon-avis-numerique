@@ -12,6 +12,8 @@ export interface DatabaseMediaItem extends MockMediaItem {
    *  (ISO). JSON-LD dateModified + visible fiche date. Deliberately NOT the
    *  row's updatedAt, which any bookkeeping write moves. */
   contentUpdatedAt?: string | null
+  /** Enriched, with a stored content analysis (not the all-zero placeholder). */
+  hasContentAnalysis?: boolean
   numberOfSeasons?: number | null
   pegiDescriptors?: string[]
   gameModes?: string[]
@@ -197,6 +199,9 @@ async function readMedia(
       expertAgeRec: dbMedia.expertAgeRec,
       // Imported with an estimated age but not yet AI-enriched → "âge provisoire".
       isProvisional: !dbMedia.isEnriched && dbMedia.expertAgeRec != null,
+      // An enriched fiche with a real content_metrics row — the analysis the
+      // meta description may quote (all-zero defaults below are not one).
+      hasContentAnalysis: !!dbMedia.isEnriched && !!dbMedia.contentMetrics,
       communityAgeRec: dbMedia.communityAgeRec,
       reviewCount,
       reviewAvgRating,
