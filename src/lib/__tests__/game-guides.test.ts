@@ -9,8 +9,8 @@ describe("game guide flag", () => {
     const prev = process.env.GAME_GUIDES_PUBLIC
     delete process.env.GAME_GUIDES_PUBLIC
     expect(isGameGuidePublic()).toBe(false)
-    expect(guideVisible("gta", false)).toBe(false)
-    expect(guideVisible("gta", true)).toBe(true)
+    expect(guideVisible("fortnite", false)).toBe(false)
+    expect(guideVisible("fortnite", true)).toBe(true)
     expect(releasedGuideKeys()).toEqual([])
     if (prev !== undefined) process.env.GAME_GUIDES_PUBLIC = prev
   })
@@ -96,9 +96,11 @@ describe("GAME_GUIDES", () => {
     expect(guideKeyForTitle("Minecraft: Java Edition")).toBe("minecraft")
     expect(guideKeyForTitle("Fortnite OG: Chapter 1 Season 7")).toBe("fortnite")
     expect(guideKeyForTitle("The Legend of Zelda: Ocarina of Time")).toBe("zelda-ocarina-of-time")
-    expect(guideKeyForTitle("Grand Theft Auto VI")).toBe("gta")
-    expect(guideKeyForTitle("Grand Theft Auto Online")).toBe("gta")
-    expect(getGameGuide("gta")?.catalogueId).toBe("57065822-8280-4fe1-9598-5ed442f4319c")
+    // The GTA VI guide was withdrawn on 27 Nov 2026: GTA fiches get the blog
+    // article instead (src/lib/blog-links.ts), never the gold button.
+    expect(guideKeyForTitle("Grand Theft Auto VI")).toBeNull()
+    expect(getGameGuide("gta")).toBeNull()
+    expect(getGameGuide("call-of-duty")?.catalogueId).toBe("ce8a57ba-a920-4ff4-8adc-add3086c6d7c")
     // The franchise seed has no guide: other Zelda fiches get no button.
     expect(guideKeyForTitle("The Legend of Zelda: Tears of the Kingdom")).toBeNull()
     expect(guideKeyForTitle("Call of Duty: Black Ops 6")).toBe("call-of-duty")
@@ -192,6 +194,32 @@ describe("guides must not cannibalise the fiches", () => {
     for (const g of GAME_GUIDES) {
       const mentions = JSON.stringify(g).match(/\bPEGI \d{1,2}\b|\bESRB [A-Z]/g) ?? []
       expect(mentions.length, `${g.key}: ${mentions.join(", ")}`).toBeLessThanOrEqual(2)
+    }
+  })
+})
+
+describe("Call of Duty: a guide for a parent whose child already plays", () => {
+  // Xavier, 27 Nov 2026: an adult-rated game keeps a guide only as « voici ce
+  // qu'il faut savoir et régler ». Nothing in it may read as an invitation to
+  // play the game with the child, as the GTA VI guide's « Jouer ensemble » did.
+  const cod = getGameGuide("call-of-duty")!
+
+  it("says plainly that the series is rated for adults", () => {
+    expect(cod.whatItIs).toMatch(/PEGI 18/)
+    expect(cod.whatItIs).toMatch(/réserv\w* aussi aux adultes/)
+  })
+
+  it("replaces « Jouer avec votre enfant » with a rule-setting block", () => {
+    expect(cod.playTogether.heading).toBe("Poser un cadre ensemble")
+    const block = [cod.playTogether.heading, cod.playTogether.intro, ...cod.playTogether.ideas].join(" ")
+    const playWithChild = /\bjouez\b|jouer (?:avec|ensemble)|partie à deux|quelques parties|même équipe|manette/i
+    expect(playWithChild.test(block), block).toBe(false)
+  })
+
+  it("covers spending, voice chat, playtime, Warzone vs the paid game, and watching", () => {
+    const questions = cod.decisions.map((d) => d.question).join(" | ")
+    for (const topic of [/dépenses/i, /chat vocal/i, /temps de jeu/i, /Warzone/, /regarder/i]) {
+      expect(questions).toMatch(topic)
     }
   })
 })

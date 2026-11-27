@@ -72,7 +72,8 @@ export interface GameGuide {
   tagline: string
   /**
    * The catalogue fiche this guide is about, when the seed's aliases would
-   * pick another one (the most-voted GTA is V, not VI). Furniture only: the
+   * pick another one (the Call of Duty guide shows Warzone, the free-to-play
+   * episode younger players reach first). Furniture only: the
    * age strip and imagery come from this row, the verdict stays on the fiche.
    */
   catalogueId?: string
@@ -98,6 +99,12 @@ export interface GameGuide {
 
   // ── Play together ────────────────────────────────────────────────────
   playTogether: {
+    /**
+     * Section heading. Defaults to « Jouer avec votre enfant »; a guide for an
+     * adult-rated game sets « Poser un cadre ensemble », so the block reads as
+     * talking and rule-setting, never as an invitation to play.
+     */
+    heading?: string
     intro: string
     ideas: string[]
   }
@@ -414,108 +421,6 @@ export const GAME_GUIDES: GameGuide[] = [
     },
   },
   {
-    key: "gta",
-    name: "Grand Theft Auto VI (GTA 6)",
-    // The seed's aliases match every GTA, and by votes GTA V wins: pin VI.
-    catalogueId: "57065822-8280-4fe1-9598-5ed442f4319c",
-    tagline: "Votre enfant le réclame parce que toute sa classe en parle. Voici de quoi lui répondre.",
-    whatItIs:
-      "Le nouvel épisode de la série d'action criminelle de Rockstar Games, sorti en novembre 2026 sur PlayStation 5 et Xbox Series X|S. Le jeu a été conçu pour des adultes et classé comme tel. Si votre enfant vous le demande entre 11 et 15 ans, la question ne porte donc pas sur un réglage à trouver : il s'agit de savoir comment dire non, ou pas encore, sans en faire une guerre. Ce guide vaut aussi pour GTA V et GTA Online, que les enfants réclament pour les mêmes raisons.",
-    whatHappens: [
-      "Le joueur incarne un duo de criminels, Lucia et Jason, dans Leonida, un État fictif inspiré de la Floride qui comprend la ville de Vice City.",
-      "Les missions tournent autour du crime : braquages, fusillades, poursuites en voiture.",
-      "Entre les missions, le monde ouvert laisse le joueur aller où il veut et faire ce qu'il veut, y compris commettre des violences sans lien avec l'histoire.",
-      "Les motifs de la classification européenne sont la violence, le contenu sexuel et la drogue.",
-      "À sa sortie, le jeu se joue seul. La série a déjà eu un volet en ligne séparé, GTA Online, où l'on croise des inconnus.",
-    ],
-    whyKidsLove:
-      "C'est d'abord un sujet de cour de récréation. Ce lancement était attendu depuis plus de dix ans, les bandes-annonces ont circulé partout, et un enfant qui n'y a pas accès a l'impression d'être le seul exclu de la conversation. Le monde ouvert fascine aussi pour lui-même : conduire où l'on veut, dans une ville qui ressemble à une vraie. Entendre cette envie sérieusement, sans s'en moquer, rend le « non » beaucoup plus facile à faire accepter.",
-    decisions: [
-      {
-        question: "Non, pas encore : comment le dire sans guerre ?",
-        detail:
-          "Expliquez la raison plutôt que de vous retrancher derrière « c'est interdit » : le jeu est réservé aux adultes à cause de ce qu'il montre (sexe, drogue, violence sur des personnes), pas parce qu'il serait trop difficile. Reconnaissez le coût social, puis proposez quelque chose de concret : un âge où vous en reparlerez, ou un autre jeu en monde ouvert pensé pour son âge. Un « non » assorti d'une date se négocie bien mieux qu'un « non » tout court.",
-      },
-      {
-        question: "Et les vidéos, vous les autorisez ?",
-        detail:
-          "Beaucoup d'enfants découvrent GTA sans jamais y jouer, en regardant des parties filmées ou commentées en direct. Aucun réglage de console ne touche à cela. Décidez si regarder relève de la même règle que jouer, et dites-le clairement : c'est souvent là que le sujet se règle en pratique.",
-      },
-      {
-        question: "Que se passe-t-il chez les copains ?",
-        detail:
-          "Vous ne contrôlez pas la console des autres familles. Plutôt qu'une interdiction impossible à vérifier, dites à votre enfant ce que vous attendez de lui s'il se retrouve devant le jeu ailleurs, et parlez-en aux parents que vous connaissez.",
-      },
-      {
-        question: "Quand le mode en ligne arrivera.",
-        detail:
-          "Rockstar n'a pas annoncé de date, mais si un volet en ligne voit le jour, il ajoutera des inconnus, un chat vocal et une boutique. Si vous avez dit « oui » au jeu solo pour un grand adolescent, ce « oui » ne vaut pas automatiquement pour le mode en ligne : la question se repose à ce moment-là.",
-      },
-    ],
-    advanced: [
-      "Le modèle économique de GTA V s'est surtout joué dans GTA Online, avec sa monnaie interne vendue en argent réel. C'est l'expérience à garder en tête pour le jour où un volet en ligne sera annoncé.",
-      "Pour un adolescent qui veut surtout un grand monde ouvert à parcourir en voiture, les jeux de course en monde ouvert et les aventures d'action classées plus bas couvrent une bonne partie de l'envie. Regardez leur fiche avant de proposer un titre précis.",
-      "Une console familiale partagée a souvent un compte adulte ouvert : un enfant qui y a accès contourne tous les réglages décrits ici. Le compte de l'enfant doit être un compte enfant, rattaché au vôtre.",
-    ],
-    stateOfPlay: {
-      // Date des recherches en ligne (21 nov. 2026), PAS une relecture humaine :
-      // chaque fait ci-dessous attend sa vérification avant GAME_GUIDES_PUBLIC.
-      verifiedOn: "2026-11-21",
-      facts: [
-        "GTA VI est disponible sur PlayStation 5 et Xbox Series X|S depuis le 19 novembre 2026. Aucune version PC n'est disponible à ce jour.",
-        "Il est classé PEGI 18 pour la violence, le contenu sexuel et la drogue. PEGI signale des achats intégrés, mais pas d'objets aléatoires payants.",
-        "À sa sortie, le jeu se joue en solo : Rockstar n'a pas annoncé de date pour un mode en ligne.",
-        "Sur PlayStation 5, un compte enfant rattaché à votre compte peut être limité aux jeux d'une certaine classification d'âge : un jeu au-dessus ne se lance pas.",
-        "PlayStation permet aussi de fixer un plafond de dépenses mensuel, de restreindre la communication avec d'autres joueurs et de limiter le temps de jeu jour par jour, depuis la console ou l'application PlayStation Family.",
-        "Sur Xbox, les paramètres familiaux permettent de filtrer les jeux selon leur classification d'âge, d'exiger votre accord avant un achat, et de choisir avec qui l'enfant peut jouer et discuter en ligne : personne, ses amis, ou tout le monde.",
-        "Ces réglages Xbox se gèrent aussi depuis l'application gratuite Xbox Family Settings, sur votre téléphone.",
-      ],
-      doesNotDo: [
-        "Les limites d'âge de la console n'empêchent pas votre enfant de regarder des parties en vidéo ou en direct, sur son téléphone ou un ordinateur.",
-        "Elles ne s'appliquent qu'à son compte, sur votre console : chez un ami, ou sur un compte adulte resté ouvert, rien ne s'y oppose.",
-        "Elles ne protègent pas d'un second compte créé avec une fausse date de naissance. Vérifiez de temps en temps quels comptes existent sur la console.",
-        "Le plafond de dépenses et l'accord avant achat portent sur les achats faits avec le compte de l'enfant, pas sur une carte prépayée utilisée sur un autre compte.",
-      ],
-      officialLinks: [
-        {
-          label: "Contrôle parental et limites de dépenses sur PlayStation",
-          url: "https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/",
-          source: "Sony Interactive Entertainment",
-        },
-        {
-          label: "L'application PlayStation Family",
-          url: "https://www.playstation.com/fr-fr/parental-controls/",
-          source: "Sony Interactive Entertainment",
-        },
-        {
-          label: "Jouer en famille sur Xbox (paramètres familiaux)",
-          url: "https://www.xbox.com/fr-FR/family-hub",
-          source: "Microsoft",
-        },
-        {
-          label: "Rechercher la classification sur le site PEGI",
-          url: "https://pegi.info/fr",
-          source: "PEGI",
-        },
-        {
-          label: "Grand Theft Auto VI (site officiel)",
-          url: "https://www.rockstargames.com/VI",
-          source: "Rockstar Games",
-        },
-      ],
-    },
-    playTogether: {
-      intro:
-        "Ici, jouer ensemble veut dire s'intéresser à ce qui l'attire dans GTA, puis trouver à deux le jeu qui y répond à son âge.",
-      ideas: [
-        "Demandez-lui ce qu'il a vu passer et ce qui lui plaît : la ville, les voitures, l'histoire, ou le fait que tout le monde en parle. La réponse oriente vers l'alternative à lui proposer.",
-        "Choisissez ensemble un jeu en monde ouvert adapté à son âge, en lisant les fiches à deux. Il ne vit plus votre décision comme une simple privation.",
-        "Si vous jouez vous-même à GTA, dites-le-lui et expliquez pourquoi vous attendez pour lui. L'incohérence perçue est l'argument qu'il vous opposera en premier.",
-        "Fixez dès maintenant la date à laquelle vous en reparlerez, et tenez-la.",
-      ],
-    },
-  },
-  {
     key: "brawl-stars",
     name: "Brawl Stars",
     catalogueId: "8fe148bb-81ca-4a12-a57c-b40713c5a872",
@@ -701,10 +606,14 @@ export const GAME_GUIDES: GameGuide[] = [
     name: "Call of Duty",
     // Warzone: free to play, so it is the episode younger players actually
     // reach first. The guide speaks about the series.
+    // Framing (Xavier, 27 Nov 2026): « votre enfant y joue déjà ». The series
+    // is adult-rated (PEGI 18 and 18 on our fiches, read 27 Nov 2026); the
+    // guide says so plainly, does not endorse under-age play, and helps the
+    // parent who is facing it. Its playTogether block sets rules, never play.
     catalogueId: "ce8a57ba-a920-4ff4-8adc-add3086c6d7c",
-    tagline: "Un jeu de guerre pour adultes, et une version gratuite qui le met à portée de tous.",
+    tagline: "Votre enfant y joue déjà, souvent sur Warzone, qui est gratuit : voici ce qu'il faut savoir et régler.",
     whatItIs:
-      "Une série de jeux de tir militaires d'Activision, avec un nouvel épisode presque chaque année et un mode bataille royale gratuit, Warzone. Les épisodes se ressemblent de loin mais ne sont pas tous classés de la même façon. Comme pour GTA, la demande arrive souvent bien avant l'âge prévu, parce que les grands frères et les copains y jouent.",
+      "Une série de jeux de tir militaires d'Activision, avec un nouvel épisode presque chaque année et un mode bataille royale gratuit, Warzone. Warzone et les épisodes récents sont classés PEGI 18, et nos fiches les réservent aussi aux adultes. Dans les faits, beaucoup de collégiens y jouent quand même, le plus souvent sur Warzone, parce qu'il ne coûte rien et que les copains y sont. Ce guide ne remet pas la classification en cause : il s'adresse au parent qui découvre que son enfant y joue déjà, pour l'aider à savoir quoi regarder et quoi régler.",
     whatHappens: [
       "La campagne solo raconte une guerre à la manière d'un film d'action, avec une violence armée réaliste.",
       "Le multijoueur oppose des équipes de joueurs en ligne, dans des parties courtes qui s'enchaînent.",
@@ -716,19 +625,34 @@ export const GAME_GUIDES: GameGuide[] = [
       "C'est le jeu des grands : y jouer, c'est être admis dans le groupe. Les parties rapides, la progression permanente et le jeu en équipe avec les copains font le reste. La gratuité de Warzone retire en plus l'obstacle du prix d'achat, qui servait autrefois de garde-fou naturel.",
     decisions: [
       {
-        question: "Quel épisode, exactement ?",
+        question: "Les dépenses : passe de combat, packs et monnaie du jeu.",
         detail:
-          "Les parents confondent souvent les opus. Avant de répondre, regardez la classification de celui que votre enfant demande : c'est elle que le filtre de la console appliquera.",
+          "Warzone ne coûte rien à installer, mais sa boutique vend des apparences, des armes cosmétiques, des packs et un passe de combat, payés avec une monnaie du jeu achetée en argent réel. Décidez s'il a droit à un budget, lequel et à quelle fréquence, ou à aucun achat. Sur console, le plafond de dépenses et l'accord avant achat se règlent sur le compte de l'enfant.",
       },
       {
-        question: "Le chat vocal, c'est le vrai sujet.",
+        question: "Le chat vocal avec des inconnus adultes.",
         detail:
-          "Le contenu du jeu est une chose, les propos tenus en ligne en sont une autre. Un adolescent qui joue avec ses amis et coupe le chat avec les inconnus ne vit pas du tout le même jeu que celui qui joue seul, casque sur les oreilles, avec des adultes qu'il ne connaît pas.",
+          "Le contenu du jeu est une chose, les propos tenus en ligne en sont une autre. Un adolescent qui joue avec ses amis et coupe le chat avec les inconnus ne vit pas du tout le même jeu que celui qui joue seul, casque sur les oreilles, avec des adultes qu'il ne connaît pas. Ne supposez pas que le chat est coupé : vérifiez avec lui ce qui est activé, dans le jeu et sur la console.",
+      },
+      {
+        question: "Le temps de jeu.",
+        detail:
+          "Les parties s'enchaînent sans point d'arrêt et le passe de combat récompense la régularité. Une limite en nombre de parties se tient mieux qu'une limite en minutes : quitter une partie en cours pénalise toute l'équipe, et c'est souvent là que naissent les disputes.",
+      },
+      {
+        question: "Warzone ou l'épisode payant : qu'est-ce qui change ?",
+        detail:
+          "Warzone, gratuit, se joue en ligne contre d'autres joueurs et vit de sa boutique. L'épisode payant ajoute une campagne solo, une guerre racontée comme un film d'action avec une violence armée réaliste, et son propre multijoueur. Les deux sont classés pour adultes. Refuser l'achat de l'épisode payant ne ferme donc pas la porte de Warzone : si votre règle porte sur Call of Duty, précisez qu'elle vaut pour les deux. Les épisodes se ressemblent de loin : regardez la classification de celui dont il parle, c'est elle que le filtre de la console appliquera.",
+      },
+      {
+        question: "Regarder des parties, ça compte ?",
+        detail:
+          "Beaucoup d'adolescents regardent des parties en vidéo ou en direct autant qu'ils jouent. Aucun réglage de console ne touche à cela. Décidez si regarder relève de la même règle que jouer, et dites-le clairement.",
       },
       {
         question: "Non, pas encore : comment le dire ?",
         detail:
-          "Comme pour tout jeu réservé aux adultes, expliquez la raison plutôt que d'invoquer l'interdit, reconnaissez la pression du groupe et fixez une date pour en reparler. Proposer un jeu d'équipe en ligne classé pour son âge rend le « non » plus facile à accepter.",
+          "S'il n'y joue pas encore, expliquez la raison plutôt que d'invoquer l'interdit, reconnaissez la pression du groupe et fixez une date pour en reparler. Proposer un jeu d'équipe en ligne classé pour son âge rend le « non » plus facile à accepter.",
       },
     ],
     advanced: [
@@ -776,13 +700,16 @@ export const GAME_GUIDES: GameGuide[] = [
       ],
     },
     playTogether: {
+      heading: "Poser un cadre ensemble",
       intro:
-        "Si votre adolescent a l'âge du jeu, ou si vous avez décidé de l'autoriser, une partie à deux vaut mieux qu'un long débat sur la violence des jeux vidéo.",
+        "Ce moment sert à parler du jeu avec lui et à fixer des règles que vous pourrez tenir tous les deux.",
       ideas: [
-        "Jouez quelques parties dans la même équipe. Vous entendrez vous-même le ton du chat vocal, ce qui rend la discussion sur les réglages beaucoup plus concrète.",
-        "Demandez-lui de vous montrer ses réglages audio : avec qui il parle, qui il a coupé, comment on signale un joueur.",
-        "Si c'est encore non, cherchez ensemble un jeu d'équipe en ligne classé pour son âge, en lisant les fiches à deux.",
+        "Demandez-lui ce qui lui plaît : les copains, les parties rapides, la progression, les apparences à débloquer. Sa réponse vous indique sur quoi la règle doit porter.",
+        "Demandez-lui de vous montrer ses réglages audio : avec qui il parle, qui il a coupé, comment on signale un joueur. Convenez ensemble de qui peut lui parler.",
+        "Fixez la règle des dépenses : un budget et sa fréquence, ou aucun achat.",
         "Mettez-vous d'accord sur une fin de session en nombre de parties, une partie interrompue pénalisant toute l'équipe.",
+        "Choisissez une date pour refaire le point, dans un mois par exemple, et tenez-la.",
+        "Si c'est encore non, cherchez ensemble un jeu d'équipe en ligne classé pour son âge, en lisant les fiches à deux.",
       ],
     },
   },

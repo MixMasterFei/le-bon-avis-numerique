@@ -47,7 +47,7 @@ export async function getGuideGameMedia(guideKey: string): Promise<GuideGameMedi
   const guide = GAME_GUIDES.find((g) => g.key === guideKey)
   if (!guide) return null
 
-  // A guide written about one release (GTA VI, not the most-voted GTA) pins
+  // A guide written about one release (Warzone for Call of Duty) pins
   // its fiche. If that row is gone, fall through to alias matching rather
   // than render without furniture.
   if (guide.catalogueId) {

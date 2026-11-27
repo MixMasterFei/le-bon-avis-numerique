@@ -3,7 +3,11 @@
 **Pour :** Xavier ou Steph · **Préparé le :** 22 novembre 2026 · **Objectif :** ouvrir les
 guides parents (`/jeux/guide/...`) à tout le monde avant Noël.
 
-Aujourd'hui, ces neuf pages ne sont visibles que par les comptes administrateurs. Avant de les
+**Mise à jour du 27 novembre 2026 :** le guide GTA VI a été retiré (décision de Xavier). Pour un
+jeu réservé aux adultes, le format « guide » se lisait comme un mode d'emploi pour laisser jouer
+un enfant ; il est remplacé par un article de blog. Il reste huit guides à vérifier.
+
+Aujourd'hui, ces huit pages ne sont visibles que par les comptes administrateurs. Avant de les
 ouvrir, une personne doit relire chaque affirmation factuelle de « L'état du jeu » et des
 réglages parentaux en la comparant à la page officielle de l'éditeur ou de la console. Personne
 ne l'a encore fait : les dates « Vérifié le … » affichées aujourd'hui ne correspondent à aucune
@@ -16,7 +20,7 @@ risque que cette liste cherche à écarter.
 ## Comment s'y prendre
 
 1. **Connectez-vous avec un compte administrateur** sur totemavise.com, puis ouvrez le guide
-   (adresse indiquée en tête de chaque guide, par exemple `totemavise.com/jeux/guide/gta`).
+   (adresse indiquée en tête de chaque guide, par exemple `totemavise.com/jeux/guide/fortnite`).
    Sans compte admin, la page répond « introuvable » : c'est normal tant que les guides ne sont
    pas publics.
 2. **Pour chaque point, ouvrez le lien proposé**, de préférence dans sa version française
@@ -42,7 +46,7 @@ risque que cette liste cherche à écarter.
 
 - En haut, une pastille d'âge « … — voir la fiche » : elle vient de la fiche du jeu dans notre
   catalogue, pas du guide. Jetez-y un œil : si elle contredit nettement la classification PEGI
-  citée dans le guide (par exemple un âge bas sur GTA VI), signalez-le, car c'est la fiche qu'il
+  citée dans le guide (par exemple un âge bas sur Call of Duty), signalez-le, car c'est la fiche qu'il
   faudra corriger.
 - Dans « L'état du jeu », la ligne « Vérifié le [date] ». Elle reprend la date `verifiedOn` du
   guide. Au-delà de 30 jours sans relecture, la page ajoute d'elle-même un avertissement « Ce bloc
@@ -52,7 +56,7 @@ risque que cette liste cherche à écarter.
 
 ## Les points les plus risqués, tous guides confondus
 
-Si vous ne deviez vérifier que cinq choses, ce seraient celles-ci :
+Si vous ne deviez vérifier que quatre choses, ce seraient celles-ci :
 
 1. **Roblox, point 12** : « Roblox ne fournit pas de minuteur ». Il nous semble que Roblox
    propose depuis fin 2024 une limite de temps d'écran quotidienne dans le compte parent. Si
@@ -61,13 +65,11 @@ Si vous ne deviez vérifier que cinq choses, ce seraient celles-ci :
    par défaut » et que « l'ouverture est la valeur par défaut » pour le chat vocal, alors qu'il
    mentionne aussi des comptes pour les plus jeunes où tout est coupé par défaut. Pour un enfant
    de moins de 15 ans en France, la règle exacte doit être écrite sans ambiguïté.
-3. **GTA VI, points 3 à 5** : la classification PEGI 18, ses motifs, et surtout l'affirmation
-   « pas d'objets aléatoires payants », jamais confirmées sur pegi.info.
-4. **EA Sports FC, points 4 et 14** : « limite de dépenses fixée à zéro par défaut » pour un
+3. **EA Sports FC, points 4 et 14** : « limite de dépenses fixée à zéro par défaut » pour un
    adolescent, et « vous pouvez autoriser le jeu sans ce mode [Ultimate Team] », qui laisse
    croire qu'un réglage permet de bloquer ce mode. Deux phrases qui rassurent, à confirmer avant
    tout.
-5. **Brawl Stars, points 4, 5 et 16** : l'accord parental avant achat (iPhone et Android)
+4. **Brawl Stars, points 4, 5 et 16** : l'accord parental avant achat (iPhone et Android)
    couvre-t-il tous les achats, ou existe-t-il une boutique Supercell sur le web qui le
    contourne ? Et la boutique d'Apple affiche-t-elle vraiment la classification PEGI ?
 
@@ -77,16 +79,15 @@ Si vous ne deviez vérifier que cinq choses, ce seraient celles-ci :
 
 | Ordre | Guide | Adresse | Date affichée | Points | Temps estimé |
 |---|---|---|---|---|---|
-| 1 | Grand Theft Auto VI (GTA 6) | `/jeux/guide/gta` | 21 nov. 2026 (date de recherche) | 21 | 1 h 15 |
-| 2 | Fortnite | `/jeux/guide/fortnite` | 19 août 2026 (date de rédaction) | 13 | 50 min |
-| 3 | Roblox | `/jeux/guide/roblox` | 19 août 2026 (date de rédaction) | 17 | 1 h |
-| 4 | The Legend of Zelda: Ocarina of Time (Switch 2) | `/jeux/guide/zelda-ocarina-of-time` | 21 nov. 2026 (date de recherche) | 18 | 1 h |
-| 5 | Brawl Stars | `/jeux/guide/brawl-stars` | 21 nov. 2026 (date de recherche) | 18 | 1 h |
-| 6 | EA Sports FC (ex-FIFA) | `/jeux/guide/ea-sports-fc` | 21 nov. 2026 (date de recherche) | 16 | 55 min |
-| 7 | Call of Duty | `/jeux/guide/call-of-duty` | 21 nov. 2026 (date de recherche) | 13 | 45 min |
-| 8 | Minecraft | `/jeux/guide/minecraft` | 19 août 2026 (date de rédaction) | 9 | 35 min |
-| 9 | Among Us | `/jeux/guide/among-us` | 21 nov. 2026 (date de recherche) | 11 | 40 min |
-| | **Total** | | | **136 points + 27 liens** | **environ 8 h** |
+| 1 | Fortnite | `/jeux/guide/fortnite` | 19 août 2026 (date de rédaction) | 13 | 50 min |
+| 2 | Roblox | `/jeux/guide/roblox` | 19 août 2026 (date de rédaction) | 17 | 1 h |
+| 3 | The Legend of Zelda: Ocarina of Time (Switch 2) | `/jeux/guide/zelda-ocarina-of-time` | 21 nov. 2026 (date de recherche) | 18 | 1 h |
+| 4 | Brawl Stars | `/jeux/guide/brawl-stars` | 21 nov. 2026 (date de recherche) | 18 | 1 h |
+| 5 | EA Sports FC (ex-FIFA) | `/jeux/guide/ea-sports-fc` | 21 nov. 2026 (date de recherche) | 16 | 55 min |
+| 6 | Call of Duty | `/jeux/guide/call-of-duty` | 21 nov. 2026 (date de recherche) | 16 | 55 min |
+| 7 | Minecraft | `/jeux/guide/minecraft` | 19 août 2026 (date de rédaction) | 9 | 35 min |
+| 8 | Among Us | `/jeux/guide/among-us` | 21 nov. 2026 (date de recherche) | 11 | 40 min |
+| | **Total** | | | **118 points + 22 liens** | **environ 7 h** |
 
 Le temps estimé comprend la lecture de la page entière (une dizaine de minutes) et environ trois
 minutes par point. Comptez plus si une page officielle a changé et qu'il faut chercher la bonne.
@@ -94,137 +95,7 @@ Mieux vaut répartir le travail sur trois ou quatre séances que tout faire d'un
 
 ---
 
-## 1. Grand Theft Auto VI (GTA 6)
-
-- **Adresse :** `totemavise.com/jeux/guide/gta`
-- **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
-- **D'où vient cette date :** c'est la date des recherches en ligne faites pour rédiger le guide,
-  **pas une relecture humaine**. Le code le dit en commentaire : « Date des recherches en ligne
-  (21 nov. 2026), PAS une relecture humaine ». La page affiche donc aujourd'hui « Vérifié le »
-  pour un bloc que personne n'a vérifié.
-- **Temps estimé :** 1 h 15.
-
-> **Doutes signalés par le Directeur**
-> - Les motifs exacts de la classification PEGI (violence, sexe, drogue) n'ont pas été
->   confirmés.
-> - L'adresse française de la page famille Xbox (`xbox.com/fr-FR/family-hub`) a été devinée.
-
-**Ce qui compte le plus :** la classification PEGI 18 et ses motifs (points 3 à 5), le blocage
-d'un jeu trop classé sur PlayStation 5 (point 7) et les trois choix de communication sur Xbox
-(point 14).
-
-### Dans « L'état du jeu »
-
-1. « GTA VI est disponible sur PlayStation 5 et Xbox Series X|S depuis le 19 novembre 2026. »
-   - Où vérifier : site officiel Rockstar, https://www.rockstargames.com/VI
-   - ☐ OK / ☐ à corriger : ___
-2. « Aucune version PC n'est disponible à ce jour. »
-   - Où vérifier : https://www.rockstargames.com/VI (plateformes listées)
-   - ☐ OK / ☐ à corriger : ___
-3. **À VÉRIFIER EN PRIORITÉ.** « Il est classé PEGI 18 »
-   - Où vérifier : moteur de recherche PEGI, https://pegi.info/fr (chercher « Grand Theft Auto
-     VI »)
-   - ☐ OK / ☐ à corriger : ___
-4. **À VÉRIFIER EN PRIORITÉ (doute du Directeur).** « pour la violence, le contenu sexuel et la
-   drogue »
-   - Où vérifier : https://pegi.info/fr, fiche du jeu, liste des pictogrammes. Notez s'il y en a
-     d'autres (langage grossier, jeux de hasard, etc.).
-   - ☐ OK / ☐ à corriger : ___
-5. **À VÉRIFIER EN PRIORITÉ.** « PEGI signale des achats intégrés, mais pas d'objets aléatoires
-   payants. »
-   - Où vérifier : https://pegi.info/fr, même fiche (la mention « Achats intégrés » précise
-     « inclut des objets aléatoires payants » quand c'est le cas)
-   - ☐ OK / ☐ à corriger : ___
-6. « À sa sortie, le jeu se joue en solo : Rockstar n'a pas annoncé de date pour un mode en
-   ligne. » (même idée reprise dans « Ce qui se passe » et dans la décision « Quand le mode en
-   ligne arrivera »)
-   - Où vérifier : https://www.rockstargames.com/VI et les actualités Rockstar
-     (https://www.rockstargames.com/fr/newswire, lien à confirmer)
-   - ☐ OK / ☐ à corriger : ___
-7. « Sur PlayStation 5, un compte enfant rattaché à votre compte peut être limité aux jeux d'une
-   certaine classification d'âge : un jeu au-dessus ne se lance pas. »
-   - Où vérifier : https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/
-   - ☐ OK / ☐ à corriger : ___
-8. « PlayStation permet aussi de fixer un plafond de dépenses mensuel »
-   - Où vérifier : même page PlayStation
-   - ☐ OK / ☐ à corriger : ___
-9. « de restreindre la communication avec d'autres joueurs »
-   - Où vérifier : même page PlayStation
-   - ☐ OK / ☐ à corriger : ___
-10. « et de limiter le temps de jeu jour par jour »
-    - Où vérifier : même page PlayStation
-    - ☐ OK / ☐ à corriger : ___
-11. « depuis la console ou l'application PlayStation Family »
-    - Où vérifier : https://www.playstation.com/fr-fr/parental-controls/ (nom exact de
-      l'application en France, et les trois réglages ci-dessus y sont-ils tous ?)
-    - ☐ OK / ☐ à corriger : ___
-12. « Sur Xbox, les paramètres familiaux permettent de filtrer les jeux selon leur classification
-    d'âge »
-    - Où vérifier : https://www.xbox.com/fr-FR/family-hub (lien à confirmer, doute du
-      Directeur) ou l'aide Xbox https://support.xbox.com/fr-FR/ (rubrique famille, lien à
-      confirmer)
-    - ☐ OK / ☐ à corriger : ___
-13. « d'exiger votre accord avant un achat »
-    - Où vérifier : même page Xbox (réglage « Demander à un parent », nom exact à relever)
-    - ☐ OK / ☐ à corriger : ___
-14. « et de choisir avec qui l'enfant peut jouer et discuter en ligne : personne, ses amis, ou
-    tout le monde. »
-    - Où vérifier : même page Xbox (les trois choix existent-ils tels quels ?)
-    - ☐ OK / ☐ à corriger : ___
-15. « Ces réglages Xbox se gèrent aussi depuis l'application gratuite Xbox Family Settings, sur
-    votre téléphone. »
-    - Où vérifier : même page Xbox, ou la fiche de l'application dans l'App Store / Google Play
-      (nom affiché en France : « Xbox Family Settings » ou « Paramètres familiaux Xbox » ?)
-    - ☐ OK / ☐ à corriger : ___
-
-### Dans « Ce que ces réglages ne font pas »
-
-16. « Elles ne s'appliquent qu'à son compte, sur votre console : chez un ami, ou sur un compte
-    adulte resté ouvert, rien ne s'y oppose. »
-    - Où vérifier : pages PlayStation et Xbox ci-dessus. Point à éclaircir : les restrictions
-      d'un compte enfant le suivent-elles quand il se connecte avec SON compte sur la console
-      d'un ami ? Si oui, « sur votre console » est inexact (la phrase reste prudente, mais elle
-      sous-estime le réglage).
-    - ☐ OK / ☐ à corriger : ___
-17. « Elles ne protègent pas d'un second compte créé avec une fausse date de naissance. »
-    - Où vérifier : pages PlayStation et Xbox (la création d'un compte sur la console
-      demande-t-elle l'accord du parent organisateur de la famille ?)
-    - ☐ OK / ☐ à corriger : ___
-18. « Le plafond de dépenses et l'accord avant achat portent sur les achats faits avec le compte
-    de l'enfant, pas sur une carte prépayée utilisée sur un autre compte. »
-    - Où vérifier : pages PlayStation et Xbox (le plafond couvre-t-il aussi l'argent ajouté par
-      carte prépayée sur le compte de l'enfant ?)
-    - ☐ OK / ☐ à corriger : ___
-
-### Ailleurs sur la page
-
-19. « Le nouvel épisode de la série d'action criminelle de Rockstar Games » ; « Le joueur
-    incarne un duo de criminels, Lucia et Jason, dans Leonida, un État fictif inspiré de la
-    Floride qui comprend la ville de Vice City. »
-    - Où vérifier : https://www.rockstargames.com/VI
-    - ☐ OK / ☐ à corriger : ___
-20. « Ce lancement était attendu depuis plus de dix ans » (GTA V est sorti en 2013)
-    - Où vérifier : https://www.rockstargames.com (page de GTA V, date de sortie)
-    - ☐ OK / ☐ à corriger : ___
-21. « La série a déjà eu un volet en ligne séparé, GTA Online, où l'on croise des inconnus » et,
-    dans « Pour aller plus loin », « GTA Online, avec sa monnaie interne vendue en argent réel ».
-    - Où vérifier : https://www.rockstargames.com/fr/gta-online (lien à confirmer)
-    - ☐ OK / ☐ à corriger : ___
-
-### Liens affichés sur la page (5)
-
-- ☐ « Contrôle parental et limites de dépenses sur PlayStation » →
-  https://www.playstation.com/fr-fr/support/account/ps5-parental-controls-spending-limits/
-- ☐ « L'application PlayStation Family » → https://www.playstation.com/fr-fr/parental-controls/
-- ☐ « Jouer en famille sur Xbox (paramètres familiaux) » → https://www.xbox.com/fr-FR/family-hub
-  (**lien à confirmer**, adresse devinée)
-- ☐ « Rechercher la classification sur le site PEGI » → https://pegi.info/fr
-- ☐ « Grand Theft Auto VI (site officiel) » → https://www.rockstargames.com/VI
-- Lien cassé ou à remplacer : ___
-
----
-
-## 2. Fortnite
+## 1. Fortnite
 
 - **Adresse :** `totemavise.com/jeux/guide/fortnite`
 - **Date affichée aujourd'hui :** « Vérifié le 19 août 2026 » (`verifiedOn: "2026-08-19"`).
@@ -316,7 +187,7 @@ contredisent), la validation des achats (point 2) et l'absence supposée de limi
 
 ---
 
-## 3. Roblox
+## 2. Roblox
 
 - **Adresse :** `totemavise.com/jeux/guide/roblox`
 - **Date affichée aujourd'hui :** « Vérifié le 19 août 2026 » (`verifiedOn: "2026-08-19"`).
@@ -422,12 +293,12 @@ tranches d'âge (point 4) et le chat désactivé par défaut pour les plus jeune
 
 ---
 
-## 4. The Legend of Zelda: Ocarina of Time (Switch 2)
+## 3. The Legend of Zelda: Ocarina of Time (Switch 2)
 
 - **Adresse :** `totemavise.com/jeux/guide/zelda-ocarina-of-time`
 - **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
 - **D'où vient cette date :** date des recherches en ligne, **pas une relecture humaine** (même
-  commentaire dans le code que pour GTA VI).
+  commentaire dans le code que pour les autres guides du 21 novembre).
 - **Temps estimé :** 1 h.
 
 > **Doutes signalés par le Directeur**
@@ -538,7 +409,7 @@ de 16 ans (points 8 et 9) et l'endroit où l'on bloque les achats (point 10).
 
 ---
 
-## 5. Brawl Stars
+## 4. Brawl Stars
 
 - **Adresse :** `totemavise.com/jeux/guide/brawl-stars`
 - **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
@@ -662,7 +533,7 @@ affichée par la boutique (point 16).
 
 ---
 
-## 6. EA Sports FC (ex-FIFA)
+## 5. EA Sports FC (ex-FIFA)
 
 - **Adresse :** `totemavise.com/jeux/guide/ea-sports-fc`
 - **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
@@ -769,12 +640,18 @@ supposée de bloquer Ultimate Team (point 14) et la classification PEGI 16 (poin
 
 ---
 
-## 7. Call of Duty
+## 6. Call of Duty
 
 - **Adresse :** `totemavise.com/jeux/guide/call-of-duty`
 - **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
 - **D'où vient cette date :** date des recherches en ligne, **pas une relecture humaine**.
-- **Temps estimé :** 45 min.
+- **Temps estimé :** 55 min.
+- **Nouvelle présentation (27 nov. 2026, décision de Xavier) :** « Votre enfant y joue déjà
+  (souvent Warzone, gratuit) : voici ce qu'il faut savoir et régler ». Le guide dit d'emblée
+  que la série est classée PEGI 18 et que nos fiches la réservent aux adultes ; le bloc « Jouer
+  avec votre enfant » devient « Poser un cadre ensemble » (en parler, fixer les règles du chat
+  vocal et des dépenses, une date pour refaire le point). Les faits de « L'état du jeu » n'ont
+  pas changé ; les points 14 à 16 sont nouveaux.
 
 > **Doute signalé par le Directeur**
 > - Le **PEGI 18** ne vient que de notre propre catalogue. Il n'a été vérifié ni sur pegi.info
@@ -806,8 +683,8 @@ de la console bloque bien Warzone, qui est gratuit (points 9 et 10).
    - ☐ OK / ☐ à corriger : ___
 6. « Sur PlayStation et Xbox, vous pouvez limiter les jeux selon leur classification d'âge,
    choisir avec qui l'enfant peut communiquer et plafonner ou valider ses achats. »
-   - Où vérifier : page PlayStation et page famille Xbox (mêmes réglages que pour GTA VI : si
-     vous avez déjà vérifié le guide GTA, cochez directement)
+   - Où vérifier : page PlayStation et page famille Xbox (mêmes réglages que dans le guide
+     EA Sports FC : si vous l'avez déjà vérifié, cochez directement)
    - ☐ OK / ☐ à corriger : ___
 
 ### Dans « Ce que ces réglages ne font pas »
@@ -828,8 +705,9 @@ de la console bloque bien Warzone, qui est gratuit (points 9 et 10).
 
 ### Ailleurs sur la page
 
-10. « Les épisodes se ressemblent de loin mais ne sont pas tous classés de la même façon. » (et
-    la décision « Quel épisode, exactement ? »)
+10. « Les épisodes se ressemblent de loin » et « regardez la classification de celui dont il
+    parle » (décision « Warzone ou l'épisode payant : qu'est-ce qui change ? »). La présentation
+    reprend aussi « Warzone et les épisodes récents sont classés PEGI 18 » : c'est le point 1.
     - Où vérifier : https://pegi.info/fr (chercher « Call of Duty » : la classification de
       Warzone, et y a-t-il des épisodes classés en dessous de 18 ?)
     - ☐ OK / ☐ à corriger : ___
@@ -843,6 +721,21 @@ de la console bloque bien Warzone, qui est gratuit (points 9 et 10).
       même partiellement ? Si oui, « pas filtré à la source » est à nuancer.)
     - ☐ OK / ☐ à corriger : ___
 13. « Pour aller plus loin » : « Chaque nouvel épisode s'intègre à Warzone »
+    - Où vérifier : site Call of Duty (lien à confirmer). Faible enjeu.
+    - ☐ OK / ☐ à corriger : ___
+14. **À VÉRIFIER (nouveau, 27 nov.).** « Dans les faits, beaucoup de collégiens y jouent quand
+    même, le plus souvent sur Warzone. »
+    - Où vérifier : aucune page officielle ne le dira. C'est un constat de terrain qui fonde le
+      guide ; s'il vous paraît exagéré, proposez une formulation plus prudente.
+    - ☐ OK / ☐ à corriger : ___
+15. **À VÉRIFIER (nouveau, 27 nov.).** « [La] boutique [de Warzone] vend des apparences, des armes
+    cosmétiques, des packs et un passe de combat, payés avec une monnaie du jeu achetée en argent
+    réel. »
+    - Où vérifier : site Call of Duty ou boutique de la console (la monnaie s'achète-t-elle bien
+      en argent réel, et les packs existent-ils dans Warzone ?). Faible enjeu.
+    - ☐ OK / ☐ à corriger : ___
+16. **À VÉRIFIER (nouveau, 27 nov.).** « L'épisode payant ajoute une campagne solo […] et son
+    propre multijoueur » (sous-entendu : Warzone n'a pas de campagne solo).
     - Où vérifier : site Call of Duty (lien à confirmer). Faible enjeu.
     - ☐ OK / ☐ à corriger : ___
 
@@ -860,7 +753,7 @@ de la console bloque bien Warzone, qui est gratuit (points 9 et 10).
 
 ---
 
-## 8. Minecraft
+## 7. Minecraft
 
 - **Adresse :** `totemavise.com/jeux/guide/minecraft`
 - **Date affichée aujourd'hui :** « Vérifié le 19 août 2026 » (`verifiedOn: "2026-08-19"`).
@@ -934,7 +827,7 @@ qui pourrait être faux si le blocage du multijoueur empêche aussi le jeu en r�
 
 ---
 
-## 9. Among Us
+## 8. Among Us
 
 - **Adresse :** `totemavise.com/jeux/guide/among-us`
 - **Date affichée aujourd'hui :** « Vérifié le 21 novembre 2026 » (`verifiedOn: "2026-11-21"`).
@@ -1015,12 +908,12 @@ l'accord d'un parent (point 1) et le chat rapide par défaut tant que le parent 
 
 ## Total
 
-- **9 guides, 136 points à vérifier et 27 liens à ouvrir.**
-- **Temps total estimé : environ 8 heures**, à répartir de préférence sur trois ou quatre
-  séances (par exemple GTA VI + Fortnite + Roblox, puis Zelda + Brawl Stars, puis EA Sports FC +
+- **8 guides, 118 points à vérifier et 22 liens à ouvrir.**
+- **Temps total estimé : environ 7 heures**, à répartir de préférence sur trois ou quatre
+  séances (par exemple Fortnite + Roblox, puis Zelda + Brawl Stars, puis EA Sports FC +
   Call of Duty, puis Minecraft + Among Us). Les réglages PlayStation et Xbox reviennent dans
-  trois guides (GTA VI, EA Sports FC, Call of Duty) : une fois vérifiés pour GTA VI, les autres
-  vont plus vite.
+  deux guides (EA Sports FC, Call of Duty) : une fois vérifiés pour EA Sports FC, Call of Duty
+  va plus vite.
 
 ---
 
@@ -1029,7 +922,7 @@ l'accord d'un parent (point 1) et le chat rapide par défaut tant que le parent 
 **Les guides s'ouvrent un par un** (changement du 22 nov. 2026). Un guide devient public — et
 visible dans Google — seulement quand les deux conditions sont réunies : l'interrupteur
 général `GAME_GUIDES_PUBLIC` est à `true`, **et** le guide figure dans la liste des guides relus
-(`src/lib/game-guide-reviews.ts`). On peut donc publier GTA VI, Fortnite et Roblox dès qu'ils
+(`src/lib/game-guide-reviews.ts`). On peut donc publier Fortnite et Roblox dès qu'ils
 sont vérifiés, sans attendre les six autres, qui restent cachés (vraie page 404 pour le public).
 
 1. **Faire corriger ce qui doit l'être.** Transmettez les lignes « à corriger » au Directeur.
@@ -1037,10 +930,10 @@ sont vérifiés, sans attendre les six autres, qui restent cachés (vraie page 4
 2. **Enregistrer la relecture de chaque guide vérifié** (un développeur ou le Directeur le fait en
    deux minutes) :
    - ajouter une ligne dans `src/lib/game-guide-reviews.ts`, par exemple
-     `gta: { reviewedOn: "2026-11-28", by: "Xavier" },` ;
+     `fortnite: { reviewedOn: "2026-11-28", by: "Xavier" },` ;
    - mettre la **même date** dans `verifiedOn` du guide, dans `src/lib/game-guides.ts` (un test
      refuse les deux dates si elles diffèrent). Jamais une date future ;
-   - pour les six guides du 21 novembre (GTA VI, Zelda, Brawl Stars, EA Sports FC, Call of Duty,
+   - pour les cinq guides du 21 novembre (Zelda, Brawl Stars, EA Sports FC, Call of Duty,
      Among Us), supprimer en même temps les deux lignes de commentaire « Date des recherches en
      ligne (21 nov. 2026), PAS une relecture humaine… », qui ne seront plus vraies.
 3. **Mettre ces changements en ligne** : le Directeur prépare la modification, la fusionne quand
@@ -1050,7 +943,7 @@ sont vérifiés, sans attendre les six autres, qui restent cachés (vraie page 4
    *Production*, puis **redéployer** (*Deployments* → dernier déploiement → *Redeploy*). Les
    guides relus suivants n'ont plus besoin de cette étape : il suffit de refaire 1 à 3.
 5. **Contrôler dans une fenêtre de navigation privée** (sans être connecté) : la page du guide
-   relu (par exemple `totemavise.com/jeux/guide/gta`) s'ouvre ; un guide non relu répond « page
+   relu (par exemple `totemavise.com/jeux/guide/fortnite`) s'ouvre ; un guide non relu répond « page
    introuvable » ; le bouton doré « Guide parents » n'apparaît que sur les fiches des jeux dont le
    guide est relu.
 6. **En cas de problème**, il suffit de supprimer la variable (ou de lui donner une autre valeur
