@@ -110,7 +110,8 @@ describe("catalogue search and disambiguation", () => {
 describe("assessment fidelity", () => {
   it("exports all eight indicators, warning reservations and unknown jurisdiction", () => {
     const markdown = renderMediaMarkdown(input)
-    expect(markdown.match(/\/5/g)).toHaveLength(8)
+    // One indicator line each; the quick answer may also quote a score (« violence 2/5 »).
+    expect(markdown.match(/^- [^:\n]+: \d\/5/gm)).toHaveLength(8)
     expect(markdown).toContain("Valeur éducative: 2/5")
     expect(markdown).toContain("Scènes effrayantes ou angoissantes")
     expect(markdown).toContain("pas de scènes confirmées")

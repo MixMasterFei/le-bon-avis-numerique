@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import { Eye, EyeOff, Check, X, ArrowRight, Loader2 } from "lucide-react"
 import { APERCU_PALETTE } from "./apercuTheme"
@@ -14,18 +13,21 @@ const SAGE = "#5C8A5C"
 // protection). Falls back to /profil, the historical post-signup landing.
 // NOTE: switch to /coin-famille at Coin Famille public launch (see
 // COIN_FAMILLE_PUBLIC in src/lib/coin-famille-flag.ts).
-function safeCallback(raw: string | null): string {
+export function safeCallback(raw: string | null | undefined): string {
   if (!raw) return "/profil"
   if (raw[0] !== "/" || raw[1] === "/" || raw[1] === "\\") return "/profil"
   return raw
 }
 
-export function ApercuInscription({ serifClass }: { serifClass: string }) {
+export function ApercuInscription({ serifClass, callbackUrl: rawCallbackUrl }: { serifClass: string; callbackUrl?: string | null }) {
   const p = APERCU_PALETTE
-  const searchParams = useSearchParams()
   // A visitor sent here from a fiche ("Créer mon profil") should come back to
-  // that fiche after signup, not be dumped on /profil.
-  const callbackUrl = safeCallback(searchParams.get("callbackUrl"))
+  // that fiche after signup, not be dumped on /profil. Read server-side by the
+  // page and passed in: reading useSearchParams() here forced a Suspense
+  // boundary with no fallback, so the form was absent from the HTML and popped
+  // in after hydration — a layout shift of 0.25 on /inscription (Lighthouse
+  // budget 0.1, 27 Nov 2026).
+  const callbackUrl = safeCallback(rawCallbackUrl)
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")

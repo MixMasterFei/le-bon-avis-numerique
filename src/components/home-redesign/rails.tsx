@@ -8,6 +8,7 @@ import { UpcomingCard, type UpcomingItem } from "./UpcomingCard"
 import { homepageRailLabel, type HomepageState } from "@/lib/homepage-time-context"
 import { isOutOfSeason } from "@/lib/seasonal"
 import { fitsHomepageAge } from "@/lib/homepage-age-cap"
+import { GAMES_RAIL_LIMIT, gamesRailUrl } from "@/lib/homepage-games-rail"
 
 type CardType = RedesignCardMedia["type"]
 
@@ -414,27 +415,25 @@ export function CoupsDeCoeurRail({ maxAge, audience, rankByMemberIds }: { maxAge
 }
 
 // ── Sortis récemment en jeux vidéo (self-hides < 3) ──
-export function GamesRail({ maxAge, audience, rankByMemberIds }: { maxAge?: number; audience?: string; rankByMemberIds?: string[] }) {
-  const url = `/api/db/games?sortBy=releaseDate&limit=12&requirePoster=true&minVoteCount=20${typeof maxAge === "number" ? `&maxAge=${maxAge}` : ""}`
-  const { items, loading } = useRail(url, "games", "GAME", { maxAge })
+//
+// A NEWS row, not a recommendation (Xavier, 27 Nov 2026): deliberately NOT
+// age-capped. Capped to the youngest child, families never saw GTA VI or the
+// Zelda: Ocarina of Time remake here and the site looked out of date. Each card
+// keeps its age badge, the per-member family-fit dots and the 15+ poster blur
+// (RedesignCard → shouldBlurMedia). Ranked by notability × recency
+// (`sortBy=notable`), so a big launch leads and obscure releases follow.
+// Every other rail keeps its cap.
+export function GamesRail({ audience, rankByMemberIds }: { audience?: string; rankByMemberIds?: string[] }) {
+  const { items, loading } = useRail(gamesRailUrl(), "games", "GAME")
   if (!loading && items.length < 3) return null
-  // Say the cap out loud. This rail is age-capped like every other browse rail
-  // (default: the youngest child in the family), so a household with a 10-year
-  // old legitimately never sees the PEGI 12/16 releases of the last few weeks —
-  // and without this line that reads as "the catalogue is out of date" rather
-  // than "these are filtered for your family".
-  const capNote =
-    typeof maxAge === "number" && maxAge < 18
-      ? ` Filtré pour les moins de ${maxAge + 1} ans — les sorties PEGI plus élevées sont sur la page Jeux vidéo.`
-      : ""
   return (
     <CardRailSection
       id="jeux"
-      eyebrow="Sur les consoles cette semaine"
+      eyebrow="Sur les consoles en ce moment"
       title={<>Sortis récemment en <Em tone="terra">jeux vidéo</Em></>}
-      lead={`Les dernières sorties consoles, avec l'âge conseillé et les points de vigilance.${capNote}`}
+      lead="Les sorties consoles qui font l'actualité, pour tous les âges : chaque jeu affiche son âge conseillé et ses points de vigilance."
       action={{ label: "Voir tout", href: "/jeux?sort=releaseDate" }}
-      items={items.slice(0, 12)}
+      items={items.slice(0, GAMES_RAIL_LIMIT)}
       loading={loading}
       totem="compact"
       audience={audience}

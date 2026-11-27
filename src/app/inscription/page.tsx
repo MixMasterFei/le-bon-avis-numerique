@@ -1,4 +1,3 @@
-import { Suspense } from "react"
 import type { Metadata } from "next"
 import { ApercuInscription } from "@/components/home-v2/ApercuInscription"
 
@@ -19,12 +18,19 @@ export const metadata: Metadata = {
   },
 }
 
-export default function InscriptionPage() {
-  // Suspense: ApercuInscription reads useSearchParams() (callbackUrl) — the
-  // boundary keeps the page statically prerenderable, same as /connexion.
+export default async function InscriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>
+}) {
+  // callbackUrl is read here, server-side, and passed down: the form ships in
+  // the HTML. (It used to read useSearchParams() inside a Suspense boundary with
+  // no fallback, so the whole form appeared only after hydration — CLS 0.25.)
+  const { callbackUrl } = await searchParams
   return (
-    <Suspense>
-      <ApercuInscription serifClass="font-serif" />
-    </Suspense>
+    <ApercuInscription
+      serifClass="font-serif"
+      callbackUrl={Array.isArray(callbackUrl) ? callbackUrl[0] : callbackUrl}
+    />
   )
 }

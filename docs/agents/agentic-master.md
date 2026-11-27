@@ -24,7 +24,29 @@ how sure it must be, what it costs, and how a human keeps control.
   care banners with results, never instead.
 - Never expose model or vendor names in rendered text.
 
-## Open work (2026-11-23)
+## Open work (2026-11-27)
+- **27 Nov batch** (Director's brief, approved by Xavier) on branch
+  `worktree-agent-a2dbae55c835aac38`, committed locally, not pushed:
+  - SEO agent: `seoTitle` fully deterministic (`decideSeoTitle`, no model call, no
+    keyword gate, canonical human titles kept, > 52 chars left alone as `too-long`);
+    `META_SEO_PATTERNS` widened (« familles cherchant / à la recherche » without
+    article, « trouveront ici »); `details.refusalsDetail` (≤ 30, draft ≤ 300 chars);
+    empty model answers are `ai-failed`. **To do:** read the next Thursday row —
+    expect 0 « réponse vide » / « mot-clé toujours absent » on titles, and judge the
+    synopsis refusals from `refusalsDetail`.
+  - homepage-watch: 16+ slots only go to titles the interleave reaches (GTA VI
+    regression test with the 27 Nov inputs); a new season dated by its premiere
+    (`newSeasonTiming`); `titles[]` now logs `releasedDaysAgo` / `signal` / `isNew` /
+    `priority`. B1 finding: the release date WAS carried to the pin choice; the
+    « null » came from the log never writing it. GTA VI is an admin pin until 11 Dec
+    (counted in the 16+ cap). **To do:** next odd-day run — check `priority` and that
+    no 16+ slot is left unused.
+  - Games row « Sortis récemment en jeux vidéo »: news row, no age cap, ranked by
+    notability × recency (`sortBy=notable`, `src/lib/games-notable.ts`); « Switch 2 »
+    added to `CONSOLE_PLATFORMS` (the Zelda remake was missing from the row because
+    of it, not because of its age). The FilterSidebar console list
+    (`src/components/media/FilterSidebar.tsx`, Age Keeper) still has no « Switch 2 »
+    — flagged to the Director.
 - **Homepage « À ne pas manquer » + `homepage-watch` agent** (Xavier's request, 21 Nov):
   - V2 band right after « Pour ce week-end », informational and NOT age-capped (GTA VI
     shows with its 18); pure selection in `src/lib/homepage-spotlight.ts`.

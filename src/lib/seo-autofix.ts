@@ -18,13 +18,15 @@
 //      the same gpt-5-mini pattern enrichment already uses. Enriched fiches only.
 //   C. SEO <title> — writes the separate `seoTitle` field (the Google <title>
 //      override); the DISPLAY name (H1/cards, media.title) is NEVER auto-edited.
-//      Also runs on provisional fiches that carry an age estimate.
+//      Also runs on provisional fiches that carry an age estimate. Fully
+//      deterministic since 27 Nov 2026 (approved 21 Nov): the title is always
+//      buildCanonicalSeoTitle, no model call.
 
 import OpenAI from "openai"
 import { MediaType } from "@prisma/client"
 import { prisma } from "./prisma"
 import { parseMediaRouteId } from "./media-route"
-import { seoTitleMatchesAge, buildCanonicalSeoTitle, releaseYearOf, MAX_TITLE } from "./fiche-title"
+import { buildCanonicalSeoTitle, isCanonicalSeoTitle, releaseYearOf } from "./fiche-title"
 import { isKnownAge } from "./age-label"
 import { hasHomonym } from "./homonyms"
 import type { StrikingQuery } from "./seo-striking-distance"
@@ -59,18 +61,19 @@ const MIN_NEIGHBOR_SCORE = 3.5
 const MAX_REWRITES = 12
 const SYNOPSIS_MAX = 400
 const MIN_QUALITY = 50
-// Lever C — SEO meta <title> override. Same cost discipline as synopsis.
+// Lever C — SEO meta <title> override. No model call any more (the title is
+// the deterministic canonical form), but the weekly write volume stays capped.
 const MAX_TITLE_REWRITES = 12
+// Judgeable refusals kept in cron_logs (details.refusalsDetail): enough to
+// review a week's guard decisions without bloating the row.
+const MAX_REFUSALS_DETAIL = 30
+const REFUSAL_DRAFT_MAX = 300
 // Wall-clock guard, and the reason the caps above can be raised safely: a run
 // stops issuing NEW AI calls past this point and defers the rest to next week,
 // so a slow OpenAI day degrades into less work rather than a 300s timeout that
 // loses the whole run — including the links and the email. Sized to leave ~90s
 // of the route's maxDuration for the remaining DB writes and the send.
 const AI_DEADLINE_MS = 210_000
-// The real page-specific budget is MAX_TITLE (52): the root layout appends
-// " | Totem Avisé" (14 chars) and Google shows ~60. The old local 65 ignored
-// the suffix, so 9 of the first 14 overrides clipped in the SERP.
-const SEO_TITLE_MAX = MAX_TITLE
 // The agent is now fed a deep pool of striking queries (see MAX_ACTIONABLE in
 // seo-striking-distance.ts) instead of just the 25 shown in the email. Most of
 // the head of that pool is already saturated, so we walk it until we find fresh
@@ -248,7 +251,10 @@ export interface SeoActionTarget {
   synopsisRejected?: string
   titleNeedsKeyword: boolean // query term missing from the display title
   // Lever C — meta <title> override action (display title is never changed).
-  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "deferred-time" | "not-enriched" | "ai-failed" | "refused" | "n/a"
+  // Deterministic since 27 Nov 2026: no model call, so no « ai-failed » /
+  // « deferred-time ». « too-long »: the canonical form exceeds MAX_TITLE, the
+  // field is left alone and the default <title> applies.
+  seoTitle: "set" | "would-set" | "covered" | "flagged-junk" | "deferred-cap" | "not-enriched" | "refused" | "too-long" | "n/a"
   seoTitleAfter?: string
   /** Why the gate refused the title (seoTitle === "refused"). */
   seoTitleRefusal?: string
@@ -292,13 +298,15 @@ export interface SeoAutofixResult {
       seoTitle: Record<string, number>
     }
   }
+  /** Up to 30 refusals with their draft, so a human can judge the guards. */
+  refusalsDetail: RefusalDetail[]
   section: string // markdown to append to the email
 }
 
 /** True when no lever had anything left to do on this fiche. */
 export function isSaturated(t: SeoActionTarget): boolean {
   const doneSynopsis = t.synopsis === "covered" || t.synopsis === "no-keyword"
-  const doneTitle = t.seoTitle === "n/a" || t.seoTitle === "covered"
+  const doneTitle = t.seoTitle === "n/a" || t.seoTitle === "covered" || t.seoTitle === "too-long"
   return t.linksCreated.length === 0 && Boolean(t.linksSkippedReason) && doneSynopsis && doneTitle
 }
 
@@ -582,6 +590,17 @@ export const META_SEO_PATTERNS: ReadonlyArray<{ label: string; re: RegExp }> = [
     re: /\b(?:les|aux|des) (?:familles|parents|internautes|spectateurs|lecteurs|joueurs) (?:qui )?(?:re)?cherch\w*/,
   },
   { label: "vous cherchez", re: /\b(?:si )?vous (?:re)?cherch\w*/ },
+  // Widened 27 Nov 2026, after the Director hand-cleaned five synopses (Seven,
+  // Arcane, Les 101 Dalmatiens, Mandalorian and Grogu, Deep): « familles »
+  // with no article in front (« idéal pour familles cherchant… »), « à la
+  // recherche » after it, and the page talking about itself (« les familles
+  // trouveront ici… »). « Familles » itself is the anchor: a story about two
+  // families searching for something is rare enough to fail closed on.
+  {
+    label: "familles à la recherche",
+    re: /\bfamilles (?:qui (?:re)?cherch\w*|(?:re)?cherchant\b|a la recherche\b)/,
+  },
+  { label: "trouveront ici", re: /\btrouveront ici\b/ },
 ]
 
 /** Age words that turn a work name into a search query (« arcane age »). */
@@ -656,21 +675,6 @@ export function rewritePasses(query: string, title: string, before: string | nul
 // Lever C — SEO meta <title> (separate `seoTitle` field; NEVER the display name)
 // ---------------------------------------------------------------------------
 
-function buildTitlePrompt(target: TargetItem, query: string, canonical: string): string {
-  const typeLabel = target.type.toLowerCase()
-  return [
-    `Tu rédiges la balise <title> SEO d'une fiche ${typeLabel} de notre guide média familial.`,
-    `Titre exact de l'œuvre (à placer au début, sans le modifier) : « ${target.title} »`,
-    `Intention des familles (contexte, à ne pas citer) : ${query}`,
-    "Le format est imposé, sans variante :",
-    `  ${canonical}`,
-    "Contraintes STRICTES :",
-    "- Recopie ce format tel quel : tiret cadratin « — », « âge conseillé : » en minuscules, puis l'âge.",
-    "- N'invente aucun fait, ne change pas l'âge. N'ajoute PAS « | Totem Avisé » (ajouté automatiquement).",
-    'Réponds en JSON valide uniquement : {"title": "..."}',
-  ].join("\n")
-}
-
 /**
  * Year to put in the <title>, or why no title may be written. Only a homonym
  * carries its year (« Scrooge (1970) » vs « Scrooge (2026) » — in Nov 2026
@@ -687,62 +691,86 @@ export function homonymYear(
   return year ? { year } : { refusal: "homonyme sans année de sortie" }
 }
 
+export type SeoTitleDecision =
+  | { action: "n/a" | "not-enriched" | "flagged-junk" | "covered" | "deferred-cap" }
+  | { action: "too-long" }
+  | { action: "refused"; refusal: string }
+  | { action: "write"; title: string }
+
 /**
- * Bring whatever the model returned to the canonical
- * « <Titre> — âge conseillé : dès N ans » form (buildCanonicalSeoTitle), or
- * say why it can't be used. The draft must still name the work and must not
- * contradict the verdict; its wording is then replaced, so the <title> shape
- * is identical across the catalogue whatever the model wrote.
+ * Lever C, decided without any model (approved 21 Nov 2026, model call
+ * dropped 27 Nov): the title is ALWAYS the canonical
+ * « <Titre> — âge conseillé : dès N ans » (buildCanonicalSeoTitle), with the
+ * release year when another work of the same type shares the title.
+ *
+ * The 26 Nov run refused 12 titles: « réponse vide » ×9 and « mot-clé
+ * toujours absent » ×3 (the canonical form can't carry « 2026 » or « film »,
+ * and must not). The canonical form IS the approved single form, so the
+ * ranking keyword is no longer required.
+ *
+ * - `titleNeedsKeyword` false → the display title already answers the query.
+ * - A stored title already canonical for the current age (and year, for a
+ *   homonym) is left alone, whoever wrote it.
+ * - Canonical form over MAX_TITLE → « too-long »: the field is left as it is
+ *   (null on a fresh fiche); the render path's buildFicheTitle handles long
+ *   names better than a clipped override would.
+ * - `capReached` → deferred to next week (12 writes per run).
  */
-export function normalizeSeoTitle(
-  candidate: string,
-  ctx: { title: string; age: number | null | undefined; year?: number | null },
-): { title: string } | { refusal: string } {
-  const draft = candidate.trim()
-  if (!draft) return { refusal: "réponse vide" }
-  if (isJunkQuery(draft)) return { refusal: "vocabulaire navigationnel" }
-  if (!normalize(draft).includes(normalize(ctx.title))) return { refusal: "titre de l'œuvre absent" }
-  if (!seoTitleMatchesAge(draft, ctx.age)) return { refusal: "âge contredit la fiche" }
+export function decideSeoTitle(input: {
+  query: string
+  title: string
+  age: number | null | undefined
+  isEnriched: boolean
+  storedSeoTitle: string | null
+  titleNeedsKeyword: boolean
+  /** hasHomonym(): true / false, or null when the lookup failed. */
+  homonym: boolean | null
+  releaseDate: Date | string | null | undefined
+  capReached: boolean
+}): SeoTitleDecision {
+  if (!input.titleNeedsKeyword) return { action: "n/a" }
+  if (!input.isEnriched && input.age == null) return { action: "not-enriched" }
+  if (isJunkQuery(input.query)) return { action: "flagged-junk" }
+  const yearInfo = homonymYear(input.homonym, input.releaseDate)
+  if ("refusal" in yearInfo) return { action: "refused", refusal: yearInfo.refusal }
+  const ctx = { title: input.title, age: input.age, year: yearInfo.year }
   const canonical = buildCanonicalSeoTitle(ctx)
   if (!canonical) {
-    return { refusal: isKnownAge(ctx.age) ? "trop long pour la forme canonique" : "âge inconnu" }
+    return isKnownAge(input.age) ? { action: "too-long" } : { action: "refused", refusal: "âge inconnu" }
   }
-  return { title: canonical }
+  if (input.storedSeoTitle && isCanonicalSeoTitle(input.storedSeoTitle, ctx)) return { action: "covered" }
+  if (input.capReached) return { action: "deferred-cap" }
+  return { action: "write", title: canonical }
+}
+
+export interface RefusalDetail {
+  title: string
+  query: string
+  lever: "synopsis" | "seoTitle"
+  reason: string
+  /** The refused text, cut to REFUSAL_DRAFT_MAX characters. */
+  draft?: string
 }
 
 /**
- * The full Lever C gate: normalise the draft, then check the canonical title
- * still covers the ranking keyword. Returns the title to write or the reason
- * it was refused (reported in the email and `outcomes.refusals`).
+ * Up to MAX_REFUSALS_DETAIL refusals with their draft, for `cron_logs`
+ * (details.refusalsDetail): the tallies alone can't tell a guard doing its
+ * job from a guard refusing clean text. A failed or empty model answer is
+ * « ai-failed », never a refusal, so it is not listed here.
  */
-export function prepareSeoTitle(
-  query: string,
-  ctx: { title: string; age: number | null | undefined; year?: number | null },
-  candidate: string,
-): { title: string } | { refusal: string } {
-  const normalized = normalizeSeoTitle(candidate, ctx)
-  if ("refusal" in normalized) return normalized
-  if (!seoTitlePasses(query, ctx.title, normalized.title, ctx.age)) return { refusal: "mot-clé toujours absent" }
-  return normalized
-}
-
-/** Gate a candidate meta title before it touches the DB. */
-export function seoTitlePasses(
-  query: string,
-  realTitle: string,
-  candidate: string,
-  expertAgeRec?: number | null,
-): boolean {
-  if (!candidate || candidate.length > SEO_TITLE_MAX) return false
-  if (isJunkQuery(candidate)) return false
-  // Stay faithful — the real work title must still be present (no rename).
-  if (!normalize(candidate).includes(normalize(realTitle))) return false
-  // Must now cover the ranking keyword it was meant to add.
-  if (!keywordPresent(query, candidate)) return false
-  // Never assert an age the fiche disagrees with — a <title> saying
-  // "dès 6 ans" over an 8-ans verdict is a family-trust bug, not SEO.
-  if (expertAgeRec !== undefined && !seoTitleMatchesAge(candidate, expertAgeRec)) return false
-  return true
+export function refusalsDetail(targets: SeoActionTarget[], max = MAX_REFUSALS_DETAIL): RefusalDetail[] {
+  const cut = (text: string | undefined) =>
+    text ? (text.length > REFUSAL_DRAFT_MAX ? `${text.slice(0, REFUSAL_DRAFT_MAX - 1)}…` : text) : undefined
+  const out: RefusalDetail[] = []
+  for (const t of targets) {
+    if (t.synopsis === "refused" && t.synopsisRefusal) {
+      out.push({ title: t.title, query: t.query, lever: "synopsis", reason: t.synopsisRefusal, draft: cut(t.synopsisRejected) })
+    }
+    if (t.seoTitle === "refused" && t.seoTitleRefusal) {
+      out.push({ title: t.title, query: t.query, lever: "seoTitle", reason: t.seoTitleRefusal })
+    }
+  }
+  return out.slice(0, max)
 }
 
 // ---------------------------------------------------------------------------
@@ -842,7 +870,9 @@ export async function runSeoAutofix(
       synopsis = "ai-failed"
     } else {
       rewritesUsed++
-      const draft = await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis")
+      const draft = (await callJsonField(openai, buildRewritePrompt(item, t.query), "synopsis"))?.trim() ?? ""
+      // An empty or failed answer is the model failing, not the guard
+      // refusing: « ai-failed », never counted among the refusals.
       const refusal = draft ? rewriteRejection(t.query, item.title, item.synopsisFr, draft) : null
       if (!draft) {
         synopsis = "ai-failed"
@@ -868,66 +898,44 @@ export async function runSeoAutofix(
     // DISPLAY title; writes the separate `seoTitle` field, never `title`.
     // Unlike the synopsis lever, this one ALSO runs on provisional
     // (un-enriched) fiches as long as they carry an age estimate: the title
-    // only uses title + age + query intent — nothing to confabulate — and
-    // pre-release tentpoles (L'Odyssée, Spider-Man…) are precisely where the
+    // only uses title + age — nothing to confabulate — and pre-release
+    // tentpoles (L'Odyssée, Spider-Man…) are precisely where the
     // striking-distance traffic concentrates.
     //
-    // Every title written is the canonical « <Titre> — âge conseillé : dès N
-    // ans » (buildCanonicalSeoTitle), with the release year when another work
-    // of the same type shares the title (« Scrooge (1970) — … »). Refusals
-    // that need no model (homonym without a year, form too long, keyword the
-    // canonical form can't carry) are decided BEFORE the call and cost no
-    // cap slot.
+    // Deterministic (decideSeoTitle): always the canonical « <Titre> — âge
+    // conseillé : dès N ans », with the release year for a homonym. No model
+    // call, so no « réponse vide » and no keyword gate.
     let seoTitle: SeoActionTarget["seoTitle"]
     let seoTitleAfter: string | undefined
     let seoTitleRefusal: string | undefined
-    if (!titleNeedsKeyword) {
-      seoTitle = "n/a"
-    } else if (!item.isEnriched && item.expertAgeRec == null) {
-      seoTitle = "not-enriched"
-    } else if (isJunkQuery(t.query)) {
-      seoTitle = "flagged-junk"
-    } else {
-      const yearInfo = homonymYear(await hasHomonym(item), item.releaseDate)
-      const year = "year" in yearInfo ? yearInfo.year : null
-      // A homonym's stored override that doesn't name its year is ambiguous
-      // in the SERP, however well it covers the keyword: not « covered ».
-      const storedCovers =
-        !!item.seoTitle &&
-        keywordPresent(t.query, item.seoTitle) &&
-        (year == null || item.seoTitle.includes(`(${year})`))
-      const ctx = { title: item.title, age: item.expertAgeRec, year }
-      const expected = "refusal" in yearInfo ? yearInfo : prepareSeoTitle(t.query, ctx, buildCanonicalSeoTitle(ctx) ?? "")
-
-      if (storedCovers) {
-        seoTitle = "covered"
-      } else if ("refusal" in expected) {
-        seoTitle = "refused"
-        seoTitleRefusal = expected.refusal
-      } else if (dryRun) {
+    const needsHomonymCheck =
+      titleNeedsKeyword && (item.isEnriched || item.expertAgeRec != null) && !isJunkQuery(t.query)
+    const decision = decideSeoTitle({
+      query: t.query,
+      title: item.title,
+      age: item.expertAgeRec,
+      isEnriched: item.isEnriched,
+      storedSeoTitle: item.seoTitle,
+      titleNeedsKeyword,
+      homonym: needsHomonymCheck ? await hasHomonym(item) : false,
+      releaseDate: item.releaseDate,
+      // A dry run reports every title it would write, past the cap too.
+      capReached: !dryRun && titleRewritesUsed >= MAX_TITLE_REWRITES,
+    })
+    if (decision.action === "write") {
+      if (dryRun) {
         seoTitle = "would-set"
-        seoTitleAfter = expected.title
-      } else if (titleRewritesUsed >= MAX_TITLE_REWRITES) {
-        seoTitle = "deferred-cap"
-      } else if (Date.now() > aiDeadline) {
-        seoTitle = "deferred-time"
-      } else if (!openai) {
-        seoTitle = "ai-failed"
       } else {
         titleRewritesUsed++
-        const draft = await callJsonField(openai, buildTitlePrompt(item, t.query, expected.title), "title")
-        const prepared = draft ? prepareSeoTitle(t.query, ctx, draft) : null
-        if (!prepared) {
-          seoTitle = "ai-failed"
-        } else if ("refusal" in prepared) {
-          seoTitle = "refused"
-          seoTitleRefusal = prepared.refusal
-        } else {
-          await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: prepared.title } })
-          seoTitle = "set"
-          seoTitleAfter = prepared.title
-        }
+        await prisma.mediaItem.update({ where: { id: item.id }, data: { seoTitle: decision.title } })
+        seoTitle = "set"
       }
+      seoTitleAfter = decision.title
+    } else if (decision.action === "refused") {
+      seoTitle = "refused"
+      seoTitleRefusal = decision.refusal
+    } else {
+      seoTitle = decision.action
     }
 
     targets.push({
@@ -1018,6 +1026,7 @@ export async function runSeoAutofix(
     linkOnlyLinksCreated,
     saturated,
     outcomes,
+    refusalsDetail: refusalsDetail(targets),
     section: buildActionsSection({
       dryRun, targets, linksCreated, synopsesRewritten, titlesSet, skippedNonMedia, saturated,
       linkOnlyExamined, linkOnlyLinksCreated,
@@ -1043,15 +1052,14 @@ const SYNOPSIS_LABEL: Record<SeoActionTarget["synopsis"], string> = {
 }
 
 const SEO_TITLE_LABEL: Record<SeoActionTarget["seoTitle"], string> = {
-  "set": "titre SEO (balise <title>) réécrit",
-  "would-set": "titre SEO à réécrire (mot-clé absent du titre)",
+  "set": "titre SEO (balise <title>) écrit, forme canonique",
+  "would-set": "titre SEO à écrire (forme canonique)",
   "covered": "titre SEO déjà pertinent",
   "flagged-junk": "requête navigationnelle — titre non touché",
   "deferred-cap": "titre SEO reporté (plafond atteint)",
-  "deferred-time": "titre SEO reporté (budget temps du run atteint)",
   "not-enriched": "fiche non enrichie — titre ignoré",
-  "ai-failed": "titre SEO échoué (pas de réponse exploitable)",
   "refused": "titre SEO refusé — balise inchangée",
+  "too-long": "titre trop long pour la forme canonique — balise par défaut conservée",
   "n/a": "",
 }
 

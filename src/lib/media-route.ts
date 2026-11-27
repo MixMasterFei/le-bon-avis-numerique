@@ -11,6 +11,21 @@ export function toMediaRouteId(type: MediaType, id: string): string {
   return `${type.toLowerCase()}:${encodeURIComponent(id)}`
 }
 
+/** `/media/<type>%3A<id>[/…]`, any case of the type and of `%3a`. */
+const ENCODED_FICHE_PATH = /^\/media\/(movie|tv|game|book|app|manga)%3a([^/]+)(\/.*)?$/i
+
+/**
+ * The literal-colon path for a percent-encoded fiche URL
+ * (`/media/movie%3A603` → `/media/movie:603`, subpath kept, type lower-cased),
+ * null for every other pathname. The result never matches again (its colon
+ * is literal), so a redirect to it cannot loop. Used by the middleware.
+ */
+export function encodedFicheRedirectPath(pathname: string): string | null {
+  const m = pathname.match(ENCODED_FICHE_PATH)
+  if (!m) return null
+  return `/media/${m[1].toLowerCase()}:${m[2]}${m[3] ?? ""}`
+}
+
 export function parseMediaRouteId(routeId: string): { type: MediaType | null; id: string } {
   // Next.js params may provide percent-encoded segments (e.g. "movie%3A123"),
   // so decode the whole segment first, then parse.

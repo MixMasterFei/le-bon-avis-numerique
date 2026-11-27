@@ -5,16 +5,16 @@ import {
   keywordPresent,
   isJunkQuery,
   scoreNeighbor,
-  seoTitlePasses,
   rewritePasses,
   ageMentionReadsNaturally,
   isSaturated,
   synopsisStuffingReason,
   rewriteRejection,
   META_SEO_PATTERNS,
-  normalizeSeoTitle,
-  prepareSeoTitle,
+  decideSeoTitle,
+  refusalsDetail,
   homonymYear,
+  type SeoActionTarget,
 } from "../seo-autofix"
 
 describe("normalize", () => {
@@ -229,68 +229,6 @@ describe("scoreNeighbor", () => {
   })
 })
 
-describe("seoTitlePasses", () => {
-  it("accepts a faithful title that adds the keyword within the length cap", () => {
-    expect(
-      seoTitlePasses(
-        "tigre et dragon age minimum",
-        "Tigre et Dragon",
-        "Tigre et Dragon : âge minimum ? Dès 12 ans",
-      ),
-    ).toBe(true)
-  })
-
-  it("rejects a title over the real SERP budget (52 + « | Totem Avisé »)", () => {
-    // 57 chars passed the old local 65 cap and clipped in Google — the layout
-    // suffix makes the true page-specific budget MAX_TITLE (52).
-    expect(
-      seoTitlePasses(
-        "tigre et dragon age minimum",
-        "Tigre et Dragon",
-        "Tigre et Dragon : âge minimum ? Avis famille (dès 12 ans)",
-      ),
-    ).toBe(false)
-  })
-
-  it("rejects a title asserting an age the fiche disagrees with", () => {
-    // "dès 6 ans" over an 8-ans verdict shipped to production (The Sheep
-    // Detectives) — the SERP must never contradict the page.
-    expect(
-      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — dès 6 ans", 8),
-    ).toBe(false)
-    expect(
-      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — dès 8 ans", 8),
-    ).toBe(true)
-    // No age wording in the candidate → nothing to contradict.
-    expect(
-      seoTitlePasses("sheep detectives age", "The Sheep Detectives", "The Sheep Detectives — quel âge ?", 8),
-    ).toBe(true)
-  })
-
-  it("rejects when the real work title is missing (no silent rename)", () => {
-    expect(
-      seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", "Âge minimum d'un film d'action"),
-    ).toBe(false)
-  })
-
-  it("rejects when the ranking keyword still isn't covered", () => {
-    expect(
-      seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", "Tigre et Dragon — film culte"),
-    ).toBe(false)
-  })
-
-  it("rejects an over-long title (> SEO cap)", () => {
-    const tooLong = "Tigre et Dragon : à partir de quel âge minimum pour le regarder en famille sans souci"
-    expect(seoTitlePasses("tigre et dragon age minimum", "Tigre et Dragon", tooLong)).toBe(false)
-  })
-
-  it("rejects a junk/navigational candidate", () => {
-    expect(
-      seoTitlePasses("tigre et dragon age", "Tigre et Dragon", "Tigre et Dragon streaming gratuit age"),
-    ).toBe(false)
-  })
-})
-
 describe("ageMentionReadsNaturally", () => {
   it("rejects an age dropped mid-clause", () => {
     // The real regression: this shipped to the meta description of the site's
@@ -407,6 +345,8 @@ describe("synopsisStuffingReason (garde-fou bourrage, 21 Nov 2026)", () => {
       "recherche en ligne": "Après une recherche en ligne, dès 8 ans.",
       "familles qui cherchent": "Idéal pour les parents qui cherchent un film.",
       "vous cherchez": "Si vous cherchez un dessin animé, dès 3 ans.",
+      "familles à la recherche": "Une fresque sombre, idéale pour familles cherchant du frisson.",
+      "trouveront ici": "Les parents trouveront ici une aventure tendre, dès 6 ans.",
     }
     for (const { label, re } of META_SEO_PATTERNS) {
       expect(samples[label], `sample for ${label}`).toBeDefined()
@@ -435,51 +375,6 @@ describe("rewriteRejection", () => {
   })
 })
 
-describe("normalizeSeoTitle / prepareSeoTitle (forme canonique)", () => {
-  const ctx = { title: "Arcane", age: 14 }
-  it("rewrites any faithful draft into the canonical form", () => {
-    for (const draft of [
-      "Arcane : à partir de quel âge ? Dès 14 ans",
-      "Arcane — Âge conseillé : Dès 14 ans",
-      "Arcane - quel âge ?",
-      "arcane, âge minimum",
-    ]) {
-      expect(normalizeSeoTitle(draft, ctx)).toEqual({ title: "Arcane — âge conseillé : dès 14 ans" })
-    }
-  })
-  it("writes « tous publics » for a TP fiche", () => {
-    expect(normalizeSeoTitle("Bluey — Tous publics", { title: "Bluey", age: 0 })).toEqual({
-      title: "Bluey — âge conseillé : tous publics",
-    })
-  })
-  it("refuses a draft that drops the work or contradicts the age", () => {
-    expect(normalizeSeoTitle("Série animée culte : quel âge ?", ctx)).toEqual({ refusal: "titre de l'œuvre absent" })
-    expect(normalizeSeoTitle("Arcane — dès 12 ans", ctx)).toEqual({ refusal: "âge contredit la fiche" })
-    expect(normalizeSeoTitle("", ctx)).toEqual({ refusal: "réponse vide" })
-    expect(normalizeSeoTitle("Arcane streaming", ctx)).toEqual({ refusal: "vocabulaire navigationnel" })
-  })
-  it("refuses when the canonical form can't be built", () => {
-    expect(normalizeSeoTitle("Arcane — quel âge ?", { title: "Arcane", age: null })).toEqual({
-      refusal: "âge inconnu",
-    })
-    const long = "Les Animaux fantastiques : Les Crimes de Grindelwald"
-    expect(normalizeSeoTitle(`${long} — dès 10 ans`, { title: long, age: 10 })).toEqual({
-      refusal: "trop long pour la forme canonique",
-    })
-  })
-  it("puts the year in a homonym's title", () => {
-    expect(
-      prepareSeoTitle("scrooge age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge : quel âge ? Dès 8 ans"),
-    ).toEqual({ title: "Scrooge (1970) — âge conseillé : dès 8 ans" })
-  })
-  it("refuses when the canonical form still misses the ranking keyword", () => {
-    // « scrooge 2026 age » on the 1970 fiche: the right answer is NOT to claim 2026.
-    expect(
-      prepareSeoTitle("scrooge 2026 age", { title: "Scrooge", age: 8, year: 1970 }, "Scrooge 2026 — dès 8 ans"),
-    ).toEqual({ refusal: "mot-clé toujours absent" })
-  })
-})
-
 describe("homonymYear", () => {
   it("no homonym → no year", () => {
     expect(homonymYear(false, "1970-11-05")).toEqual({ year: null })
@@ -491,5 +386,145 @@ describe("homonymYear", () => {
   it("fails closed on a homonym without a year or a failed lookup", () => {
     expect(homonymYear(true, null)).toEqual({ refusal: "homonyme sans année de sortie" })
     expect(homonymYear(null, "1970-11-05")).toEqual({ refusal: "homonymes non vérifiés" })
+  })
+})
+
+describe("META_SEO_PATTERNS élargis (27 Nov 2026)", () => {
+  it("refuses the shapes the Director hand-cleaned", () => {
+    const drafts = [
+      // No article in front of « familles ».
+      "Dès 14 ans, deux sœurs s'affrontent dans une cité divisée, idéal pour familles cherchant une série exigeante.",
+      "Dès 6 ans, une pieuvre curieuse remonte des abysses : parfait pour familles qui cherchent un divertissement.",
+      "Dès 12 ans, un chasseur de primes protège un enfant, pour les familles à la recherche d'une saga spatiale.",
+      // The page talking about itself.
+      "Dès 16 ans, deux inspecteurs traquent un tueur ; les familles trouveront ici un thriller très sombre.",
+    ]
+    for (const d of drafts) expect(synopsisStuffingReason("titre age", "Titre", d), d).toMatch(/^formulation SEO/)
+  })
+
+  it("still lets plot through", () => {
+    const plots = [
+      "Deux enfants partent à la recherche de leur chien, dès 6 ans.",
+      "Une famille cherchant un nouveau foyer traverse l'océan.",
+      "Ils trouveront leur chemin ici et là, au fil d'une aventure tendre.",
+    ]
+    for (const p of plots) expect(synopsisStuffingReason("titre age", "Titre", p), p).toBeNull()
+  })
+})
+
+describe("decideSeoTitle (titre SEO déterministe, 27 Nov 2026)", () => {
+  const base = {
+    query: "arcane age",
+    title: "Arcane",
+    age: 14,
+    isEnriched: true,
+    storedSeoTitle: null,
+    titleNeedsKeyword: true,
+    homonym: false,
+    releaseDate: "2021-11-06",
+    capReached: false,
+  }
+
+  it("always writes the canonical form — no model, no keyword requirement", () => {
+    expect(decideSeoTitle(base)).toEqual({ action: "write", title: "Arcane — âge conseillé : dès 14 ans" })
+    // « scrooge 2026 age » on the 1970 fiche used to be refused « mot-clé
+    // toujours absent »; the canonical form (with its year) is now written.
+    expect(
+      decideSeoTitle({ ...base, query: "scrooge 2026 age", title: "Scrooge", age: 8, homonym: true, releaseDate: "1970-11-05" }),
+    ).toEqual({ action: "write", title: "Scrooge (1970) — âge conseillé : dès 8 ans" })
+    expect(decideSeoTitle({ ...base, query: "bluey film", title: "Bluey", age: 0 })).toEqual({
+      action: "write",
+      title: "Bluey — âge conseillé : tous publics",
+    })
+  })
+
+  it("never overwrites a stored title that is already canonical", () => {
+    expect(decideSeoTitle({ ...base, storedSeoTitle: "Arcane — âge conseillé : dès 14 ans" })).toEqual({ action: "covered" })
+    // A human chose to name the year: still canonical.
+    expect(decideSeoTitle({ ...base, storedSeoTitle: "Arcane (2021) — âge conseillé : dès 14 ans" })).toEqual({
+      action: "covered",
+    })
+  })
+
+  it("replaces a stored title in an old form or with a stale age", () => {
+    expect(decideSeoTitle({ ...base, storedSeoTitle: "Arcane : à partir de quel âge ? Dès 14 ans" })).toEqual({
+      action: "write",
+      title: "Arcane — âge conseillé : dès 14 ans",
+    })
+    expect(decideSeoTitle({ ...base, storedSeoTitle: "Arcane — âge conseillé : dès 12 ans" })).toEqual({
+      action: "write",
+      title: "Arcane — âge conseillé : dès 14 ans",
+    })
+    // A homonym's canonical title must carry ITS year.
+    expect(
+      decideSeoTitle({
+        ...base,
+        title: "Scrooge",
+        age: 8,
+        homonym: true,
+        releaseDate: "1970-11-05",
+        storedSeoTitle: "Scrooge — âge conseillé : dès 8 ans",
+      }),
+    ).toEqual({ action: "write", title: "Scrooge (1970) — âge conseillé : dès 8 ans" })
+  })
+
+  it("leaves the field alone when the canonical form is too long", () => {
+    const long = "Les Animaux fantastiques : Les Crimes de Grindelwald"
+    expect(decideSeoTitle({ ...base, title: long, age: 10 })).toEqual({ action: "too-long" })
+  })
+
+  it("respects the cap, the gates before it, and fails closed on homonyms", () => {
+    expect(decideSeoTitle({ ...base, capReached: true })).toEqual({ action: "deferred-cap" })
+    expect(decideSeoTitle({ ...base, titleNeedsKeyword: false })).toEqual({ action: "n/a" })
+    expect(decideSeoTitle({ ...base, isEnriched: false, age: null })).toEqual({ action: "not-enriched" })
+    expect(decideSeoTitle({ ...base, query: "arcane streaming gratuit" })).toEqual({ action: "flagged-junk" })
+    expect(decideSeoTitle({ ...base, homonym: null })).toEqual({ action: "refused", refusal: "homonymes non vérifiés" })
+    expect(decideSeoTitle({ ...base, homonym: true, releaseDate: null })).toEqual({
+      action: "refused",
+      refusal: "homonyme sans année de sortie",
+    })
+    expect(decideSeoTitle({ ...base, age: null })).toEqual({ action: "refused", refusal: "âge inconnu" })
+  })
+
+  it("still writes on a provisional fiche that carries an age", () => {
+    expect(decideSeoTitle({ ...base, isEnriched: false, age: 12, title: "L'Odyssée", query: "odyssee age" })).toEqual({
+      action: "write",
+      title: "L'Odyssée — âge conseillé : dès 12 ans",
+    })
+  })
+})
+
+describe("refusalsDetail", () => {
+  const target = (partial: Partial<SeoActionTarget>): SeoActionTarget => ({
+    routeId: "id",
+    title: "Arcane",
+    type: "TV",
+    query: "arcane age",
+    position: 9,
+    linksCreated: [],
+    synopsis: "covered",
+    titleNeedsKeyword: true,
+    seoTitle: "n/a",
+    ...partial,
+  })
+
+  it("lists refusals with their draft cut to 300 characters", () => {
+    const long = "x".repeat(400)
+    const out = refusalsDetail([
+      target({ synopsis: "refused", synopsisRefusal: "mot-clé toujours absent", synopsisRejected: long }),
+      target({ title: "Scrooge", seoTitle: "refused", seoTitleRefusal: "homonymes non vérifiés" }),
+    ])
+    expect(out).toHaveLength(2)
+    expect(out[0]).toMatchObject({ title: "Arcane", query: "arcane age", lever: "synopsis", reason: "mot-clé toujours absent" })
+    expect(out[0].draft?.length).toBe(300)
+    expect(out[1]).toEqual({ title: "Scrooge", query: "arcane age", lever: "seoTitle", reason: "homonymes non vérifiés" })
+  })
+
+  it("never lists a failed model answer, and keeps at most 30 entries", () => {
+    expect(refusalsDetail([target({ synopsis: "ai-failed" })])).toEqual([])
+    const many = Array.from({ length: 40 }, () =>
+      target({ synopsis: "refused", synopsisRefusal: "trop long", synopsisRejected: "…" }),
+    )
+    expect(refusalsDetail(many)).toHaveLength(30)
   })
 })

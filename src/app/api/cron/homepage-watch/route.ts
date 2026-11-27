@@ -3,6 +3,7 @@ import { isCronOrAdminAuthorized } from "@/lib/cron-auth"
 import { logCronRun } from "@/lib/cron-log"
 import { sendHomepageWatchReport } from "@/lib/email"
 import { runHomepageWatch } from "@/lib/homepage-watch-run"
+import { watchTitleLog } from "@/lib/homepage-watch"
 
 // ~40 third-party reads (cinema pages are cached) + up to 8 imports, each a
 // details read, a providers read and two poster uploads.
@@ -14,7 +15,7 @@ export const maxDuration = 120
  * Compares the V2 homepage with the week's releases and buzz, then imports
  * the missing titles (≤ 8, through the existing import functions — ages come
  * from those and from enrichment, never from here) and refreshes the pins of
- * the « À ne pas manquer cette semaine » band (≤ 8, 14-day expiry).
+ * the « À ne pas manquer cette semaine » band (≤ 6, 14-day expiry, ≤ 2 titles 16+).
  *
  * Writes are ON by default IN PRODUCTION ONLY (fail-closed on previews/local,
  * same VERCEL_ENV guard as the SEO agent). Kill switch:
@@ -38,18 +39,11 @@ export async function GET(req: NextRequest) {
 
     // 16+ launches the band's 16+ cap kept out of the pins.
     const capSkipped = new Set(result.matureSkipped.map((c) => c.key))
-    // Compact per-title outcome, so a run can be read back from cron_logs.
-    const titles = classified.map((c) => ({
-      key: c.key,
-      title: c.title,
-      kind: c.kind,
-      status: c.status,
-      age: c.entry?.expertAgeRec ?? null,
-      sources: c.sources,
-      placements: c.placements,
-      imported: outcomes.imports.keys.includes(c.key),
-      ...(capSkipped.has(c.key) ? { matureCapSkipped: true } : {}),
-    }))
+    // Compact per-title outcome, so a run can be read back from cron_logs —
+    // recency, signal and pin priority included (watchTitleLog).
+    const titles = classified.map((c) =>
+      watchTitleLog(c, { imported: outcomes.imports.keys.includes(c.key), matureCapSkipped: capSkipped.has(c.key) }),
+    )
 
     if (dryRun) {
       return NextResponse.json({ success: true, dryRun: true, health: result.health, remaining: result.remaining, outcomes, pins, titles, report: result.report })

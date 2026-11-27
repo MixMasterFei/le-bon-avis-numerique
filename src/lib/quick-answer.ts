@@ -1,6 +1,7 @@
 import { mediaTypeLabels } from "@/lib/utils"
 import type { MediaType } from "@/lib/media-route"
 import { isKnownAge } from "@/lib/age-label"
+import { buildFicheReasons, UNNAMED_SIGNAL_SENTENCE } from "@/lib/fiche-reasons"
 
 export interface QuickAnswerInput {
   title: string
@@ -14,6 +15,11 @@ export interface QuickAnswerInput {
     substanceUse: number
     positiveMessages: number
     roleModels: number
+    /** « Ce que les parents doivent savoir » bullets (scary nouns for the reasons). */
+    whatParentsNeedToKnow?: string[] | null
+    /** « Ce qui peut marquer » flags, read above the card's confidence gate. */
+    sensitiveWarnings?: string[] | null
+    enrichmentConfidence?: number | null
   }
   /**
    * When true (film/jeu pas encore sorti ou fiche provisoire), we have NOT
@@ -48,24 +54,10 @@ function ageVerdict(age: number): string {
   return age === 0 ? "pour tous publics" : `à partir de ${age} ans`
 }
 
-/** « en raison » + each axis, article included, in severity order. */
-const REASON_PHRASES = {
-  violence: "de la violence",
-  sexNudity: "des scènes de sexe ou de nudité",
-  language: "du langage",
-  substanceUse: "de la consommation de substances",
-  consumerism: "du consumérisme",
-} as const
-
 function releaseYear(date: string | Date | null | undefined): number | null {
   if (!date) return null
   const year = typeof date === "string" ? Number(date.slice(0, 4)) : date.getUTCFullYear()
   return Number.isInteger(year) && year >= 1870 && year <= 2100 ? year : null
-}
-
-/** « a », « a et b », « a, b et c ». */
-function joinFr(items: string[]): string {
-  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`
 }
 
 // Shared by the media detail page (FAQPage JSON-LD + hero block) and
@@ -108,36 +100,38 @@ export function buildQuickAnswer(input: QuickAnswerInput): QuickAnswer {
 
   const age = ageVerdict(ageRec)
 
-  const sensitivePoints: string[] = []
-  if (media.contentMetrics.violence >= 3) sensitivePoints.push("violence")
-  if (media.contentMetrics.sexNudity >= 3) sensitivePoints.push("sexe ou nudité")
-  if (media.contentMetrics.language >= 3) sensitivePoints.push("langage")
-  if (media.contentMetrics.substanceUse >= 3) sensitivePoints.push("substances")
-  if (media.contentMetrics.consumerism >= 3) sensitivePoints.push("consumérisme")
+  // The reasons come from the fiche's own analysis (src/lib/fiche-reasons.ts),
+  // the SAME ones the meta description gives, so the SERP, this answer and
+  // the page never contradict each other. « Aucun signal sensible majeur »
+  // only when nothing at all is flagged — Beetlejuice used to say it next to
+  // a list of frightening creatures.
+  const { reasons, hasSignal } = buildFicheReasons(media)
 
   const positivePoints: string[] = []
   if (media.contentMetrics.positiveMessages >= 4) positivePoints.push("messages positifs")
   if (media.contentMetrics.roleModels >= 4) positivePoints.push("modèles positifs")
 
-  const sensitiveText = sensitivePoints.length > 0
-    ? `Points à vérifier : ${sensitivePoints.join(", ")}.`
-    : "Aucun signal sensible majeur ne ressort dans les dimensions principales."
+  const sensitiveText =
+    reasons.length > 0
+      ? `Points à vérifier : ${reasons.join(", ")}.`
+      : hasSignal
+        ? UNNAMED_SIGNAL_SENTENCE
+        : "Aucun signal sensible majeur ne ressort dans les dimensions principales."
   const positiveText = positivePoints.length > 0
     ? `Points favorables : ${positivePoints.join(", ")}.`
     : "Les apports positifs sont à lire dans l'analyse détaillée."
 
   // Say WHY the age, not only which axes to check: a parent searching « à
   // partir de quel âge » gets the reason in the answer itself. Only for a
-  // minimum age — « tous publics » has no reason, its elevated axes stay
-  // « points à vérifier ». Built from the stored metrics only, never a new age.
-  const reasons = (Object.keys(REASON_PHRASES) as (keyof typeof REASON_PHRASES)[])
-    .filter((k) => media.contentMetrics[k] >= 3)
-    .sort((a, b) => media.contentMetrics[b] - media.contentMetrics[a])
-    .map((k) => REASON_PHRASES[k])
+  // minimum age — « tous publics » has no reason, its signals stay « à
+  // surveiller ». Built from the stored analysis only, never a new age.
+  const head = `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé`
   const verdict =
-    ageRec > 0 && reasons.length > 0
-      ? `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé, surtout en raison ${joinFr(reasons)}.`
-      : `${media.title} est un ${typeLabel} conseillé ${age} par Totem Avisé. ${sensitiveText}`
+    reasons.length === 0
+      ? `${head}. ${sensitiveText}`
+      : ageRec > 0
+        ? `${head}, principalement en raison de : ${reasons.join(", ")}.`
+        : `${head}. À surveiller malgré tout : ${reasons.join(", ")}.`
 
   return {
     question,

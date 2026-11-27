@@ -21,7 +21,8 @@
  * sensible rather than truncating mid-phrase.
  */
 
-import { ageSentenceLabel, isKnownAge } from "@/lib/age-label"
+import { ageInlineLabel, ageSentenceLabel, isKnownAge } from "@/lib/age-label"
+import { capitalizeFr, UNNAMED_SIGNAL_SENTENCE, type FicheReasons } from "@/lib/fiche-reasons"
 
 /** Page-specific budget, leaving room for the " | Totem Avisé" suffix. */
 export const MAX_TITLE = 52
@@ -117,6 +118,27 @@ export function buildCanonicalSeoTitle({ title, age, year }: CanonicalSeoTitleIn
   return out.length <= MAX_TITLE ? out : null
 }
 
+/**
+ * Is a stored `seoTitle` already in the canonical form for THIS fiche — its
+ * exact name, the current age wording, and, when a year is required
+ * (homonym), that year? Lets the SEO agent leave a human-set canonical title
+ * alone. A year is accepted when none is required (a human may have chosen to
+ * name it); a stale age never is.
+ */
+export function isCanonicalSeoTitle(stored: string, ctx: CanonicalSeoTitleInput): boolean {
+  const label = ageSentenceLabel(ctx.age)
+  if (!label) return false
+  const name = ctx.title.trim()
+  const tail = ` — âge conseillé : ${label.charAt(0).toLowerCase()}${label.slice(1)}`
+  const value = stored.trim()
+  if (!name || !value.startsWith(name) || !value.endsWith(tail)) return false
+  const middle = value.slice(name.length, value.length - tail.length)
+  if (middle === "") return !ctx.year
+  const year = middle.match(/^ \((\d{4})\)$/)
+  if (!year) return false
+  return ctx.year ? Number(year[1]) === ctx.year : true
+}
+
 interface FicheAgeInput {
   age?: number | null
   /** Pre-release / provisional: the age is an estimate (shouldHideContentAnalysis). */
@@ -165,6 +187,58 @@ export interface FicheDescriptionInput extends FicheAgeInput {
   /** « Film », « Série »… for the fallback sentences. */
   typeLabel: string
   releaseDate?: string | Date | null
+  /** The work's display name — required for the analysis-led description. */
+  title?: string | null
+  /**
+   * The fiche's content reasons (`buildFicheReasons`, src/lib/fiche-reasons.ts).
+   * Pass them only when the analysis exists and is shown; null/undefined =
+   * no analysis (provisional, pre-release, never analysed) → the synopsis
+   * description below.
+   */
+  analysis?: Pick<FicheReasons, "reasons" | "hasSignal" | "onlyUnnamedSignal"> | null
+}
+
+/** Closing words of the analysis-led description. */
+const ANALYSIS_TAIL = "L'analyse pour les parents."
+
+/**
+ * « Beetlejuice (1988) : conseillé dès 10 ans. Fantômes et créatures qui
+ * peuvent effrayer, violence 2/5, langage 2/5. L'analyse pour les parents. »
+ *
+ * What sets the fiche apart in a SERP is the analysis, not a plot summary
+ * every other site already shows. Reasons are dropped from the end until the
+ * sentence fits MAX_DESCRIPTION; null when even the bare verdict cannot fit.
+ */
+export function buildAnalysisDescription({
+  title,
+  age,
+  releaseDate,
+  analysis,
+}: {
+  title: string
+  age: number
+  releaseDate?: string | Date | null
+  analysis: Pick<FicheReasons, "reasons" | "hasSignal" | "onlyUnnamedSignal">
+}): string | null {
+  const name = title.trim()
+  const inline = ageInlineLabel(age)
+  if (!name || !inline) return null
+  const year = releaseYearOf(releaseDate)
+  const head = `${year ? `${name} (${year})` : name} : conseillé ${inline}.`
+
+  const candidates: string[] = []
+  for (let n = analysis.reasons.length; n >= 1; n--) {
+    candidates.push(`${head} ${capitalizeFr(analysis.reasons.slice(0, n).join(", "))}. ${ANALYSIS_TAIL}`)
+  }
+  if (analysis.reasons.length === 0) {
+    candidates.push(
+      analysis.hasSignal
+        ? `${head} ${UNNAMED_SIGNAL_SENTENCE} ${ANALYSIS_TAIL}`
+        : `${head} Aucun signal sensible majeur relevé. ${ANALYSIS_TAIL}`,
+    )
+  }
+  candidates.push(`${head} ${ANALYSIS_TAIL}`)
+  return candidates.find((c) => c.length <= MAX_DESCRIPTION) ?? null
 }
 
 function truncate(text: string, max: number): string {
@@ -197,7 +271,15 @@ export function buildFicheDescription({
   synopsis,
   typeLabel,
   releaseDate,
+  title,
+  analysis,
 }: FicheDescriptionInput): string {
+  // Analysis-led when the analysis exists and the verdict is not an estimate.
+  if (analysis && !provisional && isKnownAge(age) && title) {
+    const described = buildAnalysisDescription({ title, age, releaseDate, analysis })
+    if (described) return described
+  }
+
   const lead = ficheAgeLead({ age, provisional })
   const text = synopsis?.trim() || ""
   const year = releaseYearOf(releaseDate)

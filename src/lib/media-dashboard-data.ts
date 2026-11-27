@@ -67,6 +67,8 @@ export interface DashboardMedia {
      *  Separates « rien relevé » from « pas encore de données » (aiWarningsState). */
     sensitiveWarningsAt: string | null
     enrichmentConfidence: number | null
+    /** Tone tags of the content analysis (read by the « À lire aussi » blog link). */
+    toneTags?: string[]
   } | null
   screenshots: { id: string; url: string; width: number | null; height: number | null; order: number }[]
   reviews: DashboardReview[]
@@ -152,6 +154,7 @@ export const getDashboardMedia = cache(async function getDashboardMedia(
             sensitiveWarnings: cm.sensitiveWarnings ?? [],
             sensitiveWarningsAt: cm.sensitiveWarningsAt?.toISOString() ?? null,
             enrichmentConfidence: cm.enrichmentConfidence,
+            toneTags: cm.toneTags ?? [],
           }
         : null,
       screenshots:

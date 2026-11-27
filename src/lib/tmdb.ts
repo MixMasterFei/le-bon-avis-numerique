@@ -223,6 +223,8 @@ export interface TMDBTVDetails extends Omit<TMDBTVShow, "genre_ids"> {
   last_air_date?: string | null
   last_episode_to_air?: { air_date: string | null; season_number: number } | null
   next_episode_to_air?: { air_date: string | null; season_number: number } | null
+  /** Per-season premiere dates — a new season's recency (homepage-watch). */
+  seasons?: { air_date: string | null; season_number: number }[]
   content_ratings?: {
     results: {
       iso_3166_1: string

@@ -110,6 +110,9 @@ export async function GET(req: NextRequest) {
         // Per-lever tallies — tells "nothing left to do" apart from "every
         // write rejected" without re-reading the email.
         outcomes: autofix.outcomes,
+        // Up to 30 refusals with their draft (≤ 300 chars), so the guards can
+        // be judged from cron_logs alone. Failed model calls are not refusals.
+        refusalsDetail: autofix.refusalsDetail,
         // Before/after for any rewrite, so a bad one can be reverted by hand.
         rewrites: autofix.targets
           .filter((t) => t.synopsis === "rewritten")

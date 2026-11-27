@@ -6,15 +6,16 @@
  * TMDB trending films / series of the week that are relevant in France, IGDB
  * trending + fresh game releases, titles of our latest news stories), reads
  * what the V2 homepage ACTUALLY shows by calling the same selection functions
- * the page uses (spotlight band, cinema rail, games rail at the default age
- * cap), then classifies every expected title:
+ * the page uses (spotlight band, cinema rail at the default age cap, games
+ * row — uncapped since 27 Nov 2026), then classifies every expected title:
  *
  *   on-homepage  shown, with its section and position
  *   missing      not in the catalogue (→ import, autofix)
  *   not-ready    in the catalogue without an age, or not analysed yet
  *   age-capped   analysed, but above the rail's default age cap (12, cinema 14)
  *                so the browse rails can never show it — the spotlight band
- *                is the only place it can appear (→ pin, autofix)
+ *                is the only place it can appear (→ pin, autofix). Never a
+ *                game: the games row is a news row with no age cap.
  *   absent       analysed, within the cap, yet nowhere on the homepage (→ pin)
  *
  * Writes (imports, pins) happen in `homepage-watch-run.ts`. Nothing here
@@ -131,6 +132,12 @@ export interface ClassifiedItem extends ExpectedItem {
  */
 export const HOMEPAGE_DEFAULT_CAP = 12
 export const HOMEPAGE_CINEMA_CAP = 14
+/**
+ * « Sortis récemment en jeux vidéo » has no age cap since 27 Nov 2026 (a news
+ * row, not a recommendation — src/lib/homepage-games-rail.ts): a game is never
+ * « exclu par le plafond d'âge ».
+ */
+export const HOMEPAGE_GAMES_CAP: number | null = null
 
 /** Import at most this many missing titles per run (the brief: ~8). */
 export const WATCH_MAX_IMPORTS = 8
@@ -175,7 +182,11 @@ export function classifyExpected(
   expected: ExpectedItem[],
   catalogue: Map<string, CatalogueEntry>,
   homepage: HomepageSlot[],
-  caps: { browse: number; cinema: number } = { browse: HOMEPAGE_DEFAULT_CAP, cinema: HOMEPAGE_CINEMA_CAP },
+  caps: { browse: number; cinema: number; games?: number | null } = {
+    browse: HOMEPAGE_DEFAULT_CAP,
+    cinema: HOMEPAGE_CINEMA_CAP,
+    games: HOMEPAGE_GAMES_CAP,
+  },
 ): ClassifiedItem[] {
   return expected.map((item) => {
     const entry = catalogue.get(item.key) ?? (item.mediaId ? catalogue.get(`media:${item.mediaId}`) : undefined) ?? null
@@ -193,8 +204,13 @@ export function classifyExpected(
     if (entry.expertAgeRec == null || !entry.isEnriched) {
       return { ...item, status: "not-ready", entry, placements }
     }
-    const cap = item.kind === "MOVIE" && item.sources.includes("cinema") ? caps.cinema : caps.browse
-    if (entry.expertAgeRec > cap) return { ...item, status: "age-capped", entry, placements, cap }
+    const cap =
+      item.kind === "GAME"
+        ? (caps.games ?? null)
+        : item.kind === "MOVIE" && item.sources.includes("cinema")
+          ? caps.cinema
+          : caps.browse
+    if (cap != null && entry.expertAgeRec > cap) return { ...item, status: "age-capped", entry, placements, cap }
     return { ...item, status: "absent", entry, placements }
   })
 }
@@ -235,9 +251,9 @@ export interface WatchPinOptions {
  * most three per kind and WATCH_MAX_PINS in all, interleaved film / série /
  * jeu, by `watchPinPriority`. Titles that already hold an admin pin are left
  * alone. At most SPOTLIGHT_MAX_MATURE titles rated 16+ counting the admin
- * pins: the slots go to the strongest 16+ launches (GTA VI stays eligible),
- * and the ones that would have been pinned without the cap come back in
- * `matureSkipped` so the report lists them.
+ * pins: the slots go to the strongest 16+ launches the interleave actually
+ * reaches (GTA VI stays eligible), and the ones the cap turned away come back
+ * in `matureSkipped` so the report lists them.
  */
 export function selectWatchPins(
   classified: ClassifiedItem[],
@@ -251,25 +267,47 @@ export function selectWatchPins(
     .filter((c) => c.isNew && c.frRelevant && c.entry && isShowable(c.entry) && !admin.has(c.entry.id))
     .sort((a, b) => watchPinPriority(b) - watchPinPriority(a) || b.signal - a.signal)
   const matureSlots = Math.max(0, SPOTLIGHT_MAX_MATURE - (opts.adminMatureCount ?? 0))
-  // The 16+ slots go by priority across kinds, not by interleave turn.
-  const matureAllowed = new Set(
-    eligible.filter((c) => isMatureAge(c.entry?.expertAgeRec)).slice(0, matureSlots).map((c) => c.key),
-  )
-
-  const ordered: ClassifiedItem[] = []
-  const matureSkipped: ClassifiedItem[] = []
-  const perKindCount = new Map<WatchKind, number>()
+  const mature = eligible.filter((c) => isMatureAge(c.entry?.expertAgeRec))
   const byKind = (kind: WatchKind) => eligible.filter((c) => c.kind === kind)
-  roundRobin([byKind("MOVIE"), byKind("TV"), byKind("GAME")], (c) => {
-    if (ordered.length >= max || (perKindCount.get(c.kind) ?? 0) >= WATCH_PINS_PER_KIND) return false
-    if (isMatureAge(c.entry?.expertAgeRec) && !matureAllowed.has(c.key)) {
-      matureSkipped.push(c)
-      return false
-    }
-    ordered.push(c)
-    perKindCount.set(c.kind, (perKindCount.get(c.kind) ?? 0) + 1)
-    return true
-  })
+  const lists = [byKind("MOVIE"), byKind("TV"), byKind("GAME")]
+
+  const interleave = (matureAllowed: Set<string>) => {
+    const ordered: ClassifiedItem[] = []
+    const matureSkipped: ClassifiedItem[] = []
+    const perKindCount = new Map<WatchKind, number>()
+    roundRobin(lists, (c) => {
+      if (ordered.length >= max || (perKindCount.get(c.kind) ?? 0) >= WATCH_PINS_PER_KIND) return false
+      if (isMatureAge(c.entry?.expertAgeRec) && !matureAllowed.has(c.key)) {
+        matureSkipped.push(c)
+        return false
+      }
+      ordered.push(c)
+      perKindCount.set(c.kind, (perKindCount.get(c.kind) ?? 0) + 1)
+      return true
+    })
+    return { ordered, matureSkipped }
+  }
+
+  // The 16+ slots go by priority across kinds, not by interleave turn — but
+  // only to titles the interleave actually reaches. Until 27 Nov 2026 they
+  // were handed out before it ran: the second slot went to South Park, a
+  // third series that the six-pin interleave (two per kind) never reached,
+  // so the slot was wasted and GTA VI was reported « plafond 16+ ». A title
+  // granted a slot but not pinned (its kind's turns or the total ran out) is
+  // dropped from the 16+ ranking and the slot passes to the next one.
+  const unreachable = new Set<string>()
+  let result = interleave(new Set())
+  for (;;) {
+    const allowed = new Set(
+      mature.filter((c) => !unreachable.has(c.key)).slice(0, matureSlots).map((c) => c.key),
+    )
+    result = interleave(allowed)
+    const pinnedKeys = new Set(result.ordered.map((c) => c.key))
+    const wasted = [...allowed].filter((key) => !pinnedKeys.has(key))
+    if (wasted.length === 0) break
+    for (const key of wasted) unreachable.add(key)
+  }
+  const { ordered, matureSkipped } = result
 
   const expiresAt = new Date(now.getTime() + days * 24 * 3_600_000)
   const pins = ordered.map((c, rank) => ({
@@ -292,6 +330,197 @@ export function buildWatchPins(classified: ClassifiedItem[], now: Date, opts: Wa
 function pinReason(c: ExpectedItem): string {
   const sources = c.sources.map((s) => SOURCE_LABELS[s]).join(", ")
   return (c.note ? `${sources} · ${c.note}` : sources).slice(0, 200)
+}
+
+// ── Source builders (pure, fed by homepage-watch-run.ts) ──────────────────
+
+const DAY_MS = 24 * 3_600_000
+/** A film / game counts as a launch for this long after its release. */
+export const NEW_RELEASE_DAYS = 45
+/** A series counts as new for this long after its premiere… */
+export const NEW_SERIES_DAYS = 120
+/** …or when an episode aired this recently / airs this soon (new season). */
+export const NEW_SEASON_RECENT_DAYS = 30
+export const NEW_SEASON_SOON_DAYS = 7
+
+/** Rank → 0–100 signal (first = 100). */
+export function rankSignal(index: number, length: number): number {
+  if (length <= 1) return 100
+  return Math.max(1, Math.round((100 * (length - index)) / length))
+}
+
+/** Whole days since `date` (YYYY-MM-DD strings read as UTC midnight); null without a date. */
+export function daysFrom(date: string | Date | null | undefined, now: Date): number | null {
+  if (!date) return null
+  const d = typeof date === "string" ? new Date(`${date.slice(0, 10)}T00:00:00.000Z`) : date
+  if (Number.isNaN(d.getTime())) return null
+  return Math.floor((now.getTime() - d.getTime()) / DAY_MS)
+}
+
+/** `daysFrom`, as an optional field (undefined without a date). */
+export function releasedDaysAgo(date: string | Date | null | undefined, now: Date): number | undefined {
+  return daysFrom(date, now) ?? undefined
+}
+
+/** Released within `days`, or due within 7 days. */
+export function isLaunch(date: string | Date | null | undefined, now: Date, days = NEW_RELEASE_DAYS): boolean {
+  const age = daysFrom(date, now)
+  return age != null && age >= -7 && age <= days
+}
+
+export function shortDate(date: string | Date): string {
+  const d = typeof date === "string" ? new Date(`${date.slice(0, 10)}T00:00:00.000Z`) : date
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "UTC" })
+}
+
+/** The IGDB fields the watch reads (IGDBGame satisfies it). */
+export interface WatchIgdbGame {
+  id: number
+  name: string
+  /** Unix timestamp, in SECONDS (IGDB). */
+  first_release_date?: number
+  total_rating_count?: number
+}
+
+export function igdbReleaseDate(g: Pick<WatchIgdbGame, "first_release_date">): Date | null {
+  return g.first_release_date ? new Date(g.first_release_date * 1000) : null
+}
+
+/**
+ * « Jeux sortis récemment »: ranked by rating count × recency, not rating
+ * count alone — lifetime counts favour a game that sat in early access for
+ * two years (Enshrouded, 15 Oct) over this month's launch (Ocarina of Time,
+ * 5 Nov). Every item carries its release recency for the pin choice.
+ */
+export function freshGameItems<G extends WatchIgdbGame>(
+  games: G[],
+  now: Date,
+  isAdult: (g: G) => boolean,
+  score: (g: G) => number,
+): ExpectedItem[] {
+  const sorted = [...games].sort((a, b) => score(b) - score(a) || (b.first_release_date ?? 0) - (a.first_release_date ?? 0))
+  return sorted.map((g, i) => {
+    const release = igdbReleaseDate(g)
+    return {
+      key: `GAME:igdb:${g.id}`,
+      kind: "GAME" as const,
+      title: g.name,
+      sources: ["igdb-fresh" as const],
+      signal: Math.round(rankSignal(i, sorted.length) * 0.8),
+      igdbId: g.id,
+      frRelevant: !isAdult(g),
+      isNew: true,
+      note: release ? `sorti le ${shortDate(release)}` : undefined,
+      releasedDaysAgo: releasedDaysAgo(release, now),
+    }
+  })
+}
+
+/**
+ * « Jeux en tendance », launches only (evergreen hits like Roblox or GTA V
+ * trend every week: not this week's news). Release date from the catalogue
+ * when we have the game, else from IGDB.
+ */
+export function trendingGameItems<G extends WatchIgdbGame>(
+  trending: Array<{ gameId: number }>,
+  known: Map<number, { title: string; releaseDate: Date | null }>,
+  igdb: Map<number, G>,
+  now: Date,
+  isAdult: (g: G) => boolean,
+): ExpectedItem[] {
+  const out: ExpectedItem[] = []
+  trending.forEach((t, i) => {
+    const k = known.get(t.gameId)
+    const g = igdb.get(t.gameId)
+    const release = k?.releaseDate ?? (g ? igdbReleaseDate(g) : null)
+    if (!isLaunch(release, now)) return
+    out.push({
+      key: `GAME:igdb:${t.gameId}`,
+      kind: "GAME",
+      title: k?.title ?? g?.name ?? `IGDB ${t.gameId}`,
+      sources: ["igdb-trending"],
+      signal: rankSignal(i, trending.length),
+      igdbId: t.gameId,
+      frRelevant: g ? !isAdult(g) : true,
+      isNew: true,
+      note: release ? `sorti le ${shortDate(release)}` : undefined,
+      releasedDaysAgo: releasedDaysAgo(release, now),
+    })
+  })
+  return out
+}
+
+export interface WatchTvDetails {
+  last_air_date?: string | null
+  last_episode_to_air?: { air_date: string | null; season_number: number } | null
+  next_episode_to_air?: { air_date: string | null; season_number: number } | null
+  seasons?: { air_date: string | null; season_number: number }[]
+}
+
+/**
+ * A long-running show with a new season: an episode aired in the last 30
+ * days, or one airs within 7. Its recency is the SEASON's premiere, not the
+ * latest episode: a weekly show always has an episode « this week », so
+ * dating it by the last episode made every airing season look like a launch
+ * out today (×1.5) and let it outrank a real new release such as GTA VI.
+ * Falls back to the episode date when TMDB gives no season premiere.
+ */
+export function newSeasonTiming(
+  d: WatchTvDetails,
+  now: Date,
+): { releasedDaysAgo: number; note: string } | null {
+  const last = d.last_episode_to_air?.air_date ?? d.last_air_date ?? null
+  const next = d.next_episode_to_air?.air_date ?? null
+  const lastAge = daysFrom(last, now)
+  const nextIn = next ? -(daysFrom(next, now) ?? 99) : null
+  const premiere = (season: number | undefined) => {
+    if (season == null) return null
+    return daysFrom(d.seasons?.find((s) => s.season_number === season)?.air_date ?? null, now)
+  }
+  if (lastAge != null && lastAge >= 0 && lastAge <= NEW_SEASON_RECENT_DAYS) {
+    const season = d.last_episode_to_air?.season_number
+    const sincePremiere = premiere(season)
+    return {
+      releasedDaysAgo: sincePremiere != null && sincePremiere >= lastAge ? sincePremiere : lastAge,
+      note: `${season ? `saison ${season}` : "nouveaux épisodes"} — épisode diffusé le ${shortDate(last as string)}`,
+    }
+  }
+  if (nextIn != null && nextIn >= 0 && nextIn <= NEW_SEASON_SOON_DAYS) {
+    const season = d.next_episode_to_air?.season_number
+    return {
+      // Not out yet (or back after a break of over 30 days): like a launch.
+      releasedDaysAgo: -nextIn,
+      note: `${season ? `saison ${season}` : "nouveaux épisodes"} à partir du ${shortDate(next as string)}`,
+    }
+  }
+  return null
+}
+
+/**
+ * One title as logged in `cron_logs.details.titles`. Recency, signal and pin
+ * priority are logged too: without them the 27 Nov 2026 row could not show
+ * why Phantom Blade Zero and Lightyear Frontier were pinned (every
+ * `releasedDaysAgo` read back as null because the field was never written).
+ */
+export function watchTitleLog(
+  c: ClassifiedItem,
+  opts: { imported: boolean; matureCapSkipped: boolean },
+): Record<string, unknown> {
+  return {
+    key: c.key,
+    title: c.title,
+    kind: c.kind,
+    status: c.status,
+    age: c.entry?.expertAgeRec ?? null,
+    sources: c.sources,
+    placements: c.placements,
+    isNew: c.isNew,
+    signal: c.signal,
+    releasedDaysAgo: c.releasedDaysAgo ?? null,
+    priority: Math.round(watchPinPriority(c) * 10) / 10,
+    imported: opts.imported,
+    ...(opts.matureCapSkipped ? { matureCapSkipped: true } : {}),
+  }
 }
 
 // ── Report ────────────────────────────────────────────────────────────────
@@ -411,7 +640,7 @@ export function buildWatchReport(input: {
     `Mode : ${o.dryRun ? "simulation (?dryRun=1) — aucune écriture" : o.writesEnabled ? "correction automatique" : "rapport seul (HOMEPAGE_WATCH_AUTOFIX=false ou hors production)"}`,
   )
   lines.push(
-    `Bilan : ${classified.length} titres attendus · ${onHome.length} à l'accueil · ${by("missing").length} absents du catalogue · ${by("not-ready").length} pas encore analysés · ${by("age-capped").length} écartés par le filtre d'âge par défaut (${HOMEPAGE_DEFAULT_CAP} ans, cinéma ${HOMEPAGE_CINEMA_CAP}) · ${by("absent").length} analysés mais absents de l'accueil`,
+    `Bilan : ${classified.length} titres attendus · ${onHome.length} à l'accueil · ${by("missing").length} absents du catalogue · ${by("not-ready").length} pas encore analysés · ${by("age-capped").length} écartés par le filtre d'âge par défaut (${HOMEPAGE_DEFAULT_CAP} ans, cinéma ${HOMEPAGE_CINEMA_CAP}, jeux sans plafond) · ${by("absent").length} analysés mais absents de l'accueil`,
   )
   if (!o.dryRun && o.writesEnabled) {
     lines.push(

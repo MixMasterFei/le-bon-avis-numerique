@@ -177,7 +177,8 @@ export function HomepageRedesign({ isLoggedIn, userName = null, familyDisplayNam
           <PlatformsSection maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         <DeferUntilVisible>
-          <GamesRail maxAge={effectiveMaxAge} audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
+          {/* News row: deliberately NOT age-capped (see GamesRail). */}
+          <GamesRail audience={audienceLabel} rankByMemberIds={selectedMemberIds} />
         </DeferUntilVisible>
         {/* Static band, NOT deferred: these are the crawlable links to the
             collection pages — hiding them behind IntersectionObserver would
