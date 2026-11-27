@@ -37,7 +37,7 @@ describe("buildQuickAnswer", () => {
       contentMetrics: { ...zeroMetrics, language: 3, violence: 4, positiveMessages: 4 },
     })
     expect(qa.answer).toBe(
-      "Kraken est un film conseillé à partir de 12 ans par Totem Avisé, surtout en raison de la violence et du langage. Points favorables : messages positifs.",
+      "Kraken est un film conseillé à partir de 12 ans par Totem Avisé, principalement en raison de : violence 4/5, langage 3/5. Points favorables : messages positifs.",
     )
   })
 
@@ -48,7 +48,8 @@ describe("buildQuickAnswer", () => {
       expertAgeRec: 0,
       contentMetrics: { ...zeroMetrics, consumerism: 3 },
     })
-    expect(qa.answer).toContain("pour tous publics par Totem Avisé. Points à vérifier : consumérisme.")
+    expect(qa.answer).toContain("pour tous publics par Totem Avisé. À surveiller malgré tout : consumérisme 3/5.")
+    expect(qa.sensitiveText).toBe("Points à vérifier : consumérisme 3/5.")
     expect(qa.answer).not.toContain("en raison")
   })
 

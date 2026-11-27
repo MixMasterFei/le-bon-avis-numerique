@@ -2,6 +2,7 @@ import type { MediaType } from "@/lib/media-route"
 import { isAnimationStyle } from "@/lib/age-floor"
 import { isKnownAge } from "@/lib/age-label"
 import { pegiAgeFromOfficialRating } from "@/lib/pegi-descriptors"
+import { buildFicheReasons, UNNAMED_SIGNAL_SENTENCE } from "@/lib/fiche-reasons"
 
 /**
  * Builds the public "Pourquoi cet âge ?" rationale shown on a fiche.
@@ -37,6 +38,9 @@ export interface AgeRationaleInput {
     substanceUse: number
     positiveMessages: number
     roleModels: number
+    whatParentsNeedToKnow?: string[] | null
+    sensitiveWarnings?: string[] | null
+    enrichmentConfidence?: number | null
   }
   /**
    * Pre-release / provisional fiche: we have NOT evaluated the content yet, so
@@ -182,8 +186,18 @@ export function buildAgeRationale(input: AgeRationaleInput): AgeRationale {
       : `${input.title} est conseillé ${recommended}, principalement en raison de : ${driverPhrase}.`
   } else {
     lead = `${input.title} est conseillé ${recommended}.`
+    // No axis at « Présent » or above — but milder scores and the « Ce qui
+    // peut marquer » flags are still on the page. Say what they are (same
+    // reasons as the quick answer and the meta description) rather than
+    // « aucun élément sensible », which Beetlejuice's frightening creatures
+    // contradicted. See src/lib/fiche-reasons.ts.
+    const { reasons, hasSignal } = buildFicheReasons(input)
     noDriverNote =
-      "Aucun élément sensible ne ressort nettement : la recommandation reflète surtout le public visé et les thèmes abordés."
+      reasons.length > 0
+        ? `Aucun axe n'est très marqué ; l'analyse relève toutefois : ${reasons.join(", ")}.`
+        : hasSignal
+          ? `Aucun axe n'est très marqué. ${UNNAMED_SIGNAL_SENTENCE}`
+          : "Aucun élément sensible ne ressort nettement : la recommandation reflète surtout le public visé et les thèmes abordés."
   }
 
   const positivesSentence =

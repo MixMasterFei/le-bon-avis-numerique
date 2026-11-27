@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import type { MediaType } from "@/lib/types"
+import { EDITORIAL_CLUSTER_REASON, getEditorialClusterIds } from "@/lib/media-versions"
 
 export type SimilarItem = {
   id: string
@@ -52,6 +53,12 @@ export async function getSimilarMedia({
     select: { director: true, expertAgeRec: true },
   })
   const currentAge = current?.expertAgeRec ?? null
+  // Versions, remakes and sequels tied by an editor (EXPERT editorial_cluster
+  // edges) have their own « Autres versions et suites » block on the fiche,
+  // with every entry's age — never repeat them here. The age rule above is
+  // unchanged for everything this rail shows.
+  const clusterIds = await getEditorialClusterIds(mediaId)
+  const excludedIds = [mediaId, ...clusterIds]
   const passesAge = (age: number | null): boolean =>
     currentAge == null || (age != null && age <= currentAge)
 
@@ -67,7 +74,7 @@ export async function getSimilarMedia({
       const gset = new Set(genres.map((g) => g.toLowerCase()))
       const pool = await prisma.mediaItem.findMany({
         where: {
-          id: { not: mediaId },
+          id: { notIn: excludedIds },
           type: "GAME",
           posterUrl: { not: null, startsWith: "http" },
           topics: { hasSome: topics },
@@ -101,7 +108,10 @@ export async function getSimilarMedia({
 
   try {
     const similarities = await prisma.mediaSimilarity.findMany({
-      where: { OR: [{ mediaIdA: mediaId }, { mediaIdB: mediaId }] },
+      where: {
+        OR: [{ mediaIdA: mediaId }, { mediaIdB: mediaId }],
+        NOT: { reasons: { has: EDITORIAL_CLUSTER_REASON } },
+      },
       orderBy: { similarityScore: "desc" },
       take: 10,
       include: {
@@ -130,13 +140,14 @@ export async function getSimilarMedia({
         }
       })
       .filter((s) => s.type === mediaType)
+      .filter((s) => !clusterIds.has(s.id))
       .filter(
         (s) => currentGenreSet.size === 0 || s.genres.some((g) => currentGenreSet.has(g.toLowerCase())),
       )
       .filter((s) => passesAge(s.expertAgeRec))
 
     if (similarMedia.length < 6 && genres.length > 0) {
-      const existingIds = new Set<string>([mediaId, ...similarMedia.map((s) => s.id)])
+      const existingIds = new Set<string>([...excludedIds, ...similarMedia.map((s) => s.id)])
       const fallback = await prisma.mediaItem.findMany({
         where: {
           id: { notIn: Array.from(existingIds) },

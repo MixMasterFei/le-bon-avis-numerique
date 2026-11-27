@@ -4,6 +4,7 @@ export const revalidate = 3600
 import { Suspense } from "react"
 import type { Metadata } from "next"
 import { buildFicheDescription, buildFicheTitle, ficheTypicalAgeRange, seoTitleMatchesAge } from "@/lib/fiche-title"
+import { buildFicheReasons } from "@/lib/fiche-reasons"
 import { BookOpen } from "lucide-react"
 import { guideKeyForTitle } from "@/lib/game-guides"
 import { guideVisible } from "@/lib/game-guide-flag"
@@ -40,6 +41,7 @@ import { MediaDashboard } from "@/components/media-v3/MediaDashboard"
 import { DashboardBreadcrumb } from "@/components/media-v3/DashboardBreadcrumb"
 import { HomonymNotice } from "@/components/media/HomonymNotice"
 import { NoelFicheLink } from "@/components/noel/NoelFicheLink"
+import { MediaVersions } from "@/components/media/MediaVersions"
 import { findHomonyms } from "@/lib/homonyms"
 import { mediaV3Enabled } from "@/lib/media-v3-flag"
 import { isAdmin } from "@/lib/auth"
@@ -140,15 +142,20 @@ export async function generateMetadata({ params }: MediaPageProps): Promise<Meta
 
   const typeLabel = typeLabels[media.type] || "Média"
 
-  // Verdict first (answers « [titre] à partir de quel âge » in the SERP and
-  // sets us apart from plain plot summaries), never the age twice, with the
-  // year for franchise titles. See buildFicheDescription.
+  // Verdict first (answers « [titre] à partir de quel âge » in the SERP), then
+  // the analysis' own reasons — the same ones the FAQ answer gives
+  // (src/lib/fiche-reasons.ts) — instead of a plot summary. Provisional /
+  // pre-release / never-analysed fiches keep the synopsis description.
+  const analysis =
+    !hide && media.hasContentAnalysis ? buildFicheReasons({ type: media.type, contentMetrics: media.contentMetrics }) : null
   const description = buildFicheDescription({
     age: media.expertAgeRec,
     provisional: hide,
     synopsis: media.synopsisFr,
     typeLabel,
     releaseDate: media.releaseDate,
+    title: media.title,
+    analysis,
   })
 
   const ogType = media.type === "MOVIE" ? "video.movie"
@@ -624,6 +631,11 @@ export default async function MediaPage({ params }: MediaPageProps) {
               }
               guideKey={guideKey}
               ageGuideHref={ageGuideHref}
+              versionsBlock={
+                <Suspense fallback={null}>
+                  <MediaVersions mediaId={dash.id} title={dash.title} variant="v3" className="mb-[13px]" />
+                </Suspense>
+              }
               seasonalLink={
                 <Suspense fallback={null}>
                   <NoelFicheLink
@@ -1055,6 +1067,14 @@ export default async function MediaPage({ params }: MediaPageProps) {
               screenshots={media.screenshots}
               title={media.title}
             />
+          )}
+
+          {/* Autres versions et suites — editorial clusters (remakes, suites),
+              every entry with its own age; hidden when there are none. */}
+          {dbId && (
+            <Suspense fallback={null}>
+              <MediaVersions mediaId={dbId} title={media.title} />
+            </Suspense>
           )}
 
           {/* Dans le même genre — streamed via Suspense to avoid blocking render */}

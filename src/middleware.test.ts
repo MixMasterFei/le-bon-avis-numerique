@@ -168,3 +168,45 @@ describe("parents' guides gate (/jeux/guide/*)", () => {
     expect(response.status).toBe(404)
   })
 })
+
+describe("percent-encoded fiche URLs (/media/<type>%3A<id>)", () => {
+  const ID = "9c489fff-a09f-484f-a608-7c95ce03fac9"
+  const go = (path: string) => middleware(new NextRequest(`https://totemavise.com${path}`), event)
+
+  it.each([
+    [`/media/movie%3A${ID}`, `/media/movie:${ID}`],
+    [`/media/movie%3a${ID}`, `/media/movie:${ID}`],
+    [`/media/tv%3A${ID}`, `/media/tv:${ID}`],
+    [`/media/GAME%3a${ID}`, `/media/game:${ID}`],
+    [`/media/movie%3A${ID}/apercu`, `/media/movie:${ID}/apercu`],
+  ])("308 %s → %s", async (from, to) => {
+    const response = await go(from)
+    expect(response.status).toBe(308)
+    expect(response.headers.get("location")).toBe(`https://totemavise.com${to}`)
+  })
+
+  it("keeps the query string", async () => {
+    const response = await go(`/media/movie%3A${ID}?v=classic&utm_source=x`)
+    expect(response.status).toBe(308)
+    expect(response.headers.get("location")).toBe(`https://totemavise.com/media/movie:${ID}?v=classic&utm_source=x`)
+  })
+
+  it("does not loop: the literal-colon target passes through", async () => {
+    const response = await go(`/media/movie:${ID}`)
+    expect(response.status).toBe(200)
+    expect(response.headers.get("location")).toBeNull()
+  })
+
+  it("composes with merged fiches: one hop to the survivor", async () => {
+    const response = await go("/media/game%3A068c5396-4416-4f33-9bd7-3ac5e826c0d9")
+    expect(response.status).toBe(301)
+    expect(response.headers.get("location")).toBe(
+      "https://totemavise.com/media/game:ced84a43-f4b1-4d7a-ae0c-489aee0a11e1",
+    )
+  })
+
+  it("leaves unknown types and other encodings alone", async () => {
+    expect((await go(`/media/foo%3A${ID}`)).status).toBe(200)
+    expect((await go("/recherche?q=a%3Ab")).status).toBe(200)
+  })
+})

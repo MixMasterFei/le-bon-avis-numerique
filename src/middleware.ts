@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai-bots"
 import { isPrivatePath, isAiFacingEndpoint } from "@/lib/private-paths"
 import { resolveMergedMediaPath } from "@/lib/merged-media"
+import { encodedFicheRedirectPath } from "@/lib/media-route"
 import { isCronJobRequest } from "@/lib/cron-credential"
 import { isGuideReleased } from "@/lib/game-guide-flag"
 
@@ -135,6 +136,20 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     const url = request.nextUrl.clone()
     url.pathname = mergedPath
     return NextResponse.redirect(url, { status: 301 })
+  }
+
+  // ===== SEO: percent-encoded fiche URLs → 308 to the literal colon =====
+  // `/media/movie%3A<id>` rendered the fiche with a 200 (the page decodes its
+  // param, so its own canonical check passes), and Google counted it as a
+  // second page. Any case of `%3a`, any known type, subpaths and the query
+  // string kept. The target holds a literal `:`, which this pattern never
+  // matches again — no loop. Merged fiches were already sent to their
+  // survivor just above, in one hop.
+  const encodedFiche = encodedFicheRedirectPath(pathname)
+  if (encodedFiche) {
+    const url = request.nextUrl.clone()
+    url.pathname = encodedFiche
+    return NextResponse.redirect(url, { status: 308 })
   }
 
   // ===== SEO: Media route prefix normalization =====
