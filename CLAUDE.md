@@ -143,7 +143,7 @@ You are a **senior full-stack developer and technical advisor** for this project
 | Family recommendations API | `src/app/api/recommendations/family/route.ts` |
 | Similarity compute | `src/app/api/admin/similarity/compute/route.ts` |
 | CNC ratings import | `src/app/api/admin/import-cnc-ratings/route.ts` |
-| AI enrichment | `src/app/api/admin/enrich/route.ts` (prompt + parser + status rule in `src/lib/enrichment-analysis.ts`) |
+| AI enrichment | `src/app/api/admin/enrich/route.ts` (prompt + parser + status rule in `src/lib/enrichment-analysis.ts`). The prompt carries the **house age scale** (`buildAgeCalibrationBlock`: bands + catalogue reference titles with their stored age and scores, films / series / games; MANGA keeps its old wording) — a reference must never be a calibration test-set title (`CALIBRATION_HELD_OUT_TITLES`, test-enforced); results in `docs/agents/age-keeper.md` |
 | OpenAI text model (single source) | `src/lib/openai-text-model.ts` — `openaiTextModel()`, `buildTextCompletionParams`, `createTextCompletion` (retries once without `reasoning_effort` on a 400 about it), `modelFailureStatus`. Compare models on the enrichment prompt, read-only: `scripts/compare-text-models.ts` |
 | Age vote button | `src/components/media/AgeVoteButton.tsx` |
 | Media route helper | `src/lib/media-route.ts` |
